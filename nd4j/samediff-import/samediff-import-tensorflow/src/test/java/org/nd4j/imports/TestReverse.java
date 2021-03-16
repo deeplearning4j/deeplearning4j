@@ -21,18 +21,17 @@
 package org.nd4j.imports;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class TestReverse extends BaseNd4jTest {
+public class TestReverse extends BaseNd4jTestWithBackends {
 
-    public TestReverse(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -40,7 +39,9 @@ public class TestReverse extends BaseNd4jTest {
     }
 
     @Test
-    public void testReverse(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReverse(Nd4jBackend backend) {
 
         INDArray in = Nd4j.createFromArray(new double[]{1,2,3,4,5,6});
         INDArray out = Nd4j.create(DataType.DOUBLE, 6);
@@ -57,7 +58,9 @@ public class TestReverse extends BaseNd4jTest {
     }
 
     @Test
-    public void testReverse2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReverse2(Nd4jBackend backend){
 
         INDArray in = Nd4j.createFromArray(new double[]{1,2,3,4,5,6});
         INDArray axis = Nd4j.scalar(0);

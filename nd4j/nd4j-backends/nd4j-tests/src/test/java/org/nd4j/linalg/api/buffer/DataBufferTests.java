@@ -25,9 +25,10 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -45,16 +46,15 @@ import java.nio.ByteOrder;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class DataBufferTests extends BaseNd4jTest {
 
-    public DataBufferTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class DataBufferTests extends BaseNd4jTestWithBackends {
+
 
     @Test
     @Disabled("AB 2019/06/03 - CI issue: \"CUDA stream synchronization failed\" - see issue 7657")
-    public void testNoArgCreateBufferFromArray() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNoArgCreateBufferFromArray(Nd4jBackend backend) {
 
         //Tests here:
         //1. Create from JVM array
@@ -280,7 +280,9 @@ public class DataBufferTests extends BaseNd4jTest {
 
 
     @Test
-    public void testCreateTypedBuffer() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCreateTypedBuffer(Nd4jBackend backend) {
 
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
@@ -350,7 +352,9 @@ public class DataBufferTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testAsBytes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAsBytes(Nd4jBackend backend) {
         INDArray orig = Nd4j.linspace(DataType.INT, 0, 10, 1);
 
         for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.BFLOAT16,
@@ -404,7 +408,9 @@ public class DataBufferTests extends BaseNd4jTest {
     }
 
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testEnsureLocation(){
         //https://github.com/eclipse/deeplearning4j/issues/8783
         Nd4j.create(1);

@@ -24,10 +24,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
@@ -53,11 +55,8 @@ import java.util.List;
 import java.util.Set;
 
 @Slf4j
-public class OpsMappingTests extends BaseNd4jTest {
+public class OpsMappingTests extends BaseNd4jTestWithBackends {
 
-    public OpsMappingTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -70,7 +69,9 @@ public class OpsMappingTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testLegacyOpsMapping() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLegacyOpsMapping(Nd4jBackend backend) {
         Nd4j.create(1);
 
         val str = NativeOpsHolder.getInstance().getDeviceNativeOps().getAllOperations().replaceAll("simdOps::","").replaceAll("randomOps::","");

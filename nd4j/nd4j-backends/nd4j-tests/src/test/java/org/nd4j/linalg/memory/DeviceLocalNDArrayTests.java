@@ -23,9 +23,10 @@ package org.nd4j.linalg.memory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,15 +40,14 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class DeviceLocalNDArrayTests extends BaseNd4jTest {
 
-    public DeviceLocalNDArrayTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testDeviceLocalStringArray(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDeviceLocalStringArray(Nd4jBackend backend){
         val arr = Nd4j.create(Arrays.asList("first", "second"), 2);
         assertEquals(DataType.UTF8, arr.dataType());
         assertArrayEquals(new long[]{2}, arr.shape());
@@ -61,7 +61,9 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDtypes(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDtypes(Nd4jBackend backend){
         for(DataType globalDType : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
             Nd4j.setDefaultDataTypes(globalDType, globalDType);
             for(DataType arrayDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
@@ -74,7 +76,9 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDeviceLocalUpdate_1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDeviceLocalUpdate_1(Nd4jBackend backend) throws Exception {
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
             return;
@@ -118,7 +122,9 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
 
 
     @Test
-    public void testDelayedDeviceLocalUpdate_1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDelayedDeviceLocalUpdate_1(Nd4jBackend backend) throws Exception {
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
             return;
@@ -145,7 +151,9 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDelayedDeviceLocalUpdate_2() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDelayedDeviceLocalUpdate_2(Nd4jBackend backend) throws Exception {
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
             return;

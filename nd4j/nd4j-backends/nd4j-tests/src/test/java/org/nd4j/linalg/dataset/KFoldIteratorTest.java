@@ -21,9 +21,10 @@
 package org.nd4j.linalg.dataset;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.KFoldIterator;
@@ -34,55 +35,56 @@ import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class KFoldIteratorTest extends BaseNd4jTest {
 
-    public KFoldIteratorTest(Nd4jBackend backend) {
-        super(backend);
+public class KFoldIteratorTest extends BaseNd4jTestWithBackends {
+
+
+
+    /**
+     * Try every possible k number of folds from 2 to the number of examples,
+     * and check that every example will be exactly once in the test set,
+     * and the sum of the number of test examples in all folds equals to the number of examples.
+     */
+    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void checkTestFoldContent(Nd4jBackend backend) {
+
+        final int numExamples = 42;
+        final int numFeatures = 3;
+        INDArray features = Nd4j.rand(new int[] {numExamples, numFeatures});
+        INDArray labels = Nd4j.linspace(1, numExamples, numExamples, DataType.DOUBLE).reshape(-1, 1);
+
+        DataSet dataSet = new DataSet(features, labels);
+
+        for (int k = 2; k <= numExamples; k++) {
+            KFoldIterator kFoldIterator = new KFoldIterator(k, dataSet);
+            HashSet<Double> testLabels = new HashSet<Double>();
+            for (int i = 0; i < k; i++) {
+                kFoldIterator.next();
+                DataSet testFold = kFoldIterator.testFold();
+                for (DataSet testExample : testFold) {
+                    /**
+                     * Check that the current example has not been in the test set before
+                     */
+                    INDArray testedLabel = testExample.getLabels();
+                    assertTrue(testLabels.add(testedLabel.getDouble(0)));
+                }
+            }
+            /**
+             * Check that the sum of the number of test examples in all folds equals to the number of examples
+             */
+            assertEquals(numExamples, testLabels.size());
+        }
     }
 
-    
-	/**
-	 * Try every possible k number of folds from 2 to the number of examples, 
-	 * and check that every example will be exactly once in the test set,
-	 * and the sum of the number of test examples in all folds equals to the number of examples.
-	 */
-	@Test
-	public void checkTestFoldContent() {
-
-		final int numExamples = 42;
-		final int numFeatures = 3;
-		INDArray features = Nd4j.rand(new int[] {numExamples, numFeatures});
-		INDArray labels = Nd4j.linspace(1, numExamples, numExamples, DataType.DOUBLE).reshape(-1, 1);
-		
-		DataSet dataSet = new DataSet(features, labels);
-		
-		for (int k = 2; k <= numExamples; k++) {
-			KFoldIterator kFoldIterator = new KFoldIterator(k, dataSet);
-			HashSet<Double> testLabels = new HashSet<Double>();
-			for (int i = 0; i < k; i++) {
-				kFoldIterator.next();
-				DataSet testFold = kFoldIterator.testFold();
-				for (DataSet testExample : testFold) {
-					/**
-					 * Check that the current example has not been in the test set before
-					 */
-					INDArray testedLabel = testExample.getLabels();
-					assertTrue(testLabels.add(testedLabel.getDouble(0)));
-				}
-			}
-			/**
-			 * Check that the sum of the number of test examples in all folds equals to the number of examples
-			 */
-			assertEquals(numExamples, testLabels.size());
-		}
-	}
-	
 
     @Test
-    public void checkFolds() {
-    	// Expected batch sizes: 3+3+3+2 = 11 total examples 
-    	int[] batchSizesExp = new int[] {3, 3, 3, 2};
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void checkFolds(Nd4jBackend backend) {
+        // Expected batch sizes: 3+3+3+2 = 11 total examples
+        int[] batchSizesExp = new int[] {3, 3, 3, 2};
         KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, batchSizesExp);
         DataSet allData = randomDS.getAllBatches();
         KFoldIterator kiter = new KFoldIterator(4, allData);
@@ -98,16 +100,16 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
             assertEquals(randomDS.getBatchK(i, true), test.getFeatures());
             assertEquals(randomDS.getBatchK(i, false), test.getLabels());
-            
+
             assertEquals(batchSizesExp[i], test.getLabels().length());
             i++;
         }
         assertEquals(i, 4);
     }
-    
+
 
     @Test()
-    public void checkCornerCaseException() {
+    public void checkCornerCaseException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             DataSet allData = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1),
                     Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
@@ -119,9 +121,11 @@ public class KFoldIteratorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void checkCornerCase() {
-    	// Expected batch sizes: 2+1 = 3 total examples 
-    	int[] batchSizesExp = new int[] {2, 1};
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void checkCornerCase(Nd4jBackend backend) {
+        // Expected batch sizes: 2+1 = 3 total examples
+        int[] batchSizesExp = new int[] {2, 1};
         KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, batchSizesExp);
         DataSet allData = randomDS.getAllBatches();
         KFoldIterator kiter = new KFoldIterator(2, allData);
@@ -135,14 +139,14 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
             assertEquals(randomDS.getBatchK(i, true), test.getFeatures());
             assertEquals(randomDS.getBatchK(i, false), test.getLabels());
-            
+
             assertEquals(batchSizesExp[i], test.getLabels().length());
             i++;
         }
         assertEquals(i, 2);
     }
 
-    
+
     /**
      * Dataset built from given sized batches of random data
      * @author susaneraly created RandomDataSet
@@ -225,12 +229,14 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             return batches;
         }
     }
-    
-    
+
+
     @Test
-    public void test5974(){
-        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1), 
-                                Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void test5974(Nd4jBackend backend){
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1),
+                Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
 
         KFoldIterator iter = new KFoldIterator(10, ds);
 

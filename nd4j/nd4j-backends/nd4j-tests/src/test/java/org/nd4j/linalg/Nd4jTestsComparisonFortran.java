@@ -25,8 +25,9 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,18 +44,14 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
+
+public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
     private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparisonFortran.class);
 
     public static final int SEED = 123;
 
-    DataType initialType;
+    DataType initialType = Nd4j.dataType();
 
-    public Nd4jTestsComparisonFortran(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
 
 
     @BeforeEach
@@ -75,7 +72,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testCrash() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCrash(Nd4jBackend backend) {
         INDArray array3d = Nd4j.ones(1, 10, 10);
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 0);
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 1);
@@ -85,7 +84,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testMmulWithOpsCommonsMath() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMmulWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
 
@@ -100,7 +101,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemmWithOpsCommonsMath() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGemmWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
@@ -156,7 +159,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemvApacheCommons() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGemvApacheCommons(Nd4jBackend backend) {
 
         int[] rowsArr = new int[] {4, 4, 4, 8, 8, 8};
         int[] colsArr = new int[] {2, 1, 10, 2, 1, 10};
@@ -197,7 +202,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
                     assertArrayEquals(new long[] {rows, 1}, gemv.shape());
                     assertArrayEquals(new int[] {rows, 1},
-                                    new int[] {gemv2.getRowDimension(), gemv2.getColumnDimension()});
+                            new int[] {gemv2.getRowDimension(), gemv2.getColumnDimension()});
 
                     //Check entries:
                     for (int r = 0; r < rows; r++) {
@@ -211,7 +216,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testAddSubtractWithOpsCommonsMath() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAddSubtractWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         for (int i = 0; i < first.size(); i++) {
@@ -229,7 +236,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testMulDivOnCheckUtilMatrices() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMulDivOnCheckUtilMatrices(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         for (int i = 0; i < first.size(); i++) {
@@ -245,13 +254,13 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     private static String getTestWithOpsErrorMsg(int i, int j, String op, Pair<INDArray, String> first,
-                    Pair<INDArray, String> second) {
+                                                 Pair<INDArray, String> second) {
         return i + "," + j + " - " + first.getSecond() + "." + op + "(" + second.getSecond() + ")";
     }
 
     private static String getGemmErrorMsg(int i, int j, boolean transposeA, boolean transposeB, double alpha,
-                    double beta, Pair<INDArray, String> first, Pair<INDArray, String> second) {
+                                          double beta, Pair<INDArray, String> first, Pair<INDArray, String> second) {
         return i + "," + j + " - gemm(tA=" + transposeA + ",tB= " + transposeB + ",alpha=" + alpha + ",beta= " + beta
-                        + "). A=" + first.getSecond() + ", B=" + second.getSecond();
+                + "). A=" + first.getSecond() + ", B=" + second.getSecond();
     }
 }

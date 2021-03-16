@@ -22,23 +22,23 @@ package org.nd4j.linalg.dataset;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.StandardScaler;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-@RunWith(Parameterized.class)
-public class StandardScalerTest extends BaseNd4jTest {
-    public StandardScalerTest(Nd4jBackend backend) {
-        super(backend);
-    }
+
+public class StandardScalerTest extends BaseNd4jTestWithBackends {
 
     @Disabled
-    @Test
-    public void testScale() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testScale(Nd4jBackend backend) {
         StandardScaler scaler = new StandardScaler();
         DataSetIterator iter = new IrisDataSetIterator(10, 150);
         scaler.fit(iter);

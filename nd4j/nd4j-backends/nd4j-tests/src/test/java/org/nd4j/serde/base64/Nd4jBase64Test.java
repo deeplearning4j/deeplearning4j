@@ -21,18 +21,17 @@
 package org.nd4j.serde.base64;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class Nd4jBase64Test extends BaseNd4jTest {
+public class Nd4jBase64Test extends BaseNd4jTestWithBackends {
 
-    public Nd4jBase64Test(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -40,7 +39,9 @@ public class Nd4jBase64Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testBase64() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBase64(Nd4jBackend backend) throws Exception {
         INDArray arr = Nd4j.linspace(1, 4, 4);
         String base64 = Nd4jBase64.base64String(arr);
         INDArray from = Nd4jBase64.fromBase64(base64);

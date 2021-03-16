@@ -25,9 +25,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.nio.file.Path;
@@ -35,17 +36,14 @@ import java.nio.file.Path;
 import static org.nd4j.linalg.api.ndarray.TestNdArrReadWriteTxt.compareArrays;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class TestNdArrReadWriteTxtC extends BaseNd4jTest {
 
+public class TestNdArrReadWriteTxtC extends BaseNd4jTestWithBackends {
 
-    public TestNdArrReadWriteTxtC(Nd4jBackend backend) {
-
-        super(backend);
-    }
 
     @Test
-    public void compareAfterWrite(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void compareAfterWrite(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         int[] ranksToCheck = new int[]{0, 1, 2, 3, 4};
         for (int i = 0; i < ranksToCheck.length; i++) {
             log.info("Checking read write arrays with rank " + ranksToCheck[i]);

@@ -21,6 +21,8 @@
 package org.nd4j.evaluation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
@@ -29,25 +31,24 @@ import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class EmptyEvaluationTests extends BaseNd4jTest {
+public class EmptyEvaluationTests extends BaseNd4jTestWithBackends {
 
-    public EmptyEvaluationTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testEmptyEvaluation() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyEvaluation (Nd4jBackend backend) {
         Evaluation e = new Evaluation();
         System.out.println(e.stats());
 
@@ -62,7 +63,9 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmptyRegressionEvaluation() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyRegressionEvaluation (Nd4jBackend backend) {
         RegressionEvaluation re = new RegressionEvaluation();
         re.stats();
 
@@ -76,7 +79,9 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmptyEvaluationBinary() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyEvaluationBinary(Nd4jBackend backend) {
         EvaluationBinary eb = new EvaluationBinary();
         eb.stats();
 
@@ -91,7 +96,9 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmptyROC() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyROC(Nd4jBackend backend) {
         ROC roc = new ROC();
         roc.stats();
 
@@ -106,7 +113,9 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmptyROCBinary() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyROCBinary(Nd4jBackend backend) {
         ROCBinary rb = new ROCBinary();
         rb.stats();
 
@@ -121,7 +130,9 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmptyROCMultiClass() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyROCMultiClass(Nd4jBackend backend) {
         ROCMultiClass r = new ROCMultiClass();
         r.stats();
 
@@ -136,7 +147,9 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmptyEvaluationCalibration() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEmptyEvaluationCalibration(Nd4jBackend backend) {
         EvaluationCalibration ec = new EvaluationCalibration();
         ec.stats();
 

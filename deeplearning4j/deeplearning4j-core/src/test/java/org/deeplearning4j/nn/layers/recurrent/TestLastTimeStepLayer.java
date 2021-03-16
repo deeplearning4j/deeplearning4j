@@ -34,13 +34,19 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.enums.RnnDataFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.learning.config.AdaGrad;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static org.deeplearning4j.nn.api.OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
 import static org.deeplearning4j.nn.weights.WeightInit.XAVIER_UNIFORM;
@@ -50,20 +56,16 @@ import static org.nd4j.linalg.activations.Activation.TANH;
 import static org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction.MSE;
 
 
-@RunWith(Parameterized.class)
 public class TestLastTimeStepLayer extends BaseDL4JTest {
-    private RNNFormat rnnDataFormat;
 
-    public TestLastTimeStepLayer(RNNFormat rnnDataFormat){
-        this.rnnDataFormat = rnnDataFormat;
-    }
-    @Parameterized.Parameters(name="{0}")
-    public static Object[] params(){
-        return RNNFormat.values();
+    public static Stream<Arguments> params(){
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
     @Test
-    public void testLastTimeStepVertex() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testLastTimeStepVertex(RNNFormat rnnDataFormat) {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("lastTS", new LastTimeStep(new SimpleRnn.Builder()
@@ -126,7 +128,9 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
     }
 
     @Test
-    public void testMaskingAndAllMasked(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testMaskingAndAllMasked(RNNFormat rnnDataFormat) {
         ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(XAVIER_UNIFORM)

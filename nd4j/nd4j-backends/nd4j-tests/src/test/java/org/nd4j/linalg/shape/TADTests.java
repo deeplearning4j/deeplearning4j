@@ -23,9 +23,10 @@ package org.nd4j.linalg.shape;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,15 +43,14 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class TADTests extends BaseNd4jTest {
 
-    public TADTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class TADTests extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testStall() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testStall(Nd4jBackend backend) {
         //[4, 3, 3, 4, 5, 60, 20, 5, 1, 0, 1, 99], dimensions: [1, 2, 3]
         INDArray arr = Nd4j.create(3, 3, 4, 5);
         arr.tensorAlongDimension(0, 1, 2, 3);
@@ -64,13 +64,15 @@ public class TADTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testEquality1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEquality1(Nd4jBackend backend) {
 
         char[] order = new char[] {'c', 'f'};
         int[] dim_e = new int[] {0, 2};
         int[] dim_x = new int[] {1, 3};
         List<int[]> dim_3 = Arrays.asList(new int[] {0, 2, 3}, new int[] {0, 1, 2}, new int[] {1, 2, 3},
-                        new int[] {0, 1, 3});
+                new int[] {0, 1, 3});
 
 
         for (char o : order) {
@@ -119,15 +121,17 @@ public class TADTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testMysteriousCrash() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMysteriousCrash(Nd4jBackend backend) {
         INDArray arrayF = Nd4j.create(new int[] {1, 1, 4, 4}, 'f');
         INDArray arrayC = Nd4j.create(new int[] {1, 1, 4, 4}, 'c');
         INDArray javaCTad = arrayC.tensorAlongDimension(0, 2, 3);
         INDArray javaFTad = arrayF.tensorAlongDimension(0, 2, 3);
         Pair<DataBuffer, DataBuffer> tadBuffersF =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, 2, 3);
+                Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, 2, 3);
         Pair<DataBuffer, DataBuffer> tadBuffersC =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, 2, 3);
+                Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, 2, 3);
 
 //        log.info("Got TADShapeF: {}", Arrays.toString(tadBuffersF.getFirst().asInt()) + " with java "
 //                        + javaFTad.shapeInfoDataBuffer());
@@ -136,6 +140,8 @@ public class TADTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testTADEWSStride(){
         INDArray orig = Nd4j.linspace(1, 600, 600).reshape('f', 10, 1, 60);
 

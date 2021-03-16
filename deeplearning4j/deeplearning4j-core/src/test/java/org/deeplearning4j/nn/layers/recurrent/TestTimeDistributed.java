@@ -37,8 +37,10 @@ import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,22 +49,22 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
 public class TestTimeDistributed extends BaseDL4JTest {
 
-    private RNNFormat rnnDataFormat;
 
-    public TestTimeDistributed(RNNFormat rnnDataFormat){
-        this.rnnDataFormat = rnnDataFormat;
+    public static Stream<Arguments> params(){
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
-    @Parameterized.Parameters
-    public static Object[] params(){
-        return RNNFormat.values();
-    }
+
     @Test
-    public void testTimeDistributed(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testTimeDistributed(RNNFormat rnnDataFormat){
         for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
 
             MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
@@ -133,10 +135,12 @@ public class TestTimeDistributed extends BaseDL4JTest {
 
 
     @Test
-    public void testTimeDistributedDense(){
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testTimeDistributedDense(RNNFormat rnnDataFormat){
 
-        for( int rnnType=0; rnnType<3; rnnType++ ) {
-            for( int ffType=0; ffType<3; ffType++ ) {
+        for( int rnnType = 0; rnnType < 3; rnnType++ ) {
+            for( int ffType = 0; ffType < 3; ffType++ ) {
 
                 Layer l0, l2;
                 switch (rnnType) {

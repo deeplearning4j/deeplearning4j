@@ -23,8 +23,10 @@ package org.nd4j.autodiff.samediff;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -40,11 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled("AB 2019/05/21 - JVM Crash on ppc64 - Issue #7657")
-public class FailingSameDiffTests extends BaseNd4jTest {
+public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
 
-    public FailingSameDiffTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -52,7 +51,9 @@ public class FailingSameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEye(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEye(Nd4jBackend backend){
         //OpValidationSuite.ignoreFailing();
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0}, new int[]{2, 3});
         List<INDArray> stack = new ArrayList<>();
@@ -68,7 +69,9 @@ public class FailingSameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEyeShape(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEyeShape(Nd4jBackend backend){
         val dco = DynamicCustomOp.builder("eye")
                 .addIntegerArguments(3,3)
                 //.addIntegerArguments(-99,3,3) //Also fails
@@ -80,7 +83,9 @@ public class FailingSameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testExecutionDifferentShapesTransform(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testExecutionDifferentShapesTransform(Nd4jBackend backend){
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
@@ -101,7 +106,9 @@ public class FailingSameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDropout() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDropout(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
         double p = 0.5;
@@ -114,7 +121,9 @@ public class FailingSameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testExecutionDifferentShapesDynamicCustom(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testExecutionDifferentShapesDynamicCustom(Nd4jBackend backend){
         OpValidationSuite.ignoreFailing();
 
         SameDiff sd = SameDiff.create();

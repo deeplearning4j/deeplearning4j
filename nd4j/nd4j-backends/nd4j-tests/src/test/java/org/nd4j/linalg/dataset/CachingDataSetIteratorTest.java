@@ -23,9 +23,10 @@ package org.nd4j.linalg.dataset;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.CachingDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -42,12 +43,9 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class CachingDataSetIteratorTest extends BaseNd4jTest {
 
-    public CachingDataSetIteratorTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class CachingDataSetIteratorTest extends BaseNd4jTestWithBackends {
+
 
     @Override
     public char ordering() {
@@ -55,13 +53,17 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testInMemory() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testInMemory(Nd4jBackend backend) {
         DataSetCache cache = new InMemoryDataSetCache();
 
         runDataSetTest(cache);
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testInFile() throws IOException {
         Path cacheDir = Files.createTempDirectory("nd4j-data-set-cache-test");
         DataSetCache cache = new InFileDataSetCache(cacheDir);

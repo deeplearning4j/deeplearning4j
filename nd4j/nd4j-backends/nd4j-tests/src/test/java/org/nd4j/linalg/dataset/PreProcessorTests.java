@@ -21,7 +21,9 @@
 package org.nd4j.linalg.dataset;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -32,14 +34,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PreProcessorTests extends BaseNd4jTest {
+public class PreProcessorTests extends BaseNd4jTestWithBackends {
 
-    public PreProcessorTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
-    public void testLabelLastTimeStepPreProcessor(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLabelLastTimeStepPreProcessor(Nd4jBackend backend){
 
         INDArray f = Nd4j.rand(DataType.FLOAT, 3, 5, 8);
         INDArray l = Nd4j.rand(DataType.FLOAT, 3, 4, 8);

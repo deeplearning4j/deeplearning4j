@@ -21,9 +21,11 @@ package org.nd4j.linalg.generated;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,10 +34,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SDLinalgTest extends BaseNd4jTest {
-    public SDLinalgTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class SDLinalgTest extends BaseNd4jTestWithBackends {
 
     @Override
     public char ordering(){
@@ -50,7 +49,9 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCholesky() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCholesky(Nd4jBackend backend) {
         INDArray input = Nd4j.createFromArray(
                 new float[]{
                         10.f,  14.f,
@@ -73,6 +74,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLstsq() {
         INDArray a = Nd4j.createFromArray(new float[]{
                 1.f,    2.f,    3.f, 4.f,
@@ -95,6 +98,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLu() {
         SDVariable sdInput = sameDiff.var(Nd4j.createFromArray(new double[]{
                 1., 2., 3., 0., 2., 3., 0., 0., 7.
@@ -109,6 +114,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMatrixBandPart() {
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*3*3).reshape(2,3,3);
         INDArray expected = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*3*3).reshape(2,3,3);
@@ -119,6 +126,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testQr() {
         INDArray input = Nd4j.createFromArray(new double[]{
                 12.,  -51.,    4.,
@@ -132,7 +141,7 @@ public class SDLinalgTest extends BaseNd4jTest {
                 0.8464147390303179,    -0.3912908119746455,    0.34312406418022884,
                 0.42320736951515897,     0.9040872694197354,   -0.02927016186366648,
                 -0.2821382463434393,    0.17042054976392634,     0.9328559865183932,
-               -0.07053456158585983,    0.01404065236547358,   -0.00109937201747271,
+                -0.07053456158585983,    0.01404065236547358,   -0.00109937201747271,
                 0.14106912317171966,   -0.01665551070074392,   -0.10577161246232346
         }).reshape(5,3);
 
@@ -151,6 +160,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testSolve() {
         INDArray a = Nd4j.createFromArray(new float[] {
                 2.f, -1.f, -2.f, -4.f, 6.f, 3.f, -4.f, -2.f, 8.f
@@ -172,6 +183,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testTriangularSolve() {
         INDArray a = Nd4j.createFromArray(new float[] {
                 0.7788f,    0.8012f,    0.7244f,
@@ -199,6 +212,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testCross() {
         INDArray a = Nd4j.createFromArray(new double[]{1, 2, 3});
         INDArray b = Nd4j.createFromArray(new double[]{6, 7, 8});
@@ -212,6 +227,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testDiag() {
         INDArray x = Nd4j.createFromArray(new double[]{1,2});
         INDArray expected = Nd4j.createFromArray(new double[]{1,0,0,2}).reshape(2,2);
@@ -223,6 +240,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testDiagPart() {
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4).reshape(2,2);
         INDArray expected = Nd4j.createFromArray(new double[]{1,4});
@@ -234,6 +253,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLogdet() {
         INDArray x = Nd4j.createFromArray(new double[]{
                 4,12,-16,12,37,-43,-16,-43,98, 4,1.2,-1.6,1.2,3.7,-4.3,-1.6,-4.3,9.8
@@ -247,6 +268,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testSvd() {
         INDArray x = Nd4j.createFromArray(new double[]{
                 0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f,0.50563407f, 0.89252293f, 0.5461209f
@@ -259,6 +282,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLogdetName() {
         INDArray x = Nd4j.createFromArray(new double[]{
                 4,12,-16,12,37,-43,-16,-43,98, 4,1.2,-1.6,1.2,3.7,-4.3,-1.6,-4.3,9.8
@@ -271,6 +296,8 @@ public class SDLinalgTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testQrNames() {
         INDArray input = Nd4j.createFromArray(new double[]{
                 12.,  -51.,    4.,

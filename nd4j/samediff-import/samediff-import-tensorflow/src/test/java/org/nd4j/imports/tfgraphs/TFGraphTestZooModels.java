@@ -27,9 +27,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.OpValidationSuite;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -46,11 +47,11 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-@RunWith(Parameterized.class)
+
 @Slf4j
 @Disabled
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
@@ -211,19 +212,11 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
-    @Parameterized.Parameters(name="{2}")
-    public static Collection<Object[]> data() throws IOException {
+    public static Stream<Arguments> data() throws IOException {
         classTestDir.toFile().mkdir();
         File baseDir = classTestDir.toFile();    // new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
         List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF, baseDir);
-        return params;
-    }
-
-    public TFGraphTestZooModels(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
-        this.inputs = inputs;
-        this.predictions = predictions;
-        this.modelName = modelName;
-        this.localTestDir = localTestDir;
+        return params.stream().map(Arguments::of);
     }
 
     private static Boolean isPPC = null;
@@ -240,6 +233,8 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     }
 
     @Test   //(timeout = 360000L)
+    @ParameterizedTest
+    @MethodSource("#data")
     public void testOutputOnly(@TempDir Path testDir) throws Exception {
         if(isPPC()){
             /*
@@ -249,7 +244,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
              */
 
             log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
-            OpValidationSuite.ignoreFailing();
+            //OpValidationSuite.ignoreFailing();
         }
 
 //        if(!modelName.startsWith("ssd_mobilenet_v1_coco_2018_01_28")){
@@ -265,7 +260,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         Nd4j.create(1);
         if(ArrayUtils.contains(IGNORE_REGEXES, modelName)){
             log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, modelName);
-            OpValidationSuite.ignoreFailing();
+           // OpValidationSuite.ignoreFailing();
         }
 
         Double maxRE = 1e-3;

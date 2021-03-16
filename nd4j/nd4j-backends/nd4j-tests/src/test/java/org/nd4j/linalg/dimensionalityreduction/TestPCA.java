@@ -21,9 +21,10 @@
 package org.nd4j.linalg.dimensionalityreduction;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -32,22 +33,19 @@ import org.nd4j.linalg.string.NDArrayStrings;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
-public class TestPCA extends BaseNd4jTest {
 
-
-    public TestPCA(Nd4jBackend backend) {
-        super(backend);
-    }
+public class TestPCA extends BaseNd4jTestWithBackends {
 
     @Test
-    public void testFactorDims() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testFactorDims(Nd4jBackend backend) {
         int m = 13;
         int n = 4;
 
         double f[] = new double[] {7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10, 26, 29, 56, 31, 52, 55, 71, 31, 54, 47,
-                        40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
-                        34, 12, 12};
+                40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
+                34, 12, 12};
 
         INDArray A = Nd4j.create(f, new int[] {m, n}, 'f');
 
@@ -64,13 +62,15 @@ public class TestPCA extends BaseNd4jTest {
     }
 
     @Test
-    public void testFactorSVDTransposed() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testFactorSVDTransposed(Nd4jBackend backend) {
         int m = 4;
         int n = 13;
 
         double f[] = new double[] {7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10, 26, 29, 56, 31, 52, 55, 71, 31, 54, 47,
-                        40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
-                        34, 12, 12};
+                40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
+                34, 12, 12};
 
         INDArray A = Nd4j.create(f, new long[] {m, n}, 'f');
 
@@ -87,13 +87,15 @@ public class TestPCA extends BaseNd4jTest {
     }
 
     @Test
-    public void testFactorVariance() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testFactorVariance(Nd4jBackend backend) {
         int m = 13;
         int n = 4;
 
         double f[] = new double[] {7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10, 26, 29, 56, 31, 52, 55, 71, 31, 54, 47,
-                        40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
-                        34, 12, 12};
+                40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
+                34, 12, 12};
 
         INDArray A = Nd4j.create(f, new int[] {m, n}, 'f');
 
@@ -116,7 +118,9 @@ public class TestPCA extends BaseNd4jTest {
      * Test new PCA routines, added by Luke Czapla
      */
     @Test
-    public void testPCA() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPCA(Nd4jBackend backend) {
         INDArray m = Nd4j.randn(10000, 16);
         // 10000 random correlated samples of 16 features to analyze
         m.getColumn(0).muli(4.84);

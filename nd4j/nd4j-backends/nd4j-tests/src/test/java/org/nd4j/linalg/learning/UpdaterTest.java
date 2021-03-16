@@ -21,9 +21,10 @@
 package org.nd4j.linalg.learning;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,16 +38,15 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
-public class UpdaterTest extends BaseNd4jTest {
 
-    public UpdaterTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class UpdaterTest extends BaseNd4jTestWithBackends {
+
 
 
     @Test
-    public void testAdaGradLegacy() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaGradLegacy(Nd4jBackend backend) {
         int rows = 1;
         int cols = 1;
 
@@ -59,7 +59,9 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testNesterovs() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNesterovs(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
 
@@ -78,7 +80,9 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdaGrad() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaGrad(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
 
@@ -98,7 +102,9 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdaDelta() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaDelta(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
 
@@ -118,7 +124,9 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdam() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdam(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
 
@@ -138,7 +146,9 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testNadam() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNadam(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
 
@@ -157,7 +167,9 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdaMax() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaMax(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
 

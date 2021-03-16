@@ -23,10 +23,9 @@ package org.nd4j.imports.tfgraphs;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.*;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.OpValidationSuite;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -36,10 +35,9 @@ import org.nd4j.common.primitives.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Stream;
 
 @Slf4j
-@RunWith(Parameterized.class)
-@Disabled
 public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
 
@@ -161,18 +159,17 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     public void tearDown() {
     }
 
-    @Parameterized.Parameters(name="{2}")
-    public static Collection<Object[]> data() throws IOException {
+    public static Stream<Arguments> data() throws IOException {
         val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
 
         // if this variable isn't set - we're using dl4j-tests-resources
         if (localPath == null) {
             File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
             List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-            return params;
+            return params.stream().map(input -> Arguments.of(input));
         } else {
             File baseDir = new File(localPath);
-            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir).stream().map(input -> Arguments.of(input));
         }
     }
 
@@ -184,30 +181,20 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     }
 
     @Test//(timeout = 25000L)
+    @ParameterizedTest
     public void testOutputOnly() throws Exception {
-        if(TFGraphTestZooModels.isPPC()) {
-            /*
-            Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
-            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
-             */
-
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
-            OpValidationSuite.ignoreFailing();
-        }
-
 
         Nd4j.create(1);
         if(EXECUTE_ONLY_MODELS.isEmpty()) {
             for(String s : IGNORE_REGEXES) {
                 if(modelName.matches(s)) {
                     log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
-                    OpValidationSuite.ignoreFailing();
+                    //OpValidationSuite.ignoreFailing();
                 }
             }
         } else if(!EXECUTE_ONLY_MODELS.contains(modelName)) {
             log.info("Not executing " + modelName);
-            OpValidationSuite.ignoreFailing();
+            //OpValidationSuite.ignoreFailing();
         }
 
 

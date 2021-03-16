@@ -23,9 +23,10 @@ package org.nd4j.linalg.options;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -35,13 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class ArrayOptionsTests extends BaseNd4jTest {
+
+public class ArrayOptionsTests extends BaseNd4jTestWithBackends {
     private static long[] shapeInfo;
 
-    public ArrayOptionsTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
 
     @BeforeEach
@@ -50,33 +48,43 @@ public class ArrayOptionsTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testArrayType_0() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testArrayType_0(Nd4jBackend backend) {
         assertEquals(ArrayType.DENSE, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
     @Test
-    public void testArrayType_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testArrayType_1(Nd4jBackend backend) {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.EMPTY);
 
         assertEquals(ArrayType.EMPTY, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
     @Test
-    public void testArrayType_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testArrayType_2(Nd4jBackend backend) {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.SPARSE);
 
         assertEquals(ArrayType.SPARSE, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
     @Test
-    public void testArrayType_3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testArrayType_3(Nd4jBackend backend) {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.COMPRESSED);
 
         assertEquals(ArrayType.COMPRESSED, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
     @Test
-    public void testDataTypesToFromLong(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDataTypesToFromLong(Nd4jBackend backend) {
 
         for(DataType dt : DataType.values()){
             if(dt == DataType.UNKNOWN)

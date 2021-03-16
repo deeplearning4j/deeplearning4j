@@ -36,8 +36,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.enums.RnnDataFormat;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -49,25 +52,23 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
 public class TestRnnLayers extends BaseDL4JTest {
 
-    private RNNFormat rnnDataFormat;
 
-    public TestRnnLayers(RNNFormat rnnDataFormat){
-        this.rnnDataFormat = rnnDataFormat;
+    public static Stream<Arguments> params(){
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
-    @Parameterized.Parameters
-    public static Object[] params(){
-        return RNNFormat.values();
-    }
+
     @Test
-    public void testTimeStepIs3Dimensional() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testTimeStepIs3Dimensional(RNNFormat rnnDataFormat) {
 
         int nIn = 12;
         int nOut = 3;
@@ -117,7 +118,9 @@ public class TestRnnLayers extends BaseDL4JTest {
     }
 
     @Test
-    public void testDropoutRecurrentLayers(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testDropoutRecurrentLayers(RNNFormat rnnDataFormat){
         Nd4j.getRandom().setSeed(12345);
 
         String[] layerTypes = new String[]{"graves", "lstm", "simple"};
@@ -215,9 +218,11 @@ public class TestRnnLayers extends BaseDL4JTest {
     }
 
     @Test
-    public void testMismatchedInputLabelLength(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testMismatchedInputLabelLength(RNNFormat rnnDataFormat){
 
-        for( int i=0; i<2; i++ ){
+        for( int i = 0; i < 2; i++) {
 
             NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
 

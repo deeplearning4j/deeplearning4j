@@ -23,9 +23,10 @@ package org.nd4j.linalg.convolution;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
@@ -46,22 +47,23 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class ConvolutionTestsC extends BaseNd4jTest {
 
-    public ConvolutionTestsC(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
+
 
 
     @Test
-    public void testConvOutWidthAndHeight() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testConvOutWidthAndHeight(Nd4jBackend backend) {
         long outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 
     @Test
-    public void testIm2Col() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testIm2Col(Nd4jBackend backend) {
         INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
         INDArray im2colAssertion = Nd4j.create(new double[] {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -85,7 +87,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testIm2Col2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testIm2Col2(Nd4jBackend backend) {
         int kh = 2;
         int kw = 2;
         int ph = 0;
@@ -107,7 +111,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     @Disabled
-    public void testCompareIm2ColImpl() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCompareIm2ColImpl(Nd4jBackend backend) {
 
         int[] miniBatches = {1, 3, 5};
         int[] depths = {1, 3, 5};
@@ -188,7 +194,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testPooling2D_Same() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPooling2D_Same(Nd4jBackend backend) {
         int[] miniBatches = {1, 3, 5};
         int[] depths = {1, 3, 5};
         int[] inHeights = {5, 21};
@@ -249,7 +257,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
                                                     Convolution.pooling2D(in, kh, kw, sh, sw, padTop, padLeft, 1, 1,
                                                             true, Pooling2D.Pooling2DType.PNORM, Pooling2D.Divisor.INCLUDE_PADDING,
-                                                            (double) pnorm, outSize[0], outSize[1], output);
+                                                            pnorm, outSize[0], outSize[1], output);
 
                                                     break;
                                                 case MAX:
@@ -284,7 +292,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testMoreIm2Col2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMoreIm2Col2(Nd4jBackend backend) {
         int kh = 2;
         int kw = 2;
         int ph = 0;
@@ -306,7 +316,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testCol2Im() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCol2Im(Nd4jBackend backend) {
         int kh = 1;
         int kw = 1;
         int sy = 1;
@@ -322,7 +334,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testimcolim() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testimcolim(Nd4jBackend backend) {
         int nEx = 2;
         int depth = 3;
         int width = 7;
@@ -346,6 +360,8 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMaxPoolBackprop(){
         Nd4j.getRandom().setSeed(12345);
 

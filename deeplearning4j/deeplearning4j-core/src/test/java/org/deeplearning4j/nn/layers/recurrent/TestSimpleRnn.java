@@ -29,8 +29,10 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,25 +40,25 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-@RunWith(Parameterized.class)
 public class TestSimpleRnn extends BaseDL4JTest {
 
-    private RNNFormat rnnDataFormat;
 
-    public TestSimpleRnn(RNNFormat rnnDataFormat){
-        this.rnnDataFormat = rnnDataFormat;
+    public static Stream<Arguments> params() {
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
-    @Parameterized.Parameters
-    public static Object[] params(){
-        return RNNFormat.values();
-    }
+
     @Test
-    public void testSimpleRnn(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testSimpleRnn(RNNFormat rnnDataFormat) {
         Nd4j.getRandom().setSeed(12345);
 
         int m = 3;
@@ -125,7 +127,9 @@ public class TestSimpleRnn extends BaseDL4JTest {
     }
 
     @Test
-    public void testBiasInit(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testBiasInit(RNNFormat rnnDataFormat) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 5;
         int layerSize = 6;

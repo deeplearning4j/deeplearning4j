@@ -20,7 +20,8 @@
 
 package org.nd4j.imports.tfgraphs;
 
-import com.google.common.io.Files;
+import org.nd4j.imports.listeners.ExecPrintListener;
+import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FilenameUtils;
@@ -48,8 +49,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.resources.strumpf.ResourceFile;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.imports.listeners.ExecPrintListener;
-import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -63,6 +62,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
+import org.nd4j.shade.guava.io.Files;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;

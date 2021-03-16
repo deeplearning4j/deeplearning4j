@@ -21,10 +21,12 @@
 package org.nd4j.evaluation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,19 +41,17 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ROCBinaryTest extends BaseNd4jTest {
-
-    public ROCBinaryTest(Nd4jBackend backend) {
-        super(backend);
-    }
-
+public class ROCBinaryTest extends BaseNd4jTestWithBackends {
+    
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testROCBinary() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCBinary(Nd4jBackend backend) {
         //Compare ROCBinary to ROC class
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
@@ -145,8 +145,10 @@ public class ROCBinaryTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testRocBinaryMerging() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRocBinaryMerging(Nd4jBackend backend) {
         for (int nSteps : new int[]{30, 0}) { //0 == exact
             int nOut = 4;
             int[] shape1 = {30, nOut};
@@ -175,8 +177,10 @@ public class ROCBinaryTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testROCBinaryPerOutputMasking() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCBinaryPerOutputMasking(Nd4jBackend backend) {
 
         for (int nSteps : new int[]{30, 0}) { //0 == exact
 
@@ -215,8 +219,10 @@ public class ROCBinaryTest extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testROCBinary3d() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCBinary3d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
 
@@ -249,8 +255,10 @@ public class ROCBinaryTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testROCBinary4d() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCBinary4d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
 
@@ -283,8 +291,10 @@ public class ROCBinaryTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testROCBinary3dMasking() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCBinary3dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
 
@@ -344,8 +354,10 @@ public class ROCBinaryTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testROCBinary4dMasking() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCBinary4dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
 

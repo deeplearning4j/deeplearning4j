@@ -26,9 +26,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.performance.primitives.AveragingTransactionsHolder;
@@ -40,26 +41,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class PerformanceTrackerTests extends BaseNd4jTest {
-    public PerformanceTrackerTests(Nd4jBackend backend) {
-        super(backend);
-    }
+
+public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
 
     @BeforeEach
-    public void setUp() {
+    public void setUp(Nd4jBackend backend) {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.BANDWIDTH);
     }
 
     @AfterEach
-    public void tearDown() {
+    public void tearDown(Nd4jBackend backend) {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @Test
-    public void testAveragedHolder_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAveragedHolder_1(Nd4jBackend backend) {
         val holder = new AveragingTransactionsHolder();
 
         holder.addValue(MemcpyDirection.HOST_TO_HOST,50L);
@@ -69,7 +69,9 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testAveragedHolder_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAveragedHolder_2(Nd4jBackend backend) {
         val holder = new AveragingTransactionsHolder();
 
         holder.addValue(MemcpyDirection.HOST_TO_HOST, 50L);
@@ -80,7 +82,9 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPerformanceTracker_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPerformanceTracker_1(Nd4jBackend backend) {
         val perf = PerformanceTracker.getInstance();
 
         // 100 nanoseconds spent for 5000 bytes. result should be around 50000 bytes per microsecond
@@ -89,7 +93,9 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPerformanceTracker_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPerformanceTracker_2(Nd4jBackend backend) {
         val perf = PerformanceTracker.getInstance();
 
         // 10 nanoseconds spent for 5000 bytes. result should be around 500000 bytes per microsecond
@@ -98,7 +104,9 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPerformanceTracker_3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPerformanceTracker_3(Nd4jBackend backend) {
         val perf = PerformanceTracker.getInstance();
 
         // 10000 nanoseconds spent for 5000 bytes. result should be around 500 bytes per microsecond
@@ -108,7 +116,7 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
 
     @Test
     @Disabled
-    public void testTrackerCpu_1() {
+    public void testTrackerCpu_1(Nd4jBackend backend) {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("native"))
             return;
 
@@ -126,7 +134,7 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
 
     @Test
     @Disabled("useless these days")
-    public void testTrackerGpu_1() {
+    public void testTrackerGpu_1(Nd4jBackend backend) {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 

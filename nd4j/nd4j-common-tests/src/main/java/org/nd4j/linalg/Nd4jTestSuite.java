@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg;
 
-import org.junit.runners.BlockJUnit4ClassRunner;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -28,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
+public class Nd4jTestSuite  {
     //the system property for what backends should run
     public final static String BACKENDS_TO_LOAD = "backends";
     private static List<Nd4jBackend> BACKENDS = new ArrayList<>();
@@ -39,14 +38,7 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
         }
     }
 
-    /**
-     * Only called reflectively. Do not use programmatically.
-     *
-     * @param klass
-     */
-    public Nd4jTestSuite(Class<?> klass) throws Throwable {
-        super(klass);
-    }
+
 
     /**
      * Based on the jvm arguments, an empty list is returned

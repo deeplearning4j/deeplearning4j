@@ -23,9 +23,10 @@ package org.nd4j.linalg.dataset;
 import lombok.Getter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.dataset.api.preprocessor.AbstractDataSetNormalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.MinMaxStrategy;
@@ -41,7 +42,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 import java.util.HashMap;
@@ -54,14 +54,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * @author Ede Meijer
  */
-@RunWith(Parameterized.class)
-public class NormalizerSerializerTest extends BaseNd4jTest {
+
+public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
     private File tmpFile;
     private NormalizerSerializer SUT;
 
-    public NormalizerSerializerTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @BeforeEach
     public void setUp() throws IOException {
@@ -72,6 +69,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testImagePreProcessingScaler() throws Exception {
         ImagePreProcessingScaler imagePreProcessingScaler = new ImagePreProcessingScaler(0,1);
         SUT.write(imagePreProcessingScaler,tmpFile);
@@ -81,6 +80,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testNormalizerStandardizeNotFitLabels() throws Exception {
         NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1),
                 Nd4j.create(new double[] {2.5, 3.5}).reshape(1, -1));
@@ -92,6 +93,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testNormalizerStandardizeFitLabels() throws Exception {
         NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1),
                 Nd4j.create(new double[] {2.5, 3.5}).reshape(1, -1), Nd4j.create(new double[] {4.5, 5.5}).reshape(1, -1),
@@ -105,6 +108,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testNormalizerMinMaxScalerNotFitLabels() throws Exception {
         NormalizerMinMaxScaler original = new NormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1), Nd4j.create(new double[] {2.5, 3.5}).reshape(1, -1));
@@ -116,6 +121,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testNormalizerMinMaxScalerFitLabels() throws Exception {
         NormalizerMinMaxScaler original = new NormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5}));
@@ -129,6 +136,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerStandardizeNotFitLabels() throws Exception {
         MultiNormalizerStandardize original = new MultiNormalizerStandardize();
         original.setFeatureStats(asList(
@@ -144,6 +153,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerStandardizeFitLabels() throws Exception {
         MultiNormalizerStandardize original = new MultiNormalizerStandardize();
         original.setFeatureStats(asList(
@@ -166,6 +177,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerMinMaxScalerNotFitLabels() throws Exception {
         MultiNormalizerMinMaxScaler original = new MultiNormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(asList(
@@ -180,6 +193,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerMinMaxScalerFitLabels() throws Exception {
         MultiNormalizerMinMaxScaler original = new MultiNormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(asList(
@@ -200,6 +215,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerHybridEmpty() throws Exception {
         MultiNormalizerHybrid original = new MultiNormalizerHybrid();
         original.setInputStats(new HashMap<Integer, NormalizerStats>());
@@ -212,6 +229,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerHybridGlobalStats() throws Exception {
         MultiNormalizerHybrid original = new MultiNormalizerHybrid().minMaxScaleAllInputs().standardizeAllOutputs();
 
@@ -233,6 +252,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testMultiNormalizerHybridGlobalAndSpecificStats() throws Exception {
         MultiNormalizerHybrid original = new MultiNormalizerHybrid().standardizeAllInputs().minMaxScaleInput(0, -5, 5)
                 .minMaxScaleAllOutputs(-10, 10).standardizeOutput(1);
@@ -263,6 +284,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testCustomNormalizer() throws Exception {
         MyNormalizer original = new MyNormalizer(42);
 

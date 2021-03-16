@@ -40,8 +40,10 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,30 +53,31 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
 @AllArgsConstructor
 public class RnnDataFormatTests extends BaseDL4JTest {
 
-    private boolean helpers;
-    private boolean lastTimeStep;
-    private boolean maskZeros;
 
-    @Parameterized.Parameters(name = "helpers={0},lastTimeStep={1},maskZero={2}")
-    public static List params(){
+    public static Stream<Arguments> params() {
         List<Object[]> ret = new ArrayList<>();
         for (boolean helpers: new boolean[]{true, false})
             for (boolean lastTimeStep: new boolean[]{true, false})
                 for (boolean maskZero: new boolean[]{true, false})
                     ret.add(new Object[]{helpers, lastTimeStep, maskZero});
-        return ret;
+        return ret.stream().map(Arguments::of);
     }
 
 
     @Test
-    public void testSimpleRnn() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testSimpleRnn(boolean helpers,
+             boolean lastTimeStep,
+             boolean maskZeros
+    ) {
         try {
 
                     Nd4j.getRandom().setSeed(12345);
@@ -107,7 +110,11 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
     @Test
-    public void testLSTM() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testLSTM(boolean helpers,
+                         boolean lastTimeStep,
+                         boolean maskZeros) {
         try {
 
             Nd4j.getRandom().setSeed(12345);
@@ -141,7 +148,11 @@ public class RnnDataFormatTests extends BaseDL4JTest {
 
 
     @Test
-    public void testGraveLSTM() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testGraveLSTM(boolean helpers,
+                              boolean lastTimeStep,
+                              boolean maskZeros) {
         try {
 
             Nd4j.getRandom().setSeed(12345);
@@ -175,7 +186,11 @@ public class RnnDataFormatTests extends BaseDL4JTest {
 
 
     @Test
-    public void testGraveBiLSTM() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testGraveBiLSTM(boolean helpers,
+                                boolean lastTimeStep,
+                                boolean maskZeros) {
         try {
 
             Nd4j.getRandom().setSeed(12345);

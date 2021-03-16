@@ -22,6 +22,8 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -51,12 +53,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public class RandomOpValidation extends BaseOpValidation {
 
-    public RandomOpValidation(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
-    public void testRandomOpsSDVarShape() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRandomOpsSDVarShape(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         List<String> failed = new ArrayList<>();
 
@@ -157,7 +158,9 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testRandomOpsLongShape() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRandomOpsLongShape(Nd4jBackend backend) {
         List<String> failed = new ArrayList<>();
 
         for (long[] shape : Arrays.asList(new long[]{1000}, new long[]{100, 10}, new long[]{40, 5, 5})) {
@@ -283,6 +286,8 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testRandomBinomial(){
 
         INDArray z = Nd4j.create(new long[]{10});
@@ -293,7 +298,9 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testUniformRankSimple() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testUniformRankSimple(Nd4jBackend backend) {
 
         INDArray arr = Nd4j.createFromArray(new double[]{100.0});
 //        OpTestCase tc = new OpTestCase(DynamicCustomOp.builder("randomuniform")
@@ -325,7 +332,9 @@ public class RandomOpValidation extends BaseOpValidation {
 
 
     @Test
-    public void testRandomExponential() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRandomExponential(Nd4jBackend backend) {
         long length = 1_000_000;
         INDArray shape = Nd4j.createFromArray(new double[]{length});
         INDArray out = Nd4j.createUninitialized(new long[]{length});
@@ -347,6 +356,8 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testRange(){
         //Technically deterministic, not random...
 
@@ -380,6 +391,8 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testAllEmptyReduce(){
         INDArray x = Nd4j.createFromArray(true, true, true);
         All all = new All(x);
@@ -389,6 +402,8 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testUniformDtype(){
         Nd4j.getRandom().setSeed(12345);
         for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE, }){
@@ -417,6 +432,8 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testRandomExponential2(){
         Nd4j.getRandom().setSeed(12345);
         DynamicCustomOp op = DynamicCustomOp.builder("random_exponential")

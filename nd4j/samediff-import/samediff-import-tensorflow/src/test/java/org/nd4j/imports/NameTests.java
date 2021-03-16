@@ -23,24 +23,24 @@ package org.nd4j.imports;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class NameTests  extends BaseNd4jTest {
 
-    public NameTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class NameTests  extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testNameExtraction_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNameExtraction_1(Nd4jBackend backend) {
         val str = "Name";
         val exp = "Name";
 
@@ -51,7 +51,9 @@ public class NameTests  extends BaseNd4jTest {
 
 
     @Test
-    public void testNameExtraction_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNameExtraction_2(Nd4jBackend backend) {
         val str = "Name_2";
         val exp = "Name_2";
 
@@ -61,7 +63,9 @@ public class NameTests  extends BaseNd4jTest {
     }
 
     @Test
-    public void testNameExtraction_3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNameExtraction_3(Nd4jBackend backend) {
         val str = "Name_1:2";
         val exp = "Name_1";
 
@@ -71,7 +75,9 @@ public class NameTests  extends BaseNd4jTest {
     }
 
     @Test
-    public void testNameExtraction_4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNameExtraction_4(Nd4jBackend backend) {
         val str = "Name_1:1:2";
         val exp = "Name_1:1";
 

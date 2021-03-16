@@ -20,19 +20,16 @@
 
 package org.nd4j;
 
-import org.bytedeco.javacpp.Loader;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
-import org.nd4j.imports.tfgraphs.TFGraphTestAllSameDiff;
+//import org.nd4j.imports.tfgraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.function.Function;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -49,7 +46,7 @@ import static org.junit.Assume.assumeFalse;
         TransformOpValidation.class,
 
         //TF import tests
-        TFGraphTestAllSameDiff.class
+        //TFGraphTestAllSameDiff.class
         //TFGraphTestAllLibnd4j.class
 })
 //IMPORTANT: This ignore is added to avoid maven surefire running both the suite AND the individual tests in "mvn test"

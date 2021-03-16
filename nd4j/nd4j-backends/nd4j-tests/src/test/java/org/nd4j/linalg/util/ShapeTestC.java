@@ -23,9 +23,10 @@ package org.nd4j.linalg.util;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.shape.Tile;
@@ -40,16 +41,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Adam Gibson
  */
 @Slf4j
-@RunWith(Parameterized.class)
-public class ShapeTestC extends BaseNd4jTest {
 
-    public ShapeTestC(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ShapeTestC extends BaseNd4jTestWithBackends {
+
 
 
     @Test
-    public void testToOffsetZero() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToOffsetZero(Nd4jBackend backend) {
         INDArray matrix = Nd4j.rand(3, 5);
         INDArray rowOne = matrix.getRow(1);
         INDArray row1Copy = Shape.toOffsetZero(rowOne);
@@ -68,7 +68,9 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testTile() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTile(Nd4jBackend backend) {
         INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0).reshape(1, 1);
         //INDArray[] inputs, INDArray[] outputs, int[] axis
         INDArray result = Nd4j.createUninitialized(DataType.DOUBLE, 2,2);
@@ -80,7 +82,9 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testElementWiseCompareOnesInMiddle() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testElementWiseCompareOnesInMiddle(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
         for (int i = 0; i < arr.length(); i++)
@@ -89,7 +93,9 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testKeepDimsShape_1_T() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_1_T(Nd4jBackend backend) {
         val shape = new int[]{5, 5};
         val axis = new int[]{1, 0, 1};
 
@@ -99,7 +105,9 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_1_F() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_1_F(Nd4jBackend backend) {
         val shape = new int[]{5, 5};
         val axis = new int[]{0, 0, 1};
 
@@ -109,7 +117,9 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_2_T() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_2_T(Nd4jBackend backend) {
         val shape = new int[]{5, 5, 5};
         val axis = new int[]{1, 0, 1};
 
@@ -119,7 +129,9 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_2_F() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_2_F(Nd4jBackend backend) {
         val shape = new int[]{5, 5, 5};
         val axis = new int[]{0, 0, 1};
 
@@ -130,7 +142,9 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testKeepDimsShape_3_T() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_3_T(Nd4jBackend backend) {
         val shape = new int[]{1, 1};
         val axis = new int[]{1, 0, 1};
 
@@ -140,7 +154,9 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_3_F() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_3_F(Nd4jBackend backend) {
         val shape = new int[]{1, 1};
         val axis = new int[]{0, 0};
 
@@ -153,7 +169,9 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testKeepDimsShape_4_F() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testKeepDimsShape_4_F(Nd4jBackend backend) {
         val shape = new int[]{4, 4};
         val axis = new int[]{0, 0};
 
@@ -166,7 +184,9 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testAxisNormalization_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAxisNormalization_1(Nd4jBackend backend) {
         val axis = new int[] {1, -2};
         val rank = 2;
         val exp = new int[] {0, 1};
@@ -176,7 +196,9 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testAxisNormalization_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAxisNormalization_2(Nd4jBackend backend) {
         val axis = new int[] {1, -2, 0};
         val rank = 2;
         val exp = new int[] {0, 1};
@@ -186,20 +208,22 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test()
-    public void testAxisNormalization_3() {
-       assertThrows(ND4JIllegalStateException.class,() -> {
-           val axis = new int[] {1, -2, 2};
-           val rank = 2;
-           val exp = new int[] {0, 1};
+    public void testAxisNormalization_3(Nd4jBackend backend) {
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            val axis = new int[] {1, -2, 2};
+            val rank = 2;
+            val exp = new int[] {0, 1};
 
-           val norm = Shape.normalizeAxis(rank, axis);
-           assertArrayEquals(exp, norm);
-       });
+            val norm = Shape.normalizeAxis(rank, axis);
+            assertArrayEquals(exp, norm);
+        });
 
     }
 
     @Test
-    public void testAxisNormalization_4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAxisNormalization_4(Nd4jBackend backend) {
         val axis = new int[] {1, 2, 0};
         val rank = 3;
         val exp = new int[] {0, 1, 2};

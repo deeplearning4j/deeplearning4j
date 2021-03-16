@@ -21,7 +21,9 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,11 +31,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class RGBtoGrayscaleDataSetPreProcessorTest extends BaseNd4jTest {
+public class RGBtoGrayscaleDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
-    public RGBtoGrayscaleDataSetPreProcessorTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -41,7 +40,7 @@ public class RGBtoGrayscaleDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test()
-    public void when_dataSetIsNull_expect_NullPointerException() {
+    public void when_dataSetIsNull_expect_NullPointerException(Nd4jBackend backend) {
         assertThrows(NullPointerException.class,() -> {
             // Assemble
             RGBtoGrayscaleDataSetPreProcessor sut = new RGBtoGrayscaleDataSetPreProcessor();
@@ -53,7 +52,9 @@ public class RGBtoGrayscaleDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void when_dataSetIsEmpty_expect_EmptyDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_dataSetIsEmpty_expect_EmptyDataSet(Nd4jBackend backend) {
         // Assemble
         RGBtoGrayscaleDataSetPreProcessor sut = new RGBtoGrayscaleDataSetPreProcessor();
         DataSet ds = new DataSet(null, null);
@@ -66,7 +67,9 @@ public class RGBtoGrayscaleDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void when_colorsAreConverted_expect_grayScaleResult() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_colorsAreConverted_expect_grayScaleResult(Nd4jBackend backend) {
         // Assign
         int numChannels = 3;
         int height = 1;

@@ -21,9 +21,10 @@
 package org.nd4j.linalg.shape.ones;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -34,22 +35,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class LeadingAndTrailingOnesC extends BaseNd4jTest {
 
-    public LeadingAndTrailingOnesC(Nd4jBackend backend) {
-        super(backend);
-    }
+public class LeadingAndTrailingOnesC extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testCreateLeadingAndTrailingOnes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCreateLeadingAndTrailingOnes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 10, 1, 1);
         arr.assign(1);
 //        System.out.println(arr);
     }
 
     @Test
-    public void testMatrix() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMatrix(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray slice1 = arr.slice(1);
 //        System.out.println(arr.slice(1));
@@ -59,13 +61,15 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest {
 //        System.out.println(otherSlice);
         INDArray twoOnesInMiddle = Nd4j.linspace(1, 4, 4).reshape(2, 1, 1, 2);
         INDArray sub = twoOnesInMiddle.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all());
+                NDArrayIndex.all());
         assertEquals(2, sub.offset());
 
     }
 
     @Test
-    public void testMultipleOnesInMiddle() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMultipleOnesInMiddle(Nd4jBackend backend) {
         INDArray tensor = Nd4j.linspace(1, 144, 144).reshape(2, 2, 1, 1, 6, 6);
         INDArray tensorSlice1 = tensor.slice(1);
         INDArray tensorSlice1Slice1 = tensorSlice1.slice(1);

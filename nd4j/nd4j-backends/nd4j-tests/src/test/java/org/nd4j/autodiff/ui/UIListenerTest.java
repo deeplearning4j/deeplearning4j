@@ -25,6 +25,8 @@ import com.google.flatbuffers.Table;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.impl.UIListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -34,7 +36,7 @@ import org.nd4j.graph.UIEvent;
 import org.nd4j.graph.UIGraphStructure;
 import org.nd4j.graph.UIStaticInfoRecord;
 import org.nd4j.graph.ui.LogFileWriter;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
@@ -51,11 +53,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class UIListenerTest extends BaseNd4jTest {
+public class UIListenerTest extends BaseNd4jTestWithBackends {
 
-    public UIListenerTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -65,7 +64,9 @@ public class UIListenerTest extends BaseNd4jTest {
 
 
     @Test
-    public void testUIListenerBasic(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testUIListenerBasic(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -101,7 +102,9 @@ public class UIListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testUIListenerContinue(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testUIListenerContinue(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         SameDiff sd1 = getSimpleNet();
@@ -192,7 +195,9 @@ public class UIListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testUIListenerBadContinue(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testUIListenerBadContinue(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
         SameDiff sd1 = getSimpleNet();
 

@@ -21,7 +21,9 @@ package org.nd4j.linalg.learning;
 
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater;
@@ -42,11 +44,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class UpdaterValidation extends BaseNd4jTest {
+public class UpdaterValidation extends BaseNd4jTestWithBackends {
 
-    public UpdaterValidation(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -54,7 +53,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdaDeltaUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaDeltaUpdater(Nd4jBackend backend) {
         double rho = 0.95;
         double epsilon = 1e-6;
 
@@ -93,7 +94,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdaGradUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaGradUpdater(Nd4jBackend backend) {
         double lr = 0.1;
         double epsilon = 1e-6;
 
@@ -127,7 +130,9 @@ public class UpdaterValidation extends BaseNd4jTest {
 
 
     @Test
-    public void testAdamUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdamUpdater(Nd4jBackend backend) {
 
         double lr = 1e-3;
         double beta1 = 0.9;
@@ -169,7 +174,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testAdaMaxUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAdaMaxUpdater(Nd4jBackend backend) {
         double lr = 1e-3;
         double beta1 = 0.9;
         double beta2 = 0.999;
@@ -210,7 +217,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testAmsGradUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAmsGradUpdater(Nd4jBackend backend) {
         double lr = 1e-3;
         double beta1 = 0.9;
         double beta2 = 0.999;
@@ -257,7 +266,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testNadamUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNadamUpdater(Nd4jBackend backend) {
 
         double lr = 1e-3;
         double beta1 = 0.9;
@@ -299,7 +310,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testNesterovUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNesterovUpdater(Nd4jBackend backend) {
 
         double lr = 0.1;
         double momentum = 0.9;
@@ -331,7 +344,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testRmsPropUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRmsPropUpdater(Nd4jBackend backend) {
 
         double lr = 0.1;
         double decay = 0.95;
@@ -365,7 +380,9 @@ public class UpdaterValidation extends BaseNd4jTest {
     }
 
     @Test
-    public void testSgdUpdater(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSgdUpdater(Nd4jBackend backend) {
         double lr = 0.1;
 
         SgdUpdater u = (SgdUpdater) new Sgd(lr).instantiate((Map<String,INDArray>)null, true);
@@ -386,8 +403,10 @@ public class UpdaterValidation extends BaseNd4jTest {
 
 
     /*
-    @Test
-    public void createUpdaterTestCases(){
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void createUpdaterTestCases(Nd4jBackend backend) {
         Nd4j.create(1);
         Nd4j.getRandom().setSeed(12345);
 

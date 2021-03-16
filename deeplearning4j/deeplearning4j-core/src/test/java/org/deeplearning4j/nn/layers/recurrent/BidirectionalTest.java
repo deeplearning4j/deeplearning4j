@@ -45,8 +45,11 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.enums.RnnDataFormat;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -61,30 +64,29 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
-@RunWith(Parameterized.class)
 @DisplayName("Bidirectional Test")
 class BidirectionalTest extends BaseDL4JTest {
 
-    private RNNFormat rnnDataFormat;
 
-    public BidirectionalTest(RNNFormat rnnDataFormat) {
-        this.rnnDataFormat = rnnDataFormat;
-    }
 
-    @Parameterized.Parameters
-    public static Object[] params() {
-        return RNNFormat.values();
+    public static Stream<Arguments> params() {
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
     @Test
     @DisplayName("Compare Implementations")
-    void compareImplementations() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void compareImplementations(RNNFormat rnnDataFormat) {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             // Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
@@ -147,9 +149,11 @@ class BidirectionalTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Compare Implementations Comp Graph")
-    void compareImplementationsCompGraph() {
+    @Test
+    @ParameterizedTest
+    @MethodSource("#params")
+    void compareImplementationsCompGraph(RNNFormat rnnFormat) {
         // for(WorkspaceMode wsm : WorkspaceMode.values()) {
         for (WorkspaceMode wsm : new WorkspaceMode[] { WorkspaceMode.NONE, WorkspaceMode.ENABLED }) {
             log.info("*** Starting workspace mode: " + wsm);
@@ -187,8 +191,8 @@ class BidirectionalTest extends BaseDL4JTest {
             Gradient g2 = net2.gradient();
             assertEquals(g1.gradient(), g2.gradient());
             // Ensure updates are equal:
-            ComputationGraphUpdater u1 = (ComputationGraphUpdater) net1.getUpdater();
-            ComputationGraphUpdater u2 = (ComputationGraphUpdater) net2.getUpdater();
+            ComputationGraphUpdater u1 = net1.getUpdater();
+            ComputationGraphUpdater u2 = net2.getUpdater();
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
             u1.update(g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
             u2.update(g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
@@ -205,7 +209,9 @@ class BidirectionalTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Serialization")
-    void testSerialization() throws Exception {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testSerialization(RNNFormat rnnDataFormat) throws Exception {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -242,7 +248,9 @@ class BidirectionalTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Serialization Comp Graph")
-    void testSerializationCompGraph() throws Exception {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testSerializationCompGraph(RNNFormat rnnDataFormat) throws Exception {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -277,7 +285,9 @@ class BidirectionalTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Simple Bidirectional")
-    void testSimpleBidirectional() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testSimpleBidirectional(RNNFormat rnnDataFormat) {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -362,7 +372,9 @@ class BidirectionalTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Simple Bidirectional Comp Graph")
-    void testSimpleBidirectionalCompGraph() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testSimpleBidirectionalCompGraph(RNNFormat rnnDataFormat) {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);

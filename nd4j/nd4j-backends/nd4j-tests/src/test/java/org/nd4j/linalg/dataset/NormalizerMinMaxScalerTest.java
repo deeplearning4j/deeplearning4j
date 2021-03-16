@@ -22,9 +22,10 @@ package org.nd4j.linalg.dataset;
 
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -37,15 +38,14 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-@RunWith(Parameterized.class)
-public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
 
-    public NormalizerMinMaxScalerTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class NormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testBruteForce() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBruteForce(Nd4jBackend backend) {
         //X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
         //X_scaled = X_std * (max - min) + min
         // Dataset features are scaled consecutive natural numbers
@@ -98,7 +98,9 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testRevert() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRevert(Nd4jBackend backend) {
         double tolerancePerc = 1; // 1% of correct value
         int nSamples = 500;
         int nFeatures = 3;
@@ -115,7 +117,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         myNormalizer.transform(transformed);
         myNormalizer.revert(transformed);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
-                        .div(sampleDataSet.getFeatures());
+                .div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         System.out.println("Delta: " + maxdeltaPerc);
         assertTrue(maxdeltaPerc < tolerancePerc);
@@ -123,7 +125,9 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGivenMaxMin() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGivenMaxMin(Nd4jBackend backend) {
         double tolerancePerc = 1; // 1% of correct value
         int nSamples = 500;
         int nFeatures = 3;
@@ -143,14 +147,16 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
 
         myNormalizer.revert(transformed);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
-                        .div(sampleDataSet.getFeatures());
+                .div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         System.out.println("Delta: " + maxdeltaPerc);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
     @Test
-    public void testGivenMaxMinConstant() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGivenMaxMinConstant(Nd4jBackend backend) {
         double tolerancePerc = 1; // 1% of correct value
         int nSamples = 500;
         int nFeatures = 3;
@@ -175,7 +181,9 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testConstant() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testConstant(Nd4jBackend backend) {
         double tolerancePerc = 0.01; // 0.01% of correct value
         int nSamples = 500;
         int nFeatures = 3;

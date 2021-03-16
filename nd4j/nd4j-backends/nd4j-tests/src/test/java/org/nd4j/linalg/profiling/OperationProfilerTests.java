@@ -27,7 +27,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -48,11 +50,8 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public class OperationProfilerTests extends BaseNd4jTest {
+public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
-    public OperationProfilerTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -71,7 +70,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCounter1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCounter1(Nd4jBackend backend) {
         INDArray array = Nd4j.createUninitialized(100);
 
         array.assign(10f);
@@ -82,7 +83,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testStack1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testStack1(Nd4jBackend backend) {
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
@@ -99,7 +102,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBadCombos1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadCombos1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(100);
         INDArray y = Nd4j.create(100);
 
@@ -110,7 +115,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadCombos2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadCombos2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(100).reshape('f', 10, 10);
         INDArray y = Nd4j.create(100).reshape('c', 10, 10);
 
@@ -121,7 +128,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadCombos3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadCombos3(Nd4jBackend backend) {
         INDArray x = Nd4j.create(27).reshape('c', 3, 3, 3).tensorAlongDimension(0, 1, 2);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
 
@@ -134,7 +143,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadCombos4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadCombos4(Nd4jBackend backend) {
         INDArray x = Nd4j.create(27).reshape('c', 3, 3, 3).tensorAlongDimension(0, 1, 2);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
         INDArray z = Nd4j.create(100).reshape('f', 10, 10);
@@ -148,7 +159,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadCombos5() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadCombos5(Nd4jBackend backend) {
         INDArray w = Nd4j.create(100).reshape('c', 10, 10);
         INDArray x = Nd4j.create(100).reshape('c', 10, 10);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
@@ -163,7 +176,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
     @Test
     @Disabled
-    public void testBadCombos6() {
+    public void testBadCombos6(Nd4jBackend backend) {
         INDArray x = Nd4j.create(27).reshape('f', 3, 3, 3).slice(1);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
 
@@ -175,11 +188,13 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadTad1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadTad1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
         Pair<DataBuffer, DataBuffer> pair =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 0, 2);
+                Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 0, 2);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -189,11 +204,13 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadTad2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadTad2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
         Pair<DataBuffer, DataBuffer> pair =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 2, 3);
+                Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 2, 3);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -205,11 +222,13 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBadTad3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadTad3(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new int[] {2, 4, 5, 6, 7}, 'f');
 
         Pair<DataBuffer, DataBuffer> pair =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 0, 2, 4);
+                Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 0, 2, 4);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -220,7 +239,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
     @Test
     @Disabled
-    public void testBadTad4() {
+    public void testBadTad4(Nd4jBackend backend) {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
         Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 3);
@@ -234,7 +253,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBadTad5() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBadTad5(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new int[] {2, 4, 5, 6, 7}, 'f');
 
         Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 4);
@@ -249,7 +270,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testCxFxF1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCxFxF1(Nd4jBackend backend) {
         INDArray a = Nd4j.create(10, 10).reshape('f', 10, 10);
         INDArray b = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray c = Nd4j.create(10, 10).reshape('f', 10, 10);
@@ -259,7 +282,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCxFxF2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCxFxF2(Nd4jBackend backend) {
         INDArray a = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray b = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray c = Nd4j.create(10, 10).reshape('f', 10, 10);
@@ -269,7 +294,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCxFxF3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCxFxF3(Nd4jBackend backend) {
         INDArray a = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray b = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray c = Nd4j.create(10, 10).reshape('c', 10, 10);
@@ -280,7 +307,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBlasFF() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBlasFF(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
         INDArray a = Nd4j.create(10, 10).reshape('f', 10, 10);
@@ -293,7 +322,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test()
-    public void testNaNPanic1() {
+    public void testNaNPanic1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
 
@@ -305,7 +334,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test()
-    public void testNaNPanic2() {
+    public void testNaNPanic2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
 
@@ -317,7 +346,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test()
-    public void testNaNPanic3() {
+    public void testNaNPanic3(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
@@ -330,7 +359,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test()
-    public void testScopePanic1() {
+    public void testScopePanic1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
@@ -349,7 +378,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test()
-    public void testScopePanic2() {
+    public void testScopePanic2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
@@ -376,7 +405,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testScopePanic3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testScopePanic3(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
 
@@ -396,7 +427,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testScopePanicPerf() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testScopePanicPerf(Nd4jBackend backend) {
         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS121")) {
             INDArray x = Nd4j.create(1000, 1000).assign(1.0);
             INDArray y = Nd4j.create(1000, 1000).assign(1.0);
@@ -434,7 +467,9 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testExtendedStatistics() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testExtendedStatistics(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().nativeStatistics(true).build());
 
         INDArray array = Nd4j.ones(10);
@@ -449,6 +484,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testNanPanic(){
         try {
             DynamicCustomOp op = DynamicCustomOp.builder("add")
@@ -480,6 +517,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testInfPanic(){
         try {
             DynamicCustomOp op = DynamicCustomOp.builder("add")
@@ -511,6 +550,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testOpProfilerOpContextLegacy(){
 
         for(boolean nan : new boolean[]{true, false}) {
@@ -534,6 +575,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testOpProfilerOpContextCustomOp(){
 
         for(boolean nan : new boolean[]{true, false}) {

@@ -24,16 +24,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.OpValidationSuite;
-import org.nd4j.imports.tfgraphs.TFGraphTestZooModels;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -42,12 +40,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class ExecutionTests extends BaseNd4jTest {
 
-    public ExecutionTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ExecutionTests extends BaseNd4jTestWithBackends {
+
 
     @AfterEach
     public void tearDown() {
@@ -57,17 +52,9 @@ public class ExecutionTests extends BaseNd4jTest {
 
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testStoredGraph_1()  throws Exception {
-        if(TFGraphTestZooModels.isPPC()){
-            /*
-            Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
-            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
-             */
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
-            OpValidationSuite.ignoreFailing();
-        }
-
         Nd4j.create(1);
 
         val tg = TFGraphMapper.importGraphTxt(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream(), null, null);

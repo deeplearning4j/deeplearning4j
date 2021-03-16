@@ -21,7 +21,9 @@
 package org.nd4j.list;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
@@ -29,11 +31,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NDArrayListTest extends BaseNd4jTest {
+public class NDArrayListTest extends BaseNd4jTestWithBackends {
 
-    public NDArrayListTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -41,7 +40,9 @@ public class NDArrayListTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testList() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testList(Nd4jBackend backend) {
         NDArrayList ndArrayList = new NDArrayList();
         List<Double> arrayAssertion = new ArrayList<>();
         for(int i = 0; i < 11; i++) {

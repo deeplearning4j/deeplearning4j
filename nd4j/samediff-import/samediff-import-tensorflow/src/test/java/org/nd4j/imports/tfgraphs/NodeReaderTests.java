@@ -23,7 +23,9 @@ package org.nd4j.imports.tfgraphs;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -31,11 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Slf4j
-public class NodeReaderTests extends BaseNd4jTest {
+public class NodeReaderTests extends BaseNd4jTestWithBackends {
 
-    public NodeReaderTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -43,7 +42,9 @@ public class NodeReaderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNodeReader_1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNodeReader_1(Nd4jBackend backend) throws Exception {
         val array = NodeReader.readArray("ae_00", "BiasAdd.0");
         val exp = Nd4j.create(new double[]{0.75157526, 0.73641957, 0.50457279, -0.45943720, 0.58269453, 0.10282226, -0.45269983, -0.05505687, -0.46887864, -0.05584033}, new long[]{5 ,2});
 

@@ -22,8 +22,10 @@ package org.nd4j.serde.binary;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,11 +40,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class BinarySerdeTest extends BaseNd4jTest {
+public class BinarySerdeTest extends BaseNd4jTestWithBackends {
 
-    public BinarySerdeTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -50,7 +49,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testToAndFrom() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToAndFrom(Nd4jBackend backend) {
         INDArray arr = Nd4j.scalar(1.0);
         ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
         INDArray back = BinarySerde.toArray(buffer);
@@ -58,7 +59,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testToAndFromHeapBuffer() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToAndFromHeapBuffer(Nd4jBackend backend) {
         INDArray arr = Nd4j.scalar(1.0);
         ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
         ByteBuffer heapBuffer = ByteBuffer.allocate(buffer.remaining());
@@ -68,7 +71,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testToAndFromCompressed() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToAndFromCompressed(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //Failing 2019/01/24
         INDArray arr = Nd4j.scalar(1.0);
         INDArray compress = Nd4j.getCompressor().compress(arr, "GZIP");
@@ -82,7 +87,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
 
 
     @Test
-    public void testToAndFromCompressedLarge() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToAndFromCompressedLarge(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //Failing 2019/01/24
         INDArray arr = Nd4j.zeros((int) 1e7);
         INDArray compress = Nd4j.getCompressor().compress(arr, "GZIP");
@@ -96,7 +103,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
 
 
     @Test
-    public void testReadWriteFile() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReadWriteFile(Nd4jBackend backend) throws Exception {
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),
                         "ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
         tmpFile.deleteOnExit();
@@ -107,7 +116,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testReadShapeFile() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReadShapeFile(Nd4jBackend backend) throws Exception {
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),
                         "ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
         tmpFile.deleteOnExit();
@@ -119,7 +130,9 @@ public class BinarySerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void timeOldVsNew() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void timeOldVsNew(Nd4jBackend backend) throws Exception {
         int numTrials = 1000;
         long oldTotal = 0;
         long newTotal = 0;

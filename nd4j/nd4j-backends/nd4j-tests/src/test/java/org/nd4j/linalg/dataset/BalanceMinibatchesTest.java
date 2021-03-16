@@ -24,7 +24,9 @@ package org.nd4j.linalg.dataset;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -32,18 +34,18 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BalanceMinibatchesTest extends BaseNd4jTest {
-    public BalanceMinibatchesTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class BalanceMinibatchesTest extends BaseNd4jTestWithBackends {
 
 
     @Test
-    public void testBalance(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBalance(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         DataSetIterator iterator = new IrisDataSetIterator(10, 150);
 
         File minibatches = new File(testDir.toFile(),"mini-batch-dir");
@@ -60,7 +62,9 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMiniBatchBalanced(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMiniBatchBalanced(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         int miniBatchSize = 100;
         DataSetIterator iterator = new IrisDataSetIterator(miniBatchSize, 150);
@@ -87,7 +91,7 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
         }
 
 
-        ArrayList<Integer> fullBatches = new ArrayList(totalCounts.length);
+        List<Integer> fullBatches = new ArrayList(totalCounts.length);
         for (int i = 0; i < totalCounts.length; i++) {
             fullBatches.add(iterator.totalOutcomes() * (int) totalCounts[i] / miniBatchSize);
         }

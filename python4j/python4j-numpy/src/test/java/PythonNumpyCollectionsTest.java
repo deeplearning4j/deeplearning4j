@@ -19,33 +19,30 @@
  */
 
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.python4j.PythonException;
 import org.nd4j.python4j.PythonGIL;
 import org.nd4j.python4j.PythonObject;
 import org.nd4j.python4j.PythonTypes;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.*;
+import java.util.stream.Stream;
 
 
 @NotThreadSafe
-@RunWith(Parameterized.class)
 public class PythonNumpyCollectionsTest {
-    private DataType dataType;
 
-    public PythonNumpyCollectionsTest(DataType dataType){
-        this.dataType = dataType;
-    }
 
-    @Parameterized.Parameters(name = "{index}: Testing with DataType={0}")
-    public static DataType[] params() {
-        return new DataType[]{
+    public static Stream<Arguments> params() {
+        return Arrays.asList(new DataType[]{
                 DataType.BOOL,
                 DataType.FLOAT16,
                 //DataType.BFLOAT16,
@@ -59,10 +56,13 @@ public class PythonNumpyCollectionsTest {
                 DataType.UINT16,
                 DataType.UINT32,
                 DataType.UINT64
-        };
+        }).stream().map(Arguments::of);
     }
+
     @Test
-    public void testPythonDictFromMap() throws PythonException {
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testPythonDictFromMap(DataType dataType) throws PythonException {
         try(PythonGIL pythonGIL = PythonGIL.lock()) {
             Map map = new HashMap();
             map.put("a", 1);
@@ -83,7 +83,9 @@ public class PythonNumpyCollectionsTest {
     }
 
     @Test
-    public void testPythonListFromList() throws PythonException {
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testPythonListFromList(DataType dataType) throws PythonException {
         try(PythonGIL pythonGIL = PythonGIL.lock()) {
             List<Object> list = new ArrayList<>();
             list.add(1);

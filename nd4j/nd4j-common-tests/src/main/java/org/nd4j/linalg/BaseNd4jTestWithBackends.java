@@ -22,7 +22,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.runners.Parameterized;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.io.ReflectionUtils;
@@ -31,14 +31,15 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Base Nd4j test
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
+
 @Slf4j
-public abstract class BaseNd4jTest extends BaseND4JTest {
+public abstract class BaseNd4jTestWithBackends extends BaseND4JTest {
     private static List<Nd4jBackend> BACKENDS = new ArrayList<>();
     static {
         List<String> backendsToRun = Nd4jTestSuite.backendsToRun();
@@ -56,29 +57,10 @@ public abstract class BaseNd4jTest extends BaseND4JTest {
     protected String name;
     public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
 
-    public BaseNd4jTest() {
-        this("", getDefaultBackend());
-    }
 
-    public BaseNd4jTest(String name) {
-        this(name, getDefaultBackend());
-    }
 
-    public BaseNd4jTest(String name, Nd4jBackend backend) {
-        this.backend = backend;
-        this.name = name;
-    }
-
-    public BaseNd4jTest(Nd4jBackend backend) {
-        this(backend.getClass().getName() + UUID.randomUUID().toString(), backend);
-    }
-
-    @Parameterized.Parameters(name = "{index}: backend({0})={1}")
-    public static Collection<Object[]> configs() {
-        List<Object[]> ret = new ArrayList<>();
-        for (Nd4jBackend backend : BACKENDS)
-            ret.add(new Object[] {backend});
-        return ret;
+    public static Stream<Arguments> configs() {
+        return BACKENDS.stream().map(input -> Arguments.of(input));
     }
 
     @BeforeEach
@@ -87,7 +69,7 @@ public abstract class BaseNd4jTest extends BaseND4JTest {
     }
 
     /**
-     * Get the default backend (jblas)
+     * Get the default backend (nd4j)
      * The default backend can be overridden by also passing:
      * -Dorg.nd4j.linalg.defaultbackend=your.backend.classname
      * @return the default backend based on the

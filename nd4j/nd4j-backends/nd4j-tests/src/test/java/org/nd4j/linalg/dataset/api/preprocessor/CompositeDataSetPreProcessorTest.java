@@ -21,7 +21,9 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,11 +31,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
+public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
-    public CompositeDataSetPreProcessorTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -41,7 +40,9 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test()
-    public void when_preConditionsIsNull_expect_NullPointerException() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_preConditionsIsNull_expect_NullPointerException(Nd4jBackend backend) {
         assertThrows(NullPointerException.class,() -> {
             // Assemble
             CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor();
@@ -54,7 +55,9 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void when_dataSetIsEmpty_expect_emptyDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_dataSetIsEmpty_expect_emptyDataSet(Nd4jBackend backend) {
         // Assemble
         CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor();
         DataSet ds = new DataSet(null, null);
@@ -67,7 +70,9 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void when_notStoppingOnEmptyDataSet_expect_allPreProcessorsCalled() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_notStoppingOnEmptyDataSet_expect_allPreProcessorsCalled(Nd4jBackend backend) {
         // Assemble
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(true);
         TestDataSetPreProcessor preProcessor2 = new TestDataSetPreProcessor(true);
@@ -83,7 +88,9 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void when_stoppingOnEmptyDataSetAndFirstPreProcessorClearDS_expect_firstPreProcessorsCalled() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_stoppingOnEmptyDataSetAndFirstPreProcessorClearDS_expect_firstPreProcessorsCalled(Nd4jBackend backend) {
         // Assemble
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(true);
         TestDataSetPreProcessor preProcessor2 = new TestDataSetPreProcessor(true);
@@ -99,7 +106,9 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
     }
 
     @Test
-    public void when_stoppingOnEmptyDataSet_expect_firstPreProcessorsCalled() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void when_stoppingOnEmptyDataSet_expect_firstPreProcessorsCalled(Nd4jBackend backend) {
         // Assemble
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(false);
         TestDataSetPreProcessor preProcessor2 = new TestDataSetPreProcessor(false);

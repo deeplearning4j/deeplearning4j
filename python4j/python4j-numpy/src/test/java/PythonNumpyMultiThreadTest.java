@@ -18,11 +18,13 @@
  *  *****************************************************************************
  */
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.python4j.*;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,20 +34,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 
 @NotThreadSafe
-@RunWith(Parameterized.class)
 public class PythonNumpyMultiThreadTest {
-    private DataType dataType;
 
-    public PythonNumpyMultiThreadTest(DataType dataType) {
-        this.dataType = dataType;
-    }
-
-    @Parameterized.Parameters(name = "{index}: Testing with DataType={0}")
-    public static DataType[] params() {
-        return new DataType[]{
+    public static Stream<Arguments> params() {
+        return Arrays.asList(new DataType[]{
 //                DataType.BOOL,
 //                DataType.FLOAT16,
 //                DataType.BFLOAT16,
@@ -59,29 +55,28 @@ public class PythonNumpyMultiThreadTest {
 //                DataType.UINT16,
 //                DataType.UINT32,
 //                DataType.UINT64
-        };
+        }).stream().map(Arguments::of);
     }
 
 
     @Test
-    public void testMultiThreading1() throws Throwable {
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testMultiThreading1(DataType dataType) throws Throwable {
         final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                try (PythonGIL gil = PythonGIL.lock()) {
-                    try (PythonGC gc = PythonGC.watch()) {
-                        List<PythonVariable> inputs = new ArrayList<>();
-                        inputs.add(new PythonVariable<>("x", NumpyArray.INSTANCE, Nd4j.ones(dataType, 2, 3).mul(3)));
-                        inputs.add(new PythonVariable<>("y", NumpyArray.INSTANCE, Nd4j.ones(dataType, 2, 3).mul(4)));
-                        PythonVariable out = new PythonVariable<>("z", NumpyArray.INSTANCE);
-                        String code = "z = x + y";
-                        PythonExecutioner.exec(code, inputs, Collections.singletonList(out));
-                        Assert.assertEquals(Nd4j.ones(dataType, 2, 3).mul(7), out.getValue());
-                    }
-                } catch (Throwable e) {
-                    exceptions.add(e);
+        Runnable runnable = () -> {
+            try (PythonGIL gil = PythonGIL.lock()) {
+                try (PythonGC gc = PythonGC.watch()) {
+                    List<PythonVariable> inputs = new ArrayList<>();
+                    inputs.add(new PythonVariable<>("x", NumpyArray.INSTANCE, Nd4j.ones(dataType, 2, 3).mul(3)));
+                    inputs.add(new PythonVariable<>("y", NumpyArray.INSTANCE, Nd4j.ones(dataType, 2, 3).mul(4)));
+                    PythonVariable out = new PythonVariable<>("z", NumpyArray.INSTANCE);
+                    String code = "z = x + y";
+                    PythonExecutioner.exec(code, inputs, Collections.singletonList(out));
+                    Assert.assertEquals(Nd4j.ones(dataType, 2, 3).mul(7), out.getValue());
                 }
+            } catch (Throwable e) {
+                exceptions.add(e);
             }
         };
 
@@ -104,8 +99,10 @@ public class PythonNumpyMultiThreadTest {
     }
 
     @Test
-    public void testMultiThreading2() throws Throwable {
-        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
+    @MethodSource("#params")
+    @ParameterizedTest
+    public void testMultiThreading2(DataType dataType) throws Throwable {
+        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<>());
         Runnable runnable = new Runnable() {
             @Override
             public void run() {

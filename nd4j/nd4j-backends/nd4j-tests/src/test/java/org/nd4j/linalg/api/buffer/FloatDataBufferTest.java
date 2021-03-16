@@ -27,7 +27,9 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -54,14 +56,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Adam Gibson
  */
 @Disabled("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
-public class FloatDataBufferTest extends BaseNd4jTest {
+public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
-    DataType initialType;
-
-    public FloatDataBufferTest(Nd4jBackend backend) {
-        super(backend);
-        initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
 
     @BeforeEach
     public void before() {
@@ -76,7 +73,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testPointerCreation() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPointerCreation(Nd4jBackend backend) {
         FloatPointer floatPointer = new FloatPointer(1, 2, 3, 4);
         Indexer indexer = FloatIndexer.create(floatPointer);
         DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataType.FLOAT, 4, indexer);
@@ -85,7 +84,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGetSet(Nd4jBackend backend) {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
@@ -96,7 +97,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testSerialization(@TempDir Path tempDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSerialization(@TempDir Path tempDir,Nd4jBackend backend) throws Exception {
         File dir = tempDir.toFile();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
@@ -117,7 +120,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testDup() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDup(Nd4jBackend backend) {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -125,7 +130,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testToNio() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToNio(Nd4jBackend backend) {
         DataBuffer buff = Nd4j.createTypedBuffer(new double[] {1, 2, 3, 4}, DataType.FLOAT);
         assertEquals(4, buff.length());
         if (buff.allocationMode() == DataBuffer.AllocationMode.HEAP)
@@ -137,7 +144,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testPut() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPut(Nd4jBackend backend) {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -148,7 +157,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRange() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[] {1, 2, 3};
@@ -164,7 +175,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetOffsetRange() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGetOffsetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[] {2, 3, 4};
@@ -181,7 +194,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testAsBytes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAsBytes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(5);
         byte[] d = arr.data().asBytes();
         assertEquals(4 * 5, d.length,getFailureMessage());
@@ -191,7 +206,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAssign() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAssign(Nd4jBackend backend) {
         DataBuffer assertion = Nd4j.createBuffer(new double[] {1, 2, 3});
         DataBuffer one = Nd4j.createBuffer(new double[] {1});
         DataBuffer twoThree = Nd4j.createBuffer(new double[] {2, 3});
@@ -201,7 +218,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testReadWrite() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReadWrite(Nd4jBackend backend) throws Exception {
         DataBuffer assertion = Nd4j.createBuffer(new double[] {1, 2, 3});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
@@ -215,7 +234,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testOffset() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testOffset(Nd4jBackend backend) {
         DataBuffer create = Nd4j.createBuffer(new float[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
         assertEquals(0, create.offset());
@@ -225,7 +246,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocation() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReallocation(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
         float[] old = buffer.asFloat();
@@ -236,7 +259,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocationWorkspace() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testReallocationWorkspace(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                         .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
@@ -253,7 +278,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAddressPointer(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAddressPointer(Nd4jBackend backend){
         if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
             return;
         }

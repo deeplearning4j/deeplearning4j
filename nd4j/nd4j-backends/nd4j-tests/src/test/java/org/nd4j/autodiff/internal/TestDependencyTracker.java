@@ -21,10 +21,12 @@
 package org.nd4j.autodiff.internal;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.internal.DependencyList;
 import org.nd4j.autodiff.samediff.internal.DependencyTracker;
 import org.nd4j.autodiff.samediff.internal.IdentityDependencyTracker;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -35,19 +37,18 @@ import java.util.Collections;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestDependencyTracker extends BaseNd4jTest {
+public class TestDependencyTracker extends BaseNd4jTestWithBackends {
 
-    public TestDependencyTracker(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testSimple(){
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSimple(Nd4jBackend backend){
 
         DependencyTracker<String,String> dt = new DependencyTracker<>();
 
@@ -93,8 +94,10 @@ public class TestDependencyTracker extends BaseNd4jTest {
         assertTrue(dt.isEmpty());
     }
 
-    @Test
-    public void testSatisfiedBeforeAdd(){
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSatisfiedBeforeAdd(Nd4jBackend backend){
         DependencyTracker<String,String> dt = new DependencyTracker<>();
 
         //Check different order of adding dependencies: i.e., mark X as satisfied, then add x -> y dependency
@@ -132,8 +135,10 @@ public class TestDependencyTracker extends BaseNd4jTest {
         assertFalse(dt.hasNewAllSatisfied());
     }
 
-    @Test
-    public void testMarkUnsatisfied(){
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMarkUnsatisfied(Nd4jBackend backend){
 
         DependencyTracker<String,String> dt = new DependencyTracker<>();
         dt.addDependency("y", "x");
@@ -164,7 +169,9 @@ public class TestDependencyTracker extends BaseNd4jTest {
     }
 
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testIdentityDependencyTracker(){
         IdentityDependencyTracker<INDArray, String> dt = new IdentityDependencyTracker<>();
         assertTrue(dt.isEmpty());

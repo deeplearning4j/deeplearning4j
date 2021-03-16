@@ -21,9 +21,11 @@
 package org.nd4j.evaluation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -36,11 +38,8 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class EvalCustomThreshold extends BaseNd4jTest {
+public class EvalCustomThreshold extends BaseNd4jTestWithBackends {
 
-    public EvalCustomThreshold(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -48,7 +47,9 @@ public class EvalCustomThreshold extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvaluationCustomBinaryThreshold() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvaluationCustomBinaryThreshold(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
         //Sanity checks: 0.5 threshold for 1-output and 2-output binary cases
@@ -114,7 +115,9 @@ public class EvalCustomThreshold extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvaluationCostArray() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvaluationCostArray(Nd4jBackend backend) {
 
 
         int nExamples = 20;
@@ -162,7 +165,9 @@ public class EvalCustomThreshold extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvaluationBinaryCustomThreshold() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvaluationBinaryCustomThreshold(Nd4jBackend backend) {
 
         //Sanity check: same results for 0.5 threshold vs. default (no threshold)
         int nExamples = 20;

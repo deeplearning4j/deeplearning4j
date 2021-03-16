@@ -26,13 +26,15 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.FlatConfiguration;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.graph.FlatNode;
 import org.nd4j.graph.FlatVariable;
 import org.nd4j.graph.IntPair;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -70,11 +72,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class FlatBufferSerdeTest extends BaseNd4jTest {
+public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
-    public FlatBufferSerdeTest(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -84,7 +83,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
 
     @Test
-    public void testBasic(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBasic(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
@@ -139,7 +140,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSimple(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSimple(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         for( int i = 0; i < 10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
@@ -268,7 +271,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
 
     @Test
-    public void testTrainingSerde(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTrainingSerde(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         //Ensure 2 things:
         //1. Training config is serialized/deserialized correctly
@@ -352,7 +357,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
 
     @Test
-    public void pooling3DSerialization(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void pooling3DSerialization(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);
@@ -372,7 +379,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void pooling3DSerialization2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void pooling3DSerialization2(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);

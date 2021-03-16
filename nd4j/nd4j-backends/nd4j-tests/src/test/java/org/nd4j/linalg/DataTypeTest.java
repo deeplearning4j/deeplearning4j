@@ -23,8 +23,9 @@ package org.nd4j.linalg;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,15 +35,14 @@ import java.io.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
+
 @Slf4j
-public class DataTypeTest extends BaseNd4jTest {
-    public DataTypeTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class DataTypeTest extends BaseNd4jTestWithBackends {
 
     @Test
-    public void testDataTypes() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDataTypes(Nd4jBackend backend) throws Exception {
         for (val type : DataType.values()) {
             if (DataType.UTF8.equals(type) || DataType.UNKNOWN.equals(type) || DataType.COMPRESSED.equals(type))
                 continue;

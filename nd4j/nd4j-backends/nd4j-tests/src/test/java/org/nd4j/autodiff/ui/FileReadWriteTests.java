@@ -27,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -41,7 +43,7 @@ import org.nd4j.graph.UIInfoType;
 import org.nd4j.graph.UIOp;
 import org.nd4j.graph.UIVariable;
 import org.nd4j.graph.ui.LogFileWriter;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,11 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class FileReadWriteTests extends BaseNd4jTest {
+public class FileReadWriteTests extends BaseNd4jTestWithBackends {
 
-    public FileReadWriteTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -81,7 +80,9 @@ public class FileReadWriteTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSimple(@TempDir Path testDir) throws IOException {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSimple(@TempDir Path testDir,Nd4jBackend backend) throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
         SDVariable sum = v.sum();
@@ -185,7 +186,9 @@ public class FileReadWriteTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNullBinLabels(@TempDir Path testDir) throws Exception{
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNullBinLabels(@TempDir Path testDir,Nd4jBackend backend) throws Exception{
         File dir = testDir.toFile();
         File f = new File(dir, "temp.bin");
         LogFileWriter w = new LogFileWriter(f);

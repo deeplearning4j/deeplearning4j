@@ -21,8 +21,10 @@
 package org.nd4j.evaluation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.Evaluation;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -39,11 +41,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-public class EvalTest extends BaseNd4jTest {
+public class EvalTest extends BaseNd4jTestWithBackends {
 
-    public EvalTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -52,7 +51,9 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
-    public void testEval() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEval(Nd4jBackend backend) {
         int classNum = 5;
         Evaluation eval = new Evaluation (classNum);
 
@@ -91,7 +92,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEval2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEval2(Nd4jBackend backend) {
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
         Evaluation first = null;
@@ -150,7 +153,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testStringListLabels() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testStringListLabels(Nd4jBackend backend) {
         INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 2);
         INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 2);
 
@@ -167,7 +172,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testStringHashLabels() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testStringHashLabels(Nd4jBackend backend) {
         INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 2);
         INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 2);
 
@@ -184,7 +191,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvalMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvalMasking(Nd4jBackend backend) {
         int miniBatch = 5;
         int nOut = 3;
         int tsLength = 6;
@@ -251,7 +260,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testFalsePerfectRecall() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testFalsePerfectRecall(Nd4jBackend backend) {
         int testSize = 100;
         int numClasses = 5;
         int winner = 1;
@@ -284,7 +295,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvaluationMerging() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvaluationMerging(Nd4jBackend backend) {
 
         int nRows = 20;
         int nCols = 3;
@@ -358,7 +371,9 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
-    public void testSingleClassBinaryClassification() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSingleClassBinaryClassification(Nd4jBackend backend) {
 
         Evaluation eval = new Evaluation(1);
 
@@ -387,7 +402,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvalInvalid() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvalInvalid(Nd4jBackend backend) {
         Evaluation e = new Evaluation(5);
         e.eval(0, 1);
         e.eval(1, 0);
@@ -400,7 +417,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvalMethods() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvalMethods(Nd4jBackend backend) {
         //Check eval(int,int) vs. eval(INDArray,INDArray)
 
         Evaluation e1 = new Evaluation(4);
@@ -443,7 +462,9 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
-    public void testTopNAccuracy() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTopNAccuracy(Nd4jBackend backend) {
 
         Evaluation e = new Evaluation(null, 3);
 
@@ -504,7 +525,9 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
-    public void testTopNAccuracyMerging() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTopNAccuracyMerging(Nd4jBackend backend) {
 
         Evaluation e1 = new Evaluation(null, 3);
         Evaluation e2 = new Evaluation(null, 3);
@@ -552,7 +575,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testBinaryCase() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBinaryCase(Nd4jBackend backend) {
         INDArray ones10 = Nd4j.ones(10, 1);
         INDArray ones4 = Nd4j.ones(4, 1);
         INDArray zeros4 = Nd4j.zeros(4, 1);
@@ -581,7 +606,9 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testF1FBeta_MicroMacroAveraging() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testF1FBeta_MicroMacroAveraging(Nd4jBackend backend) {
         //Confusion matrix: rows = actual, columns = predicted
         //[3, 1, 0]
         //[2, 2, 1]
@@ -722,7 +749,9 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
-    public void testConfusionMatrixStats() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testConfusionMatrixStats(Nd4jBackend backend) {
 
         Evaluation e = new Evaluation();
 
@@ -743,6 +772,8 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testEvalBinaryMetrics(){
 
         Evaluation ePosClass1_nOut2 = new Evaluation(2, 1);
@@ -864,6 +895,8 @@ public class EvalTest extends BaseNd4jTest {
 
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testConfusionMatrixString(){
 
         Evaluation e = new Evaluation(Arrays.asList("a","b","c"));
@@ -914,6 +947,8 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testEvaluationNaNs(){
 
         Evaluation e = new Evaluation();
@@ -929,6 +964,8 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testSegmentation(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);
@@ -1023,6 +1060,8 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLabelReset(){
 
         Map<Integer,String> m = new HashMap<>();
@@ -1056,6 +1095,8 @@ public class EvalTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testEvalStatsBinaryCase(){
         //Make sure we report class 1 precision/recall/f1 not macro averaged, for binary case
 

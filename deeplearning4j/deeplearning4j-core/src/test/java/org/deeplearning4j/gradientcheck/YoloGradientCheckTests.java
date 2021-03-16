@@ -39,8 +39,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -55,26 +57,22 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
 public class YoloGradientCheckTests extends BaseDL4JTest {
 
     static {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    private CNN2DFormat format;
-    public YoloGradientCheckTests(CNN2DFormat format){
-        this.format = format;
-    }
-    @Parameterized.Parameters(name = "{0}")
-    public static Object[] params(){
-        return CNN2DFormat.values();
-    }
 
+    public static Stream<Arguments> params() {
+        return Arrays.asList(CNN2DFormat.values()).stream().map(Arguments::of);
+    }
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -82,7 +80,9 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     }
 
     @Test
-    public void testYoloOutputLayer() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testYoloOutputLayer(CNN2DFormat format) {
         int depthIn = 2;
         int c = 3;
         int b = 3;
@@ -159,13 +159,13 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         }
     }
 
-    private static INDArray yoloLabels(int mb, int c, int h, int w){
+    private static INDArray yoloLabels(int mb, int c, int h, int w) {
         int labelDepth = 4 + c;
         INDArray labels = Nd4j.zeros(mb, labelDepth, h, w);
         //put 1 object per minibatch, at positions (0,0), (1,1) etc.
         //Positions for label boxes: (1,1) to (2,2), (2,2) to (4,4) etc
 
-        for( int i=0; i<mb; i++ ){
+        for( int i = 0; i < mb; i++) {
             //Class labels
             labels.putScalar(i, 4 + i%c, i%h, i%w, 1);
 
@@ -181,7 +181,9 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
 
     @Test
-    public void yoloGradientCheckRealData(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void yoloGradientCheckRealData(@TempDir Path testDir,CNN2DFormat format) throws Exception {
         Nd4j.getRandom().setSeed(12345);
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();

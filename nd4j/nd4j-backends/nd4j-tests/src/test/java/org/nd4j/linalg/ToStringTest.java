@@ -24,23 +24,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.util.ArrayUtil;
 
-@RunWith(Parameterized.class)
+
 @Slf4j
-public class ToStringTest extends BaseNd4jTest {
-    public ToStringTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ToStringTest extends BaseNd4jTestWithBackends {
 
     @Test
-    public void testToString() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToString(Nd4jBackend backend) throws Exception {
         assertEquals("[         1,         2,         3]",
                 Nd4j.createFromArray(1, 2, 3).toString());
 
@@ -58,6 +58,8 @@ public class ToStringTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testToStringScalars(){
         DataType[] dataTypes = new DataType[]{DataType.FLOAT, DataType.DOUBLE, DataType.BOOL, DataType.INT, DataType.UINT32};
         String[] strs = new String[]{"1.0000", "1.0000", "true", "1", "1"};

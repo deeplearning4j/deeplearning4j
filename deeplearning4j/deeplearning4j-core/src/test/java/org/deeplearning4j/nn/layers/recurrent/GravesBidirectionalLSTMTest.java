@@ -19,7 +19,6 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
-import junit.framework.TestCase;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -34,9 +33,12 @@ import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,31 +46,29 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.common.primitives.Pair;
-import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@RunWith(Parameterized.class)
+import java.util.Arrays;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 @DisplayName("Graves Bidirectional LSTM Test")
 class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
     private double score = 0.0;
 
-    private RNNFormat rnnDataFormat;
 
-    public GravesBidirectionalLSTMTest(RNNFormat rnnDataFormat) {
-        this.rnnDataFormat = rnnDataFormat;
+
+    public static Stream<Arguments> params(){
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
-    @Parameterized.Parameters
-    public static Object[] params() {
-        return RNNFormat.values();
-    }
 
     @Test
     @DisplayName("Test Bidirectional LSTM Graves Forward Basic")
-    void testBidirectionalLSTMGravesForwardBasic() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    void testBidirectionalLSTMGravesForwardBasic(RNNFormat rnnDataFormat) {
         // Very basic test of forward prop. of LSTM layer with a time series.
         // Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
         int nIn = 13;
@@ -110,19 +110,21 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Bidirectional LSTM Graves Backward Basic")
-    void testBidirectionalLSTMGravesBackwardBasic() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    void testBidirectionalLSTMGravesBackwardBasic(RNNFormat rnnDataFormat) {
         // Very basic test of backprop for mini-batch + time series
         // Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
-        testGravesBackwardBasicHelper(13, 3, 17, 10, 7);
+        testGravesBackwardBasicHelper(rnnDataFormat,13, 3, 17, 10, 7);
         // Edge case: miniBatchSize = 1
-        testGravesBackwardBasicHelper(13, 3, 17, 1, 7);
+        testGravesBackwardBasicHelper(rnnDataFormat,13, 3, 17, 1, 7);
         // Edge case: timeSeriesLength = 1
-        testGravesBackwardBasicHelper(13, 3, 17, 10, 1);
+        testGravesBackwardBasicHelper(rnnDataFormat,13, 3, 17, 10, 1);
         // Edge case: both miniBatchSize = 1 and timeSeriesLength = 1
-        testGravesBackwardBasicHelper(13, 3, 17, 1, 1);
+        testGravesBackwardBasicHelper(rnnDataFormat,13, 3, 17, 1, 1);
     }
 
-    private void testGravesBackwardBasicHelper(int nIn, int nOut, int lstmNHiddenUnits, int miniBatchSize, int timeSeriesLength) {
+    private void testGravesBackwardBasicHelper(RNNFormat rnnDataFormat,int nIn, int nOut, int lstmNHiddenUnits, int miniBatchSize, int timeSeriesLength) {
         INDArray inputData = (rnnDataFormat == RNNFormat.NCW) ? Nd4j.ones(miniBatchSize, nIn, timeSeriesLength) : Nd4j.ones(miniBatchSize, timeSeriesLength, nIn);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(lstmNHiddenUnits).dataFormat(rnnDataFormat).dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build()).build();
         long numParams = conf.getLayer().initializer().numParams(conf);
@@ -204,7 +206,9 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Get Set Parmas")
-    void testGetSetParmas() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    void testGetSetParmas(RNNFormat rnnDataFormat) {
         final int nIn = 2;
         final int layerSize = 3;
         final int miniBatchSize = 2;
@@ -224,7 +228,9 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Simple Forwards And Backwards Activation")
-    void testSimpleForwardsAndBackwardsActivation() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    void testSimpleForwardsAndBackwardsActivation(RNNFormat rnnDataFormat) {
         final int nIn = 2;
         final int layerSize = 3;
         final int miniBatchSize = 1;
@@ -342,7 +348,9 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Gate Activation Fns Sanity Check")
-    void testGateActivationFnsSanityCheck() {
+    @MethodSource("#params")
+    @ParameterizedTest
+    void testGateActivationFnsSanityCheck(RNNFormat rnnDataFormat) {
         for (String gateAfn : new String[] { "sigmoid", "hardsigmoid" }) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345).list().layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2).dataFormat(rnnDataFormat).build()).layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).dataFormat(rnnDataFormat).activation(Activation.TANH).build()).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

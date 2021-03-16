@@ -24,10 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -47,16 +47,15 @@ import static junit.framework.TestCase.assertFalse;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class CompressionTests extends BaseNd4jTest {
 
-    public CompressionTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class CompressionTests extends BaseNd4jTestWithBackends {
+
 
 
     @Test
-    public void testCompressionDescriptorSerde() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCompressionDescriptorSerde(Nd4jBackend backend) {
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(4);
         descriptor.setOriginalElementSize(4);
@@ -71,7 +70,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testGzipInPlaceCompression() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGzipInPlaceCompression(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
         Nd4j.getCompressor().setDefaultCompression("GZIP");
         Nd4j.getCompressor().compressi(array);
@@ -81,7 +82,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testGzipCompression1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGzipCompression1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
         INDArray exp = array.dup();
 
@@ -98,7 +101,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNoOpCompression1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNoOpCompression1(Nd4jBackend backend) {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray array = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
         INDArray exp = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
@@ -124,7 +129,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testJVMCompression3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testJVMCompression3(Nd4jBackend backend) {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f}).reshape(1,-1);
 
@@ -143,7 +150,9 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Disabled
     @Test
-    public void testThresholdCompression0() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression0(Nd4jBackend backend) {
         INDArray initial = Nd4j.rand(new int[] {1, 150000000}, 119L);
 
         log.info("DTYPE: {}", Nd4j.dataType());
@@ -174,7 +183,9 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     @Disabled
-    public void testThresholdCompression1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression1(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(new float[] {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(DataType.FLOAT, 6);
         INDArray exp_1 = initial.dup();
@@ -193,7 +204,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression2(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(new double[] {1.0, 2.0, 0.0, 0.0, -1.0, -1.0});
         INDArray exp_0 = Nd4j.create(new double[] {1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
@@ -215,7 +228,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression3(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(new double[] {-1.0, -2.0, 0.0, 0.0, 1.0, 1.0});
         INDArray exp_0 = Nd4j.create(new double[] {-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
@@ -244,7 +259,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression4(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(new double[] {1e-4, -1e-4, 0.0, 0.0, 1e-4, -1e-4});
         INDArray exp_0 = initial.dup();
 
@@ -262,7 +279,9 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testThresholdCompression5() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression5(Nd4jBackend backend) {
         INDArray initial = Nd4j.ones(10);
         INDArray exp_0 = initial.dup();
 
@@ -279,7 +298,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression5_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression5_1(Nd4jBackend backend) {
         INDArray initial = Nd4j.ones(1000);
         INDArray exp_0 = initial.dup();
 
@@ -296,7 +317,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression6() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdCompression6(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(new double[] {1.0, 2.0, 0.0, 0.0, -1.0, -1.0});
         INDArray exp_0 = Nd4j.create(new double[] {1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
@@ -325,7 +348,9 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testThresholdSerialization1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThresholdSerialization1(Nd4jBackend backend) throws Exception {
         INDArray initial = Nd4j.create(new double[] {-1.0, -2.0, 0.0, 0.0, 1.0, 1.0});
         INDArray exp_0 = Nd4j.create(new double[] {-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
@@ -347,7 +372,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding1(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(new float[] {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(DataType.FLOAT, 6);
         INDArray exp_1 = initial.dup();
@@ -369,7 +396,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding1_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding1_1(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(15);
         INDArray exp_0 = Nd4j.create(6);
         INDArray exp_1 = initial.dup();
@@ -393,7 +422,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding2(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(40000000);
         INDArray target = Nd4j.create(initial.length());
 
@@ -413,7 +444,9 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBitmapEncoding3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding3(Nd4jBackend backend) {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray initial = Nd4j.create(new float[] {0.0f, -6e-4f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(new float[] {0.0f, -1e-4f, 0.0f, 0.0f, 0.0f, 0.0f});
@@ -440,7 +473,9 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBitmapEncoding4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding4(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
         INDArray initial = Nd4j.rand(new int[]{1, 10000}, 0, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();
@@ -453,7 +488,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding5() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding5(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
         INDArray initial = Nd4j.rand(new int[]{10000}, -1, -0.5, Nd4j.getRandom());
         INDArray exp_0 = initial.dup().addi(1e-1);
@@ -468,7 +505,9 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding6() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBitmapEncoding6(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
         INDArray initial = Nd4j.rand(new int[]{10000}, -1, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();

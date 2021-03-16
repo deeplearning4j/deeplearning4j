@@ -37,8 +37,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,13 +49,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Arrays;
+import java.util.stream.Stream;
+
 import static org.deeplearning4j.nn.conf.ConvolutionMode.Same;
 import static org.deeplearning4j.nn.conf.ConvolutionMode.Truncate;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@RunWith(Parameterized.class)
 @DisplayName("Cnn Gradient Check Test")
 class CNNGradientCheckTest extends BaseDL4JTest {
 
@@ -71,15 +74,10 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    private CNN2DFormat format;
 
-    public CNNGradientCheckTest(CNN2DFormat format) {
-        this.format = format;
-    }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Object[] params() {
-        return CNN2DFormat.values();
+    public static Stream<Arguments> params() {
+        return Arrays.asList(CNN2DFormat.values()).stream().map(Arguments::of);
     }
 
     @Override
@@ -89,9 +87,11 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Gradient CNNMLN")
-    void testGradientCNNMLN() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testGradientCNNMLN(CNN2DFormat format) {
         if (// Only test NCHW due to flat input format...
-        this.format != CNN2DFormat.NCHW)
+        format != CNN2DFormat.NCHW)
             return;
         // Parameterized test, testing combinations of:
         // (a) activation function
@@ -146,9 +146,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Gradient CNNL 1 L 2 MLN")
-    void testGradientCNNL1L2MLN() {
+    void testGradientCNNL1L2MLN(CNN2DFormat format) {
         if (// Only test NCHW due to flat input format...
-        this.format != CNN2DFormat.NCHW)
+        format != CNN2DFormat.NCHW)
             return;
         // Parameterized test, testing combinations of:
         // (a) activation function
@@ -245,7 +245,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn With Space To Batch")
-    void testCnnWithSpaceToBatch() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testCnnWithSpaceToBatch(CNN2DFormat format) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
         int[] minibatchSizes = { 2, 4 };
@@ -289,7 +291,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn With Upsampling")
-    void testCnnWithUpsampling() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnWithUpsampling(CNN2DFormat format) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
         int[] minibatchSizes = { 1, 3 };
@@ -323,7 +327,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn With Subsampling")
-    void testCnnWithSubsampling() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnWithSubsampling(CNN2DFormat format) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
         int[] minibatchSizes = { 1, 3 };
@@ -365,7 +371,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn With Subsampling V 2")
-    void testCnnWithSubsamplingV2() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnWithSubsamplingV2(CNN2DFormat format) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
         int[] minibatchSizes = { 1, 3 };
@@ -403,7 +411,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Locally Connected 2 D")
-    void testCnnLocallyConnected2D() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnLocallyConnected2D(CNN2DFormat format) {
         int nOut = 3;
         int width = 5;
         int height = 5;
@@ -433,7 +443,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Multi Layer")
-    void testCnnMultiLayer() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnMultiLayer(CNN2DFormat format) {
         int nOut = 2;
         int[] minibatchSizes = { 1, 2, 5 };
         int width = 5;
@@ -473,7 +485,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Same Padding Mode")
-    void testCnnSamePaddingMode() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnSamePaddingMode(CNN2DFormat format) {
         int nOut = 2;
         int[] minibatchSizes = { 1, 3, 3, 2, 1, 2 };
         // Same padding mode: insensitive to exact input size...
@@ -507,7 +521,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Same Padding Mode Strided")
-    void testCnnSamePaddingModeStrided() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnSamePaddingModeStrided(CNN2DFormat format) {
         int nOut = 2;
         int[] minibatchSizes = { 1, 3 };
         int width = 16;
@@ -550,7 +566,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Zero Padding Layer")
-    void testCnnZeroPaddingLayer() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnZeroPaddingLayer(CNN2DFormat format) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
         int width = 6;
@@ -596,7 +614,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Deconvolution 2 D")
-    void testDeconvolution2D() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testDeconvolution2D(CNN2DFormat format) {
         int nOut = 2;
         int[] minibatchSizes = new int[] { 1, 3, 3, 1, 3 };
         int[] kernelSizes = new int[] { 1, 1, 1, 3, 3 };
@@ -641,7 +661,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Separable Conv 2 D")
-    void testSeparableConv2D() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testSeparableConv2D(CNN2DFormat format) {
         int nOut = 2;
         int width = 6;
         int height = 6;
@@ -686,7 +708,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Dilated")
-    void testCnnDilated() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCnnDilated(CNN2DFormat format) {
         int nOut = 2;
         int minibatchSize = 2;
         int width = 8;
@@ -736,7 +760,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cropping 2 D Layer")
-    void testCropping2DLayer() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testCropping2DLayer(CNN2DFormat format) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 2;
         int width = 12;
@@ -780,7 +806,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Depthwise Conv 2 D")
-    void testDepthwiseConv2D() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testDepthwiseConv2D(CNN2DFormat format) {
         int nIn = 3;
         int depthMultiplier = 2;
         int nOut = nIn * depthMultiplier;

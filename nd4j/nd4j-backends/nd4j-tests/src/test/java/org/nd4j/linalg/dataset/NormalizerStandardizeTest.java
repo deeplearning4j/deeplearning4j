@@ -21,9 +21,10 @@
 package org.nd4j.linalg.dataset;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -35,11 +36,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class NormalizerStandardizeTest extends BaseNd4jTest {
-    public NormalizerStandardizeTest(Nd4jBackend backend) {
-        super(backend);
-    }
+
+public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -47,7 +45,9 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testBruteForce() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBruteForce(Nd4jBackend backend) {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers
            The obtained values are compared to the theoretical mean and std dev
          */
@@ -64,10 +64,10 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         double meanNaturalNums = (nSamples + 1) / 2.0;
         INDArray theoreticalMean =
-                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1);
+                Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1);
         double stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
         INDArray theoreticalStd =
-                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1);
+                Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleDataSet);
@@ -100,7 +100,9 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testTransform() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTransform(Nd4jBackend backend) {
         /*Random dataset is generated such that
             AX + B where X is from a normal distribution with mean 0 and std 1
             The mean of above will be B and std A
@@ -172,7 +174,9 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testDifferentBatchSizes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testDifferentBatchSizes(Nd4jBackend backend) {
         // Create 6x1 matrix of the numbers 1 through 6
         INDArray values = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1).transpose();
         DataSet dataSet = new DataSet(values, values);
@@ -206,7 +210,9 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testUnderOverflow() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testUnderOverflow(Nd4jBackend backend) {
         // This dataset will be basically constant with a small std deviation
         // And the constant is large. Checking if algorithm can handle
         double tolerancePerc = 1; //Within 1 %
@@ -239,7 +245,9 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testRevert() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRevert(Nd4jBackend backend) {
         double tolerancePerc = 0.01; // 0.01% of correct value
         int nSamples = 500;
         int nFeatures = 3;
@@ -256,13 +264,15 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         myNormalizer.revert(transformed);
         //System.out.println(transformed.getFeatures());
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
-                        .div(sampleDataSet.getFeatures());
+                .div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
     @Test
-    public void testConstant() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testConstant(Nd4jBackend backend) {
         double tolerancePerc = 10.0; // 10% of correct value
         int nSamples = 500;
         int nFeatures = 3;
@@ -283,13 +293,13 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         assertFalse(Double.isNaN(sampleDataSet.getFeatures().min(0, 1).getDouble(0)));
         //Checking to see if transformed values are close enough to zero
         assertEquals(Transforms.abs(sampleDataSet.getFeatures()).max(0, 1).getDouble(0), 0,
-                        constant * tolerancePerc / 100.0);
+                constant * tolerancePerc / 100.0);
 
         myNormalizer.revert(sampleDataSet);
         //Checking if we gets nans, because std dev is zero
         assertFalse(Double.isNaN(sampleDataSet.getFeatures().min(0, 1).getDouble(0)));
         assertEquals(Transforms.abs(sampleDataSet.getFeatures().sub(featureSet)).min(0, 1).getDouble(0), 0,
-                        constant * tolerancePerc / 100.0);
+                constant * tolerancePerc / 100.0);
     }
 
     public class genRandomDataSet {

@@ -24,9 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,23 +40,21 @@ import java.io.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class TestSerializationDoubleToFloat extends BaseNd4jTest {
 
-    DataType initialType;
+public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
 
-    public TestSerializationDoubleToFloat(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
+
 
     @AfterEach
     public void after() {
         DataTypeUtil.setDTypeForContext(this.initialType);
     }
-    
+
     @Test
-    public void testSerializationFullArrayNd4jWriteRead() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSerializationFullArrayNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 4;
 
         //WRITE OUT A DOUBLE ARRAY
@@ -93,7 +92,9 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
     }
 
     @Test
-    public void testSerializationFullArrayJava() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSerializationFullArrayJava(Nd4jBackend backend) throws Exception {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
@@ -123,7 +124,9 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
     }
 
     @Test
-    public void testSerializationOnViewsNd4jWriteRead() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSerializationOnViewsNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
@@ -153,7 +156,9 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
     }
 
     @Test
-    public void testSerializationOnViewsJava() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSerializationOnViewsJava(Nd4jBackend backend) throws Exception {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);

@@ -21,7 +21,9 @@
 package org.nd4j.autodiff.samediff;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -35,19 +37,18 @@ import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
+public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
 
-    public SameDiffSpecifiedLossVarsTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
-    public char ordering(){
+    public char ordering() {
         return 'c';
     }
 
     @Test
-    public void testSpecifiedLoss1(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSpecifiedLoss1(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable ph1 = sd.var("ph", DataType.FLOAT, 3, 4);
         ph1.setArray(Nd4j.create(DataType.FLOAT, 3, 4));
@@ -68,7 +69,9 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSpecifiedLoss2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSpecifiedLoss2(Nd4jBackend backend) {
         for( int i=0; i<2; i++ ) {
             SameDiff sd = SameDiff.create();
             SDVariable ph = sd.placeHolder("ph", DataType.FLOAT, 3, 4);
@@ -121,7 +124,9 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
 
 
     @Test
-    public void testTrainingDifferentLosses(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTrainingDifferentLosses(Nd4jBackend backend) {
         //Net with 2 losses: train on the first one, then change losses
         //Also check that if modifying via add/setLossVariables the training config changes
 

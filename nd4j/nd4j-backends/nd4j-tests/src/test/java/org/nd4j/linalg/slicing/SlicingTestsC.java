@@ -21,9 +21,10 @@
 package org.nd4j.linalg.slicing;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,16 +38,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class SlicingTestsC extends BaseNd4jTest {
 
-    public SlicingTestsC(Nd4jBackend backend) {
-        super(backend);
-    }
-
+public class SlicingTestsC extends BaseNd4jTestWithBackends {
+    
 
     @Test
-    public void testSliceRowVector() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSliceRowVector(Nd4jBackend backend) {
         INDArray arr = Nd4j.zeros(5);
 //        System.out.println(arr.slice(1));
         arr.slice(1);
@@ -54,7 +53,9 @@ public class SlicingTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testSliceAssertion() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSliceAssertion(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 30, 30).reshape(3, 5, 2);
         INDArray firstRow = arr.slice(0).slice(0);
 //        for (int i = 0; i < firstRow.length(); i++) {
@@ -64,7 +65,9 @@ public class SlicingTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testSliceShape() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSliceShape(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(3, 5, 2);
 
         INDArray sliceZero = arr.slice(0);
@@ -93,7 +96,9 @@ public class SlicingTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testSwapReshape() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSwapReshape(Nd4jBackend backend) {
         INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30, DataType.FLOAT).data(), new int[] {3, 5, 2});
         INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
         INDArray firstSlice2 = swapped.slice(0).slice(0);
@@ -114,7 +119,9 @@ public class SlicingTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRow() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testGetRow(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray get = arr.getRow(1);
         INDArray get2 = arr.get(NDArrayIndex.point(1), NDArrayIndex.all());
@@ -132,7 +139,9 @@ public class SlicingTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testVectorIndexing() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testVectorIndexing(Nd4jBackend backend) {
         INDArray zeros = Nd4j.create(1, 400000);
         INDArray get = zeros.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 300000));
         assertArrayEquals(new long[] {300000}, get.shape());

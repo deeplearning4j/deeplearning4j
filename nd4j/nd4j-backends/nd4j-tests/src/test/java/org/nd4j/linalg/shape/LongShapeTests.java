@@ -22,9 +22,10 @@ package org.nd4j.linalg.shape;
 
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -32,16 +33,15 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
-public class LongShapeTests extends BaseNd4jTest {
 
-    public LongShapeTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class LongShapeTests extends BaseNd4jTestWithBackends {
+
 
 
     @Test
-    public void testLongBuffer_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLongBuffer_1(Nd4jBackend backend) {
         val exp = new long[]{2, 5, 3, 3, 1, 0, 1, 99};
         val buffer = Nd4j.getDataBufferFactory().createLong(exp);
 
@@ -52,7 +52,9 @@ public class LongShapeTests extends BaseNd4jTest {
 
 
     @Test
-    public void testLongShape_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLongShape_1(Nd4jBackend backend) {
         val exp = new long[]{2, 5, 3, 3, 1, 16384, 1, 99};
 
         val array = Nd4j.createUninitialized(DataType.DOUBLE, 5, 3);

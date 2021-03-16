@@ -23,6 +23,8 @@ package org.nd4j.imports.tfgraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -35,7 +37,7 @@ import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -54,11 +56,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @Disabled("AB 2019/05/21 - JVM Crash on linux-x86_64-cuda-9.2, linux-ppc64le-cpu - Issue #7657")
-public class BERTGraphTest extends BaseNd4jTest {
+public class BERTGraphTest extends BaseNd4jTestWithBackends {
 
-    public BERTGraphTest(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -66,7 +65,9 @@ public class BERTGraphTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testBert() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBert(Nd4jBackend backend) throws Exception {
 
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
@@ -275,7 +276,9 @@ public class BERTGraphTest extends BaseNd4jTest {
     }
 
     @Test //@Disabled   //AB ignored 08/04/2019 until fixed
-    public void testBertTraining() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBertTraining(Nd4jBackend backend) throws Exception {
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
         saveDir.mkdirs();
@@ -404,7 +407,7 @@ public class BERTGraphTest extends BaseNd4jTest {
         INDArray lossArr = sd.output(placeholderValues, "loss").get("loss");
         assertTrue(lossArr.isScalar());
         double scoreBefore = lossArr.getDouble(0);
-        for( int i=0; i<5; i++ ){
+        for( int i = 0; i < 5; i++) {
             sd.fit(mds);
         }
 
@@ -416,8 +419,11 @@ public class BERTGraphTest extends BaseNd4jTest {
         assertTrue( scoreAfter < scoreBefore,s);
     }
 
-    @Test @Disabled
-    public void writeBertUI() throws Exception {
+    @Test
+    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void writeBertUI(Nd4jBackend backend) throws Exception {
         //Test used to generate graph for visualization to work out appropriate subgraph structure to replace
         File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");
         int minibatchSize = 4;

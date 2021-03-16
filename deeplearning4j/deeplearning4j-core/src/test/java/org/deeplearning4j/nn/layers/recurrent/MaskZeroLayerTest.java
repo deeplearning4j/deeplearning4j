@@ -30,36 +30,35 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@RunWith(Parameterized.class)
 @DisplayName("Mask Zero Layer Test")
 class MaskZeroLayerTest extends BaseDL4JTest {
 
-    private RNNFormat rnnDataFormat;
 
-    public MaskZeroLayerTest(RNNFormat rnnDataFormat) {
-        this.rnnDataFormat = rnnDataFormat;
+    public static Stream<Arguments> params() {
+        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
-    @Parameterized.Parameters
-    public static Object[] params() {
-        return RNNFormat.values();
-    }
-
-    @Test
     @DisplayName("Activate")
-    void activate() {
+    @Test
+    @ParameterizedTest
+    @MethodSource("#params")
+    void activate(RNNFormat rnnDataFormat) {
         // GIVEN two examples where some of the timesteps are zero.
         INDArray ex1 = Nd4j.create(new double[][] { new double[] { 0, 3, 5 }, new double[] { 0, 0, 2 } });
         INDArray ex2 = Nd4j.create(new double[][] { new double[] { 0, 0, 2 }, new double[] { 0, 0, 2 } });
@@ -95,9 +94,12 @@ class MaskZeroLayerTest extends BaseDL4JTest {
         assertEquals(1.0, secondExampleOutput.getDouble(2), 1e-6);
     }
 
-    @Test
+
     @DisplayName("Test Serialization")
-    void testSerialization() {
+    @Test
+    @ParameterizedTest
+    @MethodSource("#params")
+    void testSerialization(RNNFormat rnnDataFormat) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(new org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer.Builder().setMaskValue(0.0).setUnderlying(new LSTM.Builder().nIn(4).nOut(5).dataFormat(rnnDataFormat).build()).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

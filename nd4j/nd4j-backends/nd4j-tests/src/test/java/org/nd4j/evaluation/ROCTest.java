@@ -21,12 +21,14 @@
 package org.nd4j.evaluation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -39,11 +41,8 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ROCTest extends BaseNd4jTest {
+public class ROCTest extends BaseNd4jTestWithBackends {
 
-    public ROCTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -83,8 +82,10 @@ public class ROCTest extends BaseNd4jTest {
         expFPR.put(10 / 10.0, 0.0 / totalNegatives);
     }
 
-    @Test
-    public void testRocBasic() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRocBasic(Nd4jBackend backend) {
         //2 outputs here - probability distribution over classes (softmax)
         INDArray predictions = Nd4j.create(new double[][] {{1.0, 0.001}, //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
                         {0.899, 0.101}, {0.799, 0.201}, {0.699, 0.301}, {0.599, 0.401}, {0.499, 0.501}, {0.399, 0.601},
@@ -126,8 +127,10 @@ public class ROCTest extends BaseNd4jTest {
         assertEquals(1.0, auc, 1e-6);
     }
 
-    @Test
-    public void testRocBasicSingleClass() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRocBasicSingleClass(Nd4jBackend backend) {
         //1 output here - single probability value (sigmoid)
 
         //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
@@ -164,8 +167,10 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testRoc() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRoc(Nd4jBackend backend) {
         //Previous tests allowed for a perfect classifier with right threshold...
 
         INDArray labels = Nd4j.create(new double[][] {{0, 1}, {0, 1}, {1, 0}, {1, 0}, {1, 0}});
@@ -249,8 +254,10 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testRocTimeSeriesNoMasking() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRocTimeSeriesNoMasking(Nd4jBackend backend) {
         //Same as first test...
 
         //2 outputs here - probability distribution over classes (softmax)
@@ -296,8 +303,10 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testRocTimeSeriesMasking() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRocTimeSeriesMasking(Nd4jBackend backend) {
         //2 outputs here - probability distribution over classes (softmax)
         INDArray predictions2d = Nd4j.create(new double[][] {{1.0, 0.001}, //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
                         {0.899, 0.101}, {0.799, 0.201}, {0.699, 0.301}, {0.599, 0.401}, {0.499, 0.501}, {0.399, 0.601},
@@ -346,8 +355,10 @@ public class ROCTest extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testCompareRocAndRocMultiClass() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCompareRocAndRocMultiClass(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
         //For 2 class case: ROC and Multi-class ROC should be the same...
@@ -376,8 +387,10 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testCompare2Vs3Classes() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCompare2Vs3Classes(Nd4jBackend backend) {
 
         //ROC multi-class: 2 vs. 3 classes should be the same, if we add two of the classes together...
         //Both methods implement one vs. all ROC/AUC in different ways
@@ -425,8 +438,10 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testROCMerging() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCMerging(Nd4jBackend backend) {
         int nArrays = 10;
         int minibatch = 64;
         int nROCs = 3;
@@ -470,8 +485,10 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testROCMerging2() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCMerging2(Nd4jBackend backend) {
         int nArrays = 10;
         int minibatch = 64;
         int exactAllocBlockSize = 10;
@@ -515,8 +532,10 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testROCMultiMerging() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testROCMultiMerging(Nd4jBackend backend) {
 
         int nArrays = 10;
         int minibatch = 64;
@@ -563,8 +582,10 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testAUCPrecisionRecall() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAUCPrecisionRecall(Nd4jBackend backend) {
         //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.25 prob
         //at threshold 0 to 0.24999: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
         //at threshold 0.25 to 0.33: tp=2, fp=0, fn=0, tn=1 prec=2/2=1, recall=2/2=1
@@ -610,8 +631,10 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testRocAucExact() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRocAucExact(Nd4jBackend backend) {
 
         //Check the implementation vs. Scikitlearn
         /*
@@ -773,8 +796,10 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void rocExactEdgeCaseReallocation() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void rocExactEdgeCaseReallocation(Nd4jBackend backend) {
 
         //Set reallocation block size to say 20, but then evaluate a 100-length array
 
@@ -785,8 +810,10 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testPrecisionRecallCurveGetPointMethods() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPrecisionRecallCurveGetPointMethods(Nd4jBackend backend) {
         double[] threshold = new double[101];
         double[] precision = threshold;
         double[] recall = new double[101];
@@ -821,8 +848,10 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testPrecisionRecallCurveConfusion() {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPrecisionRecallCurveConfusion(Nd4jBackend backend) {
         //Sanity check: values calculated from the confusion matrix should match the PR curve values
 
         for (boolean removeRedundantPts : new boolean[] {true, false}) {
@@ -860,7 +889,9 @@ public class ROCTest extends BaseNd4jTest {
     }
 
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testRocMerge(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -904,7 +935,9 @@ public class ROCTest extends BaseNd4jTest {
         assertEquals(auprc, auprcAct, 1e-6);
     }
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testRocMultiMerge(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -953,7 +986,9 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testRocBinaryMerge(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -998,7 +1033,9 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testSegmentationBinary(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);
@@ -1088,7 +1125,9 @@ public class ROCTest extends BaseNd4jTest {
         }
     }
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testSegmentation(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);

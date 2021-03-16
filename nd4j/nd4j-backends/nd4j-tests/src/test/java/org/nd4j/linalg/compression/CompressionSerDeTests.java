@@ -22,9 +22,10 @@ package org.nd4j.linalg.compression;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,15 +35,14 @@ import java.io.ByteArrayInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
-public class CompressionSerDeTests extends BaseNd4jTest {
-    public CompressionSerDeTests(Nd4jBackend backend) {
-        super(backend);
-    }
+
+public class CompressionSerDeTests extends BaseNd4jTestWithBackends {
 
 
     @Test
-    public void testAutoDecompression2() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAutoDecompression2(Nd4jBackend backend) throws Exception {
         INDArray array = Nd4j.linspace(1, 10, 11, DataType.DOUBLE);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");

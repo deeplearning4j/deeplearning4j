@@ -21,10 +21,12 @@
 package org.nd4j.linalg.factory.ops;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -34,10 +36,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NDLossTest extends BaseNd4jTest {
-    public NDLossTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class NDLossTest extends BaseNd4jTestWithBackends {
 
     @Override
     public char ordering(){
@@ -45,7 +44,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testAbsoluteDifference() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testAbsoluteDifference(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -79,7 +80,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCosineDistance() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCosineDistance(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -115,7 +118,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testHingeLoss() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testHingeLoss(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -148,7 +153,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testHuberLoss() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testHuberLoss(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -181,7 +188,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testL2Loss() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testL2Loss(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -199,7 +208,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testLogLoss() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLogLoss(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -237,7 +248,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testLogPoisson() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLogPoisson(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -270,7 +283,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMeanPairwiseSquaredError() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMeanPairwiseSquaredError(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -304,7 +319,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMeanSquaredError() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMeanSquaredError(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -338,7 +355,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSigmoidCrossEntropy() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSigmoidCrossEntropy(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -373,7 +392,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSoftmaxCrossEntropy() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSoftmaxCrossEntropy(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -410,7 +431,9 @@ public class NDLossTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSparseSoftmaxCrossEntropy() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testSparseSoftmaxCrossEntropy(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         int nOut = 4;
@@ -437,7 +460,9 @@ public class NDLossTest extends BaseNd4jTest {
 
 
     @Test
-    public void testWeightedCrossEntropyWithLogits() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testWeightedCrossEntropyWithLogits(Nd4jBackend backend) {
         // This one from SamediffTests.java
         SameDiff sameDiff = SameDiff.create();
         INDArray targets = Nd4j.create(new long[]{1, 5});

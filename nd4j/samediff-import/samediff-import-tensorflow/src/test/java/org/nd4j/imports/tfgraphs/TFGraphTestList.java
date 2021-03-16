@@ -25,8 +25,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,11 +39,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-@RunWith(Parameterized.class)
+
 @Disabled
 public class TFGraphTestList {
 
@@ -75,22 +77,21 @@ public class TFGraphTestList {
 
     private String modelName;
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data() {
+
+    public static Stream<Arguments> data() {
         List<Object[]> modelNamesParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
             Object[] currentParams = new String[]{modelNames[i]};
             modelNamesParams.add(currentParams);
         }
-        return modelNamesParams;
+        return modelNamesParams.stream().map(Arguments::of);
     }
 
-    public TFGraphTestList(String modelName) {
-        this.modelName = modelName;
-    }
 
     @Test
-    public void testOutputOnly(@TempDir Path testDir) throws IOException {
+    @ParameterizedTest
+    @MethodSource("#data")
+    public void testOutputOnly(@TempDir Path testDir,String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
@@ -104,7 +105,9 @@ public class TFGraphTestList {
     }
 
     @Test @Disabled
-    public void testAlsoIntermediate(@TempDir Path testDir) throws IOException {
+    @ParameterizedTest
+    @MethodSource("#data")
+    public void testAlsoIntermediate(@TempDir Path testDir,String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);

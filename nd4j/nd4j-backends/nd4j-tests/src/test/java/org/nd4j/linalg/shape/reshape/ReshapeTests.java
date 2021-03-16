@@ -22,9 +22,10 @@ package org.nd4j.linalg.shape.reshape;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,15 +39,14 @@ import static org.junit.Assume.assumeNotNull;
  * @author Adam Gibson
  */
 @Slf4j
-@RunWith(Parameterized.class)
-public class ReshapeTests extends BaseNd4jTest {
 
-    public ReshapeTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ReshapeTests extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testThreeTwoTwoTwo() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testThreeTwoTwoTwo(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray sliceZero = Nd4j.create(new double[][] {{1, 7}, {4, 10}});
         INDArray sliceOne = Nd4j.create(new double[][] {{2, 8}, {5, 11}});
@@ -67,7 +67,9 @@ public class ReshapeTests extends BaseNd4jTest {
 
 
     @Test
-    public void testColumnVectorReshape() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testColumnVectorReshape(Nd4jBackend backend) {
         double delta = 1e-1;
         INDArray arr = Nd4j.create(1, 3);
         INDArray reshaped = arr.reshape('f', 3, 1);

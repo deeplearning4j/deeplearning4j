@@ -21,6 +21,8 @@
 package org.nd4j.autodiff.opvalidation;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.GradCheckUtil;
@@ -38,12 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActivationGradChecks extends BaseOpValidation {
 
-    public ActivationGradChecks(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
-    public void testActivationGradientCheck1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testActivationGradientCheck1(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("x", Nd4j.rand(DataType.DOUBLE, 3, 4));
@@ -61,7 +62,9 @@ public class ActivationGradChecks extends BaseOpValidation {
     }
 
     @Test
-    public void testActivationGradientCheck2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testActivationGradientCheck2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.placeHolder("x", DataType.DOUBLE, 3, 4);

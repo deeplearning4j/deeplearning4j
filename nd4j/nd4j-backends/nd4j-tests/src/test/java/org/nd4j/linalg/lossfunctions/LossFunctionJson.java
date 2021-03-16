@@ -21,7 +21,9 @@
 package org.nd4j.linalg.lossfunctions;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -47,14 +49,13 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LossFunctionJson extends BaseNd4jTest {
+public class LossFunctionJson extends BaseNd4jTestWithBackends {
 
-    public LossFunctionJson(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testJsonSerialization() throws Exception {
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testJsonSerialization(Nd4jBackend backend) throws Exception {
 
         INDArray w = Nd4j.create(new double[] {1.0, 2.0, 3.0});
 

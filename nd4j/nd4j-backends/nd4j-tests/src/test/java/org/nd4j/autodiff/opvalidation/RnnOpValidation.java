@@ -22,6 +22,8 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -43,12 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class RnnOpValidation extends BaseOpValidation {
-    public RnnOpValidation(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
-    public void testRnnBlockCell(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRnnBlockCell(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int mb = 2;
         int nIn = 3;
@@ -147,7 +148,9 @@ public class RnnOpValidation extends BaseOpValidation {
 
 
     @Test
-    public void testRnnBlockCellManualTFCompare() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRnnBlockCellManualTFCompare(Nd4jBackend backend) {
         //Test case: "rnn/lstmblockcell/static_batch1_n3-2_tsLength1_noPH_noClip_fBias1_noIS"
 
         SameDiff sd = SameDiff.create();
@@ -209,6 +212,8 @@ public class RnnOpValidation extends BaseOpValidation {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testGRUCell(){
         Nd4j.getRandom().setSeed(12345);
         int mb = 2;

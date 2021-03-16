@@ -25,11 +25,13 @@ import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.checkpoint.CheckpointListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -48,11 +50,8 @@ import java.util.concurrent.TimeUnit;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CheckpointListenerTest extends BaseNd4jTest {
+public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
 
-    public CheckpointListenerTest(Nd4jBackend backend){
-        super(backend);
-    }
 
     @Override
     public char ordering(){
@@ -96,7 +95,9 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
 
     @Test
-    public void testCheckpointEveryEpoch(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCheckpointEveryEpoch(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
 
         SameDiff sd = getModel();
@@ -130,7 +131,9 @@ public class CheckpointListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCheckpointEvery5Iter(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCheckpointEvery5Iter(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
 
         SameDiff sd = getModel();
@@ -169,7 +172,9 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
 
     @Test
-    public void testCheckpointListenerEveryTimeUnit(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCheckpointListenerEveryTimeUnit(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
         SameDiff sd = getModel();
 
@@ -199,7 +204,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         for(File f : files){
             String s = f.getAbsolutePath();
 //            System.out.println(s);
-            for( int i=0; i<names.size(); i++ ){
+            for( int i = 0; i < names.size(); i++ ){
                 if(s.contains(names.get(i))){
                     found[i] = true;
                     break;
@@ -213,7 +218,9 @@ public class CheckpointListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCheckpointListenerKeepLast3AndEvery3(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCheckpointListenerKeepLast3AndEvery3(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
         SameDiff sd = getModel();
 

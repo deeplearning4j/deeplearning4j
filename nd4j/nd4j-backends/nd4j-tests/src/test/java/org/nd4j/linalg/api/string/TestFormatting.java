@@ -23,9 +23,10 @@ package org.nd4j.linalg.api.string;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -35,22 +36,23 @@ import org.nd4j.linalg.string.NDArrayStrings;
  * @author Adam Gibson
  */
 @Slf4j
-@RunWith(Parameterized.class)
-public class TestFormatting extends BaseNd4jTest {
 
-    public TestFormatting(Nd4jBackend backend) {
-        super(backend);
-    }
+public class TestFormatting extends BaseNd4jTestWithBackends {
+
 
     @Test
-    public void testTwoByTwo() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTwoByTwo(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(2, 2, 2, 2);
         System.out.println(new NDArrayStrings().format(arr));
 
     }
 
     @Test
-    public void testNd4jArrayString() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNd4jArrayString(Nd4jBackend backend) {
 
         INDArray arr = Nd4j.create(new float[]{1f, 20000000f, 40.838383f, 3f}, new int[]{2, 2});
 
@@ -71,7 +73,9 @@ public class TestFormatting extends BaseNd4jTest {
     }
 
     @Test
-    public void testRange() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRange(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[][]{
                 {-1,0,1,0},
                 {-0.1, 0.1, -10, 10},

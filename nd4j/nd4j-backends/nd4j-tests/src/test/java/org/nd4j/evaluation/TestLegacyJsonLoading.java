@@ -22,10 +22,12 @@ package org.nd4j.evaluation;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 
@@ -34,11 +36,8 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestLegacyJsonLoading extends BaseNd4jTest {
+public class TestLegacyJsonLoading extends BaseNd4jTestWithBackends {
 
-    public TestLegacyJsonLoading(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -46,7 +45,9 @@ public class TestLegacyJsonLoading extends BaseNd4jTest {
     }
 
     @Test
-    public void testEvalLegacyFormat() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testEvalLegacyFormat(Nd4jBackend backend) throws Exception {
 
         File f = new ClassPathResource("regression_testing/eval_100b/evaluation.json").getFile();
         String s = FileUtils.readFileToString(f, StandardCharsets.UTF_8);

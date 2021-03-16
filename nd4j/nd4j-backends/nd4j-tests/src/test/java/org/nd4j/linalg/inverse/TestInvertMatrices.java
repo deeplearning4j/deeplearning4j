@@ -25,9 +25,10 @@ import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
@@ -40,16 +41,15 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class TestInvertMatrices extends BaseNd4jTest {
+
+public class TestInvertMatrices extends BaseNd4jTestWithBackends {
 
 
-    public TestInvertMatrices(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
-    public void testInverse() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testInverse(Nd4jBackend backend) {
         RealMatrix matrix = new Array2DRowRealMatrix(new double[][] {{1, 2}, {3, 4}});
 
         RealMatrix inverse = MatrixUtils.inverse(matrix);
@@ -62,7 +62,9 @@ public class TestInvertMatrices extends BaseNd4jTest {
     }
 
     @Test
-    public void testInverseComparison() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testInverseComparison(Nd4jBackend backend) {
 
         List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape(10, 10, 12345, DataType.DOUBLE);
 
@@ -79,7 +81,9 @@ public class TestInvertMatrices extends BaseNd4jTest {
     }
 
     @Test
-    public void testInvalidMatrixInversion() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testInvalidMatrixInversion(Nd4jBackend backend) {
         try {
             InvertMatrix.invert(Nd4j.create(5, 4), false);
             fail("No exception thrown for invalid input");
@@ -100,6 +104,8 @@ public class TestInvertMatrices extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testInvertMatrixScalar(){
         INDArray in = Nd4j.valueArrayOf(new int[]{1,1}, 2);
         INDArray out1 = InvertMatrix.invert(in, false);
@@ -115,7 +121,9 @@ public class TestInvertMatrices extends BaseNd4jTest {
      * Example from: <a href="https://www.wolframalpha.com/input/?i=invert+matrix+((1,2),(3,4),(5,6))">here</a>
      */
     @Test
-    public void testLeftPseudoInvert() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLeftPseudoInvert(Nd4jBackend backend) {
         INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 4}, {5, 6}});
         INDArray expectedLeftInverse = Nd4j.create(new double[][]{{-16, -4, 8}, {13, 4, -5}}).mul(1 / 12d);
         INDArray leftInverse = InvertMatrix.pLeftInvert(X, false);
@@ -162,7 +170,9 @@ public class TestInvertMatrices extends BaseNd4jTest {
      * Example from: <a href="https://www.wolframalpha.com/input/?i=invert+matrix+((1,2),(3,4),(5,6))^T">here</a>
      */
     @Test
-    public void testRightPseudoInvert() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRightPseudoInvert(Nd4jBackend backend) {
         INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 4}, {5, 6}}).transpose();
         INDArray expectedRightInverse = Nd4j.create(new double[][]{{-16, 13}, {-4, 4}, {8, -5}}).mul(1 / 12d);
         INDArray rightInverse = InvertMatrix.pRightInvert(X, false);
@@ -190,8 +200,10 @@ public class TestInvertMatrices extends BaseNd4jTest {
     /**
      * Try to compute the right pseudo inverse of a matrix without full row rank (x1 = 2*x2)
      */
-    @Test()
-    public void testRightPseudoInvertWithNonFullRowRank() {
+    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testRightPseudoInvertWithNonFullRowRank(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}}).transpose();
             INDArray rightInverse = InvertMatrix.pRightInvert(X, false);
@@ -202,8 +214,10 @@ public class TestInvertMatrices extends BaseNd4jTest {
     /**
      * Try to compute the left pseudo inverse of a matrix without full column rank (x1 = 2*x2)
      */
-    @Test()
-    public void testLeftPseudoInvertWithNonFullColumnRank() {
+    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testLeftPseudoInvertWithNonFullColumnRank(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}});
             INDArray leftInverse = InvertMatrix.pLeftInvert(X, false);

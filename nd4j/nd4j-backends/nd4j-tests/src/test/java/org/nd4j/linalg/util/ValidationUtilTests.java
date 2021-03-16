@@ -26,9 +26,11 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,15 +49,12 @@ import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ValidationUtilTests extends BaseNd4jTest {
-
-   
-    public ValidationUtilTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
     @Test
-    public void testFileValidation(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testFileValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -91,7 +90,9 @@ public class ValidationUtilTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testZipValidation(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testZipValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -141,7 +142,9 @@ public class ValidationUtilTests extends BaseNd4jTest {
 
 
     @Test
-    public void testINDArrayTextValidation(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testINDArrayTextValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -282,7 +285,9 @@ public class ValidationUtilTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNpzValidation(@TempDir Path testDIr) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNpzValidation(@TempDir Path testDIr,Nd4jBackend backend) throws Exception {
 
         File f = testDIr.toFile();
 
@@ -351,7 +356,9 @@ public class ValidationUtilTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNumpyTxtValidation(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNumpyTxtValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -419,7 +426,9 @@ public class ValidationUtilTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testValidateSameDiff(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testValidateSameDiff(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         Nd4j.setDataType(DataType.FLOAT);
 
         File f = testDir.toFile();

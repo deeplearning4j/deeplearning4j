@@ -21,24 +21,23 @@
 package org.nd4j.linalg.api;
 
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
-import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-public class TestNDArrayCreationUtil extends BaseNd4jTest {
+public class TestNDArrayCreationUtil extends BaseNd4jTestWithBackends {
 
-
-    public TestNDArrayCreationUtil(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testShapes() {
 
         long[] shape2d = {2, 3};

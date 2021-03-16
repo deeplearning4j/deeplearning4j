@@ -22,7 +22,9 @@ package org.nd4j.imports.tfgraphs;
 
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -32,11 +34,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CustomOpTests extends BaseNd4jTest {
+public class CustomOpTests extends BaseNd4jTestWithBackends {
 
-    public CustomOpTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -44,7 +43,9 @@ public class CustomOpTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPad(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testPad(Nd4jBackend backend){
 
         INDArray in = Nd4j.create(DataType.FLOAT, 1, 28, 28, 264);
         INDArray pad = Nd4j.createFromArray(new int[][]{{0,0},{0,1},{0,1},{0,0}});
@@ -64,7 +65,9 @@ public class CustomOpTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testResizeBilinearEdgeCase(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testResizeBilinearEdgeCase(Nd4jBackend backend){
         INDArray in = Nd4j.ones(DataType.FLOAT, 1, 1, 1, 3);
         INDArray size = Nd4j.createFromArray(8, 8);
         INDArray out = Nd4j.create(DataType.FLOAT, 1, 8, 8, 3);

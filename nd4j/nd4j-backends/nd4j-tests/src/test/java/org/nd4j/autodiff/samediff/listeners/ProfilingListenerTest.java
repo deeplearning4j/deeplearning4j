@@ -26,11 +26,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.profiler.ProfilingListener;
 import org.nd4j.autodiff.listeners.profiler.comparison.ProfileAnalyzer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,11 +47,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class ProfilingListenerTest extends BaseNd4jTest {
+public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
 
-    public ProfilingListenerTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -59,7 +58,9 @@ public class ProfilingListenerTest extends BaseNd4jTest {
 
 
     @Test
-    public void testProfilingListenerSimple(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testProfilingListenerSimple(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 3);
@@ -107,19 +108,25 @@ public class ProfilingListenerTest extends BaseNd4jTest {
     }
 
     /*
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLoadTfProfile(){
         File f = new File("C:\\Temp\\sd_profiler\\tf_profile.json");
         ProfileAnalyzer.summarizeProfile(f, ProfileAnalyzer.ProfileFormat.TENSORFLOW);
     }
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLoadTfProfileDir(){
         File f = new File("C:\\Temp\\sd_profiler\\tf_multiple_profiles");
         ProfileAnalyzer.summarizeProfileDirectory(f, ProfileAnalyzer.ProfileFormat.TENSORFLOW);
     }
 
-    @Test
+      @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testLoadTfProfileDir2(){
         File f = new File("C:\\DL4J\\Git\\dl4j-dev-tools\\import-tests\\profiling\\mobilenet_v2_1.0_224_batch32_tf-1.15.0");
         ProfileAnalyzer.summarizeProfileDirectory(f, ProfileAnalyzer.ProfileFormat.TENSORFLOW);

@@ -24,8 +24,10 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.graph.FlatArray;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -33,11 +35,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public class StringArrayTests extends BaseNd4jTest {
+public class StringArrayTests extends BaseNd4jTestWithBackends {
 
-    public StringArrayTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -45,7 +44,9 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBasicStrings_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBasicStrings_1(Nd4jBackend backend) {
         val array = Nd4j.scalar("alpha");
 
         assertNotNull(array);
@@ -60,7 +61,9 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBasicStrings_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBasicStrings_2(Nd4jBackend backend) {
         val array = Nd4j.create("alpha","beta", "gamma");
 
         assertNotNull(array);
@@ -79,6 +82,8 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testBasicStrings_3() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
         val arrayY = Nd4j.create("alpha", "beta", "gamma");
@@ -90,6 +95,8 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testBasicStrings_4() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
 
@@ -108,6 +115,8 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testBasicStrings_4a() {
         val arrayX = Nd4j.scalar("alpha");
 
@@ -126,6 +135,8 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testBasicStrings_5() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
         val arrayZ0 = arrayX.dup();

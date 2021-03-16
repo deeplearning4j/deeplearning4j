@@ -23,9 +23,10 @@ package org.nd4j.linalg.api.buffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,13 +34,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(Parameterized.class)
-public class DataTypeValidationTests extends BaseNd4jTest {
-    DataType initialType;
 
-    public DataTypeValidationTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
+    DataType initialType = Nd4j.dataType();
+
 
     @BeforeEach
     public void setUp() {
@@ -48,7 +46,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     }
 
     @AfterEach
-    public void shutUp() {
+    public void reset() {
         Nd4j.setDataType(initialType);
     }
 
@@ -73,7 +71,9 @@ public class DataTypeValidationTests extends BaseNd4jTest {
      * Testing level1 blas
      */
     @Test()
-    public void testBlasValidation1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBlasValidation1(Nd4jBackend backend) {
        assertThrows(ND4JIllegalStateException.class,() -> {
            INDArray x = Nd4j.create(10);
 
@@ -90,7 +90,9 @@ public class DataTypeValidationTests extends BaseNd4jTest {
      * Testing level2 blas
      */
     @Test()
-    public void testBlasValidation2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBlasValidation2(Nd4jBackend backend) {
         assertThrows(RuntimeException.class,() -> {
             INDArray a = Nd4j.create(100, 10);
             INDArray x = Nd4j.create(100);
@@ -108,7 +110,9 @@ public class DataTypeValidationTests extends BaseNd4jTest {
      * Testing level3 blas
      */
     @Test()
-    public void testBlasValidation3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBlasValidation3(Nd4jBackend backend) {
        assertThrows(IllegalStateException.class,() -> {
            INDArray x = Nd4j.create(100, 100);
 

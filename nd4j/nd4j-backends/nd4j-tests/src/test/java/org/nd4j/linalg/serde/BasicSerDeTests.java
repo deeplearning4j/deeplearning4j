@@ -24,9 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,15 +38,11 @@ import java.io.ByteArrayOutputStream;
 
 import static junit.framework.TestCase.assertEquals;
 
-@RunWith(Parameterized.class)
-@Slf4j
-public class BasicSerDeTests extends BaseNd4jTest {
-    public BasicSerDeTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
 
-    DataType initialType;
+@Slf4j
+public class BasicSerDeTests extends BaseNd4jTestWithBackends {
+
+    DataType initialType = Nd4j.dataType();
 
     @AfterEach
     public void after() {
@@ -54,7 +51,9 @@ public class BasicSerDeTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBasicDataTypeSwitch1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBasicDataTypeSwitch1(Nd4jBackend backend) throws Exception {
         DataType initialType = Nd4j.dataType();
         Nd4j.setDataType(DataType.FLOAT);
 
@@ -82,7 +81,9 @@ public class BasicSerDeTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testHalfSerde_1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testHalfSerde_1(Nd4jBackend backend) throws Exception {
         val array = Nd4j.create(DataType.HALF, 3, 4);
         array.assign(1.0f);
 

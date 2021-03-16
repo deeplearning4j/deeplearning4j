@@ -23,9 +23,10 @@ package org.nd4j.linalg.api.tad;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -40,17 +41,15 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class TestTensorAlongDimension extends BaseNd4jTest {
 
+public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
 
-    public TestTensorAlongDimension(Nd4jBackend backend) {
-        super(backend);
-    }
 
 
     @Test
-    public void testJavaVsNative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testJavaVsNative(Nd4jBackend backend) {
         long totalJavaTime = 0;
         long totalCTime = 0;
         long n = 10;
@@ -74,7 +73,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
     @Test
-    public void testTadShapesEdgeCases() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTadShapesEdgeCases(Nd4jBackend backend) {
         INDArray row = Nd4j.create(DataType.DOUBLE, 1, 5);
         INDArray col = Nd4j.create(DataType.DOUBLE, 5, 1);
 
@@ -83,7 +84,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
     @Test
-    public void testTadShapes1d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTadShapes1d(Nd4jBackend backend) {
         //Ensure TAD returns the correct/expected shapes, and values don't depend on underlying array layout/order etc
         /**
          * NEED TO WORK ON ELEMENT WISE STRIDE NOW.
@@ -152,7 +155,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
     @Test
-    public void testTadShapes2d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTadShapes2d(Nd4jBackend backend) {
         //Ensure TAD returns the correct/expected shapes, and values don't depend on underlying array layout/order etc
 
         //From a 3d array:
@@ -199,7 +204,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         //From a 4d array:
         int dim3 = 6;
         testValues = Nd4j.linspace(1, rows * cols * dim2 * dim3, rows * cols * dim2 * dim3, DataType.DOUBLE).reshape('c', rows, cols,
-                        dim2, dim3);
+                dim2, dim3);
         list = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{rows, cols, dim2, dim3}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
@@ -256,7 +261,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
     @Test
-    public void testTadKnownValues() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTadKnownValues(Nd4jBackend backend) {
         long[] shape = {2, 3, 4};
 
         INDArray arr = Nd4j.create(DataType.DOUBLE, shape);
@@ -277,7 +284,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
         INDArray exp12_0 = Nd4j.create(new double[][] {{0, 1, 2, 3}, {10, 11, 12, 13}, {20, 21, 22, 23}});
         INDArray exp12_1 =
-                        Nd4j.create(new double[][] {{100, 101, 102, 103}, {110, 111, 112, 113}, {120, 121, 122, 123}});
+                Nd4j.create(new double[][] {{100, 101, 102, 103}, {110, 111, 112, 113}, {120, 121, 122, 123}});
 
         assertEquals(exp01_0, arr.tensorAlongDimension(0, 0, 1));
         assertEquals(exp01_0, arr.tensorAlongDimension(0, 1, 0));
@@ -296,7 +303,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
     @Test
-    public void testStalled() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testStalled(Nd4jBackend backend) {
         int shape[] = new int[] {3, 3, 4, 5};
         INDArray orig2 = Nd4j.create(shape, 'c');
         System.out.println("Shape: " + Arrays.toString(orig2.shapeInfoDataBuffer().asInt()));

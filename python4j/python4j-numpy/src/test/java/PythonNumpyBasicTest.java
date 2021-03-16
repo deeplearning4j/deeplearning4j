@@ -19,11 +19,13 @@
  */
 
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.python4j.*;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,20 +37,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 @NotThreadSafe
-@RunWith(Parameterized.class)
 public class PythonNumpyBasicTest {
-    private DataType dataType;
-    private long[] shape;
-
-    public PythonNumpyBasicTest(DataType dataType, long[] shape, String dummyArg) {
-        this.dataType = dataType;
-        this.shape = shape;
-    }
-
-    @Parameterized.Parameters(name = "{index}: Testing with DataType={0}, shape={2}")
-    public static Collection params() {
+    public static Stream<Arguments> params() {
         DataType[] types = new DataType[] {
                 DataType.BOOL,
                 DataType.FLOAT16,
@@ -79,11 +72,13 @@ public class PythonNumpyBasicTest {
                 ret.add(new Object[]{type, shape, Arrays.toString(shape)});
             }
         }
-        return ret;
+        return ret.stream().map(Arguments::of);
     }
 
     @Test
-    public void testConversion(){
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testConversion(DataType dataType,long[] shape){
       try(PythonGIL pythonGIL = PythonGIL.lock()) {
           INDArray arr = Nd4j.zeros(dataType, shape);
           PythonObject npArr = PythonTypes.convert(arr);
@@ -98,7 +93,9 @@ public class PythonNumpyBasicTest {
 
 
     @Test
-    public void testExecution() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testExecution(DataType dataType,long[] shape) {
         try(PythonGIL pythonGIL = PythonGIL.lock()) {
             List<PythonVariable> inputs = new ArrayList<>();
             INDArray x = Nd4j.ones(dataType, shape);
@@ -127,7 +124,9 @@ public class PythonNumpyBasicTest {
 
 
     @Test
-    public void testInplaceExecution() {
+    @ParameterizedTest
+    @MethodSource("#params")
+    public void testInplaceExecution(DataType dataType,long[] shape) {
         try(PythonGIL pythonGIL = PythonGIL.lock()) {
             if (dataType == DataType.BOOL || dataType == DataType.BFLOAT16)return;
             if (shape.length == 0) return;

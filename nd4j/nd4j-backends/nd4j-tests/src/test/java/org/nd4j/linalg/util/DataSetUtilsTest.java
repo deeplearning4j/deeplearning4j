@@ -26,7 +26,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,11 +40,8 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class DataSetUtilsTest extends BaseNd4jTest {
+public class DataSetUtilsTest extends BaseNd4jTestWithBackends {
 
-	public DataSetUtilsTest(Nd4jBackend b){
-		super(b);
-	}
 
 	@Override
 	public char ordering(){
@@ -55,7 +54,9 @@ public class DataSetUtilsTest extends BaseNd4jTest {
 	private SIS sis;
 	//
 	@Test
-	public void testAll(@TempDir Path tmpFld) {
+	@ParameterizedTest
+	@MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+	public void testAll(@TempDir Path tmpFld,Nd4jBackend backend) {
 		//
 		sis = new SIS();
 		//

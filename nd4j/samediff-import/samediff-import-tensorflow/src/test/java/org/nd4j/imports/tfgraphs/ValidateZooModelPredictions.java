@@ -28,9 +28,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
-import org.nd4j.OpValidationSuite;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,11 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @Disabled
-public class ValidateZooModelPredictions extends BaseNd4jTest {
+public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
 
-    public ValidateZooModelPredictions(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
@@ -73,18 +71,9 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
     }
 
     @Test
-    public void testMobilenetV1(@TempDir Path testDir) throws Exception {
-        if(TFGraphTestZooModels.isPPC()){
-            /*
-            Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
-            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
-             */
-
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
-            OpValidationSuite.ignoreFailing();
-        }
-
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testMobilenetV1(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         TFGraphTestZooModels.currentTestDir = testDir.toFile();
 
         //Load model
@@ -138,7 +127,9 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
 
 
     @Test
-    public void testResnetV2(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testResnetV2(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         if(TFGraphTestZooModels.isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
@@ -147,7 +138,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
              */
 
             log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
-            OpValidationSuite.ignoreFailing();
+            //OpValidationSuite.ignoreFailing();
         }
 
         TFGraphTestZooModels.currentTestDir = testDir.toFile();

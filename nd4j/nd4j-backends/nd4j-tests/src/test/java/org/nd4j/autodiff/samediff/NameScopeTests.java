@@ -21,9 +21,11 @@
 package org.nd4j.autodiff.samediff;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -35,19 +37,18 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class NameScopeTests extends BaseNd4jTest {
+public class NameScopeTests extends BaseNd4jTestWithBackends {
 
-    public NameScopeTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
-    public char ordering(){
+    public char ordering() {
         return 'c';
     }
 
     @Test
-    public void testVariableNameScopesBasic(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testVariableNameScopesBasic(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var("x");
@@ -73,7 +74,9 @@ public class NameScopeTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testOpFieldsAndNames(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testOpFieldsAndNames(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.var("x", DataType.FLOAT, 1);
@@ -151,7 +154,9 @@ public class NameScopeTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNoNesting(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNoNesting(Nd4jBackend backend) {
         SameDiff SD = SameDiff.create();
 
         SDVariable a = SD.constant(4);
@@ -168,7 +173,9 @@ public class NameScopeTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNoTesting2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNoTesting2(Nd4jBackend backend) {
         SameDiff SD = SameDiff.create();
 
         SDVariable a = SD.constant(4);

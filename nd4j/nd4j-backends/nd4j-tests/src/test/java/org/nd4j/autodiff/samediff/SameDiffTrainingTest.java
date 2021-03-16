@@ -30,11 +30,13 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -55,14 +57,13 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
 @Slf4j
-public class SameDiffTrainingTest extends BaseNd4jTest {
+public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
-    public SameDiffTrainingTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Test
-    public void irisTrainingSanityCheck() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void irisTrainingSanityCheck(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();
@@ -134,7 +135,9 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
 
     @Test
-    public void irisTrainingEvalTest() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void irisTrainingEvalTest(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();
@@ -184,7 +187,9 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
 
     @Test
-    public void irisTrainingValidationTest() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void irisTrainingValidationTest(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();
@@ -239,6 +244,8 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testTrainingMixedDtypes(){
 
         for (String u : new String[]{"adam", "nesterov", "adamax", "amsgrad"}) {
@@ -301,7 +308,9 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void simpleClassification() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void simpleClassification(Nd4jBackend backend) {
         double learning_rate = 0.001;
         int seed = 7;
         org.nd4j.linalg.api.rng.Random rng = Nd4j.getRandom();
@@ -348,6 +357,8 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
     }
 
     @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testTrainingEvalVarNotReqForLoss(){
         //If a variable is not required for the loss - normally it won't be calculated
         //But we want to make sure it IS calculated here - so we can perform evaluation on it

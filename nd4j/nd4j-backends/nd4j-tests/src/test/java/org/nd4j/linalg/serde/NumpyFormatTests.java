@@ -28,7 +28,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,15 +44,12 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public class NumpyFormatTests extends BaseNd4jTest {
-
-
-    public NumpyFormatTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class NumpyFormatTests extends BaseNd4jTestWithBackends {
 
     @Test
-    public void testToNpyFormat(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToNpyFormat(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         val dir = testDir.toFile();
         new ClassPathResource("numpy_arrays/").copyDirectory(dir);
@@ -99,7 +98,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testToNpyFormatScalars(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testToNpyFormatScalars(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 //        File dir = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays\\scalar");
 
         val dir = testDir.toFile();
@@ -153,7 +154,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNpzReading(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNpzReading(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         val dir = testDir.toFile();
         new ClassPathResource("numpy_arrays/npz/").copyDirectory(dir);
@@ -193,7 +196,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testTxtReading() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testTxtReading(Nd4jBackend backend) throws Exception {
         File f = new ClassPathResource("numpy_arrays/txt/arange_3,4_float32.txt").getFile();
         INDArray arr = Nd4j.readNumpy(DataType.FLOAT, f.getPath());
 
@@ -212,7 +217,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNpy(@TempDir Path testDir) throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNpy(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         for(boolean empty : new boolean[]{false, true}) {
             val dir = testDir.toFile();
             if(!empty) {
@@ -256,13 +263,15 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testFromNumpyScalar() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testFromNumpyScalar(Nd4jBackend backend) throws Exception {
         val out = Nd4j.createFromNpyFile(new ClassPathResource("numpy_oneoff/scalar.npy").getFile());
         assertEquals(Nd4j.scalar(DataType.INT, 1), out);
     }
 
     @Test()
-    public void readNumpyCorruptHeader1(@TempDir Path testDir) throws Exception {
+    public void readNumpyCorruptHeader1(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         assertThrows(RuntimeException.class,() -> {
             File f = testDir.toFile();
 
@@ -286,7 +295,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test()
-    public void readNumpyCorruptHeader2(@TempDir Path testDir) throws Exception {
+    public void readNumpyCorruptHeader2(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         assertThrows(RuntimeException.class,() -> {
             File f = testDir.toFile();
 
@@ -310,7 +319,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test()
-    public void testAbsentNumpyFile_1() throws Exception {
+    public void testAbsentNumpyFile_1(Nd4jBackend backend) throws Exception {
         assertThrows(IllegalArgumentException.class,() -> {
             val f = new File("pew-pew-zomg.some_extension_that_wont_exist");
             INDArray act1 = Nd4j.createFromNpyFile(f);
@@ -319,7 +328,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test()
-    public void testAbsentNumpyFile_2() throws Exception {
+    public void testAbsentNumpyFile_2(Nd4jBackend backend) throws Exception {
         assertThrows(IllegalArgumentException.class,() -> {
             val f = new File("c:/develop/batch-x-1.npy");
             INDArray act1 = Nd4j.createFromNpyFile(f);
@@ -330,7 +339,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
     @Disabled
     @Test
-    public void testNumpyBoolean() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testNumpyBoolean(Nd4jBackend backend) {
         INDArray out = Nd4j.createFromNpyFile(new File("c:/Users/raver/Downloads/error2.npy"));
 //        System.out.println(ArrayUtil.toList(ArrayUtil.toInts(out.shape())));
 //        System.out.println(out);

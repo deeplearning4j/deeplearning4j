@@ -21,18 +21,14 @@
 package org.nd4j.autodiff.opvalidation;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 
-public abstract class BaseOpValidation extends BaseNd4jTest {
+public abstract class BaseOpValidation extends BaseNd4jTestWithBackends {
 
-    private DataType initialType;
+    private DataType initialType = Nd4j.dataType();
 
-    public BaseOpValidation(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {

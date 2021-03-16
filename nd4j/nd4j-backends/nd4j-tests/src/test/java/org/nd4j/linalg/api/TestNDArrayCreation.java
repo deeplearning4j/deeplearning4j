@@ -26,7 +26,9 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,16 +42,12 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public class TestNDArrayCreation extends BaseNd4jTest {
-
-
-    public TestNDArrayCreation(Nd4jBackend backend) {
-        super(backend);
-    }
+public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
-    public void testBufferCreation() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testBufferCreation(Nd4jBackend backend) {
         DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
         FloatPointer floatPointer = new FloatPointer(pointer);
@@ -69,6 +67,8 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     @Test
     @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
     public void testCreateNpy() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/test.npy").getFile());
         assertEquals(2, arrCreate.size(0));
@@ -82,7 +82,9 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     @Test
     @Disabled
-    public void testCreateNpz() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    public void testCreateNpz(Nd4jBackend backend) throws Exception {
         Map<String, INDArray> map = Nd4j.createFromNpzFile(new ClassPathResource("nd4j-tests/test.npz").getFile());
         assertEquals(true, map.containsKey("x"));
         assertEquals(true, map.containsKey("y"));
@@ -100,8 +102,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
-    public void testCreateNpy3() throws Exception {
+    public void testCreateNpy3(Nd4jBackend backend) throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/rank3.npy").getFile());
         assertEquals(8, arrCreate.length());
         assertEquals(3, arrCreate.rank());
@@ -113,7 +114,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     @Test
     @Disabled // this is endless test
-    public void testEndlessAllocation() {
+    public void testEndlessAllocation(Nd4jBackend backend) {
         Nd4j.getEnvironment().setMaxSpecialMemory(1);
         while (true) {
             val arr = Nd4j.createUninitialized(DataType.FLOAT, 100000000);
