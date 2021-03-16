@@ -22,14 +22,14 @@ package org.deeplearning4j.models.sequencevectors.serialization;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AbstractElementFactoryTest extends BaseDL4JTest {
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }

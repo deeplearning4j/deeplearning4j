@@ -46,7 +46,7 @@ import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingGraphTrainer;
 import org.deeplearning4j.spark.earlystopping.SparkLossCalculatorComputationGraph;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,7 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 

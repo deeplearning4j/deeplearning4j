@@ -24,8 +24,9 @@ import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
@@ -35,10 +36,10 @@ import org.nd4j.parameterserver.client.ParameterServerClient;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 @Deprecated
 public class ParameterServerNodeTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
@@ -48,16 +49,16 @@ public class ParameterServerNodeTest extends BaseND4JTest {
     private static int masterStatusPort = 40323 + new java.util.Random().nextInt(15999);
     private static int statusPort = masterStatusPort - 1299;
 
-    @BeforeClass
+    @BeforeAll
     public static void before() throws Exception {
         mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(parameterLength));
         System.setProperty("play.server.dir", "/tmp");
         aeron = Aeron.connect(getContext());
         parameterServerNode = new ParameterServerNode(mediaDriver, statusPort);
         parameterServerNode.runMain(new String[] {"-m", "true", "-s", "1," + String.valueOf(parameterLength), "-p",
-                        String.valueOf(masterStatusPort), "-h", "localhost", "-id", "11", "-md",
-                        mediaDriver.aeronDirectoryName(), "-sp", String.valueOf(statusPort), "-sh", "localhost", "-u",
-                        String.valueOf(Runtime.getRuntime().availableProcessors())});
+                String.valueOf(masterStatusPort), "-h", "localhost", "-id", "11", "-md",
+                mediaDriver.aeronDirectoryName(), "-sp", String.valueOf(statusPort), "-sh", "localhost", "-u",
+                String.valueOf(Runtime.getRuntime().availableProcessors())});
 
         while (!parameterServerNode.subscriberLaunched()) {
             Thread.sleep(10000);
@@ -73,11 +74,11 @@ public class ParameterServerNodeTest extends BaseND4JTest {
         String host = "localhost";
         for (int i = 0; i < numCores; i++) {
             clients[i] = ParameterServerClient.builder().aeron(aeron).masterStatusHost(host)
-                            .masterStatusPort(statusPort).subscriberHost(host).subscriberPort(40325 + i)
-                            .subscriberStream(10 + i)
-                            .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
-                            .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
-                            .build();
+                    .masterStatusPort(statusPort).subscriberHost(host).subscriberPort(40325 + i)
+                    .subscriberStream(10 + i)
+                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
+                    .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
+                    .build();
         }
 
         Thread.sleep(60000);
@@ -119,10 +120,10 @@ public class ParameterServerNodeTest extends BaseND4JTest {
 
     private static Aeron.Context getContext() {
         return new Aeron.Context().driverTimeoutMs(10000)
-                        .availableImageHandler(AeronUtil::printAvailableImage)
-                        .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(100000)
-                        .errorHandler(e -> log.error(e.toString(), e));
+                .availableImageHandler(AeronUtil::printAvailableImage)
+                .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(100000)
+                .errorHandler(e -> log.error(e.toString(), e));
     }
 
 

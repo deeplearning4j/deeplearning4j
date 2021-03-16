@@ -22,8 +22,8 @@ package org.nd4j.imports;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
@@ -39,7 +39,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -49,7 +49,7 @@ public class ExecutionTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);

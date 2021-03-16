@@ -25,9 +25,9 @@ import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.util.TestDataSetConsumer;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,9 +41,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Multiple Epochs Iterator Test")
 class MultipleEpochsIteratorTest extends BaseDL4JTest {
-
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
 
     @Test
     @DisplayName("Test Next And Reset")

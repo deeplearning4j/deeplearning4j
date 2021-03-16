@@ -21,7 +21,7 @@
 package org.nd4j.serde.binary;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -36,7 +36,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BinarySerdeTest extends BaseNd4jTest {
 

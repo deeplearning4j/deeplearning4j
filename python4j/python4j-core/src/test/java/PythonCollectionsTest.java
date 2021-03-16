@@ -21,7 +21,7 @@
 
 import org.nd4j.python4j.*;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
 

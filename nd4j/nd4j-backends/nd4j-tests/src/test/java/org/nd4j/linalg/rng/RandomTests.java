@@ -24,10 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -67,7 +67,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -79,13 +79,13 @@ public class RandomTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         initialType = Nd4j.dataType();
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         Nd4j.setDataType(initialType);
     }
@@ -177,7 +177,7 @@ public class RandomTests extends BaseNd4jTest {
 
             INDArray z2 = Nd4j.randn('c', new int[] {1, 1000});
 
-            assertEquals("Failed on iteration " + i, z1, z2);
+            assertEquals(z1, z2,"Failed on iteration " + i);
         }
     }
 
@@ -192,7 +192,7 @@ public class RandomTests extends BaseNd4jTest {
 
             INDArray z2 = Nd4j.rand('c', new int[] {1, 1000});
 
-            assertEquals("Failed on iteration " + i, z1, z2);
+            assertEquals( z1, z2,"Failed on iteration " + i);
         }
     }
 
@@ -207,7 +207,7 @@ public class RandomTests extends BaseNd4jTest {
 
             INDArray z2 = Nd4j.getExecutioner().exec(new BinomialDistribution(Nd4j.createUninitialized(1000), 10, 0.2));
 
-            assertEquals("Failed on iteration " + i, z1, z2);
+            assertEquals(z1, z2,"Failed on iteration " + i);
         }
     }
 
@@ -242,7 +242,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
         for (int x = 0; x < z1.length(); x++) {
-            assertEquals("Failed on element: [" + x + "]", z1.getFloat(x), z2.getFloat(x), 0.01f);
+            assertEquals(z1.getFloat(x), z2.getFloat(x), 0.01f,"Failed on element: [" + x + "]");
         }
         assertEquals(z1, z2);
     }
@@ -421,7 +421,7 @@ public class RandomTests extends BaseNd4jTest {
         A = A / n - n;
         A *= (1 + 4.0/n - 25.0/(n*n));
 
-        assertTrue("Critical (max) value for 1000 points and confidence α = 0.0001 is 1.8692, received: "+ A, A < 1.8692);
+        assertTrue(A < 1.8692,"Critical (max) value for 1000 points and confidence α = 0.0001 is 1.8692, received: "+ A);
     }
 
     @Test
@@ -491,13 +491,13 @@ public class RandomTests extends BaseNd4jTest {
 
 
         for (int x = 0; x < z01.length(); x++) {
-            assertEquals("Failed on element: [" + x + "]", z01.getFloat(x), z11.getFloat(x), 0.01f);
+            assertEquals(z11.getFloat(x), z01.getFloat(x),0.01f,"Failed on element: [" + x + "]");
         }
 
         assertEquals(z01, z11);
 
         for (int x = 0; x < z02.length(); x++) {
-            assertEquals("Failed on element: [" + x + "]", z02.getFloat(x), z12.getFloat(x), 0.01f);
+            assertEquals(z02.getFloat(x), z12.getFloat(x), 0.01f,"Failed on element: [" + x + "]");
         }
 
         assertEquals(z02, z12);
@@ -891,7 +891,7 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(exp, sampled);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testDeallocation1() throws Exception {
 
@@ -1254,7 +1254,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testTruncatedNormal1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -1273,7 +1273,7 @@ public class RandomTests extends BaseNd4jTest {
         log.info("Truncated: {} ms; Gaussian: {} ms", time2 - time1, time3 - time2);
 
         for (int e = 0; e < z01.length(); e++) {
-            assertTrue("Value: " + z01.getDouble(e) + " at " + e,FastMath.abs(z01.getDouble(e)) <= 2.0);
+            assertTrue(FastMath.abs(z01.getDouble(e)) <= 2.0,"Value: " + z01.getDouble(e) + " at " + e);
             assertNotEquals(-119119d, z01.getDouble(e), 1e-3);
         }
 
@@ -1364,7 +1364,7 @@ public class RandomTests extends BaseNd4jTest {
         INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
         Nd4j.exec(new BernoulliDistribution(arr, 0.5));
         double sum = arr.sumNumber().doubleValue();
-        assertTrue(String.valueOf(sum), sum > 0.0 && sum < 100.0);
+        assertTrue(sum > 0.0 && sum < 100.0,String.valueOf(sum));
     }
 
     private List<INDArray> getList(int numBatches){

@@ -21,13 +21,13 @@
 package org.deeplearning4j.iterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,11 +37,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
-    @Before
+    @BeforeEach
     public void before(){
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
@@ -278,7 +278,7 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
             fail("Expected exception");
         } catch (Throwable t){
             String m = t.getMessage();
-            assertTrue(m, m.contains("RemoveWord") && m.contains("vocabulary"));
+            assertTrue(m.contains("RemoveWord") && m.contains("vocabulary"), m);
         }
     }
 

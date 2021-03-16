@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.factory.ops;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,7 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NDBaseTest extends BaseNd4jTest {
     public NDBaseTest(Nd4jBackend backend) {

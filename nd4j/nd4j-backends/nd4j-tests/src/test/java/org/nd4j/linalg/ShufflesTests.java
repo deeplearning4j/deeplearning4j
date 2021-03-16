@@ -21,7 +21,7 @@
 package org.nd4j.linalg;
 
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,7 +32,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.*;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(Parameterized.class)
 public class ShufflesTests extends BaseNd4jTest {
@@ -247,11 +247,11 @@ public class ShufflesTests extends BaseNd4jTest {
 
         for (int i = 0; i < array1.length; i++) {
             if (i >= array1.length / 2) {
-                assertEquals("Failed on element [" + i + "]", -1, array1[i]);
-                assertEquals("Failed on element [" + i + "]", -1, array2[i]);
+                assertEquals(-1, array1[i],"Failed on element [" + i + "]");
+                assertEquals(-1, array2[i],"Failed on element [" + i + "]");
             } else {
-                assertNotEquals("Failed on element [" + i + "]", -1, array1[i]);
-                assertNotEquals("Failed on element [" + i + "]", -1, array2[i]);
+                assertNotEquals(-1, array1[i],"Failed on element [" + i + "]");
+                assertNotEquals(-1, array2[i],"Failed on element [" + i + "]");
             }
         }
     }
@@ -268,11 +268,11 @@ public class ShufflesTests extends BaseNd4jTest {
 
         for (int i = 0; i < array1.length; i++) {
             if (i % 2 != 0) {
-                assertEquals("Failed on element [" + i + "]", -1, array1[i]);
-                assertEquals("Failed on element [" + i + "]", -1, array2[i]);
+                assertEquals( -1, array1[i],"Failed on element [" + i + "]");
+                assertEquals(-1, array2[i],"Failed on element [" + i + "]");
             } else {
-                assertNotEquals("Failed on element [" + i + "]", -1, array1[i]);
-                assertNotEquals("Failed on element [" + i + "]", -1, array2[i]);
+                assertNotEquals(-1, array1[i],"Failed on element [" + i + "]");
+                assertNotEquals( -1, array2[i],"Failed on element [" + i + "]");
             }
         }
     }

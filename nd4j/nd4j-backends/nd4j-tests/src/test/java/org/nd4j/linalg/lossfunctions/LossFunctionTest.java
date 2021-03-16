@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.lossfunctions;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -45,7 +45,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LossFunctionTest extends BaseNd4jTest {
 

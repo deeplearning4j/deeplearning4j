@@ -26,7 +26,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.*;
 import org.datavec.spark.BaseSparkTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -35,8 +35,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestSparkStorageUtils extends BaseSparkTest {
 

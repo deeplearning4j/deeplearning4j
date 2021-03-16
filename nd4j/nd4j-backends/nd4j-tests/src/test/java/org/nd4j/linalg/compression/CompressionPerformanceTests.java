@@ -22,8 +22,8 @@ package org.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,7 +36,7 @@ import org.nd4j.common.util.SerializationUtils;
 import java.io.ByteArrayOutputStream;
 
 @Slf4j
-@Ignore
+@Disabled
 @RunWith(Parameterized.class)
 public class CompressionPerformanceTests extends BaseNd4jTest {
 

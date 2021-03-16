@@ -22,11 +22,11 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.util.UIDProvider;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestUIDProvider extends BaseDL4JTest {
 

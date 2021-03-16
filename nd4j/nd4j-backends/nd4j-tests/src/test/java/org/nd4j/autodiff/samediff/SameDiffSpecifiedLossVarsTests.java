@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,7 +33,7 @@ import org.nd4j.linalg.learning.config.Adam;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
 

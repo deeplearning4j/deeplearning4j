@@ -20,9 +20,9 @@
 
 package org.nd4j.linalg.dimensionalityreduction;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,18 +38,15 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.johnsonLindenStraussMinDim;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.targetShape;
 
-@Ignore
+@Disabled
 @RunWith(Parameterized.class)
 public class TestRandomProjection extends BaseNd4jTest {
 
     INDArray z1 = Nd4j.createUninitialized(new int[]{(int)1e6, 1000});
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
 
     public TestRandomProjection(Nd4jBackend backend) {
@@ -79,22 +76,26 @@ public class TestRandomProjection extends BaseNd4jTest {
 
     @Test
     public void testTargetEpsilonChecks() {
-        exception.expect(IllegalArgumentException.class);
-        // wrong rel. error
-        targetShape(z1, 0.0);
+        assertThrows(IllegalArgumentException.class,() -> {
+            // wrong rel. error
+            targetShape(z1, 0.0);
+        });
+
     }
 
     @Test
     public void testTargetShapeTooHigh() {
-        exception.expect(ND4JIllegalStateException.class);
-        // original dimension too small
-        targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 1}), 0.5);
-        // target dimension too high
-        targetShape(z1, 1001);
-        // suggested dimension too high
-        targetShape(z1, 0.1);
-        // original samples too small
-        targetShape(Nd4j.createUninitialized(new int[]{1, 1000}), 0.5);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            // original dimension too small
+            targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 1}), 0.5);
+            // target dimension too high
+            targetShape(z1, 1001);
+            // suggested dimension too high
+            targetShape(z1, 0.1);
+            // original samples too small
+            targetShape(Nd4j.createUninitialized(new int[]{1, 1000}), 0.5);
+        });
+
     }
 
 

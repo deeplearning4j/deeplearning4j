@@ -21,8 +21,7 @@
 package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.*;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -30,27 +29,26 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 @Deprecated
 public class VoidAggregationTest extends BaseND4JTest {
     private static final short NODES = 100;
     private static final int ELEMENTS_PER_NODE = 3;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
 
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(30);
+
 
     /**
      * In this test we check for aggregation of sample vector.

@@ -20,16 +20,18 @@
 
 package org.nd4j.parameterserver.status.play;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.model.SubscriberState;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StorageTests extends BaseND4JTest {
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testMapStorage() throws Exception {
         StatusStorage mapDb = new MapDbStatusStorage();
         assertEquals(SubscriberState.empty(), mapDb.getState(-1));
@@ -44,7 +46,8 @@ public class StorageTests extends BaseND4JTest {
 
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testStorage() throws Exception {
         StatusStorage statusStorage = new InMemoryStatusStorage();
         assertEquals(SubscriberState.empty(), statusStorage.getState(-1));

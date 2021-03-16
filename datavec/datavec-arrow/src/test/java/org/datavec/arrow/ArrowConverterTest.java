@@ -41,7 +41,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;

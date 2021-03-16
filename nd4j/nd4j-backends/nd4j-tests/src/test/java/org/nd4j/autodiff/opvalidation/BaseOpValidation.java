@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.opvalidation;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,7 +39,7 @@ public abstract class BaseOpValidation extends BaseNd4jTest {
         return 'c';
     }
 
-    @Before
+    @BeforeEach
     public void beforeClass() {
         Nd4j.create(1);
 

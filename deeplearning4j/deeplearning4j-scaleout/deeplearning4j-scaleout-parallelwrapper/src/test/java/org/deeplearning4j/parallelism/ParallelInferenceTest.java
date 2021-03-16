@@ -32,8 +32,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.junit.*;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.*;
 import org.nd4j.linalg.activations.Activation;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -58,17 +57,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class ParallelInferenceTest extends BaseDL4JTest {
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
 
-    @Before
+
+    @BeforeEach
     public void setUp() throws Exception {
         if (model == null) {
             File file = Resources.asFile("models/LenetMnistMLN.zip");
@@ -78,12 +76,13 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         iterator.reset();
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000)
     public void testInferenceSequential1() throws Exception {
 
         long count0 = 0;
@@ -128,7 +127,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         assertTrue(count1 > 0L);
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000)
     public void testInferenceSequential2() throws Exception {
 
         long count0 = 0;
@@ -173,7 +173,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000)
     public void testInferenceBatched1() throws Exception {
         long count0 = 0;
         long count1 = 0;
@@ -405,7 +406,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 120000L)
+    @Test()
+    @Timeout(120000)
     public void testParallelInferenceVariableLengthTS() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -451,7 +453,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 120000L)
+    @Test()
+    @Timeout(120000)
     public void testParallelInferenceVariableLengthTS2() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -506,8 +509,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
     }
 
 
-
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000)
     public void testParallelInferenceVariableSizeCNN() throws Exception {
         //Variable size input for CNN model - for example, YOLO models
         //In these cases, we can't batch and have to execute the different size inputs separately
@@ -562,8 +565,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
     }
 
-
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000)
     public void testParallelInferenceVariableSizeCNN2() throws Exception {
         //Variable size input for CNN model - for example, YOLO models
         //In these cases, we can't batch and have to execute the different size inputs separately
@@ -617,7 +620,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000)
     public void testParallelInferenceErrorPropagation(){
 
         int nIn = 10;
@@ -751,7 +755,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000)
     public void testModelUpdate_1() throws Exception {
         int nIn = 5;
 
@@ -789,7 +794,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
             // model can be null for some of the workers yet, due to race condition
             if (m != null) {
                 Thread.sleep(500);
-                assertEquals("Failed at model [" + cnt0 + "]", net.params(), m.params());
+                assertEquals(net.params(), m.params(), "Failed at model [" + cnt0 + "]");
                 passed = true;
             }
             cnt0++;
@@ -816,14 +821,15 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
         cnt0 = 0;
         for (val m:modelsAfter) {
-            assertNotNull("Failed at model [" + cnt0 + "]", m);
-            assertEquals("Failed at model [" + cnt0++ + "]", net2.params(), m.params());
+            assertNotNull(m,"Failed at model [" + cnt0 + "]");
+            assertEquals(net2.params(), m.params(), "Failed at model [" + cnt0++ + "]");
         }
 
         inf.shutdown();
     }
 
-    @Test(timeout = 120000L)
+    @Test()
+    @Timeout(120000)
     public void testMultiOutputNet() throws Exception {
 
         int nIn = 5;
@@ -936,7 +942,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 //            System.out.println(Arrays.toString(e.shape()) + " vs " + Arrays.toString(a.shape()));
 //            assertArrayEquals(e.shape(), a.shape());
 
-            assertEquals("Failed at iteration [" + i + "]", e, a);
+            assertEquals(e, a, "Failed at iteration [" + i + "]");
         }
     }
 

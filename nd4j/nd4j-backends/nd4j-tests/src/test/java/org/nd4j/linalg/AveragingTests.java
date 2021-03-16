@@ -21,9 +21,9 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -35,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -50,12 +50,12 @@ public class AveragingTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         DataTypeUtil.setDTypeForContext(initialType);
     }

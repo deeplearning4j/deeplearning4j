@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -32,8 +32,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NameScopeTests extends BaseNd4jTest {
 
@@ -101,10 +101,10 @@ public class NameScopeTests extends BaseNd4jTest {
         assertEquals("s1/s2/z", z.name());
         assertEquals("a", a.name());
 
-        assertTrue(add.name(), add.name().startsWith("s1/"));
+        assertTrue(add.name().startsWith("s1/"),add.name());
         assertEquals("s1/addxy", addWithName.name());
 
-        assertTrue(merge.name(), merge.name().startsWith("s1/s2/"));
+        assertTrue(merge.name().startsWith("s1/s2/"),merge.name());
         assertEquals("s1/s2/mmax", mergeWithName.name());
 
         Set<String> allowedVarNames = new HashSet<>(Arrays.asList("x", "s1/y", "s1/s2/z", "a",
@@ -116,17 +116,17 @@ public class NameScopeTests extends BaseNd4jTest {
         System.out.println(ops.keySet());
 
         for(String s : ops.keySet()){
-            assertTrue(s, s.startsWith("s1") || s.startsWith("s1/s2"));
+            assertTrue(s.startsWith("s1") || s.startsWith("s1/s2"),s);
             allowedOpNames.add(s);
         }
 
         //Check fields - Variable, SDOp, etc
         for(Variable v : sd.getVariables().values()){
-            assertTrue(v.getVariable().name(), allowedVarNames.contains(v.getVariable().name()));
+            assertTrue( allowedVarNames.contains(v.getVariable().name()),v.getVariable().name());
             assertEquals(v.getName(), v.getVariable().name());
             if(v.getInputsForOp() != null){
                 for(String s : v.getInputsForOp()){
-                    assertTrue(s, allowedOpNames.contains(s));
+                    assertTrue(allowedOpNames.contains(s),s);
                 }
             }
 
@@ -164,7 +164,7 @@ public class NameScopeTests extends BaseNd4jTest {
 
         scope.close();
 
-        assertTrue("Var with name test/argmax exists", SD.variableMap().containsKey("test/argmax"));
+        assertTrue(SD.variableMap().containsKey("test/argmax"),"Var with name test/argmax exists");
     }
 
     @Test
@@ -182,6 +182,6 @@ public class NameScopeTests extends BaseNd4jTest {
 
         scope.close();
 
-        assertTrue("Var with name test/switch:1 exists", SD.variableMap().containsKey("test/switch:1"));
+        assertTrue( SD.variableMap().containsKey("test/switch:1"),"Var with name test/switch:1 exists");
     }
 }

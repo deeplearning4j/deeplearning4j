@@ -23,10 +23,10 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -45,9 +45,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Ignore
+@Disabled
 @Slf4j
 @RunWith(Parameterized.class)
 public class EndlessWorkspaceTests extends BaseNd4jTest {
@@ -58,12 +58,12 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void startUp() {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();

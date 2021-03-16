@@ -38,13 +38,15 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.model.stats.StatsListener;
 import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.common.function.Function;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -53,11 +55,13 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
-@Ignore
+@Disabled
 public class TestVertxUIManual extends BaseDL4JTest {
+
+    private static Logger log = LoggerFactory.getLogger(TestVertxUIManual.class.getName());
+
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -65,7 +69,7 @@ public class TestVertxUIManual extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testUI() throws Exception {
         VertxUIServer uiServer = (VertxUIServer) UIServer.getInstance();
         assertEquals(9000, uiServer.getPort());
@@ -75,7 +79,7 @@ public class TestVertxUIManual extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testUISequentialSessions() throws Exception {
         UIServer uiServer = UIServer.getInstance();
         StatsStorage ss = null;
@@ -118,7 +122,7 @@ public class TestVertxUIManual extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testUIServerStop() throws Exception {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
@@ -144,7 +148,7 @@ public class TestVertxUIManual extends BaseDL4JTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testUIServerStopAsync() throws Exception {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
@@ -176,7 +180,7 @@ public class TestVertxUIManual extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testUIAutoAttachDetach() throws Exception {
         long detachTimeoutMillis = 15_000;
         AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(detachTimeoutMillis);

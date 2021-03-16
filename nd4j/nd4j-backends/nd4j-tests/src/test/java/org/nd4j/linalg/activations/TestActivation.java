@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.activations;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -53,7 +53,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 public class TestActivation extends BaseNd4jTest {
@@ -69,7 +69,7 @@ public class TestActivation extends BaseNd4jTest {
 
     private ObjectMapper mapper;
 
-    @Before
+    @BeforeEach
     public void initMapper() {
         mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -173,7 +173,7 @@ public class TestActivation extends BaseNd4jTest {
 
             String msg = activations[i].toString() + "\tExpected fields: " + Arrays.toString(expFields)
                             + "\tActual fields: " + actualFieldsByName;
-            assertEquals(msg, expFields.length, actualFieldsByName.size());
+            assertEquals(expFields.length, actualFieldsByName.size(),msg);
 
             for (String s : expFields) {
                 msg = "Expected field \"" + s + "\", was not found in " + activations[i].toString();

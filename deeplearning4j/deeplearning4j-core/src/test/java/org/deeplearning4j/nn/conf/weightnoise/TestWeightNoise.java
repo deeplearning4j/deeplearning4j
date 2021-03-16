@@ -36,7 +36,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,7 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestWeightNoise extends BaseDL4JTest {
 
@@ -211,7 +211,7 @@ public class TestWeightNoise extends BaseDL4JTest {
         graph.output(trainData.get(0).getFeatures());
 
         for (int i = 0; i < 3; i++) {
-            assertEquals(String.valueOf(i), expCalls.get(i), list.get(i).getAllCalls());
+            assertEquals(expCalls.get(i), list.get(i).getAllCalls(), String.valueOf(i));
         }
 
     }

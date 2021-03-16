@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -46,8 +46,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(Parameterized.class)
 public class NormalizerTests extends BaseNd4jTest {
@@ -64,7 +64,7 @@ public class NormalizerTests extends BaseNd4jTest {
     private int lastBatch;
     private final float thresholdPerc = 2.0f; //this is the difference in percentage!
 
-    @Before
+    @BeforeEach
     public void randomData() {
         Nd4j.getRandom().setSeed(12345);
         batchSize = 13;
@@ -81,10 +81,10 @@ public class NormalizerTests extends BaseNd4jTest {
     public void testPreProcessors() {
         System.out.println("Running iterator vs non-iterator std scaler..");
         double d1 = testItervsDataset(stdScaler);
-        assertTrue(d1 + " < " + thresholdPerc, d1 < thresholdPerc);
+        assertTrue( d1 < thresholdPerc,d1 + " < " + thresholdPerc);
         System.out.println("Running iterator vs non-iterator min max scaler..");
         double d2 = testItervsDataset(minMaxScaler);
-        assertTrue(d2 + " < " + thresholdPerc, d2 < thresholdPerc);
+        assertTrue(d2 < thresholdPerc,d2 + " < " + thresholdPerc);
     }
 
     public float testItervsDataset(DataNormalization preProcessor) {

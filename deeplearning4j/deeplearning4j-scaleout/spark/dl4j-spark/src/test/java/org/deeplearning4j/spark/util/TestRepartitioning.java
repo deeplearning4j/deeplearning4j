@@ -29,8 +29,7 @@ import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -38,9 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestRepartitioning extends BaseSparkTest {
 
@@ -192,7 +189,7 @@ public class TestRepartitioning extends BaseSparkTest {
                 new Tuple2<>(4,34),
                 new Tuple2<>(5,35),
                 new Tuple2<>(6,34));
-        Assert.assertEquals(initialExpected, partitionCounts);
+        assertEquals(initialExpected, partitionCounts);
 
 
         JavaRDD<Integer> afterRepartition = SparkUtils.repartitionBalanceIfRequired(initial.values(), Repartition.Always, 2, 112);

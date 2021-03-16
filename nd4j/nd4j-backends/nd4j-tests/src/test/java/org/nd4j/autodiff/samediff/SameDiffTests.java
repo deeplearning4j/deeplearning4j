@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.samediff;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.Assume.assumeNotNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
@@ -35,12 +35,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
@@ -103,15 +102,14 @@ public class SameDiffTests extends BaseNd4jTest {
         return 'c';
     }
 
-    @ClassRule
-    public static TemporaryFolder folder = new TemporaryFolder();
+
 
     @Override
     public long getTimeoutMilliseconds() {
         return 999999999L;
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
@@ -120,7 +118,7 @@ public class SameDiffTests extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(123);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(initialType);
 
@@ -659,7 +657,7 @@ public class SameDiffTests extends BaseNd4jTest {
             INDArray out = mean2.eval();
 
             long[] shape = out.shape();
-            assertArrayEquals(msg, new long[]{10}, shape);
+            assertArrayEquals(new long[]{10}, shape,msg);
         }
     }
 
@@ -1035,7 +1033,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
             Map<String,INDArray> m = sd.output(Collections.emptyMap(), "out");
             INDArray outAct = m.get("out");
-            assertEquals(a.toString(), outExp, outAct);
+            assertEquals(outExp, outAct,a.toString());
 
             // L = sum_i (label - out)^2
             //dL/dOut = 2(out - label)
@@ -1048,8 +1046,8 @@ public class SameDiffTests extends BaseNd4jTest {
             INDArray dLdOutAct = grads.get("out");
             INDArray dLdInAct = grads.get("in");
 
-            assertEquals(a.toString(), dLdOutExp, dLdOutAct);
-            assertEquals(a.toString(), dLdInExp, dLdInAct);
+            assertEquals(dLdOutExp, dLdOutAct,a.toString());
+            assertEquals(dLdInExp, dLdInAct,a.toString());
         }
     }
 
@@ -1650,7 +1648,7 @@ public class SameDiffTests extends BaseNd4jTest {
         }
     }
 
-    @Ignore(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
+    @Disabled(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
     @Test
     public void testIsStrictlyIncShape() {
         int nOut = 0;
@@ -1694,7 +1692,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
                 String msg = "expandDim=" + i + ", source=" + p.getSecond();
 
-                assertEquals(msg, out, expOut);
+                assertEquals(out, expOut,msg);
             }
         }
     }
@@ -1735,7 +1733,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
                 String msg = "squeezeDim=" + i + ", source=" + p.getSecond();
 
-                assertEquals(msg, out, expOut);
+                assertEquals(out, expOut,msg);
             }
         }
     }
@@ -1759,7 +1757,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
                 String msg = "expand/Squeeze=" + i + ", source=" + p.getSecond();
 
-                assertEquals(msg, out, inArr);  //expand -> squeeze: should be opposite ops
+                assertEquals(out, inArr,msg);  //expand -> squeeze: should be opposite ops
             }
         }
     }
@@ -1787,7 +1785,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
                 String msg = "expand/Squeeze=" + i + ", source=" + p.getSecond();
 
-                assertEquals(msg, out, inArr);  //squeeze -> expand: should be opposite ops
+                assertEquals(out, inArr,msg);  //squeeze -> expand: should be opposite ops
             }
         }
     }
@@ -2427,7 +2425,7 @@ public class SameDiffTests extends BaseNd4jTest {
             sd.createGradFunction();
             fail("Expected exception");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("No loss variables"));
+            assertTrue(e.getMessage().contains("No loss variables"),e.getMessage());
         }
 
         SDVariable add = mean.add(sum);
@@ -2445,7 +2443,7 @@ public class SameDiffTests extends BaseNd4jTest {
             sd.createGradFunction();
             fail("Expected exception");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("No loss variables"));
+            assertTrue( e.getMessage().contains("No loss variables"),e.getMessage());
         }
 
         SDVariable add = in.add(in2);
@@ -2863,47 +2861,47 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable x2 = i == 0 ? sd.placeHolder("b", DataType.FLOAT, 5, 3) : sd.var("b", DataType.FLOAT, 5, 3);
             try {
                 sd.placeHolder("a", DataType.FLOAT, 5, 3);
-                fail("Expected execption");
+                fail("Expected exception");
             } catch (Throwable t) {
                 String m = t.getMessage();
                 assertNotNull(m);
-                assertTrue(m, m.contains("already exists"));
+                   assertTrue(m.contains("already exists"),m);
             }
 
             try {
                 sd.var("a", DataType.FLOAT, 1, 2);
-                fail("Expected execption");
+                fail("Expected exception");
             } catch (Throwable t) {
                 String m = t.getMessage();
                 assertNotNull(m);
-                assertTrue(m, m.contains("already exists"));
+                   assertTrue(m.contains("already exists"),m);
             }
 
             try {
                 sd.var("a", Nd4j.zeros(1));
-                fail("Expected execption");
+                fail("Expected exception");
             } catch (Throwable t) {
                 String m = t.getMessage();
                 assertNotNull(m);
-                assertTrue(m, m.contains("already exists"));
+                assertTrue(m.contains("already exists"),m);
             }
 
             try {
                 sd.var("a", LongShapeDescriptor.fromShape(new long[]{1}, DataType.FLOAT));
-                fail("Expected execption");
+                fail("Expected exception");
             } catch (Throwable t) {
                 String m = t.getMessage();
                 assertNotNull(m);
-                assertTrue(m, m.contains("already exists"));
+                   assertTrue(m.contains("already exists"),m);
             }
 
             try {
                 sd.constant("a", Nd4j.zeros(1));
-                fail("Expected execption");
+                fail("Expected exception");
             } catch (Throwable t) {
                 String m = t.getMessage();
                 assertNotNull(m);
-                assertTrue(m, m.contains("already exists"));
+                   assertTrue(m.contains("already exists"),m);
             }
         }
     }
@@ -2982,8 +2980,8 @@ public class SameDiffTests extends BaseNd4jTest {
                     fail("Expected exception");
                 } catch (Exception t) {
                     String msg = t.getMessage();
-                    assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]") && msg
-                            .contains(Arrays.toString(v.placeholderShape())));
+                    assertTrue(msg.contains("shape") && msg.contains("[2, 3]") && msg
+                            .contains(Arrays.toString(v.placeholderShape())),msg);
                 }
             }
 
@@ -2992,8 +2990,8 @@ public class SameDiffTests extends BaseNd4jTest {
                 fail("Expected exception");
             } catch (Exception t) {
                 String msg = t.getMessage();
-                assertTrue(msg, msg.contains("shape") && msg.contains("[1]") && msg
-                        .contains(Arrays.toString(v.placeholderShape())));
+                assertTrue(msg.contains("shape") && msg.contains("[1]") && msg
+                        .contains(Arrays.toString(v.placeholderShape())),msg);
             }
 
             try {
@@ -3001,8 +2999,8 @@ public class SameDiffTests extends BaseNd4jTest {
                 fail("Expected exception");
             } catch (Exception t) {
                 String msg = t.getMessage();
-                assertTrue(msg, msg.contains("shape") && msg.contains("[3, 4, 5]") && msg
-                        .contains(Arrays.toString(v.placeholderShape())));
+                assertTrue(msg.contains("shape") && msg.contains("[3, 4, 5]") && msg
+                        .contains(Arrays.toString(v.placeholderShape())),msg);
             }
         }
 
@@ -3020,7 +3018,7 @@ public class SameDiffTests extends BaseNd4jTest {
             sd.fit(mds);
         } catch (Exception t) {
             String msg = t.getMessage();
-            assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]"));
+            assertTrue( msg.contains("shape") && msg.contains("[2, 3]"),msg);
         }
     }
 
@@ -3122,7 +3120,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String, INDArray> out = sd.output((Map<String,INDArray>)null, "x", "y", "z", "tanh", "stdev");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
-            assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
+            assertEquals(DataType.FLOAT, e.getValue().dataType(),e.getKey());
         }
 
         assertEquals(DataType.FLOAT, x.getArr().dataType());
@@ -3141,7 +3139,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         out = sd.output((Map<String,INDArray>)null, "x", "y", "z", "tanh", "stdev");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
-            assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+            assertEquals(DataType.DOUBLE, e.getValue().dataType(),e.getKey());
         }
 
         assertEquals(DataType.DOUBLE, x.getArr().dataType());
@@ -3171,9 +3169,9 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> out = sd.output(ph, "x", "y", "xD", "yD", "a", "r");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
             if (e.getKey().equals("x") || e.getKey().equals("y")) {
-                assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
+                assertEquals(DataType.FLOAT, e.getValue().dataType(),e.getKey());
             } else {
-                assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+                assertEquals(DataType.DOUBLE, e.getValue().dataType(),e.getKey());
             }
         }
 
@@ -3193,7 +3191,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         out = sd.output(ph, "x", "y", "xD", "yD", "a", "r");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
-            assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+            assertEquals(DataType.DOUBLE, e.getValue().dataType(),e.getKey());
         }
 
         assertEquals(DataType.DOUBLE, y.getArr().dataType());
@@ -3312,7 +3310,7 @@ public class SameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testNestedWhile() throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable countIn = sd.constant(5);
@@ -3385,7 +3383,7 @@ public class SameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore // casted shape is null
+    @Disabled // casted shape is null
     public void castShapeTestEmpty(){
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.constant(Nd4j.empty(DataType.INT));
@@ -3405,7 +3403,7 @@ public class SameDiffTests extends BaseNd4jTest {
             fail("Expected exception");
         } catch (IllegalArgumentException e){
             String m = e.getMessage();
-            assertTrue(m, m.contains("variable") && m.contains("empty") && m.contains("0"));
+            assertTrue(m.contains("variable") && m.contains("empty") && m.contains("0"),m);
         }
 
         try {
@@ -3413,7 +3411,7 @@ public class SameDiffTests extends BaseNd4jTest {
             fail("Expected exception");
         } catch (IllegalArgumentException e){
             String m = e.getMessage().toLowerCase();
-            assertTrue(m, m.contains("variable") && m.contains("empty") && m.contains("0"));
+            assertTrue(m.contains("variable") && m.contains("empty") && m.contains("0"),m);
         }
     }
 
@@ -3561,7 +3559,7 @@ public class SameDiffTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testMissingPlaceholderError(){
+    public void testMissingPlaceholderError() {
 
         SameDiff sd = SameDiff.create();
 
@@ -3577,9 +3575,9 @@ public class SameDiffTests extends BaseNd4jTest {
         try {
             loss.eval();
             fail("Exception should have been thrown");
-        } catch (IllegalStateException e){
+        } catch (IllegalStateException e) {
             String msg = e.getMessage();
-            assertTrue(msg, msg.contains("\"labels\"") && msg.contains("No array was provided"));
+            assertTrue(msg.contains("\"labels\"") && msg.contains("No array was provided"),msg);
         }
     }
 

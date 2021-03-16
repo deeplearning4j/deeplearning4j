@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasLRN;
 import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasPoolHelper;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.Disabled;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.io.File;

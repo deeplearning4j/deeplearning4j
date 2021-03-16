@@ -23,10 +23,11 @@ package org.nd4j.linalg.serde;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,24 +36,23 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class NumpyFormatTests extends BaseNd4jTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     public NumpyFormatTests(Nd4jBackend backend) {
         super(backend);
     }
 
     @Test
-    public void testToNpyFormat() throws Exception {
+    public void testToNpyFormat(@TempDir Path testDir) throws Exception {
 
-        val dir = testDir.newFolder();
+        val dir = testDir.toFile();
         new ClassPathResource("numpy_arrays/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
@@ -91,7 +91,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
             System.out.println();
 */
 
-            assertArrayEquals("Failed with file [" + f.getName() + "]", expected, bytes);
+            assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "]");
             cnt++;
         }
 
@@ -99,10 +99,10 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testToNpyFormatScalars() throws Exception {
+    public void testToNpyFormatScalars(@TempDir Path testDir) throws Exception {
 //        File dir = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays\\scalar");
 
-        val dir = testDir.newFolder();
+        val dir = testDir.toFile();
         new ClassPathResource("numpy_arrays/scalar/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
@@ -142,7 +142,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
             System.out.println();
             */
 
-            assertArrayEquals("Failed with file [" + f.getName() + "]", expected, bytes);
+            assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "]");
             cnt++;
 
             System.out.println();
@@ -153,9 +153,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNpzReading() throws Exception {
+    public void testNpzReading(@TempDir Path testDir) throws Exception {
 
-        val dir = testDir.newFolder();
+        val dir = testDir.toFile();
         new ClassPathResource("numpy_arrays/npz/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
@@ -212,9 +212,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNpy() throws Exception {
+    public void testNpy(@TempDir Path testDir) throws Exception {
         for(boolean empty : new boolean[]{false, true}) {
-            val dir = testDir.newFolder();
+            val dir = testDir.toFile();
             if(!empty) {
                 new ClassPathResource("numpy_arrays/npy/3,4/").copyDirectory(dir);
             } else {
@@ -247,7 +247,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
                 }
                 INDArray act = Nd4j.createFromNpyFile(f);
 
-                assertEquals("Failed with file [" + f.getName() + "]", exp, act);
+                assertEquals( exp, act,"Failed with file [" + f.getName() + "]");
                 cnt++;
             }
 
@@ -261,62 +261,74 @@ public class NumpyFormatTests extends BaseNd4jTest {
         assertEquals(Nd4j.scalar(DataType.INT, 1), out);
     }
 
-    @Test(expected = RuntimeException.class)
-    public void readNumpyCorruptHeader1() throws Exception {
-        File f = testDir.newFolder();
+    @Test()
+    public void readNumpyCorruptHeader1(@TempDir Path testDir) throws Exception {
+        assertThrows(RuntimeException.class,() -> {
+            File f = testDir.toFile();
 
-        File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
-        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
-        for( int i=0; i<10; i++ ){
-            numpyBytes[i] = 0;
-        }
-        File fCorrupt = new File(f, "corrupt.npy");
-        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+            File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
+            byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+            for( int i = 0; i < 10; i++) {
+                numpyBytes[i] = 0;
+            }
+            File fCorrupt = new File(f, "corrupt.npy");
+            FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
 
-        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+            INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
 
-        INDArray act1 = Nd4j.createFromNpyFile(fValid);
-        assertEquals(exp, act1);
+            INDArray act1 = Nd4j.createFromNpyFile(fValid);
+            assertEquals(exp, act1);
 
-        INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
-        boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+            INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
+            boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+        });
+
     }
 
-    @Test(expected = RuntimeException.class)
-    public void readNumpyCorruptHeader2() throws Exception {
-        File f = testDir.newFolder();
+    @Test()
+    public void readNumpyCorruptHeader2(@TempDir Path testDir) throws Exception {
+        assertThrows(RuntimeException.class,() -> {
+            File f = testDir.toFile();
 
-        File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
-        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
-        for( int i=1; i<10; i++ ){
-            numpyBytes[i] = 0;
-        }
-        File fCorrupt = new File(f, "corrupt.npy");
-        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+            File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
+            byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+            for( int i = 1; i < 10; i++) {
+                numpyBytes[i] = 0;
+            }
+            File fCorrupt = new File(f, "corrupt.npy");
+            FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
 
-        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+            INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
 
-        INDArray act1 = Nd4j.createFromNpyFile(fValid);
-        assertEquals(exp, act1);
+            INDArray act1 = Nd4j.createFromNpyFile(fValid);
+            assertEquals(exp, act1);
 
-        INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
-        boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+            INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
+            boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testAbsentNumpyFile_1() throws Exception {
-        val f = new File("pew-pew-zomg.some_extension_that_wont_exist");
-        INDArray act1 = Nd4j.createFromNpyFile(f);
+        assertThrows(IllegalArgumentException.class,() -> {
+            val f = new File("pew-pew-zomg.some_extension_that_wont_exist");
+            INDArray act1 = Nd4j.createFromNpyFile(f);
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testAbsentNumpyFile_2() throws Exception {
-        val f = new File("c:/develop/batch-x-1.npy");
-        INDArray act1 = Nd4j.createFromNpyFile(f);
-        log.info("Array shape: {}; sum: {};", act1.shape(), act1.sumNumber().doubleValue());
+        assertThrows(IllegalArgumentException.class,() -> {
+            val f = new File("c:/develop/batch-x-1.npy");
+            INDArray act1 = Nd4j.createFromNpyFile(f);
+            log.info("Array shape: {}; sum: {};", act1.shape(), act1.sumNumber().doubleValue());
+        });
+
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testNumpyBoolean() {
         INDArray out = Nd4j.createFromNpyFile(new File("c:/Users/raver/Downloads/error2.npy"));

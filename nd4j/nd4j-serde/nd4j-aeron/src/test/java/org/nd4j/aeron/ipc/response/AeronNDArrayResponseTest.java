@@ -26,9 +26,9 @@ import io.aeron.driver.ThreadingMode;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,11 +38,11 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @NotThreadSafe
-@Ignore("Tests are too flaky")
+@Disabled("Tests are too flaky")
 public class AeronNDArrayResponseTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
 
@@ -51,7 +51,7 @@ public class AeronNDArrayResponseTest extends BaseND4JTest {
         return 180000L;
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         if(isIntegrationTests()) {
             final MediaDriver.Context ctx =

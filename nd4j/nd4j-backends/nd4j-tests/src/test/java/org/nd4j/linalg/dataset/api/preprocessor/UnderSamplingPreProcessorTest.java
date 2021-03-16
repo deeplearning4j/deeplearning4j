@@ -22,7 +22,7 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.extern.slf4j.Slf4j;
 import net.jcip.annotations.NotThreadSafe;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -41,8 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import static java.lang.Math.min;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author susaneraly
@@ -151,19 +151,19 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
                 INDArray minorityDist = labelWindow.mul(maskWindow).sum(1).div(maskWindow.sum(1));
 
                 if (j < shortSeq / window) {
-                    assertEquals("Failed on window " + j + " batch 0, loop " + i, targetDist,
-                                    minorityDist.getFloat(0), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 1, loop " + i, targetDist,
-                                    minorityDist.getFloat(1), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2),
-                                    tolerancePerc); //should be unchanged as it was already above target dist
+                    assertEquals(targetDist,
+                            minorityDist.getFloat(0), tolerancePerc,"Failed on window " + j + " batch 0, loop " + i); //should now be close to target dist
+                    assertEquals( targetDist,
+                            minorityDist.getFloat(1), tolerancePerc,"Failed on window " + j + " batch 1, loop " + i); //should now be close to target dist
+                    assertEquals(0.8, minorityDist.getFloat(2),
+                            tolerancePerc,"Failed on window " + j + " batch 2, loop " + i); //should be unchanged as it was already above target dist
                 }
-                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5),
-                                tolerancePerc); //should be unchanged as it was already above target dist
+                assertEquals(targetDist, minorityDist.getFloat(3),
+                        tolerancePerc,"Failed on window " + j + " batch 3, loop " + i); //should now be close to target dist
+                assertEquals(targetDist, minorityDist.getFloat(4),
+                        tolerancePerc,"Failed on window " + j + " batch 4, loop " + i); //should now be close to target dist
+                assertEquals( 0.8, minorityDist.getFloat(5),
+                        tolerancePerc,"Failed on window " + j + " batch 5, loop " + i); //should be unchanged as it was already above target dist
             }
         }
     }
@@ -214,19 +214,19 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
                 INDArray minorityDist = minorityClass.sum(1).div(majorityClass.add(minorityClass).sum(1));
 
                 if (j < shortSeq / window) {
-                    assertEquals("Failed on window " + j + " batch 0, loop " + i, targetDist,
-                                    minorityDist.getFloat(0), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 1, loop " + i, targetDist,
-                                    minorityDist.getFloat(1), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2),
-                                    tolerancePerc); //should be unchanged as it was already above target dist
+                    assertEquals(targetDist,
+                            minorityDist.getFloat(0), tolerancePerc,"Failed on window " + j + " batch 0, loop " + i); //should now be close to target dist
+                    assertEquals(targetDist,
+                            minorityDist.getFloat(1), tolerancePerc,"Failed on window " + j + " batch 1, loop " + i); //should now be close to target dist
+                    assertEquals(0.8, minorityDist.getFloat(2),
+                            tolerancePerc,"Failed on window " + j + " batch 2, loop " + i); //should be unchanged as it was already above target dist
                 }
-                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5),
-                                tolerancePerc); //should be unchanged as it was already above target dist
+                assertEquals(targetDist, minorityDist.getFloat(3),
+                        tolerancePerc,"Failed on window " + j + " batch 3, loop " + i); //should now be close to target dist
+                assertEquals( targetDist, minorityDist.getFloat(4),
+                        tolerancePerc,"Failed on window " + j + " batch 4, loop " + i); //should now be close to target dist
+                assertEquals(0.8, minorityDist.getFloat(5),
+                        tolerancePerc,"Failed on window " + j + " batch 5, loop " + i); //should be unchanged as it was already above target dist
             }
         }
     }

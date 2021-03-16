@@ -32,8 +32,8 @@ import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIte
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.common.resources.Resources;
@@ -44,7 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
 
@@ -57,7 +57,7 @@ public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
      * Basically all we want from this test - being able to finish without exceptions.
      */
     @Test
-    @Ignore
+    @Disabled
     public void testIterator1() throws Exception {
 
         File inputFile = Resources.asFile("big/raw_sentences.txt");

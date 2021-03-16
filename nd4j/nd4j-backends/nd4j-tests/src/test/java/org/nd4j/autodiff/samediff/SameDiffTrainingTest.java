@@ -20,8 +20,8 @@
 
 package org.nd4j.autodiff.samediff;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.evaluation.IEvaluation;
@@ -128,7 +128,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
             System.out.println(e.stats());
 
             double acc = e.accuracy();
-            assertTrue(u + " - " + acc, acc >= 0.75);
+            assertTrue( acc >= 0.75,u + " - " + acc);
         }
     }
 
@@ -179,7 +179,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
         double acc = e.accuracy();
 
-        assertTrue("Accuracy bad: " + acc, acc >= 0.75);
+        assertTrue(acc >= 0.75,"Accuracy bad: " + acc);
     }
 
 
@@ -234,7 +234,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
         double acc = e.accuracy();
 
-        assertTrue("Accuracy bad: " + acc, acc >= 0.75);
+        assertTrue(acc >= 0.75,"Accuracy bad: " + acc);
     }
 
 

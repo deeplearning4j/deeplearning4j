@@ -19,16 +19,17 @@
  */
 package org.datavec.api.transform.ops;
 
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.nd4j.common.tests.BaseND4JTest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.DisplayName;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Aggregator Impls Test")
 class AggregatorImplsTest extends BaseND4JTest {
@@ -265,23 +266,25 @@ class AggregatorImplsTest extends BaseND4JTest {
         assertEquals(9, cu.get().toInt());
     }
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
+
 
     @Test
     @DisplayName("Incompatible Aggregator Test")
     void incompatibleAggregatorTest() {
-        AggregatorImpls.AggregableSum<Integer> sm = new AggregatorImpls.AggregableSum<>();
-        for (int i = 0; i < intList.size(); i++) {
-            sm.accept(intList.get(i));
-        }
-        assertEquals(45, sm.get().toInt());
-        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
-        for (int i = 0; i < intList.size(); i++) {
-            reverse.accept(intList.get(intList.size() - i - 1));
-        }
-        exception.expect(UnsupportedOperationException.class);
-        sm.combine(reverse);
-        assertEquals(45, sm.get().toInt());
+        assertThrows(UnsupportedOperationException.class,() -> {
+            AggregatorImpls.AggregableSum<Integer> sm = new AggregatorImpls.AggregableSum<>();
+            for (int i = 0; i < intList.size(); i++) {
+                sm.accept(intList.get(i));
+            }
+            assertEquals(45, sm.get().toInt());
+            AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+            for (int i = 0; i < intList.size(); i++) {
+                reverse.accept(intList.get(intList.size() - i - 1));
+            }
+
+            sm.combine(reverse);
+            assertEquals(45, sm.get().toInt());
+        });
+
     }
 }

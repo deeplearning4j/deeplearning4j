@@ -21,9 +21,9 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.util.ArrayUtil;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 @Slf4j
@@ -46,12 +46,12 @@ public class TestEigen extends BaseNd4jTest {
         initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(initialType);
     }

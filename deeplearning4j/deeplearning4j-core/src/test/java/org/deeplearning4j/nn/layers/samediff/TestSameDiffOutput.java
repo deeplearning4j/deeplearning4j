@@ -31,7 +31,7 @@ import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffMSELossLayer;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffMSEOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -39,7 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class TestSameDiffOutput extends BaseDL4JTest {
@@ -166,8 +166,8 @@ public class TestSameDiffOutput extends BaseDL4JTest {
                 netSD.fit(ds);
                 netStd.fit(ds);
                 String s = String.valueOf(i);
-                assertEquals(s, netStd.params(), netSD.params());
-                assertEquals(s, netStd.getFlattenedGradients(), netSD.getFlattenedGradients());
+                assertEquals(netStd.params(), netSD.params(), s);
+                assertEquals(netStd.getFlattenedGradients(), netSD.getFlattenedGradients(), s);
             }
 
             //Test fit before output:

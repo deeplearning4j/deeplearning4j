@@ -26,7 +26,7 @@ import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PatternPathLabelGenerator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.net.URI;
@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *

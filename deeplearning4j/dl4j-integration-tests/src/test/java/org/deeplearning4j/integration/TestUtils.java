@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.*;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestUtils {
 

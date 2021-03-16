@@ -20,15 +20,10 @@
 
 package org.nd4j.linalg.workspace;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -50,6 +45,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @Slf4j
 @RunWith(Parameterized.class)
 public class SpecialWorkspaceTests extends BaseNd4jTest {
@@ -60,7 +57,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -120,14 +117,14 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                     Nd4j.create(500);
                 }
 
-                assertEquals("Failed on iteration " + i, (i + 1) * workspace.getInitialBlockSize(),
-                                workspace.getDeviceOffset());
+                assertEquals((i + 1) * workspace.getInitialBlockSize(),
+                        workspace.getDeviceOffset(),"Failed on iteration " + i);
             }
 
             if (e >= 2) {
-                assertEquals("Failed on iteration " + e, 0, workspace.getNumberOfPinnedAllocations());
+                assertEquals(0, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             } else {
-                assertEquals("Failed on iteration " + e, 1, workspace.getNumberOfPinnedAllocations());
+                assertEquals(1, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             }
         }
 
@@ -407,25 +404,28 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         Files.delete(tmpFile);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testDeleteMappedFile_2() throws Exception {
-        if (!Nd4j.getEnvironment().isCPU())
-            throw new IllegalArgumentException("Don't try to run on CUDA");
+       assertThrows(IllegalArgumentException.class,() -> {
+           if (!Nd4j.getEnvironment().isCPU())
+               throw new IllegalArgumentException("Don't try to run on CUDA");
 
-        val tmpFile = Files.createTempFile("some", "file");
-        val mmap = WorkspaceConfiguration.builder()
-                .initialSize(200 * 1024L * 1024L) // 200mbs
-                .tempFilePath(tmpFile.toAbsolutePath().toString())
-                .policyLocation(LocationPolicy.MMAP)
-                .build();
+           val tmpFile = Files.createTempFile("some", "file");
+           val mmap = WorkspaceConfiguration.builder()
+                   .initialSize(200 * 1024L * 1024L) // 200mbs
+                   .tempFilePath(tmpFile.toAbsolutePath().toString())
+                   .policyLocation(LocationPolicy.MMAP)
+                   .build();
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
-            val x = Nd4j.rand(DataType.FLOAT, 1024);
-        }
+           try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+               val x = Nd4j.rand(DataType.FLOAT, 1024);
+           }
 
-        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+           Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
 
-        Files.delete(tmpFile);
+           Files.delete(tmpFile);
+       });
+
     }
 
     @Test

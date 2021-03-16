@@ -38,7 +38,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
@@ -51,8 +51,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(Parameterized.class)
 public class ConvDataFormatTests extends BaseDL4JTest {
@@ -865,13 +865,13 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         INDArray l0_3 = tc.net3.feedForward(inNHWC).get(tc.testLayerIdx + 1);
         INDArray l0_4 = tc.net4.feedForward(inNHWC).get(tc.testLayerIdx + 1);
 
-        assertEquals(tc.msg, l0_1, l0_2);
+        assertEquals(l0_1, l0_2,tc.msg);
         if(l0_1.rank() == 4) {
-            assertEquals(tc.msg, l0_1, l0_3.permute(0, 3, 1, 2));
-            assertEquals(tc.msg, l0_1, l0_4.permute(0, 3, 1, 2));
+            assertEquals(l0_1, l0_3.permute(0, 3, 1, 2),tc.msg);
+            assertEquals(l0_1, l0_4.permute(0, 3, 1, 2),tc.msg);
         } else {
-            assertEquals(tc.msg, l0_1, l0_3);
-            assertEquals(tc.msg, l0_1, l0_4);
+            assertEquals(l0_1, l0_3,tc.msg);
+            assertEquals( l0_1, l0_4,tc.msg);
         }
 
 
@@ -880,13 +880,13 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         INDArray out3 = tc.net3.output(inNHWC);
         INDArray out4 = tc.net4.output(inNHWC);
 
-        assertEquals(tc.msg, out1, out2);
+        assertEquals(out1, out2,tc.msg);
         if(!tc.nhwcOutput) {
-            assertEquals(tc.msg, out1, out3);
-            assertEquals(tc.msg, out1, out4);
+            assertEquals(out1, out3,tc.msg);
+            assertEquals( out1, out4,tc.msg);
         } else {
-            assertEquals(tc.msg, out1, out3.permute(0,3,1,2));      //NHWC to NCHW
-            assertEquals(tc.msg, out1, out4.permute(0,3,1,2));
+            assertEquals(out1, out3.permute(0,3,1,2),tc.msg);      //NHWC to NCHW
+            assertEquals(out1, out4.permute(0,3,1,2),tc.msg);
         }
 
         //Test backprop
@@ -896,29 +896,29 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         Pair<Gradient, INDArray> p4 = tc.net4.calculateGradients(inNHWC, tc.labelsNHWC, null, null);
 
             //Inpput gradients
-        assertEquals(tc.msg, p1.getSecond(), p2.getSecond());
-        assertEquals(tc.msg, p1.getSecond(), p3.getSecond().permute(0,3,1,2));  //Input gradients for NHWC input are also in NHWC format
-        assertEquals(tc.msg, p1.getSecond(), p4.getSecond().permute(0,3,1,2));
+        assertEquals( p1.getSecond(), p2.getSecond(),tc.msg);
+        assertEquals(p1.getSecond(), p3.getSecond().permute(0,3,1,2),tc.msg);  //Input gradients for NHWC input are also in NHWC format
+        assertEquals( p1.getSecond(), p4.getSecond().permute(0,3,1,2),tc.msg);
 
         List<String> diff12 = differentGrads(p1.getFirst(), p2.getFirst());
         List<String> diff13 = differentGrads(p1.getFirst(), p3.getFirst());
         List<String> diff14 = differentGrads(p1.getFirst(), p4.getFirst());
-        assertEquals(tc.msg + " " + diff12, 0, diff12.size());
-        assertEquals(tc.msg + " " + diff13, 0, diff13.size());
-        assertEquals(tc.msg + " " + diff14, 0, diff14.size());
+        assertEquals( 0, diff12.size(),tc.msg + " " + diff12);
+        assertEquals( 0, diff13.size(),tc.msg + " " + diff13);
+        assertEquals(0, diff14.size(),tc.msg + " " + diff14);
 
-        assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p2.getFirst().gradientForVariable());
-        assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p3.getFirst().gradientForVariable());
-        assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p4.getFirst().gradientForVariable());
+        assertEquals(p1.getFirst().gradientForVariable(), p2.getFirst().gradientForVariable(),tc.msg);
+        assertEquals(p1.getFirst().gradientForVariable(), p3.getFirst().gradientForVariable(),tc.msg);
+        assertEquals( p1.getFirst().gradientForVariable(), p4.getFirst().gradientForVariable(),tc.msg);
 
         tc.net1.fit(inNCHW, tc.labelsNCHW);
         tc.net2.fit(inNCHW, tc.labelsNCHW);
         tc.net3.fit(inNHWC, tc.labelsNHWC);
         tc.net4.fit(inNHWC, tc.labelsNHWC);
 
-        assertEquals(tc.msg, tc.net1.params(), tc.net2.params());
-        assertEquals(tc.msg, tc.net1.params(), tc.net3.params());
-        assertEquals(tc.msg, tc.net1.params(), tc.net4.params());
+        assertEquals(tc.net1.params(), tc.net2.params(),tc.msg);
+        assertEquals(tc.net1.params(), tc.net3.params(),tc.msg);
+        assertEquals(tc.net1.params(), tc.net4.params(),tc.msg);
 
         //Test serialization
         MultiLayerNetwork net1a = TestUtils.testModelSerialization(tc.net1);
@@ -927,14 +927,14 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         MultiLayerNetwork net4a = TestUtils.testModelSerialization(tc.net4);
 
         out1 = tc.net1.output(inNCHW);
-        assertEquals(tc.msg, out1, net1a.output(inNCHW));
-        assertEquals(tc.msg, out1, net2a.output(inNCHW));
+        assertEquals(out1, net1a.output(inNCHW),tc.msg);
+        assertEquals(out1, net2a.output(inNCHW),tc.msg);
         if(!tc.nhwcOutput) {
-            assertEquals(tc.msg, out1, net3a.output(inNHWC));
-            assertEquals(tc.msg, out1, net4a.output(inNHWC));
+            assertEquals( out1, net3a.output(inNHWC),tc.msg);
+            assertEquals(out1, net4a.output(inNHWC),tc.msg);
         } else {
-            assertEquals(tc.msg, out1, net3a.output(inNHWC).permute(0,3,1,2));   //NHWC to NCHW
-            assertEquals(tc.msg, out1, net4a.output(inNHWC).permute(0,3,1,2));
+            assertEquals(out1, net3a.output(inNHWC).permute(0,3,1,2),tc.msg);   //NHWC to NCHW
+            assertEquals(out1, net4a.output(inNHWC).permute(0,3,1,2),tc.msg);
         }
 
     }
@@ -1033,7 +1033,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 } catch (DL4JInvalidInputException e) {
 //                    e.printStackTrace();
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG) || msg.contains("input array channels does not match CNN layer configuration"));
+                    assertTrue(msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG) || msg.contains("input array channels does not match CNN layer configuration"),msg);
                 }
             }
         }

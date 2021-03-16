@@ -23,8 +23,8 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -51,7 +51,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * NDArrayTests for fortran ordering
@@ -243,7 +243,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(sorted[1], sorted2);
         INDArray shouldIndex = Nd4j.create(new double[] {1, 1, 0, 0}, new long[] {2, 2});
-        assertEquals(getFailureMessage(), shouldIndex, sorted[0]);
+        assertEquals(shouldIndex, sorted[0],getFailureMessage());
     }
 
     @Test
@@ -262,7 +262,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, true);
         assertEquals(sorted[1], sorted2);
         INDArray shouldIndex = Nd4j.create(new double[] {0, 0, 1, 1}, new long[] {2, 2});
-        assertEquals(getFailureMessage(), shouldIndex, sorted[0]);
+        assertEquals(shouldIndex, sorted[0],getFailureMessage());
     }
 
     @Test
@@ -319,13 +319,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testDivide() {
         INDArray two = Nd4j.create(new float[] {2, 2, 2, 2});
         INDArray div = two.div(two);
-        assertEquals(getFailureMessage(), Nd4j.ones(DataType.FLOAT, 4), div);
+        assertEquals( Nd4j.ones(DataType.FLOAT, 4), div,getFailureMessage());
 
         INDArray half = Nd4j.create(new float[] {0.5f, 0.5f, 0.5f, 0.5f}, new long[] {2, 2});
         INDArray divi = Nd4j.create(new float[] {0.3f, 0.6f, 0.9f, 0.1f}, new long[] {2, 2});
         INDArray assertion = Nd4j.create(new float[] {1.6666666f, 0.8333333f, 0.5555556f, 5}, new long[] {2, 2});
         INDArray result = half.div(divi);
-        assertEquals(getFailureMessage(), assertion, result);
+        assertEquals( assertion, result,getFailureMessage());
     }
 
 
@@ -334,7 +334,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[] {0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
-        assertEquals(getFailureMessage(), assertion, sigmoid);
+        assertEquals( assertion, sigmoid,getFailureMessage());
 
     }
 
@@ -343,7 +343,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[] {-1, -2, -3, -4});
         INDArray neg = Transforms.neg(n);
-        assertEquals(getFailureMessage(), assertion, neg);
+        assertEquals(assertion, neg,getFailureMessage());
 
     }
 
@@ -353,12 +353,12 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray vec1 = Nd4j.create(new double[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[] {1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
-        assertEquals(getFailureMessage(), 1, sim, 1e-1);
+        assertEquals(1, sim, 1e-1,getFailureMessage());
 
         INDArray vec3 = Nd4j.create(new float[] {0.2f, 0.3f, 0.4f, 0.5f});
         INDArray vec4 = Nd4j.create(new float[] {0.6f, 0.7f, 0.8f, 0.9f});
         sim = Transforms.cosineSim(vec3, vec4);
-        assertEquals(getFailureMessage(), 0.98, sim, 1e-1);
+        assertEquals(0.98, sim, 1e-1,getFailureMessage());
 
     }
 
@@ -597,7 +597,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray innerProduct = n.mmul(transposed);
 
         INDArray scalar = Nd4j.scalar(385.0).reshape(1,1);
-        assertEquals(getFailureMessage(), scalar, innerProduct);
+        assertEquals(scalar, innerProduct,getFailureMessage());
     }
 
 
@@ -651,7 +651,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray five = Nd4j.ones(5);
         five.addi(five.dup());
         INDArray twos = Nd4j.valueArrayOf(5, 2);
-        assertEquals(getFailureMessage(), twos, five);
+        assertEquals(twos, five,getFailureMessage());
 
     }
 
@@ -664,7 +664,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[][] {{14, 32}, {32, 77}});
 
         INDArray test = arr.mmul(arr.transpose());
-        assertEquals(getFailureMessage(), assertion, test);
+        assertEquals(assertion, test,getFailureMessage());
 
     }
 
@@ -675,7 +675,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         Nd4j.exec(new PrintVariable(newSlice));
         log.info("Slice: {}", newSlice);
         n.putSlice(0, newSlice);
-        assertEquals(getFailureMessage(), newSlice, n.slice(0));
+        assertEquals( newSlice, n.slice(0),getFailureMessage());
 
     }
 
@@ -683,7 +683,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testRowVectorMultipleIndices() {
         INDArray linear = Nd4j.create(DataType.DOUBLE, 1, 4);
         linear.putScalar(new long[] {0, 1}, 1);
-        assertEquals(getFailureMessage(), linear.getDouble(0, 1), 1, 1e-1);
+        assertEquals(linear.getDouble(0, 1), 1, 1e-1,getFailureMessage());
     }
 
 
@@ -1004,7 +1004,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray nClone = n1.add(n2);
         assertEquals(Nd4j.scalar(3), nClone);
         INDArray n1PlusN2 = n1.add(n2);
-        assertFalse(getFailureMessage(), n1PlusN2.equals(n1));
+        assertFalse(n1PlusN2.equals(n1),getFailureMessage());
 
         INDArray n3 = Nd4j.scalar(3.0);
         INDArray n4 = Nd4j.scalar(4.0);
@@ -1029,7 +1029,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testTensorDot() {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape('f', 3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2).castTo(DataType.DOUBLE);
@@ -1081,12 +1081,12 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             INDArray dupc = in.dup('c');
             INDArray dupf = in.dup('f');
 
-            assertEquals(msg, in, dup);
-            assertEquals(msg, dup.ordering(), (char) Nd4j.order());
-            assertEquals(msg, dupc.ordering(), 'c');
-            assertEquals(msg, dupf.ordering(), 'f');
-            assertEquals(msg, in, dupc);
-            assertEquals(msg, in, dupf);
+            assertEquals(in, dup,msg);
+            assertEquals(dup.ordering(), (char) Nd4j.order(),msg);
+            assertEquals(dupc.ordering(), 'c',msg);
+            assertEquals(dupf.ordering(), 'f',msg);
+            assertEquals( in, dupc,msg);
+            assertEquals(in, dupf,msg);
             count++;
         }
     }
@@ -1104,12 +1104,12 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             INDArray dupf = Shape.toOffsetZeroCopy(in, 'f');
             INDArray dupany = Shape.toOffsetZeroCopyAnyOrder(in);
 
-            assertEquals(msg + ": " + cnt, in, dup);
-            assertEquals(msg, in, dupc);
-            assertEquals(msg, in, dupf);
-            assertEquals(msg, dupc.ordering(), 'c');
-            assertEquals(msg, dupf.ordering(), 'f');
-            assertEquals(msg, in, dupany);
+            assertEquals( in, dup,msg + ": " + cnt);
+            assertEquals(in, dupc,msg);
+            assertEquals(in, dupf,msg);
+            assertEquals(dupc.ordering(), 'c',msg);
+            assertEquals(dupf.ordering(), 'f',msg);
+            assertEquals( in, dupany,msg);
 
             assertEquals(dup.offset(), 0);
             assertEquals(dupc.offset(), 0);

@@ -23,8 +23,8 @@ package org.nd4j.linalg.blas;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,7 +36,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -213,7 +213,7 @@ public class BlasTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testHalfPrecision() {
         val a = Nd4j.create(DataType.HALF, 64, 768);
         val b = Nd4j.create(DataType.HALF, 768, 1024);

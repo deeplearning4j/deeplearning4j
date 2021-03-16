@@ -20,9 +20,9 @@
 package org.deeplearning4j.datasets.fetchers;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+
 import java.io.File;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;

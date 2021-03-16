@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,7 +29,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTest {
 
@@ -42,48 +42,72 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_originalHeightIsZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+       assertThrows(IllegalArgumentException.class,() -> {
+           CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+       });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_originalWidthIsZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_yStartIsNegative_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_xStartIsNegative_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, -1, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, -1, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_heightIsNotGreaterThanZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 0, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 0, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_widthIsNotGreaterThanZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 0, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 0, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_numChannelsIsNotGreaterThanZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 0, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 0, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_dataSetIsNull_expect_NullPointerException() {
         // Assemble
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(NullPointerException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
 
-        // Act
-        sut.preProcess(null);
+            // Act
+            sut.preProcess(null);
+        });
+
     }
 
     @Test

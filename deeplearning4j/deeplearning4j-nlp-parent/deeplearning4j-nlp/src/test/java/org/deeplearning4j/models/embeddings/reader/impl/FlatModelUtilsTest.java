@@ -25,9 +25,9 @@ import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -35,14 +35,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Ignore
+@Disabled
 public class FlatModelUtilsTest extends BaseDL4JTest {
     private Word2Vec vec;
     private static final Logger log = LoggerFactory.getLogger(FlatModelUtilsTest.class);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         if (vec == null) {
             //vec = WordVectorSerializer.loadFullModel("/Users/raver119/develop/model.dat");

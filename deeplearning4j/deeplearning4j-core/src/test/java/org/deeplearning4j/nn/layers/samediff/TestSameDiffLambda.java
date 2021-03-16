@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffSimpleLambdaLayer;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffSimpleLambdaVertex;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,7 +44,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class TestSameDiffLambda extends BaseDL4JTest {
@@ -119,8 +119,8 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 std.fit(ds);
 
                 String s = String.valueOf(i);
-                assertEquals(s, std.params(), lambda.params());
-                assertEquals(s, std.getFlattenedGradients(), lambda.getFlattenedGradients());
+                assertEquals(std.params(), lambda.params(), s);
+                assertEquals(std.getFlattenedGradients(), lambda.getFlattenedGradients(), s);
             }
 
             ComputationGraph loaded = TestUtils.testModelSerialization(lambda);
@@ -204,8 +204,8 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 std.fit(mds);
 
                 String s = String.valueOf(i);
-                assertEquals(s, std.params(), lambda.params());
-                assertEquals(s, std.getFlattenedGradients(), lambda.getFlattenedGradients());
+                assertEquals(std.params(), lambda.params(), s);
+                assertEquals(std.getFlattenedGradients(), lambda.getFlattenedGradients(), s);
             }
 
             ComputationGraph loaded = TestUtils.testModelSerialization(lambda);

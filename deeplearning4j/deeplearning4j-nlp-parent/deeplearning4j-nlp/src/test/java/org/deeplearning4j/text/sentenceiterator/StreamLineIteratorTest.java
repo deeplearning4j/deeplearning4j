@@ -22,15 +22,15 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.common.io.ClassPathResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class StreamLineIteratorTest extends BaseDL4JTest {
 

@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.samediff.listeners;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
 import org.nd4j.autodiff.listeners.Listener;
@@ -59,7 +59,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ListenerTest extends BaseNd4jTest {
 
@@ -132,7 +132,7 @@ public class ListenerTest extends BaseNd4jTest {
         System.out.println("Losses: " + Arrays.toString(losses));
 
         double acc = hist.finalTrainingEvaluations().getValue(Metric.ACCURACY);
-        assertTrue("Accuracy < 75%, was " + acc, acc >= 0.75);
+        assertTrue(acc >= 0.75,"Accuracy < 75%, was " + acc);
     }
 
     @Test

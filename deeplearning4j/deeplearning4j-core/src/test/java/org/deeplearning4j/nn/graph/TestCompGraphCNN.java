@@ -30,9 +30,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,10 +44,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
-//@Ignore
+//@Disabled
 public class TestCompGraphCNN extends BaseDL4JTest {
 
     protected ComputationGraphConfiguration conf;
@@ -96,8 +96,8 @@ public class TestCompGraphCNN extends BaseDL4JTest {
         return 2 * (3 * 1 * 4 * 4 * 3 + 3) + (7 * 14 * 14 * 6 + 7) + (7 * 10 + 10);
     }
 
-    @Before
-    @Ignore
+    @BeforeEach
+    @Disabled
     public void beforeDo() {
         conf = getMultiInputGraphConfig();
         graph = new ComputationGraph(conf);
@@ -138,51 +138,54 @@ public class TestCompGraphCNN extends BaseDL4JTest {
 
     }
 
-    @Test(expected = DL4JInvalidConfigException.class)
+    @Test()
     public void testCNNComputationGraphKernelTooLarge() {
-        int imageWidth = 23;
-        int imageHeight = 19;
-        int nChannels = 1;
-        int classes = 2;
-        int numSamples = 200;
+       assertThrows(DL4JInvalidConfigException.class,() -> {
+           int imageWidth = 23;
+           int imageHeight = 19;
+           int nChannels = 1;
+           int classes = 2;
+           int numSamples = 200;
 
-        int kernelHeight = 3;
-        int kernelWidth = imageWidth;
-
-
-        DataSet trainInput;
-
-        ComputationGraphConfiguration conf =
-                new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .seed(123).graphBuilder().addInputs("input")
-                        .setInputTypes(InputType.convolutional(nChannels, imageWidth,
-                                imageHeight))
-                        .addLayer("conv1", new ConvolutionLayer.Builder()
-                                .kernelSize(kernelHeight, kernelWidth).stride(1, 1)
-                                .dataFormat(CNN2DFormat.NCHW)
-                                .nIn(nChannels).nOut(2).weightInit(WeightInit.XAVIER)
-                                .activation(Activation.RELU).build(), "input")
-                        .addLayer("pool1",
-                                new SubsamplingLayer.Builder()
-                                        .dataFormat(CNN2DFormat.NCHW)
-                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                                        .kernelSize(imageHeight - kernelHeight + 1, 1)
-                                        .stride(1, 1).build(),
-                                "conv1")
-                        .addLayer("output", new OutputLayer.Builder().nOut(classes).activation(Activation.SOFTMAX).build(), "pool1")
-                        .setOutputs("output").build();
+           int kernelHeight = 3;
+           int kernelWidth = imageWidth;
 
 
-        ComputationGraph model = new ComputationGraph(conf);
-        model.init();
+           DataSet trainInput;
+
+           ComputationGraphConfiguration conf =
+                   new NeuralNetConfiguration.Builder()
+                           .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                           .seed(123).graphBuilder().addInputs("input")
+                           .setInputTypes(InputType.convolutional(nChannels, imageWidth,
+                                   imageHeight))
+                           .addLayer("conv1", new ConvolutionLayer.Builder()
+                                   .kernelSize(kernelHeight, kernelWidth).stride(1, 1)
+                                   .dataFormat(CNN2DFormat.NCHW)
+                                   .nIn(nChannels).nOut(2).weightInit(WeightInit.XAVIER)
+                                   .activation(Activation.RELU).build(), "input")
+                           .addLayer("pool1",
+                                   new SubsamplingLayer.Builder()
+                                           .dataFormat(CNN2DFormat.NCHW)
+                                           .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                           .kernelSize(imageHeight - kernelHeight + 1, 1)
+                                           .stride(1, 1).build(),
+                                   "conv1")
+                           .addLayer("output", new OutputLayer.Builder().nOut(classes).activation(Activation.SOFTMAX).build(), "pool1")
+                           .setOutputs("output").build();
 
 
-        INDArray emptyFeatures = Nd4j.zeros(numSamples, imageWidth * imageHeight * nChannels);
-        INDArray emptyLables = Nd4j.zeros(numSamples, classes);
+           ComputationGraph model = new ComputationGraph(conf);
+           model.init();
 
-        trainInput = new DataSet(emptyFeatures, emptyLables);
 
-        model.fit(trainInput);
+           INDArray emptyFeatures = Nd4j.zeros(numSamples, imageWidth * imageHeight * nChannels);
+           INDArray emptyLables = Nd4j.zeros(numSamples, classes);
+
+           trainInput = new DataSet(emptyFeatures, emptyLables);
+
+           model.fit(trainInput);
+       });
+
     }
 }

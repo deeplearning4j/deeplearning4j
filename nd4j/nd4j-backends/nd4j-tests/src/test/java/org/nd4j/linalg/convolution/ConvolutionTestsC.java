@@ -21,8 +21,8 @@
 package org.nd4j.linalg.convolution;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -43,7 +43,7 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -106,7 +106,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testCompareIm2ColImpl() {
 
         int[] miniBatches = {1, 3, 5};
@@ -271,7 +271,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
                                             reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]).dup('c');
 
-                                            assertEquals("Failed opType: " + type, reduced, output);
+                                            assertEquals(reduced, output,"Failed opType: " + type);
                                         }
                                     }
                                 }
@@ -345,7 +345,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testMaxPoolBackprop(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -401,7 +401,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                     INDArray expEpsNext = expGradMaxPoolBackPropSame(input, epsilon, kernel, strides, same);
 
                     String msg = "input=" + pIn.getSecond() + ", eps=" + pEps.getSecond();
-                    assertEquals(msg, expEpsNext, epsNext);
+                    assertEquals( expEpsNext, epsNext,msg);
                 }
             }
         }

@@ -27,8 +27,8 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.util.IDataManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -53,7 +53,7 @@ public class SyncLearningTest {
     @Mock
     ILearningConfiguration mockLearningConfiguration;
 
-    @Before
+    @BeforeEach
     public void setup() {
 
         syncLearning = mock(SyncLearning.class, Mockito.withSettings()

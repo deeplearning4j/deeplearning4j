@@ -29,9 +29,10 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.common.validation.ValidationResult;
 
@@ -52,16 +53,15 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ModelValidatorTests extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testMultiLayerNetworkValidation() throws Exception {
-        File f = testDir.newFolder();
+    public void testMultiLayerNetworkValidation(@TempDir Path testDir) throws Exception {
+        File f = testDir.toFile();
 
         //Test non-existent file
         File f0 = new File(f, "doesntExist.bin");
@@ -178,8 +178,8 @@ public class ModelValidatorTests extends BaseDL4JTest {
 
 
     @Test
-    public void testComputationGraphNetworkValidation() throws Exception {
-        File f = testDir.newFolder();
+    public void testComputationGraphNetworkValidation(@TempDir Path testDir) throws Exception {
+        File f = testDir.toFile();
 
         //Test non-existent file
         File f0 = new File(f, "doesntExist.bin");

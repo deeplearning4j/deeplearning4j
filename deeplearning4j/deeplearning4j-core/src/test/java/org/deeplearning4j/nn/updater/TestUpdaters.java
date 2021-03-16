@@ -38,8 +38,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,7 +53,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
@@ -70,7 +70,7 @@ public class TestUpdaters extends BaseDL4JTest {
     protected String key;
 
 
-    @Before
+    @BeforeEach
     public void beforeDo() {
         gradients = Nd4j.ones(1, nIn * nOut + nOut);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
@@ -320,7 +320,7 @@ public class TestUpdaters extends BaseDL4JTest {
             count++;
         }
 
-        assertEquals("Count should be equal to 2, one for weight gradient and one for bias gradient", 2, count);
+        assertEquals(2, count,"Count should be equal to 2, one for weight gradient and one for bias gradient");
 
         /*
         * Check that we are not erroneously mutating moving avg gradient while calculating
@@ -340,7 +340,7 @@ public class TestUpdaters extends BaseDL4JTest {
             actualM[i] = Math.round(actualM[i] * 1e2) / 1e2;
         }
 
-        assertEquals("Wrong weight gradient after first iteration's update", Arrays.equals(expectedM, actualM), true);
+        assertEquals(Arrays.equals(expectedM, actualM), true, "Wrong weight gradient after first iteration's update");
 
     }
 

@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(Parameterized.class)
 public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
@@ -45,7 +45,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
     private double meanNaturalNums;
     private double stdNaturalNums;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         SUT = new MultiNormalizerStandardize();
         SUT.fitLabel(true);

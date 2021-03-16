@@ -35,7 +35,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
@@ -50,9 +50,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestRnnLayers extends BaseDL4JTest {
@@ -178,8 +178,8 @@ public class TestRnnLayers extends BaseDL4JTest {
             MultiLayerNetwork netD2 = new MultiLayerNetwork(confD2);
             netD2.init();
 
-            assertEquals(s, net.params(), netD.params());
-            assertEquals(s, net.params(), netD2.params());
+            assertEquals(net.params(), netD.params(), s);
+            assertEquals(net.params(), netD2.params(), s);
 
             INDArray f = Nd4j.rand(DataType.FLOAT, new int[]{3, 10, 10});
 
@@ -187,18 +187,18 @@ public class TestRnnLayers extends BaseDL4JTest {
             INDArray out1 = net.output(f);
             INDArray out1D = netD.output(f);
             INDArray out1D2 = netD2.output(f);
-            assertEquals(s, out1, out1D);
-            assertEquals(s, out1, out1D2);
+            assertEquals(out1, out1D, s);
+            assertEquals(out1, out1D2, s);
 
 
             INDArray out2 = net.output(f, true);
             INDArray out2D = netD.output(f, true);
-            assertNotEquals(s, out2, out2D);
+            assertNotEquals(out2, out2D, s);
 
             INDArray l = TestUtils.randomOneHotTimeSeries(3, 10, 10, 12345);
             net.fit(f.dup(), l);
             netD.fit(f.dup(), l);
-            assertNotEquals(s, net.params(), netD.params());
+            assertNotEquals(net.params(), netD.params(), s);
 
             netD2.fit(f.dup(), l);
             netD2.fit(f.dup(), l);
@@ -210,7 +210,7 @@ public class TestRnnLayers extends BaseDL4JTest {
                     new Pair<>(1, 0),
                     new Pair<>(2, 0));
 
-            assertEquals(s, expected, cd.getAllCalls());
+            assertEquals(expected, cd.getAllCalls(), s);
         }
     }
 
@@ -248,7 +248,7 @@ public class TestRnnLayers extends BaseDL4JTest {
                 if(msg == null)
                     t.printStackTrace();
                 System.out.println(i);
-                assertTrue(msg, msg != null && msg.contains("sequence length") && msg.contains("input") && msg.contains("label"));
+                assertTrue(msg != null && msg.contains("sequence length") && msg.contains("input") && msg.contains("label"), msg);
             }
 
         }

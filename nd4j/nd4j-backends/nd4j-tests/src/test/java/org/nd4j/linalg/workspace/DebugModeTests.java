@@ -22,9 +22,9 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -39,7 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -51,12 +51,12 @@ public class DebugModeTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void turnMeUp() {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.DISABLED);
     }
 
-    @After
+    @AfterEach
     public void turnMeDown() {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.DISABLED);
         Nd4j.getMemoryManager().setCurrentWorkspace(null);

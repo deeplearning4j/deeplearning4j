@@ -32,30 +32,32 @@ import org.deeplearning4j.graph.iterator.parallel.WeightedRandomWalkGraphIterato
 import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.loader.GraphVectorSerializer;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestDeepWalk extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public long getTimeoutMilliseconds() {
         return 120_000L;        //Increase timeout due to intermittently slow CI machines
     }
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000)
     public void testBasic() throws IOException {
         //Very basic test. Load graph, build tree, call fit, make sure it doesn't throw any exceptions
 
@@ -93,7 +95,8 @@ public class TestDeepWalk extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 180000L)
+    @Test()
+    @Timeout(180000)
     public void testParallel() {
 
         IGraph<String, String> graph = generateRandomGraph(30, 4);
@@ -127,7 +130,8 @@ public class TestDeepWalk extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000)
     public void testVerticesNearest() {
 
         int nVertices = 20;
@@ -172,8 +176,9 @@ public class TestDeepWalk extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 60000L)
-    public void testLoadingSaving() throws IOException {
+    @Test()
+    @Timeout(60000)
+    public void testLoadingSaving(@TempDir Path testDir) throws IOException {
         String out = "dl4jdwtestout.txt";
 
         int nVertices = 20;
@@ -187,7 +192,7 @@ public class TestDeepWalk extends BaseDL4JTest {
 
         deepWalk.fit(graph, 10);
 
-        File f = testDir.newFile(out);
+        File f = new File(testDir.toFile(),out);
         GraphVectorSerializer.writeGraphVectors(deepWalk, f.getAbsolutePath());
 
         GraphVectors<String, String> vectors =
@@ -209,7 +214,8 @@ public class TestDeepWalk extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 180000L)
+    @Test()
+    @Timeout(180000)
     public void testDeepWalk13Vertices() throws IOException {
 
         int nVertices = 13;
@@ -245,7 +251,8 @@ public class TestDeepWalk extends BaseDL4JTest {
             deepWalk.getVertexVector(i);
     }
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000)
     public void testDeepWalkWeightedParallel() throws IOException {
 
         //Load graph

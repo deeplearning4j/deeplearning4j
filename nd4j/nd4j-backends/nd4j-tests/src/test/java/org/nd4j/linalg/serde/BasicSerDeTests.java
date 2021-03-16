@@ -22,8 +22,8 @@ package org.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -47,7 +47,7 @@ public class BasicSerDeTests extends BaseNd4jTest {
 
     DataType initialType;
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(this.initialType);
     }

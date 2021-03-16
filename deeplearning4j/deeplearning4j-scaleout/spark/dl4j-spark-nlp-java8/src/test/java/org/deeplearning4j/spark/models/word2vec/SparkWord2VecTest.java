@@ -34,17 +34,17 @@ import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
 import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.learning.elements.SparkSkipGram;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SparkWord2VecTest extends BaseDL4JTest {
 
@@ -56,7 +56,7 @@ public class SparkWord2VecTest extends BaseDL4JTest {
     private static List<String> sentences;
     private JavaSparkContext sc;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         if (sentences == null) {
             sentences = new ArrayList<>();
@@ -72,13 +72,13 @@ public class SparkWord2VecTest extends BaseDL4JTest {
         sc = new JavaSparkContext(sparkConf);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         sc.stop();
     }
 
     @Test
-    @Ignore("AB 2019/05/21 - Failing - Issue #7657")
+    @Disabled("AB 2019/05/21 - Failing - Issue #7657")
     public void testStringsTokenization1() throws Exception {
         JavaRDD<String> rddSentences = sc.parallelize(sentences);
 

@@ -21,8 +21,8 @@
 package org.nd4j.imports.listeners;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,11 +34,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-@Ignore
+@Disabled
 public class ImportModelDebugger {
 
     @Test
-    @Ignore
+    @Disabled
     public void doTest(){
         main(new String[0]);
     }

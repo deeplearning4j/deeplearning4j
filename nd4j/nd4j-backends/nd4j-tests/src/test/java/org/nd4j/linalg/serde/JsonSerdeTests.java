@@ -24,7 +24,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,7 +39,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class JsonSerdeTests extends BaseNd4jTest {
 
@@ -83,7 +83,7 @@ public class JsonSerdeTests extends BaseNd4jTest {
 //                    System.out.println("\n\n\n");
 
                     TestClass deserialized = om.readValue(s, TestClass.class);
-                    assertEquals(dt.toString(), tc, deserialized);
+                    assertEquals(tc, deserialized,dt.toString());
                 }
             }
         }

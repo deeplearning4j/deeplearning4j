@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -34,8 +34,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestSerializationFloatToDouble extends BaseNd4jTest {
@@ -47,7 +47,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(this.initialType);
     }

@@ -30,7 +30,8 @@ import org.datavec.local.transforms.LocalTransformExecutor;
 import org.datavec.api.writable.*;
 import org.datavec.python.PythonCondition;
 import org.datavec.python.PythonTransform;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +44,7 @@ import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.datavec.api.transform.schema.Schema.Builder;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @NotThreadSafe
 public class TestPythonTransformProcess {
@@ -77,8 +78,9 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test(timeout = 60000L)
-    public void testMixedTypes() throws Exception{
+    @Test()
+    @Timeout(60000L)
+    public void testMixedTypes() throws Exception {
         Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnInteger("col1")
@@ -99,7 +101,7 @@ public class TestPythonTransformProcess {
                         .inputSchema(initialSchema)
                         .build()        ).build();
 
-        List<Writable> inputs = Arrays.asList((Writable)new IntWritable(10),
+        List<Writable> inputs = Arrays.asList(new IntWritable(10),
                 new FloatWritable(3.5f),
                 new Text("5"),
                 new DoubleWritable(2.0)
@@ -109,8 +111,9 @@ public class TestPythonTransformProcess {
         assertEquals(((LongWritable)outputs.get(4)).get(), 36);
     }
 
-    @Test(timeout = 60000L)
-    public void testNDArray() throws Exception{
+    @Test()
+    @Timeout(60000L)
+    public void testNDArray() throws Exception {
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(shape);
         INDArray arr2 = Nd4j.rand(shape);
@@ -145,8 +148,9 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test(timeout = 60000L)
-    public void testNDArray2() throws Exception{
+    @Test()
+    @Timeout(60000L)
+    public void testNDArray2() throws Exception {
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(shape);
         INDArray arr2 = Nd4j.rand(shape);
@@ -181,7 +185,8 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testNDArrayMixed() throws Exception{
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(DataType.DOUBLE, shape);
@@ -217,7 +222,8 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testPythonFilter() {
         Schema schema = new Builder().addColumnInteger("column").build();
 
@@ -237,8 +243,9 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test(timeout = 60000L)
-    public void testPythonFilterAndTransform() throws Exception{
+    @Test()
+    @Timeout(60000L)
+    public void testPythonFilterAndTransform() throws Exception {
         Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnInteger("col1")

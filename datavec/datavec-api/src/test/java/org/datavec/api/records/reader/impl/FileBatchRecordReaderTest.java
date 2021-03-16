@@ -27,7 +27,7 @@ import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.records.reader.impl.filebatch.FileBatchRecordReader;
 import org.datavec.api.records.reader.impl.filebatch.FileBatchSequenceRecordReader;
 import org.datavec.api.writable.Writable;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;

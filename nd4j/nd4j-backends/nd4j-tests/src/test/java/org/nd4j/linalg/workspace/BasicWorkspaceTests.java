@@ -22,10 +22,10 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -48,7 +48,7 @@ import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.api.buffer.DataType.DOUBLE;
 
 @Slf4j
@@ -77,12 +77,12 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Nd4j.setDataType(DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void shutdown() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -712,7 +712,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
-            assertEquals("Failed on iteration " + x, 10, array.sumNumber().doubleValue(), 0.01);
+            assertEquals(10, array.sumNumber().doubleValue(), 0.01,"Failed on iteration " + x);
 
             workspace.notifyScopeLeft();
 
@@ -960,7 +960,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testMmap2() throws Exception {
         // we don't support MMAP on cuda yet
         if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))

@@ -19,7 +19,7 @@
  */
 package org.deeplearning4j.datasets.datavec;
 
-import org.junit.rules.Timeout;
+
 import org.nd4j.shade.guava.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -44,7 +44,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -73,8 +73,7 @@ class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
     @TempDir
     public Path temporaryFolder;
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
+
 
     @Test
     @DisplayName("Tests Basic")

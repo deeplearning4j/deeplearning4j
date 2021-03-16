@@ -21,10 +21,7 @@
 package org.nd4j.parameterserver.distributed;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,17 +48,17 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 @Deprecated
 public class VoidParameterServerTest extends BaseND4JTest {
     private static List<String> localIPs;
     private static List<String> badIPs;
     private static final Transport transport = new MulticastTransport();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         if (localIPs == null) {
             localIPs = new ArrayList<>(VoidParameterServer.getLocalAddresses());
@@ -70,12 +67,13 @@ public class VoidParameterServerTest extends BaseND4JTest {
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testNodeRole1() throws Exception {
         final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).multicastNetwork("224.0.1.1").shardAddresses(localIPs).ttl(4).build();
@@ -88,7 +86,8 @@ public class VoidParameterServerTest extends BaseND4JTest {
         node.shutdown();
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testNodeRole2() throws Exception {
         final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).shardAddresses(badIPs).backupAddresses(localIPs)
@@ -102,7 +101,8 @@ public class VoidParameterServerTest extends BaseND4JTest {
         node.shutdown();
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testNodeRole3() throws Exception {
         final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).shardAddresses(badIPs).backupAddresses(badIPs).multicastNetwork("224.0.1.1")
@@ -116,7 +116,8 @@ public class VoidParameterServerTest extends BaseND4JTest {
         node.shutdown();
     }
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testNodeInitialization1() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
@@ -162,7 +163,8 @@ public class VoidParameterServerTest extends BaseND4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testNodeInitialization2() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
@@ -251,8 +253,8 @@ public class VoidParameterServerTest extends BaseND4JTest {
         // now we check message queue within Shards
         for (int t = 0; t < threads.length; t++) {
             VoidMessage incMessage = shards[t].getTransport().takeMessage();
-            assertNotEquals("Failed for shard " + t, null, incMessage);
-            assertEquals("Failed for shard " + t, message.getMessageType(), incMessage.getMessageType());
+            assertNotEquals( null, incMessage,"Failed for shard " + t);
+            assertEquals(message.getMessageType(), incMessage.getMessageType(),"Failed for shard " + t);
 
             // we should put message back to corresponding
             shards[t].getTransport().putMessage(incMessage);
@@ -269,7 +271,7 @@ public class VoidParameterServerTest extends BaseND4JTest {
 
         for (int t = 0; t < threads.length; t++) {
             VoidMessage incMessage = shards[t].getTransport().takeMessage();
-            assertNotEquals("Failed for shard " + t, null, incMessage);
+            assertNotEquals(null, incMessage,"Failed for shard " + t);
             shards[t].handleMessage(message);
 
             /**
@@ -415,7 +417,8 @@ public class VoidParameterServerTest extends BaseND4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 60000L)
+    @Test
+    @Timeout(60000L)
     public void testNodeInitialization3() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);

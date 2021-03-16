@@ -18,13 +18,11 @@
  *  *****************************************************************************
  */
 
-import org.bytedeco.cpython.PyThreadState;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.python4j.*;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -32,9 +30,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.bytedeco.cpython.global.python.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.bytedeco.cpython.global.python.PyGILState_Check;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @NotThreadSafe
@@ -145,7 +143,7 @@ public class PythonMultiThreadTest {
                 public void run() {
                     try(PythonGIL pythonGIL = PythonGIL.lock()) {
                         System.out.println("Using thread " + Thread.currentThread().getId() + " to invoke python");
-                        assertTrue("Thread " + Thread.currentThread().getId() + " does not hold the gil.", PyGILState_Check() > 0);
+                        assertTrue(PyGILState_Check() > 0,"Thread " + Thread.currentThread().getId() + " does not hold the gil.");
                         PythonExecutioner.exec("import time; time.sleep(10)");
                         System.out.println("Finished execution on thread " + Thread.currentThread().getId());
                         finishedExecutionCount.incrementAndGet();

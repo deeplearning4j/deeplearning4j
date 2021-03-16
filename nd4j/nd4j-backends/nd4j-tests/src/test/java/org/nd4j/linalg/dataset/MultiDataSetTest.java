@@ -21,7 +21,7 @@
 package org.nd4j.linalg.dataset;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -39,7 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -700,7 +700,7 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 MultiDataSet mds2 = new MultiDataSet();
                 mds2.load(dis);
 
-                assertEquals("Failed at [" + numF + "]/[" + numL + "]",mds, mds2);
+                assertEquals(mds, mds2,"Failed at [" + numF + "]/[" + numL + "]");
             }
         }
     }

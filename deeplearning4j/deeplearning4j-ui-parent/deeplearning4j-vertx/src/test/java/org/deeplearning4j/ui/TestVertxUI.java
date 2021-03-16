@@ -23,7 +23,6 @@ package org.deeplearning4j.ui;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.storage.StatsStorage;
@@ -45,29 +44,31 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.model.stats.StatsListener;
 import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.common.function.Function;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
-@Ignore
+@Disabled
 public class TestVertxUI extends BaseDL4JTest {
+    private static Logger log = LoggerFactory.getLogger(TestVertxUI.class.getName());
 
-    @Before
+
+    @BeforeEach
     public void setUp() throws Exception {
         UIServer.stopInstance();
     }
@@ -307,23 +308,26 @@ public class TestVertxUI extends BaseDL4JTest {
         uiServer.stop();
     }
 
-    @Test (expected = DL4JException.class)
+    @Test ()
     public void testUIStartPortAlreadyBound() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        //Create HttpServer that binds the same port
-        int port = VertxUIServer.DEFAULT_UI_PORT;
-        Vertx vertx = Vertx.vertx();
-        vertx.createHttpServer()
-                .requestHandler(event -> {})
-                .listen(port, result -> latch.countDown());
-        latch.await();
+        assertThrows(DL4JException.class,() -> {
+            CountDownLatch latch = new CountDownLatch(1);
+            //Create HttpServer that binds the same port
+            int port = VertxUIServer.DEFAULT_UI_PORT;
+            Vertx vertx = Vertx.vertx();
+            vertx.createHttpServer()
+                    .requestHandler(event -> {})
+                    .listen(port, result -> latch.countDown());
+            latch.await();
 
-        try {
-            //DL4JException signals that the port cannot be bound, UI server cannot start
-            UIServer.getInstance();
-        } finally {
-            vertx.close();
-        }
+            try {
+                //DL4JException signals that the port cannot be bound, UI server cannot start
+                UIServer.getInstance();
+            } finally {
+                vertx.close();
+            }
+        });
+
     }
 
     @Test

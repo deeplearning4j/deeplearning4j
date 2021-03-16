@@ -20,7 +20,7 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.classification.ROCMultiClass;
@@ -37,7 +37,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ROCTest extends BaseNd4jTest {
 
@@ -585,7 +585,7 @@ public class ROCTest extends BaseNd4jTest {
             PrecisionRecallCurve prc = r.getPrecisionRecallCurve();
 
             double auprc = r.calculateAUCPR();
-            assertEquals(msg, 1.0, auprc, 1e-6);
+            assertEquals(1.0, auprc, 1e-6,msg);
 
             //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.5 prob
             //at threshold 0 to 0.33: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
@@ -605,7 +605,7 @@ public class ROCTest extends BaseNd4jTest {
             } else {
                 precision = 1e-4;
             }
-            assertEquals(msg, 0.7916666666667, r.calculateAUCPR(), precision);
+            assertEquals( 0.7916666666667, r.calculateAUCPR(), precision,msg);
         }
     }
 

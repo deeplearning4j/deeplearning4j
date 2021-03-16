@@ -22,7 +22,7 @@ package org.nd4j.linalg.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -31,8 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -82,21 +81,26 @@ public class CloseableTests extends BaseNd4jTest {
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void testAccessException_1() {
-        val array = Nd4j.create(5, 5);
-        array.close();
+       assertThrows(IllegalStateException.class,() -> {
+           val array = Nd4j.create(5, 5);
+           array.close();
 
-        array.data().pointer();
+           array.data().pointer();
+       });
+
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void testAccessException_2() {
-        val array = Nd4j.create(5, 5);
-        val view = array.getRow(0);
-        array.close();
+      assertThrows(IllegalStateException.class,() -> {
+          val array = Nd4j.create(5, 5);
+          val view = array.getRow(0);
+          array.close();
 
-        view.data().pointer();
+          view.data().pointer();
+      });
     }
 
     @Override

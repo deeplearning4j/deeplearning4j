@@ -21,7 +21,7 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -39,7 +39,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class LossOpValidation extends BaseOpValidation {
@@ -363,7 +363,7 @@ public class LossOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.size() + " of " + totalRun + " failed: " + failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.size() + " of " + totalRun + " failed: " + failed.toString());
     }
 
 
@@ -461,7 +461,7 @@ public class LossOpValidation extends BaseOpValidation {
                         .build();
                 Nd4j.getExecutioner().exec(op);
 
-                assertNotEquals(lossOp + " returns zero result. Reduction Mode " + reductionMode, out, zero);
+                assertNotEquals(out, zero,lossOp + " returns zero result. Reduction Mode " + reductionMode);
             }
         }
 
@@ -480,7 +480,7 @@ public class LossOpValidation extends BaseOpValidation {
                         .build();
                 Nd4j.getExecutioner().exec(op);
 
-                assertNotEquals(lossOp + "_grad returns zero result. Reduction Mode " + reductionMode, outBP, zeroBp);
+                assertNotEquals(outBP, zeroBp,lossOp + "_grad returns zero result. Reduction Mode " + reductionMode);
             }
         }
     }

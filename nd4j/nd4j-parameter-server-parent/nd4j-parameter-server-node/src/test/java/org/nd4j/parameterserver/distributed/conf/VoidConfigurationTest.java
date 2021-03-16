@@ -20,20 +20,19 @@
 
 package org.nd4j.parameterserver.distributed.conf;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 public class VoidConfigurationTest extends BaseND4JTest {
 
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(30);
+
 
     @Test
     public void testNetworkMask1() throws Exception {
@@ -68,20 +67,26 @@ public class VoidConfigurationTest extends BaseND4JTest {
         assertEquals("192.168.0.0/8", configuration.getNetworkMask());
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNetworkMask3() throws Exception {
-        VoidConfiguration configuration = new VoidConfiguration();
-        configuration.setNetworkMask("192.256.1.1/24");
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            VoidConfiguration configuration = new VoidConfiguration();
+            configuration.setNetworkMask("192.256.1.1/24");
 
-        assertEquals("192.168.1.0/24", configuration.getNetworkMask());
+            assertEquals("192.168.1.0/24", configuration.getNetworkMask());
+        });
+
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNetworkMask4() throws Exception {
-        VoidConfiguration configuration = new VoidConfiguration();
-        configuration.setNetworkMask("0.0.0.0/8");
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            VoidConfiguration configuration = new VoidConfiguration();
+            configuration.setNetworkMask("0.0.0.0/8");
 
-        assertEquals("192.168.1.0/24", configuration.getNetworkMask());
+            assertEquals("192.168.1.0/24", configuration.getNetworkMask());
+        });
+
     }
 
     @Override

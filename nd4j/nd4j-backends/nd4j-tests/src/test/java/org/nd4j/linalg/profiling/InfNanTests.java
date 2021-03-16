@@ -20,9 +20,9 @@
 
 package org.nd4j.linalg.profiling;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -33,6 +33,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @RunWith(Parameterized.class)
 public class InfNanTests extends BaseNd4jTest {
 
@@ -40,37 +42,43 @@ public class InfNanTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
 
     }
 
-    @After
+    @AfterEach
     public void cleanUp() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testInf1() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
+       assertThrows(ND4JIllegalStateException.class,() -> {
+           Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
 
-        INDArray x = Nd4j.create(100);
+           INDArray x = Nd4j.create(100);
 
-        x.putScalar(2, Float.NEGATIVE_INFINITY);
+           x.putScalar(2, Float.NEGATIVE_INFINITY);
 
-        OpExecutionerUtil.checkForAny(x);
+           OpExecutionerUtil.checkForAny(x);
+       });
+
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testInf2() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
-        INDArray x = Nd4j.create(100);
+            INDArray x = Nd4j.create(100);
 
-        x.putScalar(2, Float.NEGATIVE_INFINITY);
+            x.putScalar(2, Float.NEGATIVE_INFINITY);
 
-        OpExecutionerUtil.checkForAny(x);
+            OpExecutionerUtil.checkForAny(x);
+        });
+
     }
 
     @Test
@@ -91,27 +99,33 @@ public class InfNanTests extends BaseNd4jTest {
         OpExecutionerUtil.checkForAny(x);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNaN1() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+       assertThrows(ND4JIllegalStateException.class,() -> {
+           Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
 
-        INDArray x = Nd4j.create(100);
+           INDArray x = Nd4j.create(100);
 
-        x.putScalar(2, Float.NaN);
+           x.putScalar(2, Float.NaN);
 
-        OpExecutionerUtil.checkForAny(x);
+           OpExecutionerUtil.checkForAny(x);
+        });
+
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNaN2() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
-        INDArray x = Nd4j.create(100);
+            INDArray x = Nd4j.create(100);
 
-        x.putScalar(2, Float.NaN);
+            x.putScalar(2, Float.NaN);
 
-        OpExecutionerUtil.checkForAny(x);
+            OpExecutionerUtil.checkForAny(x);
+        });
+
     }
 
     @Test

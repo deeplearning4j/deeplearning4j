@@ -25,9 +25,9 @@ import com.google.common.primitives.Floats;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -43,7 +43,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 import java.util.stream.LongStream;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -58,12 +58,12 @@ public class SortCooTests extends BaseNd4jTest {
         this.initialDefaultType = Nd4j.defaultFloatingPointType();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
-    @After
+    @AfterEach
     public void setDown() {
         Nd4j.setDefaultDataTypes(initialType, Nd4j.defaultFloatingPointType());
     }

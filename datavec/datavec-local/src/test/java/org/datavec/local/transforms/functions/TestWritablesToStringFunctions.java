@@ -30,12 +30,12 @@ import org.datavec.api.writable.Writable;
 
 import org.datavec.local.transforms.misc.SequenceWritablesToStringFunction;
 import org.datavec.local.transforms.misc.WritablesToStringFunction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestWritablesToStringFunctions  {
 

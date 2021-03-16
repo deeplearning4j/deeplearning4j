@@ -20,7 +20,7 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -35,7 +35,7 @@ import org.nd4j.linalg.util.FeatureUtil;
 import java.text.DecimalFormat;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -737,8 +737,8 @@ public class EvalTest extends BaseNd4jTest {
         String s2 = " 2 0 0 | 1 = 1";   //Second row: predicted 0, actual 1 - 2 times
 
         String stats = e.stats();
-        assertTrue(stats, stats.contains(s1));
-        assertTrue(stats, stats.contains(s2));
+        assertTrue(stats.contains(s1),stats);
+        assertTrue(stats.contains(s2),stats);
     }
 
 
@@ -831,10 +831,10 @@ public class EvalTest extends BaseNd4jTest {
 
             //System.out.println(evals[i].stats());
 
-            assertEquals(m, tp, tpAct);
-            assertEquals(m, tn, tnAct);
-            assertEquals(m, fp, fpAct);
-            assertEquals(m, fn, fnAct);
+            assertEquals(tp, tpAct,m);
+            assertEquals( tn, tnAct,m);
+            assertEquals(fp, fpAct,m);
+            assertEquals(fn, fnAct,m);
         }
 
         double acc = (tp+tn) / (double)(tp+fn+tn+fp);
@@ -844,10 +844,10 @@ public class EvalTest extends BaseNd4jTest {
 
         for( int i=0; i<evals.length; i++ ){
             String m = String.valueOf(i);
-            assertEquals(m, acc, evals[i].accuracy(), 1e-5);
-            assertEquals(m, prec, evals[i].precision(), 1e-5);
-            assertEquals(m, rec, evals[i].recall(), 1e-5);
-            assertEquals(m, f1, evals[i].f1(), 1e-5);
+            assertEquals(acc, evals[i].accuracy(), 1e-5,m);
+            assertEquals( prec, evals[i].precision(), 1e-5,m);
+            assertEquals( rec, evals[i].recall(), 1e-5,m);
+            assertEquals(f1, evals[i].f1(), 1e-5,m);
         }
 
         //Also check macro-averaged versions (null positive class):
@@ -1094,8 +1094,8 @@ public class EvalTest extends BaseNd4jTest {
         String preS = " Precision: " + df.format(prec);
         String f1S = "F1 Score: " + df.format(f1);
 
-        assertTrue(stats2, stats2.contains(recS));
-        assertTrue(stats2, stats2.contains(preS));
-        assertTrue(stats2, stats2.contains(f1S));
+        assertTrue(stats2.contains(recS),stats2);
+        assertTrue(stats2.contains(preS),stats2);
+        assertTrue(stats2.contains(f1S),stats2);
     }
 }

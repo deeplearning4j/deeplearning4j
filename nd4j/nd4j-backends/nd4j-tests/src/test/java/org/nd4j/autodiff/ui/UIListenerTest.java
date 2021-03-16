@@ -21,9 +21,10 @@
 package org.nd4j.autodiff.ui;
 
 import com.google.flatbuffers.Table;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.listeners.impl.UIListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -43,11 +44,12 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UIListenerTest extends BaseNd4jTest {
 
@@ -60,18 +62,17 @@ public class UIListenerTest extends BaseNd4jTest {
         return 'c';
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testUIListenerBasic() throws Exception {
+    public void testUIListenerBasic(@TempDir Path testDir) throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         SameDiff sd = getSimpleNet();
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         File f = new File(dir, "logFile.bin");
         UIListener l = UIListener.builder(f)
                 .plotLosses(1)
@@ -100,13 +101,13 @@ public class UIListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testUIListenerContinue() throws Exception {
+    public void testUIListenerContinue(@TempDir Path testDir) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         SameDiff sd1 = getSimpleNet();
         SameDiff sd2 = getSimpleNet();
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         File f = new File(dir, "logFileNoContinue.bin");
         f.delete();
         UIListener l1 = UIListener.builder(f)
@@ -191,11 +192,11 @@ public class UIListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testUIListenerBadContinue() throws Exception {
+    public void testUIListenerBadContinue(@TempDir Path testDir) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
         SameDiff sd1 = getSimpleNet();
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         File f = new File(dir, "logFile.bin");
         f.delete();
         UIListener l1 = UIListener.builder(f)
@@ -233,8 +234,8 @@ public class UIListenerTest extends BaseNd4jTest {
             fail("Expected exception");
         } catch (Throwable t){
             String m = t.getMessage();
-            assertTrue(m, m.contains("placeholder"));
-            assertTrue(m, m.contains("FileMode.CREATE_APPEND_NOCHECK"));
+            assertTrue(m.contains("placeholder"),m);
+            assertTrue(m.contains("FileMode.CREATE_APPEND_NOCHECK"),m);
         }
 
 
@@ -254,8 +255,8 @@ public class UIListenerTest extends BaseNd4jTest {
             fail("Expected exception");
         } catch (Throwable t){
             String m = t.getMessage();
-            assertTrue(m, m.contains("variable"));
-            assertTrue(m, m.contains("FileMode.CREATE_APPEND_NOCHECK"));
+            assertTrue(m.contains("variable"),m);
+            assertTrue(m.contains("FileMode.CREATE_APPEND_NOCHECK"),m);
         }
 
 

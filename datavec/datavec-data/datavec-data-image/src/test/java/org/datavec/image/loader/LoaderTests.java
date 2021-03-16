@@ -22,8 +22,8 @@ package org.datavec.image.loader;
 
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.reader.RecordReader;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
@@ -32,9 +32,9 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -182,7 +182,7 @@ public class LoaderTests {
     }
 
 
-    @Ignore // Use when confirming data is getting stored
+    @Disabled // Use when confirming data is getting stored
     @Test
     public void testProcessCifar() {
         int row = 32;
@@ -208,15 +208,15 @@ public class LoaderTests {
         int minibatch = 100;
         int nMinibatches = 50000 / minibatch;
 
-        for( int i=0; i<nMinibatches; i++ ){
+        for( int i=0; i < nMinibatches; i++) {
             DataSet ds = loader.next(minibatch);
             String s = String.valueOf(i);
-            assertNotNull(s, ds.getFeatures());
-            assertNotNull(s, ds.getLabels());
+            assertNotNull(ds.getFeatures(),s);
+            assertNotNull(ds.getLabels(),s);
 
-            assertEquals(s, minibatch, ds.getFeatures().size(0));
-            assertEquals(s, minibatch, ds.getLabels().size(0));
-            assertEquals(s, 10, ds.getLabels().size(1));
+            assertEquals(minibatch, ds.getFeatures().size(0),s);
+            assertEquals(minibatch, ds.getLabels().size(0),s);
+            assertEquals(10, ds.getLabels().size(1),s);
         }
 
     }

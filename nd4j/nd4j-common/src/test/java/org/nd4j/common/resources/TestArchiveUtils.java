@@ -21,9 +21,10 @@
 package org.nd4j.common.resources;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.util.ArchiveUtils;
 
 import java.io.File;
@@ -31,17 +32,16 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class TestArchiveUtils {
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testUnzipFileTo() throws IOException {
+    public void testUnzipFileTo(@TempDir Path testDir) throws IOException {
         //random txt file
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         String content = "test file content";
         String path = "myDir/myTestFile.txt";
         File testFile = new File(dir, path);

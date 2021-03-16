@@ -31,10 +31,10 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Disabled;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.rules.Timeout;
+
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
@@ -59,8 +59,7 @@ class ModelGuesserTest extends BaseDL4JTest {
     @TempDir
     public Path testDir;
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
+
 
     @Test
     @DisplayName("Test Model Guess File")

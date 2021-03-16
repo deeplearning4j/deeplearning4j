@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.blas;
 
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -30,7 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Adam Gibson
@@ -59,7 +59,7 @@ public class Level1Test extends BaseNd4jTest {
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray row = matrix.getRow(1);
         Nd4j.getBlasWrapper().level1().axpy(row.length(), 1.0, row, row);
-        assertEquals(getFailureMessage(), Nd4j.create(new double[] {4, 8}), row);
+        assertEquals(Nd4j.create(new double[] {4, 8}), row,getFailureMessage());
 
     }
 

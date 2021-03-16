@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
@@ -38,7 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
@@ -115,7 +115,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
             else{
                 outActCurrent = out.get(all(), point(i), all());
             }
-            assertEquals(String.valueOf(i), outExpCurrent, outActCurrent);
+            assertEquals(outExpCurrent, outActCurrent, String.valueOf(i));
 
             outLast = outExpCurrent;
         }

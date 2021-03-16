@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,7 +44,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestFrozenLayers extends BaseDL4JTest {
 
@@ -90,9 +90,9 @@ public class TestFrozenLayers extends BaseDL4JTest {
                     String s = msg + " - " + entry.getKey();
                     if(entry.getKey().startsWith("5_")){
                         //Non-frozen layer
-                        assertNotEquals(s, paramsBefore.get(entry.getKey()), entry.getValue());
+                        assertNotEquals(paramsBefore.get(entry.getKey()), entry.getValue(), s);
                     } else {
-                        assertEquals(s, paramsBefore.get(entry.getKey()), entry.getValue());
+                        assertEquals(paramsBefore.get(entry.getKey()), entry.getValue(), s);
                     }
                 }
             }
@@ -142,9 +142,9 @@ public class TestFrozenLayers extends BaseDL4JTest {
                     String s = msg + " - " + entry.getKey();
                     if(entry.getKey().startsWith("5_")){
                         //Non-frozen layer
-                        assertNotEquals(s, paramsBefore.get(entry.getKey()), entry.getValue());
+                        assertNotEquals(paramsBefore.get(entry.getKey()), entry.getValue(), s);
                     } else {
-                        assertEquals(s, paramsBefore.get(entry.getKey()), entry.getValue());
+                        assertEquals(paramsBefore.get(entry.getKey()), entry.getValue(), s);
                     }
                 }
             }

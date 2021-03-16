@@ -20,13 +20,13 @@
 
 package org.nd4j.common.primitives;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.primitives.CounterMap;
 import org.nd4j.common.primitives.Pair;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CounterMapTest {
 

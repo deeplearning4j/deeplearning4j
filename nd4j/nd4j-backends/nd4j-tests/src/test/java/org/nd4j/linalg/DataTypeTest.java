@@ -22,7 +22,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -32,7 +32,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 @Slf4j
@@ -61,7 +61,7 @@ public class DataTypeTest extends BaseNd4jTest {
             val ois = new ObjectInputStream(bios);
             try {
                 val in2 = (INDArray) ois.readObject();
-                assertEquals("Failed for data type [" + type + "]", in1, in2);
+                assertEquals( in1, in2,"Failed for data type [" + type + "]");
             } catch (Exception e) {
                 throw new RuntimeException("Failed for data type [" + type + "]", e);
             }

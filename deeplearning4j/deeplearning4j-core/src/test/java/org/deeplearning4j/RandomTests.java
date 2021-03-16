@@ -26,8 +26,8 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -38,7 +38,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
 
-@Ignore
+@Disabled
 public class RandomTests extends BaseDL4JTest {
 
     @Test

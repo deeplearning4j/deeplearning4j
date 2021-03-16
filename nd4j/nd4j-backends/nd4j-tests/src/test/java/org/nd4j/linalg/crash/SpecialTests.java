@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -51,8 +51,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -100,17 +99,20 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testScalarShuffle1() {
-        List<DataSet> listData = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            INDArray features = Nd4j.ones(25, 25);
-            INDArray label = Nd4j.create(new float[] {1}, new int[] {1});
-            DataSet dataset = new DataSet(features, label);
-            listData.add(dataset);
-        }
-        DataSet data = DataSet.merge(listData);
-        data.shuffle();
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            List<DataSet> listData = new ArrayList<>();
+            for (int i = 0; i < 3; i++) {
+                INDArray features = Nd4j.ones(25, 25);
+                INDArray label = Nd4j.create(new float[] {1}, new int[] {1});
+                DataSet dataset = new DataSet(features, label);
+                listData.add(dataset);
+            }
+            DataSet data = DataSet.merge(listData);
+            data.shuffle();
+        });
+
     }
 
 

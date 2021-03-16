@@ -21,10 +21,11 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.imports.tfgraphs.TFGraphTestZooModels;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -34,19 +35,19 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.resources.Resources;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Slf4j
 public class SameDiffMultiThreadTests extends BaseND4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -93,19 +94,19 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
         s.release(nThreads);
         latch.await();
 
-        for(int i=0; i<nThreads; i++ ){
-            assertFalse("Thread " + i + " failed", failuresByThread[i].get());
+        for(int i = 0; i < nThreads; i++) {
+            assertFalse(failuresByThread[i].get(),"Thread " + i + " failed");
         }
 
-        for(int i=0; i<nThreads; i++ ){
-            assertEquals("Thread " + i + " number of runs", nRuns, counters[i].get());
+        for(int i = 0; i < nThreads; i++) {
+            assertEquals( nRuns, counters[i].get(),"Thread " + i + " number of runs");
         }
     }
 
     @Test
-    @Ignore //2020/03/24 AB - https://github.com/eclipse/deeplearning4j/issues/8802
-    public void testMobilenet() throws Exception {
-        TFGraphTestZooModels.currentTestDir = testDir.newFolder();
+    @Disabled //2020/03/24 AB - https://github.com/eclipse/deeplearning4j/issues/8802
+    public void testMobilenet(@TempDir Path testDir) throws Exception {
+        TFGraphTestZooModels.currentTestDir = testDir.toFile();
         File f = Resources.asFile("tf_graphs/zoo_models/mobilenet_v2_1.0_224/tf_model.txt");
         SameDiff sd = TFGraphTestZooModels.LOADER.apply(f, "mobilenet_v2_1.0_224");
 //        System.out.println(sd.summary());
@@ -136,12 +137,12 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
         s.release(nThreads);
         latch.await();
 
-        for(int i=0; i<nThreads; i++ ){
-            assertFalse("Thread " + i + " failed", failuresByThread[i].get());
+        for(int i = 0; i < nThreads; i++) {
+            assertFalse( failuresByThread[i].get(),"Thread " + i + " failed");
         }
 
-        for(int i=0; i<nThreads; i++ ){
-            assertEquals("Thread " + i + " number of runs", nRuns, counters[i].get());
+        for(int i = 0; i < nThreads; i++) {
+            assertEquals( nRuns, counters[i].get(),"Thread " + i + " number of runs");
         }
     }
 

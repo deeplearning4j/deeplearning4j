@@ -24,7 +24,7 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -38,7 +38,7 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(Parameterized.class)
 public class TestInvertMatrices extends BaseNd4jTest {
@@ -74,7 +74,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
             RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
             INDArray expected = CheckUtil.convertFromApacheMatrix(rmInverse, orig.dataType());
-            assertTrue(p.getSecond(), CheckUtil.checkEntries(expected, inverse, 1e-3, 1e-4));
+            assertTrue(CheckUtil.checkEntries(expected, inverse, 1e-3, 1e-4),p.getSecond());
         }
     }
 
@@ -190,19 +190,25 @@ public class TestInvertMatrices extends BaseNd4jTest {
     /**
      * Try to compute the right pseudo inverse of a matrix without full row rank (x1 = 2*x2)
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testRightPseudoInvertWithNonFullRowRank() {
-        INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}}).transpose();
-        INDArray rightInverse = InvertMatrix.pRightInvert(X, false);
+        assertThrows(IllegalArgumentException.class,() -> {
+            INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}}).transpose();
+            INDArray rightInverse = InvertMatrix.pRightInvert(X, false);
+        });
+
     }
 
     /**
      * Try to compute the left pseudo inverse of a matrix without full column rank (x1 = 2*x2)
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testLeftPseudoInvertWithNonFullColumnRank() {
-        INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}});
-        INDArray leftInverse = InvertMatrix.pLeftInvert(X, false);
+        assertThrows(IllegalArgumentException.class,() -> {
+            INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}});
+            INDArray leftInverse = InvertMatrix.pLeftInvert(X, false);
+        });
+
     }
 
     @Override

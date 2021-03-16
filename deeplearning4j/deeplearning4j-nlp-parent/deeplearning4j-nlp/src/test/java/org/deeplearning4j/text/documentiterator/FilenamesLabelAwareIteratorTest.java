@@ -22,31 +22,31 @@ package org.deeplearning4j.text.documentiterator;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.junit.Before;
-import org.junit.Test;
+
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.resources.Resources;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FilenamesLabelAwareIteratorTest extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
     @Test
-    public void testNextDocument() throws Exception {
-        val tempDir = testDir.newFolder();
+    public void testNextDocument(@TempDir Path testDir) throws Exception {
+        val tempDir = testDir.toFile();
         Resources.copyDirectory("/big/", tempDir);
 
         FilenamesLabelAwareIterator iterator = new FilenamesLabelAwareIterator.Builder()

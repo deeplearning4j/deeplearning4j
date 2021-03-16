@@ -23,16 +23,16 @@ package org.deeplearning4j.models.word2vec;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore
+@Disabled
 public class Word2VecVisualizationTests extends BaseDL4JTest {
 
     private static WordVectors vectors;
 
-    @Before
+    @BeforeEach
     public synchronized void setUp() throws Exception {
         if (vectors == null) {
             vectors = WordVectorSerializer.loadFullModel("/ext/Temp/Models/raw_sentences.dat");

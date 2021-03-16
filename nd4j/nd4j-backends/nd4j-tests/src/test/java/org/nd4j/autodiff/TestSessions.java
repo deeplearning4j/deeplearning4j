@@ -20,7 +20,8 @@
 
 package org.nd4j.autodiff;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -43,7 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSessions extends BaseNd4jTest {
 
@@ -202,7 +203,8 @@ public class TestSessions extends BaseNd4jTest {
         assertEquals(expFalse, outMap.get(n));
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testSwitchWhile() throws Exception{
 
         /*

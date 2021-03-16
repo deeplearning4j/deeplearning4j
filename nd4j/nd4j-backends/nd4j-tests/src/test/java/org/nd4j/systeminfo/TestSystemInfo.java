@@ -20,7 +20,7 @@
 
 package org.nd4j.systeminfo;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 public class TestSystemInfo extends BaseND4JTest {

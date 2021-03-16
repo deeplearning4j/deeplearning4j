@@ -26,8 +26,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -62,7 +62,7 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -119,7 +119,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
     @Test
@@ -155,7 +155,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -193,7 +193,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -276,7 +276,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 }
             }
         }
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -339,7 +339,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -392,7 +392,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
 
@@ -492,7 +492,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 failed.add(error);
             }
         }
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -564,7 +564,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Override
@@ -659,7 +659,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
 
@@ -731,7 +731,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                     Map<String,INDArray> m = sd.outputAll(null);
                     for (SDVariable v : unstacked) {
-                        assertArrayEquals(msg, shape, m.get(v.name()).shape());
+                        assertArrayEquals(shape, m.get(v.name()).shape(),msg);
                     }
 
                     TestCase tc = new TestCase(sd).testName(msg);
@@ -748,7 +748,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
     @Test
@@ -819,7 +819,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -1358,7 +1358,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 failed.add(err);
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -1467,7 +1467,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 failed.add(err);
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -2517,7 +2517,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
 
-    @Test @Ignore //AB 2020/04/01 - https://github.com/eclipse/deeplearning4j/issues/8592
+    @Test @Disabled //AB 2020/04/01 - https://github.com/eclipse/deeplearning4j/issues/8592
     public void testReshapeZeros(){
         int[][] shapes = new int[][]{{2,0}, {10,0},    {10, 0},  {2,0,0,10}, {10, 0},   {0, 0, 10},  {0,2,10}, {1,2,0}};
         int[][] reshape = new int[][]{{2,-1}, {2,0,-1}, {5,2,-1}, {2,0,-1},   {-1, 2, 0}, {2, -1, 0}, {2, 0, 0, 0, -1}, {2,0,-1}};

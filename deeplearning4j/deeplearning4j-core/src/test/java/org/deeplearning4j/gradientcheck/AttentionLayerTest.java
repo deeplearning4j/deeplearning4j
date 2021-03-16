@@ -32,7 +32,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Disabled;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.activations.Activation;
@@ -42,6 +42,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,8 +52,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Attention Layer Test")
 class AttentionLayerTest extends BaseDL4JTest {
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
+
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -178,21 +179,22 @@ class AttentionLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Recurrent Attention Layer _ differing Time Steps")
     void testRecurrentAttentionLayer_differingTimeSteps() {
-        int nIn = 9;
-        int nOut = 5;
-        int layerSize = 8;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.IDENTITY).updater(new NoOp()).weightInit(WeightInit.XAVIER).list().layer(new LSTM.Builder().nOut(layerSize).build()).layer(new RecurrentAttentionLayer.Builder().nIn(layerSize).nOut(layerSize).nHeads(1).projectInput(false).hasBias(false).build()).layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build()).layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build()).setInputType(InputType.recurrent(nIn)).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        final INDArray initialInput = Nd4j.rand(new int[] { 8, nIn, 7 });
-        final INDArray goodNextInput = Nd4j.rand(new int[] { 8, nIn, 7 });
-        final INDArray badNextInput = Nd4j.rand(new int[] { 8, nIn, 12 });
-        final INDArray labels = Nd4j.rand(new int[] { 8, nOut });
-        net.fit(initialInput, labels);
-        net.fit(goodNextInput, labels);
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage("This layer only supports fixed length mini-batches. Expected 7 time steps but got 12.");
-        net.fit(badNextInput, labels);
+       assertThrows(IllegalArgumentException.class, () -> {
+           int nIn = 9;
+           int nOut = 5;
+           int layerSize = 8;
+           MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.IDENTITY).updater(new NoOp()).weightInit(WeightInit.XAVIER).list().layer(new LSTM.Builder().nOut(layerSize).build()).layer(new RecurrentAttentionLayer.Builder().nIn(layerSize).nOut(layerSize).nHeads(1).projectInput(false).hasBias(false).build()).layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build()).layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build()).setInputType(InputType.recurrent(nIn)).build();
+           MultiLayerNetwork net = new MultiLayerNetwork(conf);
+           net.init();
+           final INDArray initialInput = Nd4j.rand(new int[] { 8, nIn, 7 });
+           final INDArray goodNextInput = Nd4j.rand(new int[] { 8, nIn, 7 });
+           final INDArray badNextInput = Nd4j.rand(new int[] { 8, nIn, 12 });
+           final INDArray labels = Nd4j.rand(new int[] { 8, nOut });
+           net.fit(initialInput, labels);
+           net.fit(goodNextInput, labels);
+           net.fit(badNextInput, labels);
+       });
+
     }
 
     @Test

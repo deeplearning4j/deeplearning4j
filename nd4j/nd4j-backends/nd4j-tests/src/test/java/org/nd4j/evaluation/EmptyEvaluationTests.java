@@ -20,7 +20,7 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
@@ -32,8 +32,8 @@ import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class EmptyEvaluationTests extends BaseNd4jTest {
 
@@ -56,7 +56,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
                 e.scoreForMetric(m);
                 fail("Expected exception");
             } catch (Throwable t){
-                assertTrue(t.getMessage(), t.getMessage().contains("no evaluation has been performed"));
+                assertTrue(t.getMessage().contains("no evaluation has been performed"),t.getMessage());
             }
         }
     }
@@ -70,7 +70,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
             try {
                 re.scoreForMetric(m);
             } catch (Throwable t){
-                assertTrue(t.getMessage(), t.getMessage().contains("eval must be called"));
+                assertTrue(t.getMessage().contains("eval must be called"),t.getMessage());
             }
         }
     }
@@ -85,7 +85,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
                 eb.scoreForMetric(m, 0);
                 fail("Expected exception");
             } catch (Throwable t) {
-                assertTrue(t.getMessage(), t.getMessage().contains("eval must be called"));
+                assertTrue( t.getMessage().contains("eval must be called"),t.getMessage());
             }
         }
     }
@@ -100,7 +100,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
                 roc.scoreForMetric(m);
                 fail("Expected exception");
             } catch (Throwable t) {
-                assertTrue(t.getMessage(), t.getMessage().contains("no evaluation"));
+                assertTrue(t.getMessage().contains("no evaluation"),t.getMessage());
             }
         }
     }
@@ -115,7 +115,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
                 rb.scoreForMetric(m, 0);
                 fail("Expected exception");
             } catch (Throwable t) {
-                assertTrue(t.getMessage(), t.getMessage().contains("eval must be called"));
+                assertTrue(t.getMessage().contains("eval must be called"),t.getMessage());
             }
         }
     }
@@ -130,7 +130,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
                 r.scoreForMetric(m, 0);
                 fail("Expected exception");
             } catch (Throwable t) {
-                assertTrue(t.getMessage(), t.getMessage().contains("no data"));
+                assertTrue(t.getMessage().contains("no data"),t.getMessage());
             }
         }
     }
@@ -144,19 +144,19 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
             ec.getResidualPlot(0);
             fail("Expected exception");
         } catch (Throwable t) {
-            assertTrue(t.getMessage(), t.getMessage().contains("no data"));
+            assertTrue( t.getMessage().contains("no data"),t.getMessage());
         }
         try {
             ec.getProbabilityHistogram(0);
             fail("Expected exception");
         } catch (Throwable t) {
-            assertTrue(t.getMessage(), t.getMessage().contains("no data"));
+            assertTrue( t.getMessage().contains("no data"),t.getMessage());
         }
         try {
             ec.getReliabilityDiagram(0);
             fail("Expected exception");
         } catch (Throwable t) {
-            assertTrue(t.getMessage(), t.getMessage().contains("no data"));
+            assertTrue(t.getMessage().contains("no data"),t.getMessage());
         }
     }
 

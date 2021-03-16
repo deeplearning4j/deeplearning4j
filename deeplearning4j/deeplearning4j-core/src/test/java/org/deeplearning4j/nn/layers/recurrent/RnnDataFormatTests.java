@@ -39,7 +39,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
@@ -52,7 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 @AllArgsConstructor
@@ -302,28 +302,28 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             INDArray l0_4 = tc.net4.feedForward(inNWC).get(tc.testLayerIdx + 1);
 
             boolean rank3Out = tc.labelsNCW.rank() == 3;
-            assertEquals(tc.msg, l0_1, l0_2);
+            assertEquals(l0_1, l0_2, tc.msg);
             if (rank3Out){
-                assertEquals(tc.msg, l0_1, l0_3.permute(0, 2, 1));
-                assertEquals(tc.msg, l0_1, l0_4.permute(0, 2, 1));
+                assertEquals(l0_1, l0_3.permute(0, 2, 1), tc.msg);
+                assertEquals(l0_1, l0_4.permute(0, 2, 1), tc.msg);
             }
             else{
-                assertEquals(tc.msg, l0_1, l0_3);
-                assertEquals(tc.msg, l0_1, l0_4);
+                assertEquals(l0_1, l0_3, tc.msg);
+                assertEquals(l0_1, l0_4, tc.msg);
             }
             INDArray out1 = tc.net1.output(inNCW);
             INDArray out2 = tc.net2.output(inNCW);
             INDArray out3 = tc.net3.output(inNWC);
             INDArray out4 = tc.net4.output(inNWC);
 
-            assertEquals(tc.msg, out1, out2);
+            assertEquals(out1, out2, tc.msg);
             if (rank3Out){
-                assertEquals(tc.msg, out1, out3.permute(0, 2, 1));      //NWC to NCW
-                assertEquals(tc.msg, out1, out4.permute(0, 2, 1));
+                assertEquals(out1, out3.permute(0, 2, 1), tc.msg);      //NWC to NCW
+                assertEquals(out1, out4.permute(0, 2, 1), tc.msg);
             }
             else{
-                assertEquals(tc.msg, out1, out3);      //NWC to NCW
-                assertEquals(tc.msg, out1, out4);
+                assertEquals(out1, out3, tc.msg);      //NWC to NCW
+                assertEquals(out1, out4, tc.msg);
             }
 
 
@@ -334,31 +334,31 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             Pair<Gradient, INDArray> p4 = tc.net4.calculateGradients(inNWC, tc.labelsNWC, null, null);
 
             //Inpput gradients
-            assertEquals(tc.msg, p1.getSecond(), p2.getSecond());
+            assertEquals(p1.getSecond(), p2.getSecond(), tc.msg);
 
-            assertEquals(tc.msg, p1.getSecond(), p3.getSecond().permute(0, 2, 1));  //Input gradients for NWC input are also in NWC format
-            assertEquals(tc.msg, p1.getSecond(), p4.getSecond().permute(0, 2, 1));
+            assertEquals(p1.getSecond(), p3.getSecond().permute(0, 2, 1), tc.msg);  //Input gradients for NWC input are also in NWC format
+            assertEquals(p1.getSecond(), p4.getSecond().permute(0, 2, 1), tc.msg);
 
 
             List<String> diff12 = differentGrads(p1.getFirst(), p2.getFirst());
             List<String> diff13 = differentGrads(p1.getFirst(), p3.getFirst());
             List<String> diff14 = differentGrads(p1.getFirst(), p4.getFirst());
-            assertEquals(tc.msg + " " + diff12, 0, diff12.size());
-            assertEquals(tc.msg + " " + diff13, 0, diff13.size());
-            assertEquals(tc.msg + " " + diff14, 0, diff14.size());
+            assertEquals(0, diff12.size(),tc.msg + " " + diff12);
+            assertEquals(0, diff13.size(),tc.msg + " " + diff13);
+            assertEquals( 0, diff14.size(),tc.msg + " " + diff14);
 
-            assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p2.getFirst().gradientForVariable());
-            assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p3.getFirst().gradientForVariable());
-            assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p4.getFirst().gradientForVariable());
+            assertEquals(p1.getFirst().gradientForVariable(), p2.getFirst().gradientForVariable(), tc.msg);
+            assertEquals(p1.getFirst().gradientForVariable(), p3.getFirst().gradientForVariable(), tc.msg);
+            assertEquals(p1.getFirst().gradientForVariable(), p4.getFirst().gradientForVariable(), tc.msg);
 
             tc.net1.fit(inNCW, tc.labelsNCW);
             tc.net2.fit(inNCW, tc.labelsNCW);
             tc.net3.fit(inNWC, tc.labelsNWC);
             tc.net4.fit(inNWC, tc.labelsNWC);
 
-            assertEquals(tc.msg, tc.net1.params(), tc.net2.params());
-            assertEquals(tc.msg, tc.net1.params(), tc.net3.params());
-            assertEquals(tc.msg, tc.net1.params(), tc.net4.params());
+            assertEquals(tc.net1.params(), tc.net2.params(), tc.msg);
+            assertEquals(tc.net1.params(), tc.net3.params(), tc.msg);
+            assertEquals(tc.net1.params(), tc.net4.params(), tc.msg);
 
             //Test serialization
             MultiLayerNetwork net1a = TestUtils.testModelSerialization(tc.net1);
@@ -367,16 +367,16 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             MultiLayerNetwork net4a = TestUtils.testModelSerialization(tc.net4);
 
             out1 = tc.net1.output(inNCW);
-            assertEquals(tc.msg, out1, net1a.output(inNCW));
-            assertEquals(tc.msg, out1, net2a.output(inNCW));
+            assertEquals(out1, net1a.output(inNCW), tc.msg);
+            assertEquals(out1, net2a.output(inNCW), tc.msg);
 
             if (rank3Out) {
-                assertEquals(tc.msg, out1, net3a.output(inNWC).permute(0, 2, 1));   //NWC to NCW
-                assertEquals(tc.msg, out1, net4a.output(inNWC).permute(0, 2, 1));
+                assertEquals(out1, net3a.output(inNWC).permute(0, 2, 1), tc.msg);   //NWC to NCW
+                assertEquals(out1, net4a.output(inNWC).permute(0, 2, 1), tc.msg);
             }
             else{
-                assertEquals(tc.msg, out1, net3a.output(inNWC));   //NWC to NCW
-                assertEquals(tc.msg, out1, net4a.output(inNWC));
+                assertEquals(out1, net3a.output(inNWC), tc.msg);   //NWC to NCW
+                assertEquals(out1, net4a.output(inNWC), tc.msg);
             }
         }
 

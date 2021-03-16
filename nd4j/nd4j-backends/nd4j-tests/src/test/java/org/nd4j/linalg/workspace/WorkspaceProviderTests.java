@@ -22,9 +22,9 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -48,7 +48,7 @@ import java.io.DataOutputStream;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -115,7 +115,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -152,7 +152,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 assertEquals(5 * shiftedSize, ws1.getCurrentSize());
             } else if (x < 4) {
                 // we're making sure we're not initialize early
-                assertEquals("Failed on iteration " + x, 0, ws1.getCurrentSize());
+                assertEquals(0, ws1.getCurrentSize(),"Failed on iteration " + x);
             }
         }
 
@@ -529,7 +529,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             if (i == 3) {
                 workspace.initializeWorkspace();
-                assertEquals("Failed on iteration " + i, 100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+                assertEquals(100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize(),"Failed on iteration " + i);
             }
         }
 
@@ -543,7 +543,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         workspace.initializeWorkspace();
-        assertEquals("Failed on final", 100 * 10 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+        assertEquals(100 * 10 * Nd4j.sizeOfDataType(), workspace.getCurrentSize(),"Failed on final");
     }
 
     @Test
@@ -558,7 +558,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             }
 
             if (i >= 3)
-                assertEquals("Failed on iteration " + i, 100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+                assertEquals(100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize(),"Failed on iteration " + i);
             else
                 assertEquals(0, workspace.getCurrentSize());
         }
@@ -619,7 +619,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("raver119: This test doesn't make any sense to me these days. We're borrowing from the same workspace. Why?")
+    @Disabled("raver119: This test doesn't make any sense to me these days. We're borrowing from the same workspace. Why?")
     public void testNestedWorkspaces11() {
         for (int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
@@ -990,7 +990,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         log.info("Done");
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testMemcpy1() {
         INDArray warmUp = Nd4j.create(100000);

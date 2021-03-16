@@ -21,10 +21,10 @@
 package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -35,8 +35,8 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.primitives.StackDescriptor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class StackAggregatorTests extends BaseNd4jTest {
@@ -50,14 +50,14 @@ public class StackAggregatorTests extends BaseNd4jTest {
         return 'c';
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().stackTrace(true).build());
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
         OpProfiler.getInstance().reset();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
@@ -129,7 +129,7 @@ public class StackAggregatorTests extends BaseNd4jTest {
     }*/
 
     @Test
-    @Ignore
+    @Disabled
     public void testScalarAggregator() {
         INDArray x = Nd4j.create(10);
 

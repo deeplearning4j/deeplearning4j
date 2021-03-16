@@ -20,9 +20,9 @@
 
 package org.nd4j.evaluation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.custom.CustomEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -61,7 +61,7 @@ public class CustomEvaluationTest extends BaseNd4jTest {
                 }
         ));
 
-        assertEquals("Accuracy", acc, 3.0/5, 0.001);
+        assertEquals(acc, 3.0/5, 0.001,"Accuracy");
 
     }
 

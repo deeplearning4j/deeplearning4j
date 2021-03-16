@@ -37,7 +37,7 @@ package org.nd4j.samediff.frameworkimport.onnx.modelzoo
 
 import onnx.Onnx
 import org.apache.commons.io.FileUtils
-import org.junit.Ignore
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.common.resources.Downloader
 import org.nd4j.common.util.ArchiveUtils
@@ -50,7 +50,7 @@ import java.io.File
 import java.net.URI
 
 data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
-@Ignore
+@Disabled
 class TestPretrainedModels {
 
     val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
@@ -201,7 +201,7 @@ class TestPretrainedModels {
 
 
     @Test
-    @Ignore
+    @Disabled
     fun test() {
         modelPaths.forEach {
             pullModel(it)

@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.*;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
@@ -47,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestKryo extends BaseSparkKryoTest {
 
@@ -56,7 +56,7 @@ public class TestKryo extends BaseSparkKryoTest {
         T deserialized = (T)si.deserialize(bb, null);
 
         boolean equals = in.equals(deserialized);
-        assertTrue(in.getClass() + "\t" + in.toString(), equals);
+        assertTrue(equals, in.getClass() + "\t" + in.toString());
     }
 
     @Test

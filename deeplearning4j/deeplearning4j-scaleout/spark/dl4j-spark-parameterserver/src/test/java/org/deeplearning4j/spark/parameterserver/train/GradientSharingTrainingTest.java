@@ -46,10 +46,11 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -65,17 +66,18 @@ import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import java.io.File;
 import java.io.Serializable;
 import java.net.Inet4Address;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-//@Ignore("AB 2019/05/21 - Failing - Issue #7657")
+//@Disabled("AB 2019/05/21 - Failing - Issue #7657")
 public class GradientSharingTrainingTest extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -83,7 +85,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
     @Test
-    public void trainSanityCheck() throws Exception {
+    public void trainSanityCheck(@TempDir Path testDir) throws Exception {
 
         for(boolean mds : new boolean[]{false, true}) {
             INDArray last = null;
@@ -108,7 +110,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                         throw new RuntimeException();
                 }
 
-                File temp = testDir.newFolder();
+                File temp = testDir.toFile();
 
 
                 //TODO this probably won't work everywhere...
@@ -146,7 +148,8 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                 sparkNet.setCollectTrainingStats(tm.getIsCollectTrainingStats());
 
 //                System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-                File f = testDir.newFolder();
+                File f = new File(testDir.toFile(),"test-dir-1");
+                f.mkdirs();
                 DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
                 int count = 0;
                 List<String> paths = new ArrayList<>();
@@ -224,7 +227,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
                     double accAfter = eAfter.accuracy();
                     double accBefore = eBefore.accuracy();
-                    assertTrue("after: " + accAfter + ", before=" + accBefore, accAfter >= accBefore + 0.005);
+                    assertTrue(accAfter >= accBefore + 0.005, "after: " + accAfter + ", before=" + accBefore);
 
                     if (i == 0) {
                         acc[0] = eBefore.accuracy();
@@ -239,11 +242,11 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
 
-    @Test @Ignore //AB https://github.com/eclipse/deeplearning4j/issues/8985
-    public void differentNetsTrainingTest() throws Exception {
+    @Test @Disabled //AB https://github.com/eclipse/deeplearning4j/issues/8985
+    public void differentNetsTrainingTest(@TempDir Path testDir) throws Exception {
         int batch = 3;
 
-        File temp = testDir.newFolder();
+        File temp = testDir.toFile();
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         List<DataSet> list = ds.asList();
         Collections.shuffle(list, new Random(12345));
@@ -327,11 +330,11 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
 
-    @Test @Ignore
-    public void testEpochUpdating() throws Exception {
+    @Test @Disabled
+    public void testEpochUpdating(@TempDir Path testDir) throws Exception {
         //Ensure that epoch counter is incremented properly on the workers
 
-        File temp = testDir.newFolder();
+        File temp = testDir.toFile();
 
         //TODO this probably won't work everywhere...
         String controller = Inet4Address.getLocalHost().getHostAddress();
@@ -370,7 +373,8 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
         int count = 0;
         List<String> paths = new ArrayList<>();
         List<DataSet> ds = new ArrayList<>();
-        File f = testDir.newFolder();
+        File f = new File(testDir.toFile(),"test-dir-1");
+        f.mkdirs();
         while (iter.hasNext() && count++ < 8) {
             DataSet d = iter.next();
             File out = new File(f, count + ".bin");
@@ -386,7 +390,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
             sparkNet.fitPaths(pathRdd);
             //Check also that threshold algorithm was updated/averaged
             ThresholdAlgorithm taAfter = tm.getThresholdAlgorithm();
-            assertTrue("Threshold algorithm should have been updated with different instance after averaging", ta != taAfter);
+            assertTrue(ta != taAfter, "Threshold algorithm should have been updated with different instance after averaging");
             AdaptiveThresholdAlgorithm ataAfter = (AdaptiveThresholdAlgorithm) taAfter;
             assertFalse(Double.isNaN(ataAfter.getLastSparsity()));
             assertFalse(Double.isNaN(ataAfter.getLastThreshold()));

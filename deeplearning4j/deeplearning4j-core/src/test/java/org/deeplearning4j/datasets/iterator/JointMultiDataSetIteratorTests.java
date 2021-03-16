@@ -24,14 +24,16 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.DataSetGenerator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class JointMultiDataSetIteratorTests extends BaseDL4JTest {
 
-    @Test (timeout = 20000L)
+    @Test ()
+    @Timeout(20000L)
     public void testJMDSI_1() {
         val iter0 = new DataSetGenerator(32, new int[]{3, 3}, new int[]{2, 2});
         val iter1 = new DataSetGenerator(32, new int[]{3, 3, 3}, new int[]{2, 2, 2});
@@ -75,7 +77,8 @@ public class JointMultiDataSetIteratorTests extends BaseDL4JTest {
     }
 
 
-    @Test (timeout = 20000L)
+    @Test ()
+    @Timeout(20000L)
     public void testJMDSI_2() {
         val iter0 = new DataSetGenerator(32, new int[]{3, 3}, new int[]{2, 2});
         val iter1 = new DataSetGenerator(32, new int[]{3, 3, 3}, new int[]{2, 2, 2});

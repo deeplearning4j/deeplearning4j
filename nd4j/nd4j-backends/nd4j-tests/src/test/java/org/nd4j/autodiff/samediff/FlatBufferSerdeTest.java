@@ -22,9 +22,10 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.FlatConfiguration;
 import org.nd4j.graph.FlatGraph;
@@ -57,14 +58,16 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class FlatBufferSerdeTest extends BaseNd4jTest {
@@ -78,11 +81,10 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
         return 'c';
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testBasic() throws Exception {
+    public void testBasic(@TempDir Path testDir) throws Exception {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
@@ -91,7 +93,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
         ByteBuffer bb = sd.asFlatBuffers(true);
 
-        File f = testDir.newFile();
+        File f = Files.createTempFile(testDir,"some-file","bin").toFile();
         f.delete();
 
         try(FileChannel fc = new FileOutputStream(f, false).getChannel()){
@@ -137,8 +139,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSimple() throws Exception {
-        for( int i=0; i<10; i++ ) {
+    public void testSimple(@TempDir Path testDir) throws Exception {
+        for( int i = 0; i < 10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
@@ -194,7 +196,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     sd.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
                 }
 
-                File f = testDir.newFile();
+                File f = Files.createTempFile(testDir,"some-file","fb").toFile();
                 f.delete();
                 sd.asFlatFile(f);
 
@@ -223,7 +225,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 Map<String,INDArray> m2 = restored.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
                 INDArray outRestored = m2.get(x.name());
 
-                assertEquals(String.valueOf(i), outOrig, outRestored);
+                assertEquals(outOrig, outRestored,String.valueOf(i));
 
 
                 //Check placeholders
@@ -231,15 +233,15 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 Map<String,SDVariable> vAfter = restored.variableMap();
                 assertEquals(vBefore.keySet(), vAfter.keySet());
                 for(String s : vBefore.keySet()){
-                    assertEquals(s, vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder());
-                    assertEquals(s, vBefore.get(s).isConstant(), vAfter.get(s).isConstant());
+                    assertEquals(vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder(),s);
+                    assertEquals(vBefore.get(s).isConstant(), vAfter.get(s).isConstant(),s);
                 }
 
 
                 //Check save methods
                 for(boolean withUpdaterState : new boolean[]{false, true}) {
 
-                    File f2 = testDir.newFile();
+                    File f2 = Files.createTempFile(testDir,"some-file-2","fb").toFile();
                     sd.save(f2, withUpdaterState);
                     SameDiff r2 = SameDiff.load(f2, withUpdaterState);
                     assertEquals(varsOrig.size(), r2.variables().size());
@@ -247,8 +249,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     assertEquals(sd.getLossVariables(), r2.getLossVariables());
 
                     //Save via stream:
-                    File f3 = testDir.newFile();
-                    try(OutputStream os = new BufferedOutputStream(new FileOutputStream(f3))){
+                    File f3 = Files.createTempFile(testDir,"some-file-3","fb").toFile();
+                    try(OutputStream os = new BufferedOutputStream(new FileOutputStream(f3))) {
                         sd.save(os, withUpdaterState);
                     }
 
@@ -266,7 +268,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
 
     @Test
-    public void testTrainingSerde() throws Exception {
+    public void testTrainingSerde(@TempDir Path testDir) throws Exception {
 
         //Ensure 2 things:
         //1. Training config is serialized/deserialized correctly
@@ -301,12 +303,12 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
             DataSet ds = new DataSet(inArr, labelArr);
 
-            for (int i = 0; i < 10; i++){
+            for (int i = 0; i < 10; i++) {
                 sd.fit(ds);
             }
 
 
-            File dir = testDir.newFolder();
+            File dir = testDir.toFile();
             File f = new File(dir, "samediff.bin");
             sd.asFlatFile(f);
 

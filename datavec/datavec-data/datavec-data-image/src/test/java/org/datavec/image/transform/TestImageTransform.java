@@ -28,8 +28,8 @@ import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.primitives.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.loader.NativeImageLoader;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.util.LinkedList;
@@ -40,7 +40,7 @@ import org.bytedeco.opencv.opencv_core.*;
 
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -255,7 +255,7 @@ public class TestImageTransform {
         assertEquals(22, transformed[1], 0);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testFilterImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 4);

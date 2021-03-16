@@ -20,12 +20,11 @@
 
 package org.nd4j.samediff.frameworkimport.tensorflow
 
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
+
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
-import org.junit.Assert
-import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper
@@ -50,6 +49,9 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+
 
 data class GraphInput(val graphDef: GraphDef,val inputNames: List<String>,val outputNames: List<String>,
                       val inputArrays: Map<String,INDArray>,val dynamicArrays: Map<String,INDArray>)
@@ -68,7 +70,7 @@ class TestTensorflowIR {
 
 
     @Test
-    @Ignore
+    @Disabled
     fun manualTest() {
         val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
         val parsedGraph = GraphDef.newBuilder()
@@ -152,7 +154,7 @@ class TestTensorflowIR {
 
 
     @Test
-    @Ignore
+    @Disabled
     fun manualTestBinary() {
         val path = "C:\\Users\\agibs\\.nd4jtests\\resnetv2_imagenet_frozen_graph\\resnetv2_imagenet_frozen_graph.pb"
         val bytes = FileUtils.readFileToByteArray(File(path))
@@ -201,7 +203,7 @@ class TestTensorflowIR {
 
         //Perform inference
         val inputs: List<String> = importedGraph.inputs()
-        Assert.assertEquals(1, inputs.size.toLong())
+        assertEquals(1, inputs.size.toLong())
 
         val out = "softmax_tensor"
         val m: Map<String, INDArray> = importedGraph.output(Collections.singletonMap(inputs[0], img), out)
@@ -222,7 +224,7 @@ class TestTensorflowIR {
         val prob = outArr!!.getDouble(classIdx.toLong())
 
         println("Predicted class: $classIdx - \"$className\" - probability = $prob")
-        Assert.assertEquals(expClass, className)
+        assertEquals(expClass, className)
 
         val inputMap = Collections.singletonMap(inputs[0], img)
         val tensorflowIRGraph = TensorflowIRGraph(parsedGraph,tensorflowOps,tfImporter.registry)
@@ -295,7 +297,7 @@ class TestTensorflowIR {
 
 
     @Test
-    @Ignore
+    @Disabled
     fun manualTest2() {
         val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
         val parsedGraph = GraphDef.newBuilder()
@@ -338,7 +340,7 @@ class TestTensorflowIR {
 
 
     @Test
-    @Ignore
+    @Disabled
     fun testTensorflowMappingContext() {
         val tensorflowOpRegistry = registry()
 
@@ -423,7 +425,6 @@ class TestTensorflowIR {
 
 
     @Test
-    @Ignore
     @org.junit.jupiter.api.Disabled
     fun testOpExecution() {
         Nd4j.getRandom().setSeed(12345)
@@ -778,7 +779,7 @@ class TestTensorflowIR {
                 assertTrue(tfOutput.isScalar)
                 val nd4jOutput = results["output"]!!
                 assertTrue(nd4jOutput.isScalar)
-                assertEquals("Function ${nd4jOpDef.name} failed with input $xVal",nd4jOutput.getDouble(0), tfOutput.getDouble(0),1e-3)
+                assertEquals(nd4jOutput.getDouble(0), tfOutput.getDouble(0),1e-3,"Function ${nd4jOpDef.name} failed with input $xVal")
                 testedOps.add(nd4jOpDef.name)
             }
             else if(singularReduceNames.contains(nd4jOpDef.name)) {
@@ -841,9 +842,9 @@ class TestTensorflowIR {
                         val tfResults = tensorflowRunner.run(inputs)
                         //2 dimensions means sum the whole array, sometimes there are subtle differences in the shape like 1,1 vs a zero length array which is effectively the same thing
                         if(dimensions.size < 2)
-                            assertEquals("Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}",tfResults["output"]!!, results["output"]!!)
+                            assertEquals(tfResults["output"]!!, results["output"]!!,"Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}")
                         else
-                            assertEquals("Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}",tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1))
+                            assertEquals(tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}")
 
                     }
 
@@ -909,9 +910,9 @@ class TestTensorflowIR {
                         val tfResults = tensorflowRunner.run(inputs)
                         //2 dimensions means sum the whole array, sometimes there are subtle differences in the shape like 1,1 vs a zero length array which is effectively the same thing
                         if(dimensions.size < 2)
-                            assertEquals("Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}",tfResults["output"]!!, results["output"]!!)
+                            assertEquals(tfResults["output"]!!, results["output"]!!,"Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}")
                         else
-                            assertEquals("Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}",tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1))
+                            assertEquals(tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $xVal and dimension ${dimensions}")
 
                     }
 
@@ -972,7 +973,7 @@ class TestTensorflowIR {
                 val inputs = mapOf("x" to xVal,"y" to yVal)
                 val results = mappedGraph.output(inputs,"output")
                 val tfResults = tensorflowRunner.run(inputs)
-                assertEquals("Function ${nd4jOpDef.name} failed with input $xVal",tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1))
+                assertEquals(tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $xVal")
                 testedOps.add(nd4jOpDef.name)
 
             } else if(pairWiseIntOps.contains(nd4jOpDef.name)) {
@@ -1023,7 +1024,7 @@ class TestTensorflowIR {
                 val inputs = mapOf("x" to xVal,"y" to yVal)
                 val results = mappedGraph.output(inputs,"output")
                 val tfResults = tensorflowRunner.run(inputs)
-                assertEquals("Function ${nd4jOpDef.name} failed with input $xVal",tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1))
+                assertEquals(tfResults["output"]!!.reshape(1,1), results["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $xVal")
                 testedOps.add(nd4jOpDef.name)
 
             } else if(mappedOps.contains(mappingProcess.opName())) {
@@ -1047,7 +1048,7 @@ class TestTensorflowIR {
 
 
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
@@ -1062,20 +1063,20 @@ class TestTensorflowIR {
                             println(Nd4j.getExecutioner().exec(DynamicCustomOp.builder("bincount").addInputs(inputVal,weightVal).addIntegerArguments(0,3).build())[0])
                             println()
                         }
-                        assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames} " +
+                        assertEquals(tfResults.values.first(), results.values.first(),"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames} " +
                                 "with tfValue of shape ${tfResults.values.first().shapeInfoToString()} and nd4j ${results.values.first().shapeInfoToString()} and ${graphInput}"
-                            ,tfResults.values.first(), results.values.first())
+                            )
                     } else if(mappingProcess.opName() == "unique_with_counts" || mappingProcess.opName() == "unique") {
                         //note: this is a separate case since the results are equal, minus dimensions
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
-                        assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults.values.first().ravel(), results.values.first().ravel())
+                        assertEquals(tfResults.values.first().ravel(), results.values.first().ravel(),"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}")
                     }//slight difference in scalar result, doesn't matter in practice
                     else if(mappingProcess.opName() == "matrix_determinant" || mappingProcess.opName() == "log_matrix_determinant") {
                         //note: this is a separate case since the results are equal, minus dimensions
@@ -1083,12 +1084,12 @@ class TestTensorflowIR {
 
 
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         if(mappingProcess.opName() == "matrix_determinant") {
                             val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                             val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
-                            assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults["output"]!!.ravel().getDouble(0), results["output"]!!.ravel().getDouble(0),1e-3)
+                            assertEquals(tfResults["output"]!!.ravel().getDouble(0), results["output"]!!.ravel().getDouble(0),1e-3,"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}")
 
                         }
                     }
@@ -1097,19 +1098,19 @@ class TestTensorflowIR {
 
 
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
-                        assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults, results)
+                        assertEquals(tfResults, results,"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}")
 
                     } else if(mappingProcess.opName() == "draw_bounding_boxes") {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
-                        assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults, results)
+                        assertEquals(tfResults, results,"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}")
 
                     }
                     else if(mappingProcess.opName() == "fused_batch_norm" && !tf2Ops.contains(mappingProcess.inputFrameworkOpName())) {
@@ -1117,11 +1118,11 @@ class TestTensorflowIR {
 
 
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
-                        assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults["y"], results["y"])
+                        assertEquals(tfResults["y"], results["y"],"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}")
 
                     }
 
@@ -1131,11 +1132,11 @@ class TestTensorflowIR {
 
 
                         val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
-                        assertEquals("Input name mismatch with input array elements",graphInput.inputArrays.keys,graphInput.inputNames.toSet())
+                        assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
-                        assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults["finalResult"]!!.ravel().getDouble(0), results["finalResult"]!!.ravel().getDouble(0),1e-3)
+                        assertEquals(tfResults["finalResult"]!!.ravel().getDouble(0), results["finalResult"]!!.ravel().getDouble(0),1e-3,"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}")
 
                     }
 

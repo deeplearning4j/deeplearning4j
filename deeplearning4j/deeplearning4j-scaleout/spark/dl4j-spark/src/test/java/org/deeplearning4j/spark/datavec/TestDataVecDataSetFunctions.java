@@ -45,9 +45,10 @@ import org.datavec.spark.util.DataVecSparkUtil;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,22 +61,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testDataVecDataSetFunction() throws Exception {
+    public void testDataVecDataSetFunction(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
         }
         JavaSparkContext sc = getContext();
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         ClassPathResource cpr = new ClassPathResource("dl4j-spark/imagetest/");
         cpr.copyDirectory(f);
 
@@ -182,14 +182,14 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
-    public void testDataVecSequenceDataSetFunction() throws Exception {
+    public void testDataVecSequenceDataSetFunction(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
         }
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
         cpr.copyDirectory(dir);
 
@@ -244,14 +244,14 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
-    public void testDataVecSequencePairDataSetFunction() throws Exception {
+    public void testDataVecSequencePairDataSetFunction(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
         }
         JavaSparkContext sc = getContext();
 
-        File f = testDir.newFolder();
+        File f = new File(testDir.toFile(),"f");
         ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
         cpr.copyDirectory(f);
         String path = f.getAbsolutePath() + "/*";
@@ -260,7 +260,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         JavaPairRDD<Text, BytesPairWritable> toWrite =
                         DataVecSparkUtil.combineFilesForSequenceFile(sc, path, path, pathConverter);
 
-        Path p = testDir.newFolder("dl4j_testSeqPairFn").toPath();
+        Path p = new File(testDir.toFile(),"dl4j_testSeqPairFn").toPath();
         p.toFile().deleteOnExit();
         String outPath = p.toString() + "/out";
         new File(outPath).deleteOnExit();
@@ -343,17 +343,17 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
-    public void testDataVecSequencePairDataSetFunctionVariableLength() throws Exception {
+    public void testDataVecSequencePairDataSetFunctionVariableLength(@TempDir Path testDir) throws Exception {
         //Same sort of test as testDataVecSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
         }
-        File dirFeatures = testDir.newFolder();
+        File dirFeatures = new File(testDir.toFile(),"dirFeatures");
         ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
         cpr.copyDirectory(dirFeatures);
 
-        File dirLabels = testDir.newFolder();
+        File dirLabels =  new File(testDir.toFile(),"dirLables");
         ClassPathResource cpr2 = new ClassPathResource("dl4j-spark/csvsequencelabels/");
         cpr2.copyDirectory(dirLabels);
 
@@ -362,7 +362,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         JavaPairRDD<Text, BytesPairWritable> toWrite =
                         DataVecSparkUtil.combineFilesForSequenceFile(sc, dirFeatures.getAbsolutePath(), dirLabels.getAbsolutePath(), pathConverter);
 
-        Path p = testDir.newFolder("dl4j_testSeqPairFnVarLength").toPath();
+        Path p = new File(testDir.toFile(),"dl4j_testSeqPairFnVarLength").toPath();
         p.toFile().deleteOnExit();
         String outPath = p.toFile().getAbsolutePath() + "/out";
         new File(outPath).deleteOnExit();

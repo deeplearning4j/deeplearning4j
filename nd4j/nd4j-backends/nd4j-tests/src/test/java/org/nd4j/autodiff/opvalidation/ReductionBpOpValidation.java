@@ -21,9 +21,9 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -44,7 +44,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {
@@ -55,7 +55,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
@@ -64,13 +64,13 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(123);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
-    @After
+    @AfterEach
     public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);

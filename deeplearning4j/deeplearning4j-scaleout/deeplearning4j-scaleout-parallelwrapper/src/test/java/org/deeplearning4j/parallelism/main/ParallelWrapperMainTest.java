@@ -33,24 +33,25 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Slf4j
 public class ParallelWrapperMainTest extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void runParallelWrapperMain() throws Exception {
+    public void runParallelWrapperMain(@TempDir Path testDir) throws Exception {
 
         int nChannels = 1;
         int outputNum = 10;
@@ -87,10 +88,10 @@ public class ParallelWrapperMainTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        File tempModel = testDir.newFile("tmpmodel.zip");
+        File tempModel = Files.createTempFile(testDir,"tmpmodel","zip").toFile();
         tempModel.deleteOnExit();
         ModelSerializer.writeModel(model, tempModel, false);
-        File tmp = testDir.newFile("tmpmodel.bin");
+        File tmp = Files.createTempFile(testDir,"tmpmodel","bin").toFile();
         tmp.deleteOnExit();
         ParallelWrapperMain parallelWrapperMain = new ParallelWrapperMain();
         try {

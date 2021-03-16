@@ -22,7 +22,9 @@ package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.*;
+import org.junit.jupiter.api.*;import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
@@ -41,20 +43,8 @@ import java.util.*;
 
 @RunWith(Parameterized.class)
 @Slf4j
-@Ignore("AB 2019/05/21 - JVM Crashes - Issue #7657")
+@Disabled("AB 2019/05/21 - JVM Crashes - Issue #7657")
 public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
-
-    @Rule
-    public TestWatcher testWatcher = new TestWatcher() {
-
-        @Override
-        protected void starting(Description description){
-            log.info("TFGraphTestAllLibnd4j: Starting parameterized test: " + description.getDisplayName());
-        }
-
-        //protected void failed(Throwable e, Description description) {
-        //protected void succeeded(Description description) {
-    };
 
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
@@ -109,18 +99,17 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
             "rnn/lstmblockfusedcell/.*",
     };
 
-    @BeforeClass
-    public static void beforeClass() {
+ @BeforeAll    public static void beforeClass() {
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
-    @Before
+    @BeforeEach
     public void setup(){
         Nd4j.setDataType(DataType.FLOAT);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);

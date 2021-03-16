@@ -22,8 +22,8 @@ package org.nd4j.aeron.ipc;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,10 +33,10 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 @NotThreadSafe
-@Ignore("Tests are too flaky")
+@Disabled("Tests are too flaky")
 
 public class AeronNDArraySerdeTest extends BaseND4JTest {
 
@@ -62,7 +62,7 @@ public class AeronNDArraySerdeTest extends BaseND4JTest {
 
 
     @Test
-    @Ignore // timeout, skip step ignored
+    @Disabled // timeout, skip step ignored
     public void testToAndFromCompressedLarge() {
         skipUnlessIntegrationTests();
 

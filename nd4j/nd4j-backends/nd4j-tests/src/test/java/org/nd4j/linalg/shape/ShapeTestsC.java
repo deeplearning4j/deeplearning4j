@@ -21,8 +21,8 @@
 package org.nd4j.linalg.shape;
 
 import lombok.val;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -33,7 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Gibson
@@ -49,7 +49,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     DataType initialType;
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(this.initialType);
     }
@@ -69,7 +69,7 @@ public class ShapeTestsC extends BaseNd4jTest {
                         new INDArray[] {columnVectorFirst, columnVectorSecond, columnVectorThird, columnVectorFourth};
         for (int i = 0; i < baseArr.tensorsAlongDimension(0, 1); i++) {
             INDArray test = baseArr.tensorAlongDimension(i, 0, 1);
-            assertEquals("Wrong at index " + i, assertions[i], test);
+            assertEquals( assertions[i], test,"Wrong at index " + i);
         }
 
     }
@@ -87,7 +87,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < baseArr.tensorsAlongDimension(2); i++) {
             INDArray arr = baseArr.tensorAlongDimension(i, 2);
-            assertEquals("Failed at index " + i, assertions[i], arr);
+            assertEquals( assertions[i], arr,"Failed at index " + i);
         }
 
     }
@@ -151,7 +151,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < baseArr.tensorsAlongDimension(1); i++) {
             INDArray arr = baseArr.tensorAlongDimension(i, 1);
-            assertEquals("Failed at index " + i, assertions[i], arr);
+            assertEquals(assertions[i], arr,"Failed at index " + i);
         }
 
     }
@@ -271,7 +271,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.FLOAT).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[] {44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(getFailureMessage(), assertion, columnVar);
+        assertEquals(assertion, columnVar,getFailureMessage());
 
     }
 
@@ -280,7 +280,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray rowMean = twoByThree.mean(1);
         INDArray assertion = Nd4j.create(new double[] {1.5, 3.5});
-        assertEquals(getFailureMessage(), assertion, rowMean);
+        assertEquals(assertion, rowMean,getFailureMessage());
 
 
     }
@@ -290,7 +290,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray rowStd = twoByThree.std(1);
         INDArray assertion = Nd4j.create(new double[] {0.7071067811865476f, 0.7071067811865476f});
-        assertEquals(getFailureMessage(), assertion, rowStd);
+        assertEquals(assertion, rowStd,getFailureMessage());
 
     }
 
@@ -302,7 +302,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.DOUBLE).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new double[] {44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(getFailureMessage(), assertion, columnVar);
+        assertEquals(assertion, columnVar,getFailureMessage());
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
@@ -322,14 +322,14 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray n = Nd4j.create(new double[] {1, 2, 3, 4}, new long[] {1, 4});
         INDArray cumSumAnswer = Nd4j.create(new double[] {1, 3, 6, 10}, new long[] {1, 4});
         INDArray cumSumTest = n.cumsum(0);
-        assertEquals(getFailureMessage(), cumSumAnswer, cumSumTest);
+        assertEquals( cumSumAnswer, cumSumTest,getFailureMessage());
 
         INDArray n2 = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
 
         INDArray axis0assertion = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0,
                         18.0, 21.0, 24.0, 27.0, 30.0, 33.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0}, n2.shape());
         INDArray axis0Test = n2.cumsum(0);
-        assertEquals(getFailureMessage(), axis0assertion, axis0Test);
+        assertEquals(axis0assertion, axis0Test,getFailureMessage());
 
     }
 

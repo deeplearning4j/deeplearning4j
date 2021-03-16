@@ -20,15 +20,14 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
 
@@ -41,13 +40,16 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_preConditionsIsNull_expect_NullPointerException() {
-        // Assemble
-        CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor();
+        assertThrows(NullPointerException.class,() -> {
+            // Assemble
+            CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor();
 
-        // Act
-        sut.preProcess(null);
+            // Act
+            sut.preProcess(null);
+        });
+
 
     }
 

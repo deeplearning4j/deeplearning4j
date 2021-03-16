@@ -21,27 +21,27 @@
 package org.datavec.image.recordreader.objdetect;
 
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestVocLabelProvider {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testVocLabelProvider() throws Exception {
+    public void testVocLabelProvider(@TempDir Path testDir) throws Exception {
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         new ClassPathResource("datavec-data-image/voc/2007/").copyDirectory(f);
 
         String path = f.getAbsolutePath();  //new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile().getParentFile().getParent();

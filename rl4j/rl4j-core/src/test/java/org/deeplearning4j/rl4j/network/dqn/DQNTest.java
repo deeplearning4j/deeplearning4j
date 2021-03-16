@@ -21,13 +21,13 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
 import org.deeplearning4j.rl4j.network.configuration.DQNDenseNetworkConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.learning.config.RmsProp;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author saudet

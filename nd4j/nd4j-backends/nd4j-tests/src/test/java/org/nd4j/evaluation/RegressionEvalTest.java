@@ -20,7 +20,7 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -35,7 +35,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -50,14 +51,17 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void testEvalParameters() {
-        int specCols = 5;
-        INDArray labels = Nd4j.ones(3);
-        INDArray preds = Nd4j.ones(6);
-        RegressionEvaluation eval = new RegressionEvaluation(specCols);
+        assertThrows(IllegalStateException.class,() -> {
+            int specCols = 5;
+            INDArray labels = Nd4j.ones(3);
+            INDArray preds = Nd4j.ones(6);
+            RegressionEvaluation eval = new RegressionEvaluation(specCols);
 
-        eval.eval(labels, preds);
+            eval.eval(labels, preds);
+        });
+
     }
 
     @Test
@@ -261,7 +265,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for (Metric m : Metric.values()) {
             double d1 = e3d.scoreForMetric(m);
             double d2 = e2d.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-6);
+            assertEquals(d2, d1, 1e-6,m.toString());
         }
     }
 
@@ -293,7 +297,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for (Metric m : Metric.values()) {
             double d1 = e4d.scoreForMetric(m);
             double d2 = e2d.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-5);
+            assertEquals(d2, d1, 1e-5,m.toString());
         }
     }
 
@@ -352,7 +356,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for(Metric m : Metric.values()){
             double d1 = e4d_m2.scoreForMetric(m);
             double d2 = e2d_m2.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-5);
+            assertEquals(d2, d1, 1e-5,m.toString());
         }
     }
 
@@ -387,7 +391,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for(Metric m : Metric.values()){
             double d1 = e4d_m1.scoreForMetric(m);
             double d2 = e2d_m1.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-5);
+            assertEquals(d2, d1, 1e-5,m.toString());
         }
 
         //Check per-output masking:
@@ -414,7 +418,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for(Metric m : Metric.values()){
             double d1 = e4d_m2.scoreForMetric(m);
             double d2 = e2d_m2.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-5);
+            assertEquals(d2, d1, 1e-5,m.toString());
         }
     }
 }

@@ -24,7 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.listener.HardwareMetric;
 import org.deeplearning4j.core.listener.SystemPolling;
 import org.junit.jupiter.api.Disabled;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.factory.Nd4j;

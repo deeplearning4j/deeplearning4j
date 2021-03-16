@@ -33,7 +33,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -42,7 +42,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TransferLearningComplex extends BaseDL4JTest {
@@ -92,9 +92,9 @@ public class TransferLearningComplex extends BaseDL4JTest {
             if ("C".equals(l.conf().getLayer().getLayerName())) {
                 //Only C should be frozen in this config
                 cFound = true;
-                assertTrue(name, l instanceof FrozenLayer);
+                assertTrue(l instanceof FrozenLayer, name);
             } else {
-                assertFalse(name, l instanceof FrozenLayer);
+                assertFalse(l instanceof FrozenLayer, name);
             }
 
             //Also check config:

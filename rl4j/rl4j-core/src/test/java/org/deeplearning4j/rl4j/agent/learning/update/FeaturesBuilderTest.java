@@ -24,7 +24,7 @@ import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.observation.IObservationSource;
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,8 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FeaturesBuilderTest {

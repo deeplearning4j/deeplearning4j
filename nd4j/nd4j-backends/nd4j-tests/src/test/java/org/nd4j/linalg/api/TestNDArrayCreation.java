@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -37,7 +37,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TestNDArrayCreation extends BaseNd4jTest {
@@ -48,7 +48,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testBufferCreation() {
         DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
@@ -68,7 +68,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testCreateNpy() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/test.npy").getFile());
         assertEquals(2, arrCreate.size(0));
@@ -81,7 +81,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testCreateNpz() throws Exception {
         Map<String, INDArray> map = Nd4j.createFromNpzFile(new ClassPathResource("nd4j-tests/test.npz").getFile());
         assertEquals(true, map.containsKey("x"));
@@ -100,7 +100,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testCreateNpy3() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/rank3.npy").getFile());
         assertEquals(8, arrCreate.length());
@@ -112,7 +112,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore // this is endless test
+    @Disabled // this is endless test
     public void testEndlessAllocation() {
         Nd4j.getEnvironment().setMaxSpecialMemory(1);
         while (true) {
@@ -122,7 +122,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("This test is designed to run in isolation. With parallel gc it makes no real sense since allocated amount changes at any time")
+    @Disabled("This test is designed to run in isolation. With parallel gc it makes no real sense since allocated amount changes at any time")
     public void testAllocationLimits() throws Exception {
         Nd4j.create(1);
 

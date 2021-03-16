@@ -22,10 +22,10 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -87,7 +87,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TransformOpValidation extends BaseOpValidation {
@@ -98,7 +98,7 @@ public class TransformOpValidation extends BaseOpValidation {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
@@ -107,13 +107,13 @@ public class TransformOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(123);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
-    @After
+    @AfterEach
     public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
@@ -213,7 +213,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 }
             }
         }
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -1309,7 +1309,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 failed.add(err);
             }
         }
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -1420,7 +1420,7 @@ public class TransformOpValidation extends BaseOpValidation {
         val outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, outShapes.size());
 
-        assertArrayEquals(Arrays.toString(outShapes.get(0).getShape()), new long[]{3, 2, 4}, outShapes.get(0).getShape());
+        assertArrayEquals(new long[]{3, 2, 4}, outShapes.get(0).getShape(),Arrays.toString(outShapes.get(0).getShape()));
     }
 
     @Test
@@ -1476,12 +1476,12 @@ public class TransformOpValidation extends BaseOpValidation {
 
             Nd4j.getExecutioner().exec(op);
 
-            assertEquals(s, exp, out);
+            assertEquals(exp, out,s);
         }
     }
 
 
-    @Ignore("12/16/2019 https://github.com/eclipse/deeplearning4j/issues/8540")
+    @Disabled("12/16/2019 https://github.com/eclipse/deeplearning4j/issues/8540")
     @Test
     public void testPad() {
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);

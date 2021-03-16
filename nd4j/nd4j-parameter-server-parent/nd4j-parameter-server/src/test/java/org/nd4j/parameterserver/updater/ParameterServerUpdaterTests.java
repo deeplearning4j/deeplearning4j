@@ -20,20 +20,22 @@
 
 package org.nd4j.parameterserver.updater;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
 public class ParameterServerUpdaterTests extends BaseND4JTest {
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void synchronousTest() {
         int cores = Runtime.getRuntime().availableProcessors();
         ParameterServerUpdater updater = new SynchronousParameterUpdater(new NoUpdateStorage(),

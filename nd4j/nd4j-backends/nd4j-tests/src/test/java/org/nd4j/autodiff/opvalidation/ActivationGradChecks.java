@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.opvalidation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.GradCheckUtil;
@@ -34,7 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActivationGradChecks extends BaseOpValidation {
 

@@ -21,8 +21,8 @@
 package org.nd4j.linalg.convolution;
 
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -43,8 +43,8 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
@@ -1321,7 +1321,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testCompareIm2ColImpl() {
 
         int[] miniBatches = {1, 3, 5};
@@ -1405,7 +1405,7 @@ public class ConvolutionTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testCompareIm2Col() {
 
         int[] miniBatches = {1, 3, 5};
@@ -1648,8 +1648,8 @@ public class ConvolutionTests extends BaseNd4jTest {
 
                 String msg = "inOrder=" + inputOrder + ", outOrder=" + outputOrder;
                 val vr = actDl4j.get(point(0), point(0), all(), all());
-                assertEquals(msg, expDl4j, vr);
-                assertEquals(msg, expEnabled, actEnabled.get(point(0), point(0), all(), all()));
+                assertEquals(expDl4j, vr,msg);
+                assertEquals(expEnabled, actEnabled.get(point(0), point(0), all(), all()),msg);
             }
         }
     }
@@ -1672,7 +1672,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
 
             /*
             k=2, s=2, p=0, d=1, same mode, divisor = 1
@@ -1734,7 +1734,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1756,7 +1756,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals( exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1779,7 +1779,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1802,7 +1802,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1825,7 +1825,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1848,7 +1848,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1870,7 +1870,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1892,7 +1892,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1914,7 +1914,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1936,7 +1936,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1958,7 +1958,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals( exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -1981,7 +1981,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
             INDArray out = op.getOutputArgument(0);
 
-            assertEquals("Output order: " + outputOrder, exp, out);
+            assertEquals(exp, out,"Output order: " + outputOrder);
         }
     }
 
@@ -2113,7 +2113,7 @@ public class ConvolutionTests extends BaseNd4jTest {
                 }
 
                 String msg = "TestNum=" + testNum + ", Mode: " + mode + ", " + pIn.getSecond();
-                assertEquals(msg, exp, out);
+                assertEquals(exp, out,msg);
                 testNum++;
             }
         }

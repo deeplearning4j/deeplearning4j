@@ -23,8 +23,9 @@ package org.nd4j.linalg.api.buffer;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -40,9 +41,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.util.SerializationUtils;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Double data buffer tests
@@ -53,11 +55,10 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 @RunWith(Parameterized.class)
-@Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+@Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
 public class DoubleDataBufferTest extends BaseNd4jTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     DataType initialType;
 
@@ -68,13 +69,13 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
 
-    @Before
+    @BeforeEach
     public void before() {
 
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void after() {
         DataTypeUtil.setDTypeForContext(initialType);
     }
@@ -128,8 +129,8 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testSerialization() throws Exception {
-        File dir = testDir.newFolder();
+    public void testSerialization(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
         File file = new File(dir, fileName);
@@ -257,12 +258,12 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
 
         DoublePointer pointer = (DoublePointer) wrappedBuffer.addressPointer();
-        Assert.assertEquals(buffer.getDouble(1), pointer.get(0), 1e-1);
-        Assert.assertEquals(buffer.getDouble(2), pointer.get(1), 1e-1);
+        assertEquals(buffer.getDouble(1), pointer.get(0), 1e-1);
+        assertEquals(buffer.getDouble(2), pointer.get(1), 1e-1);
 
         try {
             pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
-            Assert.fail("Accessing this address should not be allowed!");
+            fail("Accessing this address should not be allowed!");
         } catch (IndexOutOfBoundsException e) {
             // do nothing
         }

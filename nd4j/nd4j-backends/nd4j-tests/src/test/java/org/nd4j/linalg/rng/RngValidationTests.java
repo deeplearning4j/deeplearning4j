@@ -20,13 +20,13 @@
 
 package org.nd4j.linalg.rng;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.util.ArrayUtil;
@@ -281,8 +281,8 @@ public class RngValidationTests extends BaseNd4jTest {
             //Check for NaNs, Infs, etc
             int countNaN = Nd4j.getExecutioner().exec(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).castTo(DataType.INT).sumNumber().intValue();
             int countInf = Nd4j.getExecutioner().exec(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).castTo(DataType.INT).sumNumber().intValue();
-            assertEquals("NaN - expected 0 values", 0, countNaN);
-            assertEquals("Infinite - expected 0 values", 0, countInf);
+            assertEquals(0, countNaN,"NaN - expected 0 values");
+            assertEquals( 0, countInf,"Infinite - expected 0 values");
 
             //Check min/max values
             double min = z.minNumber().doubleValue();

@@ -28,18 +28,20 @@ import org.deeplearning4j.graph.data.impl.WeightedEdgeLineProcessor;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestGraphLoadingWeighted extends BaseDL4JTest {
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testWeightedDirected() throws IOException {
 
         String path = new ClassPathResource("deeplearning4j-graph/WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
@@ -79,7 +81,8 @@ public class TestGraphLoadingWeighted extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testWeightedDirectedV2() throws Exception {
 
         String path = new ClassPathResource("deeplearning4j-graph/WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();

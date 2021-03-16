@@ -22,8 +22,8 @@ package org.nd4j.linalg.custom;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -92,7 +92,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.Float.NaN;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class CustomOpsTests extends BaseNd4jTest {
@@ -151,7 +151,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore // it's noop, we dont care anymore
+    @Disabled // it's noop, we dont care anymore
     public void testNoOp1() {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(5, 3);
@@ -191,24 +191,27 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(exp, arrayX);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testInplaceOp1() {
-        val arrayX = Nd4j.create(10, 10);
-        val arrayY = Nd4j.create(10, 10);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            val arrayX = Nd4j.create(10, 10);
+            val arrayY = Nd4j.create(10, 10);
 
-        arrayX.assign(4.0);
-        arrayY.assign(2.0);
+            arrayX.assign(4.0);
+            arrayY.assign(2.0);
 
-        val exp = Nd4j.create(10,10).assign(6.0);
+            val exp = Nd4j.create(10,10).assign(6.0);
 
-        CustomOp op = DynamicCustomOp.builder("add")
-                .addInputs(arrayX, arrayY)
-                .callInplace(true)
-                .build();
+            CustomOp op = DynamicCustomOp.builder("add")
+                    .addInputs(arrayX, arrayY)
+                    .callInplace(true)
+                    .build();
 
-        Nd4j.getExecutioner().exec(op);
+            Nd4j.getExecutioner().exec(op);
 
-        assertEquals(exp, arrayX);
+            assertEquals(exp, arrayX);
+        });
+
     }
 
     @Test
@@ -604,21 +607,24 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(e, z);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test()
     public void testInputValidationMergeMax(){
-        INDArray[] inputs = new INDArray[]{
-                Nd4j.createFromArray(0.0f, 1.0f, 2.0f).reshape('c', 1, 3),
-                Nd4j.createFromArray(1.0f).reshape('c', 1, 1)};
+        assertThrows(RuntimeException.class,() -> {
+            INDArray[] inputs = new INDArray[]{
+                    Nd4j.createFromArray(0.0f, 1.0f, 2.0f).reshape('c', 1, 3),
+                    Nd4j.createFromArray(1.0f).reshape('c', 1, 1)};
 
-        INDArray out = Nd4j.create(DataType.FLOAT, 1, 3).assign(Double.NaN);
-        CustomOp op = DynamicCustomOp.builder("mergemax")
-                .addInputs(inputs)
-                .addOutputs(out)
-                .callInplace(false)
-                .build();
+            INDArray out = Nd4j.create(DataType.FLOAT, 1, 3).assign(Double.NaN);
+            CustomOp op = DynamicCustomOp.builder("mergemax")
+                    .addInputs(inputs)
+                    .addOutputs(out)
+                    .callInplace(false)
+                    .build();
 
-        Nd4j.exec(op);
+            Nd4j.exec(op);
 //        System.out.println(out);
+        });
+
     }
 
     @Test
@@ -786,9 +792,9 @@ public class CustomOpsTests extends BaseNd4jTest {
     public void test() throws Exception {
 
         INDArray in1 = Nd4j.create(DataType.BFLOAT16, 2, 3, 10, 1);//Nd4j.createFromArray(0.2019043,0.6464844,0.9116211,0.60058594,0.34033203,0.7036133,0.6772461,0.3815918,0.87353516,0.04650879,0.67822266,0.8618164,0.88378906,0.7573242,0.66796875,0.63427734,0.33764648,0.46923828,0.62939453,0.76464844,-0.8618164,-0.94873047,-0.9902344,-0.88916016,-0.86572266,-0.92089844,-0.90722656,-0.96533203,-0.97509766,-0.4975586,-0.84814453,-0.984375,-0.98828125,-0.95458984,-0.9472656,-0.91064453,-0.80859375,-0.83496094,-0.9140625,-0.82470703,0.4802246,0.45361328,0.28125,0.28320312,0.79345703,0.44604492,-0.30273438,0.11730957,0.56396484,0.73583984,0.1418457,-0.44848633,0.6923828,-0.40234375,0.40185547,0.48632812,0.14538574,0.4638672,0.13000488,0.5058594)
-                //.castTo(DataType.BFLOAT16).reshape(2,3,10,1);
+        //.castTo(DataType.BFLOAT16).reshape(2,3,10,1);
         INDArray in2 = Nd4j.create(DataType.BFLOAT16, 2, 3, 10, 1); //Nd4j.createFromArray(0.0,-0.13391113,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,-0.1751709,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.51904297,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.5107422,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
-                //.castTo(DataType.BFLOAT16).reshape(2,3,10,1);
+        //.castTo(DataType.BFLOAT16).reshape(2,3,10,1);
 
         INDArray out = in1.ulike();
 
@@ -870,43 +876,43 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testDrawBoundingBoxesShape() {
         INDArray images = Nd4j.createFromArray(new float[]{0.7788f, 0.8012f, 0.7244f,  0.2309f, 0.7271f,
-                        0.1804f,0.5056f,0.8925f,0.5461f,0.9234f,0.0856f,0.7938f,0.6591f,0.5555f,0.1596f,
-                        0.3087f,0.1548f,0.4695f,0.9939f,0.6113f,0.6765f,0.1800f,0.6750f,0.2246f,0.0509f,
-                        0.4601f,0.8284f,0.2354f,0.9752f,0.8361f,0.2585f,0.4189f,0.7028f,0.7679f,0.5373f,
-                        0.7234f,0.2690f,0.0062f,0.0327f,0.0644f,0.8428f,0.7494f,0.0755f,0.6245f,0.3491f,
-                        0.5793f,0.5730f,0.1822f,0.6420f,0.9143f}).reshape(2,5,5,1);
+                0.1804f,0.5056f,0.8925f,0.5461f,0.9234f,0.0856f,0.7938f,0.6591f,0.5555f,0.1596f,
+                0.3087f,0.1548f,0.4695f,0.9939f,0.6113f,0.6765f,0.1800f,0.6750f,0.2246f,0.0509f,
+                0.4601f,0.8284f,0.2354f,0.9752f,0.8361f,0.2585f,0.4189f,0.7028f,0.7679f,0.5373f,
+                0.7234f,0.2690f,0.0062f,0.0327f,0.0644f,0.8428f,0.7494f,0.0755f,0.6245f,0.3491f,
+                0.5793f,0.5730f,0.1822f,0.6420f,0.9143f}).reshape(2,5,5,1);
         INDArray boxes = Nd4j.createFromArray(new float[]{0.7717f,    0.9281f,    0.9846f,    0.4838f,
-                                                          0.6433f,    0.6041f,    0.6501f,    0.7612f,
-                                                          0.7605f,    0.3948f,    0.9493f,    0.8600f,
-                                                          0.7876f,    0.8945f,    0.4638f,    0.7157f}).reshape(2,2,4);
+                0.6433f,    0.6041f,    0.6501f,    0.7612f,
+                0.7605f,    0.3948f,    0.9493f,    0.8600f,
+                0.7876f,    0.8945f,    0.4638f,    0.7157f}).reshape(2,2,4);
         INDArray colors = Nd4j.createFromArray(new float[]{0.9441f, 0.5957f}).reshape(1,2);
         INDArray output = Nd4j.create(DataType.FLOAT, images.shape());
         val op = new DrawBoundingBoxes(images, boxes, colors, output);
         Nd4j.exec(op);
         INDArray expected = Nd4j.createFromArray(new float[]{0.7788f, 0.8012f, 0.7244f, 0.2309f, 0.7271f,
-                           0.1804f, 0.5056f, 0.8925f, 0.5461f, 0.9234f, 0.0856f, 0.7938f, 0.9441f,
-                           0.9441f, 0.1596f, 0.3087f, 0.1548f, 0.4695f, 0.9939f, 0.6113f, 0.6765f,
-                           0.1800f, 0.6750f, 0.2246f, 0.0509f, 0.4601f, 0.8284f, 0.2354f, 0.9752f, 0.8361f,
+                0.1804f, 0.5056f, 0.8925f, 0.5461f, 0.9234f, 0.0856f, 0.7938f, 0.9441f,
+                0.9441f, 0.1596f, 0.3087f, 0.1548f, 0.4695f, 0.9939f, 0.6113f, 0.6765f,
+                0.1800f, 0.6750f, 0.2246f, 0.0509f, 0.4601f, 0.8284f, 0.2354f, 0.9752f, 0.8361f,
                 0.2585f, 0.4189f,0.7028f,0.7679f,0.5373f,0.7234f,0.2690f,0.0062f,0.0327f,0.0644f,
-               0.8428f, 0.9441f,0.9441f,0.9441f,0.3491f,0.5793f,0.5730f,0.1822f,0.6420f,0.9143f});
+                0.8428f, 0.9441f,0.9441f,0.9441f,0.3491f,0.5793f,0.5730f,0.1822f,0.6420f,0.9143f});
         assertEquals(expected, output);
     }
 
     @Test
-    @Ignore("Failing with results that are close")
+    @Disabled("Failing with results that are close")
     public void testFakeQuantAgainstTF_1() {
         INDArray x = Nd4j.createFromArray(new double[]{ 0.7788f,    0.8012f,    0.7244f,    0.2309f,    0.7271f,
-     0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
-     0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f}).reshape(3,5);
+                0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
+                0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f}).reshape(3,5);
         INDArray min = Nd4j.createFromArray(new double[]{ -0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f});
         INDArray max = Nd4j.createFromArray(new double[]{ 0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f});
 
         INDArray expected = Nd4j.createFromArray(new double[]{0.7801f,    0.5966f,    0.7260f,    0.2320f,    0.5084f,
-             0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
-             0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f}).reshape(3,5);
+                0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
+                0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f}).reshape(3,5);
 
         val op = new FakeQuantWithMinMaxVarsPerChannel(x,min,max);
         INDArray[] output = Nd4j.exec(op);
@@ -972,7 +978,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testDrawBoundingBoxes() {
         INDArray images = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 2*4*5*3).reshape(2,4,5,3);
         INDArray boxes = Nd4j.createFromArray(new float[]{ 0.0f , 0.0f , 1.0f , 1.0f,
@@ -1082,7 +1088,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray batchVar = Nd4j.create(4);
 
         FusedBatchNorm op = new FusedBatchNorm(x,scale,offset,0,1,
-                                                y, batchMean, batchVar);
+                y, batchMean, batchVar);
 
         INDArray expectedY = Nd4j.createFromArray(new double[]{1.20337462,  1.20337462,  1.20337462,
                 1.20337462, 1.34821558,  1.34821558,  1.34821558,  1.34821558, 1.49305654,  1.49305654,
@@ -1103,11 +1109,11 @@ public class CustomOpsTests extends BaseNd4jTest {
     @Test
     public void testFusedBatchNorm1() {
         INDArray x = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,0.2309f,
-            0.7271f, 0.1804f, 0.5056f, 0.8925f,
-            0.5461f, 0.9234f, 0.0856f, 0.7938f,
-            0.6591f, 0.5555f, 0.1596f, 0.3087f,
-            0.1548f, 0.4695f, 0.9939f, 0.6113f,
-            0.6765f, 0.1800f, 0.6750f, 0.2246f}).reshape(1,2,3,4);
+                0.7271f, 0.1804f, 0.5056f, 0.8925f,
+                0.5461f, 0.9234f, 0.0856f, 0.7938f,
+                0.6591f, 0.5555f, 0.1596f, 0.3087f,
+                0.1548f, 0.4695f, 0.9939f, 0.6113f,
+                0.6765f, 0.1800f, 0.6750f, 0.2246f}).reshape(1,2,3,4);
         INDArray scale = Nd4j.createFromArray(new float[]{ 0.7717f, 0.9281f, 0.9846f, 0.4838f});
         INDArray offset = Nd4j.createFromArray(new float[]{0.9441f, 0.5957f, 0.8669f, 0.3502f});
 
@@ -1119,11 +1125,11 @@ public class CustomOpsTests extends BaseNd4jTest {
                 y, batchMean, batchVar);
 
         INDArray expectedY = Nd4j.createFromArray(new float[]{1.637202024f, 1.521406889f, 1.48303616f, -0.147269756f,
-              1.44721508f,  -0.51030159f,  0.810390055f,     1.03076458f,
-              0.781284988f, 1.921229601f,  -0.481337309f,    0.854952335f,
-              1.196854949f, 0.717398405f,  -0.253610134f,    -0.00865117f,
-              -0.658405781f,0.43602103f,   2.311818838f,    0.529999137f,
-              1.260738254f, -0.511638165f, 1.331095099f,   -0.158477545f}).reshape(x.shape());
+                1.44721508f,  -0.51030159f,  0.810390055f,     1.03076458f,
+                0.781284988f, 1.921229601f,  -0.481337309f,    0.854952335f,
+                1.196854949f, 0.717398405f,  -0.253610134f,    -0.00865117f,
+                -0.658405781f,0.43602103f,   2.311818838f,    0.529999137f,
+                1.260738254f, -0.511638165f, 1.331095099f,   -0.158477545f}).reshape(x.shape());
         Nd4j.exec(op);
         assertArrayEquals(expectedY.shape(), y.shape());
     }
@@ -1159,7 +1165,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, x);
     }
 
-    @Ignore("AS failed 2019/12/04")
+    @Disabled("AS failed 2019/12/04")
     @Test
     public void testPolygamma() {
         INDArray n = Nd4j.linspace(DataType.FLOAT, 1.0, 1.0, 9).reshape(3,3);
@@ -1217,12 +1223,12 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, result[0]);
     }
 
-    @Ignore("AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8449")
+    @Disabled("AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8449")
     @Test
     public void testNonMaxSuppression() {
         INDArray boxes = Nd4j.createFromArray(new float[] {0.8115f,    0.4121f,    0.0771f,    0.4863f,
-                            0.7412f,    0.7607f,    0.1543f,    0.5479f,
-                            0.8223f,    0.2246f,    0.0049f,    0.6465f}).reshape(3,4);
+                0.7412f,    0.7607f,    0.1543f,    0.5479f,
+                0.8223f,    0.2246f,    0.0049f,    0.6465f}).reshape(3,4);
         INDArray scores = Nd4j.createFromArray(new float[]{0.0029f,    0.8135f,    0.4873f});
         val op = new NonMaxSuppression(boxes,scores,2,0.5,0.5);
         val res = Nd4j.exec(op);
@@ -1232,14 +1238,14 @@ public class CustomOpsTests extends BaseNd4jTest {
     @Test
     public void testMatrixBand() {
         INDArray input = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,0.2309f,
-                                               0.7271f,0.1804f,0.5056f,0.8925f,
-                                               0.5461f,0.9234f,0.0856f,0.7938f}).reshape(3,4);
+                0.7271f,0.1804f,0.5056f,0.8925f,
+                0.5461f,0.9234f,0.0856f,0.7938f}).reshape(3,4);
         MatrixBandPart op = new MatrixBandPart(input,1,-1);
         List<LongShapeDescriptor> lsd = op.calculateOutputShape();
         assertEquals(1, lsd.size());
     }
 
-    @Ignore("Failed AS 11.26.2019 - https://github.com/eclipse/deeplearning4j/issues/8450")
+    @Disabled("Failed AS 11.26.2019 - https://github.com/eclipse/deeplearning4j/issues/8450")
     @Test
     public void testBetaInc1() {
         INDArray a = Nd4j.createFromArray(new float[]{0.7788f,    0.8012f,    0.7244f,    0.2309f});
@@ -1251,15 +1257,15 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, ret[0]);
     }
 
-    @Ignore("Failure AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8452")
+    @Disabled("Failure AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8452")
     @Test
     public void testPolygamma1() {
         INDArray a = Nd4j.createFromArray(new float[]{0.7788f,    0.8012f,    0.7244f,    0.2309f,
-                                        0.7271f,    0.1804f,    0.5056f,    0.8925f,
-                                        0.5461f,    0.9234f,    0.0856f,    0.7938f}).reshape(3,4);
+                0.7271f,    0.1804f,    0.5056f,    0.8925f,
+                0.5461f,    0.9234f,    0.0856f,    0.7938f}).reshape(3,4);
         INDArray b = Nd4j.createFromArray(new float[]{0.7717f,    0.9281f,    0.9846f,    0.4838f,
-                                        0.6433f,    0.6041f,    0.6501f,    0.7612f,
-                                        0.7605f,    0.3948f,    0.9493f,    0.8600f}).reshape(3,4);
+                0.6433f,    0.6041f,    0.6501f,    0.7612f,
+                0.7605f,    0.3948f,    0.9493f,    0.8600f}).reshape(3,4);
         INDArray expected = Nd4j.createFromArray(new float[]{NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN, }).reshape(3,4);
         Polygamma op = new Polygamma(a,b);
         INDArray[] ret = Nd4j.exec(op);
@@ -1282,38 +1288,38 @@ public class CustomOpsTests extends BaseNd4jTest {
     @Test
     public void testAdjustHueShape(){
         INDArray image = Nd4j.createFromArray(new float[]{0.7788f,    0.8012f,    0.7244f,
-            0.2309f,    0.7271f,    0.1804f, 0.5056f,    0.8925f,    0.5461f,
-            0.9234f,    0.0856f,    0.7938f, 0.6591f,    0.5555f,    0.1596f,
-            0.3087f,    0.1548f,    0.4695f, 0.9939f,    0.6113f,    0.6765f,
-            0.1800f,    0.6750f,    0.2246f, 0.0509f,    0.4601f,    0.8284f,
-            0.2354f,    0.9752f,    0.8361f, 0.2585f,    0.4189f,    0.7028f,
-            0.7679f,    0.5373f,    0.7234f,  0.2690f,    0.0062f,    0.0327f,
-            0.0644f,    0.8428f,    0.7494f,  0.0755f,    0.6245f,    0.3491f,
-            0.5793f,    0.5730f,    0.1822f,  0.6420f,    0.9143f,    0.3019f,
-            0.3574f,    0.1704f,    0.8395f, 0.5468f,    0.0744f,    0.9011f,
-            0.6574f,    0.4124f,    0.2445f, 0.4248f,    0.5219f,    0.6952f,
-            0.4900f,    0.2158f,    0.9549f, 0.1386f,    0.1544f,    0.5365f,
-            0.0134f,    0.4163f,    0.1456f, 0.4109f,    0.2484f,    0.3330f,
-            0.2974f,    0.6636f,    0.3808f, 0.8664f,    0.1896f,    0.7530f,
-            0.7215f,    0.6612f,    0.7270f, 0.5704f,    0.2666f,    0.7453f,
-            0.0444f,    0.3024f,    0.4850f, 0.7982f,    0.0965f,    0.7843f,
-            0.5075f,    0.0844f,    0.8370f, 0.6103f,    0.4604f,    0.6087f,
-            0.8594f,    0.4599f,    0.6714f, 0.2744f,    0.1981f,    0.4143f,
-            0.7821f,    0.3505f,    0.5040f, 0.1180f,    0.8307f,    0.1817f,
-            0.8442f,    0.5074f,    0.4471f, 0.5105f,    0.6666f,    0.2576f,
-            0.2341f,    0.6801f,    0.2652f, 0.5394f,    0.4690f,    0.6146f,
-            0.1210f,    0.2576f,    0.0769f, 0.4643f,    0.1628f,    0.2026f,
-            0.3774f,    0.0506f,    0.3462f, 0.5720f,    0.0838f,    0.4228f,
-            0.0588f,    0.5362f,    0.4756f, 0.2530f,    0.1778f,    0.0751f,
-            0.8977f,    0.3648f,    0.3065f, 0.4739f,    0.7014f,    0.4473f,
-            0.5171f,    0.1744f,    0.3487f, 0.7759f,    0.9491f,    0.2072f,
-            0.2182f,    0.6520f,    0.3092f, 0.9545f,    0.1881f,    0.9579f,
-            0.1785f,    0.9636f,    0.4830f, 0.6569f,    0.3353f,    0.9997f,
-            0.5869f,    0.5747f,    0.0238f, 0.2943f,    0.5248f,    0.5879f,
-            0.7266f,    0.1965f,    0.9167f, 0.9726f,    0.9206f,    0.0519f,
-            0.2997f,    0.0039f,    0.7652f, 0.5498f,    0.3794f,    0.3791f,
-            0.3528f,    0.2873f,    0.8082f,  0.4732f,    0.4399f,    0.6606f,
-            0.5991f,    0.0034f,    0.4874f}).reshape(8,8,3);
+                0.2309f,    0.7271f,    0.1804f, 0.5056f,    0.8925f,    0.5461f,
+                0.9234f,    0.0856f,    0.7938f, 0.6591f,    0.5555f,    0.1596f,
+                0.3087f,    0.1548f,    0.4695f, 0.9939f,    0.6113f,    0.6765f,
+                0.1800f,    0.6750f,    0.2246f, 0.0509f,    0.4601f,    0.8284f,
+                0.2354f,    0.9752f,    0.8361f, 0.2585f,    0.4189f,    0.7028f,
+                0.7679f,    0.5373f,    0.7234f,  0.2690f,    0.0062f,    0.0327f,
+                0.0644f,    0.8428f,    0.7494f,  0.0755f,    0.6245f,    0.3491f,
+                0.5793f,    0.5730f,    0.1822f,  0.6420f,    0.9143f,    0.3019f,
+                0.3574f,    0.1704f,    0.8395f, 0.5468f,    0.0744f,    0.9011f,
+                0.6574f,    0.4124f,    0.2445f, 0.4248f,    0.5219f,    0.6952f,
+                0.4900f,    0.2158f,    0.9549f, 0.1386f,    0.1544f,    0.5365f,
+                0.0134f,    0.4163f,    0.1456f, 0.4109f,    0.2484f,    0.3330f,
+                0.2974f,    0.6636f,    0.3808f, 0.8664f,    0.1896f,    0.7530f,
+                0.7215f,    0.6612f,    0.7270f, 0.5704f,    0.2666f,    0.7453f,
+                0.0444f,    0.3024f,    0.4850f, 0.7982f,    0.0965f,    0.7843f,
+                0.5075f,    0.0844f,    0.8370f, 0.6103f,    0.4604f,    0.6087f,
+                0.8594f,    0.4599f,    0.6714f, 0.2744f,    0.1981f,    0.4143f,
+                0.7821f,    0.3505f,    0.5040f, 0.1180f,    0.8307f,    0.1817f,
+                0.8442f,    0.5074f,    0.4471f, 0.5105f,    0.6666f,    0.2576f,
+                0.2341f,    0.6801f,    0.2652f, 0.5394f,    0.4690f,    0.6146f,
+                0.1210f,    0.2576f,    0.0769f, 0.4643f,    0.1628f,    0.2026f,
+                0.3774f,    0.0506f,    0.3462f, 0.5720f,    0.0838f,    0.4228f,
+                0.0588f,    0.5362f,    0.4756f, 0.2530f,    0.1778f,    0.0751f,
+                0.8977f,    0.3648f,    0.3065f, 0.4739f,    0.7014f,    0.4473f,
+                0.5171f,    0.1744f,    0.3487f, 0.7759f,    0.9491f,    0.2072f,
+                0.2182f,    0.6520f,    0.3092f, 0.9545f,    0.1881f,    0.9579f,
+                0.1785f,    0.9636f,    0.4830f, 0.6569f,    0.3353f,    0.9997f,
+                0.5869f,    0.5747f,    0.0238f, 0.2943f,    0.5248f,    0.5879f,
+                0.7266f,    0.1965f,    0.9167f, 0.9726f,    0.9206f,    0.0519f,
+                0.2997f,    0.0039f,    0.7652f, 0.5498f,    0.3794f,    0.3791f,
+                0.3528f,    0.2873f,    0.8082f,  0.4732f,    0.4399f,    0.6606f,
+                0.5991f,    0.0034f,    0.4874f}).reshape(8,8,3);
 
         AdjustHue op = new AdjustHue(image, 0.2f);
         INDArray[] res = Nd4j.exec(op);
@@ -1361,7 +1367,7 @@ public class CustomOpsTests extends BaseNd4jTest {
 
     // Exact copy of libnd4j test
     @Test
-    @Ignore
+    @Disabled
     public void testRgbToHsv() {
         INDArray expected = Nd4j.createFromArray(new float[]{
                 0.545678377f, 0.644941628f, 0.461456001f, 0.588904262f, 0.725874603f,

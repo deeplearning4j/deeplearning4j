@@ -21,9 +21,10 @@
 package org.nd4j.parameterserver.distributed.messages;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -35,12 +36,12 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 @Deprecated
 public class FrameTest extends BaseND4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
@@ -48,7 +49,8 @@ public class FrameTest extends BaseND4JTest {
     /**
      * Simple test for Frame functionality
      */
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testFrame1() {
         final AtomicInteger count = new AtomicInteger(0);
 
@@ -163,7 +165,8 @@ public class FrameTest extends BaseND4JTest {
     }
 
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testJoin1() throws Exception {
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(0, 1, new int[] {3, 4, 5}, new byte[] {0, 1, 0},
                         (short) 0, 0.01, 119L);

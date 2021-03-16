@@ -32,7 +32,7 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;

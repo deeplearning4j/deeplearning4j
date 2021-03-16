@@ -20,9 +20,9 @@
 
 package org.nd4j.linalg;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 
@@ -56,12 +56,12 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
     }
 
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         DataTypeUtil.setDTypeForContext(initialType);
     }
@@ -106,14 +106,14 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
                         String errorMsgtf = getGemmErrorMsg(i, j, true, false, a, b, p1T, p2);
                         String errorMsgtt = getGemmErrorMsg(i, j, true, true, a, b, p1T, p2T);
                         //System.out.println((String.format("Running iteration %d %d %d %d", i, j, k, m)));
-                        assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false, a,
-                                        b, 1e-4, 1e-6));
-                        assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true, a,
-                                        b, 1e-4, 1e-6));
-                        assertTrue(errorMsgtf, CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf, true, false, a,
-                                        b, 1e-4, 1e-6));
-                        assertTrue(errorMsgtt, CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt, true, true, a,
-                                        b, 1e-4, 1e-6));
+                        assertTrue( CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false, a,
+                                b, 1e-4, 1e-6),errorMsgff);
+                        assertTrue(CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true, a,
+                                b, 1e-4, 1e-6),errorMsgft);
+                        assertTrue(CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf, true, false, a,
+                                b, 1e-4, 1e-6),errorMsgtf);
+                        assertTrue( CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt, true, true, a,
+                                b, 1e-4, 1e-6),errorMsgtt);
 
                         //Also: Confirm that if the C array is uninitialized and beta is 0.0, we don't have issues like 0*NaN = NaN
                         if (b == 0.0) {
@@ -122,14 +122,14 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
                             ctf.assign(Double.NaN);
                             ctt.assign(Double.NaN);
 
-                            assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false,
-                                            a, b, 1e-4, 1e-6));
-                            assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true,
-                                            a, b, 1e-4, 1e-6));
-                            assertTrue(errorMsgtf, CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf, true, false,
-                                            a, b, 1e-4, 1e-6));
-                            assertTrue(errorMsgtt, CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt, true, true,
-                                            a, b, 1e-4, 1e-6));
+                            assertTrue( CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false,
+                                    a, b, 1e-4, 1e-6),errorMsgff);
+                            assertTrue( CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true,
+                                    a, b, 1e-4, 1e-6),errorMsgft);
+                            assertTrue(CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf, true, false,
+                                    a, b, 1e-4, 1e-6),errorMsgtf);
+                            assertTrue(CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt, true, true,
+                                    a, b, 1e-4, 1e-6),errorMsgtt);
                         }
 
                     }

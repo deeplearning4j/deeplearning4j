@@ -23,10 +23,10 @@ package org.nd4j.linalg.profiling;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -45,7 +45,7 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class OperationProfilerTests extends BaseNd4jTest {
@@ -59,13 +59,13 @@ public class OperationProfilerTests extends BaseNd4jTest {
         return 'c';
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.OPERATIONS);
         OpProfiler.getInstance().reset();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
@@ -162,7 +162,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testBadCombos6() {
         INDArray x = Nd4j.create(27).reshape('f', 3, 3, 3).slice(1);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
@@ -219,7 +219,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testBadTad4() {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
@@ -292,71 +292,86 @@ public class OperationProfilerTests extends BaseNd4jTest {
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNaNPanic1() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
 
-        INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NaN});
+            INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NaN});
 
-        a.muli(3f);
+            a.muli(3f);
+        });
+
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNaNPanic2() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
 
-        INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.POSITIVE_INFINITY});
+            INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.POSITIVE_INFINITY});
 
-        a.muli(3f);
+            a.muli(3f);
+        });
+
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testNaNPanic3() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
-        INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NEGATIVE_INFINITY});
+            INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NEGATIVE_INFINITY});
 
-        a.muli(3f);
+            a.muli(3f);
+        });
+
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testScopePanic1() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
-        INDArray array;
+            INDArray array;
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS119")) {
-            array = Nd4j.create(10);
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS119")) {
+                array = Nd4j.create(10);
 
-            assertTrue(array.isAttached());
-        }
-
-        array.add(1.0);
-    }
-
-
-    @Test(expected = ND4JIllegalStateException.class)
-    public void testScopePanic2() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
-
-        INDArray array;
-
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS120")) {
-            array = Nd4j.create(10);
-            assertTrue(array.isAttached());
-
-            assertEquals(1, workspace.getGenerationId());
-        }
-
-
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS120")) {
-            assertEquals(2, workspace.getGenerationId());
+                assertTrue(array.isAttached());
+            }
 
             array.add(1.0);
+        });
 
-            assertTrue(array.isAttached());
-        }
+    }
+
+
+    @Test()
+    public void testScopePanic2() {
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+
+            INDArray array;
+
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS120")) {
+                array = Nd4j.create(10);
+                assertTrue(array.isAttached());
+
+                assertEquals(1, workspace.getGenerationId());
+            }
+
+
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS120")) {
+                assertEquals(2, workspace.getGenerationId());
+
+                array.add(1.0);
+
+                assertTrue(array.isAttached());
+            }
+        });
+
     }
 
 
@@ -448,7 +463,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
             } catch (Exception e){
                 //throw new RuntimeException(e);
                 log.info("Message: {}", e.getMessage());
-                assertTrue(e.getMessage(), e.getMessage().contains("NaN"));
+                assertTrue(e.getMessage().contains("NaN"),e.getMessage());
             }
 
             INDArray in = op.getInputArgument(0);
@@ -478,7 +493,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
                 fail();
             } catch (Exception e){
                 log.error("",e);
-                assertTrue(e.getMessage(), e.getMessage().contains("Inf"));
+                assertTrue(e.getMessage().contains("Inf"),e.getMessage());
             }
 
             INDArray in = op.getInputArgument(0);
@@ -513,7 +528,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
                 fail("Expected op profiler exception");
             } catch (Throwable t) {
                 //OK
-                assertTrue(t.getMessage(), t.getMessage().contains(nan ? "NaN" : "Inf"));
+                assertTrue(t.getMessage().contains(nan ? "NaN" : "Inf"),t.getMessage());
             }
         }
     }
@@ -540,7 +555,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
                 fail("Expected op profiler exception");
             } catch (Throwable t) {
                 //OK
-                assertTrue(t.getMessage(), t.getMessage().contains(nan ? "NaN" : "Inf"));
+                assertTrue(t.getMessage().contains(nan ? "NaN" : "Inf"),t.getMessage());
             }
         }
     }

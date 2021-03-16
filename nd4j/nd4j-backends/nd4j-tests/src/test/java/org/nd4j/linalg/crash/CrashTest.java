@@ -22,8 +22,8 @@ package org.nd4j.linalg.crash;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -41,7 +41,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 
 @Slf4j
 @RunWith(Parameterized.class)
-@Ignore
+@Disabled
 public class CrashTest extends BaseNd4jTest {
     public CrashTest(Nd4jBackend backend) {
         super(backend);

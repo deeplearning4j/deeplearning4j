@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.schedule;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -28,7 +28,7 @@ import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSchedules extends BaseNd4jTest {
 
@@ -113,7 +113,7 @@ public class TestSchedules extends BaseNd4jTest {
                         throw new RuntimeException();
                     }
 
-                    assertEquals(s.toString() + ", " + st, e, now, 1e-6);
+                    assertEquals(e, now, 1e-6,s.toString() + ", " + st);
                 }
             }
         }

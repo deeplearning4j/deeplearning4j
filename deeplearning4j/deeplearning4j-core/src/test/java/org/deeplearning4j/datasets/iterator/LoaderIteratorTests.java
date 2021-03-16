@@ -23,7 +23,7 @@ package org.deeplearning4j.datasets.iterator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.loader.DataSetLoaderIterator;
 import org.deeplearning4j.datasets.iterator.loader.MultiDataSetLoaderIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.loader.Loader;
 import org.nd4j.common.loader.LocalFileSourceFactory;
 import org.nd4j.common.loader.Source;
@@ -39,8 +39,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LoaderIteratorTests extends BaseDL4JTest {
 

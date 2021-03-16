@@ -20,9 +20,9 @@
 
 package org.nd4j.common.util;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.util.ArrayUtil;
 
 public class ArrayUtilTest {

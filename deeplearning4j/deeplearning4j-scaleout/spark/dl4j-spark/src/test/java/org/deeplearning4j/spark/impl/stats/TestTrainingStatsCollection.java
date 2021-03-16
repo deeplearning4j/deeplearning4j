@@ -40,7 +40,7 @@ import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMa
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.StatsUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,9 +49,7 @@ import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
-import static junit.framework.TestCase.assertNotNull;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestTrainingStatsCollection extends BaseSparkTest {
 

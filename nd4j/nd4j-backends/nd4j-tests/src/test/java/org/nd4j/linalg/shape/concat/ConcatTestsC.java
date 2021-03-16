@@ -22,8 +22,8 @@ package org.nd4j.linalg.shape.concat;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -41,8 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 /**
@@ -218,13 +217,16 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(exp, concat2);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testConcatVector() {
-        Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1));
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1));
+
+        });
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testConcat3dv2() {
 
         INDArray first = Nd4j.linspace(1, 24, 24).reshape('c', 2, 3, 4);

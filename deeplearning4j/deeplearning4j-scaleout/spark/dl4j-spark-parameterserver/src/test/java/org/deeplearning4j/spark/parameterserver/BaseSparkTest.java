@@ -28,8 +28,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -60,7 +60,7 @@ public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable
         return 120000L;
     }
 
-    @Before
+    @BeforeEach
     public void before() {
 
         sc = getContext();
@@ -78,7 +78,7 @@ public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable
         sparkData = getBasicSparkDataSet(nRows, input, labels);
     }
 
-    @After
+    @AfterEach
     public void after() {
         sc.close();
         sc = null;

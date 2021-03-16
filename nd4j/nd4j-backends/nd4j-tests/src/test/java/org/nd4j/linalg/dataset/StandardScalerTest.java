@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,7 +36,7 @@ public class StandardScalerTest extends BaseNd4jTest {
         super(backend);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testScale() {
         StandardScaler scaler = new StandardScaler();

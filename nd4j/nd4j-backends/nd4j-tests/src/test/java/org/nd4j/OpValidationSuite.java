@@ -23,7 +23,8 @@ package org.nd4j;
 import org.bytedeco.javacpp.Loader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
@@ -53,7 +54,7 @@ import static org.junit.Assume.assumeFalse;
 })
 //IMPORTANT: This ignore is added to avoid maven surefire running both the suite AND the individual tests in "mvn test"
 // With it ignored here, the individual tests will run outside (i.e., separately/independently) of the suite in both "mvn test" and IntelliJ
-@Ignore
+@Disabled
 public class OpValidationSuite {
 
     /*
@@ -78,7 +79,7 @@ public class OpValidationSuite {
 
     private static DataType initialType;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();

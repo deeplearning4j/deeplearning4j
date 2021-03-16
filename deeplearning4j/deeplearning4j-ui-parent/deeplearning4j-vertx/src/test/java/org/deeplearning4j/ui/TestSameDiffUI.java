@@ -20,35 +20,32 @@
 
 package org.deeplearning4j.ui;
 
-import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.api.UIServer;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 
-@Ignore
-@Slf4j
+@Disabled
 public class TestSameDiffUI extends BaseDL4JTest {
+    private static Logger log = LoggerFactory.getLogger(TestSameDiffUI.class.getName());
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
-
-    @Ignore
+    @Disabled
     @Test
-    public void testSameDiff() throws Exception {
-        File dir = testDir.newFolder();
+    public void testSameDiff(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         File f = new File(dir, "ui_data.bin");
         log.info("File path: {}", f.getAbsolutePath());
 

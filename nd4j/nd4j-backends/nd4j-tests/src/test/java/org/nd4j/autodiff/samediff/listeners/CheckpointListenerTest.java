@@ -21,9 +21,10 @@
 package org.nd4j.autodiff.samediff.listeners;
 
 import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.listeners.checkpoint.CheckpointListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +46,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CheckpointListenerTest extends BaseNd4jTest {
 
@@ -56,9 +58,6 @@ public class CheckpointListenerTest extends BaseNd4jTest {
     public char ordering(){
         return 'c';
     }
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -97,8 +96,8 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
 
     @Test
-    public void testCheckpointEveryEpoch() throws Exception {
-        File dir = testDir.newFolder();
+    public void testCheckpointEveryEpoch(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
 
         SameDiff sd = getModel();
         CheckpointListener l = CheckpointListener.builder(dir)
@@ -131,8 +130,8 @@ public class CheckpointListenerTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCheckpointEvery5Iter() throws Exception {
-        File dir = testDir.newFolder();
+    public void testCheckpointEvery5Iter(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
 
         SameDiff sd = getModel();
         CheckpointListener l = CheckpointListener.builder(dir)
@@ -170,8 +169,8 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
 
     @Test
-    public void testCheckpointListenerEveryTimeUnit() throws Exception {
-        File dir = testDir.newFolder();
+    public void testCheckpointListenerEveryTimeUnit(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         SameDiff sd = getModel();
 
         CheckpointListener l = new CheckpointListener.Builder(dir)
@@ -208,14 +207,14 @@ public class CheckpointListenerTest extends BaseNd4jTest {
             }
         }
 
-        for( int i=0; i<found.length; i++ ){
+        for( int i = 0; i < found.length; i++) {
             assertTrue(names.get(i), found[i]);
         }
     }
 
     @Test
-    public void testCheckpointListenerKeepLast3AndEvery3() throws Exception {
-        File dir = testDir.newFolder();
+    public void testCheckpointListenerKeepLast3AndEvery3(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         SameDiff sd = getModel();
 
         CheckpointListener l = new CheckpointListener.Builder(dir)
@@ -236,7 +235,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         Set<Integer> cpNums = new HashSet<>();
         Set<Integer> epochNums = new HashSet<>();
         for(File f2 : files){
-            if(!f2.getPath().endsWith(".bin")){
+            if(!f2.getPath().endsWith(".bin")) {
                 continue;
             }
             count++;
@@ -251,7 +250,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
             cpNums.add(epochNum);
         }
 
-        assertEquals(cpNums.toString(), 5, cpNums.size());
+        assertEquals(5, cpNums.size(),cpNums.toString());
         Assert.assertTrue(cpNums.toString(), cpNums.containsAll(Arrays.asList(2, 5, 7, 8, 9)));
         Assert.assertTrue(epochNums.toString(), epochNums.containsAll(Arrays.asList(5, 11, 15, 17, 19)));
 

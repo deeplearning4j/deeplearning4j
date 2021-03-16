@@ -36,9 +36,10 @@ import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.functions.data.FilesAsBytesFunction;
 import org.datavec.spark.functions.data.SequenceRecordReaderBytesFunction;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
@@ -47,21 +48,20 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testRecordReaderBytesFunction() throws Exception {
+    public void testRecordReaderBytesFunction(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             return;
         }
         //Local file path
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         new ClassPathResource("datavec-spark/video/").copyDirectory(f);
         String path = f.getAbsolutePath() + "/*";
 

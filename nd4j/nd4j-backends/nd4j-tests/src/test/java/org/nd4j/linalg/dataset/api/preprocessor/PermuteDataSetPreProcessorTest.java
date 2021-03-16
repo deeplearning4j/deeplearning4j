@@ -22,13 +22,13 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.api.preprocessor.PermuteDataSetPreProcessor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PermuteDataSetPreProcessorTest extends BaseNd4jTest {
 
@@ -41,13 +41,16 @@ public class PermuteDataSetPreProcessorTest extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_dataSetIsNull_expect_NullPointerException() {
-        // Assemble
-        PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
+        assertThrows(NullPointerException.class,() -> {
+            // Assemble
+            PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
 
-        // Act
-        sut.preProcess(null);
+            // Act
+            sut.preProcess(null);
+        });
+
     }
 
     @Test

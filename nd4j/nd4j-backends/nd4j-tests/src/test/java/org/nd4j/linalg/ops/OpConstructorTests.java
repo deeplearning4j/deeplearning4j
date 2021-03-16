@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.ops;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -38,9 +38,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Ignore //AB 2019/08/23 Ignored for now
+@Disabled //AB 2019/08/23 Ignored for now
 public class OpConstructorTests extends BaseNd4jTest {
 
     public OpConstructorTests(Nd4jBackend backend) {
@@ -119,7 +119,7 @@ public class OpConstructorTests extends BaseNd4jTest {
                 System.out.println("No INDArray constructor: " + c.getName());
             }
         }
-        assertEquals("Found " + classes.size() + " (non-ignored) op classes with no INDArray/INDArray[] constructors", 0, classes.size());
+        assertEquals(0, classes.size(),"Found " + classes.size() + " (non-ignored) op classes with no INDArray/INDArray[] constructors");
 
     }
 

@@ -35,9 +35,9 @@ import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.stopwords.StopWords;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.common.primitives.Pair;
@@ -48,8 +48,8 @@ import scala.Tuple2;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Jeffrey Tang
@@ -67,7 +67,7 @@ public class TextPipelineTest extends BaseSparkTest {
         return sc.parallelize(sentenceList, 2);
     }
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         conf = new SparkConf().setMaster("local[4]").setAppName("sparktest").set("spark.driver.host", "localhost");
 
@@ -335,7 +335,7 @@ public class TextPipelineTest extends BaseSparkTest {
         sc.stop();
     }
 
-    @Test @Ignore   //AB 2020/04/20 https://github.com/eclipse/deeplearning4j/issues/8849
+    @Test @Disabled   //AB 2020/04/20 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testCountCumSum() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
@@ -360,7 +360,7 @@ public class TextPipelineTest extends BaseSparkTest {
      *
      * @throws Exception
      */
-    @Test @Ignore   //AB 2020/04/19 https://github.com/eclipse/deeplearning4j/issues/8849
+    @Test @Disabled   //AB 2020/04/19 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testZipFunction1() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
@@ -398,7 +398,7 @@ public class TextPipelineTest extends BaseSparkTest {
         sc.stop();
     }
 
-    @Test @Ignore   //AB 2020/04/19 https://github.com/eclipse/deeplearning4j/issues/8849
+    @Test @Disabled   //AB 2020/04/19 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testZipFunction2() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);

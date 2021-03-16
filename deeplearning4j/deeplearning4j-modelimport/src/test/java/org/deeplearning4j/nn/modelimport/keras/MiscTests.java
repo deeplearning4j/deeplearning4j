@@ -24,10 +24,12 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.utils.DL4JKerasModelValidator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.validation.ValidationResult;
 
@@ -36,19 +38,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 public class MiscTests extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testMultiThreadedLoading() throws Exception {
         final File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
 
@@ -87,11 +89,12 @@ public class MiscTests extends BaseDL4JTest {
         }
 
         boolean result = latch.await(30000, TimeUnit.MILLISECONDS);
-        assertTrue("Latch did not get to 0", result);
-        assertEquals("Number of errors", 0, errors.get());
+        assertTrue(result,"Latch did not get to 0");
+        assertEquals( 0, errors.get(),"Number of errors");
     }
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testLoadFromStream() throws Exception {
         final File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
 
@@ -101,16 +104,17 @@ public class MiscTests extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 60000L)
-    public void testModelValidatorSequential() throws Exception {
-        File f = testDir.newFolder();
+    @Test()
+    @Timeout(60000L)
+    public void testModelValidatorSequential(@TempDir Path testDir) throws Exception {
+        File f = testDir.toFile();
 
         //Test not existent file:
         File fNonExistent = new File("doesntExist.h5");
         ValidationResult vr0 = DL4JKerasModelValidator.validateKerasSequential(fNonExistent);
         assertFalse(vr0.isValid());
         assertEquals("Keras Sequential Model HDF5", vr0.getFormatType());
-        assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
+        assertTrue( vr0.getIssues().get(0).contains("exist"),vr0.getIssues().get(0));
         System.out.println(vr0.toString());
 
         //Test empty file:
@@ -120,7 +124,7 @@ public class MiscTests extends BaseDL4JTest {
         ValidationResult vr1 = DL4JKerasModelValidator.validateKerasSequential(fEmpty);
         assertEquals("Keras Sequential Model HDF5", vr1.getFormatType());
         assertFalse(vr1.isValid());
-        assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
+        assertTrue(vr1.getIssues().get(0).contains("empty"),vr1.getIssues().get(0));
         System.out.println(vr1.toString());
 
         //Test directory (not zip file)
@@ -130,7 +134,7 @@ public class MiscTests extends BaseDL4JTest {
         ValidationResult vr2 = DL4JKerasModelValidator.validateKerasSequential(directory);
         assertEquals("Keras Sequential Model HDF5", vr2.getFormatType());
         assertFalse(vr2.isValid());
-        assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
+        assertTrue( vr2.getIssues().get(0).contains("directory"),vr2.getIssues().get(0));
         System.out.println(vr2.toString());
 
         //Test Keras HDF5 format:
@@ -140,7 +144,7 @@ public class MiscTests extends BaseDL4JTest {
         assertEquals("Keras Sequential Model HDF5", vr3.getFormatType());
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
-        assertTrue(s, s.contains("Keras") && s.contains("Sequential") && s.contains("corrupt"));
+        assertTrue(s.contains("Keras") && s.contains("Sequential") && s.contains("corrupt"),s);
         System.out.println(vr3.toString());
 
         //Test corrupted npy format:
@@ -156,7 +160,7 @@ public class MiscTests extends BaseDL4JTest {
         assertEquals("Keras Sequential Model HDF5", vr4.getFormatType());
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
-        assertTrue(s, s.contains("Keras") && s.contains("Sequential") && s.contains("corrupt"));
+        assertTrue(s.contains("Keras") && s.contains("Sequential") && s.contains("corrupt"),s);
         System.out.println(vr4.toString());
 
 
@@ -169,9 +173,10 @@ public class MiscTests extends BaseDL4JTest {
         System.out.println(vr4.toString());
     }
 
-    @Test(timeout = 60000L)
-    public void testModelValidatorFunctional() throws Exception {
-        File f = testDir.newFolder();
+    @Test()
+    @Timeout(60000L)
+    public void testModelValidatorFunctional(@TempDir Path testDir) throws Exception {
+        File f = testDir.toFile();
         //String modelPath = "modelimport/keras/examples/functional_lstm/lstm_functional_tf_keras_2.h5";
 
         //Test not existent file:
@@ -179,7 +184,7 @@ public class MiscTests extends BaseDL4JTest {
         ValidationResult vr0 = DL4JKerasModelValidator.validateKerasFunctional(fNonExistent);
         assertFalse(vr0.isValid());
         assertEquals("Keras Functional Model HDF5", vr0.getFormatType());
-        assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
+        assertTrue( vr0.getIssues().get(0).contains("exist"),vr0.getIssues().get(0));
         System.out.println(vr0.toString());
 
         //Test empty file:
@@ -189,7 +194,7 @@ public class MiscTests extends BaseDL4JTest {
         ValidationResult vr1 = DL4JKerasModelValidator.validateKerasFunctional(fEmpty);
         assertEquals("Keras Functional Model HDF5", vr1.getFormatType());
         assertFalse(vr1.isValid());
-        assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
+        assertTrue( vr1.getIssues().get(0).contains("empty"),vr1.getIssues().get(0));
         System.out.println(vr1.toString());
 
         //Test directory (not zip file)
@@ -199,7 +204,7 @@ public class MiscTests extends BaseDL4JTest {
         ValidationResult vr2 = DL4JKerasModelValidator.validateKerasFunctional(directory);
         assertEquals("Keras Functional Model HDF5", vr2.getFormatType());
         assertFalse(vr2.isValid());
-        assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
+        assertTrue( vr2.getIssues().get(0).contains("directory"),vr2.getIssues().get(0));
         System.out.println(vr2.toString());
 
         //Test Keras HDF5 format:
@@ -209,13 +214,13 @@ public class MiscTests extends BaseDL4JTest {
         assertEquals("Keras Functional Model HDF5", vr3.getFormatType());
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
-        assertTrue(s, s.contains("Keras") && s.contains("Functional") && s.contains("corrupt"));
+        assertTrue(s.contains("Keras") && s.contains("Functional") && s.contains("corrupt"),s);
         System.out.println(vr3.toString());
 
         //Test corrupted npy format:
         File fValid = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
         byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
-        for( int i=0; i<30; i++ ){
+        for( int i = 0; i < 30; i++) {
             numpyBytes[i] = 0;
         }
         File fCorrupt = new File(f, "corrupt.h5");
@@ -225,7 +230,7 @@ public class MiscTests extends BaseDL4JTest {
         assertEquals("Keras Functional Model HDF5", vr4.getFormatType());
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
-        assertTrue(s, s.contains("Keras") && s.contains("Functional") && s.contains("corrupt"));
+        assertTrue( s.contains("Keras") && s.contains("Functional") && s.contains("corrupt"),s);
         System.out.println(vr4.toString());
 
 

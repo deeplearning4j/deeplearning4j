@@ -21,9 +21,9 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
@@ -73,14 +73,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
 public class ReductionOpValidation extends BaseOpValidation {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     public ReductionOpValidation(Nd4jBackend backend) {
         super(backend);
@@ -109,7 +107,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 }
             }
         }
-        assertEquals(errors.toString(), 0, errors.size());
+        assertEquals(0, errors.size(),errors.toString());
     }
 
     @Test
@@ -142,7 +140,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             if (error != null)
                 allFailed.add(error);
         }
-        assertEquals(allFailed.toString(), 0, allFailed.size());
+        assertEquals(0, allFailed.size(),allFailed.toString());
     }
 
 
@@ -173,7 +171,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 allFailed.add(error);
         }
 
-        assertEquals(allFailed.toString(), 0, allFailed.size());
+        assertEquals(0, allFailed.size(),allFailed.toString());
     }
 
     @Test
@@ -342,7 +340,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 failed.add(error);
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -465,7 +463,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals("Failed: " + failed, 0, failed.size());
+        assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
     @Override
@@ -647,7 +645,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals("Failed: " + failed, 0, failed.size());
+        assertEquals( 0, failed.size(),"Failed: " + failed);
     }
 
 
@@ -753,7 +751,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals("Failed: " + failed, 0, failed.size());
+        assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
     @Test
@@ -938,7 +936,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -1032,10 +1030,10 @@ public class ReductionOpValidation extends BaseOpValidation {
                 log.info(msg + " - expected shape: " + Arrays.toString(expShape) + ", out=" + Arrays.toString(out.shape())
                         + ", outExp=" + Arrays.toString(expOut.shape()));
 
-                assertArrayEquals(msg, expShape, out.shape());
-                assertArrayEquals(msg, expShape, expOut.shape());
+                assertArrayEquals( expShape, out.shape(),msg);
+                assertArrayEquals(expShape, expOut.shape(),msg);
 
-                assertEquals(msg, expOut, out);
+                assertEquals(expOut, out,msg);
             }
         }
     }

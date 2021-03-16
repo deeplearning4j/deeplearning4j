@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -30,7 +30,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.lang.reflect.Field;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MemoryMgrTest extends BaseNd4jTest {
 

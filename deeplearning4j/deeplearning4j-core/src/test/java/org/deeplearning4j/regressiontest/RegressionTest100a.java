@@ -35,8 +35,8 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
@@ -53,10 +53,10 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 public class RegressionTest100a extends BaseDL4JTest {
 
     @Override
@@ -82,7 +82,7 @@ public class RegressionTest100a extends BaseDL4JTest {
             fail("Expected exception");
         } catch (Exception e){
             String msg = e.getMessage();
-            assertTrue(msg, msg.contains("custom") && msg.contains("1.0.0-beta") && msg.contains("saved again"));
+            assertTrue(msg.contains("custom") && msg.contains("1.0.0-beta") && msg.contains("saved again"), msg);
         }
     }
 
@@ -169,7 +169,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testYoloHouseNumber() throws Exception {
 
         File f = Resources.asFile("regression_testing/100a/HouseNumberDetection_100a.bin");
@@ -215,12 +215,12 @@ public class RegressionTest100a extends BaseDL4JTest {
             log.info("Expected: {}", outExp);
             log.info("Actual: {}", outAct);
         }
-        assertTrue("Output not equal", eq);
+        assertTrue(eq, "Output not equal");
     }
 
 
     @Test
-    @Ignore("Ignoring due to new set input types changes. Loading a network isn't a problem, but we need to set the input types yet.")
+    @Disabled("Ignoring due to new set input types changes. Loading a network isn't a problem, but we need to set the input types yet.")
     public void testUpsampling2d() throws Exception {
 
         File f = Resources.asFile("regression_testing/100a/upsampling/net.bin");

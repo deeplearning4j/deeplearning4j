@@ -23,10 +23,10 @@ package org.nd4j.aeron.ipc;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,10 +38,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @NotThreadSafe
-@Ignore("Tests are too flaky")
+@Disabled("Tests are too flaky")
 
 public class NdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
@@ -56,7 +56,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
         return 120000L;
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         if(isIntegrationTests()) {
             MediaDriver.Context ctx = AeronUtil.getMediaDriverContext(length);
@@ -66,7 +66,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
         }
     }
 
-    @After
+    @AfterEach
     public void after() {
         if(isIntegrationTests()) {
             CloseHelper.quietClose(mediaDriver);

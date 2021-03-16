@@ -35,7 +35,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,8 +48,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class TestVariableLengthTSCG extends BaseDL4JTest {
 
@@ -122,7 +122,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             for (String s : g1map.keySet()) {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
-                assertEquals(s, g1s, g2s);
+                assertEquals(g1s, g2s, s);
             }
 
             //Finally: check that the values at the masked outputs don't actually make any difference to:
@@ -140,7 +140,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                 for (String s : g2map.keySet()) {
                     INDArray g2s = g2map.get(s);
                     INDArray g2sa = g2a.getGradientFor(s);
-                    assertEquals(s, g2s, g2sa);
+                    assertEquals(g2s, g2sa, s);
                 }
             }
         }
@@ -225,7 +225,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
 
-                assertNotEquals(s, g1s, g2s);
+                assertNotEquals(g1s, g2s, s);
             }
 
             //Modify the values at the masked time step, and check that neither the gradients, score or activations change
@@ -331,8 +331,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
 
                         net.computeGradientAndScore();
                         double score = net.score();
-
-                        assertEquals(msg, expScore, score, 0.1);
+                        assertEquals( expScore, score, 0.1,msg);
                     }
                 }
             }

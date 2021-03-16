@@ -47,8 +47,9 @@ import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -69,9 +70,9 @@ import scala.Tuple2;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore("AB 2019/05/24 - Rarely getting stuck on CI - see issue #7657")
+@Disabled("AB 2019/05/24 - Rarely getting stuck on CI - see issue #7657")
 public class TestSparkComputationGraph extends BaseSparkTest {
 
     public static ComputationGraph getBasicNetIris2Class() {
@@ -213,7 +214,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         }
     }
 
-    @Ignore("AB 2019/05/23 - Failing on CI only - passing locally. Possible precision or threading issue")
+    @Disabled("AB 2019/05/23 - Failing on CI only - passing locally. Possible precision or threading issue")
     public void testSeedRepeatability() throws Exception {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
@@ -281,12 +282,13 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
         boolean eq1 = p1.equalsWithEps(p2, 0.01);
         boolean eq2 = p1.equalsWithEps(p3, 0.01);
-        assertTrue("Model 1 and 2 params should be equal", eq1);
-        assertFalse("Model 1 and 3 params shoud be different", eq2);
+        assertTrue(eq1, "Model 1 and 2 params should be equal");
+        assertFalse(eq2, "Model 1 and 3 params shoud be different");
     }
 
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testEvaluationAndRoc() {
         for( int evalWorkers : new int[]{1, 4, 8}) {
             DataSetIterator iter = new IrisDataSetIterator(5, 150);

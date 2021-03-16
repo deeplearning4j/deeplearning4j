@@ -32,7 +32,8 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.*;
@@ -40,14 +41,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author saudet
  */
 public class TestGeoTransforms {
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         //Use test resources version to avoid tests suddenly failing due to IP/Location DB content changing
         File f = new ClassPathResource("datavec-geo/GeoIP2-City-Test.mmdb").getFile();
@@ -63,7 +64,7 @@ public class TestGeoTransforms {
     @Test
     public void testCoordinatesDistanceTransform() throws Exception {
         Schema schema = new Schema.Builder().addColumnString("point").addColumnString("mean").addColumnString("stddev")
-                        .build();
+                .build();
 
         Transform transform = new CoordinatesDistanceTransform("dist", "point", "mean", "stddev", "\\|");
         transform.setInputSchema(schema);
@@ -72,14 +73,14 @@ public class TestGeoTransforms {
         assertEquals(4, out.numColumns());
         assertEquals(Arrays.asList("point", "mean", "stddev", "dist"), out.getColumnNames());
         assertEquals(Arrays.asList(ColumnType.String, ColumnType.String, ColumnType.String, ColumnType.Double),
-                        out.getColumnTypes());
+                out.getColumnTypes());
 
         assertEquals(Arrays.asList((Writable) new Text("-30"), new Text("20"), new Text("10"), new DoubleWritable(5.0)),
-                        transform.map(Arrays.asList((Writable) new Text("-30"), new Text("20"), new Text("10"))));
+                transform.map(Arrays.asList((Writable) new Text("-30"), new Text("20"), new Text("10"))));
         assertEquals(Arrays.asList((Writable) new Text("50|40"), new Text("10|-20"), new Text("10|5"),
-                        new DoubleWritable(Math.sqrt(160))),
-                        transform.map(Arrays.asList((Writable) new Text("50|40"), new Text("10|-20"),
-                                        new Text("10|5"))));
+                new DoubleWritable(Math.sqrt(160))),
+                transform.map(Arrays.asList((Writable) new Text("50|40"), new Text("10|-20"),
+                        new Text("10|5"))));
     }
 
     @Test

@@ -35,9 +35,10 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
@@ -53,9 +54,10 @@ import org.nd4j.linalg.learning.config.NoOp;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(Parameterized.class)
 public class YoloGradientCheckTests extends BaseDL4JTest {
@@ -73,8 +75,6 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         return CNN2DFormat.values();
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -154,7 +154,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                     .minAbsoluteError(1e-6)
                     .labels(labels).subset(true).maxPerParam(100));
 
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -181,14 +181,15 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
 
     @Test
-    public void yoloGradientCheckRealData() throws Exception {
+    public void yoloGradientCheckRealData(@TempDir Path testDir) throws Exception {
         Nd4j.getRandom().setSeed(12345);
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
         InputStream is4 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2008_003344.xml").getInputStream();
 
-        File dir = testDir.newFolder("testYoloOverfitting");
+        File dir = new File(testDir.toFile(),"testYoloOverfitting");
+        dir.mkdirs();
         File jpg = new File(dir, "JPEGImages");
         File annot = new File(dir, "Annotations");
         jpg.mkdirs();

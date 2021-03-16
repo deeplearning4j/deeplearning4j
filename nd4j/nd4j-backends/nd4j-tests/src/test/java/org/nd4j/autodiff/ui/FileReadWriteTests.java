@@ -22,10 +22,11 @@ package org.nd4j.autodiff.ui;
 
 import com.google.flatbuffers.Table;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -49,13 +50,14 @@ import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class FileReadWriteTests extends BaseNd4jTest {
@@ -70,10 +72,8 @@ public class FileReadWriteTests extends BaseNd4jTest {
     }
 
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.create(1);
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
@@ -81,12 +81,12 @@ public class FileReadWriteTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSimple() throws IOException {
+    public void testSimple(@TempDir Path testDir) throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
         SDVariable sum = v.sum();
 
-        File f = testDir.newFile();
+        File f = testDir.toFile();
         if (f.exists())
             f.delete();
         System.out.println(f.getAbsolutePath());
@@ -185,8 +185,8 @@ public class FileReadWriteTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNullBinLabels() throws Exception{
-        File dir = testDir.newFolder();
+    public void testNullBinLabels(@TempDir Path testDir) throws Exception{
+        File dir = testDir.toFile();
         File f = new File(dir, "temp.bin");
         LogFileWriter w = new LogFileWriter(f);
 

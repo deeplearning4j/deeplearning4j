@@ -20,34 +20,34 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BalanceMinibatchesTest extends BaseNd4jTest {
     public BalanceMinibatchesTest(Nd4jBackend backend) {
         super(backend);
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testBalance() throws Exception {
+    public void testBalance(@TempDir Path testDir) throws Exception {
         DataSetIterator iterator = new IrisDataSetIterator(10, 150);
 
-        File minibatches = testDir.newFolder();
-        File saveDir = testDir.newFolder();
+        File minibatches = new File(testDir.toFile(),"mini-batch-dir");
+        File saveDir = new File(testDir.toFile(),"save-dir");
 
         BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator).miniBatchSize(10)
                         .numLabels(3).rootDir(minibatches).rootSaveDir(saveDir).build();
@@ -60,13 +60,13 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMiniBatchBalanced() throws Exception {
+    public void testMiniBatchBalanced(@TempDir Path testDir) throws Exception {
 
         int miniBatchSize = 100;
         DataSetIterator iterator = new IrisDataSetIterator(miniBatchSize, 150);
 
-        File minibatches = testDir.newFolder();
-        File saveDir = testDir.newFolder();
+        File minibatches = new File(testDir.toFile(),"mini-batch-dir");
+        File saveDir = new File(testDir.toFile(),"save-dir");
 
         BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator)
                         .miniBatchSize(miniBatchSize).numLabels(iterator.totalOutcomes())
@@ -100,10 +100,9 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
             Map<Integer, Double> balancedCounts = balanced.next().labelCounts();
             for (int i = 0; i < iterator.totalOutcomes(); i++) {
                 double bCounts = (balancedCounts.containsKey(i) ? balancedCounts.get(i) : 0);
-                assertTrue("key " + i + " totalOutcomes: " + iterator.totalOutcomes() + " balancedCounts : "
-                                + balancedCounts.containsKey(i) + " val : " + bCounts,
-                                balancedCounts.containsKey(i) && balancedCounts.get(i) >= (double) miniBatchSize
-                                                / iterator.totalOutcomes());
+                assertTrue(   balancedCounts.containsKey(i) && balancedCounts.get(i) >= (double) miniBatchSize
+                        / iterator.totalOutcomes(),"key " + i + " totalOutcomes: " + iterator.totalOutcomes() + " balancedCounts : "
+                                + balancedCounts.containsKey(i) + " val : " + bCounts);
             }
         }
 

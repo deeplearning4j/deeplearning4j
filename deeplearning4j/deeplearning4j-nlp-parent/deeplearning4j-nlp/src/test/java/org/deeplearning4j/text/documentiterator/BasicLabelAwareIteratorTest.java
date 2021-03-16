@@ -21,24 +21,23 @@
 package org.deeplearning4j.text.documentiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
+
+
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BasicLabelAwareIteratorTest extends BaseDL4JTest {
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
 
-    @Before
+
+    @BeforeEach
     public void setUp() throws Exception {
 
     }

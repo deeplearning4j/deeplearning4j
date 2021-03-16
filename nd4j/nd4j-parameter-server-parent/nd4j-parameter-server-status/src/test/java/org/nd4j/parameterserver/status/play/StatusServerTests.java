@@ -20,13 +20,15 @@
 
 package org.nd4j.parameterserver.status.play;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import play.server.Server;
 
 public class StatusServerTests extends BaseND4JTest {
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void runStatusServer() {
         Server server = StatusServer.startServer(new InMemoryStatusStorage(), 65236);
         server.stop();

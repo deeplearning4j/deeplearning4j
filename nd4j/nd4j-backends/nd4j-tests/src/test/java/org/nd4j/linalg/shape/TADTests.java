@@ -22,7 +22,7 @@ package org.nd4j.linalg.shape;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -37,7 +37,7 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
@@ -145,9 +145,9 @@ public class TADTests extends BaseNd4jTest {
             INDArray get = orig.get(all(), all(), point(i));
 
             String str = String.valueOf(i);
-            assertEquals(str, get, tad);
-            assertEquals(str, get.data().offset(), tad.data().offset());
-            assertEquals(str, get.elementWiseStride(), tad.elementWiseStride());
+            assertEquals(get, tad,str);
+            assertEquals(get.data().offset(), tad.data().offset(),str);
+            assertEquals(get.elementWiseStride(), tad.elementWiseStride(),str);
 
             char orderTad = Shape.getOrder(tad.shape(), tad.stride(), 1);
             char orderGet = Shape.getOrder(get.shape(), get.stride(), 1);

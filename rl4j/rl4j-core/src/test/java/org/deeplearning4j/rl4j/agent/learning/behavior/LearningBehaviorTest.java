@@ -24,8 +24,8 @@ import org.deeplearning4j.rl4j.agent.learning.behavior.LearningBehavior;
 import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -36,8 +36,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -51,7 +51,7 @@ public class LearningBehaviorTest {
 
     LearningBehavior<Integer, Object> sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         sut = LearningBehavior.<Integer, Object>builder()
             .experienceHandler(experienceHandlerMock)

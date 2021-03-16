@@ -20,9 +20,9 @@
 
 package org.deeplearning4j.spark.impl.common.repartition;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class BalancedPartitionerTest {
@@ -34,7 +34,7 @@ public class BalancedPartitionerTest {
         // the 10 first elements should go in the 1st partition
         for (int i = 0; i < 10; i++) {
             int p = bp.getPartition(i);
-            assertEquals("Found wrong partition output " + p + ", not 0", 0, p);
+            assertEquals(0, p,"Found wrong partition output " + p + ", not 0");
         }
     }
 
@@ -44,7 +44,7 @@ public class BalancedPartitionerTest {
         // the 10 first elements should go in the 1st partition
         for (int i = 0; i < 10; i++) {
             int p = bp.getPartition(i);
-            assertEquals("Found wrong partition output " + p + ", not 0", 0, p);
+            assertEquals( 0, p,"Found wrong partition output " + p + ", not 0");
         }
     }
 

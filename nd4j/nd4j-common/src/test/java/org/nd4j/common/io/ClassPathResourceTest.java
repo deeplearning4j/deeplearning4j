@@ -20,27 +20,27 @@
 
 package org.nd4j.common.io;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
+import java.nio.file.Path;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ClassPathResourceTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testDirExtractingIntelliJ() throws Exception {
+    public void testDirExtractingIntelliJ(@TempDir Path testDir) throws Exception {
         //https://github.com/deeplearning4j/deeplearning4j/issues/6483
 
         ClassPathResource cpr = new ClassPathResource("somedir");
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
 
         cpr.copyDirectory(f);
 

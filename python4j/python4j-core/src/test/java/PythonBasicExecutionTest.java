@@ -20,19 +20,24 @@
 
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.python4j.*;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @NotThreadSafe
 public class PythonBasicExecutionTest {
 
-    @Test(expected =  IllegalStateException.class)
+    @Test()
     public void testSimpleExecIllegal() {
-        String code = "print('Hello World')";
-        PythonExecutioner.exec(code);
+        assertThrows(IllegalStateException.class,() -> {
+            String code = "print('Hello World')";
+            PythonExecutioner.exec(code);
+        });
+
 
     }
 

@@ -25,8 +25,8 @@ import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Box;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -54,7 +54,7 @@ public class AsyncLearningTest {
     @Mock
     IAsyncLearningConfiguration mockConfiguration;
 
-    @Before
+    @BeforeEach
     public void setup() {
         asyncLearning = mock(AsyncLearning.class, Mockito.withSettings()
                 .useConstructor()

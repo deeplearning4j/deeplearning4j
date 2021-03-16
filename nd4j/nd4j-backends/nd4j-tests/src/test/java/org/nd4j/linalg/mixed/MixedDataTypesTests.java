@@ -23,8 +23,8 @@ package org.nd4j.linalg.mixed;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -48,7 +48,7 @@ import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class MixedDataTypesTests extends BaseNd4jTest {
@@ -359,33 +359,42 @@ public class MixedDataTypesTests extends BaseNd4jTest {
         assertEquals(exp, arrayZ);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testTypesValidation_1() {
-        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
-        val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
-        val exp = new long[]{1, 0, 0, 1};
+        assertThrows(IllegalArgumentException.class,() -> {
+            val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
+            val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+            val exp = new long[]{1, 0, 0, 1};
 
-        val op = new CosineSimilarity(arrayX, arrayY);
-        val result = Nd4j.getExecutioner().exec(op);
+            val op = new CosineSimilarity(arrayX, arrayY);
+            val result = Nd4j.getExecutioner().exec(op);
+        });
+
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test()
     public void testTypesValidation_2() {
-        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
-        val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.LONG);
-        val exp = new long[]{1, 0, 0, 1};
+        assertThrows(RuntimeException.class,() -> {
+            val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+            val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.LONG);
+            val exp = new long[]{1, 0, 0, 1};
 
-        val result = Nd4j.getExecutioner().exec(new EqualTo(arrayX, arrayY, arrayX.ulike().castTo(DataType.BOOL)))[0];
-        val arr = result.data().asLong();
+            val result = Nd4j.getExecutioner().exec(new EqualTo(arrayX, arrayY, arrayX.ulike().castTo(DataType.BOOL)))[0];
+            val arr = result.data().asLong();
 
-        assertArrayEquals(exp, arr);
+            assertArrayEquals(exp, arr);
+        });
+
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test()
     public void testTypesValidation_3() {
-        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        assertThrows(RuntimeException.class,() -> {
+            val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
-        val result = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(arrayX, arrayX, -1));
+            val result = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(arrayX, arrayX, -1));
+        });
+
     }
 
     public void testTypesValidation_4() {
@@ -533,7 +542,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testArrayCreationFromPointer() {
         val source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
 

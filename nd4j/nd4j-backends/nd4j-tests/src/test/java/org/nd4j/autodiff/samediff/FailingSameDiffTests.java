@@ -21,8 +21,8 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -36,10 +36,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Ignore("AB 2019/05/21 - JVM Crash on ppc64 - Issue #7657")
+@Disabled("AB 2019/05/21 - JVM Crash on ppc64 - Issue #7657")
 public class FailingSameDiffTests extends BaseNd4jTest {
 
     public FailingSameDiffTests(Nd4jBackend b){

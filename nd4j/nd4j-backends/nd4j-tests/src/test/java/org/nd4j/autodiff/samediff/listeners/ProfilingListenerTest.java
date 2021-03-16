@@ -22,9 +22,10 @@ package org.nd4j.autodiff.samediff.listeners;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.listeners.profiler.ProfilingListener;
 import org.nd4j.autodiff.listeners.profiler.comparison.ProfileAnalyzer;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -37,11 +38,12 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ProfilingListenerTest extends BaseNd4jTest {
 
@@ -54,11 +56,10 @@ public class ProfilingListenerTest extends BaseNd4jTest {
         return 'c';
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testProfilingListenerSimple() throws Exception {
+    public void testProfilingListenerSimple(@TempDir Path testDir) throws Exception {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 3);
@@ -72,7 +73,7 @@ public class ProfilingListenerTest extends BaseNd4jTest {
         INDArray l = Nd4j.rand(DataType.FLOAT, 1, 2);
 
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         File f = new File(dir, "test.json");
         ProfilingListener listener = ProfilingListener.builder(f)
                 .recordAll()
@@ -96,7 +97,7 @@ public class ProfilingListenerTest extends BaseNd4jTest {
         //5 warmup iterations, 5 profile iterations, x2 for both the op name and the op "instance" name
         String[] opNames = {"matmul", "add", "softmax"};
         for(String s : opNames) {
-            assertEquals(s, 10, StringUtils.countMatches(content, s));
+            assertEquals( 10, StringUtils.countMatches(content, s),s);
         }
 
 

@@ -20,18 +20,21 @@
 
 package org.deeplearning4j.rl4j.observation.transform.operation.historymerge;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CircularFifoStoreTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_fifoSizeIsLessThan1_expect_exception() {
-        // Arrange
-        CircularFifoStore sut = new CircularFifoStore(0);
+      assertThrows(IllegalArgumentException.class,() -> {
+          // Arrange
+          CircularFifoStore sut = new CircularFifoStore(0);
+      });
+
     }
 
     @Test

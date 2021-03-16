@@ -22,10 +22,10 @@ package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -47,12 +47,12 @@ public class RavelIndexTest extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Nd4j.setDataType(DataType.FLOAT);
     }
 
-    @After
+    @AfterEach
     public void setDown() {
         Nd4j.setDataType(initialType);
     }

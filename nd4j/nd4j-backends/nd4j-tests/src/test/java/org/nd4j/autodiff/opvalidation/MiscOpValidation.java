@@ -22,7 +22,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -72,7 +72,7 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.Assume.assumeNotNull;
 
 @Slf4j
@@ -167,7 +167,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals("Failed: " + failed, 0, failed.size());
+        assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
     @Test
@@ -256,7 +256,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals("Failed: " + failed, 0, failed.size());
+        assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
     @Test
@@ -358,7 +358,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals("Failed: " + failed, 0, failed.size());
+        assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
 
@@ -466,7 +466,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -537,7 +537,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
 
@@ -739,7 +739,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     private static int[] t(boolean transpose, int[] orig){
@@ -1061,7 +1061,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failing.toString(), 0, failing.size());
+        assertEquals(0, failing.size(),failing.toString());
     }
 
 
@@ -1130,7 +1130,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failing.toString(), 0, failing.size());
+        assertEquals(0, failing.size(),failing.toString());
     }
 
     @Test
@@ -1160,7 +1160,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 failed.add(err);
             }
         }
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
     @Test
@@ -1388,7 +1388,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -1502,7 +1502,7 @@ public class MiscOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
     @Test

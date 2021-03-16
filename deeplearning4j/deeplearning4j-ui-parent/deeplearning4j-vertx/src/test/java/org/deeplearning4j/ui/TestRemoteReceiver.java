@@ -38,8 +38,8 @@ import org.deeplearning4j.ui.model.stats.StatsListener;
 import org.deeplearning4j.ui.model.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.model.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.model.storage.impl.SbeStorageMetaData;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -49,13 +49,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Ignore
+@Disabled
 public class TestRemoteReceiver extends BaseDL4JTest {
 
     @Test
-    @Ignore
+    @Disabled
     public void testRemoteBasic() throws Exception {
 
         List<Persistable> updates = new ArrayList<>();
@@ -123,7 +123,7 @@ public class TestRemoteReceiver extends BaseDL4JTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testRemoteFull() throws Exception {
         //Use this in conjunction with startRemoteUI()
 
@@ -150,7 +150,7 @@ public class TestRemoteReceiver extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void startRemoteUI() throws Exception {
 
         UIServer s = UIServer.getInstance();

@@ -44,7 +44,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.earlystopping.SparkDataSetLossCalculator;
 import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingTrainer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -58,7 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestEarlyStoppingSpark extends BaseSparkTest {
 
@@ -191,8 +191,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         long endTime = System.currentTimeMillis();
         int durationSeconds = (int) (endTime - startTime) / 1000;
 
-        assertTrue("durationSeconds = " + durationSeconds, durationSeconds >= 3);
-        assertTrue("durationSeconds = " + durationSeconds, durationSeconds <= 20);
+        assertTrue(durationSeconds >= 3, "durationSeconds = " + durationSeconds);
+        assertTrue(durationSeconds <= 20, "durationSeconds = " + durationSeconds);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         result.getTerminationReason());

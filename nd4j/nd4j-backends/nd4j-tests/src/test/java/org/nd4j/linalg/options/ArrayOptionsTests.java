@@ -21,8 +21,8 @@
 package org.nd4j.linalg.options;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -31,8 +31,8 @@ import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -44,7 +44,7 @@ public class ArrayOptionsTests extends BaseNd4jTest {
     }
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         shapeInfo = new long[]{2, 2, 2, 2, 1, 0, 1, 99};
     }
@@ -84,9 +84,9 @@ public class ArrayOptionsTests extends BaseNd4jTest {
             String s = dt.toString();
             long l = 0;
             l = ArrayOptionsHelper.setOptionBit(l, dt);
-            assertNotEquals(s, 0, l);
+            assertNotEquals(0, l,s);
             DataType dt2 = ArrayOptionsHelper.dataType(l);
-            assertEquals(s, dt, dt2);
+            assertEquals(dt, dt2,s);
         }
 
     }

@@ -27,8 +27,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.FailureTestingListener;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Adam;
@@ -36,17 +36,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.net.InetAddress;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * WARNING: DO NOT ENABLE (UN-IGNORE) THESE TESTS.
  * They should be run manually, not as part of standard unit test run.
  */
-@Ignore
+@Disabled
 public class TestFailureListener extends BaseDL4JTest {
 
-    @Ignore
+    @Disabled
     @Test
     public void testFailureIter5() throws Exception {
 
@@ -68,7 +68,7 @@ public class TestFailureListener extends BaseDL4JTest {
         net.fit(iter);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testFailureRandom_OR(){
 
@@ -96,7 +96,7 @@ public class TestFailureListener extends BaseDL4JTest {
         net.fit(iter);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testFailureRandom_AND() throws Exception {
 

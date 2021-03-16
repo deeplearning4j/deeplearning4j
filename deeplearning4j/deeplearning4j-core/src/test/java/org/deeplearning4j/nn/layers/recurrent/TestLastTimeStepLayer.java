@@ -33,7 +33,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,7 +44,7 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 
 import static org.deeplearning4j.nn.api.OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
 import static org.deeplearning4j.nn.weights.WeightInit.XAVIER_UNIFORM;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.activations.Activation.IDENTITY;
 import static org.nd4j.linalg.activations.Activation.TANH;
 import static org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction.MSE;

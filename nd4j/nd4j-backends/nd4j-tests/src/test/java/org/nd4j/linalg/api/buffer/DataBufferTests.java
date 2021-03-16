@@ -23,8 +23,8 @@ package org.nd4j.linalg.api.buffer;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -42,7 +42,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -53,7 +53,7 @@ public class DataBufferTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("AB 2019/06/03 - CI issue: \"CUDA stream synchronization failed\" - see issue 7657")
+    @Disabled("AB 2019/06/03 - CI issue: \"CUDA stream synchronization failed\" - see issue 7657")
     public void testNoArgCreateBufferFromArray() {
 
         //Tests here:

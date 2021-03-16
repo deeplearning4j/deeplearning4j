@@ -23,7 +23,8 @@ package org.nd4j.parameterserver.distributed.v2;
 import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,13 +45,14 @@ import java.util.ArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class ModelParameterServerTest extends BaseND4JTest {
     private static final String rootId = "ROOT_NODE";
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testBasicInitialization_1() throws Exception {
         val connector = new DummyTransport.Connector();
         val rootTransport = new DummyTransport(rootId, connector);
@@ -65,7 +67,8 @@ public class ModelParameterServerTest extends BaseND4JTest {
         rootServer.shutdown();
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testBasicInitialization_2() throws Exception {
         val connector = new DummyTransport.Connector();
         val rootTransport = new DummyTransport(rootId, connector);
@@ -436,7 +439,7 @@ public class ModelParameterServerTest extends BaseND4JTest {
                     failedCnt++;
         }
 
-        assertEquals("Some nodes got no updates:", 0, failedCnt);
+        assertEquals(0, failedCnt,"Some nodes got no updates:");
 
         assertTrue(updatedModel.get());
         assertTrue(gotGradients.get());

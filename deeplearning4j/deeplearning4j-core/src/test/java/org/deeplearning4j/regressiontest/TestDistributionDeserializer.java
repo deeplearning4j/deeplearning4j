@@ -23,11 +23,11 @@ package org.deeplearning4j.regressiontest;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestDistributionDeserializer extends BaseDL4JTest {
 

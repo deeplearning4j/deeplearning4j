@@ -24,7 +24,7 @@ import org.nd4j.python4j.PythonGIL;
 import org.nd4j.python4j.PythonObject;
 import org.nd4j.python4j.PythonTypes;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;

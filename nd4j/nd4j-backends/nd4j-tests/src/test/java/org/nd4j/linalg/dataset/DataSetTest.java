@@ -22,9 +22,10 @@ package org.nd4j.linalg.dataset;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -40,17 +41,17 @@ import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
 public class DataSetTest extends BaseNd4jTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
 
     public DataSetTest(Nd4jBackend backend) {
@@ -117,7 +118,7 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(train.getTrain().getLabels().length(), 6);
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
-        assertEquals(getFailureMessage(), train.getTrain().getFeatures(), train2.getTrain().getFeatures());
+        assertEquals(train.getTrain().getFeatures(), train2.getTrain().getFeatures(),getFailureMessage());
 
         DataSet x0 = new IrisDataSetIterator(150, 150).next();
         SplitTestAndTrain testAndTrain = x0.splitTestAndTrain(10);
@@ -153,13 +154,13 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void testLabelCounts() {
         DataSet x0 = new IrisDataSetIterator(150, 150).next();
-        assertEquals(getFailureMessage(), 0, x0.get(0).outcome());
-        assertEquals(getFailureMessage(), 0, x0.get(1).outcome());
-        assertEquals(getFailureMessage(), 2, x0.get(149).outcome());
+        assertEquals(0, x0.get(0).outcome(),getFailureMessage());
+        assertEquals( 0, x0.get(1).outcome(),getFailureMessage());
+        assertEquals(2, x0.get(149).outcome(),getFailureMessage());
         Map<Integer, Double> counts = x0.labelCounts();
-        assertEquals(getFailureMessage(), 50, counts.get(0), 1e-1);
-        assertEquals(getFailureMessage(), 50, counts.get(1), 1e-1);
-        assertEquals(getFailureMessage(), 50, counts.get(2), 1e-1);
+        assertEquals(50, counts.get(0), 1e-1,getFailureMessage());
+        assertEquals(50, counts.get(1), 1e-1,getFailureMessage());
+        assertEquals(50, counts.get(2), 1e-1,getFailureMessage());
 
     }
 
@@ -1078,7 +1079,7 @@ public class DataSetTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testDataSetMetaDataSerialization() throws IOException {
+    public void testDataSetMetaDataSerialization(@TempDir Path testDir) throws IOException {
 
         for(boolean withMeta : new boolean[]{false, true}) {
             // create simple data set with meta data object
@@ -1092,7 +1093,7 @@ public class DataSetTest extends BaseNd4jTest {
             }
 
             // check if the meta data was serialized and deserialized
-            File dir = testDir.newFolder();
+            File dir = testDir.toFile();
             File saved = new File(dir, "ds.bin");
             ds.save(saved);
             DataSet loaded = new DataSet();
@@ -1108,7 +1109,7 @@ public class DataSetTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMultiDataSetMetaDataSerialization() throws IOException {
+    public void testMultiDataSetMetaDataSerialization(@TempDir Path testDir) throws IOException {
 
         for(boolean withMeta : new boolean[]{false, true}) {
             // create simple data set with meta data object
@@ -1121,7 +1122,7 @@ public class DataSetTest extends BaseNd4jTest {
             }
 
             // check if the meta data was serialized and deserialized
-            File dir = testDir.newFolder();
+            File dir = testDir.toFile();
             File saved = new File(dir, "ds.bin");
             ds.save(saved);
             MultiDataSet loaded = new MultiDataSet();

@@ -28,7 +28,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.misc.StringToWritablesFunction;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.common.io.ClassPathResource;
@@ -36,7 +36,7 @@ import org.nd4j.common.io.ClassPathResource;
 import java.io.File;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestIteratorUtils extends BaseSparkTest {
 

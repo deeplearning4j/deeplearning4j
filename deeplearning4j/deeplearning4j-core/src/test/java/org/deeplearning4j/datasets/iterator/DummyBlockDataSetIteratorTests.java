@@ -25,15 +25,15 @@ import lombok.val;
 import lombok.var;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class DummyBlockDataSetIteratorTests extends BaseDL4JTest {

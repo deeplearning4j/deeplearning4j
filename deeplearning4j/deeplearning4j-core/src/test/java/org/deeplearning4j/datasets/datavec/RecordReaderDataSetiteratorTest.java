@@ -19,7 +19,7 @@
  */
 package org.deeplearning4j.datasets.datavec;
 
-import org.junit.rules.Timeout;
+
 import org.nd4j.shade.guava.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -47,7 +47,7 @@ import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException
 import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.junit.jupiter.api.Disabled;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -73,9 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Slf4j
 @DisplayName("Record Reader Data Setiterator Test")
 class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
-
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
 
     @Override
     public DataType getDataType() {

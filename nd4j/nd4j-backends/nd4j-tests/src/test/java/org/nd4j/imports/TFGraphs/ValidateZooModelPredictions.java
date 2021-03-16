@@ -22,11 +22,12 @@ package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -38,13 +39,14 @@ import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@Ignore
+@Disabled
 public class ValidateZooModelPredictions extends BaseNd4jTest {
 
     public ValidateZooModelPredictions(Nd4jBackend backend) {
@@ -56,10 +58,9 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
         return 'c';
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Before
+
+    @BeforeEach
     public void before() {
         Nd4j.create(1);
         Nd4j.setDataType(DataType.DOUBLE);
@@ -72,7 +73,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
     }
 
     @Test
-    public void testMobilenetV1() throws Exception {
+    public void testMobilenetV1(@TempDir Path testDir) throws Exception {
         if(TFGraphTestZooModels.isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
@@ -84,7 +85,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
             OpValidationSuite.ignoreFailing();
         }
 
-        TFGraphTestZooModels.currentTestDir = testDir.newFolder();
+        TFGraphTestZooModels.currentTestDir = testDir.toFile();
 
         //Load model
         String path = "tf_graphs/zoo_models/mobilenet_v1_0.5_128/tf_model.txt";
@@ -137,7 +138,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
 
 
     @Test
-    public void testResnetV2() throws Exception {
+    public void testResnetV2(@TempDir Path testDir) throws Exception {
         if(TFGraphTestZooModels.isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
@@ -149,7 +150,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
             OpValidationSuite.ignoreFailing();
         }
 
-        TFGraphTestZooModels.currentTestDir = testDir.newFolder();
+        TFGraphTestZooModels.currentTestDir = testDir.toFile();
 
         //Load model
         String path = "tf_graphs/zoo_models/resnetv2_imagenet_frozen_graph/tf_model.txt";

@@ -21,32 +21,34 @@
 package org.nd4j.common.loader;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.loader.FileBatch;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestFileBatch {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testFileBatch() throws Exception {
-        File baseDir = testDir.newFolder();
+    public void testFileBatch(@TempDir Path testDir) throws Exception {
+        File baseDir = testDir.toFile();
 
         List<File> fileList = new ArrayList<>();
-        for( int i=0; i<10; i++ ){
+        for( int i = 0; i < 10; i++) {
             String s = "File contents - file " + i;
             File f = new File(baseDir, "origFile" + i + ".txt");
             FileUtils.writeStringToFile(f, s, StandardCharsets.UTF_8);
@@ -79,12 +81,12 @@ public class TestFileBatch {
 
         assertEquals(fb.getOriginalUris(), fb2.getOriginalUris());
         assertEquals(10, fb2.getFileBytes().size());
-        for( int i=0; i<10; i++ ){
+        for( int i = 0; i < 10; i++) {
             assertArrayEquals(fb.getFileBytes().get(i), fb2.getFileBytes().get(i));
         }
 
         //Check that it is indeed a valid zip file:
-        File f = testDir.newFile();
+        File f = Files.createTempFile(testDir,"testfile","zip").toFile();
         f.delete();
         fb.writeAsZip(f);
 
@@ -101,7 +103,7 @@ public class TestFileBatch {
         assertTrue(names.contains(FileBatch.ORIGINAL_PATHS_FILENAME));
         for( int i=0; i<10; i++ ){
             String n = "file_" + i + ".txt";
-            assertTrue(n, names.contains(n));
+            assertTrue(names.contains(n),n);
         }
     }
 

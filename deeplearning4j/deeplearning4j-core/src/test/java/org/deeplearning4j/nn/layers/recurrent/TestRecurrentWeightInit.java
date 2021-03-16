@@ -27,10 +27,10 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestRecurrentWeightInit extends BaseDL4JTest {
 
@@ -86,11 +86,11 @@ public class TestRecurrentWeightInit extends BaseDL4JTest {
                 double min = rw.minNumber().doubleValue();
                 double max = rw.maxNumber().doubleValue();
                 if(rwInit){
-                    assertTrue(String.valueOf(min), min >= 2.0);
-                    assertTrue(String.valueOf(max), max <= 3.0);
+                    assertTrue(min >= 2.0, String.valueOf(min));
+                    assertTrue(max <= 3.0, String.valueOf(max));
                 } else {
-                    assertTrue(String.valueOf(min), min >= 0.0);
-                    assertTrue(String.valueOf(max), max <= 1.0);
+                    assertTrue(min >= 0.0, String.valueOf(min));
+                    assertTrue(max <= 1.0, String.valueOf(max));
                 }
             }
         }

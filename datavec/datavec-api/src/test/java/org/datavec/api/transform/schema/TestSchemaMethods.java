@@ -21,10 +21,10 @@
 package org.datavec.api.transform.schema;
 
 import org.datavec.api.transform.ColumnType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSchemaMethods extends BaseND4JTest {
 

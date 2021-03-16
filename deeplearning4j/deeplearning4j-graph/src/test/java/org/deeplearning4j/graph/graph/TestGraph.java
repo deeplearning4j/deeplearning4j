@@ -27,20 +27,21 @@ import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.WeightedRandomWalkIterator;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestGraph extends BaseDL4JTest {
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testSimpleGraph() {
 
         Graph<String, String> graph = new Graph<>(10, false, new VFactory());
@@ -94,7 +95,8 @@ public class TestGraph extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testRandomWalkIterator() {
         Graph<String, String> graph = new Graph<>(10, false, new VFactory());
         assertEquals(10, graph.numVertices());
@@ -124,8 +126,8 @@ public class TestGraph extends BaseDL4JTest {
                 int left = (previous - 1 + 10) % 10;
                 int right = (previous + 1) % 10;
                 int current = sequence.next().vertexID();
-                assertTrue("expected: " + left + " or " + right + ", got " + current,
-                                current == left || current == right);
+                assertTrue(current == left || current == right,
+                        "expected: " + left + " or " + right + ", got " + current);
                 seqCount++;
                 previous = current;
             }
@@ -137,7 +139,8 @@ public class TestGraph extends BaseDL4JTest {
         assertEquals(10, startIdxSet.size());
     }
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testWeightedRandomWalkIterator() throws Exception {
 
         //Load a directed, weighted graph from file

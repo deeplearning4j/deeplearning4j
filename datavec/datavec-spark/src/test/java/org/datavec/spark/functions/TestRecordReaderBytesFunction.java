@@ -36,9 +36,10 @@ import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.functions.data.FilesAsBytesFunction;
 import org.datavec.spark.functions.data.RecordReaderBytesFunction;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
@@ -48,23 +49,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestRecordReaderBytesFunction extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testRecordReaderBytesFunction() throws Exception {
+    public void testRecordReaderBytesFunction(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             return;
         }
         JavaSparkContext sc = getContext();
 
         //Local file path
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         new ClassPathResource("datavec-spark/imagetest/").copyDirectory(f);
         List<String> labelsList = Arrays.asList("0", "1"); //Need this for Spark: can't infer without init call
         String path = f.getAbsolutePath() + "/*";

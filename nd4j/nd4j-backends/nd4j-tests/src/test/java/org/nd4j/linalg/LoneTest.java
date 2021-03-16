@@ -23,7 +23,7 @@ package org.nd4j.linalg;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -43,8 +43,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @Slf4j
@@ -223,7 +222,7 @@ public class LoneTest extends BaseNd4jTest {
         for (int e = 0; e < 32; e++) {
             val tad = res.tensorAlongDimension(e, 1, 2);
 
-            assertEquals("Failed for TAD [" + e + "]",(double) e, tad.meanNumber().doubleValue(), 1e-5);
+            assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5,"Failed for TAD [" + e + "]");
             assertEquals((double) e, tad.getDouble(0), 1e-5);
         }
     }
@@ -256,13 +255,16 @@ public class LoneTest extends BaseNd4jTest {
 //        log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
     }
 
-    @Test(expected = Exception.class)
+    @Test()
     public void checkIllegalElementOps() {
-        INDArray A = Nd4j.linspace(1, 20, 20).reshape(4, 5);
-        INDArray B = A.dup().reshape(2, 2, 5);
+        assertThrows(Exception.class,() -> {
+            INDArray A = Nd4j.linspace(1, 20, 20).reshape(4, 5);
+            INDArray B = A.dup().reshape(2, 2, 5);
 
-        //multiplication of arrays of different rank should throw exception
-        INDArray C = A.mul(B);
+            //multiplication of arrays of different rank should throw exception
+            INDArray C = A.mul(B);
+        });
+
     }
 
     @Test

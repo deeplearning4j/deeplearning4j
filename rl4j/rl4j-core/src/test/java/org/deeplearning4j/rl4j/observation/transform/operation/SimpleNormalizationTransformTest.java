@@ -20,18 +20,21 @@
 
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
-import org.deeplearning4j.rl4j.helper.INDArrayHelper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SimpleNormalizationTransformTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_maxIsLessThanMin_expect_exception() {
-        // Arrange
-        SimpleNormalizationTransform sut = new SimpleNormalizationTransform(10.0, 1.0);
+        assertThrows(IllegalArgumentException.class,() -> {
+            // Arrange
+            SimpleNormalizationTransform sut = new SimpleNormalizationTransform(10.0, 1.0);
+        });
+
     }
 
     @Test

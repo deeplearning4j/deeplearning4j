@@ -34,10 +34,10 @@ import org.deeplearning4j.rl4j.support.MockDataManager;
 import org.deeplearning4j.rl4j.support.MockHistoryProcessor;
 import org.deeplearning4j.rl4j.support.MockMDP;
 import org.deeplearning4j.rl4j.support.MockObservationSpace;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class DataManagerTrainingListenerTest {
 

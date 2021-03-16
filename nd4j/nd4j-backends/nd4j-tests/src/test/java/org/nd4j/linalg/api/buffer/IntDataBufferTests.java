@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.buffer;
 
 
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -35,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.io.*;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class IntDataBufferTests extends BaseNd4jTest {
 

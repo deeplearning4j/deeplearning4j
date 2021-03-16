@@ -29,18 +29,18 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GraphTransformerTest extends BaseDL4JTest {
 
     private static IGraph<VocabWord, Double> graph;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         if (graph == null) {
             graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());

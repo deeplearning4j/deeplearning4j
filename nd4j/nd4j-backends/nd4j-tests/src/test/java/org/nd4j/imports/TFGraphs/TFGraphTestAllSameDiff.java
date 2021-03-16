@@ -22,8 +22,7 @@ package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.*;
-import org.junit.rules.TestWatcher;
+import org.junit.jupiter.api.*;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -40,20 +39,9 @@ import java.util.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
-@Ignore
+@Disabled
 public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
-    @Rule
-    public TestWatcher testWatcher = new TestWatcher() {
-
-        @Override
-        protected void starting(Description description){
-            log.info("TFGraphTestAllSameDiff: Starting parameterized test: " + description.getDisplayName());
-        }
-
-        //protected void failed(Throwable e, Description description) {
-        //protected void succeeded(Description description) {
-    };
 
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
@@ -155,21 +143,21 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      */
     private final List<String> debugModeRegexes = Arrays.asList("fused_batch_norm/float16_nhwc");
 
-    @BeforeClass
-    public static void beforeClass() {
+ @BeforeAll
+ public static void beforeClass() {
         Nd4j.scalar(1.0);
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
     }
 

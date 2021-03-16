@@ -21,7 +21,7 @@
 package org.nd4j.evaluation;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
@@ -32,7 +32,7 @@ import org.nd4j.common.io.ClassPathResource;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestLegacyJsonLoading extends BaseNd4jTest {
 

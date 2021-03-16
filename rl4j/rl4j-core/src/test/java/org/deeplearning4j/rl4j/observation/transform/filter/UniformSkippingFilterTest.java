@@ -21,17 +21,19 @@
 package org.deeplearning4j.rl4j.observation.transform.filter;
 
 import org.deeplearning4j.rl4j.observation.transform.FilterOperation;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UniformSkippingFilterTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void when_negativeSkipFrame_expect_exception() {
-        // Act
-        new UniformSkippingFilter(-1);
+       assertThrows(IllegalArgumentException.class,() -> {
+           // Act
+           new UniformSkippingFilter(-1);
+       });
+
     }
 
     @Test

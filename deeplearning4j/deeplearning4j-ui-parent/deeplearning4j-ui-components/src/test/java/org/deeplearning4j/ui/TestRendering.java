@@ -35,8 +35,8 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.awt.*;
@@ -48,7 +48,7 @@ import java.util.Random;
 
 public class TestRendering extends BaseDL4JTest {
 
-    @Ignore
+    @Disabled
     @Test
     public void test() throws Exception {
 

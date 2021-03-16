@@ -24,8 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -50,11 +52,11 @@ import java.util.Map;
 
 @RunWith(Parameterized.class)
 @Slf4j
-@Ignore
+@Disabled
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
+    @TempDir
+    static Path classTestDir;
 
-    @ClassRule
-    public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
             //2019/07/22 - Result value failure
@@ -95,8 +97,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             "deeplabv3_pascal_train_aug_2018_01_04"
     };
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
     public static File currentTestDir;
 
     public static final File BASE_MODEL_DL_DIR = new File(getBaseModelDir(), ".nd4jtests");
@@ -204,7 +205,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass(){
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
@@ -212,8 +213,8 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        classTestDir.create();
-        File baseDir = classTestDir.newFolder();    // new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        classTestDir.toFile().mkdir();
+        File baseDir = classTestDir.toFile();    // new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
         List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF, baseDir);
         return params;
     }
@@ -239,7 +240,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     }
 
     @Test   //(timeout = 360000L)
-    public void testOutputOnly() throws Exception {
+    public void testOutputOnly(@TempDir Path testDir) throws Exception {
         if(isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
@@ -256,7 +257,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 //        if(!modelName.startsWith("faster_rcnn_resnet101_coco_2018_01_28")){
 //            OpValidationSuite.ignoreFailing();
 //        }
-        currentTestDir = testDir.newFolder();
+        currentTestDir = testDir.toFile();
 
 //        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
         Nd4j.getMemoryManager().setAutoGcWindow(2000);
@@ -269,7 +270,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
-        currentTestDir = testDir.newFolder();
+        currentTestDir = testDir.toFile();
         log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs, false);

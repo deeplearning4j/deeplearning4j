@@ -22,7 +22,7 @@ package org.nd4j.linalg.shape;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -34,7 +34,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -180,10 +180,13 @@ public class EmptyTests extends BaseNd4jTest {
         assertEquals(1, array.rank());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testEmptyWithShape_3() {
-        val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
-        array.tensorAlongDimension(0, 2);
+        assertThrows(IllegalArgumentException.class,() -> {
+            val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+            array.tensorAlongDimension(0, 2);
+        });
+
     }
 
     @Test
@@ -239,15 +242,18 @@ public class EmptyTests extends BaseNd4jTest {
         assertEquals(e, reduced);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testEmptyReduction_4() {
-        val x = Nd4j.create(DataType.FLOAT, 2, 0);
-        val e = Nd4j.create(DataType.FLOAT, 0);
+       assertThrows(ND4JIllegalStateException.class,() -> {
+           val x = Nd4j.create(DataType.FLOAT, 2, 0);
+           val e = Nd4j.create(DataType.FLOAT, 0);
 
-        val reduced = x.argMax(1);
+           val reduced = x.argMax(1);
 
-        assertArrayEquals(e.shape(), reduced.shape());
-        assertEquals(e, reduced);
+           assertArrayEquals(e.shape(), reduced.shape());
+           assertEquals(e, reduced);
+       });
+
     }
 
     @Test

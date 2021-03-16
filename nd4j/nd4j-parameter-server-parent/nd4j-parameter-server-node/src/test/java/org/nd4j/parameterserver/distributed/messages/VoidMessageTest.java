@@ -20,29 +20,27 @@
 
 package org.nd4j.parameterserver.distributed.messages;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 @Deprecated
 public class VoidMessageTest extends BaseND4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testSerDe1() throws Exception {
         SkipGramRequestMessage message = new SkipGramRequestMessage(10, 12, new int[] {10, 20, 30, 40},
                         new byte[] {(byte) 0, (byte) 0, (byte) 1, (byte) 0}, (short) 0, 0.0, 117L);

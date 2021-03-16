@@ -22,23 +22,26 @@ package org.deeplearning4j.integration;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.integration.testcases.dl4j.*;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-//@Ignore("AB - 2019/05/27 - Integration tests need to be updated")
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
+
+
+//@Disabled("AB - 2019/05/27 - Integration tests need to be updated")
 public class IntegrationTestsDL4J extends BaseDL4JTest {
+    @TempDir
+    static Path testDir;
 
     @Override
     public long getTimeoutMilliseconds() {
         return 300_000L;
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @AfterClass
+    @AfterEach
     public static void afterClass(){
         IntegrationTestRunner.printCoverageInformation();
     }

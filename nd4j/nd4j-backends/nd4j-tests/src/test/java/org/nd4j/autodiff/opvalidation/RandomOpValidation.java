@@ -21,7 +21,7 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -46,7 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class RandomOpValidation extends BaseOpValidation {
@@ -153,7 +153,7 @@ public class RandomOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -279,7 +279,7 @@ public class RandomOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -342,8 +342,8 @@ public class RandomOpValidation extends BaseOpValidation {
         double expStd = 1.0/lambda;
 
         assertTrue(min >= 0.0);
-        assertEquals("mean", expMean, mean, 0.1);
-        assertEquals("std", expStd, std, 0.1);
+        assertEquals(expMean, mean, 0.1,"mean");
+        assertEquals( expStd, std, 0.1,"std");
     }
 
     @Test
@@ -437,7 +437,7 @@ public class RandomOpValidation extends BaseOpValidation {
         double min = out.minNumber().doubleValue();
         double max = out.maxNumber().doubleValue();
 
-        assertTrue(String.valueOf(min), min > 0.0);
-        assertTrue(String.valueOf(max), max > 1.0);
+        assertTrue(min > 0.0,String.valueOf(min));
+        assertTrue( max > 1.0,String.valueOf(max));
     }
 }

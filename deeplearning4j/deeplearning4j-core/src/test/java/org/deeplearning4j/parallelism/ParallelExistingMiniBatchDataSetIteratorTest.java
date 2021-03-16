@@ -20,7 +20,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.BaseDL4JTest;

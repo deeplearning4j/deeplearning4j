@@ -23,8 +23,8 @@ package org.nd4j.linalg.factory;
 import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -44,8 +44,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  */
@@ -133,7 +133,7 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray actualResult = data.mean(0);
         INDArray expectedResult = Nd4j.create(new double[] {3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6.,
                 6., 3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6., 6.}, new int[] {2, 4, 4});
-        assertEquals(getFailureMessage(), expectedResult, actualResult);
+        assertEquals(expectedResult, actualResult,getFailureMessage());
     }
 
 
@@ -147,7 +147,7 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4.,
                 4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new long[] {2, 4, 4});
-        assertEquals(getFailureMessage(), expectedResult, actualResult);
+        assertEquals(expectedResult, actualResult,getFailureMessage());
     }
 
     @Test
@@ -178,12 +178,12 @@ public class Nd4jTest extends BaseNd4jTest {
 
                 val tmR = testMatrix.ravel();
                 val expR = expanded.ravel();
-                assertEquals(message, 1, expanded.shape()[i < 0 ? i + rank : i]);
-                assertEquals(message, tmR, expR);
-                assertEquals(message, ordering,  expanded.ordering());
+                assertEquals( 1, expanded.shape()[i < 0 ? i + rank : i],message);
+                assertEquals(tmR, expR,message);
+                assertEquals( ordering,  expanded.ordering(),message);
 
                 testMatrix.assign(Nd4j.rand(DataType.DOUBLE, shape));
-                assertEquals(message, testMatrix.ravel(), expanded.ravel());
+                assertEquals(testMatrix.ravel(), expanded.ravel(),message);
             }
         }
     }
@@ -204,19 +204,19 @@ public class Nd4jTest extends BaseNd4jTest {
             final long[] expShape = ArrayUtil.removeIndex(shape, 1);
             final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " " + ordering + " Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;
 
-            assertArrayEquals(message, expShape, squeezed.shape());
-            assertEquals(message, ordering, squeezed.ordering());
-            assertEquals(message, testMatrix.ravel(), squeezed.ravel());
+            assertArrayEquals(expShape, squeezed.shape(),message);
+            assertEquals(ordering, squeezed.ordering(),message);
+            assertEquals(testMatrix.ravel(), squeezed.ravel(),message);
 
             testMatrix.assign(Nd4j.rand(shape));
-            assertEquals(message, testMatrix.ravel(), squeezed.ravel());
+            assertEquals(testMatrix.ravel(), squeezed.ravel(),message);
 
         }
     }
 
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNumpyConversion() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
@@ -254,7 +254,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNumpyWrite() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
@@ -266,7 +266,7 @@ public class Nd4jTest extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNpyByteArray() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         byte[] bytes = Nd4j.toNpyByteArray(linspace);

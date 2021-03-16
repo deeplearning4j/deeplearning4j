@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,7 +29,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class TestNDArrayCreationUtil extends BaseNd4jTest {
 
@@ -43,27 +43,27 @@ public class TestNDArrayCreationUtil extends BaseNd4jTest {
 
         long[] shape2d = {2, 3};
         for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(2, 3, 12345, DataType.DOUBLE)) {
-            assertArrayEquals(p.getSecond(), shape2d, p.getFirst().shape());
+            assertArrayEquals(shape2d, p.getFirst().shape(),p.getSecond());
         }
 
         long[] shape3d = {2, 3, 4};
         for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, shape3d, DataType.DOUBLE)) {
-            assertArrayEquals(p.getSecond(), shape3d, p.getFirst().shape());
+            assertArrayEquals( shape3d, p.getFirst().shape(),p.getSecond());
         }
 
         long[] shape4d = {2, 3, 4, 5};
         for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, ArrayUtil.toInts(shape4d), DataType.DOUBLE)) {
-            assertArrayEquals(p.getSecond(), shape4d, p.getFirst().shape());
+            assertArrayEquals(shape4d, p.getFirst().shape(),p.getSecond());
         }
 
         long[] shape5d = {2, 3, 4, 5, 6};
         for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll5dTestArraysWithShape(12345, ArrayUtil.toInts(shape5d), DataType.DOUBLE)) {
-            assertArrayEquals(p.getSecond(), shape5d, p.getFirst().shape());
+            assertArrayEquals( shape5d, p.getFirst().shape(),p.getSecond());
         }
 
         long[] shape6d = {2, 3, 4, 5, 6, 7};
         for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll6dTestArraysWithShape(12345, ArrayUtil.toInts(shape6d), DataType.DOUBLE)) {
-            assertArrayEquals(p.getSecond(), shape6d, p.getFirst().shape());
+            assertArrayEquals( shape6d, p.getFirst().shape(),p.getSecond());
         }
     }
 

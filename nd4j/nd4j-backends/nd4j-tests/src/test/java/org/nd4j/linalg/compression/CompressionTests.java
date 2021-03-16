@@ -22,8 +22,8 @@ package org.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -44,7 +44,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -141,7 +141,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
 
-    @Ignore
+    @Disabled
     @Test
     public void testThresholdCompression0() {
         INDArray initial = Nd4j.rand(new int[] {1, 150000000}, 119L);
@@ -173,7 +173,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testThresholdCompression1() {
         INDArray initial = Nd4j.create(new float[] {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(DataType.FLOAT, 6);

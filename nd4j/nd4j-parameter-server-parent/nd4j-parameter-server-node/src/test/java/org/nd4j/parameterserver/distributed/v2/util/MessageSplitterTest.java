@@ -22,7 +22,7 @@ package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Atomic;
@@ -31,7 +31,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMess
 
 import java.util.ArrayList;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class MessageSplitterTest extends BaseND4JTest {

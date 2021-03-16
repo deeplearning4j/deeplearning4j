@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -61,7 +61,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class LayerOpValidation extends BaseOpValidation {
@@ -297,7 +297,7 @@ public class LayerOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -338,7 +338,7 @@ public class LayerOpValidation extends BaseOpValidation {
             }
 
         }
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(0, failed.size(),failed.toString());
     }
 
     @Test
@@ -371,7 +371,7 @@ public class LayerOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -571,7 +571,7 @@ public class LayerOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals( 0, failed.size(),failed.toString());
     }
 
 
@@ -1325,81 +1325,89 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void exceptionThrown_WhenConv1DConfigInvalid() {
-        int nIn = 3;
-        int nOut = 4;
-        int k = 2;
-        int mb = 3;
-        int img = 28;
+       assertThrows(IllegalArgumentException.class,() -> {
+           int nIn = 3;
+           int nOut = 4;
+           int k = 2;
+           int mb = 3;
+           int img = 28;
 
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(k, nIn, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, img);
+           SameDiff sd = SameDiff.create();
+           INDArray wArr = Nd4j.create(k, nIn, nOut);
+           INDArray inArr = Nd4j.create(mb, nIn, img);
 
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
+           SDVariable in = sd.var("in", inArr);
+           SDVariable w = sd.var("W", wArr);
 
-        SDVariable[] vars = new SDVariable[]{in, w};
+           SDVariable[] vars = new SDVariable[]{in, w};
 
-        Conv1DConfig conv1DConfig = Conv1DConfig.builder()
-                .k(k).p(-1).s(0)
-                .paddingMode(PaddingMode.VALID)
-                .build();
+           Conv1DConfig conv1DConfig = Conv1DConfig.builder()
+                   .k(k).p(-1).s(0)
+                   .paddingMode(PaddingMode.VALID)
+                   .build();
 
-        SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);
+           SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);
+
+       });
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void exceptionThrown_WhenConv2DConfigInvalid() {
-
-        Nd4j.getRandom().setSeed(12345);
-
-        SameDiff sd = SameDiff.create();
-        SDVariable in = null;
-
-        int[] inSizeNCHW = {1, 3, 8, 8};
-
-        String msg = "0 - conv2d+bias, nchw - input " + Arrays.toString(inSizeNCHW);
-        SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{3, 3, inSizeNCHW[1], 3}).muli(10));  //kH,kW,iC,oC
-        SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-        SDVariable out = sd.cnn().conv2d(in, w0, b0, Conv2DConfig.builder()
-                .dataFormat(Conv2DConfig.NCHW)
-                .isSameMode(true)
-                .kH(3).kW(-3)
-                .sH(1).sW(0)
-                .build());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void exceptionThrown_WhenConf3DInvalid() {
-        Nd4j.getRandom().setSeed(12345);
-
-        //NCDHW format
-        int[] inSizeNCDHW = {2, 3, 4, 5, 5};
-
-        List<String> failed = new ArrayList<>();
-
-        for (boolean ncdhw : new boolean[]{true, false}) {
-            int nIn = inSizeNCDHW[1];
-            int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
+        assertThrows(IllegalArgumentException.class,() -> {
+            Nd4j.getRandom().setSeed(12345);
 
             SameDiff sd = SameDiff.create();
-            SDVariable in = sd.var("in", shape);
+            SDVariable in = null;
 
-            SDVariable out;
-            String msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
+            int[] inSizeNCHW = {1, 3, 8, 8};
 
-            SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
+            String msg = "0 - conv2d+bias, nchw - input " + Arrays.toString(inSizeNCHW);
+            SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{3, 3, inSizeNCHW[1], 3}).muli(10));  //kH,kW,iC,oC
             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-            out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
-                    .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+            SDVariable out = sd.cnn().conv2d(in, w0, b0, Conv2DConfig.builder()
+                    .dataFormat(Conv2DConfig.NCHW)
                     .isSameMode(true)
-                    .kH(2).kW(2).kD(2)
-                    .sD(1).sH(1).sW(-1).dW(-1)
+                    .kH(3).kW(-3)
+                    .sH(1).sW(0)
                     .build());
-        }
+        });
+
+    }
+
+    @Test()
+    public void exceptionThrown_WhenConf3DInvalid() {
+       assertThrows(IllegalArgumentException.class,() -> {
+           Nd4j.getRandom().setSeed(12345);
+
+           //NCDHW format
+           int[] inSizeNCDHW = {2, 3, 4, 5, 5};
+
+           List<String> failed = new ArrayList<>();
+
+           for (boolean ncdhw : new boolean[]{true, false}) {
+               int nIn = inSizeNCDHW[1];
+               int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
+
+               SameDiff sd = SameDiff.create();
+               SDVariable in = sd.var("in", shape);
+
+               SDVariable out;
+               String msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
+
+               SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
+               SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
+               out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
+                       .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                       .isSameMode(true)
+                       .kH(2).kW(2).kD(2)
+                       .sD(1).sH(1).sW(-1).dW(-1)
+                       .build());
+           }
+       });
+
     }
 
     @Test

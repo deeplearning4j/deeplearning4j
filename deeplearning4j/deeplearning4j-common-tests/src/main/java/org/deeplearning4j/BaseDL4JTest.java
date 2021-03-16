@@ -20,7 +20,6 @@
 package org.deeplearning4j;
 
 import ch.qos.logback.classic.LoggerContext;
-import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.*;
 
@@ -32,6 +31,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.lang.management.ManagementFactory;
 import java.util.List;
@@ -39,13 +39,11 @@ import java.util.Map;
 import java.util.Properties;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@Slf4j
 @DisplayName("Base DL 4 J Test")
 public abstract class BaseDL4JTest {
 
-
+   private static Logger log = LoggerFactory.getLogger(BaseDL4JTest.class.getName());
 
     protected long startTime;
 

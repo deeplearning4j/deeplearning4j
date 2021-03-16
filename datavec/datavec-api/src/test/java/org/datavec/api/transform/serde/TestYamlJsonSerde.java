@@ -64,13 +64,13 @@ import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.writable.comparator.DoubleWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestYamlJsonSerde  extends BaseND4JTest {
 

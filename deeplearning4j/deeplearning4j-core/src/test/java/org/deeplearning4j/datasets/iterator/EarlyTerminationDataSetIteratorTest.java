@@ -21,7 +21,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.dataset.DataSet;
@@ -43,8 +43,7 @@ class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
 
     int numExamples = 105;
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
+
 
     @Test
     @DisplayName("Test Next And Reset")
@@ -86,14 +85,16 @@ class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Callsto Next Not Allowed")
+    @DisplayName("Test calls to Next Not Allowed")
     void testCallstoNextNotAllowed() throws IOException {
-        int terminateAfter = 1;
-        DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
-        EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
-        earlyEndIter.next(10);
-        iter.reset();
-        exception.expect(RuntimeException.class);
-        earlyEndIter.next(10);
+        assertThrows(RuntimeException.class,() -> {
+            int terminateAfter = 1;
+            DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
+            EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
+            earlyEndIter.next(10);
+            iter.reset();
+            earlyEndIter.next(10);
+        });
+
     }
 }

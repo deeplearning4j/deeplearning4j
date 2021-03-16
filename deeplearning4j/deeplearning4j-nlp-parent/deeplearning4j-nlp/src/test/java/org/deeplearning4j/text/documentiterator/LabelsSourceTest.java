@@ -21,17 +21,17 @@
 package org.deeplearning4j.text.documentiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LabelsSourceTest extends BaseDL4JTest {
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }

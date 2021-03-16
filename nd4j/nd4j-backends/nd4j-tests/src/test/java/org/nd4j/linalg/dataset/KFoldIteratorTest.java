@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -32,8 +32,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.HashSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(Parameterized.class)
 public class KFoldIteratorTest extends BaseNd4jTest {
@@ -107,13 +106,16 @@ public class KFoldIteratorTest extends BaseNd4jTest {
     }
     
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void checkCornerCaseException() {
-        DataSet allData = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1), 
-                                    Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
-        int k = 1;
-        //this will throw illegal argument exception
-        new KFoldIterator(k, allData);
+        assertThrows(IllegalArgumentException.class,() -> {
+            DataSet allData = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1),
+                    Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
+            int k = 1;
+            //this will throw illegal argument exception
+            new KFoldIterator(k, allData);
+        });
+
     }
 
     @Test
@@ -248,10 +250,10 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             }
             String s = String.valueOf(count);
             DataSet test = iter.testFold();
-            assertEquals(s, testFold, test.getFeatures());
-            assertEquals(s, testFold, test.getLabels());
-            assertEquals(s, countTrain, fold.getFeatures().length());
-            assertEquals(s, countTrain, fold.getLabels().length());
+            assertEquals(testFold, test.getFeatures(),s);
+            assertEquals( testFold, test.getLabels(),s);
+            assertEquals(countTrain, fold.getFeatures().length(),s);
+            assertEquals(countTrain, fold.getLabels().length(),s);
             count++;
         }
     }

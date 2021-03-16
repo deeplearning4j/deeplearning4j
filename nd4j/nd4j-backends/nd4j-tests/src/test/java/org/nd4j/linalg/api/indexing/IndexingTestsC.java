@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.indexing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.common.base.Preconditions;
@@ -43,7 +43,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
@@ -450,7 +450,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
                         long[] expShape = getShape(arr, indexes);
                         long[] subShape = sub.shape();
-                        assertArrayEquals(msg, expShape, subShape);
+                        assertArrayEquals(expShape, subShape,msg);
 
                         msg = "Test case: rank = " + rank + ", order = " + order + ", inShape = " + Arrays.toString(inShape) +
                                 ", outShape = " + Arrays.toString(expShape) +
@@ -462,7 +462,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                             double act = sub.getDouble(outIdxs);
                             double exp = getDouble(indexes, arr, outIdxs);
 
-                            assertEquals(msg, exp, act, 1e-6);
+                            assertEquals(exp, act, 1e-6,msg);
                         }
                         totalTestCaseCount++;
                     }
@@ -470,7 +470,7 @@ public class IndexingTestsC extends BaseNd4jTest {
             }
         }
 
-        assertTrue(String.valueOf(totalTestCaseCount), totalTestCaseCount > 5000);
+        assertTrue( totalTestCaseCount > 5000,String.valueOf(totalTestCaseCount));
     }
 
     private static long[] getShape(INDArray in, INDArrayIndex[] idxs){

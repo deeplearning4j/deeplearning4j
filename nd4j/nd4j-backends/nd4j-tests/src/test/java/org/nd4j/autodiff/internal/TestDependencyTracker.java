@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.internal.DependencyList;
 import org.nd4j.autodiff.samediff.internal.DependencyTracker;
 import org.nd4j.autodiff.samediff.internal.IdentityDependencyTracker;
@@ -33,7 +33,7 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Collections;
 
 import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestDependencyTracker extends BaseNd4jTest {
 

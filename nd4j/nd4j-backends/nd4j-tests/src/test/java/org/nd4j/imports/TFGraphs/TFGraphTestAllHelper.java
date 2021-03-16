@@ -26,9 +26,9 @@ import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -76,7 +76,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
 
 @Slf4j
@@ -111,17 +111,17 @@ public class TFGraphTestAllHelper {
 
     public static final DefaultGraphLoader LOADER = new DefaultGraphLoader();
 
-    @BeforeClass
+    @BeforeAll
     public void beforeClass(){
         log.info("Starting tests for class: " + getClass().getName());
     }
 
-    @Before
+    @BeforeEach
     public void setup(){
         Nd4j.setDataType(DataType.FLOAT);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
@@ -182,7 +182,7 @@ public class TFGraphTestAllHelper {
         OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
-            assertTrue("No predictions to validate", predictions.keySet().size() > 0);
+            assertTrue(predictions.keySet().size() > 0,"No predictions to validate");
             for (String outputNode : predictions.keySet()) {
                 INDArray nd4jPred = null;
                 INDArray tfPred = null;
@@ -211,7 +211,7 @@ public class TFGraphTestAllHelper {
                 if(maxRelErrorOverride == null) {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
-                    assertArrayEquals("Shapes for node \"" + outputNode + "\" are not equal: TF: " + Arrays.toString(sTf) + " vs SD: " + Arrays.toString(sNd4j), sTf, sNd4j);
+                    assertArrayEquals(sTf, sNd4j,"Shapes for node \"" + outputNode + "\" are not equal: TF: " + Arrays.toString(sTf) + " vs SD: " + Arrays.toString(sNd4j));
 
                     // TODO: once we add more dtypes files - this should be removed
                     if (tfPred.dataType() != nd4jPred.dataType())
@@ -253,7 +253,7 @@ public class TFGraphTestAllHelper {
                         }
                     }
 
-                    assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
+                    assertTrue(eq,"Predictions do not match on " + modelName + ", node " + outputNode);
                 } else {
 
                     if(!tfPred.equalShapes(nd4jPred)) {
@@ -302,8 +302,8 @@ public class TFGraphTestAllHelper {
                     }
 
 
-                    assertEquals( outputNode + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
-                            + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE, 0, countExceeds);
+                    assertEquals( 0, countExceeds,outputNode + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
+                            + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE);
                 }
             }
             log.info("TEST {} PASSED with {} arrays compared...", modelName, predictions.keySet().size());
@@ -383,8 +383,8 @@ public class TFGraphTestAllHelper {
                             }
 
 
-                            assertEquals( varName + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
-                                    + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE, 0, countExceeds);
+                            assertEquals(  0, countExceeds,varName + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
+                                    + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE);
                         } else {
 //                            assertEquals("Value not equal on node " + varName, tfValue, sdVal);
                             if(tfValue.equals(sdVal)){
@@ -403,7 +403,7 @@ public class TFGraphTestAllHelper {
                 }
             }
 
-            assertTrue("No intermediate variables were checked", count > 0);
+            assertTrue(count > 0,"No intermediate variables were checked");
         }
 
         Nd4j.EPS_THRESHOLD = 1e-5;

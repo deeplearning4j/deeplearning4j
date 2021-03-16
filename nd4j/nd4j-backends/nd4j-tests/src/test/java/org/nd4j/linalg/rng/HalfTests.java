@@ -22,9 +22,9 @@ package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -45,7 +45,7 @@ public class HalfTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
@@ -54,7 +54,7 @@ public class HalfTests extends BaseNd4jTest {
         Nd4j.setDataType(DataType.HALF);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;

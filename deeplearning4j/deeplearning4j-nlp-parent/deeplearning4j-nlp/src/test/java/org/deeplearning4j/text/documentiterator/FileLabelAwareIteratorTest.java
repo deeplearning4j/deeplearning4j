@@ -22,27 +22,29 @@ package org.deeplearning4j.text.documentiterator;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.nd4j.common.io.ClassPathResource;
-import org.junit.Before;
-import org.junit.Test;
 
-import static org.junit.Assert.*;
+
+import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.io.ClassPathResource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
     @Test
-    public void testExtractLabelFromPath1() throws Exception {
-        val dir = testDir.newFolder();
+    public void testExtractLabelFromPath1(@TempDir Path testDir) throws Exception {
+        val dir = testDir.toFile();
         val resource = new ClassPathResource("/labeled/");
         resource.copyDirectory(dir);
 
@@ -69,9 +71,9 @@ public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
 
     @Test
-    public void testExtractLabelFromPath2() throws Exception {
-        val dir0 = testDir.newFolder();
-        val dir1 = testDir.newFolder();
+    public void testExtractLabelFromPath2(@TempDir Path testDir) throws Exception {
+        val dir0 = new File(testDir.toFile(),"dir-0");
+        val dir1 = new File(testDir.toFile(),"dir-1");
         val resource = new ClassPathResource("/labeled/");
         val resource2 = new ClassPathResource("/rootdir/");
         resource.copyDirectory(dir0);

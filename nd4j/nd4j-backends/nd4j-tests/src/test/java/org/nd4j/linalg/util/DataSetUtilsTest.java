@@ -21,10 +21,11 @@
 package org.nd4j.linalg.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -32,7 +33,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.tools.SIS;
 
-import static org.junit.Assert.assertTrue;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class DataSetUtilsTest extends BaseNd4jTest {
@@ -47,19 +50,18 @@ public class DataSetUtilsTest extends BaseNd4jTest {
 	}
 
 	//
-	@Rule
-	public TemporaryFolder tmpFld = new TemporaryFolder();
+
 	//
 	private SIS sis;
 	//
 	@Test
-	public void testAll() {
+	public void testAll(@TempDir Path tmpFld) {
 		//
 		sis = new SIS();
 		//
 		int mtLv = 0;
 		//
-		sis.initValues( mtLv, "TEST", System.out, System.err, tmpFld.getRoot().getAbsolutePath(), "Test", "ABC", true, true );
+		sis.initValues( mtLv, "TEST", System.out, System.err, tmpFld.toAbsolutePath().toString(), "Test", "ABC", true, true );
 		//
 		INDArray in_INDA = Nd4j.zeros( 8, 8 );
 		INDArray ot_INDA = Nd4j.ones( 8, 1 );
@@ -88,7 +90,7 @@ public class DataSetUtilsTest extends BaseNd4jTest {
 		//
 	}
 	
-	@After
+	@AfterEach
 	public void after() {
 		//
 		int mtLv = 0;

@@ -23,7 +23,7 @@ package org.deeplearning4j.datasets;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.fetchers.Cifar10Fetcher;
 import org.deeplearning4j.datasets.fetchers.TinyImageNetFetcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestDataSets extends BaseDL4JTest {
 

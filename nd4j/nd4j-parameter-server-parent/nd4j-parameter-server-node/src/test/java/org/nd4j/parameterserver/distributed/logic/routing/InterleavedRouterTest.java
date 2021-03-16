@@ -20,11 +20,11 @@
 
 package org.nd4j.parameterserver.distributed.logic.routing;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -36,16 +36,16 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 @Deprecated
 public class InterleavedRouterTest extends BaseND4JTest {
     VoidConfiguration configuration;
     Transport transport;
     long originator;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         configuration = VoidConfiguration.builder()
                         .shardAddresses(Arrays.asList("1.2.3.4", "2.3.4.5", "3.4.5.6", "4.5.6.7")).numberOfShards(4) // we set it manually here
@@ -56,8 +56,7 @@ public class InterleavedRouterTest extends BaseND4JTest {
         originator = HashUtil.getLongHash(transport.getIp() + ":" + transport.getPort());
     }
 
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(30);
+
 
     /**
      * Testing default assignment for everything, but training requests

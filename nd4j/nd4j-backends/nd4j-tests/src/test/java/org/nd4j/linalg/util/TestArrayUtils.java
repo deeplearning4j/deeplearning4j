@@ -20,14 +20,14 @@
 
 package org.nd4j.linalg.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestArrayUtils extends BaseNd4jTest {
 
@@ -196,7 +196,7 @@ public class TestArrayUtils extends BaseNd4jTest {
             fail("Expected exception");
         } catch (Exception e){
             String msg = e.getMessage();
-            assertTrue(msg, msg.contains("Ragged array detected"));
+            assertTrue(msg.contains("Ragged array detected"),msg);
         }
     }
 

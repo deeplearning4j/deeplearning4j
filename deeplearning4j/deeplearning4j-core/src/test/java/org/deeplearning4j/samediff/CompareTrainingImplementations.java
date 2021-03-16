@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -53,8 +53,8 @@ import org.nd4j.weightinit.impl.XavierInitScheme;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
 public class CompareTrainingImplementations extends BaseDL4JTest {
@@ -181,7 +181,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 INDArray outSd = map.get(a1.name());
                 INDArray outDl4j = net.output(f);
 
-                assertEquals(testName, outDl4j, outSd);
+                assertEquals(outDl4j, outSd, testName);
 
                 net.setInput(f);
                 net.setLabels(l);
@@ -193,7 +193,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 //Check score
                 double scoreDl4j = net.score();
                 double scoreSd = map.get(lossMse.name()).getDouble(0) + sd.calcRegularizationScore();
-                assertEquals(testName, scoreDl4j, scoreSd, 1e-6);
+                assertEquals( scoreDl4j, scoreSd, 1e-6,testName);
 
                 double lossRegScoreSD = sd.calcRegularizationScore();
                 double lossRegScoreDL4J = net.calcRegularizationScore(true);
@@ -207,10 +207,10 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added in fitting only
                 //We can check correctness though with training param checks later
                 if(l1Val == 0 && l2Val == 0 && wdVal == 0) {
-                    assertEquals(testName, grads.get("1_b"), gm.get(b1.name()));
-                    assertEquals(testName, grads.get("1_W"), gm.get(w1.name()));
-                    assertEquals(testName, grads.get("0_b"), gm.get(b0.name()));
-                    assertEquals(testName, grads.get("0_W"), gm.get(w0.name()));
+                    assertEquals(grads.get("1_b"), gm.get(b1.name()), testName);
+                    assertEquals(grads.get("1_W"), gm.get(w1.name()), testName);
+                    assertEquals(grads.get("0_b"), gm.get(b0.name()), testName);
+                    assertEquals(grads.get("0_W"), gm.get(w0.name()), testName);
                 }
 
 
@@ -237,10 +237,10 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                     String s = testName + " - " + j;
                     INDArray dl4j_0W = net.getParam("0_W");
                     INDArray sd_0W = w0.getArr();
-                    assertEquals(s, dl4j_0W, sd_0W);
-                    assertEquals(s, net.getParam("0_b"), b0.getArr());
-                    assertEquals(s, net.getParam("1_W"), w1.getArr());
-                    assertEquals(s, net.getParam("1_b"), b1.getArr());
+                    assertEquals(dl4j_0W, sd_0W, s);
+                    assertEquals(net.getParam("0_b"), b0.getArr(), s);
+                    assertEquals(net.getParam("1_W"), w1.getArr(), s);
+                    assertEquals(net.getParam("1_b"), b1.getArr(), s);
                 }
 
                 //Compare evaluations

@@ -23,10 +23,11 @@ package org.nd4j.common.resources;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
@@ -36,14 +37,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-@Ignore
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+@Disabled
 public class TestStrumpf {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
 /*    @Test
     public void testResolvingReference() throws Exception {
@@ -80,9 +81,9 @@ public class TestStrumpf {
     }
 
     @Test
-    public void testResolveLocal() throws Exception {
+    public void testResolveLocal(@TempDir Path testDir) throws Exception {
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
 
         String content = "test file content";
         String path = "myDir/myTestFile.txt";

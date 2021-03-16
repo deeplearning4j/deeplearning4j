@@ -21,9 +21,9 @@
 package org.nd4j.linalg.ops;
 
 import org.apache.commons.math3.util.FastMath;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -42,7 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @RunWith(Parameterized.class)
@@ -58,12 +58,12 @@ public class DerivativeTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(this.initialType);
     }
@@ -257,7 +257,7 @@ public class DerivativeTests extends BaseNd4jTest {
             if (d1 == 0.0 && d2 == 0.0)
                 relError = 0.0;
             String str = "exp=" + expOut[i] + ", act=" + zPrime.getDouble(i) + "; relError = " + relError;
-            assertTrue(str, relError < REL_ERROR_TOLERANCE);
+            assertTrue(relError < REL_ERROR_TOLERANCE,str);
         }
     }
 

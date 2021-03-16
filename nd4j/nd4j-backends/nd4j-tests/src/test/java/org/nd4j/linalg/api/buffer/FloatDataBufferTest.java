@@ -24,8 +24,9 @@ import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -40,8 +41,9 @@ import org.nd4j.common.util.SerializationUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Float data buffer tests
@@ -51,11 +53,8 @@ import static org.junit.Assert.*;
  *
  * @author Adam Gibson
  */
-@Ignore("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+@Disabled("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
 public class FloatDataBufferTest extends BaseNd4jTest {
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     DataType initialType;
 
@@ -64,13 +63,13 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         initialType = Nd4j.dataType();
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         System.out.println("DATATYPE HERE: " + Nd4j.dataType());
     }
 
-    @After
+    @AfterEach
     public void after() {
         DataTypeUtil.setDTypeForContext(initialType);
     }
@@ -90,15 +89,15 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
-        assertArrayEquals(getFailureMessage(), d1, d2, 1e-1f);
+        assertArrayEquals( d1, d2, 1e-1f,getFailureMessage());
 
     }
 
 
 
     @Test
-    public void testSerialization() throws Exception {
-        File dir = testDir.newFolder();
+    public void testSerialization(@TempDir Path tempDir) throws Exception {
+        File dir = tempDir.toFile();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
         File file = new File(dir, fileName);
@@ -144,7 +143,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         d.put(0, 0.0);
         float[] result = new float[] {0, 2, 3, 4};
         d1 = d.asFloat();
-        assertArrayEquals(getFailureMessage(), d1, result, 1e-1f);
+        assertArrayEquals(d1, result, 1e-1f,getFailureMessage());
     }
 
 
@@ -153,12 +152,12 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[] {1, 2, 3};
-        assertArrayEquals(getFailureMessage(), get, data, 1e-1f);
+        assertArrayEquals(get, data, 1e-1f,getFailureMessage());
 
 
         float[] get2 = buffer.asFloat();
         float[] allData = buffer.getFloatsAt(0, (int) buffer.length());
-        assertArrayEquals(getFailureMessage(), get2, allData, 1e-1f);
+        assertArrayEquals(get2, allData, 1e-1f,getFailureMessage());
 
 
     }
@@ -169,13 +168,13 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[] {2, 3, 4};
-        assertArrayEquals(getFailureMessage(), get, data, 1e-1f);
+        assertArrayEquals(get, data, 1e-1f,getFailureMessage());
 
 
         float[] allButLast = new float[] {2, 3, 4, 5};
 
         float[] allData = buffer.getFloatsAt(1, (int) buffer.length());
-        assertArrayEquals(getFailureMessage(), allButLast, allData, 1e-1f);
+        assertArrayEquals(allButLast, allData, 1e-1f,getFailureMessage());
 
 
     }
@@ -185,7 +184,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     public void testAsBytes() {
         INDArray arr = Nd4j.create(5);
         byte[] d = arr.data().asBytes();
-        assertEquals(getFailureMessage(), 4 * 5, d.length);
+        assertEquals(4 * 5, d.length,getFailureMessage());
         INDArray rand = Nd4j.rand(3, 3);
         rand.data().asBytes();
 
@@ -263,12 +262,12 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
 
         FloatPointer pointer = (FloatPointer) wrappedBuffer.addressPointer();
-        Assert.assertEquals(buffer.getFloat(1), pointer.get(0), 1e-1);
-        Assert.assertEquals(buffer.getFloat(2), pointer.get(1), 1e-1);
+        assertEquals(buffer.getFloat(1), pointer.get(0), 1e-1);
+        assertEquals(buffer.getFloat(2), pointer.get(1), 1e-1);
 
         try {
             pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
-            Assert.fail("Accessing this address should not be allowed!");
+            fail("Accessing this address should not be allowed!");
         } catch (IndexOutOfBoundsException e) {
             // do nothing
         }

@@ -22,8 +22,10 @@ package org.deeplearning4j.models.embeddings.inmemory;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+
+
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -35,25 +37,25 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 
 import java.io.File;
+import java.nio.file.Path;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class InMemoryLookupTableTest extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(300000)
     public void testConsumeOnEqualVocabs() throws Exception {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -80,14 +82,14 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
         assertEquals(244, cacheSource.numWords());
 
         InMemoryLookupTable<VocabWord> mem1 =
-                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
-                                        .cache(cacheSource).seed(17).build();
+                new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                .cache(cacheSource).seed(17).build();
 
         mem1.resetWeights(true);
 
         InMemoryLookupTable<VocabWord> mem2 =
-                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
-                                        .cache(cacheSource).seed(15).build();
+                new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                .cache(cacheSource).seed(15).build();
 
         mem2.resetWeights(true);
 
@@ -100,8 +102,9 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 300000)
-    public void testConsumeOnNonEqualVocabs() throws Exception {
+    @Test()
+    @Timeout(300000)
+    public void testConsumeOnNonEqualVocabs(@TempDir Path testDir) throws Exception {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
@@ -127,8 +130,8 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
         assertEquals(244, cacheSource.numWords());
 
         InMemoryLookupTable<VocabWord> mem1 =
-                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
-                                        .cache(cacheSource).build();
+                new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                .cache(cacheSource).build();
 
         mem1.resetWeights(true);
 
@@ -137,7 +140,7 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
         AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
 
-        val dir = testDir.newFolder();
+        val dir = testDir.toFile();
         new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()

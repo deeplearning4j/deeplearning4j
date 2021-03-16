@@ -36,7 +36,7 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.scoring.VaeReconstructionErrorWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.VaeReconstructionProbWithKeyFunction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -49,8 +49,8 @@ import scala.Tuple2;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestMiscFunctions extends BaseSparkTest {
 

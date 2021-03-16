@@ -20,9 +20,9 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(Parameterized.class)
 public class DataTypeValidationTests extends BaseNd4jTest {
@@ -39,13 +41,13 @@ public class DataTypeValidationTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         initialType = Nd4j.dataType();
         Nd4j.setDataType(DataType.FLOAT);
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         Nd4j.setDataType(initialType);
     }
@@ -70,44 +72,53 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     /**
      * Testing level1 blas
      */
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testBlasValidation1() {
-        INDArray x = Nd4j.create(10);
+       assertThrows(ND4JIllegalStateException.class,() -> {
+           INDArray x = Nd4j.create(10);
 
-        Nd4j.setDataType(DataType.DOUBLE);
+           Nd4j.setDataType(DataType.DOUBLE);
 
-        INDArray y = Nd4j.create(10);
+           INDArray y = Nd4j.create(10);
 
-        Nd4j.getBlasWrapper().dot(x, y);
+           Nd4j.getBlasWrapper().dot(x, y);
+       });
+
     }
 
     /**
      * Testing level2 blas
      */
-    @Test(expected = RuntimeException.class)
+    @Test()
     public void testBlasValidation2() {
-        INDArray a = Nd4j.create(100, 10);
-        INDArray x = Nd4j.create(100);
+        assertThrows(RuntimeException.class,() -> {
+            INDArray a = Nd4j.create(100, 10);
+            INDArray x = Nd4j.create(100);
 
-        Nd4j.setDataType(DataType.DOUBLE);
+            Nd4j.setDataType(DataType.DOUBLE);
 
-        INDArray y = Nd4j.create(100);
+            INDArray y = Nd4j.create(100);
 
-        Nd4j.getBlasWrapper().gemv(1.0, a, x, 1.0, y);
+            Nd4j.getBlasWrapper().gemv(1.0, a, x, 1.0, y);
+        });
+
     }
 
     /**
      * Testing level3 blas
      */
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void testBlasValidation3() {
-        INDArray x = Nd4j.create(100, 100);
+       assertThrows(IllegalStateException.class,() -> {
+           INDArray x = Nd4j.create(100, 100);
 
-        Nd4j.setDataType(DataType.DOUBLE);
+           Nd4j.setDataType(DataType.DOUBLE);
 
-        INDArray y = Nd4j.create(100, 100);
+           INDArray y = Nd4j.create(100, 100);
 
-        x.mmul(y);
+           x.mmul(y);
+       });
+
     }
 
 

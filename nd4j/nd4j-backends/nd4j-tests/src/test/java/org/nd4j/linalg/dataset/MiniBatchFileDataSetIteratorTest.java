@@ -20,23 +20,24 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @RunWith(Parameterized.class)
 public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     public MiniBatchFileDataSetIteratorTest(Nd4jBackend backend) {
         super(backend);
@@ -44,9 +45,9 @@ public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
 
 
     @Test
-    public void testMiniBatches() throws Exception {
+    public void testMiniBatches(@TempDir Path testDir) throws Exception {
         DataSet load = new IrisDataSetIterator(150, 150).next();
-        final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load, 10, false, testDir.newFolder());
+        final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load, 10, false, testDir.toFile());
         while (iter.hasNext())
             assertEquals(10, iter.next().numExamples());
         if (iter.getRootDir() == null)

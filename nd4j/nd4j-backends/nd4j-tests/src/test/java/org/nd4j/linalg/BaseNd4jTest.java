@@ -21,7 +21,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.common.config.ND4JClassLoading;
@@ -81,7 +81,7 @@ public abstract class BaseNd4jTest extends BaseND4JTest {
         return ret;
     }
 
-    @Before
+    @BeforeEach
     public void beforeTest2(){
         Nd4j.factory().setOrder(ordering());
     }

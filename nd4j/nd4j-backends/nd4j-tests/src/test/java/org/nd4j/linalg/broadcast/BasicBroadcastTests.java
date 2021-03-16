@@ -22,7 +22,8 @@ package org.nd4j.linalg.broadcast;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,8 +37,9 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -130,46 +132,60 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         assertEquals(e, z);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void basicBroadcastFailureTest_1() {
-        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
-        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
-        val z = x.subi(y);
+        assertThrows(IllegalStateException.class,() -> {
+            val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+            val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+            val z = x.subi(y);
+        });
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void basicBroadcastFailureTest_2() {
-        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
-        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
-        val z = x.divi(y);
+        assertThrows(IllegalStateException.class,() -> {
+            val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+            val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+            val z = x.divi(y);
+        });
+
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void basicBroadcastFailureTest_3() {
-        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
-        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
-        val z = x.muli(y);
+        assertThrows(IllegalStateException.class, () -> {
+            val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+            val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+            val z = x.muli(y);
+        });
+
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void basicBroadcastFailureTest_4() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
         val z = x.addi(y);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void basicBroadcastFailureTest_5() {
-        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
-        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
-        val z = x.rsubi(y);
+        assertThrows(IllegalStateException.class,() -> {
+            val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+            val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+            val z = x.rsubi(y);
+        });
+
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void basicBroadcastFailureTest_6() {
-        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
-        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
-        val z = x.rdivi(y);
+        assertThrows(IllegalStateException.class,() -> {
+            val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+            val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+            val z = x.rdivi(y);
+        });
+
     }
 
     @Test
@@ -214,13 +230,14 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         assertEquals(y, z);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void emptyBroadcastTest_2() {
         val x = Nd4j.create(DataType.FLOAT, 1, 2);
         val y = Nd4j.create(DataType.FLOAT, 0, 2);
 
         val z = x.addi(y);
         assertEquals(y, z);
+
     }
 
     @Test
@@ -246,7 +263,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             x.addi(y);
         } catch (Exception e){
             String s = e.getMessage();
-            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+            assertTrue(s.contains("broadcast") && s.contains("shape"),s);
         }
 
         x.sub(y);
@@ -255,7 +272,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             x.subi(y);
         } catch (Exception e){
             String s = e.getMessage();
-            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+            assertTrue(s.contains("broadcast") && s.contains("shape"),s);
         }
 
         x.mul(y);
@@ -264,7 +281,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             x.muli(y);
         } catch (Exception e){
             String s = e.getMessage();
-            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+            assertTrue(s.contains("broadcast") && s.contains("shape"),s);
         }
 
         x.div(y);
@@ -273,7 +290,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             x.divi(y);
         } catch (Exception e){
             String s = e.getMessage();
-            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+            assertTrue(s.contains("broadcast") && s.contains("shape"),s);
         }
 
         x.rsub(y);
@@ -282,7 +299,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             x.rsubi(y);
         } catch (Exception e){
             String s = e.getMessage();
-            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+            assertTrue(s.contains("broadcast") && s.contains("shape"),s);
         }
 
         x.rdiv(y);
@@ -291,7 +308,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             x.rdivi(y);
         } catch (Exception e){
             String s = e.getMessage();
-            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+            assertTrue(s.contains("broadcast") && s.contains("shape"),s);
         }
     }
 

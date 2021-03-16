@@ -21,8 +21,8 @@
 package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -49,11 +49,11 @@ import java.io.File;
 import java.net.URL;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@Ignore("AB 2019/05/21 - JVM Crash on linux-x86_64-cuda-9.2, linux-ppc64le-cpu - Issue #7657")
+@Disabled("AB 2019/05/21 - JVM Crash on linux-x86_64-cuda-9.2, linux-ppc64le-cpu - Issue #7657")
 public class BERTGraphTest extends BaseNd4jTest {
 
     public BERTGraphTest(Nd4jBackend b){
@@ -156,7 +156,7 @@ public class BERTGraphTest extends BaseNd4jTest {
 
         List<SubGraph> subGraphs = GraphTransformUtil.getSubgraphsMatching(sd, p);
         int subGraphCount = subGraphs.size();
-        assertTrue("Subgraph count: " + subGraphCount, subGraphCount > 0);
+        assertTrue(subGraphCount > 0,"Subgraph count: " + subGraphCount);
 
 
         /*
@@ -274,7 +274,7 @@ public class BERTGraphTest extends BaseNd4jTest {
         assertEquals(exp3, softmax.getRow(3));
     }
 
-    @Test //@Ignore   //AB ignored 08/04/2019 until fixed
+    @Test //@Disabled   //AB ignored 08/04/2019 until fixed
     public void testBertTraining() throws Exception {
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
@@ -413,10 +413,10 @@ public class BERTGraphTest extends BaseNd4jTest {
         double scoreAfter = lossArr.getDouble(0);
 
         String s = "Before: " + scoreBefore + "; after: " + scoreAfter;
-        assertTrue(s, scoreAfter < scoreBefore);
+        assertTrue( scoreAfter < scoreBefore,s);
     }
 
-    @Test @Ignore
+    @Test @Disabled
     public void writeBertUI() throws Exception {
         //Test used to generate graph for visualization to work out appropriate subgraph structure to replace
         File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");

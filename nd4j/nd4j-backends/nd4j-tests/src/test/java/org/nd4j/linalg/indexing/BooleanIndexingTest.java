@@ -21,7 +21,7 @@
 package org.nd4j.linalg.indexing;
 
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -41,7 +41,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(Parameterized.class)
 public class BooleanIndexingTest extends BaseNd4jTest {

@@ -24,10 +24,10 @@ import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,11 +35,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Slf4j
 @NotThreadSafe
-@Ignore("Tests are too flaky")
+@Disabled("Tests are too flaky")
 public class LargeNdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private Aeron.Context ctx;
@@ -52,7 +52,7 @@ public class LargeNdArrayIpcTest extends BaseND4JTest {
         return 180000L;
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         if(isIntegrationTests()) {
             //MediaDriver.loadPropertiesFile("aeron.properties");
@@ -63,7 +63,7 @@ public class LargeNdArrayIpcTest extends BaseND4JTest {
         }
     }
 
-    @After
+    @AfterEach
     public void after() {
         if(isIntegrationTests()) {
             CloseHelper.quietClose(mediaDriver);
@@ -71,7 +71,7 @@ public class LargeNdArrayIpcTest extends BaseND4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testMultiThreadedIpcBig() throws Exception {
         skipUnlessIntegrationTests();   //Long-running test - don't run as part of unit tests by default
 

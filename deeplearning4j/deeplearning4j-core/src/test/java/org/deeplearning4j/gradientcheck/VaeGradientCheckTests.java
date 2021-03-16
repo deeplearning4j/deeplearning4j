@@ -29,7 +29,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -43,7 +43,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VaeGradientCheckTests extends BaseDL4JTest {
 
@@ -135,7 +135,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input,
                     labels);
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(mln);
         }
     }
@@ -207,7 +207,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
                     RETURN_ON_FIRST_FAILURE, input, 12345);
 
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(mln);
         }
     }
@@ -295,7 +295,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
                     data, 12345);
 
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(mln);
         }
     }
@@ -337,7 +337,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
                     features, 12345);
 
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(mln);
         }
     }

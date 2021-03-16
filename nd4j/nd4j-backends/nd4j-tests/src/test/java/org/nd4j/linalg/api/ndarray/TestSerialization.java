@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -30,7 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 public class TestSerialization extends BaseNd4jTest {

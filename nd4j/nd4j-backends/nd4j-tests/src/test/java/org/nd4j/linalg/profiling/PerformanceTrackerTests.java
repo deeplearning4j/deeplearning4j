@@ -22,10 +22,10 @@ package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,8 +36,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -46,13 +46,13 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.BANDWIDTH);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
@@ -107,7 +107,7 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testTrackerCpu_1() {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("native"))
             return;
@@ -125,7 +125,7 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore("useless these days")
+    @Disabled("useless these days")
     public void testTrackerGpu_1() {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;

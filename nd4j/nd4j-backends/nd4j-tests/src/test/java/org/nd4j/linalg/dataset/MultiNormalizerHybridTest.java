@@ -20,8 +20,8 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -30,7 +30,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerHybrid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 public class MultiNormalizerHybridTest extends BaseNd4jTest {
@@ -38,7 +38,7 @@ public class MultiNormalizerHybridTest extends BaseNd4jTest {
     private MultiDataSet data;
     private MultiDataSet dataCopy;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         SUT = new MultiNormalizerHybrid();
         data = new MultiDataSet(

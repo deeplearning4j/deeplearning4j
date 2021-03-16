@@ -21,7 +21,7 @@
 package org.nd4j.linalg.custom
 
 import junit.framework.Assert.assertEquals
-import org.junit.Ignore
+import org.junit.jupiter.api.Disabled
 import org.junit.Test
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.impl.image.CropAndResize
@@ -34,7 +34,7 @@ import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner
 class CustomOpTensorflowInteropTests {
 
     @Test
-    @Ignore("Tensorflow expects different shape")
+    @Disabled("Tensorflow expects different shape")
     fun testCropAndResize() {
         val image = Nd4j.createUninitialized(DataType.FLOAT, 1, 2, 2, 1)
         val boxes = Nd4j.createFromArray(*floatArrayOf(1f, 2f, 3f, 4f)).reshape(1, 4)

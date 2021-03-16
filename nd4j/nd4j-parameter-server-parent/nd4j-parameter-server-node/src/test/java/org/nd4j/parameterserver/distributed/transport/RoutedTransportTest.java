@@ -20,10 +20,7 @@
 
 package org.nd4j.parameterserver.distributed.transport;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -37,17 +34,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 @Deprecated
 public class RoutedTransportTest extends BaseND4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
@@ -58,7 +55,8 @@ public class RoutedTransportTest extends BaseND4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 30000)
+    @Test()
+    @Timeout(30000)
     public void testMessaging1() throws Exception {
 
         List<String> list = new ArrayList<>();

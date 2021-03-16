@@ -29,17 +29,19 @@ import org.deeplearning4j.graph.data.impl.DelimitedVertexLoader;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestGraphLoading extends BaseDL4JTest {
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testEdgeListGraphLoading() throws IOException {
         ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/testgraph_7vertices.txt");
 
@@ -59,7 +61,8 @@ public class TestGraphLoading extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testGraphLoading() throws IOException {
 
         ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/simplegraph.txt");
@@ -102,7 +105,8 @@ public class TestGraphLoading extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testGraphLoadingWithVertices() throws IOException {
 
         ClassPathResource verticesCPR = new ClassPathResource("deeplearning4j-graph/test_graph_vertices.txt");

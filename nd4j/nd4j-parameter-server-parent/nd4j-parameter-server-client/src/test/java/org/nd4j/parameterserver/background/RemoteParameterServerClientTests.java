@@ -26,10 +26,7 @@ import io.aeron.driver.ThreadingMode;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,7 +35,7 @@ import org.nd4j.parameterserver.client.ParameterServerClient;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class RemoteParameterServerClientTests extends BaseND4JTest {
@@ -49,7 +46,7 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
     private AtomicInteger slaveStatus = new AtomicInteger(0);
     private Aeron aeron;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         final MediaDriver.Context ctx =
                         new MediaDriver.Context().threadingMode(ThreadingMode.DEDICATED).dirDeleteOnStart(true)
@@ -86,13 +83,15 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
     }
 
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         CloseHelper.close(mediaDriver);
         CloseHelper.close(aeron);
     }
 
-    @Test(timeout = 60000L) @Ignore //AB 20200425 https://github.com/eclipse/deeplearning4j/issues/8882
+    @Test()
+    @Timeout(60000L)
+    @Disabled //AB 20200425 https://github.com/eclipse/deeplearning4j/issues/8882
     public void remoteTests() throws Exception {
         if (masterStatus.get() != 0 || slaveStatus.get() != 0)
             throw new IllegalStateException("Master or slave failed to start. Exiting");

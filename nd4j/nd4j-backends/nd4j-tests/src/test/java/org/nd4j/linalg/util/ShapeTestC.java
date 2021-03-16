@@ -22,7 +22,7 @@ package org.nd4j.linalg.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -34,8 +34,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Gibson
@@ -186,14 +185,17 @@ public class ShapeTestC extends BaseNd4jTest {
         assertArrayEquals(exp, norm);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test()
     public void testAxisNormalization_3() {
-        val axis = new int[] {1, -2, 2};
-        val rank = 2;
-        val exp = new int[] {0, 1};
+       assertThrows(ND4JIllegalStateException.class,() -> {
+           val axis = new int[] {1, -2, 2};
+           val rank = 2;
+           val exp = new int[] {0, 1};
 
-        val norm = Shape.normalizeAxis(rank, axis);
-        assertArrayEquals(exp, norm);
+           val norm = Shape.normalizeAxis(rank, axis);
+           assertArrayEquals(exp, norm);
+       });
+
     }
 
     @Test

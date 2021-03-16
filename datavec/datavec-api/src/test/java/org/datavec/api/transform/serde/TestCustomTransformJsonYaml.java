@@ -26,10 +26,10 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.serde.testClasses.CustomCondition;
 import org.datavec.api.transform.serde.testClasses.CustomFilter;
 import org.datavec.api.transform.serde.testClasses.CustomTransform;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestCustomTransformJsonYaml extends BaseND4JTest {
 

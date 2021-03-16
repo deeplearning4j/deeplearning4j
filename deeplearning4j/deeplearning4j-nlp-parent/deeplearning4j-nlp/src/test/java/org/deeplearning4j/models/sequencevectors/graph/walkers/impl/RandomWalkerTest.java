@@ -31,12 +31,12 @@ import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFact
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RandomWalkerTest extends BaseDL4JTest {
 
@@ -46,7 +46,7 @@ public class RandomWalkerTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(RandomWalkerTest.class);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         if (graph == null) {
             graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());

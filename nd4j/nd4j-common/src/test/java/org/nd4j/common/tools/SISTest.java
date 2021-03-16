@@ -20,30 +20,31 @@
 
 package org.nd4j.common.tools;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tools.SIS;
 
-import static org.junit.Assert.*;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SISTest {
 	//
-	@Rule
-	public TemporaryFolder tmpFld = new TemporaryFolder();
 	//
 	private SIS sis;
 	//
 	
 	@Test
-	public void testAll() throws Exception {
+	public void testAll(@TempDir Path tmpFld) throws Exception {
 		//
 		sis = new SIS();
 		//
 		int mtLv = 0;
 		//
-		sis.initValues( mtLv, "TEST", System.out, System.err, tmpFld.getRoot().getAbsolutePath(), "Test", "ABC", true, true );
+		sis.initValues( mtLv, "TEST", System.out, System.err, tmpFld.getRoot().toAbsolutePath().toString(), "Test", "ABC", true, true );
 		//
 		String fFName = sis.getfullFileName();
 		sis.info( fFName );
@@ -57,7 +58,7 @@ public class SISTest {
 		//
 	}
 	
-	@After
+	@AfterEach
 	public void after() {
 		//
 		int mtLv = 0;

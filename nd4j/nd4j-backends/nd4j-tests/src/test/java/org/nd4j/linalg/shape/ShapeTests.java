@@ -21,7 +21,7 @@
 package org.nd4j.linalg.shape;
 
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,7 +36,7 @@ import org.nd4j.common.primitives.Triple;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 /**
@@ -76,7 +76,7 @@ public class ShapeTests extends BaseNd4jTest {
 
         for (int i = 0; i < baseArr.tensorsAlongDimension(0, 1); i++) {
             INDArray test = baseArr.tensorAlongDimension(i, 0, 1);
-            assertEquals("Wrong at index " + i, assertions[i], test);
+            assertEquals(assertions[i], test,"Wrong at index " + i);
         }
 
     }
@@ -106,7 +106,7 @@ public class ShapeTests extends BaseNd4jTest {
 
         for (int i = 0; i < baseArr.tensorsAlongDimension(2); i++) {
             INDArray arr = baseArr.tensorAlongDimension(i, 2);
-            assertEquals("Failed at index " + i, assertions[i], arr);
+            assertEquals( assertions[i], arr,"Failed at index " + i);
         }
     }
 
@@ -207,7 +207,7 @@ public class ShapeTests extends BaseNd4jTest {
 
         for (int i = 0; i < baseArr.tensorsAlongDimension(1); i++) {
             INDArray arr = baseArr.tensorAlongDimension(i, 1);
-            assertEquals("Failed at index " + i, assertions[i], arr);
+            assertEquals( assertions[i], arr,"Failed at index " + i);
         }
 
     }

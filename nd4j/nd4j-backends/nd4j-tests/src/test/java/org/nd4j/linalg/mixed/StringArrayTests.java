@@ -23,14 +23,14 @@ package org.nd4j.linalg.mixed;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class StringArrayTests extends BaseNd4jTest {
@@ -55,7 +55,7 @@ public class StringArrayTests extends BaseNd4jTest {
 
         assertEquals("alpha", array.getString(0));
         String s = array.toString();
-        assertTrue(s, s.contains("alpha"));
+        assertTrue(s.contains("alpha"),s);
         System.out.println(s);
     }
 
@@ -72,9 +72,9 @@ public class StringArrayTests extends BaseNd4jTest {
         assertEquals("beta", array.getString(1));
         assertEquals("gamma", array.getString(2));
         String s = array.toString();
-        assertTrue(s, s.contains("alpha"));
-        assertTrue(s, s.contains("beta"));
-        assertTrue(s, s.contains("gamma"));
+        assertTrue(s.contains("alpha"),s);
+        assertTrue(s.contains("beta"),s);
+        assertTrue(s.contains("gamma"),s);
         System.out.println(s);
     }
 

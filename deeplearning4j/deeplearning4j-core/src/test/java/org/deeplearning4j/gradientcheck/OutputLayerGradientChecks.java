@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +42,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OutputLayerGradientChecks extends BaseDL4JTest {
 
@@ -149,7 +149,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
                         .labels(labels).labelMask(labelMask));
 
-                assertTrue(testName, gradOK);
+                assertTrue(gradOK, testName);
                 TestUtils.testModelSerialization(mln);
             }
         }
@@ -256,7 +256,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                     boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
                             .labels(labels).labelMask(labelMask));
 
-                    assertTrue(testName, gradOK);
+                    assertTrue(gradOK, testName);
                     TestUtils.testModelSerialization(mln);
                 }
             }
@@ -405,7 +405,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
                                 .labels(labels).labelMask(labelMask));
 
-                        assertTrue(testName, gradOK);
+                        assertTrue(gradOK, testName);
                         TestUtils.testModelSerialization(mln);
                     }
                 }

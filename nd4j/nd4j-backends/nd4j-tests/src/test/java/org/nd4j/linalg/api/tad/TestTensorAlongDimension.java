@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.tad;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -36,8 +36,8 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -126,7 +126,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             INDArray tadTest = arr.tensorAlongDimension(0, 0);
             assertEquals(javaTad, tadTest);
             //Along dimension 0: expect row vector with length 'rows'
-            assertEquals("Failed on " + p.getValue(), cols * dim2, arr.tensorsAlongDimension(0));
+            assertEquals(cols * dim2, arr.tensorsAlongDimension(0),"Failed on " + p.getValue());
             for (int i = 0; i < cols * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0);
                 assertArrayEquals(new long[] {rows}, tad.shape());

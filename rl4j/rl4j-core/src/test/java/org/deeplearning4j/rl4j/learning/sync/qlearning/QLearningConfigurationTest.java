@@ -22,13 +22,10 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import org.junit.jupiter.api.Test;
 
 public class QLearningConfigurationTest {
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void serialize() throws Exception {
