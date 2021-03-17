@@ -42,9 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LeadingAndTrailingOnes extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceConstructor(Nd4jBackend backend) {
         List<INDArray> testList = new ArrayList<>();
         for (int i = 0; i < 5; i++)
@@ -55,9 +54,8 @@ public class LeadingAndTrailingOnes extends BaseNd4jTestWithBackends {
         assertEquals(expected, test);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeadAndTrail(Nd4jBackend backend) {
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
         assertEquals(2, fourD.length());
@@ -66,9 +64,8 @@ public class LeadingAndTrailingOnes extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateLeadingAndTrailingOnes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 10, 1, 1);
         arr.assign(1);

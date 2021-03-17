@@ -39,9 +39,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static junit.framework.TestCase.assertNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class EvalJsonTest extends BaseNd4jTestWithBackends {
@@ -52,9 +50,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerdeEmpty(Nd4jBackend backend) {
         boolean print = false;
 
@@ -74,9 +71,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerde(Nd4jBackend backend) {
         boolean print = false;
         Nd4j.getRandom().setSeed(12345);
@@ -124,9 +120,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerdeExactRoc(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         boolean print = false;
@@ -204,9 +199,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJsonYamlCurves(Nd4jBackend backend) {
         ROC roc = new ROC(0);
 
@@ -258,9 +252,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
 
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJsonWithCustomThreshold(Nd4jBackend backend) {
 
         //Evaluation - binary threshold

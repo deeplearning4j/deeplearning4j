@@ -42,9 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BalanceMinibatchesTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBalance(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         DataSetIterator iterator = new IrisDataSetIterator(10, 150);
 
@@ -61,9 +60,8 @@ public class BalanceMinibatchesTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMiniBatchBalanced(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         int miniBatchSize = 100;

@@ -55,7 +55,6 @@ public class TestSimpleRnn extends BaseDL4JTest {
         return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testSimpleRnn(RNNFormat rnnDataFormat) {
@@ -126,7 +125,6 @@ public class TestSimpleRnn extends BaseDL4JTest {
         TestUtils.testModelSerialization(net);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testBiasInit(RNNFormat rnnDataFormat) {

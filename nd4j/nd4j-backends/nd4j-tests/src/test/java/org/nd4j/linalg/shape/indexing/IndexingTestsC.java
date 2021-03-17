@@ -48,9 +48,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecSubArray(Nd4jBackend backend) {
         INDArray nd = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new int[] {2, 3});
 
@@ -61,9 +60,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinearViewElementWiseMatching(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray dup = linspace.dup();
@@ -71,9 +69,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRows(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray testAssertion = Nd4j.create(new double[][] {{4, 5}, {7, 8}});
@@ -83,9 +80,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFirstColumn(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[][] {{5, 7}, {6, 8}});
 
@@ -94,9 +90,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, test);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiRow(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray assertion = Nd4j.create(new double[][] {{4, 7}});
@@ -105,9 +100,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, test);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPointIndexes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(DataType.DOUBLE, 4, 3, 2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
@@ -124,9 +118,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, linspacedGet);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetWithVariedStride(Nd4jBackend backend) {
         int ph = 0;
         int pw = 0;
@@ -176,9 +169,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowVectorInterval(Nd4jBackend backend) {
         int len = 30;
         INDArray row = Nd4j.zeros(1, len);
@@ -207,9 +199,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
             assertTrue(last10b.getDouble(i) == 20 + i);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test1dSubarray_1(Nd4jBackend backend) {
         val data = Nd4j.linspace(DataType.FLOAT,0, 10, 1);
         val exp = Nd4j.createFromArray(new float[]{3.f, 4.f});
@@ -218,9 +209,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, dataAtIndex);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test1dSubarray_2(Nd4jBackend backend) {
         val data = Nd4j.linspace(DataType.FLOAT,1, 10, 1);
         val exp = Nd4j.createFromArray(new float[]{4.f, 6.f});
@@ -229,9 +219,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, dataAtIndex);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGet(Nd4jBackend backend) {
 //        System.out.println("Testing sub-array put and get with a 3D array ...");
 
@@ -288,9 +277,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 //        System.out.println("... done");
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimplePoint(Nd4jBackend backend) {
         INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
 
@@ -316,9 +304,8 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         This is the same as the above test - just tests every possible window with a slice from the 0th dim
         They all fail - so it's possibly unrelated to the value of the index
      */
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPointIndexing(Nd4jBackend backend) {
         int slices = 5;
         int rows = 5;

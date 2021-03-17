@@ -48,9 +48,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         sameDiff = SameDiff.create();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCholesky(Nd4jBackend backend) {
         INDArray input = Nd4j.createFromArray(
                 new float[]{
@@ -73,9 +72,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, out.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLstsq() {
         INDArray a = Nd4j.createFromArray(new float[]{
                 1.f,    2.f,    3.f, 4.f,
@@ -97,9 +95,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLu() {
         SDVariable sdInput = sameDiff.var(Nd4j.createFromArray(new double[]{
                 1., 2., 3., 0., 2., 3., 0., 0., 7.
@@ -113,9 +110,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, out.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrixBandPart() {
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*3*3).reshape(2,3,3);
         INDArray expected = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*3*3).reshape(2,3,3);
@@ -125,9 +121,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(x.shape(), res[0].eval().shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testQr() {
         INDArray input = Nd4j.createFromArray(new double[]{
                 12.,  -51.,    4.,
@@ -159,9 +154,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(input, mmulResult.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSolve() {
         INDArray a = Nd4j.createFromArray(new float[] {
                 2.f, -1.f, -2.f, -4.f, 6.f, 3.f, -4.f, -2.f, 8.f
@@ -182,9 +176,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriangularSolve() {
         INDArray a = Nd4j.createFromArray(new float[] {
                 0.7788f,    0.8012f,    0.7244f,
@@ -211,9 +204,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCross() {
         INDArray a = Nd4j.createFromArray(new double[]{1, 2, 3});
         INDArray b = Nd4j.createFromArray(new double[]{6, 7, 8});
@@ -226,9 +218,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiag() {
         INDArray x = Nd4j.createFromArray(new double[]{1,2});
         INDArray expected = Nd4j.createFromArray(new double[]{1,0,0,2}).reshape(2,2);
@@ -239,9 +230,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiagPart() {
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4).reshape(2,2);
         INDArray expected = Nd4j.createFromArray(new double[]{1,4});
@@ -252,9 +242,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogdet() {
         INDArray x = Nd4j.createFromArray(new double[]{
                 4,12,-16,12,37,-43,-16,-43,98, 4,1.2,-1.6,1.2,3.7,-4.3,-1.6,-4.3,9.8
@@ -267,9 +256,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSvd() {
         INDArray x = Nd4j.createFromArray(new double[]{
                 0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f,0.50563407f, 0.89252293f, 0.5461209f
@@ -281,9 +269,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals(expected, res.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogdetName() {
         INDArray x = Nd4j.createFromArray(new double[]{
                 4,12,-16,12,37,-43,-16,-43,98, 4,1.2,-1.6,1.2,3.7,-4.3,-1.6,-4.3,9.8
@@ -295,9 +282,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         assertEquals("logdet", res.name());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testQrNames() {
         INDArray input = Nd4j.createFromArray(new double[]{
                 12.,  -51.,    4.,

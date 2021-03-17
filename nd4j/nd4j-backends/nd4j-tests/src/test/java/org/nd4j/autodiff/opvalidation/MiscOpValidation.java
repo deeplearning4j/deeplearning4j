@@ -74,17 +74,17 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assumptions.*;
 
 @Slf4j
 public class MiscOpValidation extends BaseOpValidation {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGradientAutoBroadcast1(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -171,9 +171,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGradientAutoBroadcast2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -262,9 +261,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGradientAutoBroadcast3(Nd4jBackend backend) {
         //These tests: output size > input sizes
 
@@ -372,9 +370,8 @@ public class MiscOpValidation extends BaseOpValidation {
         return Long.MAX_VALUE;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterOpGradients(Nd4jBackend backend) {
         List<String> failed = new ArrayList<>();
 
@@ -476,9 +473,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterUpdate(){
         INDArray x = Nd4j.linspace(DataType.FLOAT, 1, 30, 1).reshape(10, 3);
         INDArray updates = Nd4j.create(new float[][]{
@@ -499,9 +495,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGatherGradient(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -552,9 +547,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrace(){
         //TODO need to work out how to handle shape_op for scalars...
         //OpValidationSuite.ignoreFailing();
@@ -579,9 +573,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorGradTensorMmul(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
 
@@ -603,9 +596,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMulGradient(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray arr2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
@@ -670,9 +662,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulGradientManual(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
@@ -689,14 +680,14 @@ public class MiscOpValidation extends BaseOpValidation {
         }, inputs);
 
 
-        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
-        assumeNotNull(sameDiff.getFunction("mmulGradient").grad("x"));
-        assumeNotNull(sameDiff.getFunction("mmulGradient").grad("y"));
+        assertNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
+        assertNotNull(sameDiff.getFunction("mmulGradient").grad("x"));
+        assertNotNull(sameDiff.getFunction("mmulGradient").grad("y"));
 
         SDVariable gradWrtX = sameDiff.getFunction("mmulGradient").grad("x");
         SDVariable gradWrtY = sameDiff.getFunction("mmulGradient").grad("y");
-        assumeNotNull(gradWrtX.getArr());
-        assumeNotNull(gradWrtY.getArr());
+        assertNotNull(gradWrtX.getArr());
+        assertNotNull(gradWrtY.getArr());
 
 
         INDArray xGradAssertion = Nd4j.create(new double[][]{
@@ -713,9 +704,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(yGradAssertion, gradWrtY.getArr());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulGradients(){
         int[] aShape = new int[]{2,3};
         int[] bShape = new int[]{3,4};
@@ -766,9 +756,8 @@ public class MiscOpValidation extends BaseOpValidation {
         return new int[]{orig[1], orig[0]};
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBatchMmulBasic(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6873
         int M = 5;
@@ -793,9 +782,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulWithTranspose(Nd4jBackend backend) {
 
         //Here: [x,3]^T * [x,4] = [3,4]
@@ -832,9 +820,8 @@ public class MiscOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulOutputSizeCalculation(){
         //[3,2] x [2,4] with result transpose: output shape [4,3]
         INDArray a = Nd4j.create(3,2);
@@ -866,9 +853,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFillOp(){
 
         INDArray ia = Nd4j.createFromArray(new double[]{2,2}).castTo(DataType.INT);
@@ -882,9 +868,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClipByNorm(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
@@ -916,9 +901,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp, norm2_1b);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClipByNorm2(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
@@ -961,9 +945,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClipByNorm1(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
@@ -1003,9 +986,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClipByNorm0(){
         //Expected: if array.norm2(0) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
@@ -1034,9 +1016,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(OpValidation.validate(op));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumSum(){
 
         List<String> failing = new ArrayList<>();
@@ -1101,9 +1082,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumProd(){
         List<String> failing = new ArrayList<>();
 
@@ -1171,9 +1151,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(0, failing.size(),failing.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHot1(){
         List<String> failed = new ArrayList<>();
 
@@ -1203,9 +1182,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals( 0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHotOp(){
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
@@ -1219,9 +1197,8 @@ public class MiscOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHot2(Nd4jBackend backend) {
 
         INDArray indicesArr = Nd4j.createFromArray(0, 2, -1, 1);
@@ -1241,9 +1218,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHot4(Nd4jBackend backend) {
 
         INDArray indicesArr = Nd4j.createFromArray(0, 2, -1, 1);
@@ -1263,9 +1239,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHot3(Nd4jBackend backend) {
         //https://github.com/deeplearning4j/deeplearning4j/issues/6872
 
@@ -1300,9 +1275,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspace(){
         SameDiff sd = SameDiff.create();
         SDVariable out = sd.linspace("linspace", DataType.DOUBLE, 1,10,10);
@@ -1315,9 +1289,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspace2(){
         OpValidationSuite.ignoreFailing();  //TODO 2019/01/18
         SameDiff sd = SameDiff.create();
@@ -1331,9 +1304,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeFn(Nd4jBackend backend) {
 
         INDArray in = Nd4j.create(new long[]{1, 2});
@@ -1347,9 +1319,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{2}, shapes.get(0).getShape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeFn2(Nd4jBackend backend) {
 
         INDArray i = Nd4j.create(1,3);
@@ -1362,9 +1333,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergeRank1(){
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
@@ -1382,9 +1352,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(1, inGrad.rank());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiagPart(Nd4jBackend backend) {
         INDArray i = Nd4j.create(5,5);
 
@@ -1396,9 +1365,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(1, out.rank());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiagShapeFn(Nd4jBackend backend) {
         INDArray i = Nd4j.create(5,5);
 
@@ -1411,9 +1379,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZerosOnesLike(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -1455,9 +1422,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZerosLikeOp(){
 
         INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0);
@@ -1472,9 +1438,8 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConfusionMatrix(){
         DataType dt = DataType.DOUBLE;
 
@@ -1510,9 +1475,8 @@ public class MiscOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsNonDecreasingIsStrictlyIncr(){
         List<long[]> shapes = Arrays.asList(null, new long[]{12}, new long[]{1,12}, new long[]{3,4}, new long[]{2,2,3});
 
@@ -1575,9 +1539,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals( 0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExtractImagePatches(){
         /*
         tf.reset_default_graph()
@@ -1624,9 +1587,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentProdBpSimple(){
 
         INDArray segmentIdxs = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
@@ -1646,9 +1608,8 @@ public class MiscOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().exec(op);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulRank4() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1683,9 +1644,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(outExp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulRank4_simple(){
 
         INDArray arr1 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
@@ -1711,9 +1671,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNthElementRank1(){
         INDArray in = Nd4j.createFromArray(new double[]{0,1,2,3,4,5,6,7,8,9});
         INDArray n = Nd4j.scalar(0);
@@ -1735,9 +1694,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(0.0, out.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorMmulShape(){
         INDArray a = Nd4j.create(new double[]{2}).reshape(1);
         INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
@@ -1755,9 +1713,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{2,2}, l.get(0).getShape());         //Returning [1,2,2]
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorMmulShape2(){
         INDArray a = Nd4j.create(new double[]{2}).reshape(1);
         INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
@@ -1765,9 +1722,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{2,2}, c.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStopGradient(){
 
         SameDiff sd = SameDiff.create();
@@ -1786,9 +1742,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(Nd4j.zeros(DataType.DOUBLE, 3, 4), wArr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCheckNumerics(){
         OpValidationSuite.ignoreFailing();  //https://github.com/eclipse/deeplearning4j/issues/7927
 
@@ -1831,9 +1786,8 @@ public class MiscOpValidation extends BaseOpValidation {
         sd.outputAll(Collections.singletonMap("in", in));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCheckNumerics2(Nd4jBackend backend) {
         INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4);
         INDArray msg = Nd4j.scalar("My error message!");
@@ -1846,9 +1800,8 @@ public class MiscOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().exec(op);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHistogramFixedWidth(){
         //Bins: [-inf, 0.2), [0.2, 0.4), [0.4, 0.6), [0.6, 0.8), [0.8, inf]
         INDArray in = Nd4j.createFromArray(0.0, 0.1, 0.1, 0.3, 0.5, 0.5, 0.9);
@@ -1866,9 +1819,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicPartition(){
         INDArray data = Nd4j.createFromArray(2, 1, 2, 0);
         INDArray partitions = Nd4j.createFromArray(0, 2, 1, 0);
@@ -1886,9 +1838,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp2, out[2]);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testListDiff(){
         INDArray x = Nd4j.createFromArray(0, 1, 2, 3);
         INDArray y = Nd4j.createFromArray(3, 1);
@@ -1907,9 +1858,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(exp, outIdx);      //Indices of the values in x not in y
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDivideNoNan(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //TODO: implement DivideNoNan.doDiff()
 
@@ -1933,9 +1883,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDigamma(Nd4jBackend backend) {
 
         INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -1950,9 +1899,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlatten(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1974,9 +1922,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFusedBatchNorm(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
@@ -2021,9 +1968,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIgamma(Nd4jBackend backend) {
 
         INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -2039,9 +1985,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIgammaC(Nd4jBackend backend) {
 
         INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -2058,9 +2003,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLgamma(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -2085,9 +2029,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLu(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -2118,9 +2061,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrixBandPart(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
@@ -2150,9 +2092,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPolygamma(Nd4jBackend backend) {
 
         INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -2168,9 +2109,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriangularSolve(Nd4jBackend backend) {
 
         INDArray a = Nd4j.createFromArray(new float[]{
@@ -2194,9 +2134,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBiasAdd(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -2225,9 +2164,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBiasAddGrad(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -2247,9 +2185,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRoll(Nd4jBackend backend) {
 
         INDArray x = Nd4j.createFromArray(new double[]{    11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,     12.11, 12.12, 12.21, 12.22, 12.31, 12.32, 12.41, 12.42,
@@ -2269,9 +2206,8 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSeqMask(){
         INDArray arr = Nd4j.createFromArray(1,2,3);
         INDArray maxLen = Nd4j.scalar(4);

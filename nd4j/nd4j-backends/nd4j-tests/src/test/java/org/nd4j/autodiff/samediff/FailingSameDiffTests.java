@@ -50,9 +50,8 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEye(Nd4jBackend backend){
         //OpValidationSuite.ignoreFailing();
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0}, new int[]{2, 3});
@@ -68,9 +67,8 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expOut, result.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEyeShape(Nd4jBackend backend){
         val dco = DynamicCustomOp.builder("eye")
                 .addIntegerArguments(3,3)
@@ -82,9 +80,8 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{3,3}, list.get(0).getShape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecutionDifferentShapesTransform(Nd4jBackend backend){
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
@@ -105,9 +102,8 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDropout(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
@@ -120,9 +116,8 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{2, 2}, res.getShape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecutionDifferentShapesDynamicCustom(Nd4jBackend backend){
         OpValidationSuite.ignoreFailing();
 

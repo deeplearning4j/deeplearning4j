@@ -79,9 +79,8 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
         Nd4j.getRandom().setSeed(123);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimple(@TempDir Path testDir,Nd4jBackend backend) throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
@@ -185,9 +184,8 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNullBinLabels(@TempDir Path testDir,Nd4jBackend backend) throws Exception{
         File dir = testDir.toFile();
         File f = new File(dir, "temp.bin");

@@ -61,9 +61,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_1(Nd4jBackend backend) {
         val array = Nd4j.create(DataType.LONG, 3, 3);
 
@@ -73,9 +72,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.LONG, ArrayOptionsHelper.dataType(array.shapeInfoJava()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_2(Nd4jBackend backend) {
         val array = Nd4j.create(DataType.SHORT, 3, 3);
 
@@ -85,9 +83,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.SHORT, ArrayOptionsHelper.dataType(array.shapeInfoJava()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_3(Nd4jBackend backend) {
         val array = Nd4j.create(DataType.HALF, 3, 3);
 
@@ -97,9 +94,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.HALF, ArrayOptionsHelper.dataType(array.shapeInfoJava()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_4(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(DataType.DOUBLE, 1.0);
         assertNotNull(scalar);
@@ -109,9 +105,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_5(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(Integer.valueOf(1));
         assertNotNull(scalar);
@@ -121,9 +116,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getInt(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_5_0(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(Long.valueOf(1));
         assertNotNull(scalar);
@@ -133,9 +127,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getInt(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_5_1(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(Double.valueOf(1));
         assertNotNull(scalar);
@@ -145,9 +138,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_5_2(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(Float.valueOf(1));
         assertNotNull(scalar);
@@ -157,9 +149,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_5_3(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(Short.valueOf((short) 1));
         assertNotNull(scalar);
@@ -169,9 +160,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_5_4(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(Byte.valueOf((byte) 1));
         assertNotNull(scalar);
@@ -181,9 +171,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_6(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(1);
         assertNotNull(scalar);
@@ -193,9 +182,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, scalar.getInt(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicCreation_7(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(1L);
         assertNotNull(scalar);
@@ -205,9 +193,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1, scalar.getInt(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_1(Nd4jBackend backend) {
         val exp = new int[]{1,1,1,1,1,1,1,1,1};
         val array = Nd4j.create(DataType.INT, 3, 3);
@@ -218,9 +205,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, vector);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_2(Nd4jBackend backend) {
         val exp = new int[]{1,1,1,1,1,1,1,1,1};
         val arrayX = Nd4j.create(DataType.INT, 3, 3);
@@ -232,9 +218,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, vector);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_3(Nd4jBackend backend) {
         if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
             return;
@@ -252,9 +237,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, vectorX);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_4(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{7,8,7,9,1,1,1,1,1}, new long[]{3, 3}, DataType.LONG);
 
@@ -264,9 +248,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(9L, l);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_5(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
@@ -275,9 +258,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(2.5f, result, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_6(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
 
@@ -289,9 +271,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(2, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_7(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new float[]{1, 0, Float.NaN, 4}, new  long[]{4}, DataType.FLOAT);
 
@@ -307,9 +288,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1, result2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_8(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
@@ -322,9 +302,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicOps_9(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
@@ -337,9 +316,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, arr, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAssign_1(Nd4jBackend backend) {
         val arrayX = Nd4j.create(DataType.FLOAT, 5);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
@@ -350,9 +328,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAssign_2(Nd4jBackend backend) {
         val arrayX = Nd4j.create(DataType.INT, 5);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
@@ -363,9 +340,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMethods_1(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
@@ -376,9 +352,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayZ);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMethods_2(Nd4jBackend backend) {
         if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
             return;
@@ -393,9 +368,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayZ);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMethods_3(Nd4jBackend backend) {
         if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
             return;
@@ -458,9 +432,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlatSerde_1(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
@@ -476,9 +449,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(arrayX, restored);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlatSerde_2(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new long[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
 
@@ -494,9 +466,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(arrayX, restored);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlatSerde_3(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new boolean[]{true, false, true, true}, new  long[]{4}, DataType.BOOL);
 
@@ -512,9 +483,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(arrayX, restored);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBoolFloatCast2(){
         val first = Nd4j.zeros(DataType.FLOAT, 3, 5000);
         INDArray asBool = first.castTo(DataType.BOOL);
@@ -534,9 +504,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, asFloat);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3Large(Nd4jBackend backend) {
         val arrayX = Nd4j.create(DataType.FLOAT, 10, 5000);
         val arrayY = Nd4j.create(DataType.FLOAT, 10, 5000);
@@ -545,9 +514,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssignScalarSimple(){
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             INDArray arr = Nd4j.scalar(dt, 10.0);
@@ -556,9 +524,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimple(){
         Nd4j.create(1);
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.LONG}) {
@@ -582,9 +549,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspaceBool(){
         val conf = WorkspaceConfiguration.builder().minSize(10 * 1024 * 1024)
                 .overallocationLimit(1.0).policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -627,9 +593,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(source.getDouble(0), restored.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBfloat16_1(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.BFLOAT16, 5);
         val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.BFLOAT16);
@@ -638,9 +603,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(x, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUint16_1(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT16, 5);
         val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT16);
@@ -649,9 +613,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(x, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUint32_1(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT32, 5);
         val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT32);
@@ -660,9 +623,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(x, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUint64_1(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT64, 5);
         val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT64);

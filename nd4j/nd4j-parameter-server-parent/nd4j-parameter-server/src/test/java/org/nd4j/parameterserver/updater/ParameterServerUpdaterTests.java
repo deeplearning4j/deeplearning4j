@@ -28,9 +28,8 @@ import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 public class ParameterServerUpdaterTests extends BaseND4JTest {
 
@@ -47,7 +46,7 @@ public class ParameterServerUpdaterTests extends BaseND4JTest {
         assertTrue(updater.shouldReplicate());
         updater.reset();
         assertFalse(updater.shouldReplicate());
-        assumeNotNull(updater.toJson());
+        assertNotNull(updater.toJson());
 
 
     }

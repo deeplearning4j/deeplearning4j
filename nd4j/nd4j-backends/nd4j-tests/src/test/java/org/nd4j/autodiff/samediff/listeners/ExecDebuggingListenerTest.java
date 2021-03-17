@@ -38,9 +38,8 @@ import org.nd4j.linalg.learning.config.Adam;
 public class ExecDebuggingListenerTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecDebugListener(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();

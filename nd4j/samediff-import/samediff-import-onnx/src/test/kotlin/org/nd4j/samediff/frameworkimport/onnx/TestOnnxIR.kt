@@ -206,6 +206,7 @@ class TestOnnxIR {
     }
 
     @Test
+    @Disabled
     fun testOpExecution() {
         val onnxOpRegistry = registry()
 

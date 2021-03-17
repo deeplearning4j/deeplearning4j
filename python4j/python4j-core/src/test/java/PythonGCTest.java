@@ -22,10 +22,12 @@ import org.nd4j.python4j.Python;
 import org.nd4j.python4j.PythonGC;
 import org.nd4j.python4j.PythonGIL;
 import org.nd4j.python4j.PythonObject;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @NotThreadSafe
@@ -45,7 +47,7 @@ public class PythonGCTest {
             PythonObject pyObjCount2 = Python.len(getObjects.call());
             long objCount2 =  pyObjCount2.toLong();
             long diff = objCount2 - objCount1;
-            Assert.assertTrue(diff > 2);
+            assertTrue(diff > 2);
             try(PythonGC gc = PythonGC.watch()){
                 PythonObject pyList2 = Python.list();
                 pyList2.attr("append").call("a");
@@ -55,7 +57,7 @@ public class PythonGCTest {
             PythonObject pyObjCount3 = Python.len(getObjects.call());
             long objCount3 =  pyObjCount3.toLong();
             diff = objCount3 - objCount2;
-            Assert.assertTrue(diff <= 2);// 2 objects created during function call
+            assertTrue(diff <= 2);// 2 objects created during function call
         }
 
     }

@@ -26,7 +26,7 @@ import org.nd4j.python4j.PythonException;
 import org.nd4j.python4j.PythonGIL;
 import org.nd4j.python4j.PythonObject;
 import org.nd4j.python4j.PythonTypes;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 
 import org.nd4j.linalg.api.buffer.DataType;
@@ -35,6 +35,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.*;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @NotThreadSafe
@@ -77,7 +79,7 @@ public class PythonNumpyCollectionsTest {
             map.put("list2", Arrays.asList(4, "5", innerMap, false, true));
             PythonObject dict = PythonTypes.convert(map);
             Map map2 = PythonTypes.DICT.toJava(dict);
-            Assert.assertEquals(map.toString(), map2.toString());
+            assertEquals(map.toString(), map2.toString());
         }
 
     }
@@ -102,7 +104,7 @@ public class PythonNumpyCollectionsTest {
             list.add(map);
             PythonObject dict = PythonTypes.convert(list);
             List list2 = PythonTypes.LIST.toJava(dict);
-            Assert.assertEquals(list.toString(), list2.toString());
+            assertEquals(list.toString(), list2.toString());
         }
 
     }

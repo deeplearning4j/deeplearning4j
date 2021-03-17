@@ -62,9 +62,8 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         Nd4j.setDefaultDataTypes(initialType, Nd4j.defaultFloatingPointType());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void sortSparseCooIndicesSort1(Nd4jBackend backend) {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
@@ -98,9 +97,8 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void sortSparseCooIndicesSort2(Nd4jBackend backend) {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
@@ -147,9 +145,8 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         return LongStream.range(i, i + length).map(buffer::getLong).toArray();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void sortSparseCooIndicesSort3(Nd4jBackend backend) {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
@@ -187,9 +184,8 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void sortSparseCooIndicesSort4(Nd4jBackend backend) {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))

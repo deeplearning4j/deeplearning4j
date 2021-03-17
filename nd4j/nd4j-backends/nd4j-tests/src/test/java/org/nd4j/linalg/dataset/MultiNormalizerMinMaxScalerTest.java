@@ -68,26 +68,23 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultipleInputsAndOutputsWithDataSet(Nd4jBackend backend) {
         SUT.fit(data);
         assertExpectedMinMax();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultipleInputsAndOutputsWithIterator(Nd4jBackend backend) {
         MultiDataSetIterator iter = new TestMultiDataSetIterator(1, data);
         SUT.fit(iter);
         assertExpectedMinMax();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRevertFeaturesINDArray(Nd4jBackend backend) {
         SUT.fit(data);
 
@@ -103,9 +100,8 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
         assertEquals(reverted, transformed.getFeatures(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRevertLabelsINDArray(Nd4jBackend backend) {
         SUT.fit(data);
 
@@ -121,9 +117,8 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
         assertEquals(reverted, transformed.getLabels(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRevertMultiDataSet(Nd4jBackend backend) {
         SUT.fit(data);
 
@@ -139,9 +134,8 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
         assertTrue(diffAfterRevert < TOLERANCE_PERC);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFullyMaskedData() {
         MultiDataSetIterator iter = new TestMultiDataSetIterator(1,
                 new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {1}).reshape(1, 1, 1)},

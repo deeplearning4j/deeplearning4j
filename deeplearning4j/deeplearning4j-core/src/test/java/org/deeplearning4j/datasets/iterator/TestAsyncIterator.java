@@ -32,7 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled

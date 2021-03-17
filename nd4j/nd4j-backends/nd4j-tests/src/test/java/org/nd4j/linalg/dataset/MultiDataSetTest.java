@@ -48,9 +48,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 public class MultiDataSetTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMerging2d(Nd4jBackend backend) {
         //Simple test: single input/output arrays; 5 MultiDataSets to merge
         int nCols = 3;
@@ -78,9 +77,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expOut, merged.getLabels(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMerging2dMultipleInOut(Nd4jBackend backend) {
         //Test merging: Multiple input/output arrays; 5 MultiDataSets to merge
 
@@ -124,9 +122,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expOut1, merged.getLabels(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMerging2dMultipleInOut2(Nd4jBackend backend) {
         //Test merging: Multiple input/output arrays; 5 MultiDataSets to merge
 
@@ -180,9 +177,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expOut2, merged.getLabels(2));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMerging2dMultipleInOut3(Nd4jBackend backend) {
         //Test merging: fewer rows than output arrays...
 
@@ -224,9 +220,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expOut2, merged.getLabels(2));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMerging4dMultipleInOut(Nd4jBackend backend) {
         int nRows = 5;
         int depthIn0 = 3;
@@ -280,9 +275,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expOut1, merged.getLabels(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergingTimeSeriesEqualLength(Nd4jBackend backend) {
         int tsLength = 8;
         int nRows = 5;
@@ -337,9 +331,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expOut1, merged.getLabels(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergingTimeSeriesWithMasking(Nd4jBackend backend) {
         //Mask arrays, and different lengths
 
@@ -440,9 +433,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expectedMaskOut1, merged.getLabelsMaskArray(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergingWithPerOutputMasking(Nd4jBackend backend) {
 
         //Test 2d mask merging, 2d data
@@ -515,9 +507,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(expLM2d, merged3d2d.getLabelsMaskArray(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSplit(Nd4jBackend backend) {
 
         INDArray[] features = new INDArray[3];
@@ -579,9 +570,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToString(Nd4jBackend backend) {
         //Mask arrays, and different lengths
 
@@ -668,9 +658,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         System.out.println(merged);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void multiDataSetSaveLoadTest() throws IOException {
 
         int max = 3;
@@ -725,9 +714,8 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCnnMergeFeatureMasks(Nd4jBackend backend) {
         //Tests merging of different CNN masks: [mb,1,h,1], [mb,1,1,w], [mb,1,h,w]
 

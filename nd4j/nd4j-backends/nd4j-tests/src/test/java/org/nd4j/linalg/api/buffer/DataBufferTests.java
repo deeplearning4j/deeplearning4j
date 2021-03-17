@@ -53,7 +53,7 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
     @Test
     @Disabled("AB 2019/06/03 - CI issue: \"CUDA stream synchronization failed\" - see issue 7657")
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoArgCreateBufferFromArray(Nd4jBackend backend) {
 
         //Tests here:
@@ -279,9 +279,8 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateTypedBuffer(Nd4jBackend backend) {
 
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
@@ -351,9 +350,8 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAsBytes(Nd4jBackend backend) {
         INDArray orig = Nd4j.linspace(DataType.INT, 0, 10, 1);
 
@@ -408,9 +406,8 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEnsureLocation(){
         //https://github.com/eclipse/deeplearning4j/issues/8783
         Nd4j.create(1);

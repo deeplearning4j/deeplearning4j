@@ -41,9 +41,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
 
     // TODO: Comment from the review. We'll remove the new NDBase() at some point.
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAll(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.BOOL, 3, 3);
@@ -52,9 +51,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAny(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.BOOL);
@@ -63,9 +61,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgmax(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -82,9 +79,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgmin(Nd4jBackend backend) {
         //Copy Paste from argmax, replaced with argmin.
         NDBase base = new NDBase();
@@ -102,9 +98,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -117,9 +112,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{3, 6}, z.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumprod(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -133,9 +127,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumsum(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -148,9 +141,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDot(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 3);
@@ -159,9 +151,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicpartition(Nd4jBackend backend) {
         //Try to execute the sample in the code dcumentation:
         NDBase base = new NDBase();
@@ -173,9 +164,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicStitch(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -183,9 +173,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         //TODO: crashes here. Op needs fixing.  Bad constructor, as previously flagged. Both input and indices need to be INDArrays
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarEq(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -194,9 +183,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEq(Nd4jBackend backend) {
         //element wise  eq.
         NDBase base = new NDBase();
@@ -206,9 +194,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandDims(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1,2).reshape(1,2);
@@ -217,9 +204,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFill(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(2, 2);
@@ -228,9 +214,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGather(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -240,9 +225,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarGt(Nd4jBackend backend) {
         //Scalar gt.
         NDBase base = new NDBase();
@@ -252,9 +236,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGt(Nd4jBackend backend) {
         //element wise  gt.
         NDBase base = new NDBase();
@@ -266,9 +249,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarGte(Nd4jBackend backend) {
         //Scalar gte.
         NDBase base = new NDBase();
@@ -278,9 +260,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGte(Nd4jBackend backend) {
         //element wise  gte.
         NDBase base = new NDBase();
@@ -291,9 +272,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIdentity(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -301,9 +281,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(x, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvertPermutation(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(2,0,1);
@@ -312,9 +291,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testisNumericTensor(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -322,18 +300,16 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.scalar(true), y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspace(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray y = base.linspace(DataType.DOUBLE, 0.0, 9.0, 19);
         //TODO: test crashes.
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarLt(Nd4jBackend backend) {
         //Scalar lt.
         NDBase base = new NDBase();
@@ -343,9 +319,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLt(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x1 = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -355,9 +330,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarLte(Nd4jBackend backend) {
         //Scalar gt.
         NDBase base = new NDBase();
@@ -367,9 +341,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLte(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x1 = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -379,9 +352,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchCondition(Nd4jBackend backend) {
         // same test as TestMatchTransformOp,
         NDBase base = new NDBase();
@@ -391,9 +363,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionCount(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1.0, 1.0, 1.0, 0.0, 1.0, 1.0);
@@ -417,9 +388,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -432,9 +402,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMean(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -447,9 +416,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMin(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -462,9 +430,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulTranspose(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(DataType.FLOAT, 4, 3);
         INDArray y = Nd4j.rand(DataType.FLOAT, 5, 4);
@@ -473,9 +440,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmul(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -484,9 +450,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y, x);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarNeq(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(DataType.DOUBLE, 3, 3);
@@ -495,9 +460,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNeq(Nd4jBackend backend) {
         //element wise  eq.
         NDBase base = new NDBase();
@@ -508,9 +472,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm1(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -523,9 +486,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm2(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -538,9 +500,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -553,9 +514,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHot(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(0.0, 1.0, 2.0);
@@ -572,9 +532,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y); //TODO: Looks like we're getting back the wrong datatype.       https://github.com/eclipse/deeplearning4j/issues/8607
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOnesLike(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(3, 3);
@@ -587,9 +546,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y); //TODO: Getting back a double array, not a long.    https://github.com/eclipse/deeplearning4j/issues/8605
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPermute(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(1, 6, 6).reshape(2, 3);
@@ -597,9 +555,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{3, 2}, y.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testProd(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3).castTo(DataType.FLOAT);
@@ -612,9 +569,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRange(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray y = base.range(0.0, 3.0, 1.0, DataType.DOUBLE);
@@ -622,9 +578,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y); //TODO: Asked for DOUBLE, got back a FLOAT Array.   https://github.com/eclipse/deeplearning4j/issues/8606
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRank(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.eye(3);
@@ -635,9 +590,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     }
 
     /*
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRepeat(Nd4jBackend backend) {
         fail("AB 2020/01/09 - Not sure what this op is supposed to do...");
         NDBase base = new NDBase();
@@ -648,9 +602,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
      */
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReplaceWhere(Nd4jBackend backend) {
         // test from BooleanIndexingTest.
         NDBase base = new NDBase();
@@ -662,9 +615,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshape(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -674,9 +626,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 6).reshape(2, 3);
@@ -685,9 +636,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseSequence(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
@@ -702,9 +652,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarFloorMod(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -713,9 +662,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -725,9 +673,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         //System.out.println(y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMin(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -736,9 +683,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarSet(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1.0, 2.0, 0.0, 4.0, 5.0);
@@ -747,9 +693,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterAdd(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -764,9 +709,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterDiv(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -781,9 +725,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -798,9 +741,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterMin(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -815,9 +757,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterMul(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -832,9 +773,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterSub(Nd4jBackend backend) {
         NDBase base = new NDBase();
 
@@ -851,9 +791,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(3, 6, 1, 4, 9,2, 2);
@@ -863,9 +802,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentMean(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(3.0, 6.0, 1.0, 4.0, 9.0,2.0, 2.0);
@@ -875,9 +813,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentMin(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(3.0, 6.0, 1.0, 4.0, 9.0,2.0, 2.0);
@@ -887,9 +824,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentProd(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(3.0, 6.0, 1.0, 4.0, 9.0,2.0, 2.0);
@@ -899,9 +835,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentSum(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(3.0, 6.0, 1.0, 4.0, 9.0,2.0, 2.0);
@@ -911,9 +846,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSequenceMask(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray length = Nd4j.createFromArray(1, 3, 2);
@@ -928,9 +862,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShape(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(3,3);
@@ -939,9 +872,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSize(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(3,3);
@@ -949,9 +881,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.scalar(9L), y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSizeAt(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(10,20, 30);
@@ -959,9 +890,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.scalar(20L), y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 6).reshape(2, 3);
@@ -970,9 +900,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSquaredNorm(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
@@ -985,9 +914,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueeze(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 10).reshape(2,1,5);
@@ -996,9 +924,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStack(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 3);
@@ -1006,9 +933,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         // TODO: Op definition looks wrong. Compare stack in Nd4j.
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardDeviation(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4);
@@ -1021,9 +947,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedSlice(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
@@ -1033,9 +958,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
@@ -1047,9 +971,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp.reshape(1,3), y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorMul(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
@@ -1067,9 +990,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTile(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4).reshape(2,2);
@@ -1083,9 +1005,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTranspose(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
@@ -1094,9 +1015,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnsegmentMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1,3,2,6,4,9,8);
@@ -1106,9 +1026,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnsegmentMean(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1,3,2,6,4,9,8).castTo(DataType.FLOAT);
@@ -1118,9 +1037,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnsegmentedMin(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1,3,2,6,4,9,8);
@@ -1130,9 +1048,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnsegmentProd(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1,3,2,6,4,9,8);
@@ -1142,9 +1059,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnsortedSegmentSqrtN(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1.0,3.0,2.0,6.0,4.0,9.0,8.0);
@@ -1154,9 +1070,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnsortedSegmentSum(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.createFromArray(1,3,2,6,4,9,8);
@@ -1166,9 +1081,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariance(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4);
@@ -1181,9 +1095,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZerosLike(Nd4jBackend backend) {
         NDBase base = new NDBase();
         INDArray x = Nd4j.zeros(3,3);

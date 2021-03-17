@@ -22,7 +22,6 @@ package org.nd4j.parameterserver.client;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -36,10 +35,9 @@ import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled
 public class ParameterServerClientTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(ParameterServerClientTest.class);

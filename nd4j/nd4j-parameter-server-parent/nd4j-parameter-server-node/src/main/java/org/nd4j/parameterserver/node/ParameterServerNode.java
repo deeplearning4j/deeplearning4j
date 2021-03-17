@@ -32,7 +32,6 @@ import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.status.play.InMemoryStatusStorage;
 import org.nd4j.parameterserver.status.play.StatusServer;
-import play.server.Server;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +41,6 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 public class ParameterServerNode implements AutoCloseable {
-    private Server server;
     private ParameterServerSubscriber[] subscriber;
     private MediaDriver mediaDriver;
     private Aeron aeron;
@@ -91,7 +89,6 @@ public class ParameterServerNode implements AutoCloseable {
      * @param args the arguments for the {@link ParameterServerSubscriber}
      */
     public void runMain(String[] args) {
-        server = StatusServer.startServer(new InMemoryStatusStorage(), statusPort);
         if (mediaDriver == null)
             mediaDriver = MediaDriver.launchEmbedded();
         log.info("Started media driver with aeron directory " + mediaDriver.aeronDirectoryName());
@@ -169,8 +166,7 @@ public class ParameterServerNode implements AutoCloseable {
                 }
             }
         }
-        if (server != null)
-            server.stop();
+
         if (mediaDriver != null)
             CloseHelper.quietClose(mediaDriver);
         if (aeron != null)

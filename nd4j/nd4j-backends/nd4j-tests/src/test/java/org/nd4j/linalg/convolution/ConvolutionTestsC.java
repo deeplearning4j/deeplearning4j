@@ -52,17 +52,15 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConvOutWidthAndHeight(Nd4jBackend backend) {
         long outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col(Nd4jBackend backend) {
         INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
@@ -86,9 +84,8 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col2(Nd4jBackend backend) {
         int kh = 2;
         int kw = 2;
@@ -112,7 +109,7 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompareIm2ColImpl(Nd4jBackend backend) {
 
         int[] miniBatches = {1, 3, 5};
@@ -193,9 +190,8 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling2D_Same(Nd4jBackend backend) {
         int[] miniBatches = {1, 3, 5};
         int[] depths = {1, 3, 5};
@@ -291,9 +287,8 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMoreIm2Col2(Nd4jBackend backend) {
         int kh = 2;
         int kw = 2;
@@ -315,9 +310,8 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCol2Im(Nd4jBackend backend) {
         int kh = 1;
         int kw = 1;
@@ -333,9 +327,8 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, newTest);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testimcolim(Nd4jBackend backend) {
         int nEx = 2;
         int depth = 3;
@@ -361,7 +354,7 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxPoolBackprop(){
         Nd4j.getRandom().setSeed(12345);
 

@@ -66,9 +66,8 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDebugMode_1(Nd4jBackend backend) {
         assertEquals(DebugMode.DISABLED, Nd4j.getWorkspaceManager().getDebugMode());
 
@@ -77,9 +76,8 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
         assertEquals(DebugMode.SPILL_EVERYTHING, Nd4j.getWorkspaceManager().getDebugMode());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpillMode_1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
 
@@ -105,9 +103,8 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpillMode_2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
 
@@ -141,9 +138,8 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBypassMode_1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);
 

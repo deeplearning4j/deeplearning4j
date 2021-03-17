@@ -63,9 +63,8 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUIListenerBasic(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -101,9 +100,8 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{150, 3}, out.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUIListenerContinue(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -194,9 +192,8 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUIListenerBadContinue(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
         SameDiff sd1 = getSimpleNet();

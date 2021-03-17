@@ -53,9 +53,8 @@ public class CudaTests extends BaseNd4jTestWithBackends {
             Nd4j.setDataType(initialType);
         }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMGrid_1(Nd4jBackend backend) {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
@@ -76,9 +75,8 @@ public class CudaTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMGrid_2(Nd4jBackend backend) {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;

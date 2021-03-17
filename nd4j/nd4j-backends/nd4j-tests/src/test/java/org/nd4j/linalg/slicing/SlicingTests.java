@@ -39,9 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SlicingTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlices() {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data(), new int[] {4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
@@ -54,9 +53,8 @@ public class SlicingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice() {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 13}, {5, 17}, {9, 21}});

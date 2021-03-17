@@ -41,9 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ActivationGradChecks extends BaseOpValidation {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testActivationGradientCheck1(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
@@ -61,9 +60,8 @@ public class ActivationGradChecks extends BaseOpValidation {
         assertTrue(ok);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testActivationGradientCheck2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();

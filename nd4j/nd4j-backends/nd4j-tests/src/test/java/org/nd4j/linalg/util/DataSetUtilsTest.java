@@ -55,7 +55,7 @@ public class DataSetUtilsTest extends BaseNd4jTestWithBackends {
 	//
 	@Test
 	@ParameterizedTest
-	@MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+	@MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 	public void testAll(@TempDir Path tmpFld,Nd4jBackend backend) {
 		//
 		sis = new SIS();

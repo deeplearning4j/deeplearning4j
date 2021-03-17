@@ -51,9 +51,8 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
         DataTypeUtil.setDTypeForContext(this.initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationFullArrayNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 4;
 
@@ -91,9 +90,8 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
         assertTrue(Transforms.abs(arr1.sub(arr2).div(arr1)).maxNumber().doubleValue() < 0.01);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationFullArrayJava(Nd4jBackend backend) throws Exception {
         int length = 100;
         Nd4j.create(1);
@@ -123,9 +121,8 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
         assertTrue(Transforms.abs(arr1.sub(arr2).div(arr1)).maxNumber().doubleValue() < 0.01);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationOnViewsNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 100;
         Nd4j.create(1);
@@ -155,9 +152,8 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationOnViewsJava(Nd4jBackend backend) throws Exception {
         int length = 100;
         Nd4j.create(1);

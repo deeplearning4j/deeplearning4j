@@ -50,90 +50,80 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         1D array checks
      */
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.greaterThan(0.5f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.lessThan(6.0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertFalse(BooleanIndexing.and(array, Conditions.lessThan(5.0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd4(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertFalse(BooleanIndexing.and(array, Conditions.greaterThan(4.0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd5(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.greaterThanOrEqual(1e-5f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd6(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
         assertFalse(BooleanIndexing.and(array, Conditions.lessThan(1e-5f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd7(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.equals(1e-5f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOr1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.or(array, Conditions.greaterThan(3.0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOr2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.or(array, Conditions.lessThan(3.0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOr3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
@@ -144,18 +134,16 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         2D array checks
      */
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dAnd1(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(10, 10);
 
         assertTrue(BooleanIndexing.and(array, Conditions.equals(0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dAnd2(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(10, 10);
         array.slice(4).putScalar(2, 1e-5f);
@@ -166,9 +154,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dAnd3(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(10, 10);
 
@@ -177,9 +164,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertFalse(BooleanIndexing.and(array, Conditions.greaterThan(0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dAnd4(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(10, 10);
 
@@ -194,9 +180,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceAssign1(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(4, 4);
 
@@ -217,9 +202,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConditionalAssign1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7});
         INDArray array2 = Nd4j.create(new double[] {7, 6, 5, 4, 3, 2, 1});
@@ -230,9 +214,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, array1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaSTransform1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
@@ -242,9 +225,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaSTransform2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {3, 2, 3, 4, 5});
@@ -254,9 +236,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaSPairwiseTransform1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
@@ -266,9 +247,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaRPairwiseTransform1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
@@ -278,9 +258,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaSPairwiseTransform2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 0, 5});
@@ -291,9 +270,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, x);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaRPairwiseTransform2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
@@ -304,9 +282,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaSPairwiseTransform3(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
@@ -317,9 +294,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(comp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCaRPairwiseTransform3(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
@@ -331,9 +307,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionAllDimensions1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
@@ -343,9 +318,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(5, val);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionAllDimensions2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NaN, 5, 6, 7, 8, 9});
 
@@ -355,9 +329,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(1, val);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionAllDimensions3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NEGATIVE_INFINITY, 5, 6, 7, 8, 9});
 
@@ -367,9 +340,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(1, val);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionAlongDimension1(Nd4jBackend backend) {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0);
@@ -381,9 +353,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(comp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionAlongDimension2(Nd4jBackend backend) {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0).putScalar(0, 1.0);
@@ -397,9 +368,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(comp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchConditionAlongDimension3(Nd4jBackend backend) {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0).putScalar(0, 1.0);
@@ -412,9 +382,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConditionalUpdate(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(-2, 2, 5, DataType.DOUBLE);
         INDArray ones = Nd4j.ones(DataType.DOUBLE, 5);
@@ -427,9 +396,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFirstIndex1(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
         INDArray result = BooleanIndexing.firstIndex(arr, Conditions.greaterThanOrEqual(3));
@@ -437,9 +405,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(2, result.getDouble(0), 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFirstIndex2(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
         INDArray result = BooleanIndexing.firstIndex(arr, Conditions.lessThan(3));
@@ -447,9 +414,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(0, result.getDouble(0), 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLastIndex1(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
         INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(3));
@@ -457,9 +423,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(8, result.getDouble(0), 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFirstIndex2D(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 0, 1, 3, 7, 8, 9}).reshape('c', 3, 3);
         INDArray result = BooleanIndexing.firstIndex(arr, Conditions.greaterThanOrEqual(2), 1);
@@ -468,9 +433,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLastIndex2D(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 0, 1, 3, 7, 8, 0}).reshape('c', 3, 3);
         INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(2), 1);
@@ -479,9 +443,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEpsEquals1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {-1, -1, -1e-8, 1e-8, 1, 1});
         MatchCondition condition = new MatchCondition(array, Conditions.epsEquals(0.0));
@@ -490,9 +453,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(2, numZeroes);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChooseNonZero(Nd4jBackend backend) {
         INDArray testArr = Nd4j.create(new double[] {
                 0.00,  0.51,  0.68,  0.69,  0.86,  0.91,  0.96,  0.97,  0.97,  1.03,  1.13,  1.16,  1.16,  1.17,  1.19,  1.25,  1.25,  1.26,  1.27,  1.28,  1.29,  1.29,  1.29,  1.30,  1.31,  1.32,  1.33,  1.33,  1.35,  1.35,  1.36,  1.37,  1.38,  1.40,  1.41,  1.42,  1.43,  1.44,  1.44,  1.45,  1.45,  1.47,  1.47,  1.51,  1.51,  1.51,  1.52,  1.53,  1.56,  1.57,  1.58,  1.59,  1.61,  1.62,  1.63,  1.63,  1.64,  1.64,  1.66,  1.66,  1.67,  1.67,  1.70,  1.70,  1.70,  1.72,  1.72,  1.72,  1.72,  1.73,  1.74,  1.74,  1.76,  1.76,  1.77,  1.77,  1.80,  1.80,  1.81,  1.82,  1.83,  1.83,  1.84,  1.84,  1.84,  1.85,  1.85,  1.85,  1.86,  1.86,  1.87,  1.88,  1.89,  1.89,  1.89,  1.89,  1.89,  1.91,  1.91,  1.91,  1.92,  1.94,  1.95,  1.97,  1.98,  1.98,  1.98,  1.98,  1.98,  1.99,  2.00,  2.00,  2.01,  2.01,  2.02,  2.03,  2.03,  2.03,  2.04,  2.04,  2.05,  2.06,  2.07,  2.08,  2.08,  2.08,  2.08,  2.09,  2.09,  2.10,  2.10,  2.11,  2.11,  2.11,  2.12,  2.12,  2.13,  2.13,  2.14,  2.14,  2.14,  2.14,  2.15,  2.15,  2.16,  2.16,  2.16,  2.16,  2.16,  2.17
@@ -504,9 +466,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChooseBasic(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
@@ -516,18 +477,16 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChooseGreaterThanZero(Nd4jBackend backend) {
         INDArray zero = Nd4j.linspace(0,4,4, Nd4j.dataType());
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{zero},Arrays.asList(0.0), Collections.emptyList(),new GreaterThan());
         assertEquals(3, filtered.length());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChooseNone(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
@@ -537,9 +496,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhere(Nd4jBackend backend) {
         INDArray data = Nd4j.create(4);
         INDArray mask = Nd4j.create(DataType.BOOL, 4);
@@ -565,9 +523,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(assertion,resultData);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEpsStuff_1(Nd4jBackend backend) {
         val dtype = Nd4j.dataType();
         val array = Nd4j.create(new float[]{0.001f, 5e-6f, 5e-6f, 5e-6f, 5e-6f});

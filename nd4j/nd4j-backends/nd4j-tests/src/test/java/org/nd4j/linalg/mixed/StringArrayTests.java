@@ -43,9 +43,8 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_1(Nd4jBackend backend) {
         val array = Nd4j.scalar("alpha");
 
@@ -60,9 +59,8 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         System.out.println(s);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_2(Nd4jBackend backend) {
         val array = Nd4j.create("alpha","beta", "gamma");
 
@@ -81,9 +79,8 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         System.out.println(s);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_3() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
         val arrayY = Nd4j.create("alpha", "beta", "gamma");
@@ -94,9 +91,8 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         assertNotEquals(arrayX, arrayZ);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_4() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
 
@@ -114,9 +110,8 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         assertEquals("gamma", restored.getString(2));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_4a() {
         val arrayX = Nd4j.scalar("alpha");
 
@@ -134,9 +129,8 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         assertEquals("alpha", restored.getString(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_5() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
         val arrayZ0 = arrayX.dup();

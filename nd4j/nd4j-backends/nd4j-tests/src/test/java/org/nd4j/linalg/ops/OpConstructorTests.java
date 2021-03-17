@@ -57,9 +57,8 @@ public class OpConstructorTests extends BaseNd4jTestWithBackends {
             "org\\.nd4j\\.linalg\\.api\\.ops\\.impl\\.controlflow\\..*"
     };
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkForINDArrayConstructors(Nd4jBackend backend) throws Exception {
         /*
         Check that all op classes have at least one INDArray or INDArray[] constructor, so they can actually

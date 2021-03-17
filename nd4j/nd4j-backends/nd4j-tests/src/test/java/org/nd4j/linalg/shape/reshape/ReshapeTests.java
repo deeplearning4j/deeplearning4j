@@ -31,9 +31,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.Assume.assumeNotNull;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  * @author Adam Gibson
@@ -43,9 +43,8 @@ import static org.junit.Assume.assumeNotNull;
 public class ReshapeTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testThreeTwoTwoTwo(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray sliceZero = Nd4j.create(new double[][] {{1, 7}, {4, 10}});
@@ -66,9 +65,8 @@ public class ReshapeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testColumnVectorReshape(Nd4jBackend backend) {
         double delta = 1e-1;
         INDArray arr = Nd4j.create(1, 3);
@@ -77,7 +75,7 @@ public class ReshapeTests extends BaseNd4jTestWithBackends {
         assertEquals(0.0, reshaped.getDouble(1), delta);
         assertEquals(0.0, reshaped.getDouble(2), delta);
         log.info("Reshaped: {}", reshaped.shapeInfoDataBuffer().asInt());
-        assumeNotNull(reshaped.toString());
+        assertNotNull(reshaped.toString());
     }
 
     @Override

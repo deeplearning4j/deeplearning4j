@@ -34,7 +34,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Collections;
 
-import static junit.framework.TestCase.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestDependencyTracker extends BaseNd4jTestWithBackends {
@@ -45,9 +44,8 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimple(Nd4jBackend backend){
 
         DependencyTracker<String,String> dt = new DependencyTracker<>();
@@ -94,9 +92,8 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
         assertTrue(dt.isEmpty());
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSatisfiedBeforeAdd(Nd4jBackend backend){
         DependencyTracker<String,String> dt = new DependencyTracker<>();
 
@@ -135,9 +132,8 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
         assertFalse(dt.hasNewAllSatisfied());
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMarkUnsatisfied(Nd4jBackend backend){
 
         DependencyTracker<String,String> dt = new DependencyTracker<>();
@@ -169,9 +165,8 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIdentityDependencyTracker(){
         IdentityDependencyTracker<INDArray, String> dt = new IdentityDependencyTracker<>();
         assertTrue(dt.isEmpty());

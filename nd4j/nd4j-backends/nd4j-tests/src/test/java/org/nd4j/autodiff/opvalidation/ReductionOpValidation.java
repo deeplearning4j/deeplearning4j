@@ -80,9 +80,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ReductionOpValidation extends BaseOpValidation {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdev(Nd4jBackend backend) {
         List<String> errors = new ArrayList<>();
 
@@ -108,9 +107,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertEquals(0, errors.size(),errors.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZeroCount(Nd4jBackend backend) {
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 21; i++) {
@@ -144,9 +142,8 @@ public class ReductionOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZeroFraction(Nd4jBackend backend) {
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
@@ -176,9 +173,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertEquals(0, allFailed.size(),allFailed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionGradientsSimple(Nd4jBackend backend) {
         //OpValidationSuite.ignoreFailing();  //TODO TEMPORARY DUE TO CRASHES
         //Test reductions: final and only function
@@ -347,9 +343,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionGradients1(Nd4jBackend backend) {
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
@@ -477,9 +472,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         return Long.MAX_VALUE;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionGradients2(Nd4jBackend backend) {
         //Test reductions: NON-final function
         Nd4j.getRandom().setSeed(12345);
@@ -657,9 +651,8 @@ public class ReductionOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -764,9 +757,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),"Failed: " + failed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMoments(Nd4jBackend backend) {
         for (int[] axes : new int[][]{{0}, {1}, {0, 1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -798,9 +790,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMomentsOp(Nd4jBackend backend) {
         int[] axes = new int[]{0};
         INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -817,9 +808,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormalizeMomentsOp(Nd4jBackend backend) {
         INDArray data = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(10, 10);
         INDArray ssSum = data.sum(0);
@@ -839,9 +829,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllAny(Nd4jBackend backend) {
 
         INDArray allZeros = Nd4j.zeros(DataType.FLOAT, 3, 4);
@@ -869,9 +858,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIndexAccum(Nd4jBackend backend) {
         List<String> failed = new ArrayList<>();
         List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1} /*, new int[0]*/);
@@ -960,9 +948,8 @@ public class ReductionOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3_2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1060,9 +1047,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionsBackwards(Nd4jBackend backend) {
 //        for (int i = 0; i < 7; i++) {
         int i=5;
@@ -1131,9 +1117,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttention(){
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
@@ -1158,9 +1143,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionWithMask(){
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
@@ -1190,9 +1174,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionMultiHeadInputWithMask(){
         final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
@@ -1223,9 +1206,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionMultiHeadInput(){
         final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
@@ -1252,9 +1234,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiHeadedDotProductAttention(){
         final INDArray k = Nd4j.rand(new int[]{10, 4, 5});
         final INDArray v = Nd4j.rand(new int[]{10, 4, 5});
@@ -1305,9 +1286,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionWeirdInputs(){
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
@@ -1344,9 +1324,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiHeadedDotProductAttentionWeirdInputs(){
         final INDArray k = Nd4j.rand(new int[]{10, 4, 5});
         final INDArray v = Nd4j.rand(new int[]{10, 4, 5});
@@ -1403,9 +1382,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             }
         }
     }
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSufficientStatisticsOp(Nd4jBackend backend) {
         INDArray data = Nd4j.createFromArray(new double[]{
                 5.5, 0.,  0.3, 5.5,1.5, 0.,  1.3, 6.5,8.6, 0.,   0., 0.4,2.5, 1.,  0.3, 4.5,1.5, 1.,
@@ -1431,9 +1409,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardDeviation(Nd4jBackend backend) {
 
         for (boolean keepDims : new boolean[]{false, true}) {
@@ -1460,9 +1437,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSquaredNorm(Nd4jBackend backend) {
 
         for (boolean keepDims : new boolean[]{false, true}) {
@@ -1485,9 +1461,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShannonEntropy(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //AB 2020/02/11 https://github.com/eclipse/deeplearning4j/issues/8695
 
@@ -1507,9 +1482,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEntropy(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1528,9 +1502,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAMean(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1551,9 +1524,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMean(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1574,9 +1546,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm1(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1597,9 +1568,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm2(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1620,9 +1590,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormMax(Nd4jBackend backend) {
 
         SameDiff sameDiff = SameDiff.create();
@@ -1643,9 +1612,8 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSoftmaxCrossEntropyWithLogitsLoss(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
 

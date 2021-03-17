@@ -39,9 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Level1Test extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDot(Nd4jBackend backend) {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4});
@@ -54,9 +53,8 @@ public class Level1Test extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxpy(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray row = matrix.getRow(1);
@@ -65,9 +63,8 @@ public class Level1Test extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxpy2(Nd4jBackend backend) {
         val rowX = Nd4j.create(new double[]{1, 2, 3, 4});
         val rowY = Nd4j.create(new double[]{1, 2, 3, 4});

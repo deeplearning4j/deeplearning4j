@@ -42,9 +42,8 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRank(Nd4jBackend backend) {
         long[] shape = {2, 4};
         long[] stride = {1, 2};
@@ -54,9 +53,8 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrCreationShape(Nd4jBackend backend) {
         val arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         for (int i = 0; i < 2; i++)
@@ -67,9 +65,8 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShape(Nd4jBackend backend) {
         long[] shape = {2, 4};
         long[] stride = {1, 2};
@@ -86,9 +83,8 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
         assertTrue(Shape.contentEquals(stride, Shape.stride(buff)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBuff(Nd4jBackend backend) {
         long[] shape = {1, 2};
         long[] stride = {1, 2};

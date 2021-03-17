@@ -43,9 +43,8 @@ public class CompressionPerformanceTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void groundTruthTests_Threshold_1(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
         val params = Nd4j.rand(new long[]{1, 50000000}, -1.0, 1.0, Nd4j.getRandom());
@@ -87,9 +86,8 @@ public class CompressionPerformanceTests extends BaseNd4jTestWithBackends {
         log.info("Encoding time: {} ms; Serialization time: {} ms; Deserialized time: {} ms; Serialized bytes: {}", timeE / iterations, timeS / iterations, timeD / iterations, s);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void groundTruthTests_Bitmap_1(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
         val params = Nd4j.rand(new long[]{1, 25000000}, -1.0, 1.0, Nd4j.getRandom());

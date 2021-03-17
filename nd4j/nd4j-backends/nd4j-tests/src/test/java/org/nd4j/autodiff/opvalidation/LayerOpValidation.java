@@ -73,9 +73,8 @@ public class LayerOpValidation extends BaseOpValidation {
         return 90000L;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testXwPlusB(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -109,9 +108,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReluLayer(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -139,9 +137,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBiasAdd(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -165,9 +162,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2d(Nd4jBackend backend) {
         //avg pool, batch norm, conv2d, max pool 2d, pooling2d, upsampling
         //Tested elsewhere: deconv2d, depthwise2d, LRN, sconv2d
@@ -307,9 +303,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLrn2d(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -350,9 +345,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col(Nd4jBackend backend) {
         //OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/eclipse/deeplearning4j/issues/6873
         Nd4j.getRandom().setSeed(12345);
@@ -391,9 +385,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOutputShape(Nd4jBackend backend) {
         long[] inSize = {1, 8, 8, 3};
 
@@ -443,9 +436,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAvgPool(Nd4jBackend backend) {
         long[] inSize = {1, 8, 8, 3};  //NHWC
 
@@ -488,9 +480,8 @@ public class LayerOpValidation extends BaseOpValidation {
         return new int[]{in[0], in[2], in[3], in[4], in[1]};
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv3d(Nd4jBackend backend) {
         //Pooling3d, Conv3D, batch norm
         Nd4j.getRandom().setSeed(12345);
@@ -592,9 +583,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDepthWiseConv2dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int depthWise = 4;
@@ -633,9 +623,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSeparableConv2dBasic(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 2;
@@ -691,9 +680,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeconv2dBasic(Nd4jBackend backend) {
         int nIn = 2;
         int nOut = 3;
@@ -737,9 +725,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int nOut = 4;
@@ -780,9 +767,8 @@ public class LayerOpValidation extends BaseOpValidation {
         // sd.execBackwards(); // TODO: test failing here
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxPoolingArgMax(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
@@ -811,9 +797,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertArrayEquals(inArr.shape(), results[1].eval().shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxPooling2dBasic(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
@@ -871,9 +856,8 @@ public class LayerOpValidation extends BaseOpValidation {
         return max;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAvgPooling2dBasic(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
@@ -922,9 +906,8 @@ public class LayerOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAvgPooling3dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int kH = 2;
@@ -961,9 +944,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxPooling3dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int kH = 2;
@@ -1001,9 +983,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv1dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int nOut = 4;
@@ -1038,9 +1019,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv1dCausal(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
@@ -1089,9 +1069,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv1dForward(Nd4jBackend backend) {
         int nIn = 2;
         int nOut = 1;
@@ -1134,9 +1113,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv3dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int nOut = 4;
@@ -1182,9 +1160,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeConv3dBasic(Nd4jBackend backend) {
         int nIn = 4;
         int nOut = 3;
@@ -1229,9 +1206,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNorm(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
@@ -1256,9 +1232,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNorm4d(Nd4jBackend backend) {
         int mb = 3;
         int ch = 4;
@@ -1290,9 +1265,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNormOP(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
@@ -1308,9 +1282,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(res, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNormNoBias(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
@@ -1333,9 +1306,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNormOPNoBias(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
@@ -1350,9 +1322,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(res, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNormNoDeviation(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         for (int i = 0; i < 4; i++) {
@@ -1467,9 +1438,8 @@ public class LayerOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLayerNormMixedOrders(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 8).dup('f');
@@ -1516,9 +1486,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(outCC, outFC);       //Fails here
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBiasAdd_nchw_nhwc(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1549,9 +1518,8 @@ public class LayerOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDepthwiseConv2D(){
 
         int bS = 10;
@@ -1589,9 +1557,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void LSTMLayerTestCase1(Nd4jBackend backend) {
 
         int bS = 5;
@@ -1666,9 +1633,8 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void LSTMLayerTestCase2(Nd4jBackend backend) {
         int bS = 5;
         int nIn = 3;
@@ -1726,9 +1692,8 @@ public class LayerOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void LSTMLayerTestCase3(Nd4jBackend backend) {
         int bS = 5;
         int nIn = 3;
@@ -1789,9 +1754,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void GRUTestCase(Nd4jBackend backend) {
         int bS = 5;
         int nIn = 4;

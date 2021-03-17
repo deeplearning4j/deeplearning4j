@@ -45,9 +45,9 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.common.resources.Resources;
 import java.io.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.Assume.assumeNotNull;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,11 +67,11 @@ class ModelGuesserTest extends BaseDL4JTest {
         File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
         assertTrue(f.exists());
         Model guess1 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
-        assumeNotNull(guess1);
+        assertNotNull(guess1);
         f = Resources.asFile("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
         assertTrue(f.exists());
         Model guess2 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
-        assumeNotNull(guess2);
+        assertNotNull(guess2);
     }
 
     @Test
@@ -81,13 +81,13 @@ class ModelGuesserTest extends BaseDL4JTest {
         assertTrue(f.exists());
         try (InputStream inputStream = new FileInputStream(f)) {
             Model guess1 = ModelGuesser.loadModelGuess(inputStream);
-            assumeNotNull(guess1);
+            assertNotNull(guess1);
         }
         f = Resources.asFile("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
         assertTrue(f.exists());
         try (InputStream inputStream = new FileInputStream(f)) {
             Model guess1 = ModelGuesser.loadModelGuess(inputStream);
-            assumeNotNull(guess1);
+            assertNotNull(guess1);
         }
     }
 
@@ -157,7 +157,7 @@ class ModelGuesserTest extends BaseDL4JTest {
         ModelSerializer.writeModel(net, tempFile, true);
         try (InputStream inputStream = new FileInputStream(tempFile)) {
             MultiLayerNetwork network = (MultiLayerNetwork) ModelGuesser.loadModelGuess(inputStream);
-            assumeNotNull(network);
+            assertNotNull(network);
             assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
             assertEquals(net.params(), network.params());
             assertEquals(net.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());

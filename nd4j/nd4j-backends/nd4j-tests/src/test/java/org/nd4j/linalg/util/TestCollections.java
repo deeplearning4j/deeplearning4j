@@ -34,9 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCollections extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompactHeapStringList(Nd4jBackend backend) {
 
         int[] reallocSizeBytes = new int[] {1024, 1048576};

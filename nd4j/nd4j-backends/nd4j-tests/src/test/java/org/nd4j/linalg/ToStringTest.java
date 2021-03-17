@@ -37,9 +37,8 @@ import org.nd4j.common.util.ArrayUtil;
 @Slf4j
 public class ToStringTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToString(Nd4jBackend backend) throws Exception {
         assertEquals("[         1,         2,         3]",
                 Nd4j.createFromArray(1, 2, 3).toString());
@@ -57,9 +56,8 @@ public class ToStringTest extends BaseNd4jTestWithBackends {
                 Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8).toString(6, true, 1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToStringScalars(){
         DataType[] dataTypes = new DataType[]{DataType.FLOAT, DataType.DOUBLE, DataType.BOOL, DataType.INT, DataType.UINT32};
         String[] strs = new String[]{"1.0000", "1.0000", "true", "1", "1"};

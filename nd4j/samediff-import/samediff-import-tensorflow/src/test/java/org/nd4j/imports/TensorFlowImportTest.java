@@ -94,16 +94,14 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClassHolder(Nd4jBackend backend) {
         DifferentialFunctionClassHolder.getInstance();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSingleExample_1(Nd4jBackend backend) {
         val g = TFGraphMapper.importGraph(new File("C:\\Users\\raver\\Downloads\\mnist.pb"));
 
@@ -116,16 +114,14 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssertImport_1(Nd4jBackend backend) {
         val graph = TFGraphMapper.importGraph(new File("C:\\Users\\raver\\Downloads\\test.pb"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMaxImport_2() throws Exception {
         val graph = TFGraphMapper.importGraph(new ClassPathResource("/tf_graphs/examples/reductions/argmax3,4,5_-1/frozen_graph.pbtxt").getInputStream());
 
@@ -134,9 +130,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         log.info(graph.asFlatPrint());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMaxImport_1() throws Exception {
         val graph = TFGraphMapper.importGraph(new ClassPathResource("/tf_graphs/argmax.pb.txt").getInputStream());
 
@@ -148,26 +143,23 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHashEquality1(Nd4jBackend backend) {
         long hash = HashUtil.getLongHash("Conv2D");
         assertEquals(-1637140380760460323L, hash);
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHashEquality2(Nd4jBackend backend) {
         long hash = HashUtil.getLongHash("switch");
         assertEquals(-1988317239813741487L, hash);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCustomOps1(Nd4jBackend backend) {
         val map = Nd4j.getExecutioner().getCustomOperations();
 
@@ -249,9 +241,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLenet() throws Exception {
         /**
          * Produced with:
@@ -276,17 +267,15 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         System.out.println(convNode);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIntermediate2() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/max_lstm.pb").getInputStream());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIntermediate1() throws Exception {
         Nd4j.create(1);
 
@@ -306,9 +295,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIntermediateLoop1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/simple_while.pb.txt").getInputStream());
@@ -331,9 +319,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIntermediateLoop3() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/nested_while.pb.txt").getInputStream());
@@ -507,9 +494,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIntermediateReduction() throws Exception {
         Nd4j.create(1);
         SameDiff tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
@@ -575,9 +561,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         */
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDefaultArgs(Nd4jBackend backend) {
         val op = new RectifiedLinear();
 
@@ -588,9 +573,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(0.0f, value.floatValue(), 1e-5f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInferShape() throws IOException {
         /**
          * node {
@@ -692,9 +676,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testImportMapping1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/ae_00/frozen_model.pb").getInputStream());
@@ -714,9 +697,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCondMapping1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
@@ -731,9 +713,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);*/
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCondMapping2() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
@@ -750,9 +731,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhileMapping1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
@@ -771,9 +751,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhileMapping2() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
@@ -791,9 +770,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);*/
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhileMapping3() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
@@ -812,9 +790,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhileDualMapping1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_1/frozen_model.pb").getInputStream());
@@ -834,9 +811,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhileDualMapping2() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_1/frozen_model.pb").getInputStream());
@@ -857,9 +833,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMixedWhileCond1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_nested/frozen_model.pb").getInputStream());
@@ -1015,9 +990,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_true.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build(), true);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray_119_1() throws Exception {
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
         assertNotNull(tg);
@@ -1030,9 +1004,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray_119_2() throws Exception {
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/tensor_array_read.pb.txt").getInputStream());
         assertNotNull(tg);
@@ -1047,9 +1020,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray_119_3() throws Exception {
         Nd4j.create(1);
 
@@ -1063,9 +1035,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray_119_4() throws Exception {
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
         assertNotNull(tg);
@@ -1079,9 +1050,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLossImport_1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/losses/log_loss_rank2_axis1_SUM_OVER_BATCH_SIZE/frozen_model.pb").getInputStream());
@@ -1089,9 +1059,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         tg.outputAll(null);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testG_1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/g_08/frozen_model.pb").getInputStream());
@@ -1099,9 +1068,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         val g = tg.asFlatBuffers(true);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBoolImport_1() throws Exception {
         Nd4j.create(1);
         for (int e = 0; e < 1000; e++){
@@ -1114,9 +1082,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogical_1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/transforms/logicalxor_3,4_3,4/frozen_model.pb").getInputStream());
@@ -1124,9 +1091,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         tg.outputAll(null);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSSD_1() throws Exception {
         // tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb
         Nd4j.create(1);
@@ -1143,9 +1109,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         });
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomGraph() throws Exception {
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/assert_equal/scalar_float32/frozen_model.pb").getInputStream());
         assertNotNull(tg);
@@ -1153,9 +1118,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/scalar_float32.fb"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomGraph2() throws Exception {
         val tg = TFGraphMapper.importGraph(new File("c:\\develop\\mobilenet_v2_1.0_224_frozen.pb"));
         assertNotNull(tg);
@@ -1174,9 +1138,8 @@ public class TensorFlowImportTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testControlDependencies1() throws Exception {
         SameDiff sd = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/cond/cond_true/frozen_model.pb").getInputStream());
 

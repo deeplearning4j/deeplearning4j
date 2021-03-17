@@ -54,9 +54,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatVertically(Nd4jBackend backend) {
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
@@ -78,9 +77,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatScalars(Nd4jBackend backend) {
         INDArray first = Nd4j.arange(0, 1).reshape(1, 1);
         INDArray second = Nd4j.arange(0, 1).reshape(1, 1);
@@ -90,9 +88,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         assertTrue(secondRet.isRowVector());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatScalars1(Nd4jBackend backend) {
         INDArray first = Nd4j.scalar(1);
         INDArray second = Nd4j.scalar(2);
@@ -105,9 +102,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         assertEquals(3f, result.getFloat(2), 0.01f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatVectors1(Nd4jBackend backend) {
         INDArray first = Nd4j.ones(1, 10);
         INDArray second = Nd4j.ones(1, 10);
@@ -125,9 +121,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatMatrices(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray b = a.dup();
@@ -146,9 +141,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         assertEquals(zeroAssertion, concat);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign(Nd4jBackend backend) {
         INDArray vector = Nd4j.linspace(1, 5, 5, Nd4j.dataType());
         vector.assign(1);
@@ -165,9 +159,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         assertEquals(tensor, ones);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatRowVectors(Nd4jBackend backend) {
         INDArray rowVector = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new int[] {1, 6});
         INDArray matrix = Nd4j.create(new double[] {7, 8, 9, 10, 11, 12}, new int[] {1, 6});
@@ -182,9 +175,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3d(Nd4jBackend backend) {
         INDArray first = Nd4j.linspace(1, 24, 24, Nd4j.dataType()).reshape('c', 2, 3, 4);
         INDArray second = Nd4j.linspace(24, 36, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
@@ -233,7 +225,7 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatVector(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1));
@@ -244,7 +236,7 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3dv2(Nd4jBackend backend) {
 
         INDArray first = Nd4j.linspace(1, 24, 24).reshape('c', 2, 3, 4);
@@ -328,9 +320,8 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLargeConcat(Nd4jBackend backend) {
         val list = new ArrayList<INDArray>();
 

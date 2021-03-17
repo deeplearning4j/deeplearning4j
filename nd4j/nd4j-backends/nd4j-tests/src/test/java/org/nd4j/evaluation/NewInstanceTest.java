@@ -46,9 +46,8 @@ public class NewInstanceTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewInstances(Nd4jBackend backend) {
         boolean print = true;
         Nd4j.getRandom().setSeed(12345);

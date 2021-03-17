@@ -43,9 +43,8 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorPerSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(2, 2, 2, 2);
         assertEquals(4, NDArrayMath.vectorsPerSlice(arr));
@@ -58,26 +57,23 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatricesPerSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(2, 2, 2, 2);
         assertEquals(2, NDArrayMath.matricesPerSlice(arr));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLengthPerSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(2, 2, 2, 2);
         val lengthPerSlice = NDArrayMath.lengthPerSlice(arr);
         assertEquals(8, lengthPerSlice);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void toffsetForSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(3, 2, 2);
         int slice = 1;
@@ -85,17 +81,15 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMapOntoVector(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(3, 2, 2);
         assertEquals(NDArrayMath.mapIndexOntoVector(2, arr), 4);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNumVectors(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(3, 2, 2);
         assertEquals(4, NDArrayMath.vectorsPerSlice(arr));
@@ -104,9 +98,8 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOffsetForSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         int[] dimensions = {0, 1};
@@ -142,18 +135,16 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOddDimensions(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(3, 2, 2);
         val numMatrices = NDArrayMath.matricesPerSlice(arr);
         assertEquals(1, numMatrices);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTotalVectors(Nd4jBackend backend) {
         INDArray arr2 = Nd4j.create(2, 2, 2, 2);
         assertEquals(8, NDArrayMath.numVectors(arr2));

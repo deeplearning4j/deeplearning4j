@@ -46,9 +46,8 @@ public class PaddingTestsC extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPrepend(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 1, 1, 1, 2}, {1, 1, 1, 3, 4}});
@@ -60,9 +59,8 @@ public class PaddingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPaddingOneThrougFour(Nd4jBackend backend) {
         int ph = 0;
         int pw = 0;
@@ -82,9 +80,8 @@ public class PaddingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAppend2(Nd4jBackend backend) {
         INDArray ret = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -99,9 +96,8 @@ public class PaddingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(appendAssertion, appended);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPaddingTensor(Nd4jBackend backend) {
         //,1,1,1,1,2,2,0
         int kh = 1, kw = 1, sy = 1, sx = 1, ph = 2, pw = 2;
@@ -119,9 +115,8 @@ public class PaddingTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAppend(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray otherAppend = Nd4j.append(linspace, 3, 1.0, -1);

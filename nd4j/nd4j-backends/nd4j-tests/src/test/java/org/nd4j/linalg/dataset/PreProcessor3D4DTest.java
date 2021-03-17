@@ -48,9 +48,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBruteForce3d(Nd4jBackend backend) {
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
@@ -87,9 +86,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBruteForce3dMaskLabels(Nd4jBackend backend) {
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
@@ -147,9 +145,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
         assertEquals(myMinMaxScaler.getLabelMax().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMax.castTo(DataType.FLOAT));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdX(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {11.10, 22.20, 33.30, 44.40, 55.50, 66.60, 77.70, 88.80, 99.90,
                 111.00, 122.10, 133.20, 144.30, 155.40, 166.50, 177.60, 188.70, 199.80, 210.90, 222.00, 233.10,
@@ -243,9 +240,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
         assertEquals(301.22601, templateStd, 0.01);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBruteForce4d(Nd4jBackend backend) {
         Construct4dDataSet imageDataSet = new Construct4dDataSet(10, 5, 10, 15);
 
@@ -270,16 +266,14 @@ public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
         myNormalizer.transform(copyDataSet);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test3dRevertStandardize(Nd4jBackend backend) {
         test3dRevert(new NormalizerStandardize());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test3dRevertNormalize(Nd4jBackend backend) {
         test3dRevert(new NormalizerMinMaxScaler());
     }
@@ -299,9 +293,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
         assertEquals(dataCopy.getLabels(), data.getLabels());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test3dNinMaxScaling(Nd4jBackend backend) {
         INDArray values = Nd4j.linspace(-10, 10, 100).reshape(5, 2, 10);
         DataSet data = new DataSet(values, values);

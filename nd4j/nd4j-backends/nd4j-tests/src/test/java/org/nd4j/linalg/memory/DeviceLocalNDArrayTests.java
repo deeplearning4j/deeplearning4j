@@ -44,9 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeviceLocalStringArray(Nd4jBackend backend){
         val arr = Nd4j.create(Arrays.asList("first", "second"), 2);
         assertEquals(DataType.UTF8, arr.dataType());
@@ -60,9 +59,8 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDtypes(Nd4jBackend backend){
         for(DataType globalDType : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
             Nd4j.setDefaultDataTypes(globalDType, globalDType);
@@ -75,9 +73,8 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeviceLocalUpdate_1(Nd4jBackend backend) throws Exception {
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
@@ -121,9 +118,8 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDelayedDeviceLocalUpdate_1(Nd4jBackend backend) throws Exception {
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
@@ -150,9 +146,8 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
         assertEquals(numDevices, counter.get());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDelayedDeviceLocalUpdate_2(Nd4jBackend backend) throws Exception {
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)

@@ -36,9 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestPCA extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFactorDims(Nd4jBackend backend) {
         int m = 13;
         int n = 4;
@@ -61,9 +60,8 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFactorSVDTransposed(Nd4jBackend backend) {
         int m = 4;
         int n = 13;
@@ -86,9 +84,8 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFactorVariance(Nd4jBackend backend) {
         int m = 13;
         int n = 4;
@@ -117,9 +114,8 @@ public class TestPCA extends BaseNd4jTestWithBackends {
     /**
      * Test new PCA routines, added by Luke Czapla
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPCA(Nd4jBackend backend) {
         INDArray m = Nd4j.randn(10000, 16);
         // 10000 random correlated samples of 16 features to analyze

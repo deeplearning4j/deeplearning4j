@@ -71,9 +71,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
         return 'f';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCrash(Nd4jBackend backend) {
         INDArray array3d = Nd4j.ones(1, 10, 10);
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 0);
@@ -83,9 +82,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array4d, 0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
@@ -100,9 +98,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemmWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED, DataType.DOUBLE);
@@ -158,9 +155,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemvApacheCommons(Nd4jBackend backend) {
 
         int[] rowsArr = new int[] {4, 4, 4, 8, 8, 8};
@@ -215,9 +211,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddSubtractWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
@@ -235,9 +230,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMulDivOnCheckUtilMatrices(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);

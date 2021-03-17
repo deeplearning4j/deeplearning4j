@@ -56,9 +56,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveragedHolder_1(Nd4jBackend backend) {
         val holder = new AveragingTransactionsHolder();
 
@@ -68,9 +67,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertEquals(100L, holder.getAverageValue(MemcpyDirection.HOST_TO_HOST).longValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveragedHolder_2(Nd4jBackend backend) {
         val holder = new AveragingTransactionsHolder();
 
@@ -81,9 +79,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertEquals(100L, holder.getAverageValue(MemcpyDirection.HOST_TO_HOST).longValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerformanceTracker_1(Nd4jBackend backend) {
         val perf = PerformanceTracker.getInstance();
 
@@ -92,9 +89,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertEquals(50000, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerformanceTracker_2(Nd4jBackend backend) {
         val perf = PerformanceTracker.getInstance();
 
@@ -103,9 +99,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertEquals(500000, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerformanceTracker_3(Nd4jBackend backend) {
         val perf = PerformanceTracker.getInstance();
 

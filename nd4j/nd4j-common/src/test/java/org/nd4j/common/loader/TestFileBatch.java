@@ -59,7 +59,7 @@ public class TestFileBatch {
 
         assertEquals(10, fb.getFileBytes().size());
         assertEquals(10, fb.getOriginalUris().size());
-        for( int i=0; i<10; i++ ){
+        for( int i = 0; i < 10; i++) {
             byte[] expBytes = ("File contents - file " + i).getBytes(StandardCharsets.UTF_8);
             byte[] actBytes = fb.getFileBytes().get(i);
             assertArrayEquals(expBytes, actBytes);
@@ -87,7 +87,6 @@ public class TestFileBatch {
 
         //Check that it is indeed a valid zip file:
         File f = Files.createTempFile(testDir,"testfile","zip").toFile();
-        f.delete();
         fb.writeAsZip(f);
 
         ZipFile zf = new ZipFile(f);
@@ -99,9 +98,10 @@ public class TestFileBatch {
             names.add(entry.getName());
         }
 
+        zf.close();
         assertEquals(11, names.size()); //10 files, 1 "original file names" file
         assertTrue(names.contains(FileBatch.ORIGINAL_PATHS_FILENAME));
-        for( int i=0; i<10; i++ ){
+        for( int i = 0; i < 10; i++) {
             String n = "file_" + i + ".txt";
             assertTrue(names.contains(n),n);
         }

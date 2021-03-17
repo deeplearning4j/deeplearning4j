@@ -51,9 +51,8 @@ public class PermuteDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_emptyDatasetInInputdataSetIsNCHW_expect_emptyDataSet(Nd4jBackend backend) {
         // Assemble
         PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
@@ -66,9 +65,8 @@ public class PermuteDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
         assertTrue(ds.isEmpty());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIsNCHW_expect_dataSetTransformedToNHWC(Nd4jBackend backend) {
         // Assemble
         int numChannels = 3;
@@ -113,9 +111,8 @@ public class PermuteDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIsNHWC_expect_dataSetTransformedToNCHW(Nd4jBackend backend) {
         // Assemble
         int numChannels = 3;

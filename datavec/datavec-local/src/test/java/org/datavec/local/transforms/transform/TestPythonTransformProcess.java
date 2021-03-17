@@ -42,7 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
+
 import static org.datavec.api.transform.schema.Schema.Builder;
 import static org.junit.jupiter.api.Assertions.*;
 

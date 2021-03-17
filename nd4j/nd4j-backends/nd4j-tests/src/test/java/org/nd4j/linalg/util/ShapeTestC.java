@@ -46,9 +46,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToOffsetZero(Nd4jBackend backend) {
         INDArray matrix = Nd4j.rand(3, 5);
         INDArray rowOne = matrix.getRow(1);
@@ -67,9 +66,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTile(Nd4jBackend backend) {
         INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0).reshape(1, 1);
         //INDArray[] inputs, INDArray[] outputs, int[] axis
@@ -81,9 +79,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testElementWiseCompareOnesInMiddle(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
@@ -92,9 +89,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_1_T(Nd4jBackend backend) {
         val shape = new int[]{5, 5};
         val axis = new int[]{1, 0, 1};
@@ -104,9 +100,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{1, 1}, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_1_F(Nd4jBackend backend) {
         val shape = new int[]{5, 5};
         val axis = new int[]{0, 0, 1};
@@ -116,9 +111,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{}, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_2_T(Nd4jBackend backend) {
         val shape = new int[]{5, 5, 5};
         val axis = new int[]{1, 0, 1};
@@ -128,9 +122,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{1, 1, 5}, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_2_F(Nd4jBackend backend) {
         val shape = new int[]{5, 5, 5};
         val axis = new int[]{0, 0, 1};
@@ -141,9 +134,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_3_T(Nd4jBackend backend) {
         val shape = new int[]{1, 1};
         val axis = new int[]{1, 0, 1};
@@ -153,9 +145,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{1, 1}, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_3_F(Nd4jBackend backend) {
         val shape = new int[]{1, 1};
         val axis = new int[]{0, 0};
@@ -168,9 +159,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKeepDimsShape_4_F(Nd4jBackend backend) {
         val shape = new int[]{4, 4};
         val axis = new int[]{0, 0};
@@ -183,9 +173,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxisNormalization_1(Nd4jBackend backend) {
         val axis = new int[] {1, -2};
         val rank = 2;
@@ -195,9 +184,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, norm);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxisNormalization_2(Nd4jBackend backend) {
         val axis = new int[] {1, -2, 0};
         val rank = 2;
@@ -220,9 +208,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxisNormalization_4(Nd4jBackend backend) {
         val axis = new int[] {1, 2, 0};
         val rank = 3;

@@ -60,7 +60,8 @@ public abstract class BaseNd4jTestWithBackends extends BaseND4JTest {
 
 
     public static Stream<Arguments> configs() {
-        return BACKENDS.stream().map(input -> Arguments.of(input));
+        Stream<Arguments> ret =  BACKENDS.stream().map(input -> Arguments.of(input));
+        return ret;
     }
 
     @BeforeEach

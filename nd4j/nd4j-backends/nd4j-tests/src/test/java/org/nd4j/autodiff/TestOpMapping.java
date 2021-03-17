@@ -145,9 +145,8 @@ public class TestOpMapping extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOpMappingCoverage() throws Exception {
         Map<String, DifferentialFunction> opNameMapping = ImportClassMapping.getOpNameMapping();
         Map<String, DifferentialFunction> tfOpNameMapping = ImportClassMapping.getTFOpMappingFunctions();
@@ -197,9 +196,8 @@ public class TestOpMapping extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOpsInNamespace(Nd4jBackend backend) throws Exception {
         //Ensure that every op is either in a namespace, OR it's explicitly marked as ignored (i.e., an op that we don't
         // want to add to a namespace for some reason)
@@ -361,7 +359,7 @@ public class TestOpMapping extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void generateOpClassList(Nd4jBackend backend) throws Exception{
         Reflections reflections = new Reflections("org.nd4j");
         Set<Class<? extends DifferentialFunction>> subTypes = reflections.getSubTypesOf(DifferentialFunction.class);

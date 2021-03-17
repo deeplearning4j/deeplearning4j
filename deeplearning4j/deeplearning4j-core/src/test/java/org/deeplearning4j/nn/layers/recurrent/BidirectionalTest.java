@@ -150,7 +150,6 @@ class BidirectionalTest extends BaseDL4JTest {
     }
 
     @DisplayName("Compare Implementations Comp Graph")
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     void compareImplementationsCompGraph(RNNFormat rnnFormat) {

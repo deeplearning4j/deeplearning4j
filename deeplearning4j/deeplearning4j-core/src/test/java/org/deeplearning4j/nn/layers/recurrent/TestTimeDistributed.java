@@ -61,7 +61,6 @@ public class TestTimeDistributed extends BaseDL4JTest {
         return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testTimeDistributed(RNNFormat rnnDataFormat){

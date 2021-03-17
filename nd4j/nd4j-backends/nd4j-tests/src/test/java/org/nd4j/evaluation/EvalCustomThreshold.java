@@ -46,9 +46,8 @@ public class EvalCustomThreshold extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationCustomBinaryThreshold(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -114,9 +113,8 @@ public class EvalCustomThreshold extends BaseNd4jTestWithBackends {
         assertEquals(ex2.getConfusionMatrix(), e025v2.getConfusionMatrix());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationCostArray(Nd4jBackend backend) {
 
 
@@ -164,9 +162,8 @@ public class EvalCustomThreshold extends BaseNd4jTestWithBackends {
         assertEquals(1.0, e2.accuracy(), 1e-6);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinaryCustomThreshold(Nd4jBackend backend) {
 
         //Sanity check: same results for 0.5 threshold vs. default (no threshold)

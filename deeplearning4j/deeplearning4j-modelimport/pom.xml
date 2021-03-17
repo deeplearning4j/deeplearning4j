@@ -90,6 +90,10 @@
             <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common-tests</artifactId>
             <version>${project.version}</version>
@@ -120,113 +124,4 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>test-nd4j-native</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <inherited>true</inherited>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.nd4j</groupId>
-                                <artifactId>nd4j-native</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <environmentVariables>
-
-                            </environmentVariables>
-                            <testSourceDirectory>src/test/java</testSourceDirectory>
-                            <includes>
-                                <include>*.java</include>
-                                <include>**/*.java</include>
-                                <include>**/Test*.java</include>
-                                <include>**/*Test.java</include>
-                                <include>**/*TestCase.java</include>
-                            </includes>
-                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
-                            <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>
-                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
-                                </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>
-                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
-                                </org.nd4j.linalg.tests.backendstorun>
-                            </systemPropertyVariables>
-                            <!--
-                                Maximum heap size was set to 8g, as a minimum required value for tests run.
-                                Depending on a build machine, default value is not always enough.
-
-                                For testing large zoo models, this may not be enough (so comment it out).
-                            -->
-                            <argLine></argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>test-nd4j-cuda-11.0</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-11.0</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.maven.surefire</groupId>
-                                <artifactId>surefire-junit47</artifactId>
-                                <version>2.19.1</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <environmentVariables>
-                            </environmentVariables>
-                            <testSourceDirectory>src/test/java</testSourceDirectory>
-                            <includes>
-                                <include>*.java</include>
-                                <include>**/*.java</include>
-                                <include>**/Test*.java</include>
-                                <include>**/*Test.java</include>
-                                <include>**/*TestCase.java</include>
-                            </includes>
-                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
-                            <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>
-                                    org.nd4j.linalg.jcublas.JCublasBackend
-                                </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>
-                                    org.nd4j.linalg.jcublas.JCublasBackend
-                                </org.nd4j.linalg.tests.backendstorun>
-                            </systemPropertyVariables>
-                            <!--
-                                Maximum heap size was set to 6g, as a minimum required value for tests run.
-                                Depending on a build machine, default value is not always enough.
-                            -->
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

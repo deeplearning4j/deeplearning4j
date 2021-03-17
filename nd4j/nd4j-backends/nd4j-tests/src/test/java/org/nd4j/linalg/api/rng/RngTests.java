@@ -37,9 +37,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class RngTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRngConstitency(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(123);
         INDArray arr = Nd4j.rand(1, 5);
@@ -48,9 +47,8 @@ public class RngTests extends BaseNd4jTestWithBackends {
         assertEquals(arr, arr2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomWithOrder(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -106,9 +104,8 @@ public class RngTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomBinomial(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         //silly tests. Just increasing the usage for randomBinomial to stop compiler warnings.

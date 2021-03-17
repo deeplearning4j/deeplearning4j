@@ -48,9 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StaticShapeTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeInd2Sub(Nd4jBackend backend) {
         long normalTotal = 0;
         long n = 1000;
@@ -69,9 +68,8 @@ public class StaticShapeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBufferToIntShapeStrideMethods(Nd4jBackend backend) {
         //Specifically: Shape.shape(IntBuffer), Shape.shape(DataBuffer)
         //.isRowVectorShape(DataBuffer), .isRowVectorShape(IntBuffer)

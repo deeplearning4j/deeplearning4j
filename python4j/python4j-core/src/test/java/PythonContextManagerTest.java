@@ -23,11 +23,13 @@
 import org.nd4j.python4j.Python;
 import org.nd4j.python4j.PythonContextManager;
 import org.nd4j.python4j.PythonExecutioner;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 import org.nd4j.python4j.PythonGIL;
 
 import javax.annotation.concurrent.NotThreadSafe;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NotThreadSafe
 public class PythonContextManagerTest {
@@ -44,13 +46,13 @@ public class PythonContextManagerTest {
 
 
             Python.setContext("context1");
-            Assert.assertEquals(1, PythonExecutioner.getVariable("a").toInt());
+            assertEquals(1, PythonExecutioner.getVariable("a").toInt());
 
             Python.setContext("context2");
-            Assert.assertEquals(2, PythonExecutioner.getVariable("a").toInt());
+            assertEquals(2, PythonExecutioner.getVariable("a").toInt());
 
             Python.setContext("context3");
-            Assert.assertEquals(3, PythonExecutioner.getVariable("a").toInt());
+            assertEquals(3, PythonExecutioner.getVariable("a").toInt());
 
             PythonContextManager.deleteNonMainContexts();
 

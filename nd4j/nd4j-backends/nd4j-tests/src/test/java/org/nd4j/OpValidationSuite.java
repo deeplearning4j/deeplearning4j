@@ -20,21 +20,19 @@
 
 package org.nd4j;
 
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
 //import org.nd4j.imports.tfgraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+
+/*@Suite.SuiteClasses({
         //Note: these will be run as part of the suite only, and will NOT be run again separately
         LayerOpValidation.class,
         LossOpValidation.class,
@@ -48,7 +46,7 @@ import static org.junit.Assume.assumeFalse;
         //TF import tests
         //TFGraphTestAllSameDiff.class
         //TFGraphTestAllLibnd4j.class
-})
+})*/
 //IMPORTANT: This ignore is added to avoid maven surefire running both the suite AND the individual tests in "mvn test"
 // With it ignored here, the individual tests will run outside (i.e., separately/independently) of the suite in both "mvn test" and IntelliJ
 @Disabled
@@ -84,7 +82,7 @@ public class OpValidationSuite {
         Nd4j.getRandom().setSeed(123);
     }
 
-    @AfterClass
+    @AfterEach
     public static void afterClass() {
         Nd4j.setDataType(initialType);
 

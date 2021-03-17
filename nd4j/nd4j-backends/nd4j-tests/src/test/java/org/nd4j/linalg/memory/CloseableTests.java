@@ -38,9 +38,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CloseableTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimpleRelease_1(Nd4jBackend backend) {
         val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
         assertTrue(array.closeable());
@@ -50,9 +49,8 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
         assertFalse(array.closeable());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCyclicRelease_1(Nd4jBackend backend) {
         for (int e = 0; e < 100; e++) {
             try (val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5})) {
@@ -62,9 +60,8 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testViewRelease_1(Nd4jBackend backend) {
         val array = Nd4j.create(5, 5);
         assertTrue(array.closeable());
@@ -75,9 +72,8 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
         assertFalse(view.closeable());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAttachedRelease_1(Nd4jBackend backend) {
         val wsconf = WorkspaceConfiguration.builder().build();
 
@@ -89,7 +85,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccessException_1(Nd4jBackend backend) {
        assertThrows(IllegalStateException.class,() -> {
            val array = Nd4j.create(5, 5);
@@ -102,7 +98,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccessException_2(Nd4jBackend backend) {
       assertThrows(IllegalStateException.class,() -> {
           val array = Nd4j.create(5, 5);

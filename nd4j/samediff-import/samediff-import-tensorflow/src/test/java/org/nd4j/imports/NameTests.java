@@ -33,13 +33,11 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-
 public class NameTests  extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_1(Nd4jBackend backend) {
         val str = "Name";
         val exp = "Name";
@@ -50,9 +48,8 @@ public class NameTests  extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_2(Nd4jBackend backend) {
         val str = "Name_2";
         val exp = "Name_2";
@@ -62,9 +59,8 @@ public class NameTests  extends BaseNd4jTestWithBackends {
         assertEquals(0, pair.getSecond().intValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_3(Nd4jBackend backend) {
         val str = "Name_1:2";
         val exp = "Name_1";
@@ -74,9 +70,8 @@ public class NameTests  extends BaseNd4jTestWithBackends {
         assertEquals(2, pair.getSecond().intValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_4(Nd4jBackend backend) {
         val str = "Name_1:1:2";
         val exp = "Name_1:1";

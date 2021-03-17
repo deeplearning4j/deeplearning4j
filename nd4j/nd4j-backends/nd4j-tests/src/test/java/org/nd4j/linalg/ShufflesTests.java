@@ -32,15 +32,14 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-import static junit.framework.TestCase.assertTrue;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
 public class ShufflesTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimpleShuffle1(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(10, 10);
         for (int x = 0; x < 10; x++) {
@@ -62,9 +61,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         assertTrue(scanner.compareRow(array));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimpleShuffle2(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(10, 10);
         for (int x = 0; x < 10; x++) {
@@ -79,9 +77,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         assertTrue(scanner.compareColumn(array));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimpleShuffle3(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(11, 10);
         for (int x = 0; x < 11; x++) {
@@ -97,9 +94,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         assertTrue(scanner.compareRow(array));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSymmetricShuffle1(Nd4jBackend backend) {
         INDArray features = Nd4j.zeros(10, 10);
         INDArray labels = Nd4j.zeros(10, 3);
@@ -137,9 +133,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSymmetricShuffle2(Nd4jBackend backend) {
         INDArray features = Nd4j.zeros(10, 10, 20);
         INDArray labels = Nd4j.zeros(10, 10, 3);
@@ -177,9 +172,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSymmetricShuffle3(Nd4jBackend backend) {
         INDArray features = Nd4j.zeros(10, 10, 20);
         INDArray featuresMask = Nd4j.zeros(10, 20);
@@ -244,9 +238,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
      * There's SMALL chance this test will randomly fail, since spread isn't too big
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfVectors1(Nd4jBackend backend) {
         int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 20);
         int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 20);
@@ -267,9 +260,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInterleavedVector1(Nd4jBackend backend) {
         int[] array1 = ArrayUtil.buildInterleavedVector(new Random(12), 20);
         int[] array2 = ArrayUtil.buildInterleavedVector(new Random(75), 20);
@@ -290,9 +282,8 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInterleavedVector3(Nd4jBackend backend) {
         for (int e = 0; e < 1000; e++) {
             int length = e + 256; //RandomUtils.nextInt(121, 2073);

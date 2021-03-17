@@ -47,43 +47,38 @@ public class ArrayOptionsTests extends BaseNd4jTestWithBackends {
         shapeInfo = new long[]{2, 2, 2, 2, 1, 0, 1, 99};
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayType_0(Nd4jBackend backend) {
         assertEquals(ArrayType.DENSE, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayType_1(Nd4jBackend backend) {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.EMPTY);
 
         assertEquals(ArrayType.EMPTY, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayType_2(Nd4jBackend backend) {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.SPARSE);
 
         assertEquals(ArrayType.SPARSE, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayType_3(Nd4jBackend backend) {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.COMPRESSED);
 
         assertEquals(ArrayType.COMPRESSED, ArrayOptionsHelper.arrayType(shapeInfo));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDataTypesToFromLong(Nd4jBackend backend) {
 
         for(DataType dt : DataType.values()){

@@ -37,9 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestSerialization extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationFullArrayNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 100;
         INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
@@ -69,9 +68,8 @@ public class TestSerialization extends BaseNd4jTestWithBackends {
         assertEquals(arrF, arr2F);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationFullArrayJava(Nd4jBackend backend) throws Exception {
         int length = 100;
         INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
@@ -102,9 +100,8 @@ public class TestSerialization extends BaseNd4jTestWithBackends {
         assertEquals(arrF, arr2F);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationOnViewsNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 100;
         INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
@@ -140,9 +137,8 @@ public class TestSerialization extends BaseNd4jTestWithBackends {
         assertEquals(subF, arr2F);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationOnViewsJava(Nd4jBackend backend) throws Exception {
         int length = 100;
         INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);

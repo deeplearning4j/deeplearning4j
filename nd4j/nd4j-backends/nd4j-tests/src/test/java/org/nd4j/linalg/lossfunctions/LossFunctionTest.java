@@ -45,16 +45,13 @@ import org.nd4j.linalg.lossfunctions.impl.LossMSLE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class LossFunctionTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClippingXENT(Nd4jBackend backend) {
 
         ILossFunction l1 = new LossBinaryXENT(0);
@@ -83,9 +80,8 @@ public class LossFunctionTest extends BaseNd4jTestWithBackends {
         assertEquals(0, match2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWeightedLossFunctionDTypes(Nd4jBackend backend){
 
         for(DataType activationsDt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){

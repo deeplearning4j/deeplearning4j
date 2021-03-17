@@ -60,9 +60,8 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
     double tolerancePerc = 0.03; //10% +/- because this is not a very large sample
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void allMajority(Nd4jBackend backend) {
         float[] someTargets = new float[] {0.01f, 0.1f, 0.5f};
         DataSet d = allMajorityDataSet(false);
@@ -87,9 +86,8 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void allMinority(Nd4jBackend backend) {
         float[] someTargets = new float[] {0.01f, 0.1f, 0.5f};
         DataSet d = allMinorityDataSet(false);
@@ -117,9 +115,8 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
         Different distribution of labels within a minibatch, different time series length within a minibatch
         Checks distribution of classes after preprocessing
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void mixedDist(Nd4jBackend backend) {
 
         UnderSamplingByMaskingPreProcessor preProcessor = new UnderSamplingByMaskingPreProcessor(targetDist, window);
@@ -176,9 +173,8 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
         Same as above but with one hot vectors instead of label size = 1
         Also checks minority override
     */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void mixedDistOneHot(Nd4jBackend backend) {
 
         //preprocessor should give 30% minority class for every "window"
@@ -238,9 +234,8 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
     }
 
     //all the tests above into one multidataset
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testForMultiDataSet(Nd4jBackend backend) {
         DataSet dataSetA = knownDistVariedDataSet(new float[] {0.8f, 0.1f, 0.2f}, false);
         DataSet dataSetB = knownDistVariedDataSet(new float[] {0.2f, 0.9f, 0.8f}, true);

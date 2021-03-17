@@ -35,9 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 public class TestNDArrayCreationUtil extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapes() {
 
         long[] shape2d = {2, 3};

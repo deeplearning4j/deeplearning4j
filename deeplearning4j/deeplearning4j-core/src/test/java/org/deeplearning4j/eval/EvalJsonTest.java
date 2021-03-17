@@ -27,11 +27,10 @@ import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
-import static junit.framework.TestCase.assertNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Eval Json Test")
 class EvalJsonTest extends BaseDL4JTest {

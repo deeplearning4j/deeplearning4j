@@ -40,9 +40,8 @@ public class CustomEvaluationTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void customEvalTest(Nd4jBackend backend){
         CustomEvaluation accuracyEval = new CustomEvaluation<>(
                 (labels, pred, mask, meta) -> new Pair<>(labels.eq(pred).castTo(DataType.INT).sumNumber(), labels.size(0)),

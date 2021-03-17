@@ -51,9 +51,8 @@ public class MultiNormalizerHybridTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoNormalizationByDefault(Nd4jBackend backend) {
         SUT.fit(data);
         SUT.preProcess(data);
@@ -63,9 +62,8 @@ public class MultiNormalizerHybridTest extends BaseNd4jTestWithBackends {
         assertEquals(dataCopy, data);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGlobalNormalization(Nd4jBackend backend) {
         SUT.standardizeAllInputs().minMaxScaleAllOutputs(-10, 10).fit(data);
         SUT.preProcess(data);
@@ -82,9 +80,8 @@ public class MultiNormalizerHybridTest extends BaseNd4jTestWithBackends {
         assertEquals(dataCopy, data);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpecificInputOutputNormalization(Nd4jBackend backend) {
         SUT.minMaxScaleAllInputs().standardizeInput(1).standardizeOutput(0).fit(data);
         SUT.preProcess(data);
@@ -101,9 +98,8 @@ public class MultiNormalizerHybridTest extends BaseNd4jTestWithBackends {
         assertEquals(dataCopy, data);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMasking(Nd4jBackend backend) {
         MultiDataSet timeSeries = new MultiDataSet(
                 new INDArray[] {Nd4j.create(new float[] {1, 2, 3, 4, 5, 0, 7, 0}).reshape(2, 2, 2),},
@@ -128,9 +124,8 @@ public class MultiNormalizerHybridTest extends BaseNd4jTestWithBackends {
         assertEquals(timeSeriesCopy, timeSeries);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDataSetWithoutLabels(Nd4jBackend backend) {
         SUT.standardizeAllInputs().standardizeAllOutputs().fit(data);
 
@@ -140,9 +135,8 @@ public class MultiNormalizerHybridTest extends BaseNd4jTestWithBackends {
         SUT.preProcess(data);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDataSetWithoutFeatures(Nd4jBackend backend) {
         SUT.standardizeAllInputs().standardizeAllOutputs().fit(data);
 

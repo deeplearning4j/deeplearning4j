@@ -42,9 +42,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEq1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 2, 1});
         INDArray exp = Nd4j.create(new boolean[] {false, false, true, false});
@@ -54,9 +53,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNEq1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 2, 1});
         INDArray exp = Nd4j.create(new boolean[] {true, false, true, false});
@@ -66,9 +64,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLT1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 2, 1});
         INDArray exp = Nd4j.create(new boolean[] {true, true, false, true});
@@ -79,9 +76,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGT1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 2, 4});
         INDArray exp = Nd4j.create(new boolean[] {false, false, true, true});
@@ -92,9 +88,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMinMax1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {1, 3, 5, 7});
         INDArray xCopy = x.dup();
@@ -117,9 +112,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(exp2, x);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayMinMax(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {1, 3, 5, 7});
         INDArray y = Nd4j.create(new double[] {2, 2, 6, 6});
@@ -152,9 +146,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(yCopy, y);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
@@ -165,9 +158,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOr1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
@@ -178,9 +170,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testXor1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
@@ -191,9 +182,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNot1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray exp = Nd4j.create(new boolean[] {false, false, true, false, false});
@@ -203,9 +193,8 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice_1(Nd4jBackend backend) {
         val arr = Nd4j.linspace(1,4, 4, DataType.FLOAT).reshape(2, 2, 1);
         val exp0 = Nd4j.create(new float[]{1, 2}, new int[] {2, 1});

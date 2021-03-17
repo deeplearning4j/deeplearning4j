@@ -41,23 +41,20 @@ public class PythonMultiThreadTest {
     @Test
     public void testMultiThreading1()throws Throwable{
         final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                try(PythonGIL gil = PythonGIL.lock()){
-                    try(PythonGC gc = PythonGC.watch()){
-                        List<PythonVariable> inputs = new ArrayList<>();
-                        inputs.add(new PythonVariable<>("x", PythonTypes.STR, "Hello "));
-                        inputs.add(new PythonVariable<>("y", PythonTypes.STR, "World"));
-                        PythonVariable out = new PythonVariable<>("z", PythonTypes.STR);
-                        String code = "z = x + y";
-                        PythonExecutioner.exec(code, inputs, Collections.singletonList(out));
-                        assertEquals("Hello World", out.getValue());
-                        System.out.println(out.getValue() + " From thread " + Thread.currentThread().getId());
-                    }
-                }catch (Throwable e){
-                    exceptions.add(e);
+        Runnable runnable = () -> {
+            try(PythonGIL gil = PythonGIL.lock()){
+                try(PythonGC gc = PythonGC.watch()){
+                    List<PythonVariable> inputs = new ArrayList<>();
+                    inputs.add(new PythonVariable<>("x", PythonTypes.STR, "Hello "));
+                    inputs.add(new PythonVariable<>("y", PythonTypes.STR, "World"));
+                    PythonVariable out = new PythonVariable<>("z", PythonTypes.STR);
+                    String code = "z = x + y";
+                    PythonExecutioner.exec(code, inputs, Collections.singletonList(out));
+                    assertEquals("Hello World", out.getValue());
+                    System.out.println(out.getValue() + " From thread " + Thread.currentThread().getId());
                 }
+            }catch (Throwable e){
+                exceptions.add(e);
             }
         };
 

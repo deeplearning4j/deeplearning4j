@@ -30,9 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class TestBackend extends BaseNd4jTestWithBackends {
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBuildInfo(Nd4jBackend backend){
         System.out.println("Backend build info: " +  backend.buildInfo());
     }

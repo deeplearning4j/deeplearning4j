@@ -39,9 +39,8 @@ public class NDArrayListTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testList(Nd4jBackend backend) {
         NDArrayList ndArrayList = new NDArrayList();
         List<Double> arrayAssertion = new ArrayList<>();

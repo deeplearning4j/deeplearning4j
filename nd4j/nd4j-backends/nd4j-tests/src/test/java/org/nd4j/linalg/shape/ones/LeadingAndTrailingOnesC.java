@@ -39,18 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LeadingAndTrailingOnesC extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateLeadingAndTrailingOnes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 10, 1, 1);
         arr.assign(1);
 //        System.out.println(arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrix(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray slice1 = arr.slice(1);
@@ -66,9 +64,8 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultipleOnesInMiddle(Nd4jBackend backend) {
         INDArray tensor = Nd4j.linspace(1, 144, 144).reshape(2, 2, 1, 1, 6, 6);
         INDArray tensorSlice1 = tensor.slice(1);

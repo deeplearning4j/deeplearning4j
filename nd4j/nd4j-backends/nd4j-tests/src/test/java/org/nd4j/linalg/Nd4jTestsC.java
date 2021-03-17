@@ -176,18 +176,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArangeNegative(Nd4jBackend backend) {
         INDArray arr = Nd4j.arange(-2,2).castTo(DataType.DOUBLE);
         INDArray assertion = Nd4j.create(new double[]{-2, -1,  0,  1});
         assertEquals(assertion,arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTri(Nd4jBackend backend) {
         INDArray assertion = Nd4j.create(new double[][]{
                 {1,1,1,0,0},
@@ -200,9 +198,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriu(Nd4jBackend backend) {
         INDArray input = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(4,3);
         int k = -1;
@@ -217,17 +214,15 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(test,create);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiag(Nd4jBackend backend) {
         INDArray diag = Nd4j.diag(Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(4,1));
         assertArrayEquals(new long[] {4,4},diag.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRowEdgeCase(Nd4jBackend backend) {
         INDArray orig = Nd4j.linspace(1,300,300, DataType.DOUBLE).reshape('c', 100, 3);
         INDArray col = orig.getColumn(0).reshape(100, 1);
@@ -247,9 +242,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNd4jEnvironment(Nd4jBackend backend) {
         System.out.println(Nd4j.getExecutioner().getEnvironmentInformation());
         int manualNumCores = Integer.parseInt(Nd4j.getExecutioner().getEnvironmentInformation()
@@ -259,9 +253,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         System.out.println(Nd4jEnvironment.getEnvironment());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerialization(@TempDir Path testDir) throws Exception {
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.rand(1, 20);
@@ -285,9 +278,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(in, inDup); //Fails
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorAlongDimension2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new float[100], new long[] {50, 1, 2});
         assertArrayEquals(new long[] {1, 2}, array.slice(0, 0).shape());
@@ -295,9 +287,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
     @Disabled // with broadcastables mechanic it'll be ok
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeEqualsOnElementWise(Nd4jBackend backend) {
         assertThrows(IllegalStateException.class,() -> {
             Nd4j.ones(10000, 1).sub(Nd4j.ones(1, 2));
@@ -305,9 +296,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         });
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxVectorCase(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {1, 2, 4, 3}, new long[] {2, 2});
         INDArray assertion = Nd4j.create(new boolean[] {false, false, true, false}, new long[] {2, 2}, DataType.BOOL);
@@ -315,9 +305,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, test);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMax(Nd4jBackend backend) {
         INDArray toArgMax = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
         INDArray argMaxZero = Nd4j.argMax(toArgMax, 0);
@@ -332,9 +321,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(valueArrayThree, argMaxTwo);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMax_119(Nd4jBackend backend) {
         val array = Nd4j.create(new double[]{1, 2, 119, 2});
         val max = array.argMax();
@@ -343,9 +331,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(2L, max.getInt(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAutoBroadcastShape(Nd4jBackend backend) {
         val assertion = new long[]{2,2,2,5};
         val shapeTest = Shape.broadcastOutputShape(new long[]{2,1,2,1},new long[]{2,1,5});
@@ -362,9 +349,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion,test);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAudoBroadcastAddMatrix(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(2,2);
         INDArray row = Nd4j.ones(1, 2);
@@ -373,9 +359,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion,test);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarOps(Nd4jBackend backend) {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new long[] {3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);
@@ -391,9 +376,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorAlongDimension(Nd4jBackend backend) {
         val shape = new long[] {4, 5, 7};
         int length = ArrayUtil.prod(shape);
@@ -417,9 +401,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulWithTranspose(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(2,2);
         INDArray arr2 = Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(2,2).transpose();
@@ -442,9 +425,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetDouble(Nd4jBackend backend) {
         INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30, DataType.DOUBLE).data(), new long[] {3, 5, 2});
         INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
@@ -453,9 +435,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, slice0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWriteTxt() throws Exception {
         INDArray row = Nd4j.create(new double[][] {{1, 2}, {3, 4}});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -466,9 +447,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dMatrixOrderingSwitch(Nd4jBackend backend) {
         char order = Nd4j.order();
         INDArray c = Nd4j.create(new double[][] {{1, 2}, {3, 4}}, 'c');
@@ -479,9 +459,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(order, Nd4j.order().charValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrix(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
         INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {2});
@@ -491,9 +470,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMul(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
 
@@ -520,9 +498,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSubiRowVector(Nd4jBackend backend) {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape('c', 2, 2);
         INDArray row1 = oneThroughFour.getRow(1).dup();
@@ -533,9 +510,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddiRowVectorWithScalar(Nd4jBackend backend) {
         INDArray colVector = Nd4j.create(5, 1).assign(0.0);
         INDArray scalar = Nd4j.create(1, 1).assign(0.0);
@@ -548,9 +524,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             assertEquals(colVector.getDouble(i), 1.0, 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTADOnVector(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -575,9 +550,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(5, colVec.getDouble(2), 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLength(Nd4jBackend backend) {
         INDArray values = Nd4j.create(2, 2);
         INDArray values2 = Nd4j.create(2, 2);
@@ -601,9 +575,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, results);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadCasting(Nd4jBackend backend) {
         INDArray first = Nd4j.arange(0, 3).reshape(3, 1).castTo(DataType.DOUBLE);
         INDArray ret = first.broadcast(3, 4);
@@ -616,9 +589,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetColumns(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray matrixGet = matrix.getColumns(1, 2);
@@ -626,9 +598,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(matrixAssertion, matrixGet);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSort(Nd4jBackend backend) {
         INDArray toSort = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray ascending = Nd4j.sort(toSort.dup(), 1, true);
@@ -640,9 +611,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(columnSorted, sorted);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSortRows(Nd4jBackend backend) {
         int nRows = 10;
         int nCols = 5;
@@ -676,9 +646,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFlattenedOrder(Nd4jBackend backend) {
         INDArray concatC = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape('c', 2, 2);
         INDArray concatF = Nd4j.create(new long[] {2, 2}, 'f');
@@ -693,9 +662,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZero(Nd4jBackend backend) {
         Nd4j.ones(11).sumNumber();
         Nd4j.ones(12).sumNumber();
@@ -703,9 +671,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSumNumberRepeatability(Nd4jBackend backend) {
         INDArray arr = Nd4j.ones(1, 450).reshape('c', 150, 3);
 
@@ -719,9 +686,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFlattened2(Nd4jBackend backend) {
         int rows = 3;
         int cols = 4;
@@ -762,9 +728,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 Nd4j.toFlattened('f', c2d, f2d, c3d, f3d, c4d, f4d));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFlattenedOnViews(Nd4jBackend backend) {
         int rows = 8;
         int cols = 8;
@@ -812,9 +777,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMax2(Nd4jBackend backend) {
         //Tests: full buffer...
         //1d
@@ -842,9 +806,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp2d, out2df);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFlattened3(Nd4jBackend backend) {
         INDArray inC1 = Nd4j.create(new long[] {10, 100}, 'c');
         INDArray inC2 = Nd4j.create(new long[] {1, 100}, 'c');
@@ -866,9 +829,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.toFlattened('c', inC2); //ok
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxEqualValues(Nd4jBackend backend) {
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
 
@@ -883,36 +845,32 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.create(new boolean[] {false, false, false, true, false, false}), Transforms.isMax(Nd4j.create(new double[] {0, 0, 0, 2, 2, 0}), DataType.BOOL));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMaxVector_1(Nd4jBackend backend) {
         val array = Nd4j.ones(3);
         val idx = array.argMax(0).getInt(0);
         assertEquals(0, idx);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMaxVector_2(Nd4jBackend backend) {
         val array = Nd4j.ones(3);
         val idx = array.argMax(Integer.MAX_VALUE).getInt(0);
         assertEquals(0, idx);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMaxVector_3(Nd4jBackend backend) {
         val array = Nd4j.ones(3);
         val idx = array.argMax().getInt(0);
         assertEquals(0, idx);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxEqualValues_2(Nd4jBackend backend) {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]bg
@@ -928,9 +886,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, outf);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxEqualValues_3(Nd4jBackend backend) {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]
@@ -943,9 +900,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, outf);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqrt_1(Nd4jBackend backend) {
         val x = Nd4j.createFromArray(9.0, 9.0, 9.0, 9.0);
         val x2 = Nd4j.createFromArray(9.0, 9.0, 9.0, 9.0);
@@ -961,9 +917,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign_CF(Nd4jBackend backend) {
         val orig = Nd4j.create(new double[][] {{0, 2}, {2, 1}});
         val oc = orig.dup('c');
@@ -973,9 +928,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(orig, of);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxAlongDimension(Nd4jBackend backend) {
         //1d: row vector
         INDArray orig = Nd4j.create(new double[] {1, 2, 3, 1}).reshape(1,4 );
@@ -1044,9 +998,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMaxSingleDim1(Nd4jBackend backend) {
         INDArray orig2d = Nd4j.create(new double[][] {{1, 0, 2}, {2, 3, 1}});
 
@@ -1055,9 +1008,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 //        System.out.println("IMAx result: " + result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxSingleDim1(Nd4jBackend backend) {
         INDArray orig2d = Nd4j.create(new double[][] {{1, 0, 2}, {2, 3, 1}});
         INDArray alongDim0c_2d = Nd4j.getExecutioner().exec(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 0))[0];
@@ -1070,9 +1022,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expAlong0_2d, alongDim0c_2d);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastRepeated(Nd4jBackend backend) {
         INDArray z = Nd4j.create(1, 4, 4, 3);
         INDArray bias = Nd4j.create(1, 3);
@@ -1090,9 +1041,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVStackDifferentOrders(Nd4jBackend backend) {
         INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
 
@@ -1115,9 +1065,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVStackEdgeCase(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         INDArray vstacked = Nd4j.vstack(arr);
@@ -1125,9 +1074,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEps3(Nd4jBackend backend) {
 
         INDArray first = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
@@ -1202,9 +1150,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMaxAlongDimensionSimple(Nd4jBackend backend) {
         //Simple test: when doing IsMax along a dimension, we expect all values to be either 0 or 1
         //Do IsMax along dims 0&1 for rank 2, along 0,1&2 for rank 3, etc
@@ -1240,9 +1187,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSortColumns(Nd4jBackend backend) {
         int nRows = 5;
         int nCols = 10;
@@ -1274,9 +1220,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddVectorWithOffset(Nd4jBackend backend) {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray row1 = oneThroughFour.getRow(1);
@@ -1289,9 +1234,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinearViewGetAndPut(Nd4jBackend backend) {
         INDArray test = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray linear = test.reshape(-1);
@@ -1303,9 +1247,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowVectorGemm(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, 4);
         INDArray other = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(4, 4);
@@ -1314,9 +1257,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemmStrided(){
 
         for( val x : new int[]{5, 1}) {
@@ -1348,9 +1290,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiSum(Nd4jBackend backend) {
         /**
          * ([[[ 0.,  1.],
@@ -1401,9 +1342,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum2dv2(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape('c', 2, 2, 2);
 
@@ -1424,9 +1364,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
     //Passes on 3.9:
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum3Of4_2222(Nd4jBackend backend) {
         int[] shape = {2, 2, 2, 2};
         int length = ArrayUtil.prod(shape);
@@ -1450,9 +1389,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcast1d(Nd4jBackend backend) {
         int[] shape = {4, 3, 2};
         int[] toBroadcastDims = new int[] {0, 1, 2};
@@ -1509,9 +1447,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum3Of4_3322(Nd4jBackend backend) {
         int[] shape = {3, 3, 2, 2};
         int length = ArrayUtil.prod(shape);
@@ -1535,9 +1472,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFlattened(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         List<INDArray> concat = new ArrayList<>();
@@ -1552,9 +1488,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDup(Nd4jBackend backend) {
         for (int x = 0; x < 100; x++) {
             INDArray orig = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
@@ -1576,9 +1511,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSortWithIndicesDescending(Nd4jBackend backend) {
         INDArray toSort = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         //indices,data
@@ -1591,18 +1525,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetFromRowVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray rowGet = matrix.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 2));
         assertArrayEquals(new long[] {2}, rowGet.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSubRowVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray row = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
@@ -1621,9 +1553,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDimShuffle(Nd4jBackend backend) {
         INDArray n = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray twoOneTwo = n.dimShuffle(new Object[] {0, 'x', 1}, new int[] {0, 1}, new boolean[] {false, false});
@@ -1634,9 +1565,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetVsGetScalar(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         float element = a.getFloat(0, 1);
@@ -1649,9 +1579,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDivide(Nd4jBackend backend) {
         INDArray two = Nd4j.create(new double[] {2, 2, 2, 2});
         INDArray div = two.div(two);
@@ -1665,9 +1594,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSigmoid(Nd4jBackend backend) {
         INDArray n = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[] {0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
@@ -1675,9 +1603,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, sigmoid);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNeg(Nd4jBackend backend) {
         INDArray n = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[] {-1, -2, -3, -4});
@@ -1686,9 +1613,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm2Double(Nd4jBackend backend) {
         DataType initialType = Nd4j.dataType();
         Nd4j.setDataType(DataType.DOUBLE);
@@ -1708,9 +1634,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm2(Nd4jBackend backend) {
         INDArray n = Nd4j.create(new float[] {1, 2, 3, 4});
         float assertion = 5.47722557505f;
@@ -1728,9 +1653,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCosineSim(Nd4jBackend backend) {
         INDArray vec1 = Nd4j.create(new double[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[] {1, 2, 3, 4});
@@ -1745,9 +1669,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScal(Nd4jBackend backend) {
         double assertion = 2;
         INDArray answer = Nd4j.create(new double[] {2, 4, 6, 8});
@@ -1763,9 +1686,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExp(Nd4jBackend backend) {
         INDArray n = Nd4j.create(new double[] {1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new double[] {2.71828183f, 7.3890561f, 20.08553692f, 54.59815003f});
@@ -1777,9 +1699,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlices(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data(), new long[] {4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
@@ -1789,9 +1710,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalar(Nd4jBackend backend) {
         INDArray a = Nd4j.scalar(1.0f);
         assertEquals(true, a.isScalar());
@@ -1801,9 +1721,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(n.isScalar());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWrap(Nd4jBackend backend) {
         int[] shape = {2, 4};
         INDArray d = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(shape[0], shape[1]);
@@ -1830,9 +1749,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorInit(Nd4jBackend backend) {
         DataBuffer data = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).data();
         INDArray arr = Nd4j.create(data, new long[] {1, 4});
@@ -1845,9 +1763,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testColumns(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new long[] {3, 2});
         INDArray column2 = arr.getColumn(0);
@@ -1888,9 +1805,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutRow(Nd4jBackend backend) {
         INDArray d = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray slice1 = d.slice(1);
@@ -1957,9 +1873,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMulRowVector(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         arr.muliRowVector(Nd4j.linspace(1, 2, 2, DataType.DOUBLE));
@@ -1970,9 +1885,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum(Nd4jBackend backend) {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8, DataType.DOUBLE).data(), new long[] {2, 2, 2});
         INDArray test = Nd4j.create(new double[] {3, 7, 11, 15}, new long[] {2, 2});
@@ -1983,9 +1897,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInplaceTranspose(Nd4jBackend backend) {
         INDArray test = Nd4j.rand(3, 4);
         INDArray orig = test.dup();
@@ -1998,9 +1911,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTADMMul(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         val shape = new long[] {4, 5, 7};
@@ -2028,9 +1940,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(mmul, mmulCopy);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTADMMulLeadingOne(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         val shape = new long[] {1, 5, 7};
@@ -2060,9 +1971,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum2(Nd4jBackend backend) {
         INDArray test = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
         INDArray sum = test.sum(1);
@@ -2073,9 +1983,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetIntervalEdgeCase(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2119,9 +2028,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetIntervalEdgeCase2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2145,9 +2053,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmul(Nd4jBackend backend) {
         DataBuffer data = Nd4j.linspace(1, 10, 10, DataType.DOUBLE).data();
         INDArray n = Nd4j.create(data, new long[] {1, 10});
@@ -2214,9 +2121,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowsColumns(Nd4jBackend backend) {
         DataBuffer data = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).data();
         INDArray rows = Nd4j.create(data, new long[] {2, 3});
@@ -2232,9 +2138,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTranspose(Nd4jBackend backend) {
         INDArray n = Nd4j.create(Nd4j.ones(100).data(), new long[] {5, 5, 4}).castTo(DataType.DOUBLE);
         INDArray transpose = n.transpose();
@@ -2257,9 +2162,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogX1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10).assign(7);
 
@@ -2270,9 +2174,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, logX5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddMatrix(Nd4jBackend backend) {
         INDArray five = Nd4j.ones(5);
         five.addi(five);
@@ -2282,9 +2185,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutSlice(Nd4jBackend backend) {
         INDArray n = Nd4j.linspace(1, 27, 27, DataType.DOUBLE).reshape(3, 3, 3);
         INDArray newSlice = Nd4j.zeros(3, 3);
@@ -2294,9 +2196,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowVectorMultipleIndices(Nd4jBackend backend) {
         INDArray linear = Nd4j.create(1, 4);
         linear.putScalar(new long[] {0, 1}, 1);
@@ -2317,9 +2218,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNullPointerDataBuffer(Nd4jBackend backend) {
         DataType initialType = Nd4j.dataType();
 
@@ -2335,9 +2235,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEps(Nd4jBackend backend) {
         INDArray ones = Nd4j.ones(5);
         val res = Nd4j.create(DataType.BOOL, 5);
@@ -2347,9 +2246,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(res.all());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEps2(Nd4jBackend backend) {
 
         INDArray first = Nd4j.valueArrayOf(10, 1e-2); //0.01
@@ -2365,9 +2263,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(expAllZeros2.none());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogDouble(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
         INDArray log = Transforms.log(linspace);
@@ -2376,18 +2273,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, log);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDupDimension(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         assertEquals(arr.tensorAlongDimension(0, 1), arr.tensorAlongDimension(0, 1));
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIterator(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray repeated = x.repeat(1, 2);
@@ -2398,9 +2293,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             assertEquals(vals[i], arrayIter.next().doubleValue(), 1e-1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTile(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray repeated = x.repeat(0, 2);
@@ -2416,9 +2310,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, tile);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNegativeOneReshape(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {0, 1, 2});
         INDArray newShape = arr.reshape(-1);
@@ -2426,9 +2319,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSmallSum(Nd4jBackend backend) {
         INDArray base = Nd4j.create(new double[] {5.843333333333335, 3.0540000000000007});
         base.addi(1e-12);
@@ -2438,9 +2330,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2DArraySlice(Nd4jBackend backend) {
         INDArray array2D = Nd4j.ones(5, 7);
         /**
@@ -2492,9 +2383,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRow(Nd4jBackend backend) {
         INDArray arr = Nd4j.ones(10, 4);
         for (int i = 0; i < 10; i++) {
@@ -2504,9 +2394,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetPermuteReshapeSub(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2527,9 +2416,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutAtIntervalIndexWithStride(Nd4jBackend backend) {
         INDArray n1 = Nd4j.create(3, 3).assign(0.0);
         INDArrayIndex[] indices = {NDArrayIndex.interval(0, 2, 3), NDArrayIndex.all()};
@@ -2538,9 +2426,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, n1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMulMatrixTimesColVector(Nd4jBackend backend) {
         //[1 1 1 1 1; 10 10 10 10 10; 100 100 100 100 100] x [1; 1; 1; 1; 1] = [5; 50; 500]
         INDArray matrix = Nd4j.ones(3, 5);
@@ -2555,9 +2442,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMulMixedOrder(Nd4jBackend backend) {
         INDArray first = Nd4j.ones(5, 2);
         INDArray second = Nd4j.ones(2, 3);
@@ -2581,9 +2467,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFTimesCAddiRow(Nd4jBackend backend) {
 
         INDArray arrF = Nd4j.create(2, 3, 'f').assign(1.0);
@@ -2610,9 +2495,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulGet(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345L);
         INDArray elevenByTwo = Nd4j.rand(new long[] {11, 2});
@@ -2629,9 +2513,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMulRowColVectorMixedOrder(Nd4jBackend backend) {
         INDArray colVec = Nd4j.ones(5, 1);
         INDArray rowVec = Nd4j.ones(1, 3);
@@ -2654,9 +2537,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(outCF, Nd4j.ones(5, 3));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMulFTimesC(Nd4jBackend backend) {
         int nRows = 3;
         int nCols = 3;
@@ -2681,9 +2563,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(fTimesC, cTimesC);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMulColVectorRowVectorMixedOrder(Nd4jBackend backend) {
         INDArray colVec = Nd4j.ones(5, 1);
         INDArray rowVec = Nd4j.ones(1, 5);
@@ -2705,9 +2586,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(outCF.equals(Nd4j.ones(1, 1).muli(5)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPermute(Nd4jBackend backend) {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 20, 20, DataType.DOUBLE).data(), new long[] {5, 4});
         INDArray transpose = n.transpose();
@@ -2722,9 +2602,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(permuted, assertion);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPermutei(Nd4jBackend backend) {
         //Check in-place permute vs. copy array permute
 
@@ -2805,9 +2684,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPermuteiShape(Nd4jBackend backend) {
 
         INDArray row = Nd4j.create(1, 10);
@@ -2841,9 +2719,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSwapAxes(Nd4jBackend backend) {
         INDArray n = Nd4j.create(Nd4j.linspace(0, 7, 8, DataType.DOUBLE).data(), new long[] {2, 2, 2});
         INDArray assertion = n.permute(2, 1, 0);
@@ -2861,9 +2738,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMuliRowVector(Nd4jBackend backend) {
         INDArray arrC = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape('c', 3, 2);
         INDArray arrF = Nd4j.create(new long[] {3, 2}, 'f').assign(arrC);
@@ -2888,9 +2764,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, outF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceConstructor(Nd4jBackend backend) {
         List<INDArray> testList = new ArrayList<>();
         for (int i = 0; i < 5; i++)
@@ -2903,9 +2778,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdev0(Nd4jBackend backend) {
         double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
         INDArray in = Nd4j.create(ind);
@@ -2915,9 +2789,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, stdev);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdev1(Nd4jBackend backend) {
         double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
         INDArray in = Nd4j.create(ind);
@@ -2928,9 +2801,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSignXZ(Nd4jBackend backend) {
         double[] d = {1.0, -1.1, 1.2, 1.3, -1.4, -1.5, 1.6, -1.7, -1.8, -1.9, -1.01, -1.011};
         double[] e = {1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0};
@@ -2964,9 +2836,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, zOutCF); //fails
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTanhXZ(Nd4jBackend backend) {
         INDArray arrC = Nd4j.linspace(-6, 6, 12, DataType.DOUBLE).reshape('c', 4, 3);
         INDArray arrF = Nd4j.create(new long[] {4, 3}, 'f').assign(arrC);
@@ -3001,9 +2872,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, zOutCF); //fails
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastDiv(Nd4jBackend backend) {
         INDArray num = Nd4j.create(new double[] {1.00, 1.00, 1.00, 1.00, 2.00, 2.00, 2.00, 2.00, 1.00, 1.00, 1.00, 1.00,
                 2.00, 2.00, 2.00, 2.00, -1.00, -1.00, -1.00, -1.00, -2.00, -2.00, -2.00, -2.00, -1.00, -1.00,
@@ -3021,9 +2891,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastDiv2(){
         INDArray arr = Nd4j.ones(DataType.DOUBLE, 1, 64, 125, 125).muli(2);
         INDArray vec = Nd4j.ones(DataType.DOUBLE, 64).muli(2);
@@ -3038,9 +2907,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastMult(Nd4jBackend backend) {
         INDArray num = Nd4j.create(new double[] {1.00, 2.00, 3.00, 4.00, 5.00, 6.00, 7.00, 8.00, -1.00, -2.00, -3.00,
                 -4.00, -5.00, -6.00, -7.00, -8.00}).reshape(2, 8);
@@ -3054,9 +2922,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastSub(Nd4jBackend backend) {
         INDArray num = Nd4j.create(new double[] {1.00, 2.00, 3.00, 4.00, 5.00, 6.00, 7.00, 8.00, -1.00, -2.00, -3.00,
                 -4.00, -5.00, -6.00, -7.00, -8.00}).reshape(2, 8);
@@ -3070,9 +2937,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastAdd(Nd4jBackend backend) {
         INDArray num = Nd4j.create(new double[] {1.00, 2.00, 3.00, 4.00, 5.00, 6.00, 7.00, 8.00, -1.00, -2.00, -3.00,
                 -4.00, -5.00, -6.00, -7.00, -8.00}).reshape(2, 8);
@@ -3086,9 +2952,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDimension(Nd4jBackend backend) {
         INDArray test = Nd4j.create(Nd4j.linspace(1, 4, 4, DataType.DOUBLE).data(), new long[] {2, 2});
         //row
@@ -3122,9 +2987,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshape(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data(), new long[] {4, 3, 2});
         INDArray reshaped = arr.reshape(2, 3, 4);
@@ -3136,9 +3000,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDot() throws Exception {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4});
@@ -3156,9 +3019,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIdentity(Nd4jBackend backend) {
         INDArray eye = Nd4j.eye(5);
         assertTrue(Arrays.equals(new long[] {5, 5}, eye.shape()));
@@ -3166,9 +3028,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(Arrays.equals(new long[] {5, 5}, eye.shape()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTemp(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(new long[] {2, 2, 2});
@@ -3185,9 +3046,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeans(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray mean1 = a.mean(1);
@@ -3199,9 +3059,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSums(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         assertEquals(Nd4j.create(new double[] {3, 7}), a.sum(1),getFailureMessage());
@@ -3211,9 +3070,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRSubi(Nd4jBackend backend) {
         INDArray n2 = Nd4j.ones(2);
         INDArray n2Assertion = Nd4j.zeros(2);
@@ -3222,9 +3080,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat(Nd4jBackend backend) {
         INDArray A = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(2, 2, 2);
         INDArray B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
@@ -3238,9 +3095,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatHorizontally(Nd4jBackend backend) {
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
@@ -3251,9 +3107,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMaxSameValues(Nd4jBackend backend) {
         //Here: assume that by convention, argmax returns the index of the FIRST maximum value
         //Thus, argmax(ones(...)) = 0 by convention
@@ -3267,9 +3122,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSoftmaxStability(Nd4jBackend backend) {
         INDArray input = Nd4j.create(new double[] {-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).reshape(1, -1).transpose();
 //        System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
@@ -3278,9 +3132,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().exec(new SoftMax(input, output));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssignOffset(Nd4jBackend backend) {
         INDArray arr = Nd4j.ones(5, 5);
         INDArray row = arr.slice(1);
@@ -3288,9 +3141,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.ones(5), row);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddScalar(Nd4jBackend backend) {
         INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4);
         INDArray rdiv = div.add(1);
@@ -3298,9 +3150,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(answer, rdiv);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRdivScalar(Nd4jBackend backend) {
         INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4).castTo(DataType.DOUBLE);
         INDArray rdiv = div.rdiv(1);
@@ -3308,9 +3159,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(rdiv, answer);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRDivi(Nd4jBackend backend) {
         INDArray n2 = Nd4j.valueArrayOf(new long[] {1, 2}, 4).castTo(DataType.DOUBLE);
         INDArray n2Assertion = Nd4j.valueArrayOf(new long[] {1, 2}, 0.5).castTo(DataType.DOUBLE);
@@ -3320,9 +3170,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testElementWiseAdd(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray linspace2 = linspace.dup();
@@ -3331,9 +3180,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, linspace);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSquareMatrix(Nd4jBackend backend) {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8, DataType.DOUBLE).data(), new long[] {2, 2, 2});
         INDArray eightFirstTest = n.vectorAlongDimension(0, 2);
@@ -3346,9 +3194,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNumVectorsAlongDimension(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
         assertEquals(12, arr.vectorsAlongDimension(2));
@@ -3356,9 +3203,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadCast(Nd4jBackend backend) {
         INDArray n = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         INDArray broadCasted = n.broadcast(5, 4);
@@ -3387,9 +3233,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[] {2, 1, 1}, ones.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarBroadcast(Nd4jBackend backend) {
         INDArray fiveThree = Nd4j.ones(5, 3);
         INDArray fiveThreeTest = Nd4j.scalar(1.0).broadcast(5, 3);
@@ -3398,9 +3243,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutRowGetRowOrdering(Nd4jBackend backend) {
         INDArray row1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray put = Nd4j.create(new double[] {5, 6});
@@ -3421,9 +3265,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testElementWiseOps(Nd4jBackend backend) {
         INDArray n1 = Nd4j.scalar(1.0);
         INDArray n2 = Nd4j.scalar(2.0);
@@ -3444,9 +3287,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.scalar(1.333333333333333333333), div);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNdArrayCreation(Nd4jBackend backend) {
         double delta = 1e-1;
         INDArray n1 = Nd4j.create(new double[] {0d, 1d, 2d, 3d}, new long[] {2, 2}, 'c');
@@ -3457,9 +3299,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(3d, lv.getDouble(3), delta);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFlattenedWithOrder(Nd4jBackend backend) {
         int[] firstShape = {10, 3};
         int firstLen = ArrayUtil.prod(firstShape);
@@ -3497,9 +3338,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeakyRelu(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(-1, 1, 10, DataType.DOUBLE);
         double[] expected = new double[10];
@@ -3514,9 +3354,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSoftmaxRow(Nd4jBackend backend) {
         for (int i = 0; i < 20; i++) {
             INDArray arr1 = Nd4j.zeros(1, 100);
@@ -3525,9 +3364,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeakyRelu2(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(-1, 1, 10, DataType.DOUBLE);
         double[] expected = new double[10];
@@ -3545,9 +3383,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDupAndDupWithOrder(Nd4jBackend backend) {
         List<Pair<INDArray, String>> testInputs =
                 NDArrayCreationUtil.getAllTestMatricesWithShape(ordering(), 4, 5, 123, DataType.DOUBLE);
@@ -3567,9 +3404,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToOffsetZeroCopy(Nd4jBackend backend) {
         List<Pair<INDArray, String>> testInputs =
                 NDArrayCreationUtil.getAllTestMatricesWithShape(ordering(), 4, 5, 123, DataType.DOUBLE);
@@ -3609,9 +3445,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.ones((1024 * 1024 * 511) + (1024 * 1024)); // Crashes
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssignNumber(Nd4jBackend backend) {
         int nRows = 10;
         int nCols = 20;
@@ -3640,9 +3475,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSumDifferentOrdersSquareMatrix(Nd4jBackend backend) {
         INDArray arrc = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray arrf = Nd4j.create(new long[] {2, 2}, 'f').assign(arrc);
@@ -3683,9 +3517,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr2f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDummy(Nd4jBackend backend) {
         INDArray arr2f = Nd4j.create(new double[] {1.0, 13.0, 25.0, 37.0, 49.0, 61.0, 73.0, 85.0, 2.0, 14.0, 26.0, 38.0,
                 50.0, 62.0, 74.0, 86.0, 3.0, 15.0, 27.0, 39.0, 51.0, 63.0, 75.0, 87.0, 4.0, 16.0, 28.0, 40.0,
@@ -3711,9 +3544,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 //        log.info("arrayf data: {}", Arrays.toString(arrayf.data().asFloat()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateDetached_1(Nd4jBackend backend) {
         val shape = new int[]{10};
         val dataTypes = new DataType[] {DataType.DOUBLE, DataType.BOOL, DataType.BYTE, DataType.UBYTE, DataType.SHORT, DataType.UINT16, DataType.INT, DataType.UINT32, DataType.LONG, DataType.UINT64, DataType.FLOAT, DataType.BFLOAT16, DataType.HALF};
@@ -3724,9 +3556,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateDetached_2(Nd4jBackend backend) {
         val shape = new long[]{10};
         val dataTypes = new DataType[] {DataType.DOUBLE, DataType.BOOL, DataType.BYTE, DataType.UBYTE, DataType.SHORT, DataType.UINT16, DataType.INT, DataType.UINT32, DataType.LONG, DataType.UINT64, DataType.FLOAT, DataType.BFLOAT16, DataType.HALF};
@@ -3737,9 +3568,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPairwiseMixedC(Nd4jBackend backend) {
         int[] shape2 = {12, 8};
         int length = ArrayUtil.prod(shape2);
@@ -3764,9 +3594,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(arrayNotEquals(arr2c.data().asFloat(), arr2f.data().asFloat(), 1e-5f));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPairwiseMixedF(Nd4jBackend backend) {
         int[] shape2 = {12, 8};
         int length = ArrayUtil.prod(shape2);
@@ -3791,9 +3620,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(arrayNotEquals(arr2c.data().asFloat(), arr2f.data().asFloat(), 1e-5f));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign2D(Nd4jBackend backend) {
         int[] shape2 = {8, 4};
 
@@ -3813,9 +3641,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr2f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign2D_2(Nd4jBackend backend) {
         int[] shape2 = {8, 4};
 
@@ -3843,9 +3670,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, z_c);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign3D_2(Nd4jBackend backend) {
         int[] shape3 = {8, 4, 8};
 
@@ -3867,9 +3693,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr3f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSumDifferentOrders(Nd4jBackend backend) {
         INDArray arrc = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape('c', 3, 2);
         INDArray arrf = Nd4j.create(new double[6], new long[] {3, 2}, 'f').assign(arrc);
@@ -3880,9 +3705,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(cSum, fSum); //Expect: 0.51, 1.79; getting [0.51,1.71] for f order
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateUnitialized(Nd4jBackend backend) {
 
         INDArray arrC = Nd4j.createUninitialized(new long[] {10, 10}, 'c');
@@ -3901,9 +3725,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.create(new long[] {10, 10}), arrF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVarConst(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(10, 10);
 //        System.out.println(x);
@@ -3947,9 +3770,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         b.transpose().var(1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVPull1(Nd4jBackend backend) {
         int indexes[] = new int[] {0, 2, 4};
         INDArray array = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape(5, 5);
@@ -4007,9 +3829,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVPull2(Nd4jBackend backend) {
         val indexes = new int[] {0, 2, 4};
         INDArray array = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape(5, 5);
@@ -4029,9 +3850,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompareAndSet1(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(25);
 
@@ -4046,9 +3866,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReplaceNaNs(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(25);
         INDArray assertion = Nd4j.zeros(25);
@@ -4066,9 +3885,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaNEquality(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(25);
         INDArray assertion = Nd4j.zeros(25);
@@ -4081,9 +3899,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSingleDeviceAveraging(Nd4jBackend backend) {
         int LENGTH = 512 * 1024 * 2;
         INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
@@ -4125,9 +3942,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistance1and2(Nd4jBackend backend) {
         double[] d1 = new double[] {-1, 3, 2};
         double[] d2 = new double[] {0, 1.5, -3.5};
@@ -4148,9 +3964,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expD2 * expD2, arr1.squaredDistance(arr2), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEqualsWithEps1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.create(new double[] {0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
         INDArray array2 = Nd4j.create(new double[] {0f, 1f, 2f, 3f, 4f});
@@ -4163,9 +3978,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(array2, array3);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMaxIAMax(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
@@ -4181,9 +3995,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMinIAMin(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
         INDArray abs = Transforms.abs(arr);
@@ -4198,9 +4011,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcast3d2d(Nd4jBackend backend) {
         char[] orders = {'c', 'f'};
 
@@ -4248,9 +4060,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcast4d2d(Nd4jBackend backend) {
         char[] orders = {'c', 'f'};
 
@@ -4369,9 +4180,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMax2Of3d(Nd4jBackend backend) {
         double[][][] slices = new double[3][][];
         boolean[][][] isMax = new boolean[3][][];
@@ -4398,9 +4208,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsMax2of4d(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -4476,9 +4285,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, actF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMax2Of3d(Nd4jBackend backend) {
         double[][][] slices = new double[3][][];
 
@@ -4504,9 +4312,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMax2of4d(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         val s = new long[] {2, 3, 4, 5};
@@ -4579,9 +4386,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, actF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadPermuteEquals(Nd4jBackend backend) {
         INDArray d3c = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape('c', 1, 5, 1);
         INDArray d3f = d3c.dup('f');
@@ -4606,9 +4412,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(tadF, tadFi);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRemainder1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10).assign(5.3);
         INDArray y = Nd4j.create(10).assign(2.0);
@@ -4621,9 +4426,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFMod1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10).assign(5.3);
         INDArray y = Nd4j.create(10).assign(2.0);
@@ -4636,9 +4440,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStrangeDups1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(10).assign(0);
         INDArray exp = Nd4j.create(10).assign(1.0f);
@@ -4653,9 +4456,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, copy);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStrangeDups2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(10).assign(0);
         INDArray exp1 = Nd4j.create(10).assign(1.0f);
@@ -4671,9 +4473,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp2, copy);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionAgreement1(Nd4jBackend backend) {
         INDArray row = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape(1, 3);
         INDArray mean0 = row.mean(0);
@@ -4685,9 +4486,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpecialConcat1(Nd4jBackend backend) {
         for (int i = 0; i < 10; i++) {
             List<INDArray> arrays = new ArrayList<>();
@@ -4707,9 +4507,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpecialConcat2(Nd4jBackend backend) {
         List<INDArray> arrays = new ArrayList<>();
         for (int x = 0; x < 10; x++) {
@@ -4728,9 +4527,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutScalar1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(10, 3, 96, 96);
 
@@ -4740,9 +4538,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveraging1(Nd4jBackend backend) {
         Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
 
@@ -4760,9 +4557,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveraging2(Nd4jBackend backend) {
 
         List<INDArray> arrays = new ArrayList<>();
@@ -4781,9 +4577,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveraging3(Nd4jBackend backend) {
         Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
 
@@ -4803,9 +4598,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZ1(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(10, 10).assign(1.0);
 
@@ -4819,9 +4613,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDupDelayed(Nd4jBackend backend) {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
@@ -4871,9 +4664,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarReduction1(Nd4jBackend backend) {
         val op = new Norm2(Nd4j.create(1).assign(1.0));
         double norm2 = Nd4j.getExecutioner().execAndReturn(op).getFinalResult().doubleValue();
@@ -4888,9 +4680,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void tesAbsReductions1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {-1, -2, -3, -4});
 
@@ -4898,9 +4689,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void tesAbsReductions2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {-1, -2, -3, -4});
 
@@ -4908,9 +4698,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void tesAbsReductions3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {-2, -2, 2, 2});
 
@@ -4918,9 +4707,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void tesAbsReductions4(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {-2, -2, 2, 3});
         assertEquals(1.0, array.sumNumber().doubleValue(), 1e-5);
@@ -4928,18 +4716,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(4, array.scan(Conditions.absGreaterThanOrEqual(0.0)).intValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void tesAbsReductions5(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {-2, 0.0, 2, 2});
 
         assertEquals(3, array.scan(Conditions.absGreaterThan(0.0)).intValue());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewBroadcastComparison1(Nd4jBackend backend) {
         val initial = Nd4j.create(3, 5);
         val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
@@ -4966,9 +4752,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewBroadcastComparison2(Nd4jBackend backend) {
         val initial = Nd4j.create(3, 5);
         val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
@@ -4992,9 +4777,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewBroadcastComparison3(Nd4jBackend backend) {
         val initial = Nd4j.create(3, 5);
         val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
@@ -5016,9 +4800,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewBroadcastComparison4(Nd4jBackend backend) {
         val initial = Nd4j.create(3, 5);
         val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
@@ -5040,9 +4823,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadDup_1(Nd4jBackend backend) {
         INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
                 -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
@@ -5057,9 +4839,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(needle, drow);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_0(Nd4jBackend backend) {
         INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527,
                 -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
@@ -5080,9 +4861,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3SignaturesEquality_1(Nd4jBackend backend) {
         val x = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
         val y = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
@@ -5096,9 +4876,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(z0, z1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_1(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -5116,9 +4895,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_2(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -5136,9 +4914,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_3(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -5157,9 +4934,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_3_NEG(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -5178,9 +4954,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_3_NEG_2(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -5214,9 +4989,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_4(Nd4jBackend backend) {
         INDArray initial = Nd4j.create(5, 6, 7);
         for (int i = 0; i < 5; i++) {
@@ -5235,9 +5009,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAtan2_1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10).assign(-1.0);
         INDArray y = Nd4j.create(10).assign(0.0);
@@ -5248,9 +5021,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAtan2_2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10).assign(1.0);
         INDArray y = Nd4j.create(10).assign(0.0);
@@ -5261,9 +5033,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJaccardDistance1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 0, 0, 1, 0});
         INDArray y = Nd4j.create(new double[] {1, 1, 0, 1, 0, 0});
@@ -5273,9 +5044,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(0.75, val, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJaccardDistance2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 0, 0, 1, 1});
         INDArray y = Nd4j.create(new double[] {1, 1, 0, 1, 0, 0});
@@ -5285,9 +5055,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(0.8, val, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHammingDistance1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 0, 0, 1, 0});
@@ -5297,9 +5066,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(2.0 / 6, val, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHammingDistance2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 1, 0, 0, 1, 0});
@@ -5309,9 +5077,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(3.0 / 6, val, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHammingDistance3(Nd4jBackend backend) {
         INDArray x = Nd4j.create(DataType.DOUBLE, 10, 6);
         for (int r = 0; r < x.rows(); r++) {
@@ -5333,9 +5100,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances1(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(5, 10);
         INDArray initialY = Nd4j.create(7, 10);
@@ -5367,9 +5133,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances2(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(5, 10);
         INDArray initialY = Nd4j.create(7, 10);
@@ -5399,9 +5164,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances2_Large(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(5, 2000);
         INDArray initialY = Nd4j.create(7, 2000);
@@ -5431,9 +5195,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances3_Large(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(5, 2000);
         INDArray initialY = Nd4j.create(7, 2000);
@@ -5465,9 +5228,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances3_Large_Columns(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(2000, 5);
         INDArray initialY = Nd4j.create(2000, 7);
@@ -5497,9 +5259,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances4_Large_Columns(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(2000, 5);
         INDArray initialY = Nd4j.create(2000, 7);
@@ -5529,9 +5290,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances5_Large_Columns(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(2000, 5);
         INDArray initialY = Nd4j.create(2000, 7);
@@ -5561,9 +5321,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances3_Small_Columns(Nd4jBackend backend) {
         INDArray initialX = Nd4j.create(200, 5);
         INDArray initialY = Nd4j.create(200, 7);
@@ -5592,9 +5351,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistances3(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(123);
 
@@ -5619,9 +5377,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedTransforms1(Nd4jBackend backend) {
         //output: Rank: 2,Offset: 0
         //Order: c Shape: [5,2],  stride: [2,1]
@@ -5649,9 +5406,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp1, out1.data().asFloat(), 1e-4f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEntropy1(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(1, 100);
 
@@ -5661,9 +5417,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEntropy2(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(10, 100);
 
@@ -5678,9 +5433,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEntropy3(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(1, 100);
 
@@ -5690,9 +5444,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEntropy4(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(1, 100);
 
@@ -5715,9 +5468,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         return Math.log(MathUtils.entropy(array));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -5727,9 +5479,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rev);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -5739,9 +5490,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rev);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -5751,9 +5501,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rev);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse4(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -5763,9 +5512,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rev);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse5(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -5777,9 +5525,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse6(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -5790,9 +5537,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(rev == array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSortView1(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(10, 10);
         INDArray exp = Nd4j.linspace(0, 9, 10, DataType.DOUBLE);
@@ -5807,9 +5553,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, matrix.getColumn(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSort1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {9, 2, 1, 7, 6, 5, 4, 3, 8, 0});
         INDArray exp1 = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -5824,9 +5569,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp2, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSort2(Nd4jBackend backend) {
         INDArray array = Nd4j.rand(1, 10000);
 
@@ -5839,9 +5583,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSort3(Nd4jBackend backend) {
         int length = isIntegrationTests() ? 1048576 : 16484;
         INDArray array = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape(1, -1);
@@ -5856,9 +5599,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLongShapeDescriptor(){
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         INDArray arr = Nd4j.create(new float[]{1,2,3});
@@ -5867,9 +5609,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertNotNull(lsd);     //Fails here on CUDA, OK on native/cpu
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseSmall_1(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 10, 10, DataType.INT);
         val exp = array.dup(array.ordering());
@@ -5883,9 +5624,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseSmall_2(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 10, 10, DataType.INT);
         val exp = array.dup(array.ordering());
@@ -5899,9 +5639,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rereversed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseSmall_3(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 11, 11, DataType.INT);
         val exp = array.dup(array.ordering());
@@ -5916,9 +5655,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseSmall_4(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 11, 11, DataType.INT);
         val exp = array.dup(array.ordering());
@@ -5932,9 +5670,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rereversed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse_1(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 2017152, 2017152, DataType.INT);
         val exp = array.dup(array.ordering());
@@ -5948,9 +5685,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse_2(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 2017152, 2017152, DataType.INT);
         val exp = array.dup(array.ordering());
@@ -5964,9 +5700,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, rereversed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSort3_1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 2017152, 2017152, DataType.DOUBLE).reshape(1, -1);
         INDArray exp = array.dup();
@@ -5980,9 +5715,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSortAlongDimension1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(1000, 1000);
         INDArray exp1 = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE);
@@ -6024,9 +5758,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         return true;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void shuffleTest(Nd4jBackend backend) {
         for (int e = 0; e < 5; e++) {
             //log.info("---------------------");
@@ -6042,9 +5775,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSortAlongDimension3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(2000,  2000);
         INDArray exp1 = Nd4j.linspace(1, 2000, 2000, DataType.DOUBLE);
@@ -6078,9 +5810,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNativeSortAlongDimension2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(100, 10);
         INDArray exp1 = Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
@@ -6097,9 +5828,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPercentile1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         Percentile percentile = new Percentile(50);
@@ -6108,9 +5838,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array.percentileNumber(50));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPercentile2(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 9, 9, DataType.DOUBLE);
         Percentile percentile = new Percentile(50);
@@ -6120,9 +5849,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPercentile3(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 9, 9, DataType.DOUBLE);
         Percentile percentile = new Percentile(75);
@@ -6131,9 +5859,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array.percentileNumber(75));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPercentile4(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         Percentile percentile = new Percentile(75);
@@ -6142,18 +5869,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array.percentileNumber(75));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPercentile5(Nd4jBackend backend) {
         val array = Nd4j.createFromArray(new int[]{1, 1982});
         val perc = array.percentileNumber(75);
         assertEquals(1982.f, perc.floatValue(), 1e-5f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadPercentile1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         Transforms.reverse(array, false);
@@ -6170,9 +5895,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             assertEquals(exp, res.getDouble(i), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutiRowVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.createUninitialized(10, 10);
         INDArray exp = Nd4j.create(10, 10).assign(1.0);
@@ -6183,9 +5907,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, matrix);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutiColumnsVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.createUninitialized(5, 10);
         INDArray exp = Nd4j.create(5, 10).assign(1.0);
@@ -6198,9 +5921,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, matrix);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRsub1(Nd4jBackend backend) {
         INDArray arr = Nd4j.ones(5).assign(2.0);
         INDArray exp_0 = Nd4j.ones(5).assign(2.0);
@@ -6214,9 +5936,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp_1, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastMin(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(5, 5);
         for (int r = 0; r < matrix.rows(); r++) {
@@ -6232,9 +5953,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastMax(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(5, 5);
         for (int r = 0; r < matrix.rows(); r++) {
@@ -6250,9 +5970,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastAMax(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(5, 5);
         for (int r = 0; r < matrix.rows(); r++) {
@@ -6268,9 +5987,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastAMin(Nd4jBackend backend) {
         INDArray matrix = Nd4j.create(5, 5);
         for (int r = 0; r < matrix.rows(); r++) {
@@ -6311,9 +6029,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(3.407605, res, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPow1(Nd4jBackend backend) {
         val argX = Nd4j.create(3).assign(2.0);
         val argY = Nd4j.create(new double[]{1.0, 2.0, 3.0});
@@ -6323,9 +6040,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRDiv1(Nd4jBackend backend) {
         val argX = Nd4j.create(3).assign(2.0);
         val argY = Nd4j.create(new double[]{1.0, 2.0, 3.0});
@@ -6335,9 +6051,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEqualOrder1(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         val arrayC = array.dup('c');
@@ -6348,9 +6063,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(arrayC, arrayF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchTransform(Nd4jBackend backend) {
         val array = Nd4j.create(new double[] {1, 1, 1, 0, 1, 1},'c');
         val result = Nd4j.createUninitialized(DataType.BOOL, array.shape());
@@ -6362,9 +6076,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test4DSumView(Nd4jBackend backend) {
         INDArray labels = Nd4j.linspace(1, 160, 160, DataType.DOUBLE).reshape(2, 5, 4, 4);
         //INDArray labels = Nd4j.linspace(1, 192, 192).reshape(new long[]{2, 6, 4, 4});
@@ -6390,9 +6103,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(sum1_dup, sum1 );
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatMul1(Nd4jBackend backend) {
         val x = 2;
         val A1 = 3;
@@ -6404,9 +6116,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         val b = Nd4j.linspace(1, x * B1 * B2, x * B1 * B2, DataType.DOUBLE).reshape(x, B1, B2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduction_Z1(Nd4jBackend backend) {
         val arrayX = Nd4j.create(10, 10, 10);
 
@@ -6415,9 +6126,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().commit();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduction_Z2(Nd4jBackend backend) {
         val arrayX = Nd4j.create(10, 10);
 
@@ -6426,9 +6136,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().commit();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduction_Z3(Nd4jBackend backend) {
         val arrayX = Nd4j.create(200, 300);
 
@@ -6437,9 +6146,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().commit();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSoftmaxZ1(Nd4jBackend backend) {
         val original = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(10, 10);
         val reference = original.dup(original.ordering());
@@ -6453,9 +6161,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRDiv(Nd4jBackend backend) {
         val x = Nd4j.create(new double[]{2,2,2});
         val y = Nd4j.create(new double[]{4,6,8});
@@ -6477,9 +6184,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col(Nd4jBackend backend) {
         int kY = 5;
         int kX = 5;
@@ -6520,9 +6226,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemmStrides(Nd4jBackend backend) {
         // 4x5 matrix from arange(20)
         final INDArray X = Nd4j.arange(20).reshape(4,5);
@@ -6554,9 +6259,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalar_1(Nd4jBackend backend) {
         val scalar = Nd4j.create(new float[]{2.0f}, new long[]{});
 
@@ -6570,9 +6274,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(2.0f, scalar.getFloat(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalar_2(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(2.0f);
         val scalar2 = Nd4j.scalar(2.0f);
@@ -6591,9 +6294,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertNotEquals(scalar, scalar3);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVector_1(Nd4jBackend backend) {
         val vector = Nd4j.createFromArray(new float[] {1, 2, 3, 4, 5});
         val vector2 = Nd4j.createFromArray(new float[] {1, 2, 3, 4, 5});
@@ -6610,9 +6312,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertNotEquals(vector, vector3);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorScalar_2(Nd4jBackend backend) {
         val vector = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
         val scalar = Nd4j.scalar(2.0f);
@@ -6623,9 +6324,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, vector);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeScalar(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(2.0f);
         val newShape = scalar.reshape(1, 1, 1, 1);
@@ -6635,9 +6335,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeVector(Nd4jBackend backend) {
         val vector = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5, 6});
         val newShape = vector.reshape(3, 2);
@@ -6702,9 +6401,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
          b = tf.constant([], shape=[1, 0])
          c = tf.matmul(a, b)
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmul_Empty(Nd4jBackend backend) {
         val mA = Nd4j.create(0,1);
         val mB = Nd4j.create(1,0);
@@ -6719,9 +6417,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.create(0,0), mC);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmul_Empty1(Nd4jBackend backend) {
         val mA = Nd4j.create(1,0, 4);
         val mB = Nd4j.create(1,4, 0);
@@ -6737,9 +6434,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.create(1,0,0), mC);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarSqueeze(Nd4jBackend backend) {
         val scalar = Nd4j.create(new float[]{2.0f}, new long[]{1, 1});
         val output = Nd4j.scalar(0.0f);
@@ -6757,9 +6453,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarVectorSqueeze(Nd4jBackend backend) {
         val scalar = Nd4j.create(new float[]{2.0f}, new long[]{1});
 
@@ -6780,9 +6475,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorSqueeze(Nd4jBackend backend) {
         val vector = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6}, new long[]{1, 6});
         val output = Nd4j.createFromArray(new float[] {0, 0, 0, 0, 0, 0});
@@ -6801,9 +6495,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrixReshape(Nd4jBackend backend) {
         val matrix = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, new long[] {3, 3});
         val exp = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, new long[] {9});
@@ -6815,9 +6508,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorScalarConcat(Nd4jBackend backend) {
         val vector = Nd4j.createFromArray(new float[] {1, 2});
         val scalar = Nd4j.scalar(3.0f);
@@ -6841,9 +6533,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarPrint_1(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(3.0f);
 
@@ -6851,9 +6542,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testValueArrayOf_1(Nd4jBackend backend) {
         val vector = Nd4j.valueArrayOf(new long[] {5}, 2f, DataType.FLOAT);
         val exp = Nd4j.createFromArray(new float[]{2, 2, 2, 2, 2});
@@ -6863,9 +6553,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testValueArrayOf_2(Nd4jBackend backend) {
         val scalar = Nd4j.valueArrayOf(new long[] {}, 2f);
         val exp = Nd4j.scalar(2f);
@@ -6875,9 +6564,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayCreation(Nd4jBackend backend) {
         val vector = Nd4j.create(new float[]{1, 2, 3}, new long[] {3}, 'c');
         val exp = Nd4j.createFromArray(new float[]{1, 2, 3});
@@ -6886,9 +6574,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, vector);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testACosh(){
         //http://www.wolframalpha.com/input/?i=acosh(x)
 
@@ -6905,9 +6592,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCosh(){
         //http://www.wolframalpha.com/input/?i=cosh(x)
 
@@ -6924,9 +6610,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAtanh(){
         //http://www.wolframalpha.com/input/?i=atanh(x)
 
@@ -6944,9 +6629,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLastIndex(){
 
         INDArray in = Nd4j.create(new double[][]{
@@ -6974,9 +6658,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3AlexBug(Nd4jBackend backend) {
         val arr = Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('f', 10, 10).dup('c');
         val arr2 = Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('c', 10, 10);
@@ -6986,9 +6669,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllDistancesEdgeCase1(Nd4jBackend backend) {
         val x = Nd4j.create(400, 20).assign(2.0);
         val y = Nd4j.ones(1, 20);
@@ -6999,9 +6681,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat_1(Nd4jBackend backend) {
         for(char order : new char[]{'c', 'f'}) {
 
@@ -7015,9 +6696,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRdiv()    {
         final INDArray a = Nd4j.create(new double[]{2.0, 2.0, 2.0, 2.0});
         final INDArray b = Nd4j.create(new double[]{1.0, 2.0, 4.0, 8.0});
@@ -7036,9 +6716,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, b.rdivColumnVector(Nd4j.scalar(2)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRsub()    {
         final INDArray a = Nd4j.create(new double[]{2.0, 2.0, 2.0, 2.0});
         final INDArray b = Nd4j.create(new double[]{1.0, 2.0, 4.0, 8.0});
@@ -7058,9 +6737,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfStuff(Nd4jBackend backend) {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
@@ -7079,9 +6757,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInconsistentOutput(){
         INDArray in = Nd4j.rand(1, 802816);
         INDArray W = Nd4j.rand(802816, 1);
@@ -7094,9 +6771,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test3D_create_1(Nd4jBackend backend) {
         val jArray = new float[2][3][4];
 
@@ -7115,9 +6791,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test4D_create_1(Nd4jBackend backend) {
         val jArray = new float[2][3][4][5];
 
@@ -7135,9 +6810,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             assertTrue(f > 0.0f,"Failed for element [" + cnt++ +"]");
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcast_1(Nd4jBackend backend) {
         val array1 = Nd4j.linspace(1, 10, 10, DataType.DOUBLE).reshape(5, 1, 2).broadcast(5, 4, 2);
         val array2 = Nd4j.linspace(1, 20, 20, DataType.DOUBLE).reshape(5, 4, 1).broadcast(5, 4, 2);
@@ -7149,9 +6823,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddiColumnEdge(){
         INDArray arr1 = Nd4j.create(1, 5);
         arr1.addiColumnVector(Nd4j.ones(1));
@@ -7159,9 +6832,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmulViews_1(Nd4jBackend backend) {
         val arrayX = Nd4j.linspace(1, 27, 27, DataType.DOUBLE).reshape(3, 3, 3);
 
@@ -7180,9 +6852,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayb.mmul(arrayb));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTile_1(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         val exp = Nd4j.create(new double[] {1.000000, 2.000000, 3.000000, 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 4.000000, 5.000000, 6.000000, 1.000000, 2.000000, 3.000000, 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 4.000000, 5.000000, 6.000000}, new int[] {4, 6});
@@ -7199,9 +6870,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRelativeError_1(Nd4jBackend backend) {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.ones(10, 10);
@@ -7212,16 +6882,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBugMeshgridOnDoubleArray(Nd4jBackend backend) {
         Nd4j.meshgrid(Nd4j.create(new double[] { 1, 2, 3 }), Nd4j.create(new double[] { 4, 5, 6 }));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeshGrid(){
 
         INDArray x1 = Nd4j.create(new double[]{1,2,3,4}).reshape(1, -1);
@@ -7259,9 +6927,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, out5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccumuationWithoutAxis_1(Nd4jBackend backend) {
         val array = Nd4j.create(3, 3).assign(1.0);
 
@@ -7271,9 +6938,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(9.0, result.getDouble(0), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSummaryStatsEquality_1(Nd4jBackend backend) {
 //        log.info("Datatype: {}", Nd4j.dataType());
 
@@ -7292,9 +6958,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanEdgeCase_C(){
         INDArray arr = Nd4j.linspace(1, 30,30, DataType.DOUBLE).reshape(new int[]{3,10,1}).dup('c');
         INDArray arr2 = arr.mean(2);
@@ -7304,9 +6969,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanEdgeCase_F(){
         INDArray arr = Nd4j.linspace(1, 30,30, DataType.DOUBLE).reshape(new int[]{3,10,1}).dup('f');
         INDArray arr2 = arr.mean(2);
@@ -7316,9 +6980,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanEdgeCase2_C(){
         INDArray arr = Nd4j.linspace(1, 60,60, DataType.DOUBLE).reshape(new int[]{3,10,2}).dup('c');
         INDArray arr2 = arr.mean(2);
@@ -7331,9 +6994,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanEdgeCase2_F(){
         INDArray arr = Nd4j.linspace(1, 60,60, DataType.DOUBLE).reshape(new int[]{3,10,2}).dup('f');
         INDArray arr2 = arr.mean(2);
@@ -7346,9 +7008,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLegacyDeserialization_1() throws Exception {
         val f = new ClassPathResource("legacy/NDArray_javacpp.bin").getFile();
 
@@ -7368,9 +7029,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRndBloat16(Nd4jBackend backend) {
         INDArray x  = Nd4j.rand(DataType.BFLOAT16 , 'c', new long[]{5});
         assertTrue(x.sumNumber().floatValue() > 0);
@@ -7379,9 +7039,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(x.sumNumber().floatValue() != 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLegacyDeserialization_2() throws Exception {
         val f = new ClassPathResource("legacy/NDArray_longshape_float.bin").getFile();
 
@@ -7402,9 +7061,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLegacyDeserialization_3() throws Exception {
         val f = new ClassPathResource("legacy/NDArray_longshape_double.bin").getFile();
 
@@ -7424,9 +7082,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTearPile_1(Nd4jBackend backend) {
         val source = Nd4j.rand(new int[]{10, 15});
 
@@ -7441,9 +7098,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(source, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariance_4D_1(Nd4jBackend backend) {
         val dtype = Nd4j.dataType();
 
@@ -7459,9 +7115,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(dtype);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTranspose_Custom(){
 
         INDArray arr = Nd4j.linspace(1,15, 15, DataType.DOUBLE).reshape(5,3);
@@ -7478,9 +7133,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowColumnOpsRank1(){
 
         for( int i=0; i<6; i++ ) {
@@ -7543,9 +7197,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyShapeRank0(){
         Nd4j.getRandom().setSeed(12345);
         int[] s = new int[0];
@@ -7581,9 +7234,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(tsRand, rand);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarView_1(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0, 5.0});
@@ -7595,9 +7247,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarView_2(Nd4jBackend backend) {
         val array = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0}).reshape(2, 2);
@@ -7609,9 +7260,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSomething_1(Nd4jBackend backend) {
         val arrayX = Nd4j.create(128, 128, 'f');
         val arrayY = Nd4j.create(128, 128, 'f');
@@ -7638,9 +7288,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIndexesIteration_1(Nd4jBackend backend) {
         val arrayC = Nd4j.linspace(1,  60,  60, DataType.DOUBLE).reshape(3, 4, 5);
         val arrayF = arrayC.dup('f');
@@ -7657,9 +7306,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIndexesIteration_2(Nd4jBackend backend) {
         val arrayC = Nd4j.linspace(1,  60,  60, DataType.DOUBLE).reshape(3, 4, 5);
         val arrayF = arrayC.dup('f');
@@ -7683,9 +7331,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPairwiseScalar_1(Nd4jBackend backend) {
         val exp_1 = Nd4j.create(new double[]{2.0, 3.0, 4.0}, new long[]{3});
         val exp_2 = Nd4j.create(new double[]{0.0, 1.0, 2.0}, new long[]{3});
@@ -7706,9 +7353,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp_3, arrayZ_4);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLTOE_1(Nd4jBackend backend) {
         val x = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
         val y = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
@@ -7725,9 +7371,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(ez, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGTOE_1(Nd4jBackend backend) {
         val x = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
         val y = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
@@ -7760,9 +7405,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGet(){
         //https://github.com/deeplearning4j/deeplearning4j/issues/6133
         INDArray m = Nd4j.linspace(0,99,100, DataType.DOUBLE).reshape('c', 10,10);
@@ -7786,9 +7430,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp.toDoubleVector(), col.toDoubleVector(), 1e-6);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhere1(){
 
         INDArray arr = Nd4j.create(new boolean[][]{{false,true,false},{false,false,true},{false,false,true}});
@@ -7801,9 +7444,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, act);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhere2(){
 
         INDArray arr = Nd4j.create(DataType.BOOL, 3,3,3);
@@ -7821,9 +7463,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, act);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhere3(){
         INDArray arr = Nd4j.create(new boolean[][]{{false,true,false},{false,false,true},{false,false,true}});
         INDArray x = Nd4j.valueArrayOf(3, 3, 1.0);
@@ -7839,9 +7480,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, act[0]);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhereEmpty(){
         INDArray inArray = Nd4j.zeros(2, 3);
         inArray.putScalar(0, 0, 10.0f);
@@ -7866,9 +7506,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarEquality_1(Nd4jBackend backend) {
         val x = Nd4j.scalar(1.0f);
         val e = Nd4j.scalar(3.0f);
@@ -7878,9 +7517,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, x);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStack(){
         INDArray in = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4);
         INDArray in2 = in.add(100);
@@ -7908,9 +7546,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutSpecifiedIndex(){
         long[][] ss = new long[][]{{3,4}, {3,4,5}, {3,4,5,6}};
         long[][] st = new long[][]{{4,4}, {4,4,5}, {4,4,5,6}};
@@ -7941,9 +7578,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutSpecifiedIndices2d(){
 
         INDArray arr = Nd4j.create(3,4);
@@ -7961,9 +7597,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutSpecifiedIndices3d(){
 
         INDArray arr = Nd4j.create(2,3,4);
@@ -7983,9 +7618,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpecifiedIndexArraySize1(Nd4jBackend backend) {
         long[] shape = {2, 2, 2, 2};
         INDArray in = Nd4j.create(shape);
@@ -7996,9 +7630,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(expShape, arr.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTransposei(){
         INDArray arr = Nd4j.linspace(1,12,12).reshape('c',3,4);
 
@@ -8009,9 +7642,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(arr == ti);  //Should be same object
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterUpdateShortcut(Nd4jBackend backend) {
         val array = Nd4j.create(DataType.FLOAT, 5, 2);
         val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
@@ -8040,9 +7672,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStatistics_1(Nd4jBackend backend) {
         val array = Nd4j.createFromArray(new float[] {-1.0f, 0.0f, 1.0f});
         val stats = Nd4j.getExecutioner().inspectArray(array);
@@ -8053,9 +7684,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(0.0f, stats.getMeanValue(), 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayMmulWithTranspose(){
         Nd4j.getRandom().setSeed(12345);
         INDArray a = Nd4j.rand(2,5);
@@ -8094,9 +7724,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, act);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvalidOrder(){
 
         try {
@@ -8149,9 +7778,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssignValid(){
         INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
         INDArray arr2 = Nd4j.create(3,4);
@@ -8159,9 +7787,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(arr1, arr2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssignInvalid(){
         INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
         INDArray arr2 = Nd4j.create(4,3);
@@ -8173,9 +7800,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyCasting(){
         for(val from : DataType.values()) {
             if (from == DataType.UTF8 || from == DataType.UNKNOWN || from == DataType.COMPRESSED)
@@ -8201,9 +7827,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVStackRank1(){
         List<INDArray> list = new ArrayList<>();
         list.add(Nd4j.linspace(1,3,3, DataType.DOUBLE));
@@ -8218,9 +7843,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxpyOpRows(){
         INDArray arr = Nd4j.create(1,4).assign(2.0f);
         INDArray ones = Nd4j.ones(1,4).assign(3.0f);
@@ -8232,17 +7856,15 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyArray(Nd4jBackend backend) {
         INDArray empty = Nd4j.empty(DataType.INT);
         assertEquals(empty.toString(), "[]");
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspaceWithStep(){
 
         double lower = -0.9, upper = 0.9, step = 0.2;
@@ -8272,9 +7894,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspaceWithStepForIntegers(){
 
         long lower = -9, upper = 9, step = 2;
@@ -8304,9 +7925,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArangeWithStep(Nd4jBackend backend) {
         int begin = -9, end = 9, step = 2;
         INDArray in = Nd4j.arange(begin, end, step);
@@ -8321,9 +7941,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(in.getInt(8), 7);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRollingMean(Nd4jBackend backend) {
         val wsconf = WorkspaceConfiguration.builder()
                 .initialSize(4L * (32*128*256*256 + 32*128 + 10*1024*1024))
@@ -8357,16 +7976,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZerosRank1(Nd4jBackend backend) {
         Nd4j.zeros(new int[] { 2 }, DataType.DOUBLE);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeEnforce(){
 
         INDArray arr = Nd4j.create(new long[]{2,2}, 'c');
@@ -8385,9 +8002,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRepeatSimple(){
 
         INDArray arr = Nd4j.createFromArray(new double[][]{
@@ -8410,9 +8026,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp1, r1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowsEdgeCaseView(){
 
         INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
@@ -8435,9 +8050,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRepeatStrided(Nd4jBackend backend) {
 
         // Create a 2D array (shape 5x5)
@@ -8456,9 +8070,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(repeatedSlice, repeatedDup);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeshgridDtypes(Nd4jBackend backend) {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.meshgrid(Nd4j.create(new double[] { 1, 2, 3 }), Nd4j.create(new double[] { 4, 5, 6 }));
@@ -8466,9 +8079,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.meshgrid(Nd4j.createFromArray(1, 2, 3), Nd4j.createFromArray(4, 5, 6));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetColumnRowVector(){
         INDArray arr = Nd4j.create(1,4);
         INDArray col = arr.getColumn(0);
@@ -8477,9 +8089,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyArrayReuse(){
         //Empty arrays are immutable - no point creating them multiple times
         INDArray ef1 = Nd4j.empty(DataType.FLOAT);
@@ -8491,9 +8102,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(el1 == el2);       //Should be exact same object
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxViewF(){
         INDArray arr = Nd4j.create(DataType.DOUBLE, new long[]{8,2}, 'f').assign(999);
 
@@ -8504,9 +8114,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.create(new double[]{2,4}), view.max(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMin2(){
         INDArray x = Nd4j.createFromArray(new double[][]{
                 {-999,       0.2236,    0.7973,    0.0962},
@@ -8557,9 +8166,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateF(){
         char origOrder = Nd4j.order();
         try {
@@ -8592,9 +8200,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceKeepDimsShape(){
         INDArray arr = Nd4j.create(3,4);
         INDArray out = arr.sum(true, 1);
@@ -8604,9 +8211,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{1, 4}, out2.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceRow(){
         double[] data = new double[]{15.0, 16.0};
         INDArray vector = Nd4j.createFromArray(data).reshape(1,2);
@@ -8617,9 +8223,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.createFromArray(-1.0, -1.0).reshape(1,2), vector);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceMatrix(){
         INDArray arr = Nd4j.arange(4).reshape(2,2);
 //        System.out.println(arr.slice(0));
@@ -8629,9 +8234,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         arr.slice(1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarEq(){
         INDArray scalarRank2 = Nd4j.scalar(10.0).reshape(1,1);
         INDArray scalarRank1 = Nd4j.scalar(10.0).reshape(1);
@@ -8646,9 +8250,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
     //@Disabled // https://github.com/eclipse/deeplearning4j/issues/7632
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetWhereINDArray(Nd4jBackend backend) {
         INDArray input = Nd4j.create(new double[] { 1, -3, 4, 8, -2, 5 });
         INDArray comp = Nd4j.create(new double[]{2, -3, 1, 1, -2, 1 });
@@ -8658,9 +8261,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetWhereNumber(Nd4jBackend backend) {
         INDArray input = Nd4j.create(new double[] { 1, -3, 4, 8, -2, 5 });
         INDArray expected = Nd4j.create(new double[] { 8, 5 });
@@ -8669,9 +8271,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(expected, actual);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testType1(@TempDir Path testDir) throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.rand(DataType.DOUBLE, new int[]{100, 100});
@@ -8692,9 +8293,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOnes(){
         INDArray arr = Nd4j.ones();
         INDArray arr2 = Nd4j.ones(DataType.LONG);
@@ -8704,9 +8304,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(1, arr2.length());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZeros(){
         INDArray arr = Nd4j.zeros();
         INDArray arr2 = Nd4j.zeros(DataType.LONG);
@@ -8716,9 +8315,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(1, arr2.length());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testType2(@TempDir Path testDir) throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT16);
@@ -8773,9 +8371,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToXMatrix(){
 
         List<long[]> shapes = Arrays.asList(new long[]{3, 4}, new long[]{3, 1}, new long[]{1,3});
@@ -8804,9 +8401,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToXVector(){
 
         List<long[]> shapes = Arrays.asList(new long[]{3}, new long[]{3, 1}, new long[]{1,3});
@@ -8836,9 +8432,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSumEdgeCase(){
         INDArray row = Nd4j.create(1,3);
         INDArray sum = row.sum(0);
@@ -8849,9 +8444,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{3}, sum2.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMedianEdgeCase(){
         INDArray rowVec = Nd4j.rand(DataType.FLOAT, 1, 10);
         INDArray median = rowVec.median(0);
@@ -8870,9 +8464,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         colVec.median();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void mmulToScalar(Nd4jBackend backend) {
         final INDArray arr1 = Nd4j.create(new float[] {1,2,3}).reshape(1,3);
         final INDArray arr2 = arr1.reshape(3,1);
@@ -8880,9 +8473,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateDtypes(Nd4jBackend backend) {
         int[] sliceShape = new int[] {9};
         float[] arrays = new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
@@ -8896,9 +8488,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateShapeValidation(){
         try {
             Nd4j.create(new double[]{1, 2, 3}, new int[]{1, 1});
@@ -8949,9 +8540,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                         arr[i][j][k][m] = (float) cnt++;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBatchToSpace(){
 
         INDArray out = Nd4j.create(DataType.FLOAT, 2, 4, 5);
@@ -8972,9 +8562,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         //from [4,4,3] to [2,4,6] then crop to [2,4,5]
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFromByteArray() throws IOException {
         // simple test to get rid of toByteArray and fromByteArray compiler warnings.
         INDArray x = Nd4j.arange(10);
@@ -8991,9 +8580,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVStackHStack1d(Nd4jBackend backend) {
         INDArray rowVector1 = Nd4j.create(new double[]{1,2,3});
         INDArray rowVector2 = Nd4j.create(new double[]{4,5,6});
@@ -9006,9 +8594,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceAll_1(Nd4jBackend backend) {
         val x = Nd4j.empty(DataType.FLOAT);
         val e = Nd4j.scalar(true);
@@ -9017,9 +8604,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceAll_2(Nd4jBackend backend) {
         val x = Nd4j.ones(DataType.FLOAT, 0);
         val e = Nd4j.scalar(true);
@@ -9028,9 +8614,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceAll_3(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 0);
         assertEquals(1, x.rank());
@@ -9041,18 +8626,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarEqualsNoResult(){
         INDArray out = Nd4j.exec(new ScalarEquals(Nd4j.createFromArray(-2, -1, 0, 1, 2), null, 0));
         INDArray exp = Nd4j.createFromArray(false, false, true, false, false);
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutOverwrite(){
         INDArray arr = Nd4j.create(DataType.DOUBLE, 10);
         arr.putScalar(0, 10);
@@ -9063,9 +8646,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         System.out.println(arr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReshapingMinus1(){
         INDArray arr0 = Nd4j.create(DataType.FLOAT, 2, 0);
         INDArray arr1 = Nd4j.create(DataType.FLOAT, 0, 1, 2);
@@ -9079,9 +8661,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{10, 0}, out2.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2DWeightsFormat1(Nd4jBackend backend) {
         int bS = 2, iH = 4, iW = 3, iC = 4, oC = 3, kH = 3, kW = 2, sH = 1, sW = 1, pH = 0, pW = 0, dH = 1, dW = 1;
         int       oH=2,oW=2;
@@ -9113,9 +8694,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{bS, oC, oH, oW}, ret[0].shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2DWeightsFormat2(Nd4jBackend backend) {
         int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
         int oH=4,oW=3;
@@ -9145,9 +8725,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{bS, oH, oW, oC}, ret[0].shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_8(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.INT8, 3, 5).assign(1);
         val y = Nd4j.create(DataType.INT8, 5, 3).assign(1);
@@ -9157,9 +8736,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_7(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.INT16, 3, 5).assign(1);
         val y = Nd4j.create(DataType.INT16, 5, 3).assign(1);
@@ -9169,9 +8747,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_1(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.INT32, 3, 5).assign(1);
         val y = Nd4j.create(DataType.INT32, 5, 3).assign(1);
@@ -9181,9 +8758,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_2(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.INT64, 3, 5).assign(1);
         val y = Nd4j.create(DataType.INT64, 5, 3).assign(1);
@@ -9193,9 +8769,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_6(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT8, 3, 5).assign(1);
         val y = Nd4j.create(DataType.UINT8, 5, 3).assign(1);
@@ -9205,9 +8780,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_5(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT16, 3, 5).assign(1);
         val y = Nd4j.create(DataType.UINT16, 5, 3).assign(1);
@@ -9217,9 +8791,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_3(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT32, 3, 5).assign(1);
         val y = Nd4j.create(DataType.UINT32, 5, 3).assign(1);
@@ -9229,9 +8802,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulMethod_4(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.UINT64, 3, 5).assign(1);
         val y = Nd4j.create(DataType.UINT64, 5, 3).assign(1);
@@ -9241,9 +8813,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(e, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateBufferFromByteBuffer(){
 
         for(DataType dt : DataType.values()){
@@ -9270,9 +8841,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateBufferFromByteBufferViews(){
 
         for(DataType dt : DataType.values()){
@@ -9297,9 +8867,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTypeCastingToString(){
 
         for(DataType dt : DataType.values()) {
@@ -9317,9 +8886,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShape0Casts(){
         for(DataType dt : DataType.values()){
             if(!dt.isNumerical())
@@ -9338,9 +8906,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSmallSort(){
         INDArray arr = Nd4j.createFromArray(0.5, 0.4, 0.1, 0.2);
         INDArray expected = Nd4j.createFromArray(0.1, 0.2, 0.4, 0.5);

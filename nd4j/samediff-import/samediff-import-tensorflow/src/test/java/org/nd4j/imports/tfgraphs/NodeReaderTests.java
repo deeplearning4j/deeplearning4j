@@ -41,9 +41,8 @@ public class NodeReaderTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNodeReader_1(Nd4jBackend backend) throws Exception {
         val array = NodeReader.readArray("ae_00", "BiasAdd.0");
         val exp = Nd4j.create(new double[]{0.75157526, 0.73641957, 0.50457279, -0.45943720, 0.58269453, 0.10282226, -0.45269983, -0.05505687, -0.46887864, -0.05584033}, new long[]{5 ,2});

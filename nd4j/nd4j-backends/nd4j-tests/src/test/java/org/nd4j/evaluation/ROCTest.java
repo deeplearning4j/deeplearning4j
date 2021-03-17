@@ -82,9 +82,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         expFPR.put(10 / 10.0, 0.0 / totalNegatives);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocBasic(Nd4jBackend backend) {
         //2 outputs here - probability distribution over classes (softmax)
         INDArray predictions = Nd4j.create(new double[][] {{1.0, 0.001}, //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
@@ -127,9 +126,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         assertEquals(1.0, auc, 1e-6);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocBasicSingleClass(Nd4jBackend backend) {
         //1 output here - single probability value (sigmoid)
 
@@ -167,9 +165,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRoc(Nd4jBackend backend) {
         //Previous tests allowed for a perfect classifier with right threshold...
 
@@ -254,9 +251,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocTimeSeriesNoMasking(Nd4jBackend backend) {
         //Same as first test...
 
@@ -303,9 +299,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocTimeSeriesMasking(Nd4jBackend backend) {
         //2 outputs here - probability distribution over classes (softmax)
         INDArray predictions2d = Nd4j.create(new double[][] {{1.0, 0.001}, //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
@@ -355,9 +350,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
 
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompareRocAndRocMultiClass(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -387,9 +381,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompare2Vs3Classes(Nd4jBackend backend) {
 
         //ROC multi-class: 2 vs. 3 classes should be the same, if we add two of the classes together...
@@ -438,9 +431,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testROCMerging(Nd4jBackend backend) {
         int nArrays = 10;
         int minibatch = 64;
@@ -485,9 +477,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testROCMerging2(Nd4jBackend backend) {
         int nArrays = 10;
         int minibatch = 64;
@@ -532,9 +523,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testROCMultiMerging(Nd4jBackend backend) {
 
         int nArrays = 10;
@@ -582,9 +572,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAUCPrecisionRecall(Nd4jBackend backend) {
         //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.25 prob
         //at threshold 0 to 0.24999: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
@@ -631,9 +620,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocAucExact(Nd4jBackend backend) {
 
         //Check the implementation vs. Scikitlearn
@@ -796,9 +784,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void rocExactEdgeCaseReallocation(Nd4jBackend backend) {
 
         //Set reallocation block size to say 20, but then evaluate a 100-length array
@@ -810,9 +797,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPrecisionRecallCurveGetPointMethods(Nd4jBackend backend) {
         double[] threshold = new double[101];
         double[] precision = threshold;
@@ -848,9 +834,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPrecisionRecallCurveConfusion(Nd4jBackend backend) {
         //Sanity check: values calculated from the confusion matrix should match the PR curve values
 
@@ -889,9 +874,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocMerge(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -935,9 +919,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         assertEquals(auprc, auprcAct, 1e-6);
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocMultiMerge(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -986,9 +969,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRocBinaryMerge(){
         Nd4j.getRandom().setSeed(12345);
 
@@ -1033,9 +1015,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentationBinary(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);
@@ -1125,9 +1106,8 @@ public class ROCTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentation(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);

@@ -42,9 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SlicingTestsC extends BaseNd4jTestWithBackends {
     
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceRowVector(Nd4jBackend backend) {
         INDArray arr = Nd4j.zeros(5);
 //        System.out.println(arr.slice(1));
@@ -52,9 +51,8 @@ public class SlicingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceAssertion(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 30, 30).reshape(3, 5, 2);
         INDArray firstRow = arr.slice(0).slice(0);
@@ -64,9 +62,8 @@ public class SlicingTestsC extends BaseNd4jTestWithBackends {
 //        System.out.println(firstRow);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceShape(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(3, 5, 2);
 
@@ -95,9 +92,8 @@ public class SlicingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertionTwo, sliceTest);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSwapReshape(Nd4jBackend backend) {
         INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30, DataType.FLOAT).data(), new int[] {3, 5, 2});
         INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
@@ -118,9 +114,8 @@ public class SlicingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRow(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray get = arr.getRow(1);
@@ -138,9 +133,8 @@ public class SlicingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(threeByThreeAssertion, offsetTest);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorIndexing(Nd4jBackend backend) {
         INDArray zeros = Nd4j.create(1, 400000);
         INDArray get = zeros.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 300000));

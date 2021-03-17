@@ -52,9 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LossFunctionJson extends BaseNd4jTestWithBackends {
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJsonSerialization(Nd4jBackend backend) throws Exception {
 
         INDArray w = Nd4j.create(new double[] {1.0, 2.0, 3.0});

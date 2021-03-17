@@ -34,9 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Level3Test extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.linspace(1, 100, 100).reshape(1, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
@@ -46,9 +45,8 @@ public class Level3Test extends BaseNd4jTestWithBackends {
         assertEquals(338350f, array3.getFloat(0), 0.001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm2(Nd4jBackend backend) {
         INDArray array1 = Nd4j.linspace(1, 100, 100).reshape('f', 1, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape('f', 100, 1);
@@ -58,9 +56,8 @@ public class Level3Test extends BaseNd4jTestWithBackends {
         assertEquals(338350f, array3.getFloat(0), 0.001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm3(Nd4jBackend backend) {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape(100, 10);
@@ -78,9 +75,8 @@ public class Level3Test extends BaseNd4jTestWithBackends {
         assertEquals(8328150.0f, array3.data().getFloat(21), 0.001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm4(Nd4jBackend backend) {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape('f', 100, 10);
@@ -97,9 +93,8 @@ public class Level3Test extends BaseNd4jTestWithBackends {
         assertEquals(3853350f, array3.data().getFloat(21), 0.001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm5(Nd4jBackend backend) {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape(100, 10);
@@ -113,9 +108,8 @@ public class Level3Test extends BaseNd4jTestWithBackends {
         assertEquals(3.3835E7f, array3.data().getFloat(99), 10f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm6(Nd4jBackend backend) {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape('f', 100, 10);

@@ -21,7 +21,7 @@
 package org.nd4j.autodiff.samediff;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assumptions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 import com.google.common.collect.Maps;
@@ -144,9 +144,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         return inputMap;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableNaming_1(Nd4jBackend backend) {
         val sd = SameDiff.create();
 
@@ -163,17 +162,15 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddArgsAndOutput(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         val varOne = sameDiff.var("one", Nd4j.ones(2));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMseBackwards(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -200,9 +197,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvalVariable(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
@@ -213,9 +209,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.FLOAT)).reshape(1, 4);
@@ -227,9 +222,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, resultArr);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddEval(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray x = Nd4j.scalar(1.0);
@@ -245,9 +239,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(outputAssertion, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWeightedXentWithLogits(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray targets = Nd4j.create(new long[]{1, 5});
@@ -264,9 +257,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{1, 5}, resultArray.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMseForward(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -292,9 +284,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(1, result.length());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistance(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
@@ -307,9 +298,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{1, 2}, out.get(finalReshape.name()).shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorGradMmul(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
@@ -322,9 +312,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEval(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 4, 4);
@@ -335,9 +324,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(assertion, eval);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFunctionInputsAndArgs(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable var = sameDiff.var("one", Nd4j.scalar(1.0));
@@ -348,9 +336,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCrossSameDiffVariableInitWithAlloc(Nd4jBackend backend) {
         SameDiff first = SameDiff.create();
         SameDiff second = SameDiff.create();
@@ -362,36 +349,33 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCrossSameDiffVariableInitWithPlaceHolder(Nd4jBackend backend) {
         SameDiff first = SameDiff.create();
         SameDiff second = SameDiff.create();
 
         SDVariable firstVar = first.var("one", new long[]{2, 2});
         SDVariable secondVar = second.var(firstVar);
-        assumeNotNull(firstVar.getArr());
+        assertNotNull(firstVar.getArr());
 
         assertEquals(firstVar.getArr(), secondVar.getArr());
         assertEquals(firstVar.name(), secondVar.name());
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableArrayReference(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable arr = sameDiff.var("one", new long[]{2, 2});
         assertArrayEquals(new long[]{2, 2}, arr.getShape());
-        assumeNotNull(arr.getArr());
+        assertNotNull(arr.getArr());
         assertArrayEquals(new long[]{2, 2}, arr.getArr().shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvalAddSelf(Nd4jBackend backend) {
         /**
          * Note this test fails yet due to needing
@@ -407,9 +391,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(assertion, eval);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvalAdd(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 4, 4);
@@ -426,9 +409,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(assertion, eval);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDup(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 8, 8)).reshape(2, 2, 2);
@@ -438,9 +420,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testElementWiseDivAndRDiv(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
@@ -468,9 +449,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNegativeGradient(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
@@ -487,9 +467,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSumOp(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
@@ -508,22 +487,20 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableReferenceNoFunction(Nd4jBackend backend) {
         /**
          * Creating a variable should not create a differential function.
          */
         SameDiff sameDiff = SameDiff.create();
         SDVariable sdVariable = sameDiff.var("one", Nd4j.scalar(1.0));
-        assumeNotNull(sameDiff.getVariable(sdVariable.name()));
+        assertNotNull(sameDiff.getVariable(sdVariable.name()));
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableWithFunction(Nd4jBackend backend) {
         /**
          * A variable's function should be null
@@ -539,9 +516,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUpdateVariable(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable one = sameDiff.one("one", new long[]{1, 1});
@@ -550,9 +526,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDefineFunctionArrayExistence(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         String testFunctionName = "testfunction";
@@ -570,9 +545,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAutoBroadcastAddMatrixVector(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
@@ -585,18 +559,16 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNegativeOneShape(Nd4jBackend backend) {
         val sd = SameDiff.create();
         SDVariable var = sd.placeHolder("test", DataType.FLOAT, -1, 3);
         assertTrue(var.isPlaceHolder());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeResolutionMinus1(Nd4jBackend backend) {
         int nIn = 3;
         int nOut = 4;
@@ -640,9 +612,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLabelInputPlaceHolderSgd(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -680,9 +651,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSequentialMeansPlaceholder(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();
         for (int dim0 : new int[]{10, -1}) {
@@ -704,9 +674,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionShapes1(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -723,9 +692,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionShapes2(Nd4jBackend backend) {
 
         SameDiff sd2 = SameDiff.create();
@@ -750,9 +718,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{8}, mB.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNames(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in1 = sd.var("in", new long[]{3, 2});
@@ -768,9 +735,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 //        log.info("Result S: {}", map.get(s.name()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRunLogisticRegression(Nd4jBackend backend) {
         Map<String, INDArray> vars = this.variablesForInput();
         SameDiff outside = SameDiff.create();
@@ -804,9 +770,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTransposeWithVector(Nd4jBackend backend) {
         val sd = SameDiff.create();
         val matrix = Nd4j.linspace(1, 12, 12).reshape(4, 3);
@@ -818,9 +783,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{3, 1}, out.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimpleDefineFunction(Nd4jBackend backend) {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> inputs = variablesForInput();
@@ -840,9 +804,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         //note here that we don't add the duplicate ops with define function anymore
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSumGradient(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable twoByTwo = sameDiff.var("initial", Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(2, 2));
@@ -852,9 +815,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRsubScalar(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         Map<String, INDArray> params = new HashMap<>();
@@ -872,9 +834,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFunctionScalarResultPropagation(Nd4jBackend backend) {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> inputs = variablesForInput();
@@ -903,9 +864,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmul(Nd4jBackend backend) {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> inputs = variablesForInput();
@@ -915,9 +875,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGraphBuilding(Nd4jBackend backend) {
         final SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> inputs = variablesForInput();
@@ -947,9 +906,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarAdd(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable twoByTwo = sameDiff.var("first", Nd4j.linspace(1, 4, 4).reshape('c', 2, 2));
@@ -960,9 +918,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSums(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(7, 4);
@@ -974,9 +931,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDenseLayerForwardPass(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1005,9 +961,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expOut, m.get(out.name()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testActivationBackprop(Nd4jBackend backend) {
 
         Activation[] afns = new Activation[]{
@@ -1102,9 +1057,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPlaceholderReduceSimple(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var("in", new long[]{-1, 10});
@@ -1112,9 +1066,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSequentialMeans(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", new long[]{10, 10, 10});
@@ -1122,9 +1075,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable mean2 = sd.mean(mean1, 1);   //[10,1] out - ***exception here***
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBatchNormTest(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -1149,9 +1101,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLrn(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -1176,9 +1127,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMoments(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -1202,9 +1152,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(varArray.getDouble(0), 1.25, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormalizeMoments(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -1235,9 +1184,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDepthWiseConv2dBasic(Nd4jBackend backend) {
         int nIn = 3;
         int depthWise = 4;
@@ -1275,9 +1223,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateMeanDiff(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1299,9 +1246,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.valueArrayOf(arr.shape(), 1.0 / arr.length()), dLdIn);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateSumDiff(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1323,9 +1269,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.ones(arr.shape()), dLdIn);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateStdevDiff(Nd4jBackend backend) {
         for (boolean biasCorrected : new boolean[]{true, false}) {
             Nd4j.getRandom().setSeed(12345);
@@ -1355,9 +1300,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateVarDiff(Nd4jBackend backend) {
         for (boolean biasCorrected : new boolean[]{true, false}) {
             Nd4j.getRandom().setSeed(12345);
@@ -1386,9 +1330,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateMinDiff(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1413,9 +1356,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, dLdIn);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateMaxDiff(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1439,9 +1381,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, dLdIn);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void validateProdDiff(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1465,9 +1406,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, dLdIn);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSquare(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1489,9 +1429,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandDims(Nd4jBackend backend) {
         for (int i = 0; i <= 2; i++) {
             SameDiff sd = SameDiff.create();
@@ -1515,9 +1454,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZerosLike(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable var0 = sd.var("in", DataType.DOUBLE, new long[]{3, 4});
@@ -1531,9 +1469,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.zeros(DataType.DOUBLE, 3, 4), out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOnesLike(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable var0 = sd.var("in", new long[]{3, 4});
@@ -1548,9 +1485,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOnesLikeBackprop(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable var0 = sd.var("in", new long[]{3, 4});
@@ -1566,9 +1502,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testManhattanAlongDim0(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1583,9 +1518,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJaccardDistance(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1611,9 +1545,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(jd, out.getDouble(0), 1e-6);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPairwiseBooleanTransforms(Nd4jBackend backend) {
         /*
         eq, neq, gt, lt, gte, lte, or, and, xor
@@ -1699,9 +1632,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBooleanChecks(Nd4jBackend backend) {
         /*
         isNonDecreasing,
@@ -1745,9 +1677,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
     @Disabled(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsStrictlyIncShape(Nd4jBackend backend) {
         int nOut = 0;
         int minibatch = 0;
@@ -1758,9 +1689,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Nd4j.exec(new IsStrictlyIncreasing(ia, expOut));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandDims2d(Nd4jBackend backend) {
         val origShape = new long[]{3, 4};
 
@@ -1797,9 +1727,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueezeDims(Nd4jBackend backend) {
         val origShape = new long[]{3, 4, 5};
 
@@ -1840,9 +1769,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandSqueezeChain(Nd4jBackend backend) {
 
         val origShape = new long[]{3, 4};
@@ -1866,9 +1794,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueezeExpandChain(Nd4jBackend backend) {
 
         val origShape = new long[]{3, 4, 5};
@@ -1896,9 +1823,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConfusionMatrix(Nd4jBackend backend) {
         INDArray labels = Nd4j.createFromArray(1, 2, 4);
         INDArray pred = Nd4j.createFromArray(2, 2, 4);
@@ -1917,9 +1843,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMax(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1938,9 +1863,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMin(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -1960,9 +1884,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterAdd(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.zeros(3, 3);
         INDArray arr2 = Nd4j.createFromArray(0, 1);
@@ -1984,9 +1907,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterMul(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.createFromArray(0, 1);
@@ -2008,9 +1930,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterSub(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.createFromArray(0, 1);
@@ -2032,9 +1953,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterDiv(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.createFromArray(0, 1);
@@ -2055,9 +1975,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, result.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterMax(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.createFromArray(0, 1);
@@ -2078,9 +1997,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, result.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterMin(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.createFromArray(1, 2);
@@ -2101,9 +2019,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, result.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReciprocal(Nd4jBackend backend) {
         INDArray inArr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray expected = Nd4j.onesLike(inArr).divi(inArr);
@@ -2114,9 +2031,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGather2(Nd4jBackend backend) {
 
         INDArray in = Nd4j.rand(DataType.FLOAT, 10, 10);
@@ -2134,9 +2050,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, act);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGatherOp(Nd4jBackend backend) {
 
         INDArray in = Nd4j.rand(DataType.DOUBLE, 10, 10);
@@ -2165,9 +2080,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConditions(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -2204,9 +2118,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         return x;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGet(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -2234,9 +2147,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(expOut5, result5.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRank3(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -2274,9 +2186,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(s6a, y6);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray1(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
@@ -2291,9 +2202,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.pile(arr1, arr2), result.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
@@ -2308,9 +2218,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorArray3(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
@@ -2327,9 +2236,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(arr2, result2.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFill(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         INDArray shape = Nd4j.createFromArray(2, 2);
@@ -2349,9 +2257,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPermute(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.create(new double[]{
@@ -2388,9 +2295,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecutionDifferentShapesAccumAlongDim(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
@@ -2410,9 +2316,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecutionDifferentShapesIndexAccumAlongDim(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
@@ -2432,9 +2337,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExternalErrorsSimple(Nd4jBackend backend) {
         INDArray externalGrad = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
@@ -2467,9 +2371,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         //Test model serialization:
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUpdatingGradient(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2499,9 +2402,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNotEquals(origGrad.get("out"), grads.get(out.name()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUpdatingGradientSimple(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
@@ -2529,9 +2431,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNotEquals(origGrad.get("out"), grads.get(out.name()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeUpdating(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -2571,9 +2472,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{2, 5}, inGrad.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiOutput1(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -2592,9 +2492,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.createGradFunction();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiOutput2(Nd4jBackend backend) {
         //Edge case: no functions
         SameDiff sd = SameDiff.create();
@@ -2612,9 +2511,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.createGradFunction();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void sameDiffPlaceholderGrad(Nd4jBackend backend) {
         INDArray x = Nd4j.ones(2, 2);
         INDArray y = Nd4j.ones(2, 2);
@@ -2635,9 +2533,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConvertToConstant(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2679,9 +2576,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPlaceholderToConstant(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2723,9 +2619,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.fit(new SingletonMultiDataSetIterator(new MultiDataSet(new INDArray[]{inArr2}, null)), 1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConvertToVariable(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -2765,9 +2660,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDoubleUseOfArray(Nd4jBackend backend) {
         //If array is reused, gradient check will fail
         INDArray a = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4});
@@ -2786,9 +2680,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiGradientRecurrent(Nd4jBackend backend) {
         final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
         final INDArray[] output = new INDArray[(int) input.size(2)];
@@ -2832,9 +2725,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiGradientManualRecurrent(Nd4jBackend backend) {
         final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
         final INDArray[] output = new INDArray[(int) input.size(2)];
@@ -2876,9 +2768,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiGradient(Nd4jBackend backend) {
         final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
         SameDiff sd = SameDiff.create();
@@ -2897,9 +2788,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonScalarOutput1(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable linspace = sd.linspace("at", DataType.DOUBLE, 1, 15, 15);
@@ -2920,9 +2810,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonScalarOutput2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
@@ -2942,9 +2831,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonScalarOutput3(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
@@ -2964,9 +2852,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonScalarOutput4(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.var("a", DataType.DOUBLE, 3, 4);
@@ -2988,9 +2875,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonScalarOutput5(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable linspace = sd.linspace(DataType.DOUBLE, 1, 75, 75);
@@ -3011,9 +2897,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSameDiffBackprop1(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         final SDVariable a = sd.var("a", Nd4j.rand(4, 4));
@@ -3027,9 +2912,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Map<String,INDArray> g = sd.calculateGradients(null, sd.getVariables().keySet());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSameDiffNoGradForConstantAndPlaceholder(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         final SDVariable a = sd.var("a", Nd4j.rand(4, 4));
@@ -3044,9 +2928,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(sd.grad("c"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDuplicateNamePlaceholder(Nd4jBackend backend) {
 
         for (int i = 0; i < 2; i++) {
@@ -3100,9 +2983,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSameDiffGetArrayScalar(Nd4jBackend backend) {
         final INDArray array = Nd4j.rand(1, 1);
         final SameDiff sd = SameDiff.create();
@@ -3110,9 +2992,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         a.getArr();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableRenaming(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -3134,9 +3015,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(out, out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableRenaming2(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -3158,9 +3038,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPlaceholderShapeValidation(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable scalar = sd.scalar("scalar", 0.0f);
@@ -3225,9 +3104,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInferenceWithoutLabel(Nd4jBackend backend) {
         //We don't need a value for the label placeholder to calculate most values here
 
@@ -3264,9 +3142,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(out, out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInferenceWithoutUnnecessaryPlaceholders(Nd4jBackend backend) {
         //We don't need an array for 2 of the placeholders to calculate the
 
@@ -3308,9 +3185,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConvertDTypes1(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -3354,9 +3230,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.DOUBLE, y.getArr().dataType());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConvertDTypes2(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -3408,9 +3283,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGradFnRequiredVars(Nd4jBackend backend) {
         //User can explicitly request that gradients for specific vars are available when differentiating (creating grad function),
         // even if they normally wouldn't be needed or calculated
@@ -3450,9 +3324,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIf() throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.placeHolder("a", DataType.DOUBLE);
@@ -3479,9 +3352,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.createFromArray(14.0), sd.output(secondBranch, "out").get("out"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedIf() throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.var("a", Nd4j.createFromArray(2.0));
@@ -3504,9 +3376,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.createFromArray(10.0), sd.output(Collections.emptyMap(), "out").get("out"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWhile() throws IOException {
 
         SameDiff sd = SameDiff.create();
@@ -3554,9 +3425,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWhileIf() throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable countIn = sd.constant(5);
@@ -3581,9 +3451,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(115, sd.output(Collections.emptyMap(), outName).get(outName).getInt(0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMod_1(Nd4jBackend backend) {
         val sd = SameDiff.create();
         val initial = sd.constant("initial", Nd4j.createFromArray(5.f, 6.f, 7.f));
@@ -3595,9 +3464,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(e, mod.eval());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void castShapeTest1(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.constant(Nd4j.createFromArray(1, 2, 3, 4));
@@ -3618,9 +3486,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyShapeVar(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -3641,9 +3508,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPReLU(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -3667,9 +3533,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSameDiffSeedReproducibilityVarInit(Nd4jBackend backend) {
 
         SameDiff sd0 = SameDiff.create();
@@ -3694,9 +3559,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCalculateGradientsAndOutputs(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
@@ -3721,9 +3585,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(gExp, g);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatVariableGrad(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
@@ -3743,9 +3606,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceVariableGrad(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
@@ -3763,9 +3625,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(map.get("input"), map.get("concat"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrainingConfigJson(Nd4jBackend backend) {
         for(IEvaluation e : new IEvaluation[]{new Evaluation(), new RegressionEvaluation(), new EvaluationBinary(), new ROC(),
                 new ROCMultiClass(), new ROCBinary(), new EvaluationCalibration()}) {
@@ -3781,9 +3642,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRngSanityCheck(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         for(DataType dt : new DataType[]{DataType.FLOAT, DataType.DOUBLE,DataType.BFLOAT16}) {
@@ -3798,9 +3658,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMissingPlaceholderError(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -3824,9 +3683,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEquals1(Nd4jBackend backend) {
 
         SameDiff sd1 = SameDiff.create();
@@ -3873,9 +3731,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertNotEquals(sd1, sd2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2DWeightsFormat(Nd4jBackend backend) {
         int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
         int       oH=2,oW=2;
@@ -3910,9 +3767,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{bS, oC, oH, oW}, out.eval().shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2DDifferentWeightsFormat(Nd4jBackend backend) {
         int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
         int       oH=2,oW=2;

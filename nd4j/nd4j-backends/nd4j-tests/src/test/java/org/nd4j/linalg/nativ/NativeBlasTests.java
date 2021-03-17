@@ -51,9 +51,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm1(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -79,9 +78,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm2(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -107,9 +105,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm3(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -135,9 +132,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm4(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -163,9 +159,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm5(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -190,9 +185,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm6(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -218,9 +212,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemm7(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -248,9 +241,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemv1(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -278,9 +270,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemv2(Nd4jBackend backend) {
 
         // we're skipping blas here
@@ -308,9 +299,8 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasGemv3(Nd4jBackend backend) {
 
         // we're skipping blas here

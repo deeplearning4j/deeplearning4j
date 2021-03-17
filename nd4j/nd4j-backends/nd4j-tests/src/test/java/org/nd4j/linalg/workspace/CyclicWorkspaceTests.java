@@ -40,9 +40,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicMechanics_1(Nd4jBackend backend) {
         val fShape = new long[]{128, 784};
         val lShape = new long[] {128, 10};
@@ -65,7 +64,7 @@ public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGc(Nd4jBackend backend) {
         val indArray = Nd4j.create(4, 4);
         indArray.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));

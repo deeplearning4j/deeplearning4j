@@ -72,9 +72,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTest1(Nd4jBackend backend) {
 
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
@@ -101,9 +100,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
      * This test checks for allocation from workspace AND spills
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTest2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
@@ -137,9 +135,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTest3(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
@@ -168,9 +165,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTest4(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
@@ -191,9 +187,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTest5(Nd4jBackend backend) throws Exception {
         while (true) {
             Thread thread = new Thread(new Runnable() {
@@ -215,9 +210,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTest6(Nd4jBackend backend) {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
@@ -234,9 +228,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void endlessValidation1(Nd4jBackend backend) {
         Nd4j.getMemoryManager().togglePeriodicGc(true);
@@ -256,9 +249,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerf1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager()
                         .setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(50000L).build());
@@ -299,9 +291,8 @@ public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
         log.info("Block: {} ns; Op: {} ns;", results.get(pos), resultsOp.get(pos));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void endlessTestSerDe1(Nd4jBackend backend) throws Exception {
         INDArray features = Nd4j.create(32, 3, 224, 224);
         INDArray labels = Nd4j.create(32, 200);

@@ -39,9 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMiniBatches(@TempDir Path testDir) throws Exception {
         DataSet load = new IrisDataSetIterator(150, 150).next();
         final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load, 10, false, testDir.toFile());

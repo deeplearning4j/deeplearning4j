@@ -43,9 +43,8 @@ public class ExpandableOpsTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompatStringSplit_1(Nd4jBackend backend) throws Exception {
         val array = Nd4j.create("first string", "second");
         val delimiter = Nd4j.create(" ");
@@ -61,9 +60,8 @@ public class ExpandableOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp1, results[1]);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test(Nd4jBackend backend) {
         val arr = Nd4j.createFromArray(0, 1, 2, 3, 4, 5, 6, 7, 8).reshape(3, 3);
         Nd4j.exec(new PrintVariable(arr));

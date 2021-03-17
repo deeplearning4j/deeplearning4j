@@ -37,9 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ParamsTestsF extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm (Nd4jBackend backend) {
         INDArray a = Nd4j.create(2, 2);
         INDArray b = Nd4j.create(2, 3);

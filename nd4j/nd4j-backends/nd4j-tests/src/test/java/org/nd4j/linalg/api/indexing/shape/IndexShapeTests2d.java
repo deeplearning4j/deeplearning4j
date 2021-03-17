@@ -41,18 +41,16 @@ public class IndexShapeTests2d extends BaseNd4jTestWithBackends {
     private long[] shape = {3, 2};
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dCases(Nd4jBackend backend) {
         assertArrayEquals(new long[] {1, 2}, Indices.shape(shape, NDArrayIndex.point(1)));
         assertArrayEquals(new long[] {3, 1},
                         Indices.shape(shape, NDArrayIndex.all(), NDArrayIndex.point(1)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAxis2d(Nd4jBackend backend) {
         assertArrayEquals(new long[] {1, 3, 2}, Indices.shape(shape,
                 NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.all()));

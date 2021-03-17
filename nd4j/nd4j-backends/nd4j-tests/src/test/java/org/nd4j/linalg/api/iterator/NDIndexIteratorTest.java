@@ -38,9 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 public class NDIndexIteratorTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIterate(Nd4jBackend backend) {
         val shapeIter = new NdIndexIterator(2, 2);
         val possibleSolutions = new long[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1},};

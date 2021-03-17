@@ -49,9 +49,8 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
         return Long.MAX_VALUE;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimple(Nd4jBackend backend) throws Exception {
 
         int nThreads = 4;

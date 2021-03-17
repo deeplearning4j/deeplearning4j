@@ -36,9 +36,8 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 public class SmokeTest {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasic() {
         Nd4j.getEnvironment().setDebug(true);
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()

@@ -60,9 +60,8 @@ import org.nd4j.weightinit.impl.XavierInitScheme;
 public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void irisTrainingSanityCheck(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -134,9 +133,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void irisTrainingEvalTest(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -186,9 +184,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void irisTrainingValidationTest(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -243,9 +240,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrainingMixedDtypes(){
 
         for (String u : new String[]{"adam", "nesterov", "adamax", "amsgrad"}) {
@@ -307,9 +303,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void simpleClassification(Nd4jBackend backend) {
         double learning_rate = 0.001;
         int seed = 7;
@@ -356,9 +351,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         History history = sd.fit(new SingletonMultiDataSetIterator(mds), 1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrainingEvalVarNotReqForLoss(){
         //If a variable is not required for the loss - normally it won't be calculated
         //But we want to make sure it IS calculated here - so we can perform evaluation on it

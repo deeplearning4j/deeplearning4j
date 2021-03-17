@@ -39,9 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NormalizerStandardizeLabelsTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBruteForce(Nd4jBackend backend) {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers
            The obtained values are compared to the theoretical mean and std dev
@@ -105,9 +104,8 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTestWithBackends {
         assertTrue(maxStdDeltaPerc < tolerancePerc);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTransform(Nd4jBackend backend) {
         /*Random dataset is generated such that
             AX + B where X is from a normal distribution with mean 0 and std 1

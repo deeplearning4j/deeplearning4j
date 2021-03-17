@@ -52,9 +52,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testByteArrayOrder1(Nd4jBackend backend) {
         val ndarray = Nd4j.create(DataType.FLOAT, 2).assign(1);
 
@@ -65,9 +65,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         assertEquals(8, array.length);
     }
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testByteArrayOrder2(Nd4jBackend backend) {
         val original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape(5, 5);
         val bufferBuilder = new FlatBufferBuilder(0);
@@ -83,9 +83,8 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testByteArrayOrder3(Nd4jBackend backend) {
         val original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape('f', 5, 5);
         val bufferBuilder = new FlatBufferBuilder(0);
@@ -100,9 +99,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         assertEquals(original, restored);
     }
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeStridesOf1(Nd4jBackend backend) {
         val buffer = new int[]{2, 5, 5, 5, 1, 0, 1, 99};
 
@@ -113,9 +112,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         assertArrayEquals(new int[]{5, 1}, strides);
     }
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeStridesOf2(Nd4jBackend backend) {
         val buffer = new int[]{3, 5, 5, 5, 25, 5, 1, 0, 1, 99};
 
@@ -126,9 +125,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         assertArrayEquals(new int[]{25, 5, 1}, strides);
     }
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarEncoding(Nd4jBackend backend) {
         val scalar = Nd4j.scalar(2.0f);
 
@@ -146,9 +145,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorEncoding_1(Nd4jBackend backend) {
         val scalar = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
 
@@ -164,9 +163,9 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         assertEquals(scalar, restored);
     }
 
-    @Test
+
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorEncoding_2(Nd4jBackend backend) {
         val scalar = Nd4j.createFromArray(new double[]{1, 2, 3, 4, 5});
 
@@ -182,9 +181,8 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
         assertEquals(scalar, restored);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStringEncoding_1(Nd4jBackend backend) {
         val strings = Arrays.asList("alpha", "beta", "gamma");
         val vector = Nd4j.create(strings, 3);

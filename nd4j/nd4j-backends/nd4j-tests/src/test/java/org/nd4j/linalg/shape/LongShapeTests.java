@@ -38,9 +38,8 @@ public class LongShapeTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLongBuffer_1(Nd4jBackend backend) {
         val exp = new long[]{2, 5, 3, 3, 1, 0, 1, 99};
         val buffer = Nd4j.getDataBufferFactory().createLong(exp);
@@ -51,9 +50,8 @@ public class LongShapeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLongShape_1(Nd4jBackend backend) {
         val exp = new long[]{2, 5, 3, 3, 1, 16384, 1, 99};
 

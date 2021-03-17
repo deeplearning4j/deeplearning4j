@@ -41,9 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ImagePreProcessortTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void simpleImageTest(Nd4jBackend backend) {
         INDArray rChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(128);
         INDArray gChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(64);
@@ -103,9 +102,8 @@ public class ImagePreProcessortTest extends BaseNd4jTestWithBackends {
         assertEquals(orig, before);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void simpleImageTestMulti(Nd4jBackend backend) {
         INDArray rChannels = Nd4j.zeros(10, 10).addi(128);
         INDArray gChannels = Nd4j.zeros(10, 10).addi(64);
@@ -161,9 +159,8 @@ public class ImagePreProcessortTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentation(Nd4jBackend backend){
 
         INDArray f = Nd4j.math().floor(Nd4j.rand(DataType.FLOAT, 3, 3, 16, 16).muli(255));

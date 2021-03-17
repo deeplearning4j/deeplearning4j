@@ -45,9 +45,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeConv2D(Nd4jBackend backend){
         DeConv2DConfig.builder().kH(2).kW(4).build();
 
@@ -108,9 +107,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv2D(Nd4jBackend backend){
         Conv2DConfig.builder().kH(2).kW(4).build();
 
@@ -171,9 +169,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling2D(Nd4jBackend backend){
         Pooling2DConfig.builder().kH(2).kW(4).build();
 
@@ -234,9 +231,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeConv3D(Nd4jBackend backend){
         DeConv3DConfig.builder().kH(2).kW(4).kD(3).build();
 
@@ -325,9 +321,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv3D(Nd4jBackend backend){
         Conv3DConfig.builder().kH(2).kW(4).kD(3).build();
 
@@ -418,9 +413,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
 
 
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling3D(Nd4jBackend backend){
         Pooling3DConfig.builder().kH(2).kW(4).kD(3).build();
 
@@ -509,9 +503,8 @@ public class ConvConfigTests extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConv1D(){
         Conv1DConfig.builder().k(2).paddingMode(PaddingMode.SAME).build();
 

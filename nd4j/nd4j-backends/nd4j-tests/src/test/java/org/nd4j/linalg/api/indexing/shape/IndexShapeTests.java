@@ -40,9 +40,8 @@ public class IndexShapeTests extends BaseNd4jTestWithBackends {
 
     private int[] shape = {1, 1, 2, 1, 3, 4, 5, 1};
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSinglePoint(Nd4jBackend backend) {
         /*
         Assumes all indexes are filled out.
@@ -73,9 +72,8 @@ public class IndexShapeTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInterval(Nd4jBackend backend) {
         int[] basicAssertion = {1, 1, 1, 1, 3, 1, 2, 1};
         INDArrayIndex[] basicTest = {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
@@ -86,9 +84,8 @@ public class IndexShapeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAxis(Nd4jBackend backend) {
         //normal prepend
         int[] prependAssertion = {1, 1, 1, 1, 2, 1, 3, 4, 5, 1};

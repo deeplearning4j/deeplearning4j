@@ -65,7 +65,6 @@ public class TestRnnLayers extends BaseDL4JTest {
         return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testTimeStepIs3Dimensional(RNNFormat rnnDataFormat) {
@@ -117,7 +116,6 @@ public class TestRnnLayers extends BaseDL4JTest {
 
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testDropoutRecurrentLayers(RNNFormat rnnDataFormat){
@@ -217,7 +215,6 @@ public class TestRnnLayers extends BaseDL4JTest {
         }
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testMismatchedInputLabelLength(RNNFormat rnnDataFormat){

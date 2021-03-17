@@ -62,7 +62,6 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testLastTimeStepVertex(RNNFormat rnnDataFormat) {
@@ -127,7 +126,6 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         TestUtils.testModelSerialization(graph);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testMaskingAndAllMasked(RNNFormat rnnDataFormat) {

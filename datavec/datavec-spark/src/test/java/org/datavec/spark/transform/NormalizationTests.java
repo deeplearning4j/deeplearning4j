@@ -40,8 +40,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NormalizationTests extends BaseSparkTest {
 

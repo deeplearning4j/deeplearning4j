@@ -40,9 +40,8 @@ public class TestSchedules extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJson() throws Exception {
 
         ObjectMapper om = new ObjectMapper();
@@ -69,9 +68,8 @@ public class TestSchedules extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScheduleValues(Nd4jBackend backend) {
 
         double lr = 0.8;
@@ -122,9 +120,8 @@ public class TestSchedules extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMapSchedule(Nd4jBackend backend) {
 
         ISchedule schedule = new MapSchedule.Builder(ScheduleType.ITERATION)
@@ -140,9 +137,8 @@ public class TestSchedules extends BaseNd4jTestWithBackends {
             }
         }
     }
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCycleSchedule(Nd4jBackend backend) {
         ISchedule schedule = new CycleSchedule(ScheduleType.ITERATION, 1.5, 100);
         assertEquals(0.15, schedule.valueAt(0, 0), 1e-6);

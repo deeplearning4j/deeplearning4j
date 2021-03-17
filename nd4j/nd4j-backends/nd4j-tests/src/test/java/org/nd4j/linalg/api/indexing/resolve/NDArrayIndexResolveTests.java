@@ -41,9 +41,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NDArrayIndexResolveTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResolvePoint(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArrayIndex[] test = NDArrayIndex.resolve(arr.shape(), NDArrayIndex.point(1));
@@ -58,9 +57,8 @@ public class NDArrayIndexResolveTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResolvePointVector() {
         INDArray arr = Nd4j.linspace(1, 4, 4);
         INDArrayIndex[] getPoint = {NDArrayIndex.point(1)};

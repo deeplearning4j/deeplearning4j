@@ -43,9 +43,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayIndexingEqualToRank(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1,6,6, DataType.DOUBLE).reshape('c',3,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{
@@ -60,9 +59,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayIndexingLessThanRankSimple(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1,6,6, DataType.DOUBLE).reshape('c',3,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{
@@ -76,9 +74,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayIndexingLessThanRankFourDimension(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1,16,16, DataType.DOUBLE).reshape('c',2,2,2,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{
@@ -91,9 +88,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutSimple(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1,16,16, DataType.DOUBLE).reshape('c',2,2,2,2);
         INDArray indexes = Nd4j.create(new double[][]{
@@ -105,9 +101,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         assertEquals(vals,x);
     }
     
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetScalar(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray d = arr.get(NDArrayIndex.point(1));
@@ -116,18 +111,16 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAxis(Nd4jBackend backend) {
         INDArray arr = Nd4j.rand(new int[] {4, 2, 3});
         INDArray view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
 //        System.out.println(view);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorIndexing(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(0, 10, 11, DataType.DOUBLE).reshape(1, 11).castTo(DataType.DOUBLE);
         int[] index = new int[] {5, 8, 9};
@@ -139,9 +132,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRowsColumnsMatrix(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 6);
         INDArray firstAndSecondColumnsAssertion = Nd4j.create(new double[][] {{1, 5}, {2, 6}, {3, 7}, {4, 8}});
@@ -159,9 +151,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlicing(Nd4jBackend backend) {
         INDArray arange = Nd4j.arange(1, 17).reshape(4, 4).castTo(DataType.DOUBLE);
         INDArray slice1Assert = Nd4j.create(new double[] {2, 6, 10, 14});
@@ -169,9 +160,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         assertEquals(slice1Assert, slice1Test);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArangeMul(Nd4jBackend backend) {
         INDArray arange = Nd4j.arange(1, 17).reshape('f', 4, 4).castTo(DataType.DOUBLE);
         INDArrayIndex index = NDArrayIndex.interval(0, 2);
@@ -183,9 +173,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetIndicesVector(Nd4jBackend backend) {
         INDArray line = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1);
         INDArray test = Nd4j.create(new double[] {2, 3});
@@ -193,9 +182,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         assertEquals(test, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetIndicesVectorView(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape('c',5, 5);
         INDArray column = matrix.getColumn(0).reshape(1,5);
@@ -213,9 +201,8 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         assertEquals(exp2, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dGetPoint(Nd4jBackend backend){
         INDArray arr = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape('c',3,4);
         for( int i=0; i<3; i++ ){

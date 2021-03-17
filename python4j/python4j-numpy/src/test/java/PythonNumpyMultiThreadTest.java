@@ -22,7 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.python4j.*;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 
 import org.nd4j.linalg.api.buffer.DataType;
@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @NotThreadSafe
@@ -73,7 +75,7 @@ public class PythonNumpyMultiThreadTest {
                     PythonVariable out = new PythonVariable<>("z", NumpyArray.INSTANCE);
                     String code = "z = x + y";
                     PythonExecutioner.exec(code, inputs, Collections.singletonList(out));
-                    Assert.assertEquals(Nd4j.ones(dataType, 2, 3).mul(7), out.getValue());
+                    assertEquals(Nd4j.ones(dataType, 2, 3).mul(7), out.getValue());
                 }
             } catch (Throwable e) {
                 exceptions.add(e);
@@ -114,9 +116,9 @@ public class PythonNumpyMultiThreadTest {
                         inputs.add(new PythonVariable<>("y", NumpyArray.INSTANCE, Nd4j.ones(dataType, 2, 3).mul(4)));
                         String code = "z = x + y";
                         List<PythonVariable> outputs = PythonExecutioner.execAndReturnAllVariables(code, inputs);
-                        Assert.assertEquals(Nd4j.ones(dataType, 2, 3).mul(3), outputs.get(0).getValue());
-                        Assert.assertEquals(Nd4j.ones(dataType, 2, 3).mul(4), outputs.get(1).getValue());
-                        Assert.assertEquals(Nd4j.ones(dataType, 2, 3).mul(7), outputs.get(2).getValue());
+                        assertEquals(Nd4j.ones(dataType, 2, 3).mul(3), outputs.get(0).getValue());
+                        assertEquals(Nd4j.ones(dataType, 2, 3).mul(4), outputs.get(1).getValue());
+                        assertEquals(Nd4j.ones(dataType, 2, 3).mul(7), outputs.get(2).getValue());
                     }
                 } catch (Throwable e) {
                     exceptions.add(e);

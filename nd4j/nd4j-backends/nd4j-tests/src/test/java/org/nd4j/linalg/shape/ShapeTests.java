@@ -45,9 +45,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
  */
 
 public class ShapeTests extends BaseNd4jTestWithBackends {
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowColVectorVsScalar(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(2);
         assertTrue(arr.isRowVector());
@@ -61,9 +60,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
         assertFalse(arr3.isRowVector());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSixteenZeroOne(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         assertEquals(4, baseArr.tensorsAlongDimension(0, 1));
@@ -81,9 +79,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorAlongDimension1(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 5, 5);
         assertEquals(arr.vectorsAlongDimension(0), 5);
@@ -95,9 +92,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSixteenSecondDim(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 5}), Nd4j.create(new double[] {9, 13}),
@@ -116,9 +112,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorAlongDimension(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(4, 3, 2);
         INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {2});
@@ -149,9 +144,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testThreeTwoTwo(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 4}), Nd4j.create(new double[] {7, 10}),
@@ -168,18 +162,16 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoCopy(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE);
         INDArray arr = Shape.newShapeNoCopy(threeTwoTwo, new long[] {3, 2, 2}, true);
         assertArrayEquals(arr.shape(), new long[] {3, 2, 2});
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testThreeTwoTwoTwo(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 7}), Nd4j.create(new double[] {4, 10}),
@@ -196,9 +188,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAxis(Nd4jBackend backend) {
         INDArray tensor = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 7}, {4, 10}}).reshape(1, 2, 2);
@@ -208,9 +199,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSixteenFirstDim(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         INDArray[] assertions = new INDArray[] {Nd4j.create(new double[] {1, 3}), Nd4j.create(new double[] {9, 11}),
@@ -229,9 +219,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDimShuffle(Nd4jBackend backend) {
         INDArray scalarTest = Nd4j.scalar(0.0).reshape(1, -1);
         INDArray broadcast = scalarTest.dimShuffle(new Object[] {'x'}, new long[] {0, 1}, new boolean[] {true, true});
@@ -251,9 +240,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEight(Nd4jBackend backend) {
         INDArray baseArr = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(2, 2, 2);
         assertEquals(2, baseArr.tensorsAlongDimension(0, 1));
@@ -263,9 +251,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
         assertEquals(columnVectorSecond, baseArr.tensorAlongDimension(1, 0, 1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastShapes(){
         //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
         List<Triple<long[], long[], long[]>> testCases = new ArrayList<>();

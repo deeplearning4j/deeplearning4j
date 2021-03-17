@@ -19,6 +19,7 @@
  */
 package org.nd4j.onnxruntime.runner;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,6 +37,7 @@ public class OnnxRuntimeRunnerTests {
 
 
     @Test
+    @Disabled
     public void testAdd() throws Exception {
         ClassPathResource classPathResource = new ClassPathResource("add.onnx");
         File f = classPathResource.getFile();

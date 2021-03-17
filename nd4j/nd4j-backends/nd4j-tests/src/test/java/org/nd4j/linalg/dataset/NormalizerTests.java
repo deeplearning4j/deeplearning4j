@@ -75,9 +75,8 @@ public class NormalizerTests extends BaseNd4jTestWithBackends {
         minMaxScaler = new NormalizerMinMaxScaler();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPreProcessors(Nd4jBackend backend) {
         System.out.println("Running iterator vs non-iterator std scaler..");
         double d1 = testItervsDataset(stdScaler);
@@ -110,9 +109,8 @@ public class NormalizerTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMasking(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(235);
 
@@ -228,9 +226,8 @@ public class NormalizerTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormalizerToStringHashCode(){
         //https://github.com/eclipse/deeplearning4j/issues/8565
 
@@ -265,9 +262,8 @@ public class NormalizerTests extends BaseNd4jTestWithBackends {
         n.hashCode();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiNormalizerToStringHashCode(){
         //https://github.com/eclipse/deeplearning4j/issues/8565
 

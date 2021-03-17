@@ -46,9 +46,8 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaVsNative(Nd4jBackend backend) {
         long totalJavaTime = 0;
         long totalCTime = 0;
@@ -72,9 +71,8 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadShapesEdgeCases(Nd4jBackend backend) {
         INDArray row = Nd4j.create(DataType.DOUBLE, 1, 5);
         INDArray col = Nd4j.create(DataType.DOUBLE, 5, 1);
@@ -83,9 +81,8 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[] {1, 5}, col.tensorAlongDimension(0, 0).shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadShapes1d(Nd4jBackend backend) {
         //Ensure TAD returns the correct/expected shapes, and values don't depend on underlying array layout/order etc
         /**
@@ -154,9 +151,8 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadShapes2d(Nd4jBackend backend) {
         //Ensure TAD returns the correct/expected shapes, and values don't depend on underlying array layout/order etc
 
@@ -260,9 +256,8 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadKnownValues(Nd4jBackend backend) {
         long[] shape = {2, 3, 4};
 
@@ -302,9 +297,8 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
         assertEquals(exp12_1, arr.tensorAlongDimension(1, 2, 1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStalled(Nd4jBackend backend) {
         int shape[] = new int[] {3, 3, 4, 5};
         INDArray orig2 = Nd4j.create(shape, 'c');

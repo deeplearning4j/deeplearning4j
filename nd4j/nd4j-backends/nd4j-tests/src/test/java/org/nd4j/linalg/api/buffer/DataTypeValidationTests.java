@@ -72,7 +72,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
      */
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation1(Nd4jBackend backend) {
        assertThrows(ND4JIllegalStateException.class,() -> {
            INDArray x = Nd4j.create(10);
@@ -91,7 +91,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
      */
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation2(Nd4jBackend backend) {
         assertThrows(RuntimeException.class,() -> {
             INDArray a = Nd4j.create(100, 10);
@@ -111,7 +111,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
      */
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation3(Nd4jBackend backend) {
        assertThrows(IllegalStateException.class,() -> {
            INDArray x = Nd4j.create(100, 100);

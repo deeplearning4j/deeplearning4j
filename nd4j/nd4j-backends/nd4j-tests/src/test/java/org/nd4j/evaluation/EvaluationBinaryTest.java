@@ -48,9 +48,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinary(Nd4jBackend backend) {
         //Compare EvaluationBinary to Evaluation class
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
@@ -136,9 +135,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinaryMerging(Nd4jBackend backend) {
         int nOut = 4;
         int[] shape1 = {30, nOut};
@@ -165,9 +163,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         assertEquals(eb.stats(), eb1.stats());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinaryPerOutputMasking(Nd4jBackend backend) {
 
         //Provide a mask array: "ignore" the masked steps
@@ -210,9 +207,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         assertEquals(1, eb.falseNegatives(2));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTimeSeriesEval(Nd4jBackend backend) {
 
         int[] shape = {2, 4, 3};
@@ -236,9 +232,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         assertEquals(eb2.stats(), eb1.stats());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinaryWithROC(Nd4jBackend backend) {
         //Simple test for nested ROCBinary in EvaluationBinary
 
@@ -255,9 +250,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinary3d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
@@ -291,9 +285,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinary4d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
@@ -327,9 +320,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinary3dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
@@ -390,9 +382,8 @@ public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationBinary4dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);

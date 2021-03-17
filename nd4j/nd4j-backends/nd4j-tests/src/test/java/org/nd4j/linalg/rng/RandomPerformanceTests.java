@@ -32,9 +32,8 @@ public class RandomPerformanceTests extends BaseNd4jTestWithBackends {
 
 
 /*
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDropoutPerformance() throws Exception {
 
         for (int i = 0; i < 100; i++) {

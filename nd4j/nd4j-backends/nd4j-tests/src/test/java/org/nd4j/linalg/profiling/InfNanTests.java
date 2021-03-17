@@ -52,7 +52,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
@@ -69,7 +69,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
@@ -83,9 +83,8 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf3(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
@@ -94,9 +93,8 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
         OpExecutionerUtil.checkForAny(x);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf4(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
 
@@ -107,7 +105,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
@@ -124,7 +122,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
@@ -138,9 +136,8 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN3(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
@@ -149,9 +146,8 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
         OpExecutionerUtil.checkForAny(x);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN4(Nd4jBackend backend) {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
 

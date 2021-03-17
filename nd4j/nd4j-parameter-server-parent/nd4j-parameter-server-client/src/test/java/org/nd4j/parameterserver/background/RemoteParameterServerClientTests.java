@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@Disabled
 public class RemoteParameterServerClientTests extends BaseND4JTest {
     private int parameterLength = 1000;
     private Aeron.Context ctx;

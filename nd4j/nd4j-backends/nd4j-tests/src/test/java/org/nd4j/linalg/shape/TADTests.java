@@ -47,9 +47,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 public class TADTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStall(Nd4jBackend backend) {
         //[4, 3, 3, 4, 5, 60, 20, 5, 1, 0, 1, 99], dimensions: [1, 2, 3]
         INDArray arr = Nd4j.create(3, 3, 4, 5);
@@ -63,9 +62,8 @@ public class TADTests extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEquality1(Nd4jBackend backend) {
 
         char[] order = new char[] {'c', 'f'};
@@ -120,9 +118,8 @@ public class TADTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMysteriousCrash(Nd4jBackend backend) {
         INDArray arrayF = Nd4j.create(new int[] {1, 1, 4, 4}, 'f');
         INDArray arrayC = Nd4j.create(new int[] {1, 1, 4, 4}, 'c');
@@ -139,9 +136,8 @@ public class TADTests extends BaseNd4jTestWithBackends {
 //                        + javaCTad.shapeInfoDataBuffer());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTADEWSStride(){
         INDArray orig = Nd4j.linspace(1, 600, 600).reshape('f', 10, 1, 60);
 

@@ -88,7 +88,6 @@ public class TFGraphTestList {
     }
 
 
-    @Test
     @ParameterizedTest
     @MethodSource("#data")
     public void testOutputOnly(@TempDir Path testDir,String modelName) throws IOException {

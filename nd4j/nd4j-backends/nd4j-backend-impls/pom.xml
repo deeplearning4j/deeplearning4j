@@ -81,7 +81,6 @@
 
     <build>
         <plugins>
-
             <!-- Skip execution of Javadoc since some versions run out of memory -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -124,7 +123,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.19.1</version>
                     <configuration>
                         <environmentVariables>
                             <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>

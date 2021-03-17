@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.lossfunctions;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,6 +30,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+
 public class TestLossFunctionsSizeChecks extends BaseNd4jTestWithBackends {
 
 
@@ -39,9 +41,8 @@ public class TestLossFunctionsSizeChecks extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testL2(Nd4jBackend backend) {
         LossFunction[] lossFunctionList = {LossFunction.MSE, LossFunction.L1, LossFunction.XENT,
                 LossFunction.MCXENT, LossFunction.SQUARED_LOSS, LossFunction.RECONSTRUCTION_CROSSENTROPY,
@@ -71,16 +72,16 @@ public class TestLossFunctionsSizeChecks extends BaseNd4jTestWithBackends {
             INDArray preOutput = Nd4j.create(100, 44);
             double score = loss.computeScore(labels, preOutput, Activation.IDENTITY.getActivationFunction(), null,
                     true);
-            Assert.assertFalse(
+            assertFalse(
+                    true,
                     "Loss function " + loss.toString()
-                            + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal",
-                    true);
+                                        + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal");
         } catch (IllegalArgumentException ex) {
             String exceptionMessage = ex.getMessage();
-            Assert.assertTrue(
+            assertTrue(
+                    exceptionMessage.contains("shapes"),
                     "Loss function exception " + loss.toString()
-                            + " did not indicate size mismatch when vectors of incorrect size were used.",
-                    exceptionMessage.contains("shapes"));
+                                        + " did not indicate size mismatch when vectors of incorrect size were used.");
         }
 
         try {
@@ -88,16 +89,16 @@ public class TestLossFunctionsSizeChecks extends BaseNd4jTestWithBackends {
             INDArray preOutput = Nd4j.create(100, 44);
             INDArray gradient =
                     loss.computeGradient(labels, preOutput, Activation.IDENTITY.getActivationFunction(), null);
-            Assert.assertFalse(
+            assertFalse(
+                    true,
                     "Loss function " + loss.toString()
-                            + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal",
-                    true);
+                                        + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal");
         } catch (IllegalArgumentException ex) {
             String exceptionMessage = ex.getMessage();
-            Assert.assertTrue(
+            assertTrue(
+                    exceptionMessage.contains("shapes"),
                     "Loss function exception " + loss.toString()
-                            + " did not indicate size mismatch when vectors of incorrect size were used.",
-                    exceptionMessage.contains("shapes"));
+                                        + " did not indicate size mismatch when vectors of incorrect size were used.");
         }
 
     }

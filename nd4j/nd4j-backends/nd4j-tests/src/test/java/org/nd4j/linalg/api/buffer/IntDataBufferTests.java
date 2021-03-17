@@ -42,9 +42,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class IntDataBufferTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicSerde1() throws Exception {
 
 
@@ -82,9 +81,8 @@ public class IntDataBufferTests extends BaseNd4jTestWithBackends {
     }
     */
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocation(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
@@ -96,9 +94,8 @@ public class IntDataBufferTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(old, Arrays.copyOf(newContent, old.length));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocationWorkspace(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();

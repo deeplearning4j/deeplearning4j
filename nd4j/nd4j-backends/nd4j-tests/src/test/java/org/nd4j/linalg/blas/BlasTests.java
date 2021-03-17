@@ -44,9 +44,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class BlasTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void simpleTest(Nd4jBackend backend) {
         INDArray m1 = Nd4j.create(new double[][]{{1.0}, {2.0}, {3.0}, {4.0}});
 
@@ -76,9 +75,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemmInvalid1(Nd4jBackend backend) {
         final INDArray a = Nd4j.rand(3, 4);
         final INDArray b = Nd4j.rand(4, 5);
@@ -94,9 +92,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemmInvalid3(Nd4jBackend backend) {
         final INDArray a = Nd4j.rand(4, 3);
         final INDArray b = Nd4j.rand(4, 5);
@@ -112,9 +109,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm1(Nd4jBackend backend) {
         final INDArray a = Nd4j.rand(4, 3);
         final INDArray b = Nd4j.rand(4, 5);
@@ -125,9 +121,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         assertEquals(result, result2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm2(Nd4jBackend backend) {
         final INDArray a = Nd4j.rand(4, 3);
         final INDArray b = Nd4j.rand(4, 5);
@@ -142,9 +137,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         assertEquals(result, view);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGemm3(Nd4jBackend backend) {
         final INDArray a = Nd4j.rand(4, 3);
         final INDArray b = Nd4j.rand(4, 5);
@@ -160,9 +154,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmuli1(Nd4jBackend backend) {
         final INDArray activations = Nd4j.createUninitialized(new long[]{1, 3, 1}, 'f');
         final INDArray z = activations.tensorAlongDimension(0, 1, 2);
@@ -176,9 +169,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         assertEquals(ab, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmuli2(Nd4jBackend backend) {
         final INDArray activations = Nd4j.createUninitialized(new long[]{2, 3, 1}, 'f');
         final INDArray z = activations.tensorAlongDimension(0, 1, 2);
@@ -192,9 +184,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         assertEquals(ab, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmuli3(Nd4jBackend backend){
         final INDArray activations = Nd4j.createUninitialized(new long[]{1, 3, 2}, 'f');
         final INDArray z = activations.tensorAlongDimension(0, 1, 2);
@@ -207,9 +198,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         assertEquals(ab, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test_Fp16_Mmuli_1(Nd4jBackend backend){
         final INDArray activations = Nd4j.createUninitialized(DataType.HALF, new long[]{1, 3, 2}, 'f');
         final INDArray z = activations.tensorAlongDimension(0, 1, 2);
@@ -222,9 +212,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         assertEquals(ab, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test_Fp16_Mmuli_2(Nd4jBackend backend){
         val a = Nd4j.create(DataType.HALF, 32, 768);
         val b = Nd4j.create(DataType.HALF, 768);
@@ -235,7 +224,7 @@ public class BlasTests extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfPrecision(Nd4jBackend backend) {
         val a = Nd4j.create(DataType.HALF, 64, 768);
         val b = Nd4j.create(DataType.HALF, 768, 1024);
@@ -255,9 +244,8 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         log.info("Median time: {} ms", durations.get(durations.size() / 2));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmuli4(Nd4jBackend backend){
         try {
             Nd4j.rand(1, 3).mmuli(Nd4j.rand(3, 1), Nd4j.createUninitialized(new int[]{10, 10, 1}));

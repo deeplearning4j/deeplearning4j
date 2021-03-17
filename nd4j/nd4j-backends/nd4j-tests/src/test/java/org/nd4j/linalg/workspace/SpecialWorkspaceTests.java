@@ -60,9 +60,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(this.initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableTimeSeries1(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration
                 .builder()
@@ -169,9 +168,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableTimeSeries2(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
@@ -212,9 +210,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         assertEquals(0, workspace.getPinnedSize());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testViewDetach_1(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
@@ -243,9 +240,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAlignment_1(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
@@ -266,9 +262,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoOpExecution_1(Nd4jBackend backend) {
         val configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
@@ -305,9 +300,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         log.info("{} ns", ((timeEnd - timeStart) / (double) iterations));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspaceOrder_1(){
         WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
                 .initialSize(1_000_000)
@@ -342,9 +336,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, res);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmapedWorkspaceLimits_1() throws Exception {
         if (!Nd4j.getEnvironment().isCPU())
             return;
@@ -368,9 +361,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMmapedWorkspace_Path_Limits_1() throws Exception {
         if (!Nd4j.getEnvironment().isCPU())
             return;
@@ -394,9 +386,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeleteMappedFile_1() throws Exception {
         if (!Nd4j.getEnvironment().isCPU())
             return;
@@ -442,9 +433,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMigrateToWorkspace(){
         val src = Nd4j.createFromArray (1L,2L);
         val wsConf = new WorkspaceConfiguration().builder().build();

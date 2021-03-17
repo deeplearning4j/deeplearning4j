@@ -53,9 +53,8 @@ public class CrashTest extends BaseNd4jTestWithBackends {
     /**
      * tensorAlongDimension() produces shapeInfo without EWS defined
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonEWSViews1(Nd4jBackend backend) {
         log.debug("non-EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
@@ -67,9 +66,8 @@ public class CrashTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonEWSViews2(Nd4jBackend backend) {
         log.debug("non-EWS 2");
         INDArray x = Nd4j.create(new int[] {64, 1024, 64}, 'f');
@@ -84,9 +82,8 @@ public class CrashTest extends BaseNd4jTestWithBackends {
     /**
      * slice() produces shapeInfo with EWS being 1 in our case
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEWSViews1(Nd4jBackend backend) {
         log.debug("EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
@@ -98,9 +95,8 @@ public class CrashTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEWSViews2(Nd4jBackend backend) {
         log.debug("EWS 2");
         INDArray x = Nd4j.create(new int[] {96, 1024, 64}, 'f');

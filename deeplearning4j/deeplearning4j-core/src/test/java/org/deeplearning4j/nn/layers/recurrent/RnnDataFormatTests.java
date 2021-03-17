@@ -109,7 +109,6 @@ public class RnnDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testLSTM(boolean helpers,

@@ -42,9 +42,8 @@ public class PaddingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAppend(Nd4jBackend backend) {
         INDArray appendTo = Nd4j.ones(DataType.DOUBLE,3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
@@ -59,9 +58,8 @@ public class PaddingTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPrepend(Nd4jBackend backend) {
         INDArray appendTo = Nd4j.ones(DataType.DOUBLE, 3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
@@ -77,9 +75,8 @@ public class PaddingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPad(Nd4jBackend backend) {
 
         INDArray start = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);

@@ -71,9 +71,8 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void irisHistoryTest(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -136,9 +135,8 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         assertTrue(acc >= 0.75,"Accuracy < 75%, was " + acc);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testListenerCalls(){
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
@@ -275,9 +273,8 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCustomListener(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("input", DataType.FLOAT, -1, 4);

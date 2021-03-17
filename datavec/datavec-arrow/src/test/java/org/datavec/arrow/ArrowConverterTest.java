@@ -54,10 +54,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 import static java.nio.channels.Channels.newChannel;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -42,9 +42,8 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayReuseTooLarge(Nd4jBackend backend) throws Exception {
 
         ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
@@ -116,9 +115,8 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         assertEquals(0, mmgr.getLruCacheValues().size());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testManyArrays(Nd4jBackend backend){
 
         ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();

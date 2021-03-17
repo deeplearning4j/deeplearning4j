@@ -53,9 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Nd4jTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandShapeAndRNG(Nd4jBackend backend) {
         INDArray ret = Nd4j.rand(new int[] {4, 2}, Nd4j.getRandomFactory().getNewRandomInstance(123));
         INDArray ret2 = Nd4j.rand(new int[] {4, 2}, Nd4j.getRandomFactory().getNewRandomInstance(123));
@@ -63,27 +62,24 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         assertEquals(ret, ret2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandShapeAndMinMax(Nd4jBackend backend) {
         INDArray ret = Nd4j.rand(new int[] {4, 2}, -0.125f, 0.125f, Nd4j.getRandomFactory().getNewRandomInstance(123));
         INDArray ret2 = Nd4j.rand(new int[] {4, 2}, -0.125f, 0.125f, Nd4j.getRandomFactory().getNewRandomInstance(123));
         assertEquals(ret, ret2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateShape(Nd4jBackend backend) {
         INDArray ret = Nd4j.create(new int[] {4, 2});
 
         assertEquals(ret.length(), 8);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateFromList(Nd4jBackend backend) {
         List<Double> doubles = Arrays.asList(1.0, 2.0);
         INDArray NdarrayDobules = Nd4j.create(doubles);
@@ -97,9 +93,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         assertEquals((Float)NdarrayFloats.getFloat(1),floats.get(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRandom(Nd4jBackend backend) {
         Random r = Nd4j.getRandom();
         Random t = Nd4j.getRandom();
@@ -107,9 +102,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         assertEquals(r, t);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRandomSetSeed(Nd4jBackend backend) {
         Random r = Nd4j.getRandom();
         Random t = Nd4j.getRandom();
@@ -119,9 +113,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         assertEquals(r, t);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrdering(Nd4jBackend backend) {
         INDArray fNDArray = Nd4j.create(new float[] {1f}, NDArrayFactory.FORTRAN);
         assertEquals(NDArrayFactory.FORTRAN, fNDArray.ordering());
@@ -135,9 +128,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMean(Nd4jBackend backend) {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
@@ -151,9 +143,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVar(Nd4jBackend backend) {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
@@ -166,18 +157,16 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         assertEquals(expectedResult, actualResult,getFailureMessage());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVar2(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray var = arr.var(false, 0);
         assertEquals(Nd4j.create(new double[] {2.25, 2.25, 2.25}), var);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandDims(){
         final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 5, 0xDEAD, DataType.DOUBLE);
         final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 11, 0xBEEF, DataType.DOUBLE);
@@ -207,9 +196,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
             }
         }
     }
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueeze(){
         final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 1, 0xDEAD, DataType.DOUBLE);
         final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 1, 0xBEEF, DataType.DOUBLE);

@@ -45,9 +45,8 @@ public class KFoldIteratorTest extends BaseNd4jTestWithBackends {
      * and check that every example will be exactly once in the test set,
      * and the sum of the number of test examples in all folds equals to the number of examples.
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkTestFoldContent(Nd4jBackend backend) {
 
         final int numExamples = 42;
@@ -79,9 +78,8 @@ public class KFoldIteratorTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkFolds(Nd4jBackend backend) {
         // Expected batch sizes: 3+3+3+2 = 11 total examples
         int[] batchSizesExp = new int[] {3, 3, 3, 2};
@@ -120,9 +118,8 @@ public class KFoldIteratorTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkCornerCase(Nd4jBackend backend) {
         // Expected batch sizes: 2+1 = 3 total examples
         int[] batchSizesExp = new int[] {2, 1};
@@ -231,9 +228,8 @@ public class KFoldIteratorTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test5974(Nd4jBackend backend){
         DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1),
                 Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));

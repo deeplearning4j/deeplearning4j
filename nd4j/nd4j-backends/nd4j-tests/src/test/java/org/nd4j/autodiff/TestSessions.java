@@ -55,9 +55,8 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInferenceSessionBasic(Nd4jBackend backend) {
         //So far: trivial test to check execution order
 
@@ -89,9 +88,8 @@ public class TestSessions extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInferenceSessionBasic2(Nd4jBackend backend) {
         //So far: trivial test to check execution order
 
@@ -127,9 +125,8 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         assertEquals(dExp, outMap.get("d"));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergeSimple(Nd4jBackend backend) {
         //This isn't really a sensible graph, as merge op behaviour is undefined when multiple inputs are available...
 
@@ -165,9 +162,8 @@ public class TestSessions extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSwitchSimple(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();

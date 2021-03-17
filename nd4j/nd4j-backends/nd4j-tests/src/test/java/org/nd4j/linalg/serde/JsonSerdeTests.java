@@ -52,9 +52,8 @@ public class JsonSerdeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNDArrayTextSerializer(Nd4jBackend backend) throws Exception {
         for(char order : new char[]{'c', 'f'}) {
             Nd4j.factory().setOrder(order);
@@ -91,9 +90,8 @@ public class JsonSerdeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBackwardCompatability(Nd4jBackend backend) throws Exception {
         Nd4j.getNDArrayFactory().setOrder('f');
 

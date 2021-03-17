@@ -44,9 +44,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
         return 60_000L;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBruteForce(Nd4jBackend backend) {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers
            The obtained values are compared to the theoretical mean and std dev
@@ -99,9 +98,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
         assertTrue(maxStdDeltaPerc < tolerancePerc);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTransform(Nd4jBackend backend) {
         /*Random dataset is generated such that
             AX + B where X is from a normal distribution with mean 0 and std 1
@@ -173,9 +171,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDifferentBatchSizes(Nd4jBackend backend) {
         // Create 6x1 matrix of the numbers 1 through 6
         INDArray values = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1).transpose();
@@ -209,9 +206,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
         assertEquals(1.70783f, norm4.getStd().getFloat(0), 1e-4);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnderOverflow(Nd4jBackend backend) {
         // This dataset will be basically constant with a small std deviation
         // And the constant is large. Checking if algorithm can handle
@@ -244,9 +240,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
         myNormalizer.transform(sampleDataSet);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRevert(Nd4jBackend backend) {
         double tolerancePerc = 0.01; // 0.01% of correct value
         int nSamples = 500;
@@ -269,9 +264,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConstant(Nd4jBackend backend) {
         double tolerancePerc = 10.0; // 10% of correct value
         int nSamples = 500;

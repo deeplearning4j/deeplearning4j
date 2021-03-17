@@ -23,7 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.python4j.*;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 
 import org.nd4j.linalg.api.buffer.DataType;
@@ -38,6 +38,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NotThreadSafe
 public class PythonNumpyBasicTest {
@@ -75,7 +77,6 @@ public class PythonNumpyBasicTest {
         return ret.stream().map(Arguments::of);
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testConversion(DataType dataType,long[] shape){
@@ -86,13 +87,12 @@ public class PythonNumpyBasicTest {
           if (dataType == DataType.BFLOAT16){
               arr = arr.castTo(DataType.FLOAT);
           }
-          Assert.assertEquals(arr,arr2);
+          assertEquals(arr,arr2);
       }
 
     }
 
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testExecution(DataType dataType,long[] shape) {
@@ -115,15 +115,14 @@ public class PythonNumpyBasicTest {
             PythonExecutioner.exec(code, inputs, outputs);
             INDArray z2 = output.getValue();
 
-            Assert.assertEquals(z.dataType(), z2.dataType());
-            Assert.assertEquals(z, z2);
+            assertEquals(z.dataType(), z2.dataType());
+            assertEquals(z, z2);
         }
 
 
     }
 
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testInplaceExecution(DataType dataType,long[] shape) {
@@ -144,13 +143,13 @@ public class PythonNumpyBasicTest {
             String code = "x *= y + 2";
             PythonExecutioner.exec(code, inputs, outputs);
             INDArray z2 = output.getValue();
-            Assert.assertEquals(x.dataType(), z2.dataType());
-            Assert.assertEquals(z.dataType(), z2.dataType());
-            Assert.assertEquals(x, z2);
-            Assert.assertEquals(z, z2);
-            Assert.assertEquals(x.data().pointer().address(), z2.data().pointer().address());
+            assertEquals(x.dataType(), z2.dataType());
+            assertEquals(z.dataType(), z2.dataType());
+            assertEquals(x, z2);
+            assertEquals(z, z2);
+            assertEquals(x.data().pointer().address(), z2.data().pointer().address());
             if("CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
-                Assert.assertEquals(getDeviceAddress(x), getDeviceAddress(z2));
+                assertEquals(getDeviceAddress(x), getDeviceAddress(z2));
             }
 
         }

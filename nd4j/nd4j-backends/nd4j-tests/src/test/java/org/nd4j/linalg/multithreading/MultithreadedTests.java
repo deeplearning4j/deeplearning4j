@@ -41,9 +41,8 @@ public class MultithreadedTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void basicMigrationTest_1() throws Exception {
         if (Nd4j.getAffinityManager().getNumberOfDevices() < 2)
             return;

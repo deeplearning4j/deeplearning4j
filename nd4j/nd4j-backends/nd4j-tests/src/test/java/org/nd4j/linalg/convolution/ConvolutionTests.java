@@ -52,9 +52,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColKnownValues(Nd4jBackend backend) {
         //Input: w=3, h=3, depth=2, minibatch = 2
         //kH=2, kW=2
@@ -193,9 +192,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColKnownValuesDilated(Nd4jBackend backend) {
         //Input: w=4, h=4, depth=1, minibatch = 2, dilation=2, stride 1
         //kH=2, kW=2
@@ -308,9 +306,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, out3p);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColKnownValuesDilatedStrided(Nd4jBackend backend) {
         //Input: w=5, h=5, depth=1, minibatch = 1, dilation=2, stride 2
         //kH=2, kW=2
@@ -392,9 +389,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, out3p);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColKnownValuesMiniBatch3(Nd4jBackend backend) {
         //Input: w=3, h=3, depth=2, minibatch = 3
         //kH=2, kW=2
@@ -580,9 +576,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColSamePadding(Nd4jBackend backend) {
         //Input: w=3, h=3, depth=2, minibatch = 2, kH/kW = 2, stride=1
 
@@ -841,9 +836,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColSamePaddingStride2(Nd4jBackend backend) {
         //Input: h=3, w=4, depth=2, minibatch = 1, kH/kW = 3, stride=2
 
@@ -996,9 +990,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCol2ImSamePaddingStride2(Nd4jBackend backend) {
         //Input: h=3, w=4, depth=2, minibatch = 1, kH/kW = 3, stride=2
 
@@ -1127,9 +1120,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCol2ImSamePaddingStride1Dilation2(Nd4jBackend backend) {
         //Input: h=4, w=5, depth=1, minibatch = 1, kH/kW = 2, stride=1, dilation 2
 
@@ -1316,17 +1308,15 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConvOutWidthAndHeight(Nd4jBackend backend) {
         long outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 /*
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col(Nd4jBackend backend) {
         INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.FLOAT).reshape(2, 2, 2, 2);
         INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
@@ -1501,9 +1491,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCol2Im(Nd4jBackend backend) {
         int kh = 1;
         int kw = 1;
@@ -1522,9 +1511,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testimcolim(Nd4jBackend backend) {
         int nEx = 2;
         int depth = 3;
@@ -1546,9 +1534,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         assertEquals(assertcol2im, col2im);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2ColWithDilation(Nd4jBackend backend) {
         int kH = 2;
         int kW = 2;
@@ -1592,9 +1579,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPoolingEdgeCases(){
         //Average pooling with same mode: should we include the padded values, when deciding what to divide by?
         ///*** Note: Mode 2 is the "DL4J always divide by kH*kW" approach ***
@@ -1678,9 +1664,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling1(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{6.f, 7.f, 10.f, 11.f, 22.f, 23.f, 26.f, 27.f, 38.f, 39.f, 42.f, 43.f, 54.f, 55.f, 58.f, 59.f}, new int[]{2, 2, 2, 2}, 'c');
@@ -1742,9 +1727,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling2(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f}, new int[]{2, 2, 2, 2}, 'c');
@@ -1766,9 +1750,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling3(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f}, new int[]{2, 2, 2, 2}, 'c');
@@ -1791,9 +1774,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling4(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f}, new int[]{2, 2, 2, 2}, 'c');
@@ -1816,9 +1798,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling5(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{7.f,    8.f,   11.f,   12.f,   14.f,   15.f,   27.f,   28.f,   31.f,   32.f,   34.f,   35.f, 42.f,   43.f,   46.f,   47.f,   49.f,   50.f,   57.f,   58.f,   61.f,   62.f,   64.f,   65.f, 77.f,   78.f,   81.f,   82.f,   84.f,   85.f,   92.f,   93.f,   96.f,   97.f,   99.f,  100.f}, new int[]{2, 3, 3, 2}, 'c');
@@ -1841,9 +1822,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling6(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{7.f,   8.f,  11.f,  12.f,  27.f,  28.f,  31.f,  32.f,  57.f,  58.f,  61.f,  62.f,  77.f,  78.f,  81.f, 82.f}, new int[]{2, 2, 2, 2}, 'c');
@@ -1866,9 +1846,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling7(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{7.f, 9.f, 17.f, 19.f, 32.f, 34.f, 42.f, 44.f, 57.f, 59.f, 67.f, 69.f, 82.f, 84.f, 92.f, 94.f}, new int[]{2, 2, 2, 2}, 'c');
@@ -1890,9 +1869,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling8(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{1.f, 2.5f, 4.5f, 8.5f, 10.f, 12.f, 18.5f, 20.f, 22.f, 26.f, 27.5f, 29.5f, 33.5f, 35.f, 37.f, 43.5f, 45.f, 47.f,  51.f, 52.5f, 54.5f,  58.5f, 60.f, 62.f, 68.5f, 70.f, 72.f,  76.f, 77.5f, 79.5f, 83.5f, 85.f, 87.f,  93.5f, 95.f, 97.f}, new int[]{2, 2, 3, 3}, 'c');
@@ -1914,9 +1892,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling9(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{0.25f, 1.25f, 2.25f,  4.25f, 10.f, 12.f, 9.25f, 20.f, 22.f, 6.5f, 13.75f, 14.75f, 16.75f, 35.f, 37.f,  21.75f, 45.f, 47.f,  12.75f, 26.25f, 27.25f,  29.25f, 60.f, 62.f, 34.25f, 70.f, 72.f, 19.f, 38.75f, 39.75f, 41.75f, 85.f, 87.f, 46.75f, 95.f, 97.f}, new int[]{2, 2, 3, 3}, 'c');
@@ -1938,9 +1915,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling10(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{4.f, 6.f, 7.5f, 14.f, 16.f, 17.5f,  21.5f, 23.5f, 25.f, 29.f, 31.f, 32.5f, 39.f, 41.f, 42.5f, 46.5f, 48.5f, 50.f, 54.f, 56.f, 57.5f,  64.f, 66.f, 67.5f, 71.5f, 73.5f, 75.f, 79.f, 81.f, 82.5f, 89.f, 91.f, 92.5f,  96.5f, 98.5f, 100.f}, new int[]{2, 2, 3, 3}, 'c');
@@ -1962,9 +1938,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling11(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{3, 4, 6, 7}, new int[]{1, 1, 2, 2}, 'c');
@@ -1986,9 +1961,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling12(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c', 'f'}) {
             INDArray exp = Nd4j.create(new float[]{3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f}, new int[]{1, 1, 3, 3}, 'c');
@@ -2011,9 +1985,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling13(Nd4jBackend backend) {
         for( char outputOrder : new char[]{'c'}) {
             INDArray exp = Nd4j.create(new float[]{3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f}, new int[]{1, 1, 3, 3}, 'c');
@@ -2037,9 +2010,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPoolingDilation(){
 
         int[] inputShape = {1, 1, 4, 5};

@@ -118,9 +118,8 @@ public class TransformOpValidation extends BaseOpValidation {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarOps(Nd4jBackend backend) {
         int d0 = 2;
         int d1 = 3;
@@ -217,9 +216,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMulCF(Nd4jBackend backend) {
 
         INDArray in = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
@@ -233,9 +231,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMulCF2(Nd4jBackend backend) {
 
         INDArray in = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
@@ -246,9 +243,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(outC, outF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCross(Nd4jBackend backend) {
         INDArray a = Nd4j.create(new double[]{4, 2, 1}, new int[]{1, 3});
         INDArray b = Nd4j.create(new double[]{1, 3, 4}, new int[]{1, 3});
@@ -276,9 +272,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpaceToDepth(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(1337);
 
@@ -306,9 +301,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDepthToSpace(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(1337);
 
@@ -335,9 +329,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBatchToSpace(Nd4jBackend backend) {
         //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
         Nd4j.getRandom().setSeed(1337);
@@ -374,9 +367,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpaceToBatch(Nd4jBackend backend) {
         //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
 
@@ -414,9 +406,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicPartition(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -456,9 +447,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicPartition2(Nd4jBackend backend) {
         INDArray data = Nd4j.createFromArray(2, 1, 2, 0);
         INDArray partitions = Nd4j.createFromArray(0, 2, 1, 0);
@@ -476,9 +466,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(exp2, out[2]);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDynamicStitch(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -515,9 +504,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiag(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -543,9 +531,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiagPart(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -564,9 +551,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEye(Nd4jBackend backend) {
         int[] rows = new int[]{3, 3, 3, 3};
         int[] cols = new int[]{3, 2, 2, 2};
@@ -600,9 +586,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEyeShape(Nd4jBackend backend) {
         DynamicCustomOp dco = DynamicCustomOp.builder("eye")
                 .addIntegerArguments(3, 3)
@@ -614,9 +599,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{3, 3}, list.get(0).getShape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTransforms(Nd4jBackend backend) {
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
@@ -1104,9 +1088,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPairwiseTransforms(Nd4jBackend backend) {
         /*
         add, sub, mul, div, rsub, rdiv
@@ -1290,9 +1273,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsX(Nd4jBackend backend) {
         List<String> failed = new ArrayList<>();
 
@@ -1347,9 +1329,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(0, failed.size(),failed.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReplaceWhereScalar(Nd4jBackend backend) {
         for (Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}) {
 
@@ -1371,9 +1352,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReplaceWhereArray(Nd4jBackend backend) {
         for (Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}) {
 
@@ -1396,9 +1376,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogGrad(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable input = sameDiff.var("x", Nd4j.linspace(1, 4, 4, DataType.DOUBLE));
@@ -1409,9 +1388,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSigmoidBackwards(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
@@ -1429,9 +1407,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-/*      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+/*      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDepth(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         SDVariable x = sameDiff.one("one",new long[]{2,2});
@@ -1440,9 +1417,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(1,sigmoid.depth());
     }*/
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRank0EdgeCase(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable v1 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4})));
@@ -1455,9 +1431,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(4, d1, 0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAtan2BroadcastShape(Nd4jBackend backend) {
         INDArray arr1 = Nd4j.create(new long[]{3, 1, 4});
         INDArray arr2 = Nd4j.create(new long[]{1, 2, 4});
@@ -1472,9 +1447,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{3, 2, 4}, outShapes.get(0).getShape(),Arrays.toString(outShapes.get(0).getShape()));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBooleanAnd(Nd4jBackend backend) {
         Nd4j.setDataType(DataType.FLOAT);
         INDArray arr1 = Nd4j.create(new long[]{3, 4});
@@ -1488,9 +1462,8 @@ public class TransformOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().exec(op);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScatterOpsScalar(Nd4jBackend backend) {
         for (String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);
@@ -1535,9 +1508,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     @Disabled("12/16/2019 https://github.com/eclipse/deeplearning4j/issues/8540")
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPad(Nd4jBackend backend) {
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
         INDArray pad = Nd4j.create(new double[]{1, 1}, new long[]{1, 2}).castTo(DataType.LONG);
@@ -1564,9 +1536,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMirrorPad(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray pad = Nd4j.create(new double[][]{{1, 1}, {2, 2}}).castTo(DataType.INT);
@@ -1599,9 +1570,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMirrorPad2(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray pad = Nd4j.create(new double[][]{{1, 1}, {2, 2}}).castTo(DataType.INT);
@@ -1627,9 +1597,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMirrorPadSymmetric(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
         INDArray pad = Nd4j.create(new double[][]{{1, 1}, {1, 1}}).castTo(DataType.INT);
@@ -1656,9 +1625,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnique(Nd4jBackend backend) {
         INDArray in = Nd4j.create(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
 
@@ -1680,9 +1648,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTopK(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //Can't assume sorted here
         INDArray in = Nd4j.create(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
@@ -1711,9 +1678,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTopK1(Nd4jBackend backend) {
         INDArray x = Nd4j.createFromArray(0.0, 0.0, 0.0, 10.0, 0.0);
         INDArray k = Nd4j.scalar(1);
@@ -1734,9 +1700,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(expIdx, outIdx);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInTopK(Nd4jBackend backend) {
         for (int k = 4; k >= 1; k--) {
             log.info("Testing: k=" + k);
@@ -1777,9 +1742,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZeta(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6182
         INDArray x = Nd4j.rand(3, 4).addi(1.0);
@@ -1796,9 +1760,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNotEquals(Nd4j.create(out.shape()), out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxEmptyScalar(Nd4jBackend backend) {
         INDArray empty = Nd4j.empty(DataType.FLOAT);
         INDArray scalar = Nd4j.scalar(1.0f);
@@ -1815,9 +1778,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertTrue(isEmpty);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastEmpty(Nd4jBackend backend) {
 //        Nd4j.getExecutioner().enableVerboseMode(true);
 //        Nd4j.getExecutioner().enableDebugMode(true);
@@ -1907,9 +1869,8 @@ public class TransformOpValidation extends BaseOpValidation {
         return false;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardize(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
 
@@ -1930,9 +1891,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardizeOP(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
 
@@ -1947,9 +1907,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(res, output);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardizeNoDeviation(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
         for (int i = 0; i < 4; i++) {
@@ -1975,9 +1934,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatMulTensor(Nd4jBackend backend) {
         final INDArray a = Nd4j.rand(new int[]{1, 2, 3, 4, 5});
         final INDArray b = Nd4j.rand(new int[]{1, 2, 3, 5, 6});
@@ -1997,9 +1955,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatMulTensorTranspose(Nd4jBackend backend) {
         for (boolean transposeA : new boolean[]{false, true}) {
             for (boolean transposeB : new boolean[]{false, true}) {
@@ -2092,9 +2049,8 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSoftmaxCF(Nd4jBackend backend) {
 
         INDArray arrC = Nd4j.rand(DataType.FLOAT, 2, 5);
@@ -2115,9 +2071,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(outCC, outFF);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogSumExp(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray inputArr = Nd4j.rand(DataType.FLOAT, 1, 4);
@@ -2132,9 +2087,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(log, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogSumExp2(Nd4jBackend backend) {
 
         for (int dim = 0; dim <= 2; dim++) {
@@ -2155,9 +2109,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCRELU(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2176,9 +2129,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testClipByAvgNorm(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2199,9 +2151,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmbeddingLookup(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2214,9 +2165,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testImageResize(Nd4jBackend backend) {
 
         //TODO: Methods failed ResizeLanczos5, ResizeMitchelcubic, ResizeArea
@@ -2258,9 +2208,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaximumBp(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2277,9 +2226,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergeAddBp(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2296,9 +2244,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergeMaxBp(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2316,9 +2263,8 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMergeAvgBp(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2335,9 +2281,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseBp(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
@@ -2351,9 +2296,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUpsampling3dBp(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);

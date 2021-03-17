@@ -36,9 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SameDiffOutputTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void outputTest(Nd4jBackend backend){
         DataSet data = new DataSet(Nd4j.zeros(10, 10), Nd4j.zeros(10, 10));
         SameDiff sd = SameDiff.create();

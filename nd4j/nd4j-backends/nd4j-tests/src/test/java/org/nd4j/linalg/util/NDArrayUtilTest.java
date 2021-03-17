@@ -39,18 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class NDArrayUtilTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatrixConversion(Nd4jBackend backend) {
         int[][] nums = {{1, 2}, {3, 4}, {5, 6}};
         INDArray result = NDArrayUtil.toNDArray(nums);
         assertArrayEquals(new long[]{2,3}, result.shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorConversion(Nd4jBackend backend) {
         int[] nums = {1, 2, 3, 4};
         INDArray result = NDArrayUtil.toNDArray(nums);
@@ -58,9 +56,8 @@ public class NDArrayUtilTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenArray1(Nd4jBackend backend) {
         float[][][] arrX = new float[2][2][2];
 
@@ -69,9 +66,8 @@ public class NDArrayUtilTest extends BaseNd4jTestWithBackends {
         assertEquals(8, arrZ.length);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenArray2(Nd4jBackend backend) {
         float[][][] arrX = new float[5][4][3];
 
@@ -81,9 +77,8 @@ public class NDArrayUtilTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenArray3(Nd4jBackend backend) {
         float[][][] arrX = new float[5][2][3];
 
@@ -92,9 +87,8 @@ public class NDArrayUtilTest extends BaseNd4jTestWithBackends {
         assertEquals(30, arrZ.length);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenArray4(Nd4jBackend backend) {
         float[][][][] arrX = new float[5][2][3][3];
 

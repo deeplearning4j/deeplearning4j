@@ -53,8 +53,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class TestActivation extends BaseNd4jTestWithBackends {
@@ -76,9 +77,8 @@ public class TestActivation extends BaseNd4jTestWithBackends {
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRelu(Nd4jBackend backend){
 
         Double[] max = {null, 6.0, 2.5, 5.0};
@@ -130,9 +130,8 @@ public class TestActivation extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJson(Nd4jBackend backend) throws Exception {
 
         IActivation[] activations = new IActivation[] {new ActivationCube(), new ActivationELU(0.25),
@@ -179,7 +178,7 @@ public class TestActivation extends BaseNd4jTestWithBackends {
 
             for (String s : expFields) {
                 msg = "Expected field \"" + s + "\", was not found in " + activations[i].toString();
-                assertTrue(msg, actualFieldsByName.contains(s));
+                assertTrue(actualFieldsByName.contains(s),msg);
             }
 
             //Test conversion from JSON:

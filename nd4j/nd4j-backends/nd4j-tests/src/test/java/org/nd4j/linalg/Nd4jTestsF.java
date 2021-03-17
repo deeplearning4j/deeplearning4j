@@ -42,9 +42,8 @@ public class Nd4jTestsF extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3D_Vstack_F(Nd4jBackend backend) {
         //Nd4j.getExecutioner().enableVerboseMode(true);
         //Nd4j.getExecutioner().enableDebugMode(true);
@@ -76,9 +75,8 @@ public class Nd4jTestsF extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice_1(Nd4jBackend backend) {
         val arr = Nd4j.linspace(1,4, 4, DataType.DOUBLE).reshape(2, 2, 1);
         val exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});

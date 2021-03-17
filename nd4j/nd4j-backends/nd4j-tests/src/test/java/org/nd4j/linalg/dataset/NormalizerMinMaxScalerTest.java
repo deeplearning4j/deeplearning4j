@@ -42,9 +42,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBruteForce(Nd4jBackend backend) {
         //X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
         //X_scaled = X_std * (max - min) + min
@@ -97,9 +96,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRevert(Nd4jBackend backend) {
         double tolerancePerc = 1; // 1% of correct value
         int nSamples = 500;
@@ -124,9 +122,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGivenMaxMin(Nd4jBackend backend) {
         double tolerancePerc = 1; // 1% of correct value
         int nSamples = 500;
@@ -153,9 +150,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGivenMaxMinConstant(Nd4jBackend backend) {
         double tolerancePerc = 1; // 1% of correct value
         int nSamples = 500;
@@ -180,9 +176,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConstant(Nd4jBackend backend) {
         double tolerancePerc = 0.01; // 0.01% of correct value
         int nSamples = 500;

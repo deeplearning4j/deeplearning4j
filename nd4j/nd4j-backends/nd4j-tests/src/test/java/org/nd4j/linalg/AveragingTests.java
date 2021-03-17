@@ -60,9 +60,8 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSingleDeviceAveraging1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
         INDArray array2 = Nd4j.valueArrayOf(LENGTH, 2.0);
@@ -109,9 +108,8 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
         assertEquals(arrayMean, array16);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSingleDeviceAveraging2(Nd4jBackend backend) {
         INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH);
         List<INDArray> arrays = new ArrayList<>();
@@ -128,9 +126,8 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccumulation1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.create(100).assign(1.0);
         INDArray array2 = Nd4j.create(100).assign(2.0);
@@ -143,9 +140,8 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccumulation2(Nd4jBackend backend) {
         INDArray array1 = Nd4j.create(100).assign(1.0);
         INDArray array2 = Nd4j.create(100).assign(2.0);
@@ -160,9 +156,8 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccumulation3(Nd4jBackend backend) {
         // we want to ensure that cuda backend is able to launch this op on cpu
         Nd4j.getAffinityManager().allowCrossDeviceAccess(false);

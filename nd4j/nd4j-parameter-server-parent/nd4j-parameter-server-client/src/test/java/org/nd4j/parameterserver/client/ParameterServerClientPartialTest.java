@@ -25,7 +25,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,11 +37,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Disabled
 public class ParameterServerClientPartialTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
     private static Aeron.Context ctx;

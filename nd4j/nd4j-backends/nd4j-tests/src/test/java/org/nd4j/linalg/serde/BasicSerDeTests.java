@@ -36,7 +36,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @Slf4j
@@ -50,9 +50,8 @@ public class BasicSerDeTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicDataTypeSwitch1(Nd4jBackend backend) throws Exception {
         DataType initialType = Nd4j.dataType();
         Nd4j.setDataType(DataType.FLOAT);
@@ -80,9 +79,8 @@ public class BasicSerDeTests extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfSerde_1(Nd4jBackend backend) throws Exception {
         val array = Nd4j.create(DataType.HALF, 3, 4);
         array.assign(1.0f);

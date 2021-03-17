@@ -107,17 +107,18 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- For unit tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -230,7 +231,6 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
                     <inherited>true</inherited>
                     <configuration>
                         <!--
@@ -250,6 +250,13 @@
                             <include>**/*.java</include>
                         </includes>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.surefire</groupId>
+                            <artifactId>surefire-junit-platform</artifactId>
+                            <version>${maven-surefire-plugin.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -316,6 +323,21 @@
                                 <artifactId>nd4j-native</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-params</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit-platform</artifactId>
+                                <version>${maven-surefire-plugin.version}</version>
+                            </dependency>
                         </dependencies>
                         <configuration>
                             <environmentVariables>
@@ -344,7 +366,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine> "</argLine>
+                            <argLine></argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -376,13 +398,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.junit</groupId>
-                                <artifactId>surefire-junit5</artifactId>
-                                <version>5.0.0-ALPHA</version>
-                            </dependency>
-                        </dependencies>
+                        <version>${maven-surefire-plugin.version}</version>
                         <configuration>
                             <environmentVariables>
                             </environmentVariables>
@@ -409,6 +425,7 @@
                             -->
                             <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
                         </configuration>
+
                     </plugin>
                 </plugins>
             </build>

@@ -72,9 +72,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPointerCreation(Nd4jBackend backend) {
         FloatPointer floatPointer = new FloatPointer(1, 2, 3, 4);
         Indexer indexer = FloatIndexer.create(floatPointer);
@@ -83,9 +82,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(other.asFloat(), buffer.asFloat(), 0.001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetSet(Nd4jBackend backend) {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
@@ -96,9 +94,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerialization(@TempDir Path tempDir,Nd4jBackend backend) throws Exception {
         File dir = tempDir.toFile();
         DataBuffer buf = Nd4j.createBuffer(5);
@@ -119,9 +116,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(buf.asFloat(), buf2.asFloat(), 0.0001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDup(Nd4jBackend backend) {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
@@ -129,9 +125,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(d.asFloat(), d2.asFloat(), 0.001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToNio(Nd4jBackend backend) {
         DataBuffer buff = Nd4j.createTypedBuffer(new double[] {1, 2, 3, 4}, DataType.FLOAT);
         assertEquals(4, buff.length());
@@ -143,9 +138,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPut(Nd4jBackend backend) {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
@@ -156,9 +150,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
@@ -174,9 +167,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetOffsetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
@@ -193,9 +185,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAsBytes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(5);
         byte[] d = arr.data().asBytes();
@@ -205,9 +196,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign(Nd4jBackend backend) {
         DataBuffer assertion = Nd4j.createBuffer(new double[] {1, 2, 3});
         DataBuffer one = Nd4j.createBuffer(new double[] {1});
@@ -217,9 +207,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(assertion.asFloat(), blank.asFloat(), 0.0001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReadWrite(Nd4jBackend backend) throws Exception {
         DataBuffer assertion = Nd4j.createBuffer(new double[] {1, 2, 3});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -233,9 +222,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(assertion.asFloat(), clone.asFloat(), 0.0001f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOffset(Nd4jBackend backend) {
         DataBuffer create = Nd4j.createBuffer(new float[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
@@ -245,9 +233,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocation(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
@@ -258,9 +245,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(old, newBuf, 1e-4F);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocationWorkspace(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                         .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
@@ -277,9 +263,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         workspace.close();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddressPointer(Nd4jBackend backend){
         if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
             return;

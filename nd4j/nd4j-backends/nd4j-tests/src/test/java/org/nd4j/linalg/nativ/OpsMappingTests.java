@@ -68,9 +68,8 @@ public class OpsMappingTests extends BaseNd4jTestWithBackends {
         return 360000L;     //Can be very slow on some CI machines (PPC)
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLegacyOpsMapping(Nd4jBackend backend) {
         Nd4j.create(1);
 

@@ -23,7 +23,7 @@ package org.nd4j.linalg.specials;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +35,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 @Slf4j
@@ -60,9 +63,8 @@ public class RavelIndexTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void ravelIndexesTest(Nd4jBackend backend) {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
@@ -139,12 +141,12 @@ public class RavelIndexTest extends BaseNd4jTestWithBackends {
         NativeOpsHolder.getInstance().getDeviceNativeOps().ravelMultiIndex(null, (LongPointer) multiIdxDB.addressPointer(),
                 (LongPointer) resultFlat.addressPointer(), length, (LongPointer) shapeInfo.addressPointer(),clipMode);
 
-        Assert.assertArrayEquals(flatIdxArray, resultFlat.asLong());
+        assertArrayEquals(flatIdxArray, resultFlat.asLong());
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().unravelIndex(null, (LongPointer) resultMulti.addressPointer(),
                 (LongPointer) flatIdxDB.addressPointer(), length, (LongPointer) shapeInfo.addressPointer());
 
-        Assert.assertArrayEquals(multiIdxArray, resultMulti.asLong());
+        assertArrayEquals(multiIdxArray, resultMulti.asLong());
 
 
         //testing various clipMode cases
@@ -154,7 +156,7 @@ public class RavelIndexTest extends BaseNd4jTestWithBackends {
             shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, DataType.FLOAT).getFirst();
             NativeOpsHolder.getInstance().getDeviceNativeOps().ravelMultiIndex(null, (LongPointer) multiIdxDB.addressPointer(),
                     (LongPointer) resultFlat.addressPointer(), length, (LongPointer) shapeInfo.addressPointer(),clipMode);
-            Assert.fail("No exception thrown while using CLIP_MODE_THROW.");
+            fail("No exception thrown while using CLIP_MODE_THROW.");
 
         } catch (RuntimeException e) {
             //OK
@@ -168,7 +170,7 @@ public class RavelIndexTest extends BaseNd4jTestWithBackends {
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().ravelMultiIndex(null, (LongPointer) multiIdxDB.addressPointer(),
                 (LongPointer) resultFlat.addressPointer(), length, (LongPointer) shapeInfo.addressPointer(), clipMode);
-        Assert.assertArrayEquals(new long[] {22, 17, 15}, resultFlat.asLong());
+        assertArrayEquals(new long[] {22, 17, 15}, resultFlat.asLong());
 
         // clipMode = 2: clip to shape
         clipMode = 2;
@@ -180,7 +182,7 @@ public class RavelIndexTest extends BaseNd4jTestWithBackends {
         NativeOpsHolder.getInstance().getDeviceNativeOps().ravelMultiIndex(null, (LongPointer) multiIdxDB.addressPointer(),
                 (LongPointer) resultFlat.addressPointer(), length, (LongPointer) shapeInfo.addressPointer(), clipMode);
 
-        Assert.assertArrayEquals(new long[] {22, 23, 23}, resultFlat.asLong());
+        assertArrayEquals(new long[] {22, 23, 23}, resultFlat.asLong());
 
 
 

@@ -20,14 +20,17 @@
 
 package org.nd4j.parameterserver.updater.storage;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+
+@Disabled
 public class UpdaterStorageTests extends BaseND4JTest {
 
     @Test()

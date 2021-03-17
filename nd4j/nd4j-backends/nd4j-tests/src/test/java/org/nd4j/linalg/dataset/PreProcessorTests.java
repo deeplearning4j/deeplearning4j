@@ -37,9 +37,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PreProcessorTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLabelLastTimeStepPreProcessor(Nd4jBackend backend){
 
         INDArray f = Nd4j.rand(DataType.FLOAT, 3, 5, 8);

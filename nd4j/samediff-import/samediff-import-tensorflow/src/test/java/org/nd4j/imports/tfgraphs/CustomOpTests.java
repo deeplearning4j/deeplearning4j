@@ -42,9 +42,8 @@ public class CustomOpTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPad(Nd4jBackend backend){
 
         INDArray in = Nd4j.create(DataType.FLOAT, 1, 28, 28, 264);
@@ -64,9 +63,8 @@ public class CustomOpTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().exec(op); //Crash here
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResizeBilinearEdgeCase(Nd4jBackend backend){
         INDArray in = Nd4j.ones(DataType.FLOAT, 1, 1, 1, 3);
         INDArray size = Nd4j.createFromArray(8, 8);

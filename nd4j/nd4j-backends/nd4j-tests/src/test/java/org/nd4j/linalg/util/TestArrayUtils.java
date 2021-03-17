@@ -34,9 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestArrayUtils extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenDoubleArray(Nd4jBackend backend) {
         assertArrayEquals(new double[0], ArrayUtil.flattenDoubleArray(new double[0]), 0.0);
         Random r = new Random(12345L);
@@ -84,9 +83,8 @@ public class TestArrayUtils extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp4, ArrayUtil.flattenDoubleArray(d4), 0.0);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenFloatArray(Nd4jBackend backend) {
         assertArrayEquals(new float[0], ArrayUtil.flattenFloatArray(new float[0]), 0.0f);
         Random r = new Random(12345L);
@@ -134,9 +132,8 @@ public class TestArrayUtils extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp4, ArrayUtil.flattenFloatArray(f4), 0.0f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayShape(Nd4jBackend backend) {
         assertArrayEquals(ArrayUtil.arrayShape(new int[0]), new int[] {0});
         assertArrayEquals(ArrayUtil.arrayShape(new int[5][7][9]), new int[] {5, 7, 9});
@@ -147,9 +144,8 @@ public class TestArrayUtils extends BaseNd4jTestWithBackends {
         assertArrayEquals(ArrayUtil.arrayShape(new String[3][2][1]), new int[] {3, 2, 1});
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArgMinOfMaxMethods(Nd4jBackend backend) {
         int[] first = {1, 5, 2, 4};
         int[] second = {4, 6, 3, 2};
@@ -160,9 +156,8 @@ public class TestArrayUtils extends BaseNd4jTestWithBackends {
         assertEquals(1, ArrayUtil.argMinOfMax(first, second, third));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssertNotRagged(Nd4jBackend backend){
 
         //Rank 1 - should be fine

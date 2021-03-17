@@ -62,9 +62,8 @@ public class StackAggregatorTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicBranching1(Nd4jBackend backend) {
         StackAggregator aggregator = new StackAggregator();
 
@@ -76,9 +75,8 @@ public class StackAggregatorTests extends BaseNd4jTestWithBackends {
         assertEquals(2, aggregator.getUniqueBranchesNumber());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicBranching2(Nd4jBackend backend) {
         StackAggregator aggregator = new StackAggregator();
 
@@ -93,9 +91,8 @@ public class StackAggregatorTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrailingFrames1(Nd4jBackend backend) {
         StackAggregator aggregator = new StackAggregator();
         aggregator.incrementCount();
@@ -109,9 +106,8 @@ public class StackAggregatorTests extends BaseNd4jTestWithBackends {
         assertTrue(descriptor.getStackTrace()[descriptor.size() - 1].getClassName().contains("StackAggregatorTests"));
     }
 
-    /*  @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    /*@ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrailingFrames2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new int[] {10, 10}, 'f');
         INDArray y = Nd4j.create(new int[] {10, 10}, 'c');

@@ -37,9 +37,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class PreconditionsTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test(Nd4jBackend backend){
 
         INDArray arr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);

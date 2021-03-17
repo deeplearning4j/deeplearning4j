@@ -49,9 +49,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReliabilityDiagram (Nd4jBackend backend) {
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
@@ -143,9 +142,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLabelAndPredictionCounts (Nd4jBackend backend) {
 
         int minibatch = 50;
@@ -173,9 +171,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(expPredictionCount, ec.getPredictionCountsEachClass());
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResidualPlots (Nd4jBackend backend) {
 
         int minibatch = 50;
@@ -276,9 +273,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentation(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);
@@ -372,9 +368,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationCalibration3d (Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
@@ -406,9 +401,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         assertEquals(e2d.stats(), e3d.stats());
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationCalibration3dMasking (Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);

@@ -63,9 +63,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerfectPredictions(Nd4jBackend backend) {
 
         int nCols = 5;
@@ -92,9 +91,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKnownValues(Nd4jBackend backend) {
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
@@ -150,9 +148,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEvaluationMerging(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -193,9 +190,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEvalPerOutputMasking(Nd4jBackend backend) {
 
         INDArray l = Nd4j.create(new double[][] {{1, 2, 3}, {10, 20, 30}, {-5, -10, -20}});
@@ -222,9 +218,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEvalTimeSeriesSplit(){
 
         INDArray out1 = Nd4j.rand(new int[]{3, 5, 20});
@@ -246,9 +241,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         assertEquals(e1, e2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval3d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
@@ -280,9 +274,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval4d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
@@ -314,9 +307,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval3dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
@@ -375,9 +367,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval4dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);

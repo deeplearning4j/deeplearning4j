@@ -19,11 +19,13 @@
  */
 
 import org.nd4j.python4j.*;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PythonNumpyImportTest {
 
@@ -34,7 +36,7 @@ public class PythonNumpyImportTest {
                 PythonObject np = Python.importModule("numpy");
                 PythonObject zeros = np.attr("zeros").call(5);
                 INDArray arr = NumpyArray.INSTANCE.toJava(zeros);
-                Assert.assertEquals(arr, Nd4j.zeros(DataType.DOUBLE, 5));
+                assertEquals(arr, Nd4j.zeros(DataType.DOUBLE, 5));
             }
         }
 

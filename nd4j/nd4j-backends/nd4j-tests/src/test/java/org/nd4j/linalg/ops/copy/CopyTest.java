@@ -35,18 +35,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CopyTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCopy(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray dup = arr.dup();
         assertEquals(arr, dup);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDup(Nd4jBackend backend) {
 
         for (int x = 0; x < 100; x++) {

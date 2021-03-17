@@ -43,9 +43,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdaGradLegacy(Nd4jBackend backend) {
         int rows = 1;
         int cols = 1;
@@ -58,9 +57,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
         assertEquals(1e-1, w.getDouble(0), 1e-1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNesterovs(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
@@ -79,9 +77,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdaGrad(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
@@ -101,9 +98,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdaDelta(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
@@ -123,9 +119,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdam(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
@@ -145,9 +140,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNadam(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;
@@ -166,9 +160,8 @@ public class UpdaterTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdaMax(Nd4jBackend backend) {
         int rows = 10;
         int cols = 2;

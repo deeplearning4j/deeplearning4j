@@ -75,9 +75,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceSumBP(Nd4jBackend backend) {
         //Full array reduction
 
@@ -103,9 +102,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceSumAlongDim0BP(Nd4jBackend backend) {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
@@ -131,9 +129,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduceSumAlongDim1BP(Nd4jBackend backend) {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
@@ -161,9 +158,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanBP(Nd4jBackend backend) {
 
         //dL/dIn_i = dL/dOut * dOut/dIn_i = dL/dOut * (1/N * sum_j (in_j))
@@ -194,9 +190,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanBP_Rank1(Nd4jBackend backend) {
         INDArray dLdOut = Nd4j.scalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2, 3, 4}, new long[]{3});
@@ -209,9 +204,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanAlongDim0BP(Nd4jBackend backend) {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
@@ -239,9 +233,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMeanAlongDim1BP(Nd4jBackend backend) {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
@@ -269,9 +262,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMinBP(Nd4jBackend backend) {
         //Full array min reduction
 
@@ -310,9 +302,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMinAlongDimensionBP(Nd4jBackend backend) {
         //Full array min reduction
 
@@ -355,9 +346,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxBP(Nd4jBackend backend) {
         //Full array max reduction
 
@@ -387,9 +377,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMaxAlongDimensionBP(Nd4jBackend backend) {
         //Full array min reduction
 
@@ -432,9 +421,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testProdBP(Nd4jBackend backend) {
         //Full array product reduction
 
@@ -463,9 +451,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testProdAlongDimensionBP(Nd4jBackend backend) {
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(prod(in))/dIn_i
@@ -521,9 +508,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdevBP(Nd4jBackend backend) {
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
@@ -559,9 +545,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdevBP_Rank1(Nd4jBackend backend) {
         INDArray dLdOut = Nd4j.scalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2, 3, 4}, new long[]{3});
@@ -582,9 +567,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStdevAlongDimensionBP(Nd4jBackend backend) {
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
@@ -629,9 +613,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVarianceBP(Nd4jBackend backend) {
         //If out = variance(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
@@ -667,9 +650,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVarianceAlongDimensionBP(Nd4jBackend backend) {
         //If out = variance(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
@@ -711,9 +693,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumSumBP(Nd4jBackend backend) {
         //Standard case, non-reverse, non-exclusive
         //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
@@ -783,9 +764,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm2Bp(Nd4jBackend backend) {
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * x/|x|_2
@@ -812,9 +792,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm2AlongDimensionBP(Nd4jBackend backend) {
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * x/|x|_2
@@ -847,9 +826,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm1Bp(Nd4jBackend backend) {
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * sgn(in)
@@ -876,9 +854,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNorm1AlongDimensionBP(Nd4jBackend backend) {
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * sgn(in)
@@ -910,9 +887,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormMaxBp(Nd4jBackend backend) {
         //out = max_i (|in_i|)
         //dL/dIn = dL/dOut * dOut/dIn
@@ -942,9 +918,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormMaxAlongDimensionBP(Nd4jBackend backend) {
         //out = max_i (|in_i|)
         //dL/dIn = dL/dOut * dOut/dIn

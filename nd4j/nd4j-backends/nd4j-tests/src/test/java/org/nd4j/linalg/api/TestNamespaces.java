@@ -32,9 +32,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 public class TestNamespaces extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBitwiseSimple(Nd4jBackend backend){
 
         INDArray x = Nd4j.rand(DataType.FLOAT, 1, 5).muli(100000).castTo(DataType.INT);
@@ -50,9 +49,8 @@ public class TestNamespaces extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMathSimple(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(DataType.FLOAT, 1, 5).muli(2).subi(1);
         INDArray abs = Nd4j.math.abs(x);
@@ -67,9 +65,8 @@ public class TestNamespaces extends BaseNd4jTestWithBackends {
 //        System.out.println(cm);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomSimple(Nd4jBackend backend){
         INDArray normal = Nd4j.random.normal(0, 1, DataType.FLOAT, 10);
 //        System.out.println(normal);
@@ -77,9 +74,8 @@ public class TestNamespaces extends BaseNd4jTestWithBackends {
 //        System.out.println(uniform);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNeuralNetworkSimple(Nd4jBackend backend){
         INDArray out = Nd4j.nn.elu(Nd4j.random.normal(0, 1, DataType.FLOAT, 10));
 //        System.out.println(out);

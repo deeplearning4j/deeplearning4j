@@ -24,9 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.util.UIDProvider;
 import org.junit.jupiter.api.Test;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUIDProvider extends BaseDL4JTest {
 

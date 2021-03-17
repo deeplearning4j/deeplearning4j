@@ -54,9 +54,8 @@ public class TestEigen extends BaseNd4jTestWithBackends {
 
     // test of functions added by Luke Czapla
     // Compares solution of A x = L x  to solution to A x = L B x when it is simple
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2Syev(Nd4jBackend backend) {
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(dt, dt);
@@ -75,9 +74,8 @@ public class TestEigen extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSyev(Nd4jBackend backend) {
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             //log.info("Datatype: {}", dt);

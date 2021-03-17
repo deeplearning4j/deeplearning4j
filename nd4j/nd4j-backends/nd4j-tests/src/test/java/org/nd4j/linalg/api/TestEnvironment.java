@@ -37,9 +37,8 @@ public class TestEnvironment extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEnvironment(Nd4jBackend backend){
         Environment e = Nd4j.getEnvironment();
         System.out.println("BLAS version: " + e.blasMajorVersion() + "." + e.blasMinorVersion() + "." + e.blasPatchVersion());

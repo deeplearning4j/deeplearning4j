@@ -40,7 +40,6 @@
         <module>nd4j-parameter-server</module>
         <module>nd4j-parameter-server-client</module>
         <module>nd4j-parameter-server-model</module>
-        <module>nd4j-parameter-server-status</module>
         <module>nd4j-parameter-server-rocksdb-storage</module>
         <module>nd4j-parameter-server-node</module>
     </modules>

@@ -40,9 +40,8 @@ import static org.nd4j.linalg.api.ndarray.TestNdArrReadWriteTxt.compareArrays;
 public class TestNdArrReadWriteTxtC extends BaseNd4jTestWithBackends {
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void compareAfterWrite(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         int[] ranksToCheck = new int[]{0, 1, 2, 3, 4};
         for (int i = 0; i < ranksToCheck.length; i++) {

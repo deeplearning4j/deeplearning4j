@@ -19,7 +19,7 @@
  */
 
 
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -28,12 +28,14 @@ import org.nd4j.python4j.PythonTypes;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @NotThreadSafe
 public class PythonNumpyServiceLoaderTest {
 
     @Test
     public void testServiceLoader(){
-        Assert.assertEquals(NumpyArray.INSTANCE, PythonTypes.<INDArray>get("numpy.ndarray"));
-        Assert.assertEquals(NumpyArray.INSTANCE, PythonTypes.getPythonTypeForJavaObject(Nd4j.zeros(1)));
+        assertEquals(NumpyArray.INSTANCE, PythonTypes.<INDArray>get("numpy.ndarray"));
+        assertEquals(NumpyArray.INSTANCE, PythonTypes.getPythonTypeForJavaObject(Nd4j.zeros(1)));
     }
 }

@@ -34,7 +34,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @Slf4j
 
@@ -58,9 +59,8 @@ public class HalfTests extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomNorman_1(Nd4jBackend backend) {
         val array = Nd4j.randn(new long[]{20, 30});
 

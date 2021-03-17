@@ -26,9 +26,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.BaseND4JTest;
 
 public class TestSystemInfo extends BaseND4JTest {
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSystemInfo(){
         SystemInfo.printSystemInfo();
     }

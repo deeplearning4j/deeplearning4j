@@ -41,9 +41,8 @@ public class InputValidationTests extends BaseNd4jTestWithBackends {
     /////////////////////////////////////////////////////////////
     ///////////////////// Broadcast Tests ///////////////////////
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvalidColVectorOp1(Nd4jBackend backend) {
         INDArray first = Nd4j.create(10, 10);
         INDArray col = Nd4j.create(5, 1);
@@ -55,9 +54,8 @@ public class InputValidationTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvalidColVectorOp2(Nd4jBackend backend) {
         INDArray first = Nd4j.create(10, 10);
         INDArray col = Nd4j.create(5, 1);
@@ -69,9 +67,8 @@ public class InputValidationTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvalidRowVectorOp1(Nd4jBackend backend) {
         INDArray first = Nd4j.create(10, 10);
         INDArray row = Nd4j.create(1, 5);
@@ -83,9 +80,8 @@ public class InputValidationTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvalidRowVectorOp2(Nd4jBackend backend) {
         INDArray first = Nd4j.create(10, 10);
         INDArray row = Nd4j.create(1, 5);

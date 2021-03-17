@@ -51,9 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class LoneTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSoftmaxStability(Nd4jBackend backend) {
         INDArray input = Nd4j.create(new double[]{-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).reshape(1, -1).transpose();
 //        System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
@@ -67,9 +66,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlattenedView(Nd4jBackend backend) {
         int rows = 8;
         int cols = 8;
@@ -105,9 +103,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         assertEquals(fAssertion, Nd4j.toFlattened('f', first));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIndexingColVec(Nd4jBackend backend) {
         int elements = 5;
         INDArray rowVector = Nd4j.linspace(1, elements, elements).reshape(1, elements);
@@ -126,9 +123,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void concatScalarVectorIssue(Nd4jBackend backend) {
         //A bug was found when the first array that concat sees is a scalar and the rest vectors + scalars
         INDArray arr1 = Nd4j.create(1, 1);
@@ -138,9 +134,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         assertTrue(arr4.sumNumber().floatValue() <= Nd4j.EPS_THRESHOLD);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reshapeTensorMmul(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 2, 12).reshape(2, 3, 2);
         INDArray b = Nd4j.linspace(3, 4, 4).reshape(2, 2);
@@ -152,9 +147,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         INDArray c = Nd4j.tensorMmul(b, a, axes);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void maskWhenMerge(Nd4jBackend backend) {
         DataSet dsA = new DataSet(Nd4j.linspace(1, 15, 15).reshape(1, 3, 5), Nd4j.zeros(1, 3, 5));
         DataSet dsB = new DataSet(Nd4j.linspace(1, 9, 9).reshape(1, 3, 3), Nd4j.zeros(1, 3, 3));
@@ -169,9 +163,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRelu(Nd4jBackend backend) {
         INDArray aA = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
         INDArray aD = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
@@ -197,9 +190,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         assertEquals(max - 1, currentArgMax);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRPF(Nd4jBackend backend) {
         val array = Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).reshape(2, 2, 3);
 
@@ -212,9 +204,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         log.info("TAD:\n{}", tad);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3D_Vstack_C(Nd4jBackend backend) {
         val shape = new long[]{1, 1000, 20};
 
@@ -244,9 +235,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRow1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(10000, 10000);
 
@@ -285,9 +275,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkSliceofSlice(Nd4jBackend backend) {
         /*
             Issue 1: Slice of slice with c order and f order views are not equal
@@ -327,9 +316,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkWithReshape(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 3);
         INDArray reshaped = arr.reshape('f', 3, 1);

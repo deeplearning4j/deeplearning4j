@@ -46,9 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 public class RnnOpValidation extends BaseOpValidation {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRnnBlockCell(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int mb = 2;
@@ -147,9 +146,8 @@ public class RnnOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRnnBlockCellManualTFCompare(Nd4jBackend backend) {
         //Test case: "rnn/lstmblockcell/static_batch1_n3-2_tsLength1_noPH_noClip_fBias1_noIS"
 
@@ -211,9 +209,8 @@ public class RnnOpValidation extends BaseOpValidation {
         assertEquals(out6, m.get(toExec.get(6)));       //Output
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGRUCell(){
         Nd4j.getRandom().setSeed(12345);
         int mb = 2;

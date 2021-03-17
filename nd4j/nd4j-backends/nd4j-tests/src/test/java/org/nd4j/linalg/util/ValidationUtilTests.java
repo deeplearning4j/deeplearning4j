@@ -51,9 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFileValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
@@ -89,9 +88,8 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 //        System.out.println(vr3.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZipValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
@@ -141,9 +139,8 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayTextValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
@@ -284,9 +281,8 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 //        System.out.println(vr4.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNpzValidation(@TempDir Path testDIr,Nd4jBackend backend) throws Exception {
 
         File f = testDIr.toFile();
@@ -355,9 +351,8 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 //        System.out.println(vr4.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNumpyTxtValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
@@ -425,9 +420,8 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 //        System.out.println(vr4.toString());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testValidateSameDiff(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         Nd4j.setDataType(DataType.FLOAT);
 

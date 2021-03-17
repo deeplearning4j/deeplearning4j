@@ -45,9 +45,8 @@ public class NameScopeTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableNameScopesBasic(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -73,9 +72,8 @@ public class NameScopeTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOpFieldsAndNames(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
@@ -153,9 +151,8 @@ public class NameScopeTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoNesting(Nd4jBackend backend) {
         SameDiff SD = SameDiff.create();
 
@@ -172,9 +169,8 @@ public class NameScopeTests extends BaseNd4jTestWithBackends {
         assertTrue(SD.variableMap().containsKey("test/argmax"),"Var with name test/argmax exists");
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoTesting2(Nd4jBackend backend) {
         SameDiff SD = SameDiff.create();
 

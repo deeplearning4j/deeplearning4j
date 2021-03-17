@@ -41,9 +41,8 @@ public class CompressionMagicTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMagicDecompression1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
@@ -56,9 +55,8 @@ public class CompressionMagicTests extends BaseNd4jTestWithBackends {
         assertEquals(array, compressed);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMagicDecompression4(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
@@ -72,9 +70,8 @@ public class CompressionMagicTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDupSkipDecompression1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
@@ -90,9 +87,8 @@ public class CompressionMagicTests extends BaseNd4jTestWithBackends {
         assertEquals(array, newArray);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDupSkipDecompression2(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
@@ -108,9 +104,8 @@ public class CompressionMagicTests extends BaseNd4jTestWithBackends {
         assertEquals(array, newArray);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDupSkipDecompression3(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 

@@ -38,9 +38,8 @@ public class TestReverse extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse(Nd4jBackend backend) {
 
         INDArray in = Nd4j.createFromArray(new double[]{1,2,3,4,5,6});
@@ -57,9 +56,8 @@ public class TestReverse extends BaseNd4jTestWithBackends {
         System.out.println(out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse2(Nd4jBackend backend){
 
         INDArray in = Nd4j.createFromArray(new double[]{1,2,3,4,5,6});

@@ -48,9 +48,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToAndFrom(Nd4jBackend backend) {
         INDArray arr = Nd4j.scalar(1.0);
         ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
@@ -58,9 +57,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
         assertEquals(arr, back);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToAndFromHeapBuffer(Nd4jBackend backend) {
         INDArray arr = Nd4j.scalar(1.0);
         ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
@@ -70,9 +68,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
         assertEquals(arr, back);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToAndFromCompressed(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //Failing 2019/01/24
         INDArray arr = Nd4j.scalar(1.0);
@@ -86,9 +83,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToAndFromCompressedLarge(Nd4jBackend backend) {
         OpValidationSuite.ignoreFailing();  //Failing 2019/01/24
         INDArray arr = Nd4j.zeros((int) 1e7);
@@ -102,9 +98,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReadWriteFile(Nd4jBackend backend) throws Exception {
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),
                         "ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
@@ -115,9 +110,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
         assertEquals(rand, fromDisk);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReadShapeFile(Nd4jBackend backend) throws Exception {
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),
                         "ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
@@ -129,9 +123,8 @@ public class BinarySerdeTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(rand.shapeInfoDataBuffer().asLong(), buffer.asLong());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void timeOldVsNew(Nd4jBackend backend) throws Exception {
         int numTrials = 1000;
         long oldTotal = 0;

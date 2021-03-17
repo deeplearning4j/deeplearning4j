@@ -46,9 +46,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInverse(Nd4jBackend backend) {
         RealMatrix matrix = new Array2DRowRealMatrix(new double[][] {{1, 2}, {3, 4}});
 
@@ -61,9 +60,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInverseComparison(Nd4jBackend backend) {
 
         List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape(10, 10, 12345, DataType.DOUBLE);
@@ -80,9 +78,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvalidMatrixInversion(Nd4jBackend backend) {
         try {
             InvertMatrix.invert(Nd4j.create(5, 4), false);
@@ -103,9 +100,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInvertMatrixScalar(){
         INDArray in = Nd4j.valueArrayOf(new int[]{1,1}, 2);
         INDArray out1 = InvertMatrix.invert(in, false);
@@ -120,9 +116,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
     /**
      * Example from: <a href="https://www.wolframalpha.com/input/?i=invert+matrix+((1,2),(3,4),(5,6))">here</a>
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeftPseudoInvert(Nd4jBackend backend) {
         INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 4}, {5, 6}});
         INDArray expectedLeftInverse = Nd4j.create(new double[][]{{-16, -4, 8}, {13, 4, -5}}).mul(1 / 12d);
@@ -169,9 +164,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
     /**
      * Example from: <a href="https://www.wolframalpha.com/input/?i=invert+matrix+((1,2),(3,4),(5,6))^T">here</a>
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRightPseudoInvert(Nd4jBackend backend) {
         INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 4}, {5, 6}}).transpose();
         INDArray expectedRightInverse = Nd4j.create(new double[][]{{-16, 13}, {-4, 4}, {8, -5}}).mul(1 / 12d);
@@ -200,9 +194,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
     /**
      * Try to compute the right pseudo inverse of a matrix without full row rank (x1 = 2*x2)
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRightPseudoInvertWithNonFullRowRank(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}}).transpose();
@@ -214,9 +207,8 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
     /**
      * Try to compute the left pseudo inverse of a matrix without full column rank (x1 = 2*x2)
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeftPseudoInvertWithNonFullColumnRank(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}});

@@ -42,9 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Disabled("AB 2019/05/23 - JVM crash on linux-x86_64-cpu-avx512 - issue #7657")
 public class LargeSerDeTests extends BaseNd4jTestWithBackends {
 
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLargeArraySerDe_1(Nd4jBackend backend) throws Exception {
         val arrayA = Nd4j.rand(new long[] {1, 135079944});
         //val arrayA = Nd4j.rand(new long[] {1, 13507});

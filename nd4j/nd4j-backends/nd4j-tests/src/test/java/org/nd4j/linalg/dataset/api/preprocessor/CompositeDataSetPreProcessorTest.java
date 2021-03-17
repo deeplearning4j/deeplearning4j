@@ -41,7 +41,7 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_preConditionsIsNull_expect_NullPointerException(Nd4jBackend backend) {
         assertThrows(NullPointerException.class,() -> {
             // Assemble
@@ -54,9 +54,8 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIsEmpty_expect_emptyDataSet(Nd4jBackend backend) {
         // Assemble
         CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor();
@@ -69,9 +68,8 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
         assertTrue(ds.isEmpty());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_notStoppingOnEmptyDataSet_expect_allPreProcessorsCalled(Nd4jBackend backend) {
         // Assemble
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(true);
@@ -87,9 +85,8 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
         assertTrue(preProcessor2.hasBeenCalled);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_stoppingOnEmptyDataSetAndFirstPreProcessorClearDS_expect_firstPreProcessorsCalled(Nd4jBackend backend) {
         // Assemble
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(true);
@@ -105,9 +102,8 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
         assertFalse(preProcessor2.hasBeenCalled);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_stoppingOnEmptyDataSet_expect_firstPreProcessorsCalled(Nd4jBackend backend) {
         // Assemble
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(false);

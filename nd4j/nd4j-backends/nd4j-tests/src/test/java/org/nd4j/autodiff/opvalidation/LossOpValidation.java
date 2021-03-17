@@ -55,9 +55,8 @@ public class LossOpValidation extends BaseOpValidation {
     // All tested Loss Ops have backprop at the moment 2019/01/30
     public static final Set<String> NO_BP_YET = new HashSet<>();
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLoss2d(Nd4jBackend backend) {
         final List<String> oneDimensionalOutputFns = Arrays.asList("cosine", "mpwse", "softmaxxent", "softmaxxent_smooth", "mpwse", "sparsesoftmax");
 
@@ -369,9 +368,8 @@ public class LossOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCosineDistance(){
         INDArray arr = Nd4j.create(new double[][]{{-0.3, -0.2, -0.1}, {0, 0.1, 0.2}});
         INDArray label = Nd4j.create(new double[][]{{1.0, 2.0, 3.0}, {-1.0, 2.0, 1.0}});
@@ -389,9 +387,8 @@ public class LossOpValidation extends BaseOpValidation {
         assertEquals(exp, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testL2Loss(){
 
         for( int rank=0; rank<=3; rank++ ){
@@ -433,9 +430,8 @@ public class LossOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonZeroResult(Nd4jBackend backend) {
         INDArray predictions = Nd4j.rand(DataType.DOUBLE, 10, 5);
         INDArray w = Nd4j.scalar(1.0);
@@ -493,9 +489,8 @@ public class LossOpValidation extends BaseOpValidation {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void TestStdLossMixedDataType(){
         // Default Data Type in this test suite is Double.
         // This test used to throw an Exception that we have mixed data types.

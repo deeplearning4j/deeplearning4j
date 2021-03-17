@@ -1,5 +1,3 @@
-Const,in_0
-Const,Roll/shift
-Const,Roll/axis
-Identity,in_0/read
-Roll,Roll
+Const,alpha
+Const,Sum/reduction_indices
+Sum,Sum

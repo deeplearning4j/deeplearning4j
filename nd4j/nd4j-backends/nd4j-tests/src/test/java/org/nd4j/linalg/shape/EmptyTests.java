@@ -44,9 +44,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     DataType initialType = Nd4j.dataType();
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmpyArray_1(Nd4jBackend backend) {
         val array = Nd4j.empty();
 
@@ -66,9 +65,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyDtype_1(Nd4jBackend backend) {
         val array = Nd4j.empty(DataType.INT);
 
@@ -76,9 +74,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.INT, array.dataType());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyDtype_2(Nd4jBackend backend) {
         val array = Nd4j.empty(DataType.LONG);
 
@@ -86,9 +83,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.LONG, array.dataType());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat_1(Nd4jBackend backend) {
         val row1 = Nd4j.create(new double[]{1, 1, 1, 1}, new long[]{1, 4});
         val row2 = Nd4j.create(new double[]{2, 2, 2, 2}, new long[]{1, 4});
@@ -108,9 +104,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReductions(Nd4jBackend backend){
 
         INDArray empty = Nd4j.empty(DataType.FLOAT);
@@ -139,9 +134,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetEmpty(Nd4jBackend backend){
         INDArray empty = Nd4j.empty(DataType.FLOAT);
         try {
@@ -163,9 +157,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyWithShape_1(Nd4jBackend backend) {
         val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
 
@@ -177,9 +170,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{0, 0, 0}, array.stride());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyWithShape_2(Nd4jBackend backend){
         val array = Nd4j.create(DataType.FLOAT, 0);
 
@@ -194,7 +186,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyWithShape_3(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
@@ -204,9 +196,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyWithShape_4(Nd4jBackend backend){
         val array = Nd4j.create(DataType.FLOAT, 0, 3);
@@ -226,9 +217,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertEquals(0, array.stride(1));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReduction_1(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
         val e = Nd4j.create(DataType.FLOAT, 2, 1, 3).assign(0);
@@ -239,9 +229,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertEquals(e, reduced);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReduction_2(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
         val e = Nd4j.create(DataType.FLOAT, 2, 3).assign(0);
@@ -253,9 +242,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyReduction_3(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 2, 0);
@@ -269,7 +257,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReduction_4(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             val x = Nd4j.create(DataType.FLOAT, 2, 0);
@@ -283,9 +271,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyCreateMethods(Nd4jBackend backend){
         DataType dt = DataType.FLOAT;
         assertArrayEquals(new long[]{0}, Nd4j.create(0).shape());
@@ -325,18 +312,16 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{0,0}, Nd4j.ones(0,0).ulike().shape());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEqualShapesEmpty(Nd4jBackend backend){
         assertTrue(Nd4j.create(0).equalShapes(Nd4j.create(0)));
         assertFalse(Nd4j.create(0).equalShapes(Nd4j.create(1, 0)));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyWhere(Nd4jBackend backend) {
         val mask = Nd4j.createFromArray(false,     false,     false,     false,     false);
         val result = Nd4j.where(mask, null, null);
@@ -345,9 +330,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertNotNull(result[0].shapeInfoDataBuffer().asLong());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllEmptyReduce(Nd4jBackend backend){
         INDArray x = Nd4j.createFromArray(true, true, true);
         val all = new All(x);
@@ -356,9 +340,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         assertEquals(x, out);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyNoop(Nd4jBackend backend) {
         val output = Nd4j.empty(DataType.LONG);
@@ -370,9 +353,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
         Nd4j.exec(op);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyConstructor_1(Nd4jBackend backend) {
         val x = Nd4j.create(new double[0]);

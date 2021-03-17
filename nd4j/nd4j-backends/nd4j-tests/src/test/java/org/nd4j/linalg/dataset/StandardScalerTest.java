@@ -35,9 +35,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 public class StandardScalerTest extends BaseNd4jTestWithBackends {
 
     @Disabled
-      @Test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScale(Nd4jBackend backend) {
         StandardScaler scaler = new StandardScaler();
         DataSetIterator iter = new IrisDataSetIterator(10, 150);

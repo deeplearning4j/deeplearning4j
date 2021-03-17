@@ -67,9 +67,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
@@ -82,9 +80,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasic(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
@@ -139,9 +136,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
         assertEquals(sd.getLossVariables().size(), fg.lossVariablesLength());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimple(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
         for( int i = 0; i < 10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
@@ -270,9 +266,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTrainingSerde(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
 
         //Ensure 2 things:
@@ -356,9 +351,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void pooling3DSerialization(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 
@@ -378,9 +372,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
                 deserialized.getVariableOutputOp("pool").getClass());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void pooling3DSerialization2(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 

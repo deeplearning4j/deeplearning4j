@@ -64,9 +64,8 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBert(Nd4jBackend backend) throws Exception {
 
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
@@ -277,7 +276,7 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
 
     @Test //@Disabled   //AB ignored 08/04/2019 until fixed
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBertTraining(Nd4jBackend backend) throws Exception {
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
@@ -422,7 +421,7 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void writeBertUI(Nd4jBackend backend) throws Exception {
         //Test used to generate graph for visualization to work out appropriate subgraph structure to replace
         File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");

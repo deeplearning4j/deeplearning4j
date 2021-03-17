@@ -22,6 +22,7 @@ package org.nd4j.tvm.runner;
 import org.bytedeco.cpython.*;
 
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.io.TempDir;
 
-
+@Disabled
 public class TvmRunnerTests {
 
     static void PrepareTestLibs(String libPath) throws Exception {

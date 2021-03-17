@@ -44,9 +44,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBufferCreation(Nd4jBackend backend) {
         DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
@@ -68,7 +67,7 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateNpy() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/test.npy").getFile());
         assertEquals(2, arrCreate.size(0));
@@ -83,7 +82,7 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
     @Test
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateNpz(Nd4jBackend backend) throws Exception {
         Map<String, INDArray> map = Nd4j.createFromNpzFile(new ClassPathResource("nd4j-tests/test.npz").getFile());
         assertEquals(true, map.containsKey("x"));

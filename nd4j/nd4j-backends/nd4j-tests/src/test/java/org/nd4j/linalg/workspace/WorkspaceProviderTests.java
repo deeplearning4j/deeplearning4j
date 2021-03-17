@@ -123,9 +123,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnboundedLoop2(Nd4jBackend backend) {
         WorkspaceConfiguration configuration =
                 WorkspaceConfiguration.builder().initialSize(0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
@@ -160,9 +159,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testUnboundedLoop1(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                 .initialSize(100 * 100 * Nd4j.sizeOfDataType()).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
@@ -196,9 +194,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultithreading1() throws Exception {
         final List<MemoryWorkspace> workspaces = new CopyOnWriteArrayList<>();
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
@@ -230,9 +227,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspacesOverlap2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
@@ -281,9 +277,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspacesOverlap1(Nd4jBackend backend) {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
@@ -315,9 +310,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspacesSerde3() throws Exception {
         INDArray array = Nd4j.create(10).assign(1.0);
         INDArray restored = null;
@@ -349,9 +343,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspacesSerde2() throws Exception {
         INDArray array = Nd4j.create(10).assign(1.0);
         INDArray restored = null;
@@ -379,9 +372,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspacesSerde1() throws Exception {
         int[] shape = new int[] {17, 57, 79};
         INDArray array = Nd4j.create(shape).assign(1.0);
@@ -405,9 +397,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCircularBufferReset1(Nd4jBackend backend) {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(circularConfiguration, "WSR_1");
@@ -439,9 +430,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableInput1(Nd4jBackend backend) {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(adsiConfiguration, "ADSI");
@@ -529,9 +519,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocate3(Nd4jBackend backend) {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(reallocateUnspecifiedConfiguration, "WS_1");
@@ -561,9 +550,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertEquals(100 * 10 * Nd4j.sizeOfDataType(), workspace.getCurrentSize(),"Failed on final");
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocate2(Nd4jBackend backend) {
         MemoryWorkspace workspace =
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateDelayedConfiguration, "WS_1");
@@ -581,9 +569,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCircularLearning1(Nd4jBackend backend) {
         INDArray array1;
         INDArray array2;
@@ -605,9 +592,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocate1(Nd4jBackend backend) {
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
             INDArray array = Nd4j.create(100);
@@ -661,9 +647,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces10(Nd4jBackend backend) {
         for (int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
@@ -682,9 +667,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces9(Nd4jBackend backend) {
         for (int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws =
@@ -701,9 +685,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces8(Nd4jBackend backend) {
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopConfiguration, "WS_1")) {
             INDArray array = Nd4j.create(100);
@@ -726,9 +709,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces7(Nd4jBackend backend) {
         try (Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getAndActivateWorkspace(basicConfiguration, "External")) {
@@ -768,9 +750,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces6(Nd4jBackend backend) {
 
         try (Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
@@ -808,9 +789,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces5(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
@@ -835,9 +815,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces4(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
@@ -881,9 +860,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces3(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
@@ -929,9 +907,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
@@ -960,9 +937,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
@@ -990,9 +966,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewWorkspace1(Nd4jBackend backend) {
         MemoryWorkspace workspace1 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread();
 
@@ -1003,9 +978,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertEquals(workspace1, workspace2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspaceGc_1() throws Exception {
 
         for (int e = 0; e < 10; e++) {
@@ -1033,9 +1007,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     }
 
     @Disabled
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMemcpy1(Nd4jBackend backend) {
         INDArray warmUp = Nd4j.create(100000);
         for (int x = 0; x < 5000; x++) {

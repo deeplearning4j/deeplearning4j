@@ -43,7 +43,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_originalHeightIsZero_expect_IllegalArgumentException(Nd4jBackend backend) {
        assertThrows(IllegalArgumentException.class,() -> {
            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -53,7 +53,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_originalWidthIsZero_expect_IllegalArgumentException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -63,7 +63,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_yStartIsNegative_expect_IllegalArgumentException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -73,7 +73,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_xStartIsNegative_expect_IllegalArgumentException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, -1, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -83,7 +83,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_heightIsNotGreaterThanZero_expect_IllegalArgumentException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 0, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -93,7 +93,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_widthIsNotGreaterThanZero_expect_IllegalArgumentException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 0, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -103,7 +103,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_numChannelsIsNotGreaterThanZero_expect_IllegalArgumentException(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 0, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -113,7 +113,7 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     @Test()
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIsNull_expect_NullPointerException(Nd4jBackend backend) {
         // Assemble
         assertThrows(NullPointerException.class,() -> {
@@ -125,9 +125,8 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
 
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIsEmpty_expect_emptyDataSet(Nd4jBackend backend) {
         // Assemble
         CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
@@ -140,9 +139,8 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBacken
         assertTrue(ds.isEmpty());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIs15wx10h_expect_3wx4hDataSet(Nd4jBackend backend) {
         // Assemble
         int numChannels = 3;

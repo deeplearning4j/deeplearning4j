@@ -88,9 +88,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCrossBackendEquality1(Nd4jBackend backend) {
         int[] shape = {12};
         double mean = 0;
@@ -104,9 +103,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -128,9 +126,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution2(Nd4jBackend backend) {
         val random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         val random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -156,9 +153,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(z1, z2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution3(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -172,9 +168,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertNotEquals(z1, z2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution4(Nd4jBackend backend) {
         for (int i = 0; i < 100; i++) {
             Nd4j.getRandom().setSeed(119);
@@ -189,9 +184,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution5(Nd4jBackend backend) {
         for (int i = 0; i < 100; i++) {
             Nd4j.getRandom().setSeed(120);
@@ -206,9 +200,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution6(Nd4jBackend backend) {
         for (int i = 0; i < 100; i++) {
             Nd4j.getRandom().setSeed(120);
@@ -223,9 +216,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspace1(Nd4jBackend backend) {
         INDArray z1 = Nd4j.linspace(1, 100, 200, DataType.DOUBLE);
 
@@ -237,9 +229,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(z1, z2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDropoutInverted1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -264,9 +255,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDropout1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -286,9 +276,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(z1, z2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAlphaDropout1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -309,9 +298,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGaussianDistribution1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -339,9 +327,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(z1, z2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGaussianDistribution2(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -380,9 +367,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertNotEquals(z3, z4);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGaussianDistribution3(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -413,9 +399,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAndersonDarling(Nd4jBackend backend) {
 
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -452,9 +437,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertTrue(A < 1.8692,"Critical (max) value for 1000 points and confidence α = 0.0001 is 1.8692, received: "+ A);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStepOver1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -478,18 +462,16 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum_119(Nd4jBackend backend) {
         INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
         val sum = z2.sumNumber().doubleValue();
         assertEquals(0.0, sum, 1e-5);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLegacyDistribution1(Nd4jBackend backend) {
         NormalDistribution distribution = new NormalDistribution(new DefaultRandom(), 0.0, 1.0);
         INDArray z1 = distribution.sample(new int[] {1, 1000000});
@@ -498,9 +480,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSetSeed1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -539,9 +520,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(z02, z12);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaSide1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -559,9 +539,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(array1, array2, 1e-5f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaSide2(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -580,9 +559,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(array1, array2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaSide3(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -607,9 +585,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
      * @throws Exception
      */
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaSide4(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -642,9 +619,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaSide5(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(7);
         int length = 100;
@@ -668,9 +644,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertNotEquals(0, sum);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBernoulliDistribution1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -690,9 +665,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(z1, z2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBernoulliDistribution2(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -716,9 +690,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, z1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBernoulliDistribution3(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -743,9 +716,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, z1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBinomialDistribution1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -768,9 +740,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBinomialDistribution2(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -795,9 +766,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultithreading1(Nd4jBackend backend) throws Exception {
 
         final AtomicInteger cnt = new AtomicInteger(0);
@@ -835,9 +805,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultithreading2() throws Exception {
 
         final AtomicInteger cnt = new AtomicInteger(0);
@@ -874,9 +843,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStepOver3(Nd4jBackend backend) {
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(119);
         if (random instanceof NativeRandom) {
@@ -903,9 +871,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStepOver4(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119, 100000);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119, 100000);
@@ -918,9 +885,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSignatures1(Nd4jBackend backend) {
 
         for (int x = 0; x < 100; x++) {
@@ -931,9 +897,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChoice1(Nd4jBackend backend) {
         INDArray source = Nd4j.create(new double[] {1, 2, 3, 4, 5});
         INDArray probs = Nd4j.create(new double[] {0.0, 0.0, 1.0, 0.0, 0.0});
@@ -943,9 +908,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, sampled);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChoice2(Nd4jBackend backend) {
         INDArray source = Nd4j.create(new double[] {1, 2, 3, 4, 5});
         INDArray probs = Nd4j.create(new double[] {0.0, 0.0, 0.0, 0.0, 0.0});
@@ -956,9 +920,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     }
 
     @Disabled
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeallocation1() throws Exception {
 
         while (true) {
@@ -970,9 +933,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void someTest(Nd4jBackend backend) {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         INDArray x = Nd4j.create(new double[] {-0.5753774207320429, 1.0614372269091394, 0.4522970978070401,
@@ -1348,9 +1310,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(0.0, z01.meanNumber().doubleValue(), 1e-3);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLogNormal1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -1376,9 +1337,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(mean, z01.meanNumber().doubleValue(), 1e-1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinspace2(Nd4jBackend backend) {
         INDArray res = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray exp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
@@ -1387,33 +1347,29 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrthogonalDistribution1(Nd4jBackend backend) {
         val dist = new OrthogonalDistribution(1.0);
         val array = dist.sample(new int[] {6, 9});
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrthogonalDistribution2(Nd4jBackend backend) {
         val dist = new OrthogonalDistribution(1.0);
         val array = dist.sample(new int[] {9, 6});
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrthogonalDistribution3(Nd4jBackend backend) {
         val dist = new OrthogonalDistribution(1.0);
         val array = dist.sample(new int[] {9, 9});
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproducabilityTest(){
         int numBatches = 1;
 
@@ -1429,9 +1385,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaInt_1(Nd4jBackend backend) {
         for (int e = 0; e < 100000; e++) {
             val i = Nd4j.getRandom().nextInt(10, 20);
@@ -1440,9 +1395,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBernoulli(){
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
@@ -1463,9 +1417,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         return out;
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRngRepeatabilityUniform(){
         val nexp = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.getRandom().setSeed(12345);
@@ -1480,9 +1433,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertNotEquals(nexp, out1);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRngRepeatabilityBernoulli(){
         Nd4j.getRandom().setSeed(12345);
         INDArray out1 = Nd4j.create(DataType.FLOAT, 10);
@@ -1495,9 +1447,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(out1, out2);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGamma(){
         Nd4j.getRandom().setSeed(12345);
         INDArray shape = Nd4j.createFromArray(new int[] {1000,1000});
@@ -1518,9 +1469,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(mean0.toFloatVector(), mean1.toFloatVector(), 1e-2f);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPoisson(){
         Nd4j.getRandom().setSeed(12345);
         INDArray shape = Nd4j.createFromArray(new int[] {1,3});
@@ -1533,9 +1483,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(res[0], res1[0]);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShuffle(){
         Nd4j.getRandom().setSeed(12345);
         INDArray alpha = Nd4j.rand(1,3);
@@ -1547,9 +1496,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(res[0], res1[0]);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandom(Nd4jBackend backend) {
         val r1 = new java.util.Random(119);
         val r2 = Nd4j.getRandom();

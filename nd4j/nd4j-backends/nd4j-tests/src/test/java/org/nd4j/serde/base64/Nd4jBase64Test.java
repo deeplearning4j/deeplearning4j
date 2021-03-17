@@ -38,9 +38,8 @@ public class Nd4jBase64Test extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBase64(Nd4jBackend backend) throws Exception {
         INDArray arr = Nd4j.linspace(1, 4, 4);
         String base64 = Nd4jBase64.base64String(arr);

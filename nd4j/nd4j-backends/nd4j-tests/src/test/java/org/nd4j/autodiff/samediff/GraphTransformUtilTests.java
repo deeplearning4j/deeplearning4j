@@ -52,9 +52,8 @@ public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasic(Nd4jBackend backend){
 
         SameDiff sd = SameDiff.create();
@@ -93,9 +92,8 @@ public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
         assertEquals(0, sg2.getChildNodes().size());
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSubgraphReplace1(Nd4jBackend backend){
 
         SameDiff sd = SameDiff.create();

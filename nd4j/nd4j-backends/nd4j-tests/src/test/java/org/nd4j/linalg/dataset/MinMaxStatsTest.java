@@ -38,9 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MinMaxStatsTest extends BaseNd4jTestWithBackends {
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEnforcingNonZeroRange(Nd4jBackend backend) {
         INDArray lower = Nd4j.create(new double[] {2, 3, 4, 5});
 

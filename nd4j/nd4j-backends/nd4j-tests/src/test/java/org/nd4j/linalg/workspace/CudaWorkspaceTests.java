@@ -43,9 +43,8 @@ public class CudaWorkspaceTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspaceReuse() {
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;

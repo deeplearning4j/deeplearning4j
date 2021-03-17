@@ -55,7 +55,6 @@ class MaskZeroLayerTest extends BaseDL4JTest {
     }
 
     @DisplayName("Activate")
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     void activate(RNNFormat rnnDataFormat) {
@@ -96,7 +95,6 @@ class MaskZeroLayerTest extends BaseDL4JTest {
 
 
     @DisplayName("Test Serialization")
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     void testSerialization(RNNFormat rnnDataFormat) {

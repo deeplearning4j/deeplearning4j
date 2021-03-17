@@ -44,9 +44,8 @@ public class TestLegacyJsonLoading extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvalLegacyFormat(Nd4jBackend backend) throws Exception {
 
         File f = new ClassPathResource("regression_testing/eval_100b/evaluation.json").getFile();

@@ -58,7 +58,7 @@ import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.writable.*;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
-import org.junit.Assert;
+
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -71,7 +71,7 @@ import java.io.ObjectOutputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static junit.framework.TestCase.assertEquals;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestTransforms extends BaseND4JTest {
@@ -277,22 +277,22 @@ public class TestTransforms extends BaseND4JTest {
         List<String> outputColumns = new ArrayList<>(ALL_COLUMNS);
         outputColumns.add(NEW_COLUMN);
         Schema newSchema = transform.transform(schema);
-        Assert.assertEquals(outputColumns, newSchema.getColumnNames());
+        assertEquals(outputColumns, newSchema.getColumnNames());
 
         List<Writable> input = new ArrayList<>();
         input.addAll(COLUMN_VALUES);
 
         transform.setInputSchema(schema);
         List<Writable> transformed = transform.map(input);
-        Assert.assertEquals(NEW_COLUMN_VALUE, transformed.get(transformed.size() - 1).toString());
+        assertEquals(NEW_COLUMN_VALUE, transformed.get(transformed.size() - 1).toString());
 
         List<Text> outputColumnValues = new ArrayList<>(COLUMN_VALUES);
         outputColumnValues.add(new Text(NEW_COLUMN_VALUE));
-        Assert.assertEquals(outputColumnValues, transformed);
+        assertEquals(outputColumnValues, transformed);
 
         String s = JsonMappers.getMapper().writeValueAsString(transform);
         Transform transform2 = JsonMappers.getMapper().readValue(s, ConcatenateStringColumns.class);
-        Assert.assertEquals(transform, transform2);
+        assertEquals(transform, transform2);
     }
 
     @Test
@@ -309,7 +309,7 @@ public class TestTransforms extends BaseND4JTest {
         transform.setInputSchema(schema);
         Schema newSchema = transform.transform(schema);
         List<String> outputColumns = new ArrayList<>(ALL_COLUMNS);
-        Assert.assertEquals(outputColumns, newSchema.getColumnNames());
+        assertEquals(outputColumns, newSchema.getColumnNames());
 
         transform = new ChangeCaseStringTransform(STRING_COLUMN, ChangeCaseStringTransform.CaseType.LOWER);
         transform.setInputSchema(schema);
@@ -320,8 +320,8 @@ public class TestTransforms extends BaseND4JTest {
         output.add(new Text(TEXT_LOWER_CASE));
         output.add(new Text(TEXT_MIXED_CASE));
         List<Writable> transformed = transform.map(input);
-        Assert.assertEquals(transformed.get(0).toString(), TEXT_LOWER_CASE);
-        Assert.assertEquals(transformed, output);
+        assertEquals(transformed.get(0).toString(), TEXT_LOWER_CASE);
+        assertEquals(transformed, output);
 
         transform = new ChangeCaseStringTransform(STRING_COLUMN, ChangeCaseStringTransform.CaseType.UPPER);
         transform.setInputSchema(schema);
@@ -329,12 +329,12 @@ public class TestTransforms extends BaseND4JTest {
         output.add(new Text(TEXT_UPPER_CASE));
         output.add(new Text(TEXT_MIXED_CASE));
         transformed = transform.map(input);
-        Assert.assertEquals(transformed.get(0).toString(), TEXT_UPPER_CASE);
-        Assert.assertEquals(transformed, output);
+        assertEquals(transformed.get(0).toString(), TEXT_UPPER_CASE);
+        assertEquals(transformed, output);
 
         String s = JsonMappers.getMapper().writeValueAsString(transform);
         Transform transform2 = JsonMappers.getMapper().readValue(s, ChangeCaseStringTransform.class);
-        Assert.assertEquals(transform, transform2);
+        assertEquals(transform, transform2);
     }
 
     @Test
@@ -1530,7 +1530,7 @@ public class TestTransforms extends BaseND4JTest {
 
         String json = JsonMappers.getMapper().writeValueAsString(t);
         Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToCountsNDArrayTransform.class);
-        Assert.assertEquals(t, transform2);
+        assertEquals(t, transform2);
     }
 
 
@@ -1551,7 +1551,7 @@ public class TestTransforms extends BaseND4JTest {
 
         String json = JsonMappers.getMapper().writeValueAsString(t);
         Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToIndicesNDArrayTransform.class);
-        Assert.assertEquals(t, transform2);
+        assertEquals(t, transform2);
     }
 
 

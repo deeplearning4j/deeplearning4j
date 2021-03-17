@@ -79,7 +79,6 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         return 90000L;
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void testYoloOutputLayer(CNN2DFormat format) {
@@ -180,7 +179,6 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     }
 
 
-    @Test
     @ParameterizedTest
     @MethodSource("#params")
     public void yoloGradientCheckRealData(@TempDir Path testDir,CNN2DFormat format) throws Exception {

@@ -52,18 +52,16 @@ public class CachingDataSetIteratorTest extends BaseNd4jTestWithBackends {
         return 'f';
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInMemory(Nd4jBackend backend) {
         DataSetCache cache = new InMemoryDataSetCache();
 
         runDataSetTest(cache);
     }
 
-    @Test
     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTest#configs")
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInFile() throws IOException {
         Path cacheDir = Files.createTempDirectory("nd4j-data-set-cache-test");
         DataSetCache cache = new InFileDataSetCache(cacheDir);
