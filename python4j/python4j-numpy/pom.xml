@@ -56,4 +56,12 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <id>nd4j-tests-cpu</id>
+        </profile>
+        <profile>
+            <id>nd4j-tests-cuda</id>
+        </profile>
+    </profiles>
 </project>
