@@ -3,14 +3,6 @@ on:
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
-    run
-    
-    
-on:
-  workflow_dispatch:
-jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
     runs-on: self-hosted
     timeout-minutes: 1
     steps:
@@ -42,5 +34,5 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn   -DskipTestResourceEnforcement=true -Ptestresources -Pintegration-tests -Pdl4j-integration-tests -Pnd4j-tests-cpu clean test
+          mvn   -DskipTestResourceEnforcement=true -Ptestresources -pintegration-test -Pintegration-tests  -Pnd4j-tests-cpu --also-make  clean test
 
