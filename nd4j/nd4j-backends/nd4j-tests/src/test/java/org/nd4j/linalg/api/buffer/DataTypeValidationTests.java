@@ -70,8 +70,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
     /**
      * Testing level1 blas
      */
-    @Test()
-    @ParameterizedTest
+     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation1(Nd4jBackend backend) {
        assertThrows(ND4JIllegalStateException.class,() -> {
@@ -89,8 +88,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
     /**
      * Testing level2 blas
      */
-    @Test()
-    @ParameterizedTest
+     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation2(Nd4jBackend backend) {
         assertThrows(RuntimeException.class,() -> {
@@ -109,8 +107,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
     /**
      * Testing level3 blas
      */
-    @Test()
-    @ParameterizedTest
+     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation3(Nd4jBackend backend) {
        assertThrows(IllegalStateException.class,() -> {

@@ -53,8 +53,6 @@ public abstract class BaseNd4jTestWithBackends extends BaseND4JTest {
         }
     }
 
-    protected Nd4jBackend backend;
-    protected String name;
     public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
 
 
@@ -95,7 +93,7 @@ public abstract class BaseNd4jTestWithBackends extends BaseND4JTest {
         return 'c';
     }
 
-    public String getFailureMessage() {
+    public String getFailureMessage(Nd4jBackend backend) {
         return "Failed with backend " + backend.getClass().getName() + " and ordering " + ordering();
     }
 }

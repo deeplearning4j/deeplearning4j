@@ -83,8 +83,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test()
-    @ParameterizedTest
+     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccessException_1(Nd4jBackend backend) {
        assertThrows(IllegalStateException.class,() -> {
@@ -96,8 +95,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test()
-    @ParameterizedTest
+     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccessException_2(Nd4jBackend backend) {
       assertThrows(IllegalStateException.class,() -> {

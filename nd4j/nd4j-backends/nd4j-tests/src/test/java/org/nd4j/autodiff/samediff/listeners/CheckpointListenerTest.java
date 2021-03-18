@@ -21,9 +21,6 @@
 package org.nd4j.autodiff.samediff.listeners;
 
 
-
-import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,11 +44,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
+    @TempDir Path testDir;
 
 
     @Override
@@ -97,7 +94,7 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCheckpointEveryEpoch(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testCheckpointEveryEpoch(Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
 
         SameDiff sd = getModel();
@@ -132,7 +129,7 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCheckpointEvery5Iter(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testCheckpointEvery5Iter(Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
 
         SameDiff sd = getModel();
@@ -172,7 +169,7 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCheckpointListenerEveryTimeUnit(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testCheckpointListenerEveryTimeUnit(Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
         SameDiff sd = getModel();
 
@@ -217,7 +214,7 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCheckpointListenerKeepLast3AndEvery3(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testCheckpointListenerKeepLast3AndEvery3(Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
         SameDiff sd = getModel();
 

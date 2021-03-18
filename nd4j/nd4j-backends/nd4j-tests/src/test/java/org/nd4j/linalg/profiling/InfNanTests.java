@@ -50,7 +50,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
-    @Test()
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf1(Nd4jBackend backend) {
@@ -67,7 +66,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test()
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf2(Nd4jBackend backend) {
@@ -103,7 +101,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
         OpExecutionerUtil.checkForAny(x);
     }
 
-    @Test()
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN1(Nd4jBackend backend) {
@@ -120,7 +117,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test()
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN2(Nd4jBackend backend) {

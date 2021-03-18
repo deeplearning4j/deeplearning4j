@@ -29,7 +29,6 @@ import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.*;
-import org.datavec.python.PythonTransform;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
@@ -166,37 +164,8 @@ class ExecutionTest {
         List<List<Writable>> out = outRdd;
         List<List<Writable>> expOut = Arrays.asList(Arrays.<Writable>asList(new IntWritable(0), new Text("first"), new DoubleWritable(4.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(40.0)));
         out = new ArrayList<>(out);
-        Collections.sort(out, new Comparator<List<Writable>>() {
-
-            @Override
-            public int compare(List<Writable> o1, List<Writable> o2) {
-                return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
-            }
-        });
+        Collections.sort(out, Comparator.comparingInt(o -> o.get(0).toInt()));
         assertEquals(expOut, out);
     }
 
-    @Test
-    @Disabled("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
-    @DisplayName("Test Python Execution Ndarray")
-    void testPythonExecutionNdarray() {
-        assertTimeout(ofMillis(60000), () -> {
-            Schema schema = new Schema.Builder().addColumnNDArray("first", new long[] { 1, 32577 }).addColumnNDArray("second", new long[] { 1, 32577 }).build();
-            TransformProcess transformProcess = new TransformProcess.Builder(schema).transform(PythonTransform.builder().code("first = np.sin(first)\nsecond = np.cos(second)").outputSchema(schema).build()).build();
-            List<List<Writable>> functions = new ArrayList<>();
-            List<Writable> firstRow = new ArrayList<>();
-            INDArray firstArr = Nd4j.linspace(1, 4, 4);
-            INDArray secondArr = Nd4j.linspace(1, 4, 4);
-            firstRow.add(new NDArrayWritable(firstArr));
-            firstRow.add(new NDArrayWritable(secondArr));
-            functions.add(firstRow);
-            List<List<Writable>> execute = LocalTransformExecutor.execute(functions, transformProcess);
-            INDArray firstResult = ((NDArrayWritable) execute.get(0).get(0)).get();
-            INDArray secondResult = ((NDArrayWritable) execute.get(0).get(1)).get();
-            INDArray expected = Transforms.sin(firstArr);
-            INDArray secondExpected = Transforms.cos(secondArr);
-            assertEquals(expected, firstResult);
-            assertEquals(secondExpected, secondResult);
-        });
-    }
 }

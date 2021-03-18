@@ -46,12 +46,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-
 public class TestNdArrReadWriteTxt extends BaseNd4jTestWithBackends {
+
+    @TempDir Path testDir;
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void compareAfterWrite(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void compareAfterWrite(Nd4jBackend backend) throws Exception {
         int [] ranksToCheck = new int[] {0,1,2,3,4};
         for (int i = 0; i < ranksToCheck.length; i++) {
 //            log.info("Checking read write arrays with rank " + ranksToCheck[i]);
@@ -82,7 +83,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNd4jReadWriteText(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testNd4jReadWriteText(Nd4jBackend backend) throws Exception {
 
         File dir = testDir.toFile();
         int count = 0;

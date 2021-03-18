@@ -50,7 +50,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvalParameters(Nd4jBackend backend) {
         assertThrows(IllegalStateException.class,() -> {
             int specCols = 5;

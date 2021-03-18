@@ -23,6 +23,7 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,7 +55,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
     private DataType initialType = Nd4j.dataType();
 
     @AfterEach
-    public void shutUp(Nd4jBackend backend) {
+    public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
@@ -62,6 +63,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testVariableTimeSeries1(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration
                 .builder()
@@ -170,6 +172,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testVariableTimeSeries2(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
@@ -247,7 +250,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "WS132143452343");
 
-        for( int j=0; j<100; j++ ){
+        for( int j = 0; j < 100; j++) {
 
             try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
@@ -409,7 +412,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         Files.delete(tmpFile);
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeleteMappedFile_2() throws Exception {
         assertThrows(IllegalArgumentException.class,() -> {
             if (!Nd4j.getEnvironment().isCPU())

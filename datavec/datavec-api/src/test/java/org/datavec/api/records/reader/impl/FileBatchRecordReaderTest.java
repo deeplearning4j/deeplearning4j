@@ -30,6 +30,8 @@ import org.datavec.api.writable.Writable;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.loader.FileBatch;
 import java.io.File;
@@ -40,13 +42,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 @DisplayName("File Batch Record Reader Test")
-class FileBatchRecordReaderTest extends BaseND4JTest {
+public class FileBatchRecordReaderTest extends BaseND4JTest {
+    @TempDir  Path testDir;
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Csv")
-    void testCsv(@TempDir  Path testDir) throws Exception {
+    void testCsv(Nd4jBackend backend) throws Exception {
         // This is an unrealistic use case - one line/record per CSV
         File baseDir = testDir.toFile();
         List<File> fileList = new ArrayList<>();
@@ -75,9 +80,10 @@ class FileBatchRecordReaderTest extends BaseND4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Csv Sequence")
-    void testCsvSequence(@TempDir  Path testDir) throws Exception {
+    void testCsvSequence(Nd4jBackend backend) throws Exception {
         // CSV sequence - 3 lines per file, 10 files
         File baseDir = testDir.toFile();
         List<File> fileList = new ArrayList<>();

@@ -88,7 +88,7 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
-        assertArrayEquals( d1, d2, 1e-1f,getFailureMessage());
+        assertArrayEquals( d1, d2, 1e-1f,getFailureMessage(backend));
 
     }
 
@@ -146,7 +146,7 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         d.put(0, 0.0);
         float[] result = new float[] {0, 2, 3, 4};
         d1 = d.asFloat();
-        assertArrayEquals(d1, result, 1e-1f,getFailureMessage());
+        assertArrayEquals(d1, result, 1e-1f,getFailureMessage(backend));
     }
 
 
@@ -156,12 +156,12 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[] {1, 2, 3};
-        assertArrayEquals(get, data, 1e-1f,getFailureMessage());
+        assertArrayEquals(get, data, 1e-1f,getFailureMessage(backend));
 
 
         float[] get2 = buffer.asFloat();
         float[] allData = buffer.getFloatsAt(0, (int) buffer.length());
-        assertArrayEquals(get2, allData, 1e-1f,getFailureMessage());
+        assertArrayEquals(get2, allData, 1e-1f,getFailureMessage(backend));
 
 
     }
@@ -173,13 +173,13 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[] {2, 3, 4};
-        assertArrayEquals(get, data, 1e-1f,getFailureMessage());
+        assertArrayEquals(get, data, 1e-1f,getFailureMessage(backend));
 
 
         float[] allButLast = new float[] {2, 3, 4, 5};
 
         float[] allData = buffer.getFloatsAt(1, (int) buffer.length());
-        assertArrayEquals(allButLast, allData, 1e-1f,getFailureMessage());
+        assertArrayEquals(allButLast, allData, 1e-1f,getFailureMessage(backend));
 
 
     }
@@ -190,7 +190,7 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     public void testAsBytes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(5);
         byte[] d = arr.data().asBytes();
-        assertEquals(4 * 5, d.length,getFailureMessage());
+        assertEquals(4 * 5, d.length,getFailureMessage(backend));
         INDArray rand = Nd4j.rand(3, 3);
         rand.data().asBytes();
 

@@ -69,7 +69,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
 
     @AfterEach
-    public void tearDown(Nd4jBackend backend) {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }

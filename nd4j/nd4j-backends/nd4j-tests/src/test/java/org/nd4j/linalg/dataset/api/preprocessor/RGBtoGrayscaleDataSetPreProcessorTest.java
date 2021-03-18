@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -39,7 +38,8 @@ public class RGBtoGrayscaleDataSetPreProcessorTest extends BaseNd4jTestWithBacke
         return 'c';
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_dataSetIsNull_expect_NullPointerException(Nd4jBackend backend) {
         assertThrows(NullPointerException.class,() -> {
             // Assemble

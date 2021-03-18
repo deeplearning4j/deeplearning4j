@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff.listeners;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
 
     @Override
     public char ordering() {
@@ -59,7 +61,8 @@ public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testProfilingListenerSimple(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    @Disabled
+    public void testProfilingListenerSimple(Nd4jBackend backend) throws Exception {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 3);

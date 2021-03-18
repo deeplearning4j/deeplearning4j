@@ -40,13 +40,13 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
 
 
     @BeforeEach
-    public void setUp(Nd4jBackend backend) {
+    public void setUp() {
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
     }
 
     @AfterEach
-    public void setDown(Nd4jBackend backend) {
+    public void setDown() {
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
     }

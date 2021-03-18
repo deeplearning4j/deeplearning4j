@@ -77,18 +77,18 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
         double sim = Transforms.cosineSim(vec1, vec2);
-        assertEquals( 1, sim, 1e-1,getFailureMessage());
+        assertEquals( 1, sim, 1e-1,getFailureMessage(backend));
 
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCosineDistance(){
+    public void testCosineDistance(Nd4jBackend backend){
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3});
         INDArray vec2 = Nd4j.create(new float[] {3, 5, 7});
         // 1-17*sqrt(2/581)
         double distance = Transforms.cosineDistance(vec1, vec2);
-        assertEquals(0.0025851, distance, 1e-7,getFailureMessage());
+        assertEquals(0.0025851, distance, 1e-7,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -97,7 +97,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.create(new double[] {55, 55});
         INDArray arr2 = Nd4j.create(new double[] {60, 60});
         double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr, arr2)).z().getDouble(0);
-        assertEquals(7.0710678118654755, result, 1e-1,getFailureMessage());
+        assertEquals(7.0710678118654755, result, 1e-1,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -137,7 +137,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray scalarMax = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).negi();
         INDArray postMax = Nd4j.ones(DataType.DOUBLE, 6);
         Nd4j.getExecutioner().exec(new ScalarMax(scalarMax, 1));
-        assertEquals(scalarMax, postMax,getFailureMessage());
+        assertEquals(scalarMax, postMax,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -147,14 +147,14 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().exec(new SetRange(linspace, 0, 1));
         for (int i = 0; i < linspace.length(); i++) {
             double val = linspace.getDouble(i);
-            assertTrue( val >= 0 && val <= 1,getFailureMessage());
+            assertTrue( val >= 0 && val <= 1,getFailureMessage(backend));
         }
 
         INDArray linspace2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(new SetRange(linspace2, 2, 4));
         for (int i = 0; i < linspace2.length(); i++) {
             double val = linspace2.getDouble(i);
-            assertTrue( val >= 2 && val <= 4,getFailureMessage());
+            assertTrue( val >= 2 && val <= 4,getFailureMessage(backend));
         }
     }
 
@@ -163,7 +163,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     public void testNormMax(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4});
         double normMax = Nd4j.getExecutioner().execAndReturn(new NormMax(arr)).z().getDouble(0);
-        assertEquals(4, normMax, 1e-1,getFailureMessage());
+        assertEquals(4, normMax, 1e-1,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -187,7 +187,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     public void testNorm2(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4});
         double norm2 = Nd4j.getExecutioner().execAndReturn(new Norm2(arr)).z().getDouble(0);
-        assertEquals(5.4772255750516612, norm2, 1e-1,getFailureMessage());
+        assertEquals(5.4772255750516612, norm2, 1e-1,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -198,7 +198,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray xDup = x.dup();
         INDArray solution = Nd4j.valueArrayOf(5, 2.0);
         opExecutioner.exec(new AddOp(new INDArray[]{x, xDup},new INDArray[]{x}));
-        assertEquals(solution, x,getFailureMessage());
+        assertEquals(solution, x,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -221,13 +221,13 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray xDup = x.dup();
         INDArray solution = Nd4j.valueArrayOf(5, 2.0);
         opExecutioner.exec(new AddOp(new INDArray[]{x, xDup},new INDArray[]{x}));
-        assertEquals(solution, x,getFailureMessage());
+        assertEquals(solution, x,getFailureMessage(backend));
         Sum acc = new Sum(x.dup());
         opExecutioner.exec(acc);
-        assertEquals(10.0, acc.getFinalResult().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals(10.0, acc.getFinalResult().doubleValue(), 1e-1,getFailureMessage(backend));
         Prod prod = new Prod(x.dup());
         opExecutioner.exec(prod);
-        assertEquals(32.0, prod.getFinalResult().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals(32.0, prod.getFinalResult().doubleValue(), 1e-1,getFailureMessage(backend));
     }
 
 
@@ -275,7 +275,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
         Variance variance = new Variance(x.dup(), true);
         opExecutioner.exec(variance);
-        assertEquals( 2.5, variance.getFinalResult().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals( 2.5, variance.getFinalResult().doubleValue(), 1e-1,getFailureMessage(backend));
     }
 
 
@@ -284,14 +284,14 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIamax(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
-        assertEquals( 3, Nd4j.getBlasWrapper().iamax(linspace),getFailureMessage());
+        assertEquals( 3, Nd4j.getBlasWrapper().iamax(linspace),getFailureMessage(backend));
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIamax2(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
-        assertEquals( 3, Nd4j.getBlasWrapper().iamax(linspace),getFailureMessage());
+        assertEquals( 3, Nd4j.getBlasWrapper().iamax(linspace),getFailureMessage(backend));
         val op = new ArgAmax(linspace);
 
         int iamax = Nd4j.getExecutioner().exec(op)[0].getInt(0);
@@ -307,11 +307,11 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
         Mean mean = new Mean(x);
         opExecutioner.exec(mean);
-        assertEquals( 3.0, mean.getFinalResult().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals( 3.0, mean.getFinalResult().doubleValue(), 1e-1,getFailureMessage(backend));
 
         Variance variance = new Variance(x.dup(), true);
         opExecutioner.exec(variance);
-        assertEquals( 2.5, variance.getFinalResult().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals( 2.5, variance.getFinalResult().doubleValue(), 1e-1,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -321,7 +321,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         val arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
         val softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
-        assertEquals(1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals(1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage(backend));
     }
 
 
@@ -332,7 +332,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         Pow pow = new Pow(oneThroughSix, 2);
         Nd4j.getExecutioner().exec(pow);
         INDArray answer = Nd4j.create(new double[] {1, 4, 9, 16, 25, 36});
-        assertEquals(answer, pow.z(),getFailureMessage());
+        assertEquals(answer, pow.z(),getFailureMessage(backend));
     }
 
 
@@ -384,7 +384,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         Log log = new Log(slice);
         opExecutioner.exec(log);
         INDArray assertion = Nd4j.create(new double[] {0., 1.09861229, 1.60943791});
-        assertEquals(assertion, slice,getFailureMessage());
+        assertEquals(assertion, slice,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -572,7 +572,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
-        assertEquals( Nd4j.create(expected), slice,getFailureMessage());
+        assertEquals( Nd4j.create(expected), slice,getFailureMessage(backend));
     }
 
     @ParameterizedTest
@@ -582,7 +582,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
         val softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
-        assertEquals(1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage());
+        assertEquals(1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage(backend));
     }
 
     @ParameterizedTest

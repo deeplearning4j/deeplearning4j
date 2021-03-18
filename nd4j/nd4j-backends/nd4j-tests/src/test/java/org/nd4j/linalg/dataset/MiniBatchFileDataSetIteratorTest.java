@@ -21,27 +21,25 @@
 package org.nd4j.linalg.dataset;
 
 
-import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-
 public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMiniBatches(@TempDir Path testDir) throws Exception {
+    public void testMiniBatches(Nd4jBackend backend) throws Exception {
         DataSet load = new IrisDataSetIterator(150, 150).next();
         final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load, 10, false, testDir.toFile());
         while (iter.hasNext())

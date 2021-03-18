@@ -22,6 +22,7 @@ package org.nd4j.evaluation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,6 +49,7 @@ public class NewInstanceTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testNewInstances(Nd4jBackend backend) {
         boolean print = true;
         Nd4j.getRandom().setSeed(12345);

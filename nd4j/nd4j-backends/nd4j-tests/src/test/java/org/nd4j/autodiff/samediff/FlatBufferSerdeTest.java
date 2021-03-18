@@ -72,6 +72,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
+
 
     @Override
     public char ordering(){
@@ -82,7 +84,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBasic(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testBasic(Nd4jBackend backend) throws Exception {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
@@ -121,7 +123,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
         int numOutputs = fg.outputsLength();
         List<IntPair> outputs = new ArrayList<>(numOutputs);
-        for( int i=0; i<numOutputs; i++ ){
+        for( int i = 0; i < numOutputs; i++) {
             outputs.add(fg.outputs(i));
         }
 
@@ -138,7 +140,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSimple(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testSimple(Nd4jBackend backend) throws Exception {
         for( int i = 0; i < 10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
@@ -268,7 +270,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTrainingSerde(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testTrainingSerde(Nd4jBackend backend) throws Exception {
 
         //Ensure 2 things:
         //1. Training config is serialized/deserialized correctly

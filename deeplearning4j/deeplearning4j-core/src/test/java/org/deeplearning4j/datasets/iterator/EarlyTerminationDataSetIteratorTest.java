@@ -23,7 +23,6 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -34,7 +33,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Early Termination Data Set Iterator Test")
 class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {

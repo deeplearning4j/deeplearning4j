@@ -55,7 +55,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
         INDArray sub = nd.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2));
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
-        assertEquals(Nd4j.create(new double[][] {{3, 4}, {6, 7}}), sub,getFailureMessage());
+        assertEquals(Nd4j.create(new double[][] {{3, 4}, {6, 7}}), sub,getFailureMessage(backend));
 
     }
 

@@ -112,7 +112,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     DataType initialType = Nd4j.dataType();
 
     @AfterEach
-    public void shutUp(Nd4jBackend backend) {
+    public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);

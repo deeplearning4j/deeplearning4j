@@ -195,7 +195,8 @@ public class ShapeTestC extends BaseNd4jTestWithBackends {
         assertArrayEquals(exp, norm);
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxisNormalization_3(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             val axis = new int[] {1, -2, 2};

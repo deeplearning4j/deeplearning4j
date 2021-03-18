@@ -195,7 +195,8 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInplaceOp1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             val arrayX = Nd4j.create(10, 10);

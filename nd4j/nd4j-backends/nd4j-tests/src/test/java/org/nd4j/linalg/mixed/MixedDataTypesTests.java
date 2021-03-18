@@ -384,7 +384,9 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayZ);
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+
     public void testTypesValidation_1(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
@@ -397,7 +399,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTypesValidation_2(Nd4jBackend backend) {
         assertThrows(RuntimeException.class,() -> {
             val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
@@ -412,7 +415,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTypesValidation_3(Nd4jBackend backend) {
         assertThrows(RuntimeException.class,() -> {
             val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
@@ -422,6 +426,8 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTypesValidation_4(Nd4jBackend backend) {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.DOUBLE);
@@ -485,7 +491,7 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBoolFloatCast2(){
+    public void testBoolFloatCast2(Nd4jBackend backend){
         val first = Nd4j.zeros(DataType.FLOAT, 3, 5000);
         INDArray asBool = first.castTo(DataType.BOOL);
         INDArray not = Transforms.not(asBool);  //
@@ -516,7 +522,7 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAssignScalarSimple(){
+    public void testAssignScalarSimple(Nd4jBackend backend){
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             INDArray arr = Nd4j.scalar(dt, 10.0);
             arr.assign(2.0);
@@ -526,7 +532,7 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSimple(){
+    public void testSimple(Nd4jBackend backend){
         Nd4j.create(1);
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.LONG}) {
 //            System.out.println("----- " + dt + " -----");
@@ -551,7 +557,7 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testWorkspaceBool(){
+    public void testWorkspaceBool(Nd4jBackend backend){
         val conf = WorkspaceConfiguration.builder().minSize(10 * 1024 * 1024)
                 .overallocationLimit(1.0).policyAllocation(AllocationPolicy.OVERALLOCATE)
                 .policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL)
@@ -559,7 +565,7 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
         val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
 
-        for( int i=0; i<10; i++ ) {
+        for( int i = 0; i < 10; i++ ) {
             try (val workspace = (Nd4jWorkspace)ws.notifyScopeEntered() ) {
                 val bool = Nd4j.create(DataType.BOOL, 1, 10);
                 val dbl = Nd4j.create(DataType.DOUBLE, 1, 10);
@@ -574,8 +580,9 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testArrayCreationFromPointer(Nd4jBackend backend) {
         val source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
 

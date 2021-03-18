@@ -139,7 +139,7 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         INDArray actualResult = data.mean(0);
         INDArray expectedResult = Nd4j.create(new double[] {3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6.,
                 6., 3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6., 6.}, new int[] {2, 4, 4});
-        assertEquals(expectedResult, actualResult,getFailureMessage());
+        assertEquals(expectedResult, actualResult,getFailureMessage(backend));
     }
 
 
@@ -154,7 +154,7 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4.,
                 4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new long[] {2, 4, 4});
-        assertEquals(expectedResult, actualResult,getFailureMessage());
+        assertEquals(expectedResult, actualResult,getFailureMessage(backend));
     }
 
     @ParameterizedTest

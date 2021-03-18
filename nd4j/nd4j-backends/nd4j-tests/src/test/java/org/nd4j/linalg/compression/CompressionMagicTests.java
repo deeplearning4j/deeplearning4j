@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CompressionMagicTests extends BaseNd4jTestWithBackends {
 
     @BeforeEach
-    public void setUp(Nd4jBackend backend) {
+    public void setUp() {
 
     }
 

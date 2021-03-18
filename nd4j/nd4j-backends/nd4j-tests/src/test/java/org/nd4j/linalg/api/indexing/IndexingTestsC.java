@@ -20,26 +20,18 @@
 
 package org.nd4j.linalg.api.indexing;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.IntervalIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndexAll;
-import org.nd4j.linalg.indexing.NewAxis;
-import org.nd4j.linalg.indexing.PointIndex;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
+import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -56,22 +48,22 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNegativeBounds() {
-       INDArray arr = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(2,5);
-       INDArrayIndex interval = NDArrayIndex.interval(0,1,-2,arr.size(1));
-       INDArray get = arr.get(NDArrayIndex.all(),interval);
-       INDArray assertion = Nd4j.create(new double[][]{
-               {1,2,3},
-               {6,7,8}
-       });
-       assertEquals(assertion,get);
+    public void testNegativeBounds(Nd4jBackend backend) {
+        INDArray arr = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(2,5);
+        INDArrayIndex interval = NDArrayIndex.interval(0,1,-2,arr.size(1));
+        INDArray get = arr.get(NDArrayIndex.all(),interval);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1,2,3},
+                {6,7,8}
+        });
+        assertEquals(assertion,get);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNewAxis() {
+    public void testNewAxis(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), newAxis(), newAxis(), all());
         long[] shapeAssertion = {3, 2, 1, 1, 2};
@@ -79,9 +71,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void broadcastBug() {
+    public void broadcastBug(Nd4jBackend backend) {
         INDArray a = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0}, new int[] {2, 2});
         final INDArray col = a.get(NDArrayIndex.all(), NDArrayIndex.point(0));
 
@@ -91,9 +83,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testIntervalsIn3D() {
+    public void testIntervalsIn3D(Nd4jBackend backend) {
         INDArray arr = Nd4j.arange(8).reshape(2, 2, 2).castTo(DataType.DOUBLE);
         INDArray assertion = Nd4j.create(new double[][] {{4, 5}, {6, 7}}).reshape(1, 2, 2);
         INDArray rest = arr.get(interval(1, 2), interval(0, 2), interval(0, 2));
@@ -101,9 +93,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSmallInterval() {
+    public void testSmallInterval(Nd4jBackend backend) {
         INDArray arr = Nd4j.arange(8).reshape(2, 2, 2).castTo(DataType.DOUBLE);
         INDArray assertion = Nd4j.create(new double[][] {{4, 5}, {6, 7}}).reshape(1, 2, 2);
         INDArray rest = arr.get(interval(1, 2), all(), all());
@@ -111,9 +103,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAllWithNewAxisAndInterval() {
+    public void testAllWithNewAxisAndInterval(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 2, 3);
         INDArray assertion2 = Nd4j.create(new double[][] {{7, 8, 9},}).reshape(1, 1, 3);
 
@@ -121,9 +113,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion2, get2);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAllWithNewAxisInMiddle() {
+    public void testAllWithNewAxisInMiddle(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 2, 3);
         INDArray assertion2 = Nd4j.create(new double[][] {{7, 8, 9}, {10, 11, 12}}).reshape(1, 2, 3);
 
@@ -131,20 +123,20 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion2, get2);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAllWithNewAxis() {
+    public void testAllWithNewAxis(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 2, 3);
         INDArray get = arr.get(newAxis(), all(), point(1));
         INDArray assertion = Nd4j.create(new double[][] {{4, 5, 6}, {10, 11, 12}, {16, 17, 18}, {22, 23, 24}})
-                        .reshape(1, 4, 3);
+                .reshape(1, 4, 3);
         assertEquals(assertion, get);
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testIndexingWithMmul() {
+    public void testIndexingWithMmul(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray b = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
 //        System.out.println(b);
@@ -154,9 +146,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, c);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPointPointInterval() {
+    public void testPointPointInterval(Nd4jBackend backend) {
         INDArray wholeArr = Nd4j.linspace(1, 36, 36, DataType.DOUBLE).reshape(4, 3, 3);
         INDArray get = wholeArr.get(point(0), interval(1, 3), interval(1, 3));
         INDArray assertion = Nd4j.create(new double[][] {{5, 6}, {8, 9}});
@@ -164,9 +156,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, get);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testIntervalLowerBound() {
+    public void testIntervalLowerBound(Nd4jBackend backend) {
         INDArray wholeArr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 2, 3);
         INDArray subarray = wholeArr.get(interval(1, 3), NDArrayIndex.point(0), NDArrayIndex.indices(0, 2));
         INDArray assertion = Nd4j.create(new double[][] {{7, 9}, {13, 15}});
@@ -176,9 +168,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetPointRowVector() {
+    public void testGetPointRowVector(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE).reshape(1, -1);
 
         INDArray arr2 = arr.get(point(0), interval(0, 100));
@@ -187,9 +179,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.linspace(1, 100, 100, DataType.DOUBLE), arr2);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSpecifiedIndexVector() {
+    public void testSpecifiedIndexVector(Nd4jBackend backend) {
         INDArray rootMatrix = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(4, 4);
         INDArray threeD = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         INDArray get = rootMatrix.get(all(), new SpecifiedIndex(0, 2));
@@ -205,9 +197,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPutRowIndexing() {
+    public void testPutRowIndexing(Nd4jBackend backend) {
         INDArray arr = Nd4j.ones(1, 10);
         INDArray row = Nd4j.create(1, 10);
 
@@ -216,9 +208,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(arr, row);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testVectorIndexing2() {
+    public void testVectorIndexing2(Nd4jBackend backend) {
         INDArray wholeVector = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).get(interval(1, 2, 3, true));
         INDArray assertion = Nd4j.create(new double[] {2, 4});
         assertEquals(assertion, wholeVector);
@@ -232,9 +224,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testOffsetsC() {
+    public void testOffsetsC(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         assertEquals(3, NDArrayIndex.offset(arr, 1, 1));
         assertEquals(3, NDArrayIndex.offset(arr, point(1), point(1)));
@@ -249,9 +241,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testIndexFor() {
+    public void testIndexFor(Nd4jBackend backend) {
         long[] shape = {1, 2};
         INDArrayIndex[] indexes = NDArrayIndex.indexesFor(shape);
         for (int i = 0; i < indexes.length; i++) {
@@ -259,9 +251,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetScalar() {
+    public void testGetScalar(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray d = arr.get(point(1));
         assertTrue(d.isScalar());
@@ -269,26 +261,26 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testVectorIndexing() {
+    public void testVectorIndexing(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE).reshape(1, -1);
         INDArray assertion = Nd4j.create(new double[] {2, 3, 4, 5});
         INDArray viewTest = arr.get(point(0), interval(1, 5));
         assertEquals(assertion, viewTest);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNegativeIndices() {
+    public void testNegativeIndices(Nd4jBackend backend) {
         INDArray test = Nd4j.create(10, 10, 10);
         test.putScalar(new int[] {0, 0, -1}, 1.0);
         assertEquals(1.0, test.getScalar(0, 0, -1).sumNumber());
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetIndices2d() {
+    public void testGetIndices2d(Nd4jBackend backend) {
         INDArray twoByTwo = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(3, 2);
         INDArray firstRow = twoByTwo.getRow(0);
         INDArray secondRow = twoByTwo.getRow(1);
@@ -305,9 +297,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.create(new double[] {4}, new int[]{1,1}), individualElement);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetRow() {
+    public void testGetRow(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.linspace(0, 14, 15, DataType.DOUBLE).reshape(3, 5);
         int[] toGet = {0, 1};
@@ -323,9 +315,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetRowEdgeCase() {
+    public void testGetRowEdgeCase(Nd4jBackend backend) {
         INDArray rowVec = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
         INDArray get = rowVec.getRow(0); //Returning shape [1,1]
 
@@ -333,9 +325,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(rowVec, get);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetColumnEdgeCase() {
+    public void testGetColumnEdgeCase(Nd4jBackend backend) {
         INDArray colVec = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1).transpose();
         INDArray get = colVec.getColumn(0); //Returning shape [1,1]
 
@@ -343,9 +335,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(colVec, get);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConcatColumns() {
+    public void testConcatColumns(Nd4jBackend backend) {
         INDArray input1 = Nd4j.zeros(2, 1).castTo(DataType.DOUBLE);
         INDArray input2 = Nd4j.ones(2, 1).castTo(DataType.DOUBLE);
         INDArray concat = Nd4j.concat(1, input1, input2);
@@ -353,18 +345,18 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, concat);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGetIndicesVector() {
+    public void testGetIndicesVector(Nd4jBackend backend) {
         INDArray line = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1);
         INDArray test = Nd4j.create(new double[] {2, 3});
         INDArray result = line.get(point(0), interval(1, 3));
         assertEquals(test, result);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testArangeMul() {
+    public void testArangeMul(Nd4jBackend backend) {
         INDArray arange = Nd4j.arange(1, 17).reshape(4, 4).castTo(DataType.DOUBLE);
         INDArrayIndex index = interval(0, 2);
         INDArray get = arange.get(index, index);
@@ -374,7 +366,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, mul);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIndexingThorough(){
         long[] fullShape = {3,4,5,6,7};
@@ -575,7 +567,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         return d;
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void debugging(){
         long[] inShape = {3,4};

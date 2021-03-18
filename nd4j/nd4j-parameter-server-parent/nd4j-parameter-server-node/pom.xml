@@ -111,7 +111,7 @@
                                 <include>*.java</include>
                                 <include>**/*.java</include>
                             </includes>
-                            <argLine> "</argLine>
+                            <argLine> </argLine>
                         </configuration>
                     </plugin>
                 </plugins>

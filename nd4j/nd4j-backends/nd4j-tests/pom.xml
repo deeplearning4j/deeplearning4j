@@ -303,7 +303,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine>-Dfile.encoding=UTF-8 "</argLine>
+                            <argLine>-Dfile.encoding=UTF-8 </argLine>
                         </configuration>
                     </plugin>
                 </plugins>

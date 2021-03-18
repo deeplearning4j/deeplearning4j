@@ -45,13 +45,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
 
     @BeforeEach
-    public void setUp(Nd4jBackend backend) {
+    public void setUp() {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.BANDWIDTH);
     }
 
     @AfterEach
-    public void tearDown(Nd4jBackend backend) {
+    public void tearDown() {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
@@ -109,7 +109,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertEquals(500, res);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Disabled
     public void testTrackerCpu_1(Nd4jBackend backend) {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("native"))
@@ -127,7 +128,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         assertTrue(bw > 0);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Disabled("useless these days")
     public void testTrackerGpu_1(Nd4jBackend backend) {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))

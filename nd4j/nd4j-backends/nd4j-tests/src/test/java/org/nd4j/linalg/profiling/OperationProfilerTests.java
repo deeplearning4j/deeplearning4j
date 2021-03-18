@@ -306,7 +306,8 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaNPanic1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
@@ -318,7 +319,8 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaNPanic2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
@@ -330,7 +332,8 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaNPanic3(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
@@ -343,7 +346,8 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScopePanic1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
@@ -362,7 +366,8 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScopePanic2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);

@@ -21,7 +21,6 @@ package org.datavec.api.transform.ops;
 
 
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
 import org.nd4j.common.tests.BaseND4JTest;
 import java.util.ArrayList;
 import java.util.Arrays;

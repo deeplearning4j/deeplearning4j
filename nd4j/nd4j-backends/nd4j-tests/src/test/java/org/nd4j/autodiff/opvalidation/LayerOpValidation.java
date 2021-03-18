@@ -27,6 +27,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -482,7 +483,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConv3d(Nd4jBackend backend) {
+    public void testConv3d(Nd4jBackend backend, TestInfo testInfo) {
         //Pooling3d, Conv3D, batch norm
         Nd4j.getRandom().setSeed(12345);
 
@@ -573,7 +574,7 @@ public class LayerOpValidation extends BaseOpValidation {
                     tc.testName(msg);
                     String error = OpValidation.validate(tc);
                     if (error != null) {
-                        failed.add(name);
+                        failed.add(testInfo.getTestMethod().get().getName());
                     }
                 }
             }
@@ -1353,7 +1354,8 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void exceptionThrown_WhenConv1DConfigInvalid(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             int nIn = 3;
@@ -1382,7 +1384,8 @@ public class LayerOpValidation extends BaseOpValidation {
 
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void exceptionThrown_WhenConv2DConfigInvalid(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             Nd4j.getRandom().setSeed(12345);
@@ -1405,7 +1408,8 @@ public class LayerOpValidation extends BaseOpValidation {
 
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void exceptionThrown_WhenConf3DInvalid(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
             Nd4j.getRandom().setSeed(12345);

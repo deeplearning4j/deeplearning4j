@@ -53,12 +53,12 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
 
 
     @BeforeEach
-    public void setUp(Nd4jBackend backend) {
+    public void setUp() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
     @AfterEach
-    public void setDown(Nd4jBackend backend) {
+    public void setDown() {
         Nd4j.setDefaultDataTypes(initialType, Nd4j.defaultFloatingPointType());
     }
 

@@ -34,7 +34,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,7 +45,6 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 @Disabled
 @DisplayName("Attention Layer Test")

@@ -39,8 +39,7 @@ public class CompositeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    @Test()
-    @ParameterizedTest
+     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void when_preConditionsIsNull_expect_NullPointerException(Nd4jBackend backend) {
         assertThrows(NullPointerException.class,() -> {

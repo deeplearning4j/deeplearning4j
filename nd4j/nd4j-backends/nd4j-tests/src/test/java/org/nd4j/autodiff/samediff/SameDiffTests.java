@@ -109,7 +109,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
     @BeforeEach
-    public void before(Nd4jBackend backend) {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -118,7 +118,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
     @AfterEach
-    public void after(Nd4jBackend backend) {
+    public void after() {
         Nd4j.setDataType(initialType);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);

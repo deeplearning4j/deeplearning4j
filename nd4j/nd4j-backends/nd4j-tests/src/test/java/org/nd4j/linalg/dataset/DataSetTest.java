@@ -51,8 +51,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @Slf4j
 
 public class DataSetTest extends BaseNd4jTestWithBackends {
-    
-      @ParameterizedTest
+
+    @TempDir Path testDir;
+
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testViewIterator(Nd4jBackend backend) {
         DataSetIterator iter = new ViewIterator(new IrisDataSetIterator(150, 150).next(), 10);
@@ -106,9 +108,9 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
 
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSplitTestAndTrain    (Nd4jBackend backend) {
+    public void testSplitTestAndTrain(Nd4jBackend backend) {
         INDArray labels = FeatureUtil.toOutcomeMatrix(new int[] {0, 0, 0, 0, 0, 0, 0, 0}, 1);
         DataSet data = new DataSet(Nd4j.rand(8, 1), labels);
 
@@ -116,7 +118,7 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
         assertEquals(train.getTrain().getLabels().length(), 6);
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
-        assertEquals(train.getTrain().getFeatures(), train2.getTrain().getFeatures(),getFailureMessage());
+        assertEquals(train.getTrain().getFeatures(), train2.getTrain().getFeatures(),getFailureMessage(backend));
 
         DataSet x0 = new IrisDataSetIterator(150, 150).next();
         SplitTestAndTrain testAndTrain = x0.splitTestAndTrain(10);
@@ -144,7 +146,7 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
         SplitTestAndTrain testAndTrainRng = x2.splitTestAndTrain(10, rngHere);
 
         assertArrayEquals(testAndTrainRng.getTrain().getFeatures().shape(),
-                        testAndTrain.getTrain().getFeatures().shape());
+                testAndTrain.getTrain().getFeatures().shape());
         assertEquals(testAndTrainRng.getTrain().getFeatures(), testAndTrain.getTrain().getFeatures());
         assertEquals(testAndTrainRng.getTrain().getLabels(), testAndTrain.getTrain().getLabels());
 
@@ -154,13 +156,13 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLabelCounts(Nd4jBackend backend) {
         DataSet x0 = new IrisDataSetIterator(150, 150).next();
-        assertEquals(0, x0.get(0).outcome(),getFailureMessage());
-        assertEquals( 0, x0.get(1).outcome(),getFailureMessage());
-        assertEquals(2, x0.get(149).outcome(),getFailureMessage());
+        assertEquals(0, x0.get(0).outcome(),getFailureMessage(backend));
+        assertEquals( 0, x0.get(1).outcome(),getFailureMessage(backend));
+        assertEquals(2, x0.get(149).outcome(),getFailureMessage(backend));
         Map<Integer, Double> counts = x0.labelCounts();
-        assertEquals(50, counts.get(0), 1e-1,getFailureMessage());
-        assertEquals(50, counts.get(1), 1e-1,getFailureMessage());
-        assertEquals(50, counts.get(2), 1e-1,getFailureMessage());
+        assertEquals(50, counts.get(0), 1e-1,getFailureMessage(backend));
+        assertEquals(50, counts.get(1), 1e-1,getFailureMessage(backend));
+        assertEquals(50, counts.get(2), 1e-1,getFailureMessage(backend));
 
     }
 
@@ -694,14 +696,14 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
 
         INDArray expLabels3d = Nd4j.create(3, 3, 4);
         expLabels3d.put(new INDArrayIndex[] {interval(0,1), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
-                        l3d1);
+                l3d1);
         expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
-                        NDArrayIndex.interval(0, 3)}, l3d2);
+                NDArrayIndex.interval(0, 3)}, l3d2);
         INDArray expLM3d = Nd4j.create(3, 3, 4);
         expLM3d.put(new INDArrayIndex[] {interval(0,1), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
-                        lm3d1);
+                lm3d1);
         expLM3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
-                        NDArrayIndex.interval(0, 3)}, lm3d2);
+                NDArrayIndex.interval(0, 3)}, lm3d2);
 
 
         DataSet merged3d = DataSet.merge(Arrays.asList(ds3d1, ds3d2));
@@ -752,52 +754,52 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShuffleNd(Nd4jBackend backend) {
-            int numDims = 7;
-            int nLabels = 3;
-            Random r = new Random();
+        int numDims = 7;
+        int nLabels = 3;
+        Random r = new Random();
 
 
-            int[] shape = new int[numDims];
-            int entries = 1;
-            for (int i = 0; i < numDims; i++) {
-                //randomly generating shapes bigger than 1
-                shape[i] = r.nextInt(4) + 2;
-                entries *= shape[i];
-            }
-            int labels = shape[0] * nLabels;
+        int[] shape = new int[numDims];
+        int entries = 1;
+        for (int i = 0; i < numDims; i++) {
+            //randomly generating shapes bigger than 1
+            shape[i] = r.nextInt(4) + 2;
+            entries *= shape[i];
+        }
+        int labels = shape[0] * nLabels;
 
-            INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.INT).reshape(shape);
-            INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.INT).reshape(shape[0], nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.INT).reshape(shape);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.INT).reshape(shape[0], nLabels);
 
-            DataSet ds = new DataSet(ds_data, ds_labels);
-            ds.shuffle();
+        DataSet ds = new DataSet(ds_data, ds_labels);
+        ds.shuffle();
 
-            //Checking Nd dataset which is the data
-            for (int dim = 1; dim < numDims; dim++) {
-                //get tensor along dimension - the order in every dimension but zero should be preserved
-                for (int tensorNum = 0; tensorNum < ds_data.tensorsAlongDimension(dim); tensorNum++) {
-                    //the difference between consecutive elements should be equal to the stride
-                    for (int i = 0, j = 1; j < shape[dim]; i++, j++) {
-                        int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
-                        int f_next_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(j);
-                        int f_element_diff = f_next_element - f_element;
-                        assertEquals(f_element_diff, ds_data.stride(dim));
-                    }
-                }
-            }
-
-            //Checking 2d, features
-            int dim = 1;
+        //Checking Nd dataset which is the data
+        for (int dim = 1; dim < numDims; dim++) {
             //get tensor along dimension - the order in every dimension but zero should be preserved
-            for (int tensorNum = 0; tensorNum < ds_labels.tensorsAlongDimension(dim); tensorNum++) {
+            for (int tensorNum = 0; tensorNum < ds_data.tensorsAlongDimension(dim); tensorNum++) {
                 //the difference between consecutive elements should be equal to the stride
-                for (int i = 0, j = 1; j < nLabels; i++, j++) {
-                    int l_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(i);
-                    int l_next_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(j);
-                    int l_element_diff = l_next_element - l_element;
-                    assertEquals(l_element_diff, ds_labels.stride(dim));
+                for (int i = 0, j = 1; j < shape[dim]; i++, j++) {
+                    int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
+                    int f_next_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(j);
+                    int f_element_diff = f_next_element - f_element;
+                    assertEquals(f_element_diff, ds_data.stride(dim));
                 }
             }
+        }
+
+        //Checking 2d, features
+        int dim = 1;
+        //get tensor along dimension - the order in every dimension but zero should be preserved
+        for (int tensorNum = 0; tensorNum < ds_labels.tensorsAlongDimension(dim); tensorNum++) {
+            //the difference between consecutive elements should be equal to the stride
+            for (int i = 0, j = 1; j < nLabels; i++, j++) {
+                int l_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(i);
+                int l_next_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(j);
+                int l_element_diff = l_next_element - l_element;
+                assertEquals(l_element_diff, ds_labels.stride(dim));
+            }
+        }
     }
 
     @ParameterizedTest
@@ -936,9 +938,9 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
 
             //Checking if the features and labels are equal
             assertEquals(iDataSet.getFeatures(),
-                            dsList.get(i).getFeatures().get(all(), all(), interval(0, minTSLength + i)));
+                    dsList.get(i).getFeatures().get(all(), all(), interval(0, minTSLength + i)));
             assertEquals(iDataSet.getLabels(),
-                            dsList.get(i).getLabels().get(all(), all(), interval(0, minTSLength + i)));
+                    dsList.get(i).getLabels().get(all(), all(), interval(0, minTSLength + i)));
         }
     }
 
@@ -964,8 +966,8 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
                         for (boolean lMask : b) {
 
                             DataSet ds = new DataSet((features ? f : null),
-                                            (labels ? (labelsSameAsFeatures ? f : l) : null), (fMask ? fm : null),
-                                            (lMask ? lm : null));
+                                    (labels ? (labelsSameAsFeatures ? f : l) : null), (fMask ? fm : null),
+                                    (lMask ? lm : null));
 
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             DataOutputStream dos = new DataOutputStream(baos);
@@ -1009,7 +1011,7 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
         boolean lMask = true;
 
         DataSet ds = new DataSet((features ? f : null), (labels ? (labelsSameAsFeatures ? f : l) : null),
-                        (fMask ? fm : null), (lMask ? lm : null));
+                (fMask ? fm : null), (lMask ? lm : null));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
@@ -1098,7 +1100,7 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDataSetMetaDataSerialization(@TempDir Path testDir,Nd4jBackend backend) throws IOException {
+    public void testDataSetMetaDataSerialization(Nd4jBackend backend) throws IOException {
 
         for(boolean withMeta : new boolean[]{false, true}) {
             // create simple data set with meta data object
@@ -1129,7 +1131,7 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiDataSetMetaDataSerialization(@TempDir Path testDir,Nd4jBackend nd4jBackend) throws IOException {
+    public void testMultiDataSetMetaDataSerialization(Nd4jBackend nd4jBackend) throws IOException {
 
         for(boolean withMeta : new boolean[]{false, true}) {
             // create simple data set with meta data object

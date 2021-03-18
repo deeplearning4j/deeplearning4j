@@ -99,7 +99,8 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarShuffle1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
             List<DataSet> listData = new ArrayList<>();

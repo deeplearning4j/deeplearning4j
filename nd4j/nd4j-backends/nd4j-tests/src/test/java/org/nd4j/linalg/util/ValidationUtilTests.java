@@ -51,9 +51,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testFileValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testFileValidation(Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -90,7 +92,7 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testZipValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testZipValidation(Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -141,7 +143,7 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testINDArrayTextValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testINDArrayTextValidation(Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -187,7 +189,7 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
         Nd4j.writeTxt(arr, fValid.getPath());
         byte[] indarrayTxtBytes = FileUtils.readFileToByteArray(fValid);
-        for( int i=0; i<30; i++ ){
+        for( int i = 0; i < 30; i++) {
             indarrayTxtBytes[i] = (byte)('a' + i);
         }
         File fCorrupt = new File(f, "corrupt.txt");
@@ -210,11 +212,9 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 //        System.out.println(vr4.toString());
     }
 
-
-    @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
-    public void testNpyValidation(@TempDir Path testDir) throws Exception {
-
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNpyValidation(Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -283,9 +283,9 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNpzValidation(@TempDir Path testDIr,Nd4jBackend backend) throws Exception {
+    public void testNpzValidation(Nd4jBackend backend) throws Exception {
 
-        File f = testDIr.toFile();
+        File f = testDir.toFile();
 
         //Test not existent file:
         File fNonExistent = new File("doesntExist.npz");
@@ -328,7 +328,7 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
         //Test corrupted npz format:
         File fValid = new ClassPathResource("numpy_arrays/npz/float32.npz").getFile();
         byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
-        for( int i=0; i<30; i++ ){
+        for( int i = 0; i < 30; i++) {
             numpyBytes[i] = 0;
         }
         File fCorrupt = new File(f, "corrupt.npz");
@@ -353,7 +353,7 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNumpyTxtValidation(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testNumpyTxtValidation(Nd4jBackend backend) throws Exception {
         File f = testDir.toFile();
 
         //Test not existent file:
@@ -422,7 +422,7 @@ public class ValidationUtilTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testValidateSameDiff(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testValidateSameDiff(Nd4jBackend backend) throws Exception {
         Nd4j.setDataType(DataType.FLOAT);
 
         File f = testDir.toFile();

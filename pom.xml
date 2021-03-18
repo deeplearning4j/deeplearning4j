@@ -319,8 +319,7 @@
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
         <rxjava.version>2.2.0</rxjava.version>
-        <kotlin.version>1.4.30</kotlin.version>
-        <junit4git.version>1.3</junit4git.version>
+        <kotlin.version>1.4.31</kotlin.version>
 
     </properties>
 
@@ -473,6 +472,15 @@
                             <version>${maven-surefire-plugin.version}</version>
                         </dependency>
                     </dependencies>
+                    <configuration>
+                        <classpathDependencyExcludes>
+                            <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
+                            <classpathDependencyExclude>com.google.android:android
+                            </classpathDependencyExclude>
+                        </classpathDependencyExcludes>
+                        <useSystemClassLoader>true</useSystemClassLoader>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.jetbrains.kotlin</groupId>
@@ -491,12 +499,12 @@
                         <dependency>
                             <groupId>org.jetbrains.kotlin</groupId>
                             <artifactId>kotlin-maven-allopen</artifactId>
-                            <version>1.4.30-M1</version>
+                            <version>${kotlin.version}</version>
                         </dependency>
                         <dependency>
                             <groupId>org.jetbrains.kotlin</groupId>
                             <artifactId>kotlin-maven-noarg</artifactId>
-                            <version>1.4.30-M1</version>
+                            <version>${kotlin.version}</version>
                         </dependency>
                     </dependencies>
                     <executions>

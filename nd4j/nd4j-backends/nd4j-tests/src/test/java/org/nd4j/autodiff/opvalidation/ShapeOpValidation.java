@@ -28,6 +28,7 @@ import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.OpValidationSuite;
@@ -83,7 +84,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConcat(Nd4jBackend backend) {
+    public void testConcat(Nd4jBackend backend, TestInfo testInfo) {
 //        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
         int[] concatDim = new int[]{0, 0, 0};
         List<List<int[]>> origShapes = new ArrayList<>();
@@ -115,7 +116,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             String error = OpValidation.validate(tc);
             if(error != null){
-                failed.add(name);
+                failed.add(testInfo.getTestMethod().get().getName());
             }
         }
 
@@ -285,7 +286,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSqueezeGradient(Nd4jBackend backend) {
+    public void testSqueezeGradient(Nd4jBackend backend,TestInfo testInfo) {
         val origShape = new long[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
@@ -339,7 +340,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc, true);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(testInfo.getTestMethod().get().getName());
                 }
             }
         }
@@ -580,8 +581,9 @@ public class ShapeOpValidation extends BaseOpValidation {
         return Long.MAX_VALUE;
     }
 
-    @Test()
-    public void testStack(Nd4jBackend backend) {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStack(Nd4jBackend backend,TestInfo testInfo) {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -661,7 +663,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                     String error = OpValidation.validate(tc);
                     if(error != null){
-                        failed.add(name);
+                        failed.add(testInfo.getTestMethod().get().getName());
                     }
                 }
             }

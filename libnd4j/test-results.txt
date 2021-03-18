@@ -5,7 +5,7 @@ Linux
 [INFO] Total time:  14.610 s
 [INFO] Finished at: 2021-03-06T15:35:28+09:00
 [INFO] ------------------------------------------------------------------------
-[WARNING] The requested profile "test-nd4j-native" could not be activated because it does not exist.
+[WARNING] The requested profile "nd4j-tests-cpu" could not be activated because it does not exist.
 [ERROR] Failed to execute goal org.bytedeco:javacpp:1.5.4:build (libnd4j-test-run) on project libnd4j: Execution libnd4j-test-run of goal org.bytedeco:javacpp:1.5.4:build failed: Process exited with an error: 127 -> [Help 1]
 [ERROR] 
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
@@ -749,7 +749,7 @@ make[1]: Leaving directory '/c/Users/agibs/Documents/GitHub/eclipse-deeplearning
 [INFO] Total time:  15.482 s
 [INFO] Finished at: 2021-03-06T15:27:35+09:00
 [INFO] ------------------------------------------------------------------------
-[WARNING] The requested profile "test-nd4j-native" could not be activated because it does not exist.
+[WARNING] The requested profile "nd4j-tests-cpu" could not be activated because it does not exist.
 [ERROR] Failed to execute goal org.bytedeco:javacpp:1.5.4:build (libnd4j-test-run) on project libnd4j: Execution libnd4j-test-run of goal org.bytedeco:javacpp:1.5.4:build failed: Process exited with an error: 127 -> [Help 1]
 [ERROR] 
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.

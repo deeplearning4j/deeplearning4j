@@ -34,5 +34,5 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn   -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"  -Ptest-nd4j-native --also-make  clean test
+          mvn   -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"  -Pnd4j-tests-cpu --also-make  clean test
 

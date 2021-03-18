@@ -152,7 +152,7 @@ public class LoneTest extends BaseNd4jTestWithBackends {
     public void maskWhenMerge(Nd4jBackend backend) {
         DataSet dsA = new DataSet(Nd4j.linspace(1, 15, 15).reshape(1, 3, 5), Nd4j.zeros(1, 3, 5));
         DataSet dsB = new DataSet(Nd4j.linspace(1, 9, 9).reshape(1, 3, 3), Nd4j.zeros(1, 3, 3));
-        List<DataSet> dataSetList = new ArrayList<DataSet>();
+        List<DataSet> dataSetList = new ArrayList<>();
         dataSetList.add(dsA);
         dataSetList.add(dsB);
         DataSet fullDataSet = DataSet.merge(dataSetList);
@@ -175,7 +175,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
 //        System.out.println(b);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     //broken at a threshold
     public void testArgMax(Nd4jBackend backend) {
         int max = 63;
@@ -263,7 +264,8 @@ public class LoneTest extends BaseNd4jTestWithBackends {
 //        log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
     }
 
-    @Test()
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void checkIllegalElementOps(Nd4jBackend backend) {
         assertThrows(Exception.class,() -> {
             INDArray A = Nd4j.linspace(1, 20, 20).reshape(4, 5);
@@ -328,13 +330,13 @@ public class LoneTest extends BaseNd4jTestWithBackends {
             reshaped.getDouble(i);
         }
         for (int j=0;j<arr.slices();j++) {
-            for (int k=0;k<arr.slice(j).length();k++) {
+            for (int k = 0; k < arr.slice(j).length(); k++) {
 //                log.info("\nArr: slice " + j + " element " + k + " " + arr.slice(j).getDouble(k));
                 arr.slice(j).getDouble(k);
             }
         }
-        for (int j=0;j<reshaped.slices();j++) {
-            for (int k=0;k<reshaped.slice(j).length();k++) {
+        for (int j = 0;j < reshaped.slices(); j++) {
+            for (int k = 0;k < reshaped.slice(j).length(); k++) {
 //                log.info("\nReshaped: slice " + j + " element " + k + " " + reshaped.slice(j).getDouble(k));
                 reshaped.slice(j).getDouble(k);
             }

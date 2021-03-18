@@ -23,6 +23,7 @@ package org.nd4j.linalg;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -58,11 +59,12 @@ public class ToStringTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testToStringScalars(){
+    @Disabled
+    public void testToStringScalars(Nd4jBackend backend){
         DataType[] dataTypes = new DataType[]{DataType.FLOAT, DataType.DOUBLE, DataType.BOOL, DataType.INT, DataType.UINT32};
         String[] strs = new String[]{"1.0000", "1.0000", "true", "1", "1"};
 
-        for(int dt=0; dt<5; dt++ ) {
+        for(int dt = 0; dt < 5; dt++) {
             for (int i = 0; i < 5; i++) {
                 long[] shape = ArrayUtil.nTimes(i, 1L);
                 INDArray scalar = Nd4j.scalar(1.0f).castTo(dataTypes[dt]).reshape(shape);

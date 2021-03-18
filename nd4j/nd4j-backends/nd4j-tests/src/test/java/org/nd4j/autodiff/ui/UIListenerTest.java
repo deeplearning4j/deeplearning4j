@@ -56,6 +56,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class UIListenerTest extends BaseNd4jTestWithBackends {
 
 
+    @TempDir Path testDir;
+
     @Override
     public char ordering() {
         return 'c';
@@ -65,7 +67,7 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUIListenerBasic(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testUIListenerBasic(Nd4jBackend backend) throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -102,7 +104,7 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUIListenerContinue(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testUIListenerContinue(Nd4jBackend backend) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         SameDiff sd1 = getSimpleNet();
@@ -194,7 +196,7 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUIListenerBadContinue(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testUIListenerBadContinue(Nd4jBackend backend) throws Exception {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
         SameDiff sd1 = getSimpleNet();
 
@@ -275,7 +277,7 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
     }
 
 
-    private static SameDiff getSimpleNet(){
+    private static SameDiff getSimpleNet() {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);

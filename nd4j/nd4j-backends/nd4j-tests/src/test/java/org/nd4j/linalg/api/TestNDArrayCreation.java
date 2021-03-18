@@ -64,7 +64,6 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -79,7 +78,6 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -100,7 +98,8 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateNpy3(Nd4jBackend backend) throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/rank3.npy").getFile());
         assertEquals(8, arrCreate.length());
@@ -111,8 +110,9 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
         assertEquals(arrCreate.data().address(), pointer.address());
     }
 
-    @Test
     @Disabled // this is endless test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEndlessAllocation(Nd4jBackend backend) {
         Nd4j.getEnvironment().setMaxSpecialMemory(1);
         while (true) {
@@ -121,9 +121,10 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
     @Disabled("This test is designed to run in isolation. With parallel gc it makes no real sense since allocated amount changes at any time")
-    public void testAllocationLimits() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAllocationLimits(Nd4jBackend backend) throws Exception {
         Nd4j.create(1);
 
         val origDeviceLimit = Nd4j.getEnvironment().getDeviceLimit(0);

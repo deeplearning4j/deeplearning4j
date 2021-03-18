@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 public class DataSetUtilsTest extends BaseNd4jTestWithBackends {
 
+	@TempDir Path tmpFld;
 
 	@Override
 	public char ordering(){
@@ -53,10 +54,9 @@ public class DataSetUtilsTest extends BaseNd4jTestWithBackends {
 	//
 	private SIS sis;
 	//
-	@Test
 	@ParameterizedTest
 	@MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-	public void testAll(@TempDir Path tmpFld,Nd4jBackend backend) {
+	public void testAll(Nd4jBackend backend) {
 		//
 		sis = new SIS();
 		//

@@ -145,6 +145,10 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>${maven-enforcer-plugin.version}</version>
                 <executions>
@@ -158,7 +162,7 @@
                             <skip>${skipBackendChoice}</skip>
                             <rules>
                                 <requireActiveProfile>
-                                    <profiles>test-nd4j-native,test-nd4j-cuda-11.0</profiles>
+                                    <profiles>nd4j-tests-cpu,nd4j-tests-cuda</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>
@@ -227,43 +231,6 @@
             </plugin>
         </plugins>
 
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <inherited>true</inherited>
-                    <configuration>
-                        <!--
-                         By default: Surefire will set the classpath based on the manifest. Because tests are not included
-                         in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
-                         function correctly without this configuration.
-                         For example, tests for custom layers (where the custom layer is defined in the test directory)
-                         will fail due to the custom layer not being found on the classpath.
-                         http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
-                         -->
-                        <useSystemClassLoader>true</useSystemClassLoader>
-                        <useManifestOnlyJar>false</useManifestOnlyJar>
-                        <argLine> -Dfile.encoding=UTF-8 -Xmx8g "</argLine>
-                        <includes>
-                            <!-- Default setting only runs tests that start/end with "Test" -->
-                            <include>*.java</include>
-                            <include>**/*.java</include>
-                        </includes>
-                    </configuration>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.apache.maven.surefire</groupId>
-                            <artifactId>surefire-junit-platform</artifactId>
-                            <version>${maven-surefire-plugin.version}</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-                <plugin>
-                    <groupId>org.eclipse.m2e</groupId>
-                    <artifactId>lifecycle-mapping</artifactId>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <profiles>
@@ -290,10 +257,10 @@
                 <module>deeplearning4j-cuda</module>
             </modules>
         </profile>
-        <!-- For running unit tests with nd4j-native: "mvn clean test -P test-nd4j-native"
+        <!-- For running unit tests with nd4j-native: "mvn clean test -P nd4j-tests-cpu"
              Note that this excludes DL4J-cuda -->
         <profile>
-            <id>test-nd4j-native</id>
+            <id>nd4j-tests-cpu</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -311,70 +278,10 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <inherited>true</inherited>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.nd4j</groupId>
-                                <artifactId>nd4j-native</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.junit.jupiter</groupId>
-                                <artifactId>junit-jupiter-engine</artifactId>
-                                <version>${junit.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.junit.jupiter</groupId>
-                                <artifactId>junit-jupiter-params</artifactId>
-                                <version>${junit.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.apache.maven.surefire</groupId>
-                                <artifactId>surefire-junit-platform</artifactId>
-                                <version>${maven-surefire-plugin.version}</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <environmentVariables>
-
-                            </environmentVariables>
-                            <testSourceDirectory>src/test/java</testSourceDirectory>
-                            <includes>
-                                <include>*.java</include>
-                                <include>**/*.java</include>
-                                <include>**/Test*.java</include>
-                                <include>**/*Test.java</include>
-                                <include>**/*TestCase.java</include>
-                            </includes>
-                            <junitArtifactName>org.junit.jupiter:junit-jupiter-engine</junitArtifactName>
-                            <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>
-                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
-                                </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>
-                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
-                                </org.nd4j.linalg.tests.backendstorun>
-                            </systemPropertyVariables>
-                            <!--
-                                Maximum heap size was set to 8g, as a minimum required value for tests run.
-                                Depending on a build machine, default value is not always enough.
-
-                                For testing large zoo models, this may not be enough (so comment it out).
-                            -->
-                            <argLine></argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
+            <id>nd4j-tests-cuda</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -392,43 +299,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-            <!-- Default to ALL modules here, unlike nd4j-native -->
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${maven-surefire-plugin.version}</version>
-                        <configuration>
-                            <environmentVariables>
-                            </environmentVariables>
-                            <testSourceDirectory>src/test/java</testSourceDirectory>
-                            <includes>
-                                <include>*.java</include>
-                                <include>**/*.java</include>
-                                <include>**/Test*.java</include>
-                                <include>**/*Test.java</include>
-                                <include>**/*TestCase.java</include>
-                            </includes>
-                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
-                            <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>
-                                    org.nd4j.linalg.jcublas.JCublasBackend
-                                </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>
-                                    org.nd4j.linalg.jcublas.JCublasBackend
-                                </org.nd4j.linalg.tests.backendstorun>
-                            </systemPropertyVariables>
-                            <!--
-                                Maximum heap size was set to 6g, as a minimum required value for tests run.
-                                Depending on a build machine, default value is not always enough.
-                            -->
-                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
-                        </configuration>
-
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>

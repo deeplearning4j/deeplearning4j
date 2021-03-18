@@ -48,12 +48,12 @@ public class RavelIndexTest extends BaseNd4jTestWithBackends {
 
 
     @BeforeEach
-    public void setUp(Nd4jBackend backend) {
+    public void setUp() {
         Nd4j.setDataType(DataType.FLOAT);
     }
 
     @AfterEach
-    public void setDown(Nd4jBackend backend) {
+    public void setDown() {
         Nd4j.setDataType(initialType);
     }
 

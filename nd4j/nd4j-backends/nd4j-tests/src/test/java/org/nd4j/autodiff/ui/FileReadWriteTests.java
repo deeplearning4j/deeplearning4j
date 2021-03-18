@@ -64,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 public class FileReadWriteTests extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
 
     @Override
     public char ordering(){
@@ -81,7 +82,7 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSimple(@TempDir Path testDir,Nd4jBackend backend) throws IOException {
+    public void testSimple(Nd4jBackend backend) throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
         SDVariable sum = v.sum();
@@ -163,7 +164,7 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
 
         //Append a number of events
         w.registerEventName("accuracy");
-        for( int iter=0; iter<3; iter++) {
+        for( int iter = 0; iter < 3; iter++) {
             long t = System.currentTimeMillis();
             w.writeScalarEvent("accuracy", LogFileWriter.EventSubtype.EVALUATION, t, iter, 0, 0.5 + 0.1 * iter);
         }
@@ -175,7 +176,7 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
         UIAddName addName = (UIAddName) events.get(0).getRight();
         assertEquals("accuracy", addName.name());
 
-        for( int i=1; i<4; i++ ){
+        for( int i = 1; i < 4; i++ ){
             FlatArray fa = (FlatArray) events.get(i).getRight();
             INDArray arr = Nd4j.createFromFlatArray(fa);
 
@@ -186,7 +187,7 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNullBinLabels(@TempDir Path testDir,Nd4jBackend backend) throws Exception{
+    public void testNullBinLabels(Nd4jBackend backend) throws Exception{
         File dir = testDir.toFile();
         File f = new File(dir, "temp.bin");
         LogFileWriter w = new LogFileWriter(f);

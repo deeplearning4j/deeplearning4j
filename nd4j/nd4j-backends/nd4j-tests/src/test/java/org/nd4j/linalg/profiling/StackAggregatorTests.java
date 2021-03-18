@@ -50,14 +50,14 @@ public class StackAggregatorTests extends BaseNd4jTestWithBackends {
     }
 
     @BeforeEach
-    public void setUp(Nd4jBackend backend) {
+    public void setUp() {
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().stackTrace(true).build());
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
         OpProfiler.getInstance().reset();
     }
 
     @AfterEach
-    public void tearDown(Nd4jBackend backend) {
+    public void tearDown() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
