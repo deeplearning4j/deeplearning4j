@@ -24,6 +24,7 @@ import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.recordreader.ImageRecordReader;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
@@ -39,11 +40,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Label Generator Test")
 class LabelGeneratorTest {
 
-    @TempDir
-    public Path testDir;
 
     @Test
     @DisplayName("Test Parent Path Label Generator")
+    @Disabled
     void testParentPathLabelGenerator(@TempDir Path testDir) throws Exception {
         File orig = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile();
         for (String dirPrefix : new String[] { "m.", "m" }) {
