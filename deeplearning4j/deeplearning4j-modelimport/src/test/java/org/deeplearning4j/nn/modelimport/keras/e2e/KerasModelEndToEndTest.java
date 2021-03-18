@@ -79,6 +79,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @Slf4j
 @DisplayName("Keras Model End To End Test")
+@Disabled
 class KerasModelEndToEndTest extends BaseDL4JTest {
 
     private static final String GROUP_ATTR_INPUTS = "inputs";
