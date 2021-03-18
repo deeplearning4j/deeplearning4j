@@ -33,14 +33,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,12 +56,18 @@ public class TestSimpleRnn extends BaseDL4JTest {
 
 
     public static Stream<Arguments> params() {
-        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(RNNFormat rnnFormat : RNNFormat.values()) {
+                args.add(Arguments.of(rnnFormat,nd4jBackend));
+            }
+        }
+        return args.stream();
     }
 
     @ParameterizedTest
-    @MethodSource("#params")
-    public void testSimpleRnn(RNNFormat rnnDataFormat) {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestRnnLayers#params")
+    public void testSimpleRnn(RNNFormat rnnDataFormat, Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
         int m = 3;
@@ -126,8 +136,8 @@ public class TestSimpleRnn extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("#params")
-    public void testBiasInit(RNNFormat rnnDataFormat) {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestRnnLayers#params")
+    public void testBiasInit(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 5;
         int layerSize = 6;

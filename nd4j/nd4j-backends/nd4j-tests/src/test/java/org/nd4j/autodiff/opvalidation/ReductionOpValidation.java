@@ -721,7 +721,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 6:
                         if (OpValidationSuite.IGNORE_FAILING) {
-                            //https://github.com/deeplearning4j/deeplearning4j/issues/6069
+                            //https://github.com/eclipse/deeplearning4j/issues/6069
                             continue;
                         }
                         name = "dot";

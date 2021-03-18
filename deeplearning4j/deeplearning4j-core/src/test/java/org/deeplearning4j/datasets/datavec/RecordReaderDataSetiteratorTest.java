@@ -20,6 +20,9 @@
 package org.deeplearning4j.datasets.datavec;
 
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.guava.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -72,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 @DisplayName("Record Reader Data Setiterator Test")
+@Disabled
 class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
     @Override
@@ -82,9 +86,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
     @TempDir
     public Path temporaryFolder;
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader")
-    void testRecordReader() throws Exception {
+    void testRecordReader(Nd4jBackend nd4jBackend) throws Exception {
         RecordReader recordReader = new CSVRecordReader();
         FileSplit csv = new FileSplit(Resources.asFile("csv-example.csv"));
         recordReader.initialize(csv);
@@ -93,9 +98,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(34, next.numExamples());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Max Batch Limit")
-    void testRecordReaderMaxBatchLimit() throws Exception {
+    void testRecordReaderMaxBatchLimit(Nd4jBackend backend) throws Exception {
         RecordReader recordReader = new CSVRecordReader();
         FileSplit csv = new FileSplit(Resources.asFile("csv-example.csv"));
         recordReader.initialize(csv);
@@ -108,9 +114,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(false, iter.hasNext());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Multi Regression")
-    void testRecordReaderMultiRegression() throws Exception {
+    void testRecordReaderMultiRegression(Nd4jBackend backend) throws Exception {
         for (boolean builder : new boolean[] { false, true }) {
             RecordReader csv = new CSVRecordReader();
             csv.initialize(new FileSplit(Resources.asFile("iris.txt")));
@@ -138,9 +145,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader")
-    void testSequenceRecordReader() throws Exception {
+    void testSequenceRecordReader(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -217,9 +225,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(dsList.get(2).getLabels(), expL2);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Meta")
-    void testSequenceRecordReaderMeta() throws Exception {
+    void testSequenceRecordReaderMeta(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -244,9 +253,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Regression")
-    void testSequenceRecordReaderRegression() throws Exception {
+    void testSequenceRecordReaderRegression(Nd4jBackend backend) throws Exception {
         // need to manually extract
         File rootDir = temporaryFolder.toFile();
         for (int i = 0; i < 3; i++) {
@@ -296,9 +306,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(3, count);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Multi Regression")
-    void testSequenceRecordReaderMultiRegression() throws Exception {
+    void testSequenceRecordReaderMultiRegression(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -351,9 +362,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(3, count);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Reset")
-    void testSequenceRecordReaderReset() throws Exception {
+    void testSequenceRecordReaderReset(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -385,9 +397,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test CSV Loading Regression")
-    void testCSVLoadingRegression() throws Exception {
+    void testCSVLoadingRegression(Nd4jBackend backend) throws Exception {
         int nLines = 30;
         int nFeatures = 5;
         int miniBatchSize = 10;
@@ -447,9 +460,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         return new Pair<>(dArr, temp);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Variable Length Sequence")
-    void testVariableLengthSequence() throws Exception {
+    void testVariableLengthSequence(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -582,9 +596,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Single Reader")
-    void testSequenceRecordReaderSingleReader() throws Exception {
+    void testSequenceRecordReaderSingleReader(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -680,9 +695,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(1, iteratorRegression.totalOutcomes());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Single Reader With Empty Sequence Throws")
-    void testSequenceRecordReaderSingleReaderWithEmptySequenceThrows() {
+    void testSequenceRecordReaderSingleReaderWithEmptySequenceThrows(Nd4jBackend backend) {
         assertThrows(ZeroLengthSequenceException.class, () -> {
             SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
             reader.initialize(new FileSplit(Resources.asFile("empty.txt")));
@@ -690,9 +706,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Two Readers With Empty Feature Sequence Throws")
-    void testSequenceRecordReaderTwoReadersWithEmptyFeatureSequenceThrows() {
+    void testSequenceRecordReaderTwoReadersWithEmptyFeatureSequenceThrows(Nd4jBackend backend) {
         assertThrows(ZeroLengthSequenceException.class, () -> {
             SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
             SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -702,9 +719,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Two Readers With Empty Label Sequence Throws")
-    void testSequenceRecordReaderTwoReadersWithEmptyLabelSequenceThrows() {
+    void testSequenceRecordReaderTwoReadersWithEmptyLabelSequenceThrows(Nd4jBackend backend) {
         assertThrows(ZeroLengthSequenceException.class, () -> {
             SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
             SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -715,9 +733,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Sequence Record Reader Single Reader Meta Data")
-    void testSequenceRecordReaderSingleReaderMetaData() throws Exception {
+    void testSequenceRecordReaderSingleReaderMetaData(Nd4jBackend backend) throws Exception {
         File rootDir = temporaryFolder.toFile();
         // need to manually extract
         for (int i = 0; i < 3; i++) {
@@ -744,9 +763,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Seq RRDSI Array Writable One Reader")
-    void testSeqRRDSIArrayWritableOneReader() {
+    void testSeqRRDSIArrayWritableOneReader(Nd4jBackend backend) {
         List<List<Writable>> sequence1 = new ArrayList<>();
         sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new IntWritable(0)));
         sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 4, 5, 6 }, new long[] { 1, 3 })), new IntWritable(1)));
@@ -767,16 +787,17 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Seq RRDSI Array Writable One Reader Regression")
-    void testSeqRRDSIArrayWritableOneReaderRegression() {
+    void testSeqRRDSIArrayWritableOneReaderRegression(Nd4jBackend backend) {
         // Regression, where the output is an array writable
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 100, 200, 300 }, new long[] { 1, 3 }))));
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 4, 5, 6 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 400, 500, 600 }, new long[] { 1, 3 }))));
+        sequence1.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 100, 200, 300 }, new long[] { 1, 3 }))));
+        sequence1.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 4, 5, 6 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 400, 500, 600 }, new long[] { 1, 3 }))));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 7, 8, 9 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 700, 800, 900 }, new long[] { 1, 3 }))));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 10, 11, 12 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 1000, 1100, 1200 }, new long[] { 1, 3 }))));
+        sequence2.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 7, 8, 9 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 700, 800, 900 }, new long[] { 1, 3 }))));
+        sequence2.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 10, 11, 12 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 1000, 1100, 1200 }, new long[] { 1, 3 }))));
         SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
         SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rr, 2, -1, 1, true);
         DataSet ds = iter.next();
@@ -791,16 +812,17 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Seq RRDSI Multiple Array Writables One Reader")
-    void testSeqRRDSIMultipleArrayWritablesOneReader() {
+    void testSeqRRDSIMultipleArrayWritablesOneReader(Nd4jBackend backend) {
         // Input with multiple array writables:
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 100, 200, 300 }, new long[] { 1, 3 })), new IntWritable(0)));
+        sequence1.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 100, 200, 300 }, new long[] { 1, 3 })), new IntWritable(0)));
         sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 4, 5, 6 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 400, 500, 600 }, new long[] { 1, 3 })), new IntWritable(1)));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 7, 8, 9 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 700, 800, 900 }, new long[] { 1, 3 })), new IntWritable(2)));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 10, 11, 12 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 1000, 1100, 1200 }, new long[] { 1, 3 })), new IntWritable(3)));
+        sequence2.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 7, 8, 9 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 700, 800, 900 }, new long[] { 1, 3 })), new IntWritable(2)));
+        sequence2.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 10, 11, 12 }, new long[] { 1, 3 })), new NDArrayWritable(Nd4j.create(new double[] { 1000, 1100, 1200 }, new long[] { 1, 3 })), new IntWritable(3)));
         SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
         SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rr, 2, 4, 2, false);
         DataSet ds = iter.next();
@@ -815,22 +837,23 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Seq RRDSI Array Writable Two Readers")
-    void testSeqRRDSIArrayWritableTwoReaders() {
+    void testSeqRRDSIArrayWritableTwoReaders(Nd4jBackend backend) {
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new IntWritable(100)));
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 4, 5, 6 }, new long[] { 1, 3 })), new IntWritable(200)));
+        sequence1.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 1, 2, 3 }, new long[] { 1, 3 })), new IntWritable(100)));
+        sequence1.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 4, 5, 6 }, new long[] { 1, 3 })), new IntWritable(200)));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 7, 8, 9 }, new long[] { 1, 3 })), new IntWritable(300)));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 10, 11, 12 }, new long[] { 1, 3 })), new IntWritable(400)));
+        sequence2.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 7, 8, 9 }, new long[] { 1, 3 })), new IntWritable(300)));
+        sequence2.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 10, 11, 12 }, new long[] { 1, 3 })), new IntWritable(400)));
         SequenceRecordReader rrFeatures = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
         List<List<Writable>> sequence1L = new ArrayList<>();
-        sequence1L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 100, 200, 300 }, new long[] { 1, 3 })), new IntWritable(101)));
-        sequence1L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 400, 500, 600 }, new long[] { 1, 3 })), new IntWritable(201)));
+        sequence1L.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 100, 200, 300 }, new long[] { 1, 3 })), new IntWritable(101)));
+        sequence1L.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 400, 500, 600 }, new long[] { 1, 3 })), new IntWritable(201)));
         List<List<Writable>> sequence2L = new ArrayList<>();
-        sequence2L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 700, 800, 900 }, new long[] { 1, 3 })), new IntWritable(301)));
-        sequence2L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] { 1000, 1100, 1200 }, new long[] { 1, 3 })), new IntWritable(401)));
+        sequence2L.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 700, 800, 900 }, new long[] { 1, 3 })), new IntWritable(301)));
+        sequence2L.add(Arrays.asList(new NDArrayWritable(Nd4j.create(new double[] { 1000, 1100, 1200 }, new long[] { 1, 3 })), new IntWritable(401)));
         SequenceRecordReader rrLabels = new CollectionSequenceRecordReader(Arrays.asList(sequence1L, sequence2L));
         SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rrFeatures, rrLabels, 2, -1, true);
         // 2 examples, 4 values per time step, 2 time steps
@@ -845,7 +868,8 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Meta Data")
     void testRecordReaderMetaData() throws Exception {
         RecordReader csv = new CSVRecordReader();
@@ -878,9 +902,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test RRDS Iwith Async")
-    void testRRDSIwithAsync() throws Exception {
+    void testRRDSIwithAsync(Nd4jBackend backend) throws Exception {
         RecordReader csv = new CSVRecordReader();
         csv.initialize(new FileSplit(Resources.asFile("iris.txt")));
         int batchSize = 10;
@@ -893,9 +918,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Data Set Iterator ND Array Writable Labels")
-    void testRecordReaderDataSetIteratorNDArrayWritableLabels() {
+    void testRecordReaderDataSetIteratorNDArrayWritableLabels(Nd4jBackend backend) {
         Collection<Collection<Writable>> data = new ArrayList<>();
         data.add(Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new NDArrayWritable(Nd4j.create(new double[] { 1.1, 2.1, 3.1 }, new long[] { 1, 3 }))));
         data.add(Arrays.<Writable>asList(new DoubleWritable(2), new DoubleWritable(3), new NDArrayWritable(Nd4j.create(new double[] { 4.1, 5.1, 6.1 }, new long[] { 1, 3 }))));
@@ -925,10 +951,11 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, ds2.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Disabled
     @DisplayName("Special RR Test 4")
-    void specialRRTest4() throws Exception {
+    void specialRRTest4(Nd4jBackend backend) throws Exception {
         RecordReader rr = new SpecialImageRecordReader(25000, 10, 3, 224, 224);
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 128);
         int cnt = 0;
@@ -1026,9 +1053,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
     
     }
     */
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Data Set Iterator Concat")
-    void testRecordReaderDataSetIteratorConcat() {
+    void testRecordReaderDataSetIteratorConcat(Nd4jBackend backend) {
         // [DoubleWritable, DoubleWritable, NDArrayWritable([1,10]), IntWritable] -> concatenate to a [1,13] feature vector automatically.
         List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1), new NDArrayWritable(Nd4j.create(new double[] { 2, 3, 4 })), new DoubleWritable(5), new NDArrayWritable(Nd4j.create(new double[] { 6, 7, 8 })), new IntWritable(9), new IntWritable(1));
         RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
@@ -1040,9 +1068,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expL, ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Data Set Iterator Concat 2")
-    void testRecordReaderDataSetIteratorConcat2() {
+    void testRecordReaderDataSetIteratorConcat2(Nd4jBackend backend) {
         List<Writable> l = new ArrayList<>();
         l.add(new IntWritable(0));
         l.add(new NDArrayWritable(Nd4j.arange(1, 9)));
@@ -1054,11 +1083,12 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expF, ds.getFeatures());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Record Reader Data Set Iterator Disjoint Features")
-    void testRecordReaderDataSetIteratorDisjointFeatures() {
+    void testRecordReaderDataSetIteratorDisjointFeatures(Nd4jBackend backend) {
         // Idea: input vector is like [f,f,f,f,l,l,f,f] or similar - i.e., label writables aren't start/end
-        List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1), new NDArrayWritable(Nd4j.create(new float[] { 2, 3, 4 }, new long[] { 1, 3 })), new DoubleWritable(5), new NDArrayWritable(Nd4j.create(new float[] { 6, 7, 8 }, new long[] { 1, 3 })));
+        List<Writable> l = Arrays.asList(new DoubleWritable(1), new NDArrayWritable(Nd4j.create(new float[] { 2, 3, 4 }, new long[] { 1, 3 })), new DoubleWritable(5), new NDArrayWritable(Nd4j.create(new float[] { 6, 7, 8 }, new long[] { 1, 3 })));
         INDArray expF = Nd4j.create(new float[] { 1, 6, 7, 8 }, new long[] { 1, 4 });
         INDArray expL = Nd4j.create(new float[] { 2, 3, 4, 5 }, new long[] { 1, 4 });
         RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
@@ -1068,9 +1098,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertEquals(expL, ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Normalizer Prefetch Reset")
-    void testNormalizerPrefetchReset() throws Exception {
+    void testNormalizerPrefetchReset(Nd4jBackend backend) throws Exception {
         // Check NPE fix for: https://github.com/eclipse/deeplearning4j/issues/4214
         RecordReader csv = new CSVRecordReader();
         csv.initialize(new FileSplit(Resources.asFile("iris.txt")));
@@ -1087,9 +1118,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         iter.next();
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Reading From Stream")
-    void testReadingFromStream() throws Exception {
+    void testReadingFromStream(Nd4jBackend backend) throws Exception {
         for (boolean b : new boolean[] { false, true }) {
             int batchSize = 1;
             int labelIndex = 4;
@@ -1121,9 +1153,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Images RRDSI")
-    void testImagesRRDSI() throws Exception {
+    void testImagesRRDSI(Nd4jBackend backend) throws Exception {
         File parentDir = temporaryFolder.toFile();
         parentDir.deleteOnExit();
         String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
@@ -1150,16 +1183,17 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertArrayEquals(new long[] { 2, 2 }, ds.getLabels().shape());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Seq RRDSI No Labels")
-    void testSeqRRDSINoLabels() {
+    void testSeqRRDSINoLabels(Nd4jBackend backend) {
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new DoubleWritable(1), new DoubleWritable(2)));
-        sequence1.add(Arrays.asList((Writable) new DoubleWritable(3), new DoubleWritable(4)));
-        sequence1.add(Arrays.asList((Writable) new DoubleWritable(5), new DoubleWritable(6)));
+        sequence1.add(Arrays.asList(new DoubleWritable(1), new DoubleWritable(2)));
+        sequence1.add(Arrays.asList(new DoubleWritable(3), new DoubleWritable(4)));
+        sequence1.add(Arrays.asList(new DoubleWritable(5), new DoubleWritable(6)));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new DoubleWritable(10), new DoubleWritable(20)));
-        sequence2.add(Arrays.asList((Writable) new DoubleWritable(30), new DoubleWritable(40)));
+        sequence2.add(Arrays.asList(new DoubleWritable(10), new DoubleWritable(20)));
+        sequence2.add(Arrays.asList(new DoubleWritable(30), new DoubleWritable(40)));
         SequenceRecordReader rrFeatures = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
         SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rrFeatures, 2, -1, -1);
         DataSet ds = iter.next();
@@ -1167,9 +1201,10 @@ class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertNull(ds.getLabels());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("Test Collect Meta Data")
-    void testCollectMetaData() {
+    void testCollectMetaData(Nd4jBackend backend) {
         RecordReaderDataSetIterator trainIter = new RecordReaderDataSetIterator.Builder(new CollectionRecordReader(Collections.<List<Writable>>emptyList()), 1).collectMetaData(true).build();
         assertTrue(trainIter.isCollectMetaData());
         trainIter.setCollectMetaData(false);

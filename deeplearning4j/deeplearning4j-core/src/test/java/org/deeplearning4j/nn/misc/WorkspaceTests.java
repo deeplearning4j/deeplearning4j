@@ -88,7 +88,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
     @Test
     public void testWorkspaceIndependence() {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4337
+        //https://github.com/eclipse/deeplearning4j/issues/4337
         int depthIn = 2;
         int depthOut = 2;
         int nOut = 2;
@@ -143,7 +143,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
     @Test
     public void testWithPreprocessorsCG() {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4347
+        //https://github.com/eclipse/deeplearning4j/issues/4347
         //Cause for the above issue was layerVertex.setInput() applying the preprocessor, with the result
         // not being detached properly from the workspace...
 

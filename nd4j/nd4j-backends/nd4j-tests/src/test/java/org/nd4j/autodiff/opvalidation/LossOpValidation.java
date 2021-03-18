@@ -383,7 +383,7 @@ public class LossOpValidation extends BaseOpValidation {
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        INDArray exp = Nd4j.scalar(0.6);    //https://github.com/deeplearning4j/deeplearning4j/issues/6532
+        INDArray exp = Nd4j.scalar(0.6);    //https://github.com/eclipse/deeplearning4j/issues/6532
         assertEquals(exp, out);
     }
 

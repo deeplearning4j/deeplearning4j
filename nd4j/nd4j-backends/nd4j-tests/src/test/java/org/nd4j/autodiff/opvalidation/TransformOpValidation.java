@@ -1745,7 +1745,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testZeta(Nd4jBackend backend) {
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6182
+        OpValidationSuite.ignoreFailing();  //https://github.com/eclipse/deeplearning4j/issues/6182
         INDArray x = Nd4j.rand(3, 4).addi(1.0);
         INDArray q = Nd4j.rand(3, 4);
 

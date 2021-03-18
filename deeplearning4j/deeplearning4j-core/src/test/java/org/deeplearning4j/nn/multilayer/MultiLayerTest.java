@@ -938,7 +938,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     @DisplayName("Test MLN Updater Blocks")
     void testMLNUpdaterBlocks() {
         // Check that setting learning rate results in correct rearrangement of updater state within updater blocks
-        // https://github.com/deeplearning4j/deeplearning4j/issues/6809#issuecomment-463892644
+        // https://github.com/eclipse/deeplearning4j/issues/6809#issuecomment-463892644
         double lr = 1e-3;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).weightInit(WeightInit.XAVIER).updater(new Adam(lr)).list().layer(new DenseLayer.Builder().nIn(5).nOut(3).build()).layer(new DenseLayer.Builder().nIn(3).nOut(2).build()).layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT).nIn(2).nOut(1).activation(Activation.SIGMOID).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

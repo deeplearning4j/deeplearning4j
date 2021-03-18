@@ -39,15 +39,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,16 +63,20 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
 
 
-    public static Stream<Arguments> params(){
-        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
+    public static Stream<Arguments> params() {
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(RNNFormat rnnFormat : RNNFormat.values()) {
+                args.add(Arguments.of(rnnFormat,nd4jBackend));
+            }
+        }
+        return args.stream();
     }
 
-
-    @Test
     @DisplayName("Test Bidirectional LSTM Graves Forward Basic")
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @ParameterizedTest
-    void testBidirectionalLSTMGravesForwardBasic(RNNFormat rnnDataFormat) {
+    void testBidirectionalLSTMGravesForwardBasic(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // Very basic test of forward prop. of LSTM layer with a time series.
         // Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
         int nIn = 13;
@@ -108,11 +116,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Bidirectional LSTM Graves Backward Basic")
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @ParameterizedTest
-    void testBidirectionalLSTMGravesBackwardBasic(RNNFormat rnnDataFormat) {
+    void testBidirectionalLSTMGravesBackwardBasic(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // Very basic test of backprop for mini-batch + time series
         // Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
         testGravesBackwardBasicHelper(rnnDataFormat,13, 3, 17, 10, 7);
@@ -168,9 +175,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Graves Bidirectional LSTM Forward Pass Helper")
-    void testGravesBidirectionalLSTMForwardPassHelper() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    void testGravesBidirectionalLSTMForwardPassHelper(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
         // GravesBidirectionalLSTM.activateHelper() has different behaviour (due to optimizations) when forBackprop==true vs false
         // But should otherwise provide identical activations
         Nd4j.getRandom().setSeed(12345);
@@ -204,11 +212,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @DisplayName("Test Get Set Parmas")
-    @MethodSource("#params")
+    @DisplayName("Test Get Set Params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @ParameterizedTest
-    void testGetSetParmas(RNNFormat rnnDataFormat) {
+    void testGetSetParmas(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         final int nIn = 2;
         final int layerSize = 3;
         final int miniBatchSize = 2;
@@ -226,11 +233,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertArrayEquals(act2.data().asDouble(), act1.data().asDouble(), 1e-8);
     }
 
-    @Test
     @DisplayName("Test Simple Forwards And Backwards Activation")
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @ParameterizedTest
-    void testSimpleForwardsAndBackwardsActivation(RNNFormat rnnDataFormat) {
+    void testSimpleForwardsAndBackwardsActivation(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         final int nIn = 2;
         final int layerSize = 3;
         final int miniBatchSize = 1;
@@ -336,9 +342,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertArrayEquals(backEpsilon.dup().data().asDouble(), refEpsilon.dup().data().asDouble(), 1e-6);
     }
 
-    @Test
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @DisplayName("Test Serialization")
-    void testSerialization() {
+    @ParameterizedTest
+    void testSerialization(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         final MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new AdaGrad(0.1)).l2(0.001).seed(12345).list().layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).dist(new UniformDistribution(-0.05, 0.05)).build()).layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).dist(new UniformDistribution(-0.05, 0.05)).build()).layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2).build()).build();
         final String json1 = conf1.toJson();
         final MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json1);
@@ -346,11 +353,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertEquals(json1, json2);
     }
 
-    @Test
     @DisplayName("Test Gate Activation Fns Sanity Check")
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @ParameterizedTest
-    void testGateActivationFnsSanityCheck(RNNFormat rnnDataFormat) {
+    void testGateActivationFnsSanityCheck(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         for (String gateAfn : new String[] { "sigmoid", "hardsigmoid" }) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345).list().layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2).dataFormat(rnnDataFormat).build()).layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).dataFormat(rnnDataFormat).activation(Activation.TANH).build()).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

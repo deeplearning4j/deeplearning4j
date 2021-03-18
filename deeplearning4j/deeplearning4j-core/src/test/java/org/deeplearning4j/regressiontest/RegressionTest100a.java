@@ -200,7 +200,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         //Minor bug in 1.0.0-beta and earlier: not adding epsilon value to forward pass for batch norm
         //Which means: the record output doesn't have this. To account for this, we'll manually set eps to 0.0 here
-        //https://github.com/deeplearning4j/deeplearning4j/issues/5836#issuecomment-405526228
+        //https://github.com/eclipse/deeplearning4j/issues/5836#issuecomment-405526228
         for(Layer l : net.getLayers()){
             if(l.conf().getLayer() instanceof BatchNormalization){
                 BatchNormalization bn = (BatchNormalization) l.conf().getLayer();

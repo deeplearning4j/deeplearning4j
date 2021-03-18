@@ -261,7 +261,7 @@ public class TestMemoryReports extends BaseDL4JTest {
 
     @Test
     public void testPreprocessors() throws Exception {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4223
+        //https://github.com/eclipse/deeplearning4j/issues/4223
         File f = new ClassPathResource("4223/CompGraphConfig.json").getTempFileFromArchive();
         String s = FileUtils.readFileToString(f, Charset.defaultCharset());
 

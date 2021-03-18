@@ -50,6 +50,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.enums.RnnDataFormat;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,6 +58,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.common.primitives.Pair;
@@ -64,7 +66,9 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
@@ -79,14 +83,20 @@ class BidirectionalTest extends BaseDL4JTest {
 
 
     public static Stream<Arguments> params() {
-        return Arrays.asList(RNNFormat.values()).stream().map(Arguments::of);
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(RNNFormat rnnFormat : RNNFormat.values()) {
+                args.add(Arguments.of(rnnFormat,nd4jBackend));
+            }
+        }
+        return args.stream();
     }
 
-    @Test
+
     @DisplayName("Compare Implementations")
     @ParameterizedTest
-    @MethodSource("#params")
-    void compareImplementations(RNNFormat rnnDataFormat) {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    void compareImplementations(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             // Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
@@ -151,8 +161,8 @@ class BidirectionalTest extends BaseDL4JTest {
 
     @DisplayName("Compare Implementations Comp Graph")
     @ParameterizedTest
-    @MethodSource("#params")
-    void compareImplementationsCompGraph(RNNFormat rnnFormat) {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    void compareImplementationsCompGraph(RNNFormat rnnFormat,Nd4jBackend backend) {
         // for(WorkspaceMode wsm : WorkspaceMode.values()) {
         for (WorkspaceMode wsm : new WorkspaceMode[] { WorkspaceMode.NONE, WorkspaceMode.ENABLED }) {
             log.info("*** Starting workspace mode: " + wsm);
@@ -206,11 +216,10 @@ class BidirectionalTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Serialization")
     @ParameterizedTest
-    @MethodSource("#params")
-    void testSerialization(RNNFormat rnnDataFormat) throws Exception {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    void testSerialization(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -245,11 +254,10 @@ class BidirectionalTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Serialization Comp Graph")
     @ParameterizedTest
-    @MethodSource("#params")
-    void testSerializationCompGraph(RNNFormat rnnDataFormat) throws Exception {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    void testSerializationCompGraph(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -282,11 +290,10 @@ class BidirectionalTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Simple Bidirectional")
     @ParameterizedTest
-    @MethodSource("#params")
-    public void testSimpleBidirectional(RNNFormat rnnDataFormat) {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    public void testSimpleBidirectional(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -369,11 +376,10 @@ class BidirectionalTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Simple Bidirectional Comp Graph")
     @ParameterizedTest
-    @MethodSource("#params")
-    void testSimpleBidirectionalCompGraph(RNNFormat rnnDataFormat) {
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    void testSimpleBidirectionalCompGraph(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
@@ -462,10 +468,11 @@ class BidirectionalTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Issue 5472")
-    void testIssue5472() {
-        // https://github.com/deeplearning4j/deeplearning4j/issues/5472
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.BidirectionalTest#params")
+    @ParameterizedTest
+    void testIssue5472(RNNFormat rnnDataFormat,Nd4jBackend backend) {
+        // https://github.com/eclipse/deeplearning4j/issues/5472
         int in = 2;
         int out = 2;
         ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder().updater(new Adam(0.01)).activation(Activation.RELU).graphBuilder().addInputs("IN").setInputTypes(InputType.recurrent(in)).addLayer("AUTOENCODER", new VariationalAutoencoder.Builder().encoderLayerSizes(64).decoderLayerSizes(64).nOut(7).pzxActivationFunction(Activation.IDENTITY).reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID.getActivationFunction())).build(), "IN").addLayer("RNN", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nOut(128).build()), "AUTOENCODER").addLayer("OUT", new RnnOutputLayer.Builder().nOut(out).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "RNN").setOutputs("OUT");

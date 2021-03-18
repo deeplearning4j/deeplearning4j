@@ -44,11 +44,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,42 +68,42 @@ public class RnnDataFormatTests extends BaseDL4JTest {
         for (boolean helpers: new boolean[]{true, false})
             for (boolean lastTimeStep: new boolean[]{true, false})
                 for (boolean maskZero: new boolean[]{true, false})
-                    ret.add(new Object[]{helpers, lastTimeStep, maskZero});
+                    for(Nd4jBackend backend : BaseNd4jTestWithBackends.BACKENDS)
+                        ret.add(new Object[]{helpers, lastTimeStep, maskZero,backend});
         return ret.stream().map(Arguments::of);
     }
 
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     @ParameterizedTest
     public void testSimpleRnn(boolean helpers,
-             boolean lastTimeStep,
-             boolean maskZeros
-    ) {
+                              boolean lastTimeStep,
+                              boolean maskZeros,
+                              Nd4jBackend backend) {
         try {
 
-                    Nd4j.getRandom().setSeed(12345);
-                    Nd4j.getEnvironment().allowHelpers(helpers);
-                    String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
-                    System.out.println(" --- " + msg + " ---");
+            Nd4j.getRandom().setSeed(12345);
+            Nd4j.getEnvironment().allowHelpers(helpers);
+            String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
+            System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
+            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
 
-                    INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
+            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
 
-                    TestCase tc = TestCase.builder()
-                            .msg(msg)
-                            .net1(getSimpleRnnNet(RNNFormat.NCW, true, lastTimeStep, maskZeros))
-                            .net2(getSimpleRnnNet(RNNFormat.NCW, false, lastTimeStep, maskZeros))
-                            .net3(getSimpleRnnNet(RNNFormat.NWC, true, lastTimeStep, maskZeros))
-                            .net4(getSimpleRnnNet(RNNFormat.NWC, false, lastTimeStep, maskZeros))
-                            .inNCW(inNCW)
-                            .labelsNCW((lastTimeStep)? labelsNWC: labelsNWC.permute(0, 2, 1))
-                            .labelsNWC(labelsNWC)
-                            .testLayerIdx(1)
-                            .build();
+            TestCase tc = TestCase.builder()
+                    .msg(msg)
+                    .net1(getSimpleRnnNet(RNNFormat.NCW, true, lastTimeStep, maskZeros))
+                    .net2(getSimpleRnnNet(RNNFormat.NCW, false, lastTimeStep, maskZeros))
+                    .net3(getSimpleRnnNet(RNNFormat.NWC, true, lastTimeStep, maskZeros))
+                    .net4(getSimpleRnnNet(RNNFormat.NWC, false, lastTimeStep, maskZeros))
+                    .inNCW(inNCW)
+                    .labelsNCW((lastTimeStep)? labelsNWC: labelsNWC.permute(0, 2, 1))
+                    .labelsNWC(labelsNWC)
+                    .testLayerIdx(1)
+                    .build();
 
-                    TestCase.testHelper(tc);
+            TestCase.testHelper(tc);
 
 
         } finally {
@@ -110,10 +112,10 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     public void testLSTM(boolean helpers,
                          boolean lastTimeStep,
-                         boolean maskZeros) {
+                         boolean maskZeros,Nd4jBackend backend) {
         try {
 
             Nd4j.getRandom().setSeed(12345);
@@ -146,12 +148,11 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     @ParameterizedTest
     public void testGraveLSTM(boolean helpers,
                               boolean lastTimeStep,
-                              boolean maskZeros) {
+                              boolean maskZeros,Nd4jBackend backend) {
         try {
 
             Nd4j.getRandom().setSeed(12345);
@@ -184,12 +185,11 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     @ParameterizedTest
     public void testGraveBiLSTM(boolean helpers,
                                 boolean lastTimeStep,
-                                boolean maskZeros) {
+                                boolean maskZeros,Nd4jBackend backend) {
         try {
 
             Nd4j.getRandom().setSeed(12345);
@@ -276,7 +276,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
                 .layer(layer)
                 .layer(
                         (lastTimeStep)?new OutputLayer.Builder().activation(Activation.SOFTMAX).nOut(10).build():
-        new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).nOut(10).dataFormat(format).build()
+                                new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).nOut(10).dataFormat(format).build()
                 )
                 .setInputType(InputType.recurrent(3, 12, format));
 

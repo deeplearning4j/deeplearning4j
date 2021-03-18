@@ -1779,7 +1779,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @Test
     public void testCompGraphDropoutOutputLayers(){
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6326
+        //https://github.com/eclipse/deeplearning4j/issues/6326
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dropOut(0.8)
                 .graphBuilder()
@@ -1817,7 +1817,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @Test
     public void testCompGraphDropoutOutputLayers2() {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6326
+        //https://github.com/eclipse/deeplearning4j/issues/6326
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dropOut(0.8)
                 .graphBuilder()
@@ -1976,7 +1976,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @Test
     public void testVerticesAndMasking7027(){
-        //https://github.com/deeplearning4j/deeplearning4j/issues/7027
+        //https://github.com/eclipse/deeplearning4j/issues/7027
         int inputSize = 300;
         int hiddenSize = 100;
         int dataSize = 10;
@@ -2017,7 +2017,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     @Test
     public void testCompGraphUpdaterBlocks(){
         //Check that setting learning rate results in correct rearrangement of updater state within updater blocks
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6809#issuecomment-463892644
+        //https://github.com/eclipse/deeplearning4j/issues/6809#issuecomment-463892644
 
         double lr = 1e-3;
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()

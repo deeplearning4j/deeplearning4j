@@ -43,6 +43,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,13 +52,16 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.NoOp;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -70,8 +74,16 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     }
 
 
+    @TempDir Path testDir;
+
     public static Stream<Arguments> params() {
-        return Arrays.asList(CNN2DFormat.values()).stream().map(Arguments::of);
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(CNN2DFormat format : CNN2DFormat.values()) {
+                args.add(Arguments.of(format,nd4jBackend));
+            }
+        }
+        return args.stream();
     }
 
     @Override
@@ -80,8 +92,8 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("#params")
-    public void testYoloOutputLayer(CNN2DFormat format) {
+    @MethodSource("org.deeplearning4j.gradientcheckYoloGradientCheckTests.#params")
+    public void testYoloOutputLayer(CNN2DFormat format,Nd4jBackend backend) {
         int depthIn = 2;
         int c = 3;
         int b = 3;
@@ -180,8 +192,8 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
 
     @ParameterizedTest
-    @MethodSource("#params")
-    public void yoloGradientCheckRealData(@TempDir Path testDir,CNN2DFormat format) throws Exception {
+    @MethodSource("org.deeplearning4j.gradientcheckYoloGradientCheckTests#params")
+    public void yoloGradientCheckRealData(CNN2DFormat format,Nd4jBackend backend) throws Exception {
         Nd4j.getRandom().setSeed(12345);
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();

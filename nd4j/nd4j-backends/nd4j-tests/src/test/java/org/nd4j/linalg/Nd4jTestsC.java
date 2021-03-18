@@ -7429,7 +7429,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGet(){
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6133
+        //https://github.com/eclipse/deeplearning4j/issues/6133
         INDArray m = Nd4j.linspace(0,99,100, DataType.DOUBLE).reshape('c', 10,10);
         INDArray exp = Nd4j.create(new double[]{5, 15, 25, 35, 45, 55, 65, 75, 85, 95}, new int[]{10});
         INDArray col = m.getColumn(5);

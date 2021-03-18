@@ -250,7 +250,7 @@ public class VersionCheck {
                 }
             } catch (NoClassDefFoundError e){
                 //Should only happen on Android 7.0 or earlier - silently ignore
-                //https://github.com/deeplearning4j/deeplearning4j/issues/6609
+                //https://github.com/eclipse/deeplearning4j/issues/6609
             } catch (Throwable e){
                 //log and skip
                 log.debug("Error finding/loading version check resources", e);

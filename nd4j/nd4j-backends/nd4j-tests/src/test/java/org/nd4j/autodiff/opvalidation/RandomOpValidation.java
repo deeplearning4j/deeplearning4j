@@ -227,7 +227,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 4:
                         if(OpValidationSuite.IGNORE_FAILING){
-                            //https://github.com/deeplearning4j/deeplearning4j/issues/6036
+                            //https://github.com/eclipse/deeplearning4j/issues/6036
                             continue;
                         }
                         name = "truncatednormal";

@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.activations.Activation;
@@ -57,6 +58,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Model Serializer Test")
+@Disabled
 class ModelSerializerTest extends BaseDL4JTest {
 
     @TempDir

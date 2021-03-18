@@ -126,7 +126,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeGradient(Nd4jBackend backend) {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6873
+        //https://github.com/eclipse/deeplearning4j/issues/6873
 
         int[] origShape = new int[]{3, 4, 5};
 
@@ -1305,7 +1305,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentOps(){
         OpValidationSuite.ignoreFailing();
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6952
+        //https://github.com/eclipse/deeplearning4j/issues/6952
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
         int numSegments = 4;
@@ -1910,7 +1910,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistancesExec(){
-        //https://github.com/deeplearning4j/deeplearning4j/issues/7001
+        //https://github.com/eclipse/deeplearning4j/issues/7001
         for(String s : new String[]{"euclidean", "manhattan", "cosinesim", "cosinedist", "jaccard"}) {
             log.info("Starting: {}", s);
             INDArray defaultTestCase = Nd4j.create(4, 4);

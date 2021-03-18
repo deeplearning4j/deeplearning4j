@@ -281,7 +281,7 @@ public class TestInstantiation extends BaseDL4JTest {
     @Test
     public void testYolo4635() throws Exception {
         ignoreIfCuda();
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4635
+        //https://github.com/eclipse/deeplearning4j/issues/4635
 
         int nClasses = 10;
         TinyYOLO model = TinyYOLO.builder().numClasses(nClasses).build();
@@ -292,7 +292,7 @@ public class TestInstantiation extends BaseDL4JTest {
     @Test
     public void testTransferLearning() throws Exception {
         ignoreIfCuda();
-        //https://github.com/deeplearning4j/deeplearning4j/issues/7193
+        //https://github.com/eclipse/deeplearning4j/issues/7193
 
         ComputationGraph cg = (ComputationGraph) ResNet50.builder().build().initPretrained();
 

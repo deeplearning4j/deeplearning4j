@@ -317,7 +317,7 @@ class TransferLearningMLNTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Object Overrides")
     void testObjectOverrides() {
-        // https://github.com/deeplearning4j/deeplearning4j/issues/4368
+        // https://github.com/eclipse/deeplearning4j/issues/4368
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dropOut(0.5).weightNoise(new DropConnect(0.5)).l2(0.5).constrainWeights(new UnitNormConstraint()).list().layer(new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
         MultiLayerNetwork orig = new MultiLayerNetwork(conf);
         orig.init();

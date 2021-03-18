@@ -43,11 +43,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,21 +61,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConvDataFormatTests extends BaseDL4JTest {
-    
 
-    public static Stream<Arguments> params(){
-        return Arrays.asList(new DataType[]{DataType.FLOAT, DataType.DOUBLE}).stream().map(Arguments::of);
+
+    public static Stream<Arguments> params() {
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(DataType dataType : Arrays.asList(new DataType[]{DataType.FLOAT, DataType.DOUBLE})) {
+                args.add(Arguments.of(dataType,nd4jBackend));
+            }
+        }
+        return args.stream();
     }
+
 
     @Override
     public long getTimeoutMilliseconds() {
         return 999999999L;
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testConv2d(DataType dataType) {
+    public void testConv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -105,10 +113,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testSubsampling2d(DataType dataType) {
+    public void testSubsampling2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -140,10 +147,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testDepthwiseConv2d(DataType dataType) {
+    public void testDepthwiseConv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -175,10 +181,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testSeparableConv2d(DataType dataType) {
+    public void testSeparableConv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -210,10 +215,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testDeconv2d(DataType dataType) {
+    public void testDeconv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -245,10 +249,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testLRN(DataType dataType) {
+    public void testLRN(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -280,10 +283,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testZeroPaddingLayer(DataType dataType) {
+    public void testZeroPaddingLayer(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -313,10 +315,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testCropping2DLayer(DataType dataType) {
+    public void testCropping2DLayer(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -346,10 +347,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testUpsampling2d(DataType dataType) {
+    public void testUpsampling2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -379,10 +379,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testBatchNormNet(DataType dataType) {
+    public void testBatchNormNet(DataType dataType,Nd4jBackend backend) {
         try {
             for(boolean useLogStd : new boolean[]{true, false}) {
                 for (boolean helpers : new boolean[]{false, true}) {
@@ -414,10 +413,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testCnnLossLayer(DataType dataType) {
+    public void testCnnLossLayer(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -452,10 +450,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testSpaceToDepthNet(DataType dataType) {
+    public void testSpaceToDepthNet(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -485,10 +482,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testSpaceToBatchNet(DataType dataType) {
+    public void testSpaceToBatchNet(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -518,10 +514,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testLocallyConnected(DataType dataType) {
+    public void testLocallyConnected(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -554,10 +549,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @Test
-    @MethodSource("#params")
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
     @ParameterizedTest
-    public void testGlobalPooling(DataType dataType) {
+    public void testGlobalPooling(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (PoolingType pt : PoolingType.values()) {
@@ -1014,7 +1008,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
 
     @Test
-    public void testWrongFormatIn(){
+    public void testWrongFormatIn() {
 
         for(CNN2DFormat df : CNN2DFormat.values()) {
             for(int i = 0; i < 4; i++) {

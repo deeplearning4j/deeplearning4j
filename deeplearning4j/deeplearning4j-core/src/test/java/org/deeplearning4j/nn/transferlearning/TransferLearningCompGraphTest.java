@@ -181,7 +181,7 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Object Overrides")
     void testObjectOverrides() {
-        // https://github.com/deeplearning4j/deeplearning4j/issues/4368
+        // https://github.com/eclipse/deeplearning4j/issues/4368
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().dropOut(0.5).weightNoise(new DropConnect(0.5)).l2(0.5).constrainWeights(new UnitNormConstraint()).graphBuilder().addInputs("in").addLayer("layer", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("layer").build();
         ComputationGraph orig = new ComputationGraph(conf);
         orig.init();

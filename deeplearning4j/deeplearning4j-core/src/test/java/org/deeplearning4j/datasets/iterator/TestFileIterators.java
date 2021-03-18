@@ -24,6 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.file.FileDataSetIterator;
 import org.deeplearning4j.datasets.iterator.file.FileMultiDataSetIterator;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -40,6 +41,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled
 public class TestFileIterators extends BaseDL4JTest {
 
 

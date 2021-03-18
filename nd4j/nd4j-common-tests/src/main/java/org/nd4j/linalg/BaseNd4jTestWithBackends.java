@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 
 @Slf4j
 public abstract class BaseNd4jTestWithBackends extends BaseND4JTest {
-    private static List<Nd4jBackend> BACKENDS = new ArrayList<>();
+    public static List<Nd4jBackend> BACKENDS = new ArrayList<>();
     static {
         List<String> backendsToRun = Nd4jTestSuite.backendsToRun();
 

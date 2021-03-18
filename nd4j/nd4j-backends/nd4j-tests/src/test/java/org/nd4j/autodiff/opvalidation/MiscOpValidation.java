@@ -141,7 +141,7 @@ public class MiscOpValidation extends BaseOpValidation {
                         bcOp = new FloorModOp(sd, in3, in2).outputVariable();
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
-                            //https://github.com/deeplearning4j/deeplearning4j/issues/5976
+                            //https://github.com/eclipse/deeplearning4j/issues/5976
                             continue;
                         }
                         break;
@@ -232,7 +232,7 @@ public class MiscOpValidation extends BaseOpValidation {
                         bcOp = new FloorModOp(sd, in3, in2).outputVariable();
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
-                            //https://github.com/deeplearning4j/deeplearning4j/issues/5976
+                            //https://github.com/eclipse/deeplearning4j/issues/5976
                             continue;
                         }
                         break;
@@ -334,7 +334,7 @@ public class MiscOpValidation extends BaseOpValidation {
                         bcOp = new FloorModOp(sd, in3, in2).outputVariable();
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
-                            //https://github.com/deeplearning4j/deeplearning4j/issues/5976
+                            //https://github.com/eclipse/deeplearning4j/issues/5976
                             continue;
                         }
                         break;
@@ -717,7 +717,7 @@ public class MiscOpValidation extends BaseOpValidation {
             for (char bOrder : new char[]{'c', 'f'}) {
                 for (boolean transposeA : new boolean[]{false, true}) {
                     for (boolean transposeB : new boolean[]{false, true}) {
-                        for (boolean transposeResult : new boolean[]{false, true}) {    //https://github.com/deeplearning4j/deeplearning4j/issues/5648
+                        for (boolean transposeResult : new boolean[]{false, true}) {    //https://github.com/eclipse/deeplearning4j/issues/5648
                             Nd4j.getRandom().setSeed(12345);
 
                             INDArray aArr = Nd4j.rand(DataType.DOUBLE, t(transposeA, aShape)).dup(aOrder);
@@ -761,7 +761,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBatchMmulBasic(Nd4jBackend backend) {
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6873
+        OpValidationSuite.ignoreFailing();  //https://github.com/eclipse/deeplearning4j/issues/6873
         int M = 5;
         int N = 3;
         int K = 4;
@@ -1188,7 +1188,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHotOp(){
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
-        //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
+        //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
         for( int axis=-1; axis<=0; axis++ ) {
             String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.create(new double[]{0, 1, 2}),
@@ -1244,7 +1244,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOneHot3(Nd4jBackend backend) {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6872
+        //https://github.com/eclipse/deeplearning4j/issues/6872
 
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]

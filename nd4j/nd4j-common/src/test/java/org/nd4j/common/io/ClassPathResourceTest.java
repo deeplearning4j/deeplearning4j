@@ -36,7 +36,7 @@ public class ClassPathResourceTest {
 
     @Test
     public void testDirExtractingIntelliJ(@TempDir Path testDir) throws Exception {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6483
+        //https://github.com/eclipse/deeplearning4j/issues/6483
 
         ClassPathResource cpr = new ClassPathResource("somedir");
 

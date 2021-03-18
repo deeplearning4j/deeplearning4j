@@ -97,7 +97,7 @@ public class CustomLayer extends FeedForwardLayer {
         //In this case, we can use the DefaultParamInitializer, which is the same one used for DenseLayer
         //For more complex layers, you may need to implement a custom parameter initializer
         //See the various parameter initializers here:
-        //https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/params
+        //https://github.com/eclipse/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/params
 
         return DefaultParamInitializer.getInstance();
     }
