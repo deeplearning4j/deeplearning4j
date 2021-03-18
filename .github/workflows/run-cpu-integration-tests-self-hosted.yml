@@ -42,5 +42,5 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn   -DskipTestResourceEnforcement=true -Ptestresources -Pintegration-tests -Pdl4j-integration-tests -Pnd4j-tests-cpu   clean test
+          mvn   -DskipTestResourceEnforcement=true -Ptestresources -Pintegration-tests -Pdl4j-integration-tests -Pnd4j-tests-cpu clean test
 
