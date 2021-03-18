@@ -92,7 +92,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheckYoloGradientCheckTests.#params")
+    @MethodSource("org.deeplearning4j.gradientcheck.YoloGradientCheckTests#params")
     public void testYoloOutputLayer(CNN2DFormat format,Nd4jBackend backend) {
         int depthIn = 2;
         int c = 3;
@@ -192,7 +192,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheckYoloGradientCheckTests#params")
+    @MethodSource("org.deeplearning4j.gradientcheck.YoloGradientCheckTests#params")
     public void yoloGradientCheckRealData(CNN2DFormat format,Nd4jBackend backend) throws Exception {
         Nd4j.getRandom().setSeed(12345);
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();

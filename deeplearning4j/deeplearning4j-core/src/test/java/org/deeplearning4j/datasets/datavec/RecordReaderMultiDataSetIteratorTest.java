@@ -20,6 +20,7 @@
 package org.deeplearning4j.datasets.datavec;
 
 
+import org.junit.jupiter.api.Disabled;
 import org.nd4j.shade.guava.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -68,6 +69,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Record Reader Multi Data Set Iterator Test")
+@Disabled
 class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @TempDir

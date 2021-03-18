@@ -256,7 +256,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn With Space To Batch")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -302,7 +301,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn With Upsampling")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -338,7 +336,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn With Subsampling")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -382,7 +379,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn With Subsampling V 2")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -422,7 +418,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn Locally Connected 2 D")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -454,7 +449,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn Multi Layer")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -496,7 +490,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn Same Padding Mode")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -532,7 +525,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn Same Padding Mode Strided")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -577,7 +569,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn Zero Padding Layer")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -625,7 +616,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Deconvolution 2 D")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -672,7 +662,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Separable Conv 2 D")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -719,7 +708,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cnn Dilated")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -771,7 +759,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Cropping 2 D Layer")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
@@ -817,7 +804,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test
     @DisplayName("Test Depthwise Conv 2 D")
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
