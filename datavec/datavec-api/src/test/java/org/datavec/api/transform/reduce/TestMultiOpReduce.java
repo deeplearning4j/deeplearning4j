@@ -32,6 +32,7 @@ import org.datavec.api.transform.ops.AggregableMultiOp;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
@@ -132,13 +133,14 @@ public class TestMultiOpReduce extends BaseND4JTest {
 
 
     @Test
+    @Disabled
     public void testReduceString() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("1")));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("2")));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("3")));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("4")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("1")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("2")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("3")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("4")));
 
         Map<ReduceOp, String> exp = new LinkedHashMap<>();
         exp.put(ReduceOp.Append, "1234");

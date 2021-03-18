@@ -26,6 +26,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -49,6 +50,7 @@ class CSVMultiSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test
     @DisplayName("Test Concat Mode")
+    @Disabled
     void testConcatMode() throws Exception {
         for (int i = 0; i < 3; i++) {
             String seqSep;
@@ -94,6 +96,7 @@ class CSVMultiSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test
     @DisplayName("Test Equal Length")
+    @Disabled
     void testEqualLength() throws Exception {
         for (int i = 0; i < 3; i++) {
             String seqSep;
@@ -133,6 +136,7 @@ class CSVMultiSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test
     @DisplayName("Test Padding")
+    @Disabled
     void testPadding() throws Exception {
         for (int i = 0; i < 3; i++) {
             String seqSep;
