@@ -51,6 +51,20 @@
             <artifactId>arrow-format</artifactId>
             <version>${arrow.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>guava</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -59,9 +73,44 @@
         </profile>
         <profile>
             <id>nd4j-tests-cpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
+        <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
             <id>nd4j-tests-cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-11.0</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

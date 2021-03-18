@@ -46,6 +46,7 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
 
     @Test
+    @Disabled
     public void testBasicIndexing() {
         Schema.Builder schema = new Schema.Builder();
         for(int i = 0; i < 3; i++) {
