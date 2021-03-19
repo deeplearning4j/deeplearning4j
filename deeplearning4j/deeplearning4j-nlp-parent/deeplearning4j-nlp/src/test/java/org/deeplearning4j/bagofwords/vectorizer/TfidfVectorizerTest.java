@@ -23,8 +23,10 @@ package org.deeplearning4j.bagofwords.vectorizer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+
+
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -39,20 +41,21 @@ import org.deeplearning4j.text.tokenization.tokenizer.DefaultTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.common.util.SerializationUtils;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Gibson
@@ -60,31 +63,31 @@ import static org.junit.Assume.assumeNotNull;
 @Slf4j
 public class TfidfVectorizerTest extends BaseDL4JTest {
 
-    @Rule
-    public final TemporaryFolder testDir = new TemporaryFolder();
 
 
-    @Test(timeout = 60000L)
-    public void testTfIdfVectorizer() throws Exception {
-        val rootDir = testDir.newFolder();
+
+    @Test()
+    @Timeout(60000L)
+    public void testTfIdfVectorizer(@TempDir Path testDir) throws Exception {
+        val rootDir = testDir.toFile();
         ClassPathResource resource = new ClassPathResource("tripledir/");
         resource.copyDirectory(rootDir);
-        
+
         assertTrue(rootDir.isDirectory());
 
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 
         TfidfVectorizer vectorizer = new TfidfVectorizer.Builder().setMinWordFrequency(1)
-                        .setStopWords(new ArrayList<String>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
-                        .allowParallelTokenization(false)
-                        //                .labels(labels)
-                        //                .cleanup(true)
-                        .build();
+                .setStopWords(new ArrayList<String>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
+                .allowParallelTokenization(false)
+                //                .labels(labels)
+                //                .cleanup(true)
+                .build();
 
         vectorizer.fit();
         VocabWord word = vectorizer.getVocabCache().wordFor("file.");
-        assumeNotNull(word);
+        assertNotNull(word);
         assertEquals(word, vectorizer.getVocabCache().tokenFor("file."));
         assertEquals(3, vectorizer.getVocabCache().totalNumberOfDocs());
 
@@ -128,7 +131,8 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
         assertEquals(1, cnt);
 
 
-        File tempFile = testDir.newFile("somefile.bin");
+
+        File tempFile = Files.createTempFile(testDir,"somefile","bin").toFile();
         tempFile.delete();
 
         SerializationUtils.saveObject(vectorizer, tempFile);
@@ -152,24 +156,24 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
         List<LabelledDocument> docs = new ArrayList<>(2);
         docs.add(doc1);
         docs.add(doc2);
-        
+
         LabelAwareIterator iterator = new SimpleLabelAwareIterator(docs);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 
         TfidfVectorizer vectorizer = new TfidfVectorizer
-            .Builder()
-            .setMinWordFrequency(1)
-            .setStopWords(new ArrayList<String>())
-            .setTokenizerFactory(tokenizerFactory)
-            .setIterator(iterator)
-            .allowParallelTokenization(false)
-            .build();
+                .Builder()
+                .setMinWordFrequency(1)
+                .setStopWords(new ArrayList<String>())
+                .setTokenizerFactory(tokenizerFactory)
+                .setIterator(iterator)
+                .allowParallelTokenization(false)
+                .build();
 
         vectorizer.fit();
 
         DataSet dataset = vectorizer.vectorize("it meows like a cat", "cat");
         assertNotNull(dataset);
-        
+
         LabelsSource source = vectorizer.getLabelsSource();
         assertEquals(2, source.getNumberOfLabelsUsed());
         List<String> labels = source.getLabels();
@@ -177,7 +181,8 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
         assertEquals("cat", labels.get(1));
     }
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000L)
     public void testParallelFlag1() throws Exception {
         val vectorizer = new TfidfVectorizer.Builder()
                 .allowParallelTokenization(false)
@@ -187,53 +192,61 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class, timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testParallelFlag2() throws Exception {
-        val collection = new ArrayList<String>();
-        collection.add("First string");
-        collection.add("Second string");
-        collection.add("Third string");
-        collection.add("");
-        collection.add("Fifth string");
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            val collection = new ArrayList<String>();
+            collection.add("First string");
+            collection.add("Second string");
+            collection.add("Third string");
+            collection.add("");
+            collection.add("Fifth string");
 //        collection.add("caboom");
 
-        val vectorizer = new TfidfVectorizer.Builder()
-                .allowParallelTokenization(false)
-                .setIterator(new CollectionSentenceIterator(collection))
-                .setTokenizerFactory(new ExplodingTokenizerFactory(8, -1))
-                .build();
+            val vectorizer = new TfidfVectorizer.Builder()
+                    .allowParallelTokenization(false)
+                    .setIterator(new CollectionSentenceIterator(collection))
+                    .setTokenizerFactory(new ExplodingTokenizerFactory(8, -1))
+                    .build();
 
-        vectorizer.buildVocab();
+            vectorizer.buildVocab();
 
 
-        log.info("Fitting vectorizer...");
+            log.info("Fitting vectorizer...");
 
-        vectorizer.fit();
+            vectorizer.fit();
+        });
+
     }
 
-    @Test(expected = ND4JIllegalStateException.class, timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testParallelFlag3() throws Exception {
-        val collection = new ArrayList<String>();
-        collection.add("First string");
-        collection.add("Second string");
-        collection.add("Third string");
-        collection.add("");
-        collection.add("Fifth string");
-        collection.add("Long long long string");
-        collection.add("Sixth string");
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            val collection = new ArrayList<String>();
+            collection.add("First string");
+            collection.add("Second string");
+            collection.add("Third string");
+            collection.add("");
+            collection.add("Fifth string");
+            collection.add("Long long long string");
+            collection.add("Sixth string");
 
-        val vectorizer = new TfidfVectorizer.Builder()
-                .allowParallelTokenization(false)
-                .setIterator(new CollectionSentenceIterator(collection))
-                .setTokenizerFactory(new ExplodingTokenizerFactory(-1, 4))
-                .build();
+            val vectorizer = new TfidfVectorizer.Builder()
+                    .allowParallelTokenization(false)
+                    .setIterator(new CollectionSentenceIterator(collection))
+                    .setTokenizerFactory(new ExplodingTokenizerFactory(-1, 4))
+                    .build();
 
-        vectorizer.buildVocab();
+            vectorizer.buildVocab();
 
 
-        log.info("Fitting vectorizer...");
+            log.info("Fitting vectorizer...");
 
-        vectorizer.fit();
+            vectorizer.fit();
+        });
+
     }
 
 

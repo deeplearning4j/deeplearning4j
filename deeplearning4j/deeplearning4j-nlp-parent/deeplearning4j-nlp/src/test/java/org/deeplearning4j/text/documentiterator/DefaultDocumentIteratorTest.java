@@ -24,13 +24,13 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.io.InputStream;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DefaultDocumentIteratorTest extends BaseDL4JTest {
 

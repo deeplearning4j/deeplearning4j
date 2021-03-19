@@ -17,38 +17,39 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.datasets.fetchers;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author saudet
  */
-public class SvhnDataFetcherTest extends BaseDL4JTest {
+@DisplayName("Svhn Data Fetcher Test")
+class SvhnDataFetcherTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 480_000_000L;    //Shouldn't take this long but slow download or drive access on CI machines may need extra time.
+        // Shouldn't take this long but slow download or drive access on CI machines may need extra time.
+        return 480_000_000L;
     }
 
     @Test
-    public void testSvhnDataFetcher() throws Exception {
-        assumeTrue(isIntegrationTests());   //Ignore unless integration tests - CI can get caught up on slow disk access
-
+    @DisplayName("Test Svhn Data Fetcher")
+    void testSvhnDataFetcher() throws Exception {
+        // Ignore unless integration tests - CI can get caught up on slow disk access
+        assumeTrue(isIntegrationTests());
         SvhnDataFetcher fetch = new SvhnDataFetcher();
         File path = fetch.getDataSetPath(DataSetType.TRAIN);
         File path2 = fetch.getDataSetPath(DataSetType.TEST);
         File path3 = fetch.getDataSetPath(DataSetType.VALIDATION);
-
         assertTrue(path.isDirectory());
         assertTrue(path2.isDirectory());
         assertTrue(path3.isDirectory());

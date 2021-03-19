@@ -27,7 +27,9 @@ import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
 import org.deeplearning4j.iterator.provider.CollectionLabeledPairSentenceProvider;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -43,9 +45,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
+@Disabled("Permissions issues on CI")
 public class TestBertIterator extends BaseDL4JTest {
 
     private static File pathToVocab = Resources.asFile("other/vocab.txt");
@@ -55,8 +58,6 @@ public class TestBertIterator extends BaseDL4JTest {
     private static String sentenceA = "Goodnight noises everywhere";
     private static String sentenceB = "Goodnight moon";
 
-    public TestBertIterator() throws IOException {
-    }
 
     @Test()
     public void testBertSequenceClassification() throws Exception {
@@ -132,7 +133,8 @@ public class TestBertIterator extends BaseDL4JTest {
         assertEquals(segmentId, b.featurizeSentences(testHelper.getSentences()).getFirst()[1]);
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000)
     public void testBertUnsupervised() throws Exception {
         int minibatchSize = 2;
         TestSentenceHelper testHelper = new TestSentenceHelper();
@@ -163,7 +165,8 @@ public class TestBertIterator extends BaseDL4JTest {
         assertTrue(b.hasNext());
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000)
     public void testLengthHandling() throws Exception {
         int minibatchSize = 2;
         TestSentenceHelper testHelper = new TestSentenceHelper();
@@ -232,7 +235,8 @@ public class TestBertIterator extends BaseDL4JTest {
         assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000)
     public void testMinibatchPadding() throws Exception {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         int minibatchSize = 3;

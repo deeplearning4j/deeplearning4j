@@ -20,9 +20,9 @@
 
 package org.deeplearning4j.regressiontest;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -54,8 +54,8 @@ import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
@@ -71,7 +71,7 @@ import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.common.resources.Resources;
-@Ignore
+@Disabled
 public class RegressionTest100b4 extends BaseDL4JTest {
 
     @Override
@@ -134,7 +134,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
             boolean eq = outExp.equalsWithEps(outAct, 0.01);
-            assertTrue("Test for dtype: " + dtypeName + "\n" + outExp + " vs " + outAct, eq);
+            assertTrue(eq,"Test for dtype: " + dtypeName + "\n" + outExp + " vs " + outAct);
         }
     }
 
@@ -221,7 +221,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
 
 
     @Test
-    @Ignore("Failing due to new data format changes. Sept 10,2020")
+    @Disabled("Failing due to new data format changes. Sept 10,2020")
     public void testYoloHouseNumber() throws Exception {
 
         File f = Resources.asFile("regression_testing/100b4/HouseNumberDetection_100b4.bin");
@@ -257,7 +257,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("failing due to new input data format changes.")
+    @Disabled("failing due to new input data format changes.")
     public void testSyntheticCNN() throws Exception {
 
         File f = Resources.asFile("regression_testing/100b4/SyntheticCNN_100b4.bin");

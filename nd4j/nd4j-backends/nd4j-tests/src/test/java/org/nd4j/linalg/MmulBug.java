@@ -20,27 +20,27 @@
 
 package org.nd4j.linalg;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MmulBug extends BaseNd4jTest {
+public class MmulBug extends BaseNd4jTestWithBackends {
 
-    public MmulBug(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
         return 'c';
     }
 
-    @Test
-    public void simpleTest() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void simpleTest(Nd4jBackend backend) {
         INDArray m1 = Nd4j.create(new double[][] {{1.0}, {2.0}, {3.0}, {4.0}});
 
         m1 = m1.reshape(2, 2);

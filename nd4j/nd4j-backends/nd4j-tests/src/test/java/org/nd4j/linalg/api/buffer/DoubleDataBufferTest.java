@@ -23,11 +23,13 @@ package org.nd4j.linalg.api.buffer;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -40,9 +42,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.util.SerializationUtils;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Double data buffer tests
@@ -52,35 +55,30 @@ import static org.junit.Assert.*;
  *
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-@Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
-public class DoubleDataBufferTest extends BaseNd4jTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
-    DataType initialType;
-
-    public DoubleDataBufferTest(Nd4jBackend backend) {
-        super(backend);
-        initialType = Nd4j.dataType();
-    }
+@Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
 
 
-    @Before
-    public void before() {
+    DataType initialType = Nd4j.dataType();
+
+
+
+    @BeforeEach
+    public void before(Nd4jBackend backend) {
 
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
-    @After
-    public void after() {
+    @AfterEach
+    public void after(Nd4jBackend backend) {
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
-    @Test
-    public void testPointerCreation() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPointerCreation(Nd4jBackend backend) {
         DoublePointer floatPointer = new DoublePointer(1, 2, 3, 4);
         Indexer indexer = DoubleIndexer.create(floatPointer);
         DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataType.DOUBLE, 4, indexer);
@@ -88,8 +86,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         assertArrayEquals(other.asDouble(), buffer.asDouble(), 0.001);
     }
 
-    @Test
-    public void testGetSet() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetSet(Nd4jBackend backend) {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
@@ -99,10 +98,11 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
 
-    @Test
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerialization2() throws Exception {
         INDArray[] arr = new INDArray[] {Nd4j.ones(1, 10),
-                        //      Nd4j.ones(5,10).getRow(2)
+                //      Nd4j.ones(5,10).getRow(2)
         };
 
         for (INDArray a : arr) {
@@ -127,9 +127,10 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSerialization() throws Exception {
-        File dir = testDir.newFolder();
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSerialization(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
         File file = new File(dir, fileName);
@@ -149,8 +150,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testDup() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDup(Nd4jBackend backend) {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -159,8 +161,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testPut() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPut(Nd4jBackend backend) {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -170,8 +173,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testGetRange() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[] {1, 2, 3};
@@ -185,8 +189,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testGetOffsetRange() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetOffsetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[] {2, 3, 4};
@@ -200,8 +205,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testAssign() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAssign(Nd4jBackend backend) {
         DataBuffer assertion = Nd4j.createBuffer(new double[] {1, 2, 3});
         DataBuffer one = Nd4j.createBuffer(new double[] {1});
         DataBuffer twoThree = Nd4j.createBuffer(new double[] {2, 3});
@@ -211,8 +217,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testOffset() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOffset(Nd4jBackend backend) {
         DataBuffer create = Nd4j.createBuffer(new double[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
         assertEquals(0, create.offset());
@@ -221,8 +228,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testReallocation() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReallocation(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
         double[] old = buffer.asDouble();
@@ -231,10 +239,11 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         assertArrayEquals(old, Arrays.copyOf(buffer.asDouble(), 4), 1e-1);
     }
 
-    @Test
-    public void testReallocationWorkspace() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReallocationWorkspace(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
-                        .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
+                .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
         DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
@@ -248,7 +257,8 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
-    @Test
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddressPointer(){
         if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
             return;
@@ -257,12 +267,12 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
 
         DoublePointer pointer = (DoublePointer) wrappedBuffer.addressPointer();
-        Assert.assertEquals(buffer.getDouble(1), pointer.get(0), 1e-1);
-        Assert.assertEquals(buffer.getDouble(2), pointer.get(1), 1e-1);
+        assertEquals(buffer.getDouble(1), pointer.get(0), 1e-1);
+        assertEquals(buffer.getDouble(2), pointer.get(1), 1e-1);
 
         try {
             pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
-            Assert.fail("Accessing this address should not be allowed!");
+            fail("Accessing this address should not be allowed!");
         } catch (IndexOutOfBoundsException e) {
             // do nothing
         }

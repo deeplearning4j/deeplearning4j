@@ -35,26 +35,26 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestUI extends BaseND4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testUI() throws Exception {
+    public void testUI(@TempDir Path testDir) throws Exception {
         Schema schema = new Schema.Builder().addColumnString("StringColumn").addColumnInteger("IntColumn")
                         .addColumnInteger("IntColumn2").addColumnInteger("IntColumn3")
                         .addColumnTime("TimeColumn", DateTimeZone.UTC).build();
@@ -92,7 +92,7 @@ public class TestUI extends BaseND4JTest {
 
         DataAnalysis da = new DataAnalysis(schema, list);
 
-        File fDir = testDir.newFolder();
+        File fDir = testDir.toFile();
         String tempDir = fDir.getAbsolutePath();
         String outPath = FilenameUtils.concat(tempDir, "datavec_transform_UITest.html");
         System.out.println(outPath);
@@ -143,7 +143,7 @@ public class TestUI extends BaseND4JTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testSequencePlot() throws Exception {
 
         Schema schema = new SequenceSchema.Builder().addColumnDouble("sinx")

@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.datasets.iterator;
 
 import org.datavec.api.records.reader.RecordReader;
@@ -26,35 +25,31 @@ import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.util.TestDataSetConsumer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+
+import org.junit.jupiter.api.Test;
+
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.resources.Resources;
-
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.*;
-
-
-public class MultipleEpochsIteratorTest extends BaseDL4JTest {
-
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
+@DisplayName("Multiple Epochs Iterator Test")
+class MultipleEpochsIteratorTest extends BaseDL4JTest {
 
     @Test
-    public void testNextAndReset() throws Exception {
+    @DisplayName("Test Next And Reset")
+    void testNextAndReset() throws Exception {
         int epochs = 3;
-
         RecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
-
         assertTrue(multiIter.hasNext());
         while (multiIter.hasNext()) {
             DataSet path = multiIter.next();
@@ -64,18 +59,15 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testLoadFullDataSet() throws Exception {
+    @DisplayName("Test Load Full Data Set")
+    void testLoadFullDataSet() throws Exception {
         int epochs = 3;
-
         RecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         DataSet ds = iter.next(50);
-
         assertEquals(50, ds.getFeatures().size(0));
-
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
-
         assertTrue(multiIter.hasNext());
         int count = 0;
         while (multiIter.hasNext()) {
@@ -89,28 +81,26 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testLoadBatchDataSet() throws Exception {
+    @DisplayName("Test Load Batch Data Set")
+    void testLoadBatchDataSet() throws Exception {
         int epochs = 2;
-
         RecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150, 4, 3);
         DataSet ds = iter.next(20);
         assertEquals(20, ds.getFeatures().size(0));
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
-
         while (multiIter.hasNext()) {
             DataSet path = multiIter.next(10);
             assertNotNull(path);
             assertEquals(10, path.numExamples(), 0.0);
         }
-
         assertEquals(epochs, multiIter.epochs);
     }
 
-
     @Test
-    public void testMEDIWithLoad1() throws Exception {
+    @DisplayName("Test MEDI With Load 1")
+    void testMEDIWithLoad1() throws Exception {
         ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(100));
         MultipleEpochsIterator iterator = new MultipleEpochsIterator(10, iter, 24);
         TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 1);
@@ -119,38 +109,39 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testMEDIWithLoad2() throws Exception {
+    @DisplayName("Test MEDI With Load 2")
+    void testMEDIWithLoad2() throws Exception {
         ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(100));
         MultipleEpochsIterator iterator = new MultipleEpochsIterator(10, iter, 24);
         TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 2);
         long num1 = 0;
-
         for (; num1 < 150; num1++) {
             consumer.consumeOnce(iterator.next(), true);
         }
         iterator.reset();
-
         long num2 = consumer.consumeWhileHasNext(true);
         assertEquals((10 * 100) + 150, num1 + num2);
     }
 
     @Test
-    public void testMEDIWithLoad3() throws Exception {
+    @DisplayName("Test MEDI With Load 3")
+    void testMEDIWithLoad3() throws Exception {
         ExistingDataSetIterator iter = new ExistingDataSetIterator(new IterableWithoutException(10000));
         MultipleEpochsIterator iterator = new MultipleEpochsIterator(iter, 24, 136);
         TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, 2);
         long num1 = 0;
-
         while (iterator.hasNext()) {
             consumer.consumeOnce(iterator.next(), true);
             num1++;
         }
-
         assertEquals(136, num1);
     }
 
+    @DisplayName("Iterable Without Exception")
     private class IterableWithoutException implements Iterable<DataSet> {
+
         private final AtomicLong counter = new AtomicLong(0);
+
         private final int datasets;
 
         public IterableWithoutException(int datasets) {
@@ -161,6 +152,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
         public Iterator<DataSet> iterator() {
             counter.set(0);
             return new Iterator<DataSet>() {
+
                 @Override
                 public boolean hasNext() {
                     return counter.get() < datasets;
@@ -174,7 +166,6 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
 
                 @Override
                 public void remove() {
-
                 }
             };
         }

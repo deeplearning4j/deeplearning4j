@@ -35,8 +35,8 @@ import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,8 +52,8 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 
-import static org.junit.Assert.*;
-@Ignore
+import static org.junit.jupiter.api.Assertions.*;
+@Disabled
 public class RegressionTest100b6 extends BaseDL4JTest {
 
     @Override
@@ -116,7 +116,7 @@ public class RegressionTest100b6 extends BaseDL4JTest {
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
             boolean eq = outExp.equalsWithEps(outAct, 0.01);
-            assertTrue("Test for dtype: " + dtypeName + " - " + outExp + " vs " + outAct, eq);
+            assertTrue(eq, "Test for dtype: " + dtypeName + " - " + outExp + " vs " + outAct);
         }
     }
 

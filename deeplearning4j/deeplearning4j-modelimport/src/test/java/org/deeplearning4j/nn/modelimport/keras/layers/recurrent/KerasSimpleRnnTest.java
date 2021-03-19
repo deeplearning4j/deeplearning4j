@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -30,36 +29,50 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasSimpleRnnTest extends BaseDL4JTest {
+@DisplayName("Keras Simple Rnn Test")
+class KerasSimpleRnnTest extends BaseDL4JTest {
 
     private final String ACTIVATION = "sigmoid";
+
     private final String LAYER_NAME = "simple_rnn_layer";
+
     private final String INIT_KERAS = "glorot_normal";
+
     private final IWeightInit INIT_DL4J = new WeightInitXavier();
+
     private final double L1_REGULARIZATION = 0.01;
+
     private final double L2_REGULARIZATION = 0.02;
+
     private final double DROPOUT_KERAS = 0.3;
+
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
+
     private final int N_OUT = 13;
 
-    private Boolean[] returnSequences = new Boolean[]{true, false};
+    private Boolean[] returnSequences = new Boolean[] { true, false };
+
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testSimpleRnnLayer() throws Exception {
+    @DisplayName("Test Simple Rnn Layer")
+    void testSimpleRnnLayer() throws Exception {
         for (Boolean rs : returnSequences) {
             buildSimpleRnnLayer(conf1, keras1, rs);
             buildSimpleRnnLayer(conf2, keras2, rs);
@@ -67,7 +80,6 @@ public class KerasSimpleRnnTest extends BaseDL4JTest {
     }
 
     private void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean rs) throws Exception {
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<>();
@@ -76,7 +88,6 @@ public class KerasSimpleRnnTest extends BaseDL4JTest {
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
-
         } else {
             Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
@@ -88,17 +99,13 @@ public class KerasSimpleRnnTest extends BaseDL4JTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), rs);
-
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
         config.put(conf.getLAYER_FIELD_UNROLL(), true);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
-
-        SimpleRnn layer = rs ? (SimpleRnn) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer() :
-                (SimpleRnn) ((LastTimeStep) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
+        SimpleRnn layer = rs ? (SimpleRnn) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer() : (SimpleRnn) ((LastTimeStep) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
         assertEquals(ACTIVATION, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());

@@ -33,28 +33,29 @@ import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestSequenceRecordReaderFunction extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testSequenceRecordReaderFunctionCSV() throws Exception {
+    public void testSequenceRecordReaderFunctionCSV(@TempDir Path testDir) throws Exception {
         JavaSparkContext sc = getContext();
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         new ClassPathResource("datavec-spark/csvsequence/").copyDirectory(f);
 
         String path = f.getAbsolutePath() + "/*";
@@ -120,10 +121,10 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
 
 
     @Test
-    public void testSequenceRecordReaderFunctionVideo() throws Exception {
+    public void testSequenceRecordReaderFunctionVideo(@TempDir Path testDir) throws Exception {
         JavaSparkContext sc = getContext();
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         new ClassPathResource("datavec-spark/video/").copyDirectory(f);
 
         String path = f.getAbsolutePath() + "/*";

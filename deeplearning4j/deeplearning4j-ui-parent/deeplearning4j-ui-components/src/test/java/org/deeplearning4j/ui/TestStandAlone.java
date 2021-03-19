@@ -28,8 +28,8 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.standalone.StaticPageUtil;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 

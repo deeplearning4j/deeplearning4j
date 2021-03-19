@@ -1,1 +1,16 @@
-Sum,Sum
+Identity,in_0/read
+Enter,while/Enter
+Enter,while/Enter_1
+Merge,while/Merge
+Merge,while/Merge_1
+Less,while/Less
+LoopCond,while/LoopCond
+Switch,while/Switch
+Switch,while/Switch_1
+Identity,while/Identity
+Exit,while/Exit
+Identity,while/Identity_1
+Exit,while/Exit_1
+Add,while/add
+NextIteration,while/NextIteration_1
+NextIteration,while/NextIteration

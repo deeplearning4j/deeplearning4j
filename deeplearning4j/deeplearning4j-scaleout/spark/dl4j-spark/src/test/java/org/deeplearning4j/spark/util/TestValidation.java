@@ -25,33 +25,32 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.data.SparkDataValidation;
 import org.deeplearning4j.spark.util.data.ValidationResult;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestValidation extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
     @Test
-    public void testDataSetValidation() throws Exception {
+    public void testDataSetValidation(@TempDir Path folder) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
         }
-        File f = folder.newFolder();
+        File f = folder.toFile();
 
         for( int i = 0; i < 3; i++ ) {
             DataSet ds = new DataSet(Nd4j.create(1,10), Nd4j.create(1,10));
@@ -113,12 +112,12 @@ public class TestValidation extends BaseSparkTest {
     }
 
     @Test
-    public void testMultiDataSetValidation() throws Exception {
+    public void testMultiDataSetValidation(@TempDir Path folder) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
         }
-        File f = folder.newFolder();
+        File f = folder.toFile();
 
         for( int i = 0; i < 3; i++ ) {
             MultiDataSet ds = new MultiDataSet(Nd4j.create(1,10), Nd4j.create(1,10));

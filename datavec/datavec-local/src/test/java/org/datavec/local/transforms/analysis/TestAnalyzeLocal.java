@@ -29,9 +29,9 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.Writable;
 import org.datavec.local.transforms.AnalyzeLocal;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.io.ClassPathResource;
@@ -39,12 +39,11 @@ import org.nd4j.common.io.ClassPathResource;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAnalyzeLocal {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
     public void testAnalysisBasic() throws Exception {
@@ -72,7 +71,7 @@ public class TestAnalyzeLocal {
         INDArray mean = arr.mean(0);
         INDArray std = arr.std(0);
 
-        for( int i=0; i<5; i++ ){
+        for( int i = 0; i < 5; i++) {
             double m = ((NumericalColumnAnalysis)da.getColumnAnalysis().get(i)).getMean();
             double stddev = ((NumericalColumnAnalysis)da.getColumnAnalysis().get(i)).getSampleStdev();
             assertEquals(mean.getDouble(i), m, 1e-3);

@@ -28,16 +28,16 @@ import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFact
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class WeightedWalkerTest extends BaseDL4JTest {
     private static Graph<VocabWord, Integer> basicGraph;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         if (basicGraph == null) {
             // we don't really care about this graph, since it's just basic graph for iteration checks

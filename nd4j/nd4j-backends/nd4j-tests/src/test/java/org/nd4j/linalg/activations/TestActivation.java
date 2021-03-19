@@ -20,11 +20,12 @@
 
 package org.nd4j.linalg.activations;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.impl.ActivationCube;
 import org.nd4j.linalg.activations.impl.ActivationELU;
 import org.nd4j.linalg.activations.impl.ActivationGELU;
@@ -52,15 +53,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
 
-@RunWith(Parameterized.class)
-public class TestActivation extends BaseNd4jTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-    public TestActivation(Nd4jBackend backend) {
-        super(backend);
-    }
+
+public class TestActivation extends BaseNd4jTestWithBackends {
+
 
     @Override
     public char ordering() {
@@ -69,7 +68,7 @@ public class TestActivation extends BaseNd4jTest {
 
     private ObjectMapper mapper;
 
-    @Before
+    @BeforeEach
     public void initMapper() {
         mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -78,8 +77,9 @@ public class TestActivation extends BaseNd4jTest {
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    @Test
-    public void testRelu(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRelu(Nd4jBackend backend){
 
         Double[] max = {null, 6.0, 2.5, 5.0};
         Double[] threshold = {0.0, 0.0, 0.75, 0.2};
@@ -130,31 +130,32 @@ public class TestActivation extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testJson() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testJson(Nd4jBackend backend) throws Exception {
 
         IActivation[] activations = new IActivation[] {new ActivationCube(), new ActivationELU(0.25),
-                        new ActivationHardSigmoid(), new ActivationHardTanH(), new ActivationIdentity(),
-                        new ActivationLReLU(0.25), new ActivationRationalTanh(), new ActivationReLU(),
-                        new ActivationRReLU(0.25, 0.5), new ActivationSigmoid(), new ActivationSoftmax(),
-                        new ActivationSoftPlus(), new ActivationSoftSign(), new ActivationTanH(), new ActivationGELU(), new ActivationGELU(true)};
+                new ActivationHardSigmoid(), new ActivationHardTanH(), new ActivationIdentity(),
+                new ActivationLReLU(0.25), new ActivationRationalTanh(), new ActivationReLU(),
+                new ActivationRReLU(0.25, 0.5), new ActivationSigmoid(), new ActivationSoftmax(),
+                new ActivationSoftPlus(), new ActivationSoftSign(), new ActivationTanH(), new ActivationGELU(), new ActivationGELU(true)};
 
         String[][] expectedFields = new String[][] {{"@class"}, //Cube
-                        {"@class", "alpha"}, //ELU
-                        {"@class"}, //Hard sigmoid
-                        {"@class"}, //Hard TanH
-                        {"@class"}, //Identity
-                        {"@class", "alpha"}, //Leaky Relu
-                        {"@class"}, //rational tanh
-                        {"@class", "max", "negativeSlope", "threshold"}, //relu
-                        {"@class", "l", "u"}, //rrelu
-                        {"@class"}, //sigmoid
-                        {"@class"}, //Softmax
-                        {"@class"}, //Softplus
-                        {"@class"}, //Softsign
-                        {"@class"}, //Tanh
-                        {"@class", "precise"}, //GELU
-                        {"@class", "precise"}  //GELU precise
+                {"@class", "alpha"}, //ELU
+                {"@class"}, //Hard sigmoid
+                {"@class"}, //Hard TanH
+                {"@class"}, //Identity
+                {"@class", "alpha"}, //Leaky Relu
+                {"@class"}, //rational tanh
+                {"@class", "max", "negativeSlope", "threshold"}, //relu
+                {"@class", "l", "u"}, //rrelu
+                {"@class"}, //sigmoid
+                {"@class"}, //Softmax
+                {"@class"}, //Softplus
+                {"@class"}, //Softsign
+                {"@class"}, //Tanh
+                {"@class", "precise"}, //GELU
+                {"@class", "precise"}  //GELU precise
 
         };
 
@@ -172,12 +173,12 @@ public class TestActivation extends BaseNd4jTest {
             String[] expFields = expectedFields[i];
 
             String msg = activations[i].toString() + "\tExpected fields: " + Arrays.toString(expFields)
-                            + "\tActual fields: " + actualFieldsByName;
-            assertEquals(msg, expFields.length, actualFieldsByName.size());
+                    + "\tActual fields: " + actualFieldsByName;
+            assertEquals(expFields.length, actualFieldsByName.size(),msg);
 
             for (String s : expFields) {
                 msg = "Expected field \"" + s + "\", was not found in " + activations[i].toString();
-                assertTrue(msg, actualFieldsByName.contains(s));
+                assertTrue(actualFieldsByName.contains(s),msg);
             }
 
             //Test conversion from JSON:

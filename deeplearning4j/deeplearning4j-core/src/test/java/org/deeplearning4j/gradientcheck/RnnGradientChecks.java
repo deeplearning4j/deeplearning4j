@@ -35,8 +35,8 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,7 +46,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RnnGradientChecks extends BaseDL4JTest {
 
@@ -62,7 +62,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
+    @Disabled("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testBidirectionalWrapper() {
 
         int nIn = 3;
@@ -146,7 +146,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
+    @Disabled("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testSimpleRnn() {
         int nOut = 5;
 
@@ -226,7 +226,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
+    @Disabled("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testLastTimeStepLayer(){
         int nIn = 3;
         int nOut = 5;
@@ -289,7 +289,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
 
                         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
                                 .labels(labels).inputMask(inMask).subset(true).maxPerParam(16));
-                        assertTrue(name, gradOK);
+                        assertTrue(gradOK, name);
                         TestUtils.testModelSerialization(net);
                     }
                 }
@@ -353,7 +353,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
 
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
                         .labels(labels).inputMask(inMask).subset(true).maxPerParam(16));
-                assertTrue(name, gradOK);
+                assertTrue(gradOK, name);
                 TestUtils.testModelSerialization(net);
             }
         }

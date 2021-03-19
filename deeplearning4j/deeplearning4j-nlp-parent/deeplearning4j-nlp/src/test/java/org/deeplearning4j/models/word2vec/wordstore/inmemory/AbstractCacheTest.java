@@ -27,17 +27,17 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class AbstractCacheTest extends BaseDL4JTest {
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }

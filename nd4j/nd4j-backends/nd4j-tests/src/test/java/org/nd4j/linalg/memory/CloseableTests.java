@@ -22,27 +22,25 @@ package org.nd4j.linalg.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class CloseableTests extends BaseNd4jTest {
-    public CloseableTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testSimpleRelease_1() {
+public class CloseableTests extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSimpleRelease_1(Nd4jBackend backend) {
         val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
         assertTrue(array.closeable());
 
@@ -51,8 +49,9 @@ public class CloseableTests extends BaseNd4jTest {
         assertFalse(array.closeable());
     }
 
-    @Test
-    public void testCyclicRelease_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCyclicRelease_1(Nd4jBackend backend) {
         for (int e = 0; e < 100; e++) {
             try (val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5})) {
                 array.addi(1.0f);
@@ -61,8 +60,9 @@ public class CloseableTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testViewRelease_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testViewRelease_1(Nd4jBackend backend) {
         val array = Nd4j.create(5, 5);
         assertTrue(array.closeable());
 
@@ -72,8 +72,9 @@ public class CloseableTests extends BaseNd4jTest {
         assertFalse(view.closeable());
     }
 
-    @Test
-    public void testAttachedRelease_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAttachedRelease_1(Nd4jBackend backend) {
         val wsconf = WorkspaceConfiguration.builder().build();
 
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "haha72yjhfdfs")) {
@@ -82,21 +83,28 @@ public class CloseableTests extends BaseNd4jTest {
         }
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testAccessException_1() {
-        val array = Nd4j.create(5, 5);
-        array.close();
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAccessException_1(Nd4jBackend backend) {
+       assertThrows(IllegalStateException.class,() -> {
+           val array = Nd4j.create(5, 5);
+           array.close();
 
-        array.data().pointer();
+           array.data().pointer();
+       });
+
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testAccessException_2() {
-        val array = Nd4j.create(5, 5);
-        val view = array.getRow(0);
-        array.close();
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAccessException_2(Nd4jBackend backend) {
+      assertThrows(IllegalStateException.class,() -> {
+          val array = Nd4j.create(5, 5);
+          val view = array.getRow(0);
+          array.close();
 
-        view.data().pointer();
+          view.data().pointer();
+      });
     }
 
     @Override

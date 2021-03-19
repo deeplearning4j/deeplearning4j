@@ -41,7 +41,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.lang.reflect.Field;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class CuDNNValidationUtil {

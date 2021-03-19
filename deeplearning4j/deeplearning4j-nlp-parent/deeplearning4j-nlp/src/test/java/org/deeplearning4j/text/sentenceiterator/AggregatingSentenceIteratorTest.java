@@ -21,16 +21,20 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled("Permissions issues on CI")
 public class AggregatingSentenceIteratorTest extends BaseDL4JTest {
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(30000)
     public void testHasNext() throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(file);

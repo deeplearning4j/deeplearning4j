@@ -21,7 +21,7 @@
 package org.deeplearning4j.rl4j.observation.transform;
 
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -30,40 +30,52 @@ import org.datavec.api.transform.Operation;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TransformProcessTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_noChannelNameIsSuppliedToBuild_expect_exception() {
         // Arrange
-        TransformProcess.builder().build();
+        assertThrows(IllegalArgumentException.class,() -> {
+            TransformProcess.builder().build();
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_callingTransformWithNullArg_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .build("test");
+        assertThrows(IllegalArgumentException.class,() ->  {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .build("test");
 
-        // Act
-        sut.transform(null, 0, false);
+            // Act
+            sut.transform(null, 0, false);
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_callingTransformWithEmptyChannelData_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>();
+        assertThrows(IllegalArgumentException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .build("test");
+            Map<String, Object> channelsData = new HashMap<String, Object>();
 
-        // Act
-        sut.transform(channelsData, 0, false);
+            // Act
+            sut.transform(channelsData, 0, false);
+        });
+
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_addingNullFilter_expect_nullException() {
-        // Act
-        TransformProcess.builder().filter(null);
+        assertThrows(NullPointerException.class,() -> {
+            // Act
+            TransformProcess.builder().filter(null);
+        });
+
     }
 
     @Test
@@ -86,16 +98,22 @@ public class TransformProcessTest {
         assertFalse(transformOperationMock.isCalled);
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_addingTransformOnNullChannel_expect_nullException() {
-        // Act
-        TransformProcess.builder().transform(null, new IntegerTransformOperationMock());
+        assertThrows(NullPointerException.class,() -> {
+            // Act
+            TransformProcess.builder().transform(null, new IntegerTransformOperationMock());
+        });
+
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_addingTransformWithNullTransform_expect_nullException() {
-        // Act
-        TransformProcess.builder().transform("test", null);
+        assertThrows(NullPointerException.class,() -> {
+            // Act
+            TransformProcess.builder().transform("test", null);
+        });
+
     }
 
     @Test
@@ -118,16 +136,21 @@ public class TransformProcessTest {
         assertEquals(-1.0, result.getData().getDouble(0), 0.00001);
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_addingPreProcessOnNullChannel_expect_nullException() {
-        // Act
-        TransformProcess.builder().preProcess(null, new DataSetPreProcessorMock());
+        assertThrows(NullPointerException.class,() -> {
+            // Act
+            TransformProcess.builder().preProcess(null, new DataSetPreProcessorMock());
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_addingPreProcessWithNullTransform_expect_nullException() {
-        // Act
-        TransformProcess.builder().transform("test", null);
+        assertThrows(NullPointerException.class,() -> {
+            // Act
+            TransformProcess.builder().transform("test", null);
+        });
+
     }
 
     @Test
@@ -153,54 +176,69 @@ public class TransformProcessTest {
         assertEquals(-10.0, result.getData().getDouble(0), 0.00001);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void when_transformingNullData_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .transform("test", new IntegerTransformOperationMock())
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("test", 1);
-        }};
+        assertThrows(IllegalStateException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .transform("test", new IntegerTransformOperationMock())
+                    .build("test");
+            Map<String, Object> channelsData = new HashMap<String, Object>() {{
+                put("test", 1);
+            }};
 
-        // Act
-        Observation result = sut.transform(channelsData, 0, false);
+            // Act
+            Observation result = sut.transform(channelsData, 0, false);
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_transformingAndChannelsNotDataSet_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .preProcess("test", new DataSetPreProcessorMock())
-                .build("test");
+        assertThrows(IllegalArgumentException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .preProcess("test", new DataSetPreProcessorMock())
+                    .build("test");
 
-        // Act
-        Observation result = sut.transform(null, 0, false);
+            // Act
+            Observation result = sut.transform(null, 0, false);
+        });
+
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_transformingAndChannelsEmptyDataSet_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .preProcess("test", new DataSetPreProcessorMock())
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>();
+        assertThrows(IllegalArgumentException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .preProcess("test", new DataSetPreProcessorMock())
+                    .build("test");
+            Map<String, Object> channelsData = new HashMap<String, Object>();
 
-        // Act
-        Observation result = sut.transform(channelsData, 0, false);
+            // Act
+            Observation result = sut.transform(channelsData, 0, false);
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_buildIsCalledWithoutChannelNames_expect_exception() {
-        // Act
-        TransformProcess.builder().build();
+        assertThrows(IllegalArgumentException.class,() -> {
+            // Act
+            TransformProcess.builder().build();
+        });
+
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_buildIsCalledWithNullChannelName_expect_exception() {
-        // Act
-        TransformProcess.builder().build(null);
+        assertThrows(NullPointerException.class,() -> {
+            // Act
+            TransformProcess.builder().build(null);
+        });
+
     }
 
     @Test
@@ -257,87 +295,105 @@ public class TransformProcessTest {
         assertEquals(1.0, result.getData().getDouble(0), 0.00001);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void when_buildIsCalledAndChannelsNotDataSetsOrINDArrays_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("test", 1);
-        }};
+        assertThrows(IllegalStateException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .build("test");
+            Map<String, Object> channelsData = new HashMap<String, Object>() {{
+                put("test", 1);
+            }};
 
-        // Act
-        Observation result = sut.transform(channelsData, 123, true);
+            // Act
+            Observation result = sut.transform(channelsData, 123, true);
+        });
+
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void when_channelDataIsNull_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .transform("test", new IntegerTransformOperationMock())
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("test", null);
-        }};
+        assertThrows(NullPointerException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .transform("test", new IntegerTransformOperationMock())
+                    .build("test");
+            Map<String, Object> channelsData = new HashMap<String, Object>() {{
+                put("test", null);
+            }};
 
-        // Act
-        sut.transform(channelsData, 0, false);
+            // Act
+            sut.transform(channelsData, 0, false);
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_transformAppliedOnChannelNotInMap_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .transform("test", new IntegerTransformOperationMock())
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("not-test", 1);
-        }};
+       assertThrows(IllegalArgumentException.class,() -> {
+           // Arrange
+           TransformProcess sut = TransformProcess.builder()
+                   .transform("test", new IntegerTransformOperationMock())
+                   .build("test");
+           Map<String, Object> channelsData = new HashMap<String, Object>() {{
+               put("not-test", 1);
+           }};
 
-        // Act
-        sut.transform(channelsData, 0, false);
+           // Act
+           sut.transform(channelsData, 0, false);
+       });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_preProcessAppliedOnChannelNotInMap_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .preProcess("test", new DataSetPreProcessorMock())
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("not-test", 1);
-        }};
+        assertThrows(IllegalArgumentException.class,() -> {
+            // Arrange
+            TransformProcess sut = TransformProcess.builder()
+                    .preProcess("test", new DataSetPreProcessorMock())
+                    .build("test");
+            Map<String, Object> channelsData = new HashMap<String, Object>() {{
+                put("not-test", 1);
+            }};
 
-        // Act
-        sut.transform(channelsData, 0, false);
+            // Act
+            sut.transform(channelsData, 0, false);
+        });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_buildContainsChannelNotInMap_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .transform("test", new IntegerTransformOperationMock())
-                .build("not-test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("test", 1);
-        }};
+       assertThrows(IllegalArgumentException.class,() -> {
+           // Arrange
+           TransformProcess sut = TransformProcess.builder()
+                   .transform("test", new IntegerTransformOperationMock())
+                   .build("not-test");
+           Map<String, Object> channelsData = new HashMap<String, Object>() {{
+               put("test", 1);
+           }};
 
-        // Act
-        sut.transform(channelsData, 0, false);
+           // Act
+           sut.transform(channelsData, 0, false);
+       });
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void when_preProcessNotAppliedOnDataSet_expect_exception() {
-        // Arrange
-        TransformProcess sut = TransformProcess.builder()
-                .preProcess("test", new DataSetPreProcessorMock())
-                .build("test");
-        Map<String, Object> channelsData = new HashMap<String, Object>() {{
-            put("test", 1);
-        }};
+       assertThrows(IllegalArgumentException.class,() -> {
+           // Arrange
+           TransformProcess sut = TransformProcess.builder()
+                   .preProcess("test", new DataSetPreProcessorMock())
+                   .build("test");
+           Map<String, Object> channelsData = new HashMap<String, Object>() {{
+               put("test", 1);
+           }};
 
-        // Act
-        sut.transform(channelsData, 0, false);
+           // Act
+           sut.transform(channelsData, 0, false);
+       });
+
     }
 
     @Test

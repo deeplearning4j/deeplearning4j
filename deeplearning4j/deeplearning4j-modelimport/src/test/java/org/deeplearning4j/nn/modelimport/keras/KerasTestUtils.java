@@ -28,7 +28,7 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class KerasTestUtils {
 

@@ -35,7 +35,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryType;
 import org.deeplearning4j.nn.conf.memory.MemoryUseMode;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,8 +48,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestMemoryReports extends BaseDL4JTest {
 
@@ -261,7 +261,7 @@ public class TestMemoryReports extends BaseDL4JTest {
 
     @Test
     public void testPreprocessors() throws Exception {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4223
+        //https://github.com/eclipse/deeplearning4j/issues/4223
         File f = new ClassPathResource("4223/CompGraphConfig.json").getTempFileFromArchive();
         String s = FileUtils.readFileToString(f, Charset.defaultCharset());
 

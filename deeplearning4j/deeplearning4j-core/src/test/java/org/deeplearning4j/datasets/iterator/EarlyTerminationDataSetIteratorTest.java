@@ -17,14 +17,12 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.datasets.iterator;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -32,23 +30,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
+import org.junit.jupiter.api.DisplayName;
+
+@DisplayName("Early Termination Data Set Iterator Test")
+class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
 
     int minibatchSize = 10;
+
     int numExamples = 105;
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
+
+
 
     @Test
-    public void testNextAndReset() throws Exception {
-
+    @DisplayName("Test Next And Reset")
+    void testNextAndReset() throws Exception {
         int terminateAfter = 2;
-
         DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
         EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
-
         assertTrue(earlyEndIter.hasNext());
         int batchesSeen = 0;
         List<DataSet> seenData = new ArrayList<>();
@@ -59,8 +59,7 @@ public class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
             batchesSeen++;
         }
         assertEquals(batchesSeen, terminateAfter);
-
-        //check data is repeated after reset
+        // check data is repeated after reset
         earlyEndIter.reset();
         batchesSeen = 0;
         while (earlyEndIter.hasNext()) {
@@ -72,30 +71,28 @@ public class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testNextNum() throws IOException {
+    @DisplayName("Test Next Num")
+    void testNextNum() throws IOException {
         int terminateAfter = 1;
-
         DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
         EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
-
         earlyEndIter.next(10);
         assertEquals(false, earlyEndIter.hasNext());
-
         earlyEndIter.reset();
         assertEquals(true, earlyEndIter.hasNext());
-
     }
 
     @Test
-    public void testCallstoNextNotAllowed() throws IOException {
-        int terminateAfter = 1;
+    @DisplayName("Test calls to Next Not Allowed")
+    void testCallstoNextNotAllowed() throws IOException {
+        assertThrows(RuntimeException.class,() -> {
+            int terminateAfter = 1;
+            DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
+            EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
+            earlyEndIter.next(10);
+            iter.reset();
+            earlyEndIter.next(10);
+        });
 
-        DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
-        EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
-
-        earlyEndIter.next(10);
-        iter.reset();
-        exception.expect(RuntimeException.class);
-        earlyEndIter.next(10);
     }
 }

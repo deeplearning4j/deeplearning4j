@@ -26,8 +26,9 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.BertWordPiecePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.resources.Resources;
 
@@ -39,10 +40,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 public class BertWordPieceTokenizerTests extends BaseDL4JTest {
 
     private File pathToVocab =  Resources.asFile("other/vocab.txt");
@@ -112,7 +113,7 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
+    @Disabled("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer5() throws Exception {
         // Longest Token in Vocab is 22 chars long, so make sure splits on the edge are properly handled
         String toTokenize = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
@@ -194,7 +195,7 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
                 String m = e.getMessage();
                 assertNotNull(m);
                 m = m.toLowerCase();
-                assertTrue(m, m.contains("invalid") && m.contains("token") && m.contains("preprocessor"));
+                assertTrue(m.contains("invalid") && m.contains("token") && m.contains("preprocessor"), m);
             }
 
             try {
@@ -204,13 +205,14 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
                 String m = e.getMessage();
                 assertNotNull(m);
                 m = m.toLowerCase();
-                assertTrue(m, m.contains("invalid") && m.contains("token") && m.contains("preprocessor"));
+                assertTrue(m.contains("invalid") && m.contains("token") && m.contains("preprocessor"), m);
             }
         }
     }
 
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(300000)
     public void testBertWordPieceTokenizer10() throws Exception {
         File f = Resources.asFile("deeplearning4j-nlp/bert/uncased_L-12_H-768_A-12/vocab.txt");
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(f, true, true, StandardCharsets.UTF_8);

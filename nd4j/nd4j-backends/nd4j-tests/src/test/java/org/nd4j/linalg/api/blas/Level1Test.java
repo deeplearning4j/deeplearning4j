@@ -21,28 +21,27 @@
 package org.nd4j.linalg.api.blas;
 
 import lombok.val;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class Level1Test extends BaseNd4jTest {
-    public Level1Test(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testDot() {
+public class Level1Test extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDot(Nd4jBackend backend) {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4});
         assertEquals(30, Nd4j.getBlasWrapper().dot(vec1, vec2), 1e-1);
@@ -54,17 +53,19 @@ public class Level1Test extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testAxpy() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAxpy(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray row = matrix.getRow(1);
         Nd4j.getBlasWrapper().level1().axpy(row.length(), 1.0, row, row);
-        assertEquals(getFailureMessage(), Nd4j.create(new double[] {4, 8}), row);
+        assertEquals(Nd4j.create(new double[] {4, 8}), row,getFailureMessage(backend));
 
     }
 
-    @Test
-    public void testAxpy2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAxpy2(Nd4jBackend backend) {
         val rowX = Nd4j.create(new double[]{1, 2, 3, 4});
         val rowY = Nd4j.create(new double[]{1, 2, 3, 4});
         val exp = Nd4j.create(new double[]{3, 6, 9, 12});

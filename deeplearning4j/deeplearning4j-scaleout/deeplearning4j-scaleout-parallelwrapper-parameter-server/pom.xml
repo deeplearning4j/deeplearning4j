@@ -70,9 +70,17 @@
             <artifactId>nd4j-parameter-server-node_2.11</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
+            <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -94,7 +102,7 @@
 
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
+            <id>nd4j-tests-cpu</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
@@ -105,7 +113,7 @@
             </dependencies>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
+            <id>nd4j-tests-cuda</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>

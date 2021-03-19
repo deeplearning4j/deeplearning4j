@@ -20,38 +20,41 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.dataset.api.preprocessor.PermuteDataSetPreProcessor;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class PermuteDataSetPreProcessorTest extends BaseNd4jTest {
+public class PermuteDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
-    public PermuteDataSetPreProcessorTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test(expected = NullPointerException.class)
-    public void when_dataSetIsNull_expect_NullPointerException() {
-        // Assemble
-        PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_dataSetIsNull_expect_NullPointerException(Nd4jBackend backend) {
+        assertThrows(NullPointerException.class,() -> {
+            // Assemble
+            PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
 
-        // Act
-        sut.preProcess(null);
+            // Act
+            sut.preProcess(null);
+        });
+
     }
 
-    @Test
-    public void when_emptyDatasetInInputdataSetIsNCHW_expect_emptyDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_emptyDatasetInInputdataSetIsNCHW_expect_emptyDataSet(Nd4jBackend backend) {
         // Assemble
         PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
         DataSet ds = new DataSet(null, null);
@@ -63,8 +66,9 @@ public class PermuteDataSetPreProcessorTest extends BaseNd4jTest {
         assertTrue(ds.isEmpty());
     }
 
-    @Test
-    public void when_dataSetIsNCHW_expect_dataSetTransformedToNHWC() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_dataSetIsNCHW_expect_dataSetTransformedToNHWC(Nd4jBackend backend) {
         // Assemble
         int numChannels = 3;
         int height = 5;
@@ -108,8 +112,9 @@ public class PermuteDataSetPreProcessorTest extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void when_dataSetIsNHWC_expect_dataSetTransformedToNCHW() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_dataSetIsNHWC_expect_dataSetTransformedToNCHW(Nd4jBackend backend) {
         // Assemble
         int numChannels = 3;
         int height = 5;

@@ -22,7 +22,8 @@ package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.resources.Resources;
 
 import java.io.IOException;
@@ -34,7 +35,8 @@ import java.io.IOException;
  */
 public class TimeSeriesGeneratorImportTest extends BaseDL4JTest {
 
-    @Test(timeout=300000)
+    @Test()
+    @Timeout(300000)
     public void importTimeSeriesTest() throws IOException, InvalidKerasConfigurationException {
         String path = "modelimport/keras/preprocessing/timeseries_generator.json";
 

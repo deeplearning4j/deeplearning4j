@@ -30,8 +30,8 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class TestKryoWarning {
 
@@ -70,7 +70,7 @@ public class TestKryoWarning {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testKryoMessageMLNIncorrectConfig() {
         //Should print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
@@ -81,7 +81,7 @@ public class TestKryoWarning {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testKryoMessageMLNCorrectConfigKryo() {
         //Should NOT print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
@@ -93,7 +93,7 @@ public class TestKryoWarning {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testKryoMessageMLNCorrectConfigNoKryo() {
         //Should NOT print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]")
@@ -106,7 +106,7 @@ public class TestKryoWarning {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testKryoMessageCGIncorrectConfig() {
         //Should print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
@@ -117,7 +117,7 @@ public class TestKryoWarning {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testKryoMessageCGCorrectConfigKryo() {
         //Should NOT print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
@@ -129,7 +129,7 @@ public class TestKryoWarning {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testKryoMessageCGCorrectConfigNoKryo() {
         //Should NOT print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]")

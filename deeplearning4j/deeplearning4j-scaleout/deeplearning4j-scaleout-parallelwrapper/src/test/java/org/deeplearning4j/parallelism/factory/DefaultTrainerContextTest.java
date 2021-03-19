@@ -34,12 +34,12 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DefaultTrainerContextTest extends BaseDL4JTest {
     int nChannels = 1;

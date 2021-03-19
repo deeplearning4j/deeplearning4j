@@ -35,7 +35,7 @@ import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffConv;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,7 +47,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.Assume.assumeTrue;
 
 @Slf4j
@@ -210,13 +210,13 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             INDArray out = net.output(in);
                                             INDArray outExp = net2.output(in);
 
-                                            assertEquals(msg, outExp, out);
+                                            assertEquals(outExp, out, msg);
 
                                             //Also check serialization:
                                             MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
                                             INDArray outLoaded = netLoaded.output(in);
 
-                                            assertEquals(msg, outExp, outLoaded);
+                                            assertEquals(outExp, outLoaded, msg);
 
                                             //Sanity check on different minibatch sizes:
                                             INDArray newIn = Nd4j.vstack(in, in);
@@ -313,7 +313,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
                                 .labels(l).subset(true).maxPerParam(50));
 
-                        assertTrue(msg, gradOK);
+                        assertTrue(gradOK, msg);
 
                         TestUtils.testModelSerialization(net);
 

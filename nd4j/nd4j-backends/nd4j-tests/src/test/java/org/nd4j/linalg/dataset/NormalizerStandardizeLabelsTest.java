@@ -20,10 +20,11 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -32,17 +33,15 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
-public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
-    public NormalizerStandardizeLabelsTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testBruteForce() {
+public class NormalizerStandardizeLabelsTest extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBruteForce(Nd4jBackend backend) {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers
            The obtained values are compared to the theoretical mean and std dev
          */
@@ -59,11 +58,11 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
 
         double meanNaturalNums = (nSamples + 1) / 2.0;
         INDArray theoreticalMean =
-                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1).castTo(Nd4j.defaultFloatingPointType());
+                Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1).castTo(Nd4j.defaultFloatingPointType());
         INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(0);
         double stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
         INDArray theoreticalStd =
-                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1).castTo(Nd4j.defaultFloatingPointType());
+                Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1).castTo(Nd4j.defaultFloatingPointType());
         INDArray theoreticallabelStd = theoreticalStd.dup().getColumns(0);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
@@ -81,7 +80,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         INDArray stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         INDArray stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
         INDArray stdlabelDeltaPerc =
-                        Transforms.abs(theoreticallabelStd.sub(myNormalizer.getLabelStd())).div(theoreticallabelStd);
+                Transforms.abs(theoreticallabelStd.sub(myNormalizer.getLabelStd())).div(theoreticallabelStd);
         double maxStdDeltaPerc = stdDeltaPerc.max(1).mul(100).getDouble(0);
         double maxlabelStdDeltaPerc = stdlabelDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
@@ -105,8 +104,9 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         assertTrue(maxStdDeltaPerc < tolerancePerc);
     }
 
-    @Test
-    public void testTransform() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTransform(Nd4jBackend backend) {
         /*Random dataset is generated such that
             AX + B where X is from a normal distribution with mean 0 and std 1
             The mean of above will be B and std A
@@ -141,7 +141,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max().getDouble(0) < tolerancePerc);
         //sanity check to see if it's within the theoretical standard error of mean
         sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max().getDouble(0);
-        assertTrue(String.valueOf(sampleMeanSEM), sampleMeanSEM < 2.6); //99% of the time it should be within this many SEMs
+        assertTrue(sampleMeanSEM < 2.6,String.valueOf(sampleMeanSEM)); //99% of the time it should be within this many SEMs
 
         tolerancePerc = 5; //within 5%
         sampleStd = myNormalizer.getStd();

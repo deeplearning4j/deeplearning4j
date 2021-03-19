@@ -22,9 +22,10 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,21 +34,17 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class Nd4jTestsF extends BaseNd4jTest {
 
-    DataType initialType;
+public class Nd4jTestsF extends BaseNd4jTestWithBackends {
 
-    public Nd4jTestsF(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
 
-    @Test
-    public void testConcat3D_Vstack_F() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcat3D_Vstack_F(Nd4jBackend backend) {
         //Nd4j.getExecutioner().enableVerboseMode(true);
         //Nd4j.getExecutioner().enableDebugMode(true);
 
@@ -78,8 +75,9 @@ public class Nd4jTestsF extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSlice_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSlice_1(Nd4jBackend backend) {
         val arr = Nd4j.linspace(1,4, 4, DataType.DOUBLE).reshape(2, 2, 1);
         val exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});
         val exp1 = Nd4j.create(new double[]{2, 4}, new int[] {2, 1});

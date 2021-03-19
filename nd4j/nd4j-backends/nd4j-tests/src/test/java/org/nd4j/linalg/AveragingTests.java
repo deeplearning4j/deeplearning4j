@@ -21,11 +21,12 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,35 +36,33 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class AveragingTests extends BaseNd4jTest {
+
+public class AveragingTests extends BaseNd4jTestWithBackends {
     private final int THREADS = 16;
     private final int LENGTH = 51200 * 4;
 
-    DataType initialType;
+    DataType initialType = Nd4j.dataType();
 
-    public AveragingTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
 
-    @Before
+
+    @BeforeEach
     public void setUp() {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
 
 
-    @Test
-    public void testSingleDeviceAveraging1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSingleDeviceAveraging1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
         INDArray array2 = Nd4j.valueArrayOf(LENGTH, 2.0);
         INDArray array3 = Nd4j.valueArrayOf(LENGTH, 3.0);
@@ -109,8 +108,9 @@ public class AveragingTests extends BaseNd4jTest {
         assertEquals(arrayMean, array16);
     }
 
-    @Test
-    public void testSingleDeviceAveraging2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSingleDeviceAveraging2(Nd4jBackend backend) {
         INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH);
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < THREADS; i++)
@@ -126,8 +126,9 @@ public class AveragingTests extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testAccumulation1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAccumulation1(Nd4jBackend backend) {
         INDArray array1 = Nd4j.create(100).assign(1.0);
         INDArray array2 = Nd4j.create(100).assign(2.0);
         INDArray array3 = Nd4j.create(100).assign(3.0);
@@ -139,8 +140,9 @@ public class AveragingTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testAccumulation2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAccumulation2(Nd4jBackend backend) {
         INDArray array1 = Nd4j.create(100).assign(1.0);
         INDArray array2 = Nd4j.create(100).assign(2.0);
         INDArray array3 = Nd4j.create(100).assign(3.0);
@@ -154,8 +156,9 @@ public class AveragingTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testAccumulation3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAccumulation3(Nd4jBackend backend) {
         // we want to ensure that cuda backend is able to launch this op on cpu
         Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
 

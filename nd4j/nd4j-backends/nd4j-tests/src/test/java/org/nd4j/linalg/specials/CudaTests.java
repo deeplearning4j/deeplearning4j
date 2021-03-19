@@ -22,42 +22,40 @@ package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class CudaTests extends BaseNd4jTest {
 
-    DataType initialType;
+public class CudaTests extends BaseNd4jTestWithBackends {
 
-    public CudaTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
 
-    @Before
+
+    @BeforeEach
     public void setUp() {
             Nd4j.setDataType(DataType.FLOAT);
         }
 
-    @After
+    @AfterEach
     public void setDown() {
             Nd4j.setDataType(initialType);
         }
 
-    @Test
-    public void testMGrid_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMGrid_1(Nd4jBackend backend) {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
 
@@ -77,8 +75,9 @@ public class CudaTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testMGrid_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMGrid_2(Nd4jBackend backend) {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
 

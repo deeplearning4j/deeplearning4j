@@ -22,30 +22,29 @@ package org.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Parameterized.class)
+
 @Slf4j
-@Ignore("AB 2019/05/23 - JVM crash on linux-x86_64-cpu-avx512 - issue #7657")
-public class LargeSerDeTests extends BaseNd4jTest {
-    public LargeSerDeTests(Nd4jBackend backend) {
-        super(backend);
-    }
+@Disabled("AB 2019/05/23 - JVM crash on linux-x86_64-cpu-avx512 - issue #7657")
+public class LargeSerDeTests extends BaseNd4jTestWithBackends {
 
-    @Test
-    public void testLargeArraySerDe_1() throws Exception {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLargeArraySerDe_1(Nd4jBackend backend) throws Exception {
         val arrayA = Nd4j.rand(new long[] {1, 135079944});
         //val arrayA = Nd4j.rand(new long[] {1, 13507});
 
@@ -68,8 +67,8 @@ public class LargeSerDeTests extends BaseNd4jTest {
 
 
     @Test
-    @Ignore // this should be commented out, since it requires approx 10GB ram to run
-    public void testLargeArraySerDe_2() throws Exception {
+    @Disabled // this should be commented out, since it requires approx 10GB ram to run
+    public void testLargeArraySerDe_2(Nd4jBackend backend) throws Exception {
         INDArray arrayA = Nd4j.createUninitialized(100000, 12500);
         log.info("Shape: {}; Length: {}", arrayA.shape(), arrayA.length());
 

@@ -20,17 +20,19 @@
 
 package org.nd4j.autodiff;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.ImportClassMapping;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.compat.CompatSparseToDense;
@@ -121,14 +123,12 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Ignore("No longer relevant after model import rewrite.")
-public class TestOpMapping extends BaseNd4jTest {
+@Disabled("No longer relevant after model import rewrite.")
+public class TestOpMapping extends BaseNd4jTestWithBackends {
 
     Set<Class<? extends DifferentialFunction>> subTypes;
 
-    public TestOpMapping(Nd4jBackend b){
-        super(b);
-
+    public TestOpMapping() {
         Reflections reflections = new Reflections("org.nd4j");
         subTypes = reflections.getSubTypesOf(DifferentialFunction.class);
     }
@@ -145,7 +145,8 @@ public class TestOpMapping extends BaseNd4jTest {
 
 
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOpMappingCoverage() throws Exception {
         Map<String, DifferentialFunction> opNameMapping = ImportClassMapping.getOpNameMapping();
         Map<String, DifferentialFunction> tfOpNameMapping = ImportClassMapping.getTFOpMappingFunctions();
@@ -166,16 +167,16 @@ public class TestOpMapping extends BaseNd4jTest {
             }
             String opName = df.opName();
 
-            assertTrue("Op is missing - not defined in ImportClassMapping: " + opName +
-                    "\nInstructions to fix: Add class to org.nd4j.imports.converters.ImportClassMapping", opNameMapping.containsKey(opName)
+            assertTrue( opNameMapping.containsKey(opName),"Op is missing - not defined in ImportClassMapping: " + opName +
+                    "\nInstructions to fix: Add class to org.nd4j.imports.converters.ImportClassMapping"
             );
 
             try{
                 String[] tfNames = df.tensorflowNames();
 
-                for(String s : tfNames ){
-                    assertTrue("Tensorflow mapping not found: " + s, tfOpNameMapping.containsKey(s));
-                    assertEquals("Tensorflow mapping: " + s, df.getClass(), tfOpNameMapping.get(s).getClass());
+                for(String s : tfNames ) {
+                    assertTrue( tfOpNameMapping.containsKey(s),"Tensorflow mapping not found: " + s);
+                    assertEquals(df.getClass(), tfOpNameMapping.get(s).getClass(),"Tensorflow mapping: " + s);
                 }
             } catch (NoOpNameFoundException e){
                 //OK, skip
@@ -186,8 +187,8 @@ public class TestOpMapping extends BaseNd4jTest {
                 String[] onnxNames = df.onnxNames();
 
                 for(String s : onnxNames ){
-                    assertTrue("Onnx mapping not found: " + s, onnxOpNameMapping.containsKey(s));
-                    assertEquals("Onnx mapping: " + s, df.getClass(), onnxOpNameMapping.get(s).getClass());
+                    assertTrue( onnxOpNameMapping.containsKey(s),"Onnx mapping not found: " + s);
+                    assertEquals(df.getClass(), onnxOpNameMapping.get(s).getClass(),"Onnx mapping: " + s);
                 }
             } catch (NoOpNameFoundException e){
                 //OK, skip
@@ -195,8 +196,9 @@ public class TestOpMapping extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testOpsInNamespace() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOpsInNamespace(Nd4jBackend backend) throws Exception {
         //Ensure that every op is either in a namespace, OR it's explicitly marked as ignored (i.e., an op that we don't
         // want to add to a namespace for some reason)
         //Note that we ignore "*Bp", "*Gradient", "*Derivative" etc ops
@@ -354,8 +356,11 @@ public class TestOpMapping extends BaseNd4jTest {
         s.add(Assign.class);
     }
 
-    @Test @Ignore
-    public void generateOpClassList() throws Exception{
+    @Test
+    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void generateOpClassList(Nd4jBackend backend) throws Exception{
         Reflections reflections = new Reflections("org.nd4j");
         Set<Class<? extends DifferentialFunction>> subTypes = reflections.getSubTypesOf(DifferentialFunction.class);
 
@@ -366,12 +371,7 @@ public class TestOpMapping extends BaseNd4jTest {
             l.add(c);
         }
 
-        Collections.sort(l, new Comparator<Class<?>>() {
-            @Override
-            public int compare(Class<?> o1, Class<?> o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
+        Collections.sort(l, Comparator.comparing(Class::getName));
 
         for(Class<?> c : l){
             System.out.println(c.getName() + ".class,");

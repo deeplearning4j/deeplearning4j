@@ -17,29 +17,29 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.api.transform.transform.parse;
 
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
+@DisplayName("Parse Double Transform Test")
+class ParseDoubleTransformTest extends BaseND4JTest {
 
-public class ParseDoubleTransformTest extends BaseND4JTest {
     @Test
-    public void testDoubleTransform() {
+    @DisplayName("Test Double Transform")
+    void testDoubleTransform() {
         List<Writable> record = new ArrayList<>();
         record.add(new Text("0.0"));
         List<Writable> transformed = Arrays.<Writable>asList(new DoubleWritable(0.0));
         assertEquals(transformed, new ParseDoubleTransform().map(record));
     }
-
-
 }

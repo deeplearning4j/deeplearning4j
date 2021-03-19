@@ -24,8 +24,9 @@ import com.sun.jna.Platform;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -37,24 +38,25 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 public class Word2VecTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testConcepts() throws Exception {
+    public void testConcepts(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
             return;
@@ -132,7 +134,8 @@ public class Word2VecTest {
 
 
         // test serialization
-        File tempFile = testDir.newFile("temp" + System.currentTimeMillis() + ".tmp");
+
+        File tempFile =  Files.createTempFile(testDir,"temp" + System.currentTimeMillis(),"tmp").toFile();
 
         int idx1 = word2Vec.vocab().wordFor("day").getIndex();
 
@@ -158,7 +161,7 @@ public class Word2VecTest {
         assertEquals(array1, array2);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("sparktest")
@@ -197,7 +200,7 @@ public class Word2VecTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testPortugeseW2V() throws Exception {
         WordVectors word2Vec = WordVectorSerializer.loadTxtVectors(new File("/ext/Temp/para.txt"));
         word2Vec.setModelUtils(new FlatModelUtils());

@@ -32,13 +32,14 @@ import org.datavec.api.transform.ops.AggregableMultiOp;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestMultiOpReduce extends BaseND4JTest {
 
@@ -46,10 +47,10 @@ public class TestMultiOpReduce extends BaseND4JTest {
     public void testMultiOpReducerDouble() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(0)));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(1)));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(2)));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(2)));
+        inputs.add(Arrays.asList(new Text("someKey"), new DoubleWritable(0)));
+        inputs.add(Arrays.asList(new Text("someKey"), new DoubleWritable(1)));
+        inputs.add(Arrays.asList(new Text("someKey"), new DoubleWritable(2)));
+        inputs.add(Arrays.asList(new Text("someKey"), new DoubleWritable(2)));
 
         Map<ReduceOp, Double> exp = new LinkedHashMap<>();
         exp.put(ReduceOp.Min, 0.0);
@@ -82,7 +83,7 @@ public class TestMultiOpReduce extends BaseND4JTest {
             assertEquals(out.get(0), new Text("someKey"));
 
             String msg = op.toString();
-            assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
+            assertEquals(exp.get(op), out.get(1).toDouble(), 1e-5,msg);
         }
     }
 
@@ -126,19 +127,20 @@ public class TestMultiOpReduce extends BaseND4JTest {
             assertEquals(out.get(0), new Text("someKey"));
 
             String msg = op.toString();
-            assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
+            assertEquals(exp.get(op), out.get(1).toDouble(), 1e-5,msg);
         }
     }
 
 
     @Test
+    @Disabled
     public void testReduceString() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("1")));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("2")));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("3")));
-        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("4")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("1")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("2")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("3")));
+        inputs.add(Arrays.asList(new Text("someKey"), new Text("4")));
 
         Map<ReduceOp, String> exp = new LinkedHashMap<>();
         exp.put(ReduceOp.Append, "1234");
@@ -210,7 +212,7 @@ public class TestMultiOpReduce extends BaseND4JTest {
             assertEquals(out.get(0), new Text("someKey"));
 
             String msg = op.toString();
-            assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
+            assertEquals(exp.get(op), out.get(1).toDouble(), 1e-5,msg);
         }
 
         for (ReduceOp op : Arrays.asList(ReduceOp.Min, ReduceOp.Max, ReduceOp.Range, ReduceOp.Sum, ReduceOp.Mean,

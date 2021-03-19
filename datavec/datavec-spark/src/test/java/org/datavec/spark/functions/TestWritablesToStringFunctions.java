@@ -29,14 +29,14 @@ import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.misc.SequenceWritablesToStringFunction;
 import org.datavec.spark.transform.misc.WritablesToStringFunction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestWritablesToStringFunctions extends BaseSparkTest {
 

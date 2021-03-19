@@ -20,8 +20,8 @@
 
 package org.deeplearning4j.nn.dtypes;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
@@ -143,8 +143,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.junit.AfterClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -170,7 +170,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
-@Ignore
+@Disabled
 public class DTypeTests extends BaseDL4JTest {
 
     protected static Set<Class<?>> seenLayers = new HashSet<>();
@@ -542,9 +542,9 @@ public class DTypeTests extends BaseDL4JTest {
                     net.init();
 
                     net.initGradientsView();
-                    assertEquals(msg, networkDtype, net.params().dataType());
-                    assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
-                    assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+                    assertEquals(networkDtype, net.params().dataType(), msg);
+                    assertEquals(networkDtype, net.getFlattenedGradients().dataType(), msg);
+                    assertEquals(networkDtype, net.getUpdater(true).getStateViewArray().dataType(), msg);
 
                     INDArray in = Nd4j.rand(networkDtype, 2, 8 * 8);
                     INDArray label;
@@ -561,11 +561,11 @@ public class DTypeTests extends BaseDL4JTest {
                     }
 
                     INDArray out = net.output(in);
-                    assertEquals(msg, networkDtype, out.dataType());
+                    assertEquals(networkDtype, out.dataType(), msg);
                     List<INDArray> ff = net.feedForward(in);
                     for (int i = 0; i < ff.size(); i++) {
                         String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
-                        assertEquals(s, networkDtype, ff.get(i).dataType());
+                        assertEquals(networkDtype, ff.get(i).dataType(), s);
                     }
 
                     net.setInput(in);
@@ -647,9 +647,9 @@ public class DTypeTests extends BaseDL4JTest {
                     net.init();
 
                     net.initGradientsView();
-                    assertEquals(msg, networkDtype, net.params().dataType());
-                    assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
-                    assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+                    assertEquals(networkDtype, net.params().dataType(), msg);
+                    assertEquals(networkDtype, net.getFlattenedGradients().dataType(), msg);
+                    assertEquals(networkDtype, net.getUpdater(true).getStateViewArray().dataType(), msg);
 
                     INDArray in = Nd4j.rand(networkDtype, 2, 1, 8, 8, 8);
                     INDArray label;
@@ -665,11 +665,11 @@ public class DTypeTests extends BaseDL4JTest {
                     }
 
                     INDArray out = net.output(in);
-                    assertEquals(msg, networkDtype, out.dataType());
+                    assertEquals(networkDtype, out.dataType(), msg);
                     List<INDArray> ff = net.feedForward(in);
                     for (int i = 0; i < ff.size(); i++) {
                         String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
-                        assertEquals(s, networkDtype, ff.get(i).dataType());
+                        assertEquals(networkDtype, ff.get(i).dataType(), s);
                     }
 
                     net.setInput(in);
@@ -697,7 +697,7 @@ public class DTypeTests extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testDtypesModelVsGlobalDtypeCnn1d() {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         Nd4j.getEnvironment().setDebug(true);
@@ -760,9 +760,9 @@ public class DTypeTests extends BaseDL4JTest {
                     net.init();
 
                     net.initGradientsView();
-                    assertEquals(msg, networkDtype, net.params().dataType());
-                    assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
-                    assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+                    assertEquals(networkDtype, net.params().dataType(), msg);
+                    assertEquals(networkDtype, net.getFlattenedGradients().dataType(), msg);
+                    assertEquals(networkDtype, net.getUpdater(true).getStateViewArray().dataType(), msg);
 
                     INDArray in = Nd4j.rand(networkDtype, 2, 5, 10);
                     INDArray label;
@@ -775,11 +775,11 @@ public class DTypeTests extends BaseDL4JTest {
                     }
 
                     INDArray out = net.output(in);
-                    assertEquals(msg, networkDtype, out.dataType());
+                    assertEquals(networkDtype, out.dataType(), msg);
                     List<INDArray> ff = net.feedForward(in);
                     for (int i = 0; i < ff.size(); i++) {
                         String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
-                        assertEquals(s, networkDtype, ff.get(i).dataType());
+                        assertEquals(networkDtype, ff.get(i).dataType(), s);
                     }
 
                     net.setInput(in);
@@ -833,19 +833,19 @@ public class DTypeTests extends BaseDL4JTest {
                 net.init();
 
                 net.initGradientsView();
-                assertEquals(msg, networkDtype, net.params().dataType());
-                assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
-                assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+                assertEquals(networkDtype, net.params().dataType(), msg);
+                assertEquals(networkDtype, net.getFlattenedGradients().dataType(), msg);
+                assertEquals(networkDtype, net.getUpdater(true).getStateViewArray().dataType(), msg);
 
                 INDArray in = Nd4j.rand(networkDtype, 2, 5, 28, 28);
                 INDArray label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
 
                 INDArray out = net.output(in);
-                assertEquals(msg, networkDtype, out.dataType());
+                assertEquals(networkDtype, out.dataType(), msg);
                 List<INDArray> ff = net.feedForward(in);
                 for (int i = 0; i < ff.size(); i++) {
                     String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
-                    assertEquals(s, networkDtype, ff.get(i).dataType());
+                    assertEquals(networkDtype, ff.get(i).dataType(), s);
                 }
 
                 net.setInput(in);
@@ -922,9 +922,9 @@ public class DTypeTests extends BaseDL4JTest {
                     net.init();
 
                     net.initGradientsView();
-                    assertEquals(msg, networkDtype, net.params().dataType());
-                    assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
-                    assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+                    assertEquals(networkDtype, net.params().dataType(), msg);
+                    assertEquals(networkDtype, net.getFlattenedGradients().dataType(), msg);
+                    assertEquals(networkDtype, net.getUpdater(true).getStateViewArray().dataType(), msg);
 
                     INDArray in = Nd4j.rand(networkDtype, 2, 5, 2);
                     INDArray label;
@@ -936,10 +936,10 @@ public class DTypeTests extends BaseDL4JTest {
 
 
                     INDArray out = net.output(in);
-                    assertEquals(msg, networkDtype, out.dataType());
+                    assertEquals(networkDtype, out.dataType(), msg);
                     List<INDArray> ff = net.feedForward(in);
                     for (int i = 0; i < ff.size(); i++) {
-                        assertEquals(msg, networkDtype, ff.get(i).dataType());
+                        assertEquals(networkDtype, ff.get(i).dataType(), msg);
                     }
 
                     net.setInput(in);
@@ -1014,11 +1014,11 @@ public class DTypeTests extends BaseDL4JTest {
                 }
 
                 INDArray out = net.output(in);
-                assertEquals(msg, networkDtype, out.dataType());
+                assertEquals(networkDtype, out.dataType(), msg);
                 List<INDArray> ff = net.feedForward(in);
                 for (int i = 0; i < ff.size(); i++) {
                     String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
-                    assertEquals(s, networkDtype, ff.get(i).dataType());
+                    assertEquals(networkDtype, ff.get(i).dataType(), s);
                 }
 
                 net.setInput(in);
@@ -1102,13 +1102,13 @@ public class DTypeTests extends BaseDL4JTest {
                         INDArray label = Nd4j.zeros(networkDtype, 10, 10);
 
                         INDArray out = net.outputSingle(input);
-                        assertEquals(msg, networkDtype, out.dataType());
+                        assertEquals(networkDtype, out.dataType(), msg);
                         Map<String, INDArray> ff = net.feedForward(input, false);
                         for (Map.Entry<String, INDArray> e : ff.entrySet()) {
                             if (e.getKey().equals("in"))
                                 continue;
                             String s = msg + " - layer: " + e.getKey();
-                            assertEquals(s, networkDtype, e.getValue().dataType());
+                            assertEquals(networkDtype, e.getValue().dataType(), s);
                         }
 
                         net.setInput(0, input);
@@ -1257,13 +1257,13 @@ public class DTypeTests extends BaseDL4JTest {
                     INDArray label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
 
                     INDArray out = net.outputSingle(in);
-                    assertEquals(msg, networkDtype, out.dataType());
+                    assertEquals(networkDtype, out.dataType(), msg);
                     Map<String, INDArray> ff = net.feedForward(in, false);
                     for (Map.Entry<String, INDArray> e : ff.entrySet()) {
                         if (e.getKey().equals("in"))
                             continue;
                         String s = msg + " - layer: " + e.getKey();
-                        assertEquals(s, networkDtype, e.getValue().dataType());
+                        assertEquals(networkDtype, e.getValue().dataType(), s);
                     }
 
                     net.setInputs(in);
@@ -1343,13 +1343,13 @@ public class DTypeTests extends BaseDL4JTest {
                     net.init();
 
                     INDArray out = net.outputSingle(in);
-                    assertEquals(msg, networkDtype, out.dataType());
+                    assertEquals(networkDtype, out.dataType(), msg);
                     Map<String, INDArray> ff = net.feedForward(in, false);
                     for (Map.Entry<String, INDArray> e : ff.entrySet()) {
                         if (e.getKey().equals("in"))
                             continue;
                         String s = msg + " - layer: " + e.getKey();
-                        assertEquals(s, networkDtype, e.getValue().dataType());
+                        assertEquals(networkDtype, e.getValue().dataType(), s);
                     }
 
                     net.setInputs(in);
@@ -1419,11 +1419,11 @@ public class DTypeTests extends BaseDL4JTest {
                 net.init();
 
                 INDArray out = net.output(in);
-                assertEquals(msg, networkDtype, out.dataType());
+                assertEquals(networkDtype, out.dataType(), msg);
                 List<INDArray> ff = net.feedForward(in);
                 for (int i = 0; i < ff.size(); i++) {
                     String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
-                    assertEquals(s, networkDtype, ff.get(i).dataType());
+                    assertEquals(networkDtype, ff.get(i).dataType(), s);
                 }
 
                 net.setInput(in);
@@ -1506,11 +1506,11 @@ public class DTypeTests extends BaseDL4JTest {
                 net.init();
 
                 INDArray out = net.outputSingle(in);
-                assertEquals(msg, networkDtype, out.dataType());
+                assertEquals(networkDtype, out.dataType(), msg);
                 Map<String,INDArray> ff = net.feedForward(in, false);
                 for(Map.Entry<String,INDArray> e : ff.entrySet()){
                     String s = msg + " - layer " + e.getKey();
-                    assertEquals(s, networkDtype, e.getValue().dataType());
+                    assertEquals(networkDtype, e.getValue().dataType(), s);
                 }
 
                 net.setInput(0, in);

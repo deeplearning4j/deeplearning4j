@@ -24,7 +24,9 @@
 package org.nd4j.smoketests;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +36,8 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 public class SmokeTest {
 
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasic() {
         Nd4j.getEnvironment().setDebug(true);
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()

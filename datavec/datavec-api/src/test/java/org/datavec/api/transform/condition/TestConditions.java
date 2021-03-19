@@ -27,13 +27,13 @@ import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.TestTransforms;
 import org.datavec.api.writable.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestConditions extends BaseND4JTest {
 

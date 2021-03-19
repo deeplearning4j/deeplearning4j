@@ -21,12 +21,13 @@
 package org.nd4j.linalg.ops;
 
 import org.apache.commons.math3.util.FastMath;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
@@ -42,34 +43,30 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
-@RunWith(Parameterized.class)
-public class DerivativeTests extends BaseNd4jTest {
+
+public class DerivativeTests extends BaseNd4jTestWithBackends {
 
     public static final double REL_ERROR_TOLERANCE = 1e-3;
 
 
-    DataType initialType;
+    DataType initialType = Nd4j.dataType();
 
-    public DerivativeTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
-
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.setDataType(this.initialType);
     }
 
-    @Test
-    public void testHardTanhDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testHardTanhDerivative(Nd4jBackend backend) {
             //HardTanh:
         //f(x) = 1 if x > 1
         //f(x) = -1 if x < -1
@@ -94,8 +91,9 @@ public class DerivativeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testRectifiedLinearDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRectifiedLinearDerivative(Nd4jBackend backend) {
         //ReLU:
         //f(x) = max(0,x)
         //Piecewise differentiable; choose f'(0) = 0
@@ -117,8 +115,9 @@ public class DerivativeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testSigmoidDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSigmoidDerivative(Nd4jBackend backend) {
         //Derivative of sigmoid: ds(x)/dx = s(x)*(1-s(x))
         //s(x) = 1 / (exp(-x) + 1)
         INDArray z = Nd4j.zeros(100);
@@ -140,8 +139,9 @@ public class DerivativeTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testHardSigmoidDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testHardSigmoidDerivative(Nd4jBackend backend) {
         /*
         f(x) = min(1, max(0, 0.2*x + 0.5))
         or equivalently: clip 0.2*x+0.5 to range 0 to 1
@@ -193,8 +193,9 @@ public class DerivativeTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSoftPlusDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSoftPlusDerivative(Nd4jBackend backend) {
         //s(x) = 1 / (exp(-x) + 1)
         INDArray z = Nd4j.zeros(100);
         double[] expOut = new double[100];
@@ -213,8 +214,9 @@ public class DerivativeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testTanhDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTanhDerivative(Nd4jBackend backend) {
 
         //Derivative of sigmoid: ds(x)/dx = s(x)*(1-s(x))
         //s(x) = 1 / (exp(-x) + 1)
@@ -236,8 +238,9 @@ public class DerivativeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testCubeDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCubeDerivative(Nd4jBackend backend) {
 
         //Derivative of cube: 3*x^2
         INDArray z = Nd4j.zeros(100);
@@ -257,12 +260,13 @@ public class DerivativeTests extends BaseNd4jTest {
             if (d1 == 0.0 && d2 == 0.0)
                 relError = 0.0;
             String str = "exp=" + expOut[i] + ", act=" + zPrime.getDouble(i) + "; relError = " + relError;
-            assertTrue(str, relError < REL_ERROR_TOLERANCE);
+            assertTrue(relError < REL_ERROR_TOLERANCE,str);
         }
     }
 
-    @Test
-    public void testLeakyReLUDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLeakyReLUDerivative(Nd4jBackend backend) {
         //Derivative: 0.01 if x<0, 1 otherwise
         INDArray z = Nd4j.zeros(100);
         double[] expOut = new double[100];
@@ -281,8 +285,9 @@ public class DerivativeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testSoftSignDerivative() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSoftSignDerivative(Nd4jBackend backend) {
         //Derivative: 1 / (1+abs(x))^2
         INDArray z = Nd4j.zeros(100).castTo(DataType.DOUBLE);
         double[] expOut = new double[100];

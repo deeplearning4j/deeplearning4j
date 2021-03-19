@@ -22,29 +22,26 @@ package org.nd4j.parameterserver.distributed.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.*;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 public class NetworkOrganizerTest extends BaseND4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
 
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(20); // 20 seconds max per method tested
 
 
     @Test
@@ -385,7 +382,7 @@ public class NetworkOrganizerTest extends BaseND4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/30 - Intermittent issue or flaky test - see issue #7657")
+    @Disabled("AB 2019/05/30 - Intermittent issue or flaky test - see issue #7657")
     public void testNetTree6() throws Exception {
         List<String> ips = new ArrayList<>();
 

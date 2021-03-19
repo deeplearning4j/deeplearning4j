@@ -20,15 +20,17 @@
 
 package org.nd4j.linalg.convolution;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.io.ClassPathResource;
-import org.nd4j.common.resources.Resources;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -37,29 +39,26 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class DeconvTests extends BaseNd4jTest {
+public class DeconvTests extends BaseNd4jTestWithBackends {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
-    public DeconvTests(Nd4jBackend backend) {
-        super(backend);
-    }
+    @TempDir Path testDir;
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void compareKeras() throws Exception {
-        File newFolder = testDir.newFolder();
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void compareKeras(Nd4jBackend backend) throws Exception {
+        File newFolder = testDir.toFile();
         new ClassPathResource("keras/deconv/").copyDirectory(newFolder);
 
         File[] files = newFolder.listFiles();

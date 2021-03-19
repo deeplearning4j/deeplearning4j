@@ -19,31 +19,27 @@
  */
 package org.nd4j.tvm.runner;
 
-import org.bytedeco.javacpp.*;
 import org.bytedeco.cpython.*;
-import org.bytedeco.numpy.*;
-import org.bytedeco.tvm.*;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.nd4j.common.io.ClassPathResource;
+
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.util.Arrays;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.bytedeco.cpython.global.python.*;
 import static org.bytedeco.numpy.global.numpy.*;
-import static org.bytedeco.tvm.global.tvm_runtime.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.io.TempDir;
+
+@Disabled
 public class TvmRunnerTests {
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     static void PrepareTestLibs(String libPath) throws Exception {
         Py_AddPath(org.bytedeco.tvm.presets.tvm.cachePackages());
@@ -81,11 +77,11 @@ public class TvmRunnerTests {
     }
 
     @Test
-    public void testAdd() throws Exception {
+    public void testAdd(@TempDir Path tempDir) throws Exception {
         /* try to use MKL when available */
         System.setProperty("org.bytedeco.openblas.load", "mkl");
 
-        File libPath = testDir.newFolder("lib");
+        File libPath = tempDir.resolve("lib").toFile();
         PrepareTestLibs(libPath.getAbsolutePath().replace(File.separatorChar, '/'));
         File f = new File(libPath, "test_relay_add.so");
         INDArray x = Nd4j.scalar(1.0f).reshape(1,1);

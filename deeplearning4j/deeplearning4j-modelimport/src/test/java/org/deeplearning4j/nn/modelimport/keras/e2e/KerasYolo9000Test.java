@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
@@ -26,43 +25,42 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.nd4j.common.resources.Resources;
+import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.resources.Resources;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
-public class KerasYolo9000Test extends BaseDL4JTest {
+@DisplayName("Keras Yolo 9000 Test")
+class KerasYolo9000Test extends BaseDL4JTest {
 
     private static final String TEMP_MODEL_FILENAME = "tempModel";
+
     private static final String H5_EXTENSION = ".h5";
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir
+    public Path testDir;
 
-    @Ignore
+    @Disabled
     @Test
+    @DisplayName("Test Custom Layer Yolo Import")
     // TODO: yolo and yolo-voc output are too large for github, find smaller equivalents
-    public void testCustomLayerYoloImport() throws Exception {
+    void testCustomLayerYoloImport() throws Exception {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
-
         String modelPath = "modelimport/keras/examples/yolo/yolo.h5";
-
-        try(InputStream is = Resources.asStream(modelPath)) {
-            File modelFile = testDir.newFile(TEMP_MODEL_FILENAME + System.currentTimeMillis() + H5_EXTENSION);
+        try (InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = testDir.resolve(TEMP_MODEL_FILENAME + System.currentTimeMillis() + H5_EXTENSION).toFile();
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                    .enforceTrainingConfig(false).buildModel().getComputationGraph();
-
+            ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath()).enforceTrainingConfig(false).buildModel().getComputationGraph();
             System.out.println(model.summary());
         }
-
-
     }
 }

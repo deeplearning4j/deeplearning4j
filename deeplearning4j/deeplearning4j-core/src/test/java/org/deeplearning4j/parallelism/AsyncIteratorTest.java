@@ -17,26 +17,26 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.parallelism;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.parallelism.AsyncIterator;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
-
-public class AsyncIteratorTest extends BaseDL4JTest {
+@DisplayName("Async Iterator Test")
+class AsyncIteratorTest extends BaseDL4JTest {
 
     @Test
-    public void hasNext() throws Exception {
+    @DisplayName("Has Next")
+    void hasNext() throws Exception {
         ArrayList<Integer> integers = new ArrayList<>();
         for (int x = 0; x < 100000; x++) {
             integers.add(x);
         }
-
         AsyncIterator<Integer> iterator = new AsyncIterator<>(integers.iterator(), 512);
         int cnt = 0;
         Integer val = null;
@@ -45,10 +45,7 @@ public class AsyncIteratorTest extends BaseDL4JTest {
             assertEquals(cnt, val.intValue());
             cnt++;
         }
-
         System.out.println("Last val: " + val);
-
         assertEquals(integers.size(), cnt);
     }
-
 }

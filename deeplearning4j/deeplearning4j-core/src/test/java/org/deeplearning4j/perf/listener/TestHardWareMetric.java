@@ -22,14 +22,14 @@ package org.deeplearning4j.perf.listener;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.listener.HardwareMetric;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import oshi.json.SystemInfo;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@Ignore("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
+@Disabled("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
 public class TestHardWareMetric extends BaseDL4JTest {
 
     @Test

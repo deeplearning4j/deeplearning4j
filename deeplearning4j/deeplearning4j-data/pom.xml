@@ -54,10 +54,10 @@
 
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
+            <id>nd4j-tests-cpu</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
+            <id>nd4j-tests-cuda</id>
         </profile>
     </profiles>
 </project>

@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -56,8 +56,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
@@ -242,7 +242,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
             }
         }
 
-        assertEquals("Tests failed", 0, failed.size());
+        assertEquals(0, failed.size(),"Tests failed");
     }
 
     @Test
@@ -349,7 +349,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     lossFunctions[i] = lf2;
                 } catch (IOException ex) {
                     ex.printStackTrace();
-                    assertEquals("Tests failed: serialization of " + lossFunctions[i], 0, 1);
+                    assertEquals(0, 1,"Tests failed: serialization of " + lossFunctions[i]);
                 }
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -410,7 +410,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
             System.out.println(s);
         }
 
-        assertEquals("Tests failed", 0, failed.size());
+        assertEquals(0, failed.size(),"Tests failed");
     }
 
     @Test
@@ -718,6 +718,6 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
             System.out.println(s);
         }
 
-        assertEquals("Tests failed", 0, failed.size());
+        assertEquals(0, failed.size(),"Tests failed");
     }
 }

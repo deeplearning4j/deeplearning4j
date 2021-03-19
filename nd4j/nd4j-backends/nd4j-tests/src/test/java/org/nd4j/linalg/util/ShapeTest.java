@@ -20,30 +20,29 @@
 
 package org.nd4j.linalg.util;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class ShapeTest extends BaseNd4jTest {
 
-    public ShapeTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ShapeTest extends BaseNd4jTestWithBackends {
 
 
-    @Test
-    public void testToOffsetZero() {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testToOffsetZero(Nd4jBackend backend) {
         INDArray matrix = Nd4j.rand(3, 5);
         INDArray rowOne = matrix.getRow(1);
         INDArray row1Copy = Shape.toOffsetZero(rowOne);
@@ -62,8 +61,9 @@ public class ShapeTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testDupLeadingTrailingZeros() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDupLeadingTrailingZeros(Nd4jBackend backend) {
         testDupHelper(1, 10);
         testDupHelper(10, 1);
         testDupHelper(1, 10, 1);
@@ -83,8 +83,9 @@ public class ShapeTest extends BaseNd4jTest {
         assertTrue(arr.equals(arr2));
     }
 
-    @Test
-    public void testLeadingOnes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLeadingOnes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 5, 5);
         assertEquals(1, arr.getLeadingOnes());
         INDArray arr2 = Nd4j.create(2, 2);
@@ -93,16 +94,18 @@ public class ShapeTest extends BaseNd4jTest {
         assertEquals(2, arr4.getLeadingOnes());
     }
 
-    @Test
-    public void testTrailingOnes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTrailingOnes(Nd4jBackend backend) {
         INDArray arr2 = Nd4j.create(5, 5, 1);
         assertEquals(1, arr2.getTrailingOnes());
         INDArray arr4 = Nd4j.create(5, 5, 1, 1);
         assertEquals(2, arr4.getTrailingOnes());
     }
 
-    @Test
-    public void testElementWiseCompareOnesInMiddle() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testElementWiseCompareOnesInMiddle(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
         for (int i = 0; i < arr.length(); i++) {
@@ -113,8 +116,9 @@ public class ShapeTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSumLeadingTrailingZeros() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSumLeadingTrailingZeros(Nd4jBackend backend) {
         testSumHelper(1, 5, 5);
         testSumHelper(5, 5, 1);
         testSumHelper(1, 5, 1);
@@ -143,7 +147,8 @@ public class ShapeTest extends BaseNd4jTest {
     }
 
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEqualsWithSqueeze(){
 
         assertTrue(Shape.shapeEqualWithSqueeze(null, null));
@@ -164,7 +169,8 @@ public class ShapeTest extends BaseNd4jTest {
 
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeOrder(){
         long[] shape = {2,2};
         long[] stride = {1,8};  //Ascending strides -> F order

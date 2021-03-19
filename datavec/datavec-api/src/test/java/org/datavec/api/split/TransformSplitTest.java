@@ -17,44 +17,43 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.api.split;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
-
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Ede Meijer
  */
-public class TransformSplitTest extends BaseND4JTest {
-    @Test
-    public void testTransform() throws URISyntaxException {
-        Collection<URI> inputFiles = asList(new URI("file:///foo/bar/../0.csv"), new URI("file:///foo/1.csv"));
+@DisplayName("Transform Split Test")
+class TransformSplitTest extends BaseND4JTest {
 
+    @Test
+    @DisplayName("Test Transform")
+    void testTransform() throws URISyntaxException {
+        Collection<URI> inputFiles = asList(new URI("file:///foo/bar/../0.csv"), new URI("file:///foo/1.csv"));
         InputSplit SUT = new TransformSplit(new CollectionInputSplit(inputFiles), new TransformSplit.URITransform() {
+
             @Override
             public URI apply(URI uri) throws URISyntaxException {
                 return uri.normalize();
             }
         });
-
-        assertArrayEquals(new URI[] {new URI("file:///foo/0.csv"), new URI("file:///foo/1.csv")}, SUT.locations());
+        assertArrayEquals(new URI[] { new URI("file:///foo/0.csv"), new URI("file:///foo/1.csv") }, SUT.locations());
     }
 
     @Test
-    public void testSearchReplace() throws URISyntaxException {
+    @DisplayName("Test Search Replace")
+    void testSearchReplace() throws URISyntaxException {
         Collection<URI> inputFiles = asList(new URI("file:///foo/1-in.csv"), new URI("file:///foo/2-in.csv"));
-
         InputSplit SUT = TransformSplit.ofSearchReplace(new CollectionInputSplit(inputFiles), "-in.csv", "-out.csv");
-
-        assertArrayEquals(new URI[] {new URI("file:///foo/1-out.csv"), new URI("file:///foo/2-out.csv")},
-                        SUT.locations());
+        assertArrayEquals(new URI[] { new URI("file:///foo/1-out.csv"), new URI("file:///foo/2-out.csv") }, SUT.locations());
     }
 }

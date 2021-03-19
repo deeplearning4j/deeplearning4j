@@ -30,13 +30,13 @@ import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.comparator.DoubleWritableComparator;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestCalculateSortedRank extends BaseSparkTest {
 

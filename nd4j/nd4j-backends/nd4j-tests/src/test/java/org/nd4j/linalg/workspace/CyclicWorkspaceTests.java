@@ -22,11 +22,12 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
@@ -36,14 +37,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class CyclicWorkspaceTests extends BaseNd4jTest {
-    public CyclicWorkspaceTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testBasicMechanics_1() {
+public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBasicMechanics_1(Nd4jBackend backend) {
         val fShape = new long[]{128, 784};
         val lShape = new long[] {128, 10};
         val prefetchSize = 24;
@@ -63,8 +62,10 @@ public class CyclicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
-    public void testGc() {
+    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGc(Nd4jBackend backend) {
         val indArray = Nd4j.create(4, 4);
         indArray.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));
         indArray.putRow(1, Nd4j.create(new float[]{0, 1, -1, 0}));

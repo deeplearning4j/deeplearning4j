@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -27,35 +26,45 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasPooling2DTest extends BaseDL4JTest {
+@DisplayName("Keras Pooling 2 D Test")
+class KerasPooling2DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "test_layer";
-    private final int[] KERNEL_SIZE = new int[]{1, 2};
-    private final int[] STRIDE = new int[]{3, 4};
+
+    private final int[] KERNEL_SIZE = new int[] { 1, 2 };
+
+    private final int[] STRIDE = new int[] { 3, 4 };
+
     private final PoolingType POOLING_TYPE = PoolingType.MAX;
+
     private final String BORDER_MODE_VALID = "valid";
-    private final int[] VALID_PADDING = new int[]{0, 0};
+
+    private final int[] VALID_PADDING = new int[] { 0, 0 };
 
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testPooling2DLayer() throws Exception {
+    @DisplayName("Test Pooling 2 D Layer")
+    void testPooling2DLayer() throws Exception {
         buildPooling2DLayer(conf1, keras1);
         buildPooling2DLayer(conf2, keras2);
     }
@@ -76,7 +85,6 @@ public class KerasPooling2DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         SubsamplingLayer layer = new KerasPooling2D(layerConfig).getSubsampling2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());

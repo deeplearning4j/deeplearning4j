@@ -17,50 +17,43 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.weights;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.RandomFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.*;
-
-
-public class LegacyWeightInitTest extends BaseDL4JTest {
+@DisplayName("Legacy Weight Init Test")
+class LegacyWeightInitTest extends BaseDL4JTest {
 
     private RandomFactory prevFactory;
+
     private final static int SEED = 666;
 
-    private final static List<Distribution> distributions = Arrays.asList(
-            new LogNormalDistribution(12.3, 4.56),
-            new BinomialDistribution(3, 0.3),
-            new NormalDistribution(0.666, 0.333),
-            new UniformDistribution(-1.23, 4.56),
-            new OrthogonalDistribution(3.45),
-            new TruncatedNormalDistribution(0.456, 0.123),
-            new ConstantDistribution(666));
+    private final static List<Distribution> distributions = Arrays.asList(new LogNormalDistribution(12.3, 4.56), new BinomialDistribution(3, 0.3), new NormalDistribution(0.666, 0.333), new UniformDistribution(-1.23, 4.56), new OrthogonalDistribution(3.45), new TruncatedNormalDistribution(0.456, 0.123), new ConstantDistribution(666));
 
-    @Before
-    public void setRandomFactory() {
+    @BeforeEach
+    void setRandomFactory() {
         prevFactory = Nd4j.randomFactory;
         Nd4j.randomFactory = new FixedSeedRandomFactory(prevFactory);
     }
 
-    @After
-    public void resetRandomFactory() {
+    @AfterEach
+    void resetRandomFactory() {
         Nd4j.randomFactory = prevFactory;
     }
 
@@ -68,24 +61,22 @@ public class LegacyWeightInitTest extends BaseDL4JTest {
      * Test that param init is identical to legacy implementation
      */
     @Test
-    public void initParams() {
-        final long[] shape = {5, 5}; // To make identity happy
+    @DisplayName("Init Params")
+    void initParams() {
+        // To make identity happy
+        final long[] shape = { 5, 5 };
         final long fanIn = shape[0];
         final long fanOut = shape[1];
-
         final INDArray inLegacy = Nd4j.create(fanIn * fanOut);
         final INDArray inTest = inLegacy.dup();
         for (WeightInit legacyWi : WeightInit.values()) {
             if (legacyWi != WeightInit.DISTRIBUTION) {
                 Nd4j.getRandom().setSeed(SEED);
                 final INDArray expected = WeightInitUtil.initWeights(fanIn, fanOut, shape, legacyWi, null, inLegacy);
-
                 Nd4j.getRandom().setSeed(SEED);
-                final INDArray actual = legacyWi.getWeightInitFunction()
-                        .init(fanIn, fanOut, shape, WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, inTest);
-                assertArrayEquals("Incorrect shape for " + legacyWi + "!", shape, actual.shape());
-
-                assertEquals("Incorrect weight initialization for " + legacyWi + "!", expected, actual);
+                final INDArray actual = legacyWi.getWeightInitFunction().init(fanIn, fanOut, shape, WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, inTest);
+                assertArrayEquals(shape, actual.shape(),"Incorrect shape for " + legacyWi + "!");
+                assertEquals( expected, actual,"Incorrect weight initialization for " + legacyWi + "!");
             }
         }
     }
@@ -94,34 +85,20 @@ public class LegacyWeightInitTest extends BaseDL4JTest {
      * Test that param init is identical to legacy implementation
      */
     @Test
-    public void initParamsFromDistribution() {
-        final long[] shape = {3, 7}; // To make identity happy
+    @DisplayName("Init Params From Distribution")
+    void initParamsFromDistribution() {
+        // To make identity happy
+        final long[] shape = { 3, 7 };
         final long fanIn = shape[0];
         final long fanOut = shape[1];
-
         final INDArray inLegacy = Nd4j.create(fanIn * fanOut);
         final INDArray inTest = inLegacy.dup();
-
         for (Distribution dist : distributions) {
-
             Nd4j.getRandom().setSeed(SEED);
-            final INDArray expected = WeightInitUtil.initWeights(
-                    fanIn,
-                    fanOut,
-                    shape,
-                    WeightInit.DISTRIBUTION,
-                    Distributions.createDistribution(dist),
-                    inLegacy);
-
-            final INDArray actual = new WeightInitDistribution(dist).init(
-                    fanIn,
-                    fanOut,
-                    shape,
-                    WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER,
-                    inTest);
-            assertArrayEquals("Incorrect shape for " + dist.getClass().getSimpleName() + "!", shape, actual.shape());
-
-            assertEquals("Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!", expected, actual);
+            final INDArray expected = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.DISTRIBUTION, Distributions.createDistribution(dist), inLegacy);
+            final INDArray actual = new WeightInitDistribution(dist).init(fanIn, fanOut, shape, WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, inTest);
+            assertArrayEquals(shape, actual.shape(),"Incorrect shape for " + dist.getClass().getSimpleName() + "!");
+            assertEquals( expected, actual,"Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!");
         }
     }
 
@@ -129,30 +106,27 @@ public class LegacyWeightInitTest extends BaseDL4JTest {
      * Test that weight inits can be serialized and de-serialized in JSON format
      */
     @Test
-    public void serializeDeserializeJson() throws IOException {
-        final long[] shape = {5, 5}; // To make identity happy
+    @DisplayName("Serialize Deserialize Json")
+    void serializeDeserializeJson() throws IOException {
+        // To make identity happy
+        final long[] shape = { 5, 5 };
         final long fanIn = shape[0];
         final long fanOut = shape[1];
-
         final ObjectMapper mapper = JsonMappers.getMapper();
         final INDArray inBefore = Nd4j.create(fanIn * fanOut);
         final INDArray inAfter = inBefore.dup();
-
         // Just use to enum to loop over all strategies
         for (WeightInit legacyWi : WeightInit.values()) {
             if (legacyWi != WeightInit.DISTRIBUTION) {
                 Nd4j.getRandom().setSeed(SEED);
                 final IWeightInit before = legacyWi.getWeightInitFunction();
                 final INDArray expected = before.init(fanIn, fanOut, shape, inBefore.ordering(), inBefore);
-
                 final String json = mapper.writeValueAsString(before);
                 final IWeightInit after = mapper.readValue(json, IWeightInit.class);
-
                 Nd4j.getRandom().setSeed(SEED);
                 final INDArray actual = after.init(fanIn, fanOut, shape, inAfter.ordering(), inAfter);
-
-                assertArrayEquals("Incorrect shape for " + legacyWi + "!", shape, actual.shape());
-                assertEquals("Incorrect weight initialization for " + legacyWi + "!", expected, actual);
+                assertArrayEquals( shape, actual.shape(),"Incorrect shape for " + legacyWi + "!");
+                assertEquals(expected, actual,"Incorrect weight initialization for " + legacyWi + "!");
             }
         }
     }
@@ -161,35 +135,25 @@ public class LegacyWeightInitTest extends BaseDL4JTest {
      * Test that distribution can be serialized and de-serialized in JSON format
      */
     @Test
-    public void serializeDeserializeDistributionJson() throws IOException {
-        final long[] shape = {3, 7}; // To make identity happy
+    @DisplayName("Serialize Deserialize Distribution Json")
+    void serializeDeserializeDistributionJson() throws IOException {
+        // To make identity happy
+        final long[] shape = { 3, 7 };
         final long fanIn = shape[0];
         final long fanOut = shape[1];
-
         final ObjectMapper mapper = JsonMappers.getMapper();
         final INDArray inBefore = Nd4j.create(fanIn * fanOut);
         final INDArray inAfter = inBefore.dup();
-
         for (Distribution dist : distributions) {
-
             Nd4j.getRandom().setSeed(SEED);
             final IWeightInit before = new WeightInitDistribution(dist);
-            final INDArray expected = before.init(
-                    fanIn,
-                    fanOut,
-                    shape,
-                    inBefore.ordering(),
-                    inBefore);
-
+            final INDArray expected = before.init(fanIn, fanOut, shape, inBefore.ordering(), inBefore);
             final String json = mapper.writeValueAsString(before);
             final IWeightInit after = mapper.readValue(json, IWeightInit.class);
-
             Nd4j.getRandom().setSeed(SEED);
             final INDArray actual = after.init(fanIn, fanOut, shape, inAfter.ordering(), inAfter);
-
-            assertArrayEquals("Incorrect shape for " + dist.getClass().getSimpleName() + "!", shape, actual.shape());
-
-            assertEquals("Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!", expected, actual);
+            assertArrayEquals(shape, actual.shape(),"Incorrect shape for " + dist.getClass().getSimpleName() + "!");
+            assertEquals(expected, actual,"Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!");
         }
     }
 
@@ -197,21 +161,22 @@ public class LegacyWeightInitTest extends BaseDL4JTest {
      * Test equals and hashcode implementation. Redundant as one can trust Lombok on this??
      */
     @Test
-    public void equalsAndHashCode() {
-        WeightInit lastInit = WeightInit.values()[WeightInit.values().length-1];
+    @DisplayName("Equals And Hash Code")
+    void equalsAndHashCode() {
+        WeightInit lastInit = WeightInit.values()[WeightInit.values().length - 1];
         for (WeightInit legacyWi : WeightInit.values()) {
-            if(legacyWi != WeightInit.DISTRIBUTION) {
-                assertEquals("Shall be equal!", legacyWi.getWeightInitFunction(), legacyWi.getWeightInitFunction());
-                assertNotEquals("Shall not be equal!", lastInit.getWeightInitFunction(), legacyWi.getWeightInitFunction());
+            if (legacyWi != WeightInit.DISTRIBUTION) {
+                assertEquals(legacyWi.getWeightInitFunction(), legacyWi.getWeightInitFunction(), "Shall be equal!");
+                assertNotEquals(lastInit.getWeightInitFunction(), legacyWi.getWeightInitFunction(), "Shall not be equal!");
                 if (legacyWi != WeightInit.NORMAL && legacyWi != WeightInit.LECUN_NORMAL) {
                     lastInit = legacyWi;
                 }
             }
         }
         Distribution lastDist = distributions.get(distributions.size() - 1);
-        for(Distribution distribution: distributions) {
-            assertEquals("Shall be equal!", new WeightInitDistribution(distribution), new WeightInitDistribution(distribution.clone()));
-            assertNotEquals("Shall not be equal!", new WeightInitDistribution(lastDist), new WeightInitDistribution(distribution));
+        for (Distribution distribution : distributions) {
+            assertEquals(new WeightInitDistribution(distribution), new WeightInitDistribution(distribution.clone()), "Shall be equal!");
+            assertNotEquals(new WeightInitDistribution(lastDist), new WeightInitDistribution(distribution), "Shall not be equal!");
             lastDist = distribution;
         }
     }
@@ -219,9 +184,10 @@ public class LegacyWeightInitTest extends BaseDL4JTest {
     /**
      * Assumes RandomFactory will only call no-args constructor while this test runs
      */
+    @DisplayName("Fixed Seed Random Factory")
     private static class FixedSeedRandomFactory extends RandomFactory {
-        private final RandomFactory factory;
 
+        private final RandomFactory factory;
 
         private FixedSeedRandomFactory(RandomFactory factory) {
             super(factory.getRandom().getClass());

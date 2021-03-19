@@ -21,10 +21,11 @@
 package org.nd4j.linalg.dataset;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -39,19 +40,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class MultiDataSetTest extends BaseNd4jTest {
-    public MultiDataSetTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testMerging2d() {
+public class MultiDataSetTest extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMerging2d(Nd4jBackend backend) {
         //Simple test: single input/output arrays; 5 MultiDataSets to merge
         int nCols = 3;
         int nRows = 5;
@@ -78,8 +77,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expOut, merged.getLabels(0));
     }
 
-    @Test
-    public void testMerging2dMultipleInOut() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMerging2dMultipleInOut(Nd4jBackend backend) {
         //Test merging: Multiple input/output arrays; 5 MultiDataSets to merge
 
         int nRows = 5;
@@ -122,8 +122,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expOut1, merged.getLabels(1));
     }
 
-    @Test
-    public void testMerging2dMultipleInOut2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMerging2dMultipleInOut2(Nd4jBackend backend) {
         //Test merging: Multiple input/output arrays; 5 MultiDataSets to merge
 
         int nRows = 10;
@@ -176,8 +177,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expOut2, merged.getLabels(2));
     }
 
-    @Test
-    public void testMerging2dMultipleInOut3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMerging2dMultipleInOut3(Nd4jBackend backend) {
         //Test merging: fewer rows than output arrays...
 
         int nRows = 2;
@@ -218,8 +220,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expOut2, merged.getLabels(2));
     }
 
-    @Test
-    public void testMerging4dMultipleInOut() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMerging4dMultipleInOut(Nd4jBackend backend) {
         int nRows = 5;
         int depthIn0 = 3;
         int widthIn0 = 4;
@@ -244,18 +247,18 @@ public class MultiDataSetTest extends BaseNd4jTest {
             if (i == 0) {
                 //For first MultiDataSet: have 2 rows, not just 1
                 INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).dup();
+                        NDArrayIndex.all()).dup();
                 INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).dup();
+                        NDArrayIndex.all()).dup();
                 INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
                 INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
                 i++;
             } else {
                 INDArray in0 = expIn0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).dup();
+                        NDArrayIndex.all()).dup();
                 INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).dup();
+                        NDArrayIndex.all()).dup();
                 INDArray out0 = expOut0.getRow(i, true).dup();
                 INDArray out1 = expOut1.getRow(i, true).dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
@@ -272,8 +275,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expOut1, merged.getLabels(1));
     }
 
-    @Test
-    public void testMergingTimeSeriesEqualLength() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMergingTimeSeriesEqualLength(Nd4jBackend backend) {
         int tsLength = 8;
         int nRows = 5;
         int nColsIn0 = 3;
@@ -295,24 +299,24 @@ public class MultiDataSetTest extends BaseNd4jTest {
             if (i == 0) {
                 //For first MultiDataSet: have 2 rows, not just 1
                 INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
                 i++;
             } else {
                 INDArray in0 = expIn0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 INDArray out0 = expOut0.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 INDArray out1 = expOut1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all())
-                                .dup();
+                        .dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
             }
         }
@@ -327,8 +331,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expOut1, merged.getLabels(1));
     }
 
-    @Test
-    public void testMergingTimeSeriesWithMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMergingTimeSeriesWithMasking(Nd4jBackend backend) {
         //Mask arrays, and different lengths
 
         int tsLengthIn0 = 8;
@@ -387,27 +392,27 @@ public class MultiDataSetTest extends BaseNd4jTest {
             }
 
             expectedIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
+                    NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
             expectedIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
+                    NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
             expectedOut0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
+                    NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
             expectedOut1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
+                    NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
 
             expectedMaskIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn0Length)},
-                            Nd4j.ones(1, thisRowIn0Length));
+                    Nd4j.ones(1, thisRowIn0Length));
             expectedMaskIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn1Length)},
-                            maskIn1);
+                    maskIn1);
             expectedMaskOut0.put(
-                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
-                            Nd4j.ones(1, thisRowOut0Length));
+                    new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
+                    Nd4j.ones(1, thisRowOut0Length));
             expectedMaskOut1.put(
-                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
-                            maskOut1);
+                    new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
+                    maskOut1);
 
             list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1},
-                            new INDArray[] {maskIn0, maskIn1}, new INDArray[] {maskOut0, maskOut1}));
+                    new INDArray[] {maskIn0, maskIn1}, new INDArray[] {maskOut0, maskOut1}));
         }
 
         MultiDataSet merged = MultiDataSet.merge(list);
@@ -428,8 +433,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expectedMaskOut1, merged.getLabelsMaskArray(1));
     }
 
-    @Test
-    public void testMergingWithPerOutputMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMergingWithPerOutputMasking(Nd4jBackend backend) {
 
         //Test 2d mask merging, 2d data
         //features
@@ -478,14 +484,14 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         INDArray expLabels3d = Nd4j.create(3, 3, 4);
         expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
-                        l3d1);
+                l3d1);
         expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
-                        NDArrayIndex.interval(0, 3)}, l3d2);
+                NDArrayIndex.interval(0, 3)}, l3d2);
         INDArray expLM3d = Nd4j.create(3, 3, 4);
         expLM3d.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
-                        lm3d1);
+                lm3d1);
         expLM3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
-                        NDArrayIndex.interval(0, 3)}, lm3d2);
+                NDArrayIndex.interval(0, 3)}, lm3d2);
 
 
         MultiDataSet merged3d = MultiDataSet.merge(Arrays.asList(mds3d1, mds3d2));
@@ -501,8 +507,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expLM2d, merged3d2d.getLabelsMaskArray(0));
     }
 
-    @Test
-    public void testSplit() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSplit(Nd4jBackend backend) {
 
         INDArray[] features = new INDArray[3];
         features[0] = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape('c', 3, 10);
@@ -537,9 +544,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
             assertEquals(features[0].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getFeatures(0));
             assertEquals(features[1].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()),
-                            m.getFeatures(1));
+                    m.getFeatures(1));
             assertEquals(features[2].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                            NDArrayIndex.all()), m.getFeatures(2));
+                    NDArrayIndex.all()), m.getFeatures(2));
 
             assertEquals(2, m.getLabels(0).rank());
             assertEquals(3, m.getLabels(1).rank());
@@ -551,9 +558,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
             assertEquals(labels[0].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getLabels(0));
             assertEquals(labels[1].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()),
-                            m.getLabels(1));
+                    m.getLabels(1));
             assertEquals(labels[2].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                            NDArrayIndex.all()), m.getLabels(2));
+                    NDArrayIndex.all()), m.getLabels(2));
 
             assertNull(m.getFeaturesMaskArray(0));
             assertEquals(fMask[1].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getFeaturesMaskArray(1));
@@ -563,8 +570,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testToString() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testToString(Nd4jBackend backend) {
         //Mask arrays, and different lengths
 
         int tsLengthIn0 = 8;
@@ -623,34 +631,35 @@ public class MultiDataSetTest extends BaseNd4jTest {
             }
 
             expectedIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
+                    NDArrayIndex.interval(0, thisRowIn0Length)}, in0);
             expectedIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
+                    NDArrayIndex.interval(0, thisRowIn1Length)}, in1);
             expectedOut0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
+                    NDArrayIndex.interval(0, thisRowOut0Length)}, out0);
             expectedOut1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
+                    NDArrayIndex.interval(0, thisRowOut1Length)}, out1);
 
             expectedMaskIn0.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn0Length)},
-                            Nd4j.ones(1, thisRowIn0Length));
+                    Nd4j.ones(1, thisRowIn0Length));
             expectedMaskIn1.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowIn1Length)},
-                            maskIn1);
+                    maskIn1);
             expectedMaskOut0.put(
-                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
-                            Nd4j.ones(1, thisRowOut0Length));
+                    new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut0Length)},
+                    Nd4j.ones(1, thisRowOut0Length));
             expectedMaskOut1.put(
-                            new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
-                            maskOut1);
+                    new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(0, thisRowOut1Length)},
+                    maskOut1);
 
             list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1},
-                            new INDArray[] {maskIn0, maskIn1}, new INDArray[] {maskOut0, maskOut1}));
+                    new INDArray[] {maskIn0, maskIn1}, new INDArray[] {maskOut0, maskOut1}));
         }
 
         MultiDataSet merged = MultiDataSet.merge(list);
         System.out.println(merged);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void multiDataSetSaveLoadTest() throws IOException {
 
         int max = 3;
@@ -700,13 +709,14 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 MultiDataSet mds2 = new MultiDataSet();
                 mds2.load(dis);
 
-                assertEquals("Failed at [" + numF + "]/[" + numL + "]",mds, mds2);
+                assertEquals(mds, mds2,"Failed at [" + numF + "]/[" + numL + "]");
             }
         }
     }
 
-    @Test
-    public void testCnnMergeFeatureMasks() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCnnMergeFeatureMasks(Nd4jBackend backend) {
         //Tests merging of different CNN masks: [mb,1,h,1], [mb,1,1,w], [mb,1,h,w]
 
         for( int t=0; t<3; t++) {

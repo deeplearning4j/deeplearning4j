@@ -50,9 +50,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
@@ -71,16 +72,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TestEarlyStopping extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public DataType getDataType(){
@@ -92,7 +92,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
 
-        for( int i=0; i<6; i++ ) {
+        for( int i = 0; i < 6; i++ ) {
             Nd4j.getRandom().setSeed(12345);
 
             ScoreCalculator sc;
@@ -181,8 +181,8 @@ public class TestEarlyStopping extends BaseDL4JTest {
                     bestEpoch = j;
                 }
             }
-            assertEquals(msg, bestEpoch, out.getEpochCount());
-            assertEquals(msg, bestScore, result.getBestModelScore(), 1e-5);
+            assertEquals(bestEpoch, out.getEpochCount(),msg);
+            assertEquals( bestScore, result.getBestModelScore(), 1e-5,msg);
 
             //Check that best score actually matches (returned model vs. manually calculated score)
             MultiLayerNetwork bestNetwork = result.getBestModel();
@@ -213,7 +213,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                 default:
                     throw new RuntimeException();
             }
-            assertEquals(msg, result.getBestModelScore(), score, 1e-2);
+            assertEquals(result.getBestModelScore(), score, 1e-2,msg);
         }
     }
 
@@ -845,7 +845,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
     }
 
     @Test
-    public void testEarlyStoppingMaximizeScore() throws Exception {
+    public void testEarlyStoppingMaximizeScore(@TempDir Path testDir) throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
         int outputs = 2;
@@ -883,7 +883,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .build())
                 .build();
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new LocalFileModelSaver(f.getAbsolutePath());
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
                 new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()

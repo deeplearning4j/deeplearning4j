@@ -27,10 +27,10 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.serializer.SerializerInstance;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.primitives.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -42,14 +42,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-@Ignore("Ignoring due to flaky nature of tests")
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+@Disabled("Ignoring due to flaky nature of tests")
 public class TestNd4jKryoSerialization extends BaseND4JTest {
 
     private JavaSparkContext sc;
 
-    @Before
+    @BeforeEach
     public void before() {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[*]");
@@ -117,11 +117,11 @@ public class TestNd4jKryoSerialization extends BaseND4JTest {
 
 //        assertEquals(in, deserialized);
         boolean equals = in.equals(deserialized);
-        assertTrue(in.getClass() + "\t" + in.toString(), equals);
+        assertTrue(equals,in.getClass() + "\t" + in.toString());
     }
 
 
-    @After
+    @AfterEach
     public void after() {
         if (sc != null)
             sc.close();

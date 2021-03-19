@@ -25,9 +25,10 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
@@ -36,11 +37,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Disabled
 public class ParameterServerClientPartialTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
     private static Aeron.Context ctx;
@@ -48,13 +48,13 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
     private int[] shape = {2, 2};
     private static Aeron aeron;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         final MediaDriver.Context ctx =
-                        new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirDeleteOnStart(true)
-                                        .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
-                                        .receiverIdleStrategy(new BusySpinIdleStrategy())
-                                        .senderIdleStrategy(new BusySpinIdleStrategy());
+                new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirDeleteOnStart(true)
+                        .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
+                        .receiverIdleStrategy(new BusySpinIdleStrategy())
+                        .senderIdleStrategy(new BusySpinIdleStrategy());
 
         mediaDriver = MediaDriver.launchEmbedded(ctx);
         aeron = Aeron.connect(getContext());
@@ -63,8 +63,8 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
         int masterPort = 40223 + new java.util.Random().nextInt(13000);
         int masterStatusPort = masterPort - 2000;
         masterNode.run(new String[] {"-m", "true", "-p", String.valueOf(masterPort), "-h", "localhost", "-id", "11",
-                        "-md", mediaDriver.aeronDirectoryName(), "-sp", String.valueOf(masterStatusPort), "-s", "2,2",
-                        "-u", String.valueOf(1)
+                "-md", mediaDriver.aeronDirectoryName(), "-sp", String.valueOf(masterStatusPort), "-s", "2,2",
+                "-u", String.valueOf(1)
 
         });
 
@@ -80,8 +80,8 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
         int slavePort = masterPort + 100;
         int slaveStatusPort = slavePort - 2000;
         slaveNode.run(new String[] {"-p", String.valueOf(slavePort), "-h", "localhost", "-id", "10", "-pm",
-                        masterNode.getSubscriber().connectionUrl(), "-md", mediaDriver.aeronDirectoryName(), "-sp",
-                        String.valueOf(slaveStatusPort), "-u", String.valueOf(1)
+                masterNode.getSubscriber().connectionUrl(), "-md", mediaDriver.aeronDirectoryName(), "-sp",
+                String.valueOf(slaveStatusPort), "-u", String.valueOf(1)
 
         });
 
@@ -105,13 +105,14 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
     }
 
 
-    @Test(timeout = 60000L)
-    @Ignore("AB 2019/06/01 - Intermittent failures - see issue 7657")
+    @Test()
+    @Timeout(60000L)
+    @Disabled("AB 2019/06/01 - Intermittent failures - see issue 7657")
     public void testServer() throws Exception {
         ParameterServerClient client = ParameterServerClient.builder().aeron(aeron)
-                        .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
-                        .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl()).subscriberHost("localhost")
-                        .subscriberPort(40325).subscriberStream(12).build();
+                .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
+                .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl()).subscriberHost("localhost")
+                .subscriberPort(40325).subscriberStream(12).build();
         assertEquals("localhost:40325:12", client.connectionUrl());
         //flow 1:
         /**
@@ -137,10 +138,10 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
     private static Aeron.Context getContext() {
         if (ctx == null)
             ctx = new Aeron.Context().driverTimeoutMs(Long.MAX_VALUE)
-                            .availableImageHandler(AeronUtil::printAvailableImage)
-                            .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(10000)
-                            .errorHandler(e -> log.error(e.toString(), e));
+                    .availableImageHandler(AeronUtil::printAvailableImage)
+                    .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(10000)
+                    .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }
 

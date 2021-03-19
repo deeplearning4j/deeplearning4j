@@ -17,11 +17,9 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.gradientcheck;
 
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -35,19 +33,21 @@ import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
-
 import java.util.Random;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@Ignore
-public class CapsnetGradientCheckTest extends BaseDL4JTest {
+@Disabled
+@DisplayName("Capsnet Gradient Check Test")
+class CapsnetGradientCheckTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -55,71 +55,39 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCapsNet() {
-
-        int[] minibatchSizes = {8, 16};
-
+    @DisplayName("Test Caps Net")
+    void testCapsNet() {
+        int[] minibatchSizes = { 8, 16 };
         int width = 6;
         int height = 6;
         int inputDepth = 4;
-
-        int[] primaryCapsDims = {2, 4};
-        int[] primaryCapsChannels = {8};
-        int[] capsules = {5};
-        int[] capsuleDims = {4, 8};
-        int[] routings = {1};
-
+        int[] primaryCapsDims = { 2, 4 };
+        int[] primaryCapsChannels = { 8 };
+        int[] capsules = { 5 };
+        int[] capsuleDims = { 4, 8 };
+        int[] routings = { 1 };
         Nd4j.getRandom().setSeed(12345);
-
         for (int routing : routings) {
             for (int primaryCapsDim : primaryCapsDims) {
                 for (int primarpCapsChannel : primaryCapsChannels) {
                     for (int capsule : capsules) {
                         for (int capsuleDim : capsuleDims) {
                             for (int minibatchSize : minibatchSizes) {
-
-                                INDArray input = Nd4j.rand(minibatchSize, inputDepth * height * width).mul(10)
-                                        .reshape(-1, inputDepth, height, width);
+                                INDArray input = Nd4j.rand(minibatchSize, inputDepth * height * width).mul(10).reshape(-1, inputDepth, height, width);
                                 INDArray labels = Nd4j.zeros(minibatchSize, capsule);
                                 for (int i = 0; i < minibatchSize; i++) {
-                                    labels.putScalar(new int[]{i, i % capsule}, 1.0);
+                                    labels.putScalar(new int[] { i, i % capsule }, 1.0);
                                 }
-
-                                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                        .dataType(DataType.DOUBLE)
-                                        .seed(123)
-                                        .updater(new NoOp())
-                                        .weightInit(new WeightInitDistribution(new UniformDistribution(-6, 6)))
-                                        .list()
-                                        .layer(new PrimaryCapsules.Builder(primaryCapsDim, primarpCapsChannel)
-                                                .kernelSize(3, 3)
-                                                .stride(2, 2)
-                                                .build())
-                                        .layer(new CapsuleLayer.Builder(capsule, capsuleDim, routing).build())
-                                        .layer(new CapsuleStrengthLayer.Builder().build())
-                                        .layer(new ActivationLayer.Builder(new ActivationSoftmax()).build())
-                                        .layer(new LossLayer.Builder(new LossNegativeLogLikelihood()).build())
-                                        .setInputType(InputType.convolutional(height, width, inputDepth))
-                                        .build();
-
+                                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).seed(123).updater(new NoOp()).weightInit(new WeightInitDistribution(new UniformDistribution(-6, 6))).list().layer(new PrimaryCapsules.Builder(primaryCapsDim, primarpCapsChannel).kernelSize(3, 3).stride(2, 2).build()).layer(new CapsuleLayer.Builder(capsule, capsuleDim, routing).build()).layer(new CapsuleStrengthLayer.Builder().build()).layer(new ActivationLayer.Builder(new ActivationSoftmax()).build()).layer(new LossLayer.Builder(new LossNegativeLogLikelihood()).build()).setInputType(InputType.convolutional(height, width, inputDepth)).build();
                                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                                 net.init();
-
                                 for (int i = 0; i < 4; i++) {
                                     System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
                                 }
-
-                                String msg = "minibatch=" + minibatchSize +
-                                        ", PrimaryCaps: " + primarpCapsChannel +
-                                        " channels, " + primaryCapsDim + " dimensions, Capsules: " + capsule +
-                                        " capsules with " + capsuleDim + " dimensions and " + routing + " routings";
+                                String msg = "minibatch=" + minibatchSize + ", PrimaryCaps: " + primarpCapsChannel + " channels, " + primaryCapsDim + " dimensions, Capsules: " + capsule + " capsules with " + capsuleDim + " dimensions and " + routing + " routings";
                                 System.out.println(msg);
-
-                                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input)
-                                        .labels(labels).subset(true).maxPerParam(100));
-
-                                assertTrue(msg, gradOK);
-
+                                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(100));
+                                assertTrue(gradOK,msg);
                                 TestUtils.testModelSerialization(net);
                             }
                         }

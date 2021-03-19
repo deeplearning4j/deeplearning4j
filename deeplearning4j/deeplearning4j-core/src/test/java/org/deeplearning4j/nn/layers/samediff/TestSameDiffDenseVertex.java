@@ -32,7 +32,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffDenseVertex;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,7 +43,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class TestSameDiffDenseVertex extends BaseDL4JTest {
@@ -134,7 +134,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                         INDArray i1 = m1.get(s);
                         INDArray i2 = m2.get(s);
 
-                        assertEquals(s, i2, i1);
+                        assertEquals(i2, i1, s);
                     }
 
                     assertEquals(gStd.gradient(), gSD.gradient());

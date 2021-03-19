@@ -30,19 +30,19 @@ import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFact
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PopularityWalkerTest extends BaseDL4JTest {
 
     private static Graph<VocabWord, Double> graph;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         if (graph == null) {
             graph = new Graph<>(10, false, new AbstractVertexFactory<VocabWord>());

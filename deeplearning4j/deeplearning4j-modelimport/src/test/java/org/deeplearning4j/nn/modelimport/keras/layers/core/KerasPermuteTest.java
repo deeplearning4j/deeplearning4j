@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -28,35 +27,38 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasPermuteTest extends BaseDL4JTest {
+@DisplayName("Keras Permute Test")
+class KerasPermuteTest extends BaseDL4JTest {
 
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
-
     @Test
-    public void testPermuteLayer() throws Exception {
+    @DisplayName("Test Permute Layer")
+    void testPermuteLayer() throws Exception {
         buildPermuteLayer(conf1, keras1);
         buildPermuteLayer(conf2, keras2);
     }
 
-
     private void buildPermuteLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        int[] permuteIndices = new int[]{2, 1};
+        int[] permuteIndices = new int[] { 2, 1 };
         List<Integer> permuteList = new ArrayList<>();
         permuteList.add(permuteIndices[0]);
         permuteList.add(permuteIndices[1]);
@@ -65,9 +67,7 @@ public class KerasPermuteTest extends BaseDL4JTest {
         assertEquals(preProcessor.getPermutationIndices()[1], permuteIndices[1]);
     }
 
-    private PermutePreprocessor getPermutePreProcessor(KerasLayerConfiguration conf, Integer kerasVersion,
-                                                       List<Integer> permuteList)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private PermutePreprocessor getPermutePreProcessor(KerasLayerConfiguration conf, Integer kerasVersion, List<Integer> permuteList) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
         Map<String, Object> config = new HashMap<>();
@@ -77,6 +77,5 @@ public class KerasPermuteTest extends BaseDL4JTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
         InputType inputType = InputType.InputTypeFeedForward.recurrent(20, 10);
         return (PermutePreprocessor) new KerasPermute(layerConfig).getInputPreprocessor(inputType);
-
     }
 }

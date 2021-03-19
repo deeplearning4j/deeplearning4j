@@ -21,27 +21,26 @@
 package org.nd4j.linalg.api.iterator;
 
 import lombok.val;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class NDIndexIteratorTest extends BaseNd4jTest {
 
-    public NDIndexIteratorTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class NDIndexIteratorTest extends BaseNd4jTestWithBackends {
 
-    @Test
-    public void testIterate() {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIterate(Nd4jBackend backend) {
         val shapeIter = new NdIndexIterator(2, 2);
         val possibleSolutions = new long[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1},};
 

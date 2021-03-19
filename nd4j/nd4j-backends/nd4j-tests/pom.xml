@@ -39,7 +39,7 @@
         <kotlin.version>1.4.30-M1</kotlin.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <junit.version>4.13</junit.version>
+        <junit.version>5.8.0-M1</junit.version>
         <junit-jupiter.version>5.4.2</junit-jupiter.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -145,92 +145,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-maven-plugin</artifactId>
-                <version>1.4.30-M1</version>
-                <configuration>
-                    <args>
-                        <arg>-Xjsr305=strict</arg>
-                    </args>
-                    <compilerPlugins>
-                        <plugin>spring</plugin>
-                        <plugin>jpa</plugin>
-                    </compilerPlugins>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.jetbrains.kotlin</groupId>
-                        <artifactId>kotlin-maven-allopen</artifactId>
-                        <version>${kotlin.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.jetbrains.kotlin</groupId>
-                        <artifactId>kotlin-maven-noarg</artifactId>
-                        <version>${kotlin.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>compile</id>
-                        <goals> <goal>compile</goal> </goals>
-                        <configuration>
-                            <sourceDirs>
-                                <sourceDir>${project.basedir}/src/main/stubs</sourceDir>
-                                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-                                <sourceDir>${project.basedir}/src/main/java</sourceDir>
-                                <sourceDir>${project.basedir}/src/main/ops</sourceDir>
-                            </sourceDirs>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>test-compile</id>
-                        <goals> <goal>test-compile</goal> </goals>
-                        <configuration>
-                            <sourceDirs>
-                                <sourceDir>${project.basedir}/src/test/stubs</sourceDir>
-                                <sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
-                                <sourceDir>${project.basedir}/src/test/java</sourceDir>
-                                <sourceDir>${project.basedir}/src/test/ops</sourceDir>
-                            </sourceDirs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- https://kotlinlang.org/docs/reference/using-maven.html -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
-                <executions>
-                    <!-- Replacing default-compile as it is treated specially by maven -->
-                    <execution>
-                        <id>default-compile</id>
-                        <phase>none</phase>
-                    </execution>
-                    <!-- Replacing default-testCompile as it is treated specially by maven -->
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>java-compile</id>
-                        <phase>compile</phase>
-                        <goals> <goal>compile</goal> </goals>
-                    </execution>
-                    <execution>
-                        <id>java-test-compile</id>
-                        <phase>test-compile</phase>
-                        <goals> <goal>testCompile</goal> </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -239,16 +153,15 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit-jupiter.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit-jupiter.version}</version>
-            <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
@@ -265,15 +178,14 @@
             <groupId>org.nd4j</groupId>
             <artifactId>samediff-import-tensorflow</artifactId>
             <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>samediff-import-onnx</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <scope>compile</scope>
+
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -376,7 +288,7 @@
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
                             </includes>
-                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
                             <systemPropertyVariables>
                                 <org.nd4j.linalg.defaultbackend>
                                     org.nd4j.linalg.cpu.nativecpu.CpuBackend
@@ -391,7 +303,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine>-Dfile.encoding=UTF-8 "</argLine>
+                            <argLine>-Dfile.encoding=UTF-8 </argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -458,7 +370,7 @@
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
                             </includes>
-                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
                             <systemPropertyVariables>
                                 <org.nd4j.linalg.defaultbackend>
                                     org.nd4j.linalg.jcublas.JCublasBackend

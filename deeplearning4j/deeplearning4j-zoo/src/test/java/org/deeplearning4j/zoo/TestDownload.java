@@ -31,38 +31,38 @@ import org.deeplearning4j.zoo.model.UNet;
 import org.deeplearning4j.zoo.util.darknet.COCOLabels;
 import org.deeplearning4j.zoo.util.darknet.DarknetLabels;
 import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@Ignore("Times out too often")
+@Disabled("Times out too often")
 public class TestDownload extends BaseDL4JTest {
+    @TempDir
+    static Path sharedTempDir;
 
     @Override
     public long getTimeoutMilliseconds() {
         return isIntegrationTests() ? 480000L : 60000L;
     }
 
-    @ClassRule
-    public static TemporaryFolder testDir = new TemporaryFolder();
-    private static File f;
 
-    @BeforeClass
+
+    @BeforeAll
     public static void before() throws Exception {
-        f = testDir.newFolder();
-        DL4JResources.setBaseDirectory(f);
+        DL4JResources.setBaseDirectory(sharedTempDir.toFile());
     }
 
-    @AfterClass
+    @AfterAll
     public static void after(){
         DL4JResources.resetBaseDirectoryLocation();
     }

@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.loader
 
 import junit.framework.Assert
 import onnx.Onnx
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcessLoader
@@ -44,10 +45,11 @@ class TestOnnxProcessLoader {
                 val process = registry().lookupOpMappingProcess(name)
                 val serialized = process.serialize()
                 val created = loader.createProcess(serialized)
-                Assert.assertEquals(
-                    "Op name $name failed with process tensor rules ${process.tensorMappingRules()} and created tensor rules ${created.tensorMappingRules()} with attributes ${process.attributeMappingRules()} and created attribute rules ${created.attributeMappingRules()}",
+                assertEquals(
                     process,
-                    created
+                    created,
+                    "Op name $name failed with process tensor rules ${process.tensorMappingRules()} and created tensor rules ${created.tensorMappingRules()} with attributes ${process.attributeMappingRules()} and created attribute rules ${created.attributeMappingRules()}",
+
                 )
             }
 

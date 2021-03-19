@@ -24,12 +24,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -37,38 +39,33 @@ import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class TestNdArrReadWriteTxt extends BaseNd4jTest {
+public class TestNdArrReadWriteTxt extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
-    public TestNdArrReadWriteTxt(Nd4jBackend backend) {
-        super(backend);
-    }
-
-    @Test
-    public void compareAfterWrite() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void compareAfterWrite(Nd4jBackend backend) throws Exception {
         int [] ranksToCheck = new int[] {0,1,2,3,4};
-        for (int i=0; i<ranksToCheck.length;i++) {
+        for (int i = 0; i < ranksToCheck.length; i++) {
 //            log.info("Checking read write arrays with rank " + ranksToCheck[i]);
             compareArrays(ranksToCheck[i],ordering(), testDir);
         }
     }
 
-    public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
+    public static void compareArrays(int rank, char ordering, Path testDir) throws Exception {
         List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, Nd4j.defaultFloatingPointType());
         Iterator<Pair<INDArray,String>> iter = all.iterator();
         int cnt = 0;
         while (iter.hasNext()) {
-            File dir = testDir.newFolder();
+            File dir = testDir.toFile();
             Pair<INDArray,String> currentPair = iter.next();
             INDArray origArray = currentPair.getFirst();
             //adding elements outside the bounds where print switches to scientific notation
@@ -79,15 +76,16 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
 //            log.info("F:\n"+ origArray.toString());
             Nd4j.writeTxt(origArray, new File(dir, "someArr.txt").getAbsolutePath());
             INDArray readBack = Nd4j.readTxt(new File(dir, "someArr.txt").getAbsolutePath());
-            assertEquals("\nNot equal on shape " + ArrayUtils.toString(origArray.shape()), origArray, readBack);
+            assertEquals(origArray, readBack,"\nNot equal on shape " + ArrayUtils.toString(origArray.shape()));
             cnt++;
         }
     }
 
-    @Test
-    public void testNd4jReadWriteText() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNd4jReadWriteText(Nd4jBackend backend) throws Exception {
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         int count = 0;
         for(val testShape : new long[][]{{1,1}, {3,1}, {4,5}, {1,2,3}, {2,1,3}, {2,3,1}, {2,3,4}, {1,2,3,4}, {2,3,4,2}}){
             List<Pair<INDArray, String>> l = null;

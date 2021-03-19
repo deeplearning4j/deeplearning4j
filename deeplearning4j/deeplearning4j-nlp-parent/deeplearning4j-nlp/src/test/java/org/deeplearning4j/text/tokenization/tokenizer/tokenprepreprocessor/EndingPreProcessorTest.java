@@ -23,9 +23,9 @@ package org.deeplearning4j.text.tokenization.tokenizer.tokenprepreprocessor;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.EndingPreProcessor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EndingPreProcessorTest extends BaseDL4JTest {
     @Test

@@ -36,7 +36,7 @@ public class DropOut extends BaseRandomOp {
     public DropOut(SameDiff sameDiff, SDVariable input, double p) {
         super(sameDiff, input);
         this.p = p;
-        //https://github.com/deeplearning4j/deeplearning4j/issues/5650
+        //https://github.com/eclipse/deeplearning4j/issues/5650
         throw new UnsupportedOperationException("Dropout SameDiff support disabled pending backprop support");
     }
 

@@ -737,7 +737,7 @@ val flatten = OnnxMappingProcess(
         inputFrameworkOpName = "Flatten",
         opName = "flatten_2d",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimensions" to "axis"))),
+        attributeMappingRules = listOf(valueMappings(mutableMapOf("flattenDimension" to "axis"))),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -761,10 +761,8 @@ val scatter = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "ScatterElements",
         opName = "scatter_update",
-        attributeMappingRules =   listOf(
-                valueMappings(mutableMapOf("dimension" to "axis")),
-                ndarrayToIntList(ndarrayNameToAttributeName = mutableMapOf("indices" to "indices"))),
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("operand" to "data","updates" to "updates")))
+        attributeMappingRules =   listOf(),
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("operand" to "data","updates" to "updates","indices" to "indices")))
 )
 
 /*

@@ -38,9 +38,10 @@ import org.datavec.spark.functions.pairdata.PairSequenceRecordReaderBytesFunctio
 import org.datavec.spark.functions.pairdata.PathToKeyConverter;
 import org.datavec.spark.functions.pairdata.PathToKeyConverterFilename;
 import org.datavec.spark.util.DataVecSparkUtil;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import scala.Tuple2;
 
@@ -50,16 +51,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
     @Test
-    public void test() throws Exception {
+    public void test(@TempDir Path testDir) throws Exception {
         //Goal: combine separate files together into a hadoop sequence file, for later parsing by a SequenceRecordReader
         //For example: use to combine input and labels data from separate files for training a RNN
         if(Platform.isWindows()) {
@@ -67,7 +65,7 @@ public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
         }
         JavaSparkContext sc = getContext();
 
-        File f = testDir.newFolder();
+        File f = testDir.toFile();
         new ClassPathResource("datavec-spark/video/").copyDirectory(f);
         String path = f.getAbsolutePath() + "/*";
 

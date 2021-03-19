@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer;
@@ -26,27 +25,31 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding3D;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasZeroPadding3DTest extends BaseDL4JTest {
+@DisplayName("Keras Zero Padding 3 D Test")
+class KerasZeroPadding3DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "zero_padding_3D_layer";
-    private final int[] ZERO_PADDING = new int[]{2, 3, 4};
+
+    private final int[] ZERO_PADDING = new int[] { 2, 3, 4 };
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testZeroPadding3DLayer() throws Exception {
+    @DisplayName("Test Zero Padding 3 D Layer")
+    void testZeroPadding3DLayer() throws Exception {
         Integer keras1 = 1;
         buildZeroPadding3DLayer(conf1, keras1);
         Integer keras2 = 2;
@@ -55,20 +58,20 @@ public class KerasZeroPadding3DTest extends BaseDL4JTest {
         buildZeroPaddingSingleDim3DLayer(conf2, keras2);
     }
 
-
-    private void buildZeroPadding3DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
-            throws Exception {
+    private void buildZeroPadding3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_ZERO_PADDING_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        ArrayList padding = new ArrayList<Integer>() {{
-            for (int i : ZERO_PADDING) add(i);
-        }};
+        ArrayList padding = new ArrayList<Integer>() {
+
+            {
+                for (int i : ZERO_PADDING) add(i);
+            }
+        };
         config.put(conf.getLAYER_FIELD_ZERO_PADDING(), padding);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         ZeroPadding3DLayer layer = new KerasZeroPadding3D(layerConfig).getZeroPadding3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
@@ -77,11 +80,9 @@ public class KerasZeroPadding3DTest extends BaseDL4JTest {
         assertEquals(ZERO_PADDING[1], layer.getPadding()[3]);
         assertEquals(ZERO_PADDING[2], layer.getPadding()[4]);
         assertEquals(ZERO_PADDING[2], layer.getPadding()[5]);
-
     }
 
-    private void buildZeroPaddingSingleDim3DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
-            throws Exception {
+    private void buildZeroPaddingSingleDim3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_ZERO_PADDING_3D());
         Map<String, Object> config = new HashMap<>();
@@ -89,7 +90,6 @@ public class KerasZeroPadding3DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_ZERO_PADDING(), ZERO_PADDING[0]);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         ZeroPadding3DLayer layer = new KerasZeroPadding3D(layerConfig).getZeroPadding3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);

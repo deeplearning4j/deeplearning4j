@@ -19,21 +19,12 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
-import junit.framework.Assert.assertNotNull
-import org.junit.Ignore
+import org.junit.jupiter.api.Disabled
 import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.nd4j.common.io.ClassPathResource
 
 class TestOnnxFrameworkImporter {
-    @Test
-    @Ignore
-    fun testOnnxImporter() {
-        val onnxImport = OnnxFrameworkImporter()
-        val onnxFile = ClassPathResource("lenet.onnx").file
-        val graph  = onnxImport.runImport(onnxFile.absolutePath)
-        //note this is just a test to make sure everything runs, we test the underlying import elsewhere
-        assertNotNull(graph)
 
-    }
 
 }

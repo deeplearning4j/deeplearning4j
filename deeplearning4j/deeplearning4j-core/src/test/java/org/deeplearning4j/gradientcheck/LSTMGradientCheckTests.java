@@ -31,7 +31,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,7 +41,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LSTMGradientCheckTests extends BaseDL4JTest {
 
@@ -137,7 +137,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
-            assertTrue(testName, gradOK);
+            assertTrue(gradOK, testName);
             TestUtils.testModelSerialization(mln);
         }
     }
@@ -226,7 +226,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
                         .labels(labels).subset(true).maxPerParam(128));
 
-                assertTrue(testName, gradOK);
+                assertTrue(gradOK, testName);
                 TestUtils.testModelSerialization(mln);
             }
         }
@@ -276,7 +276,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 System.out.println(msg);
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
                 TestUtils.testModelSerialization(mln);
             }
         }
@@ -356,7 +356,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
                 String msg = "testGradientGravesLSTMFull() - activationFn=" + afn + ", lossFn=" + lf
                         + ", outputActivation=" + outputActivation + ", l2=" + l2 + ", l1=" + l1;
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
                 TestUtils.testModelSerialization(mln);
             }
         }
@@ -405,7 +405,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
             String msg = "testGradientGravesLSTMEdgeCases() - timeSeriesLength=" + timeSeriesLength[i]
                             + ", miniBatchSize=" + miniBatchSize[i];
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(mln);
         }
     }

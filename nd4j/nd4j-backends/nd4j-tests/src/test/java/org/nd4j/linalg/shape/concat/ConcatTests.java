@@ -21,11 +21,12 @@
 package org.nd4j.linalg.shape.concat;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -38,23 +39,21 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Adam Gibson
  */
 @Slf4j
-@RunWith(Parameterized.class)
-public class ConcatTests extends BaseNd4jTest {
 
-    public ConcatTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ConcatTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
-    public void testConcat() {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcat(Nd4jBackend backend) {
         INDArray A = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(2, 2, 2);
         INDArray B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray concat = Nd4j.concat(0, A, B);
@@ -62,8 +61,9 @@ public class ConcatTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testConcatHorizontally() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcatHorizontally(Nd4jBackend backend) {
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
@@ -73,8 +73,9 @@ public class ConcatTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testVStackColumn() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testVStackColumn(Nd4jBackend backend) {
         INDArray linspaced = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape(3, 1);
         INDArray stacked = linspaced.dup();
         INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 1, 2, 3}, new int[] {6, 1});
@@ -83,8 +84,9 @@ public class ConcatTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testConcatScalars() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcatScalars(Nd4jBackend backend) {
         INDArray first = Nd4j.arange(0, 1).reshape(1, 1);
         INDArray second = Nd4j.arange(0, 1).reshape(1, 1);
         INDArray firstRet = Nd4j.concat(0, first, second);
@@ -94,8 +96,9 @@ public class ConcatTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testConcatMatrices() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcatMatrices(Nd4jBackend backend) {
         INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray b = a.dup();
 
@@ -109,8 +112,9 @@ public class ConcatTests extends BaseNd4jTest {
         assertEquals(zeroAssertion, concat);
     }
 
-    @Test
-    public void testConcatRowVectors() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcatRowVectors(Nd4jBackend backend) {
         INDArray rowVector = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new int[] {1, 6});
         INDArray matrix = Nd4j.create(new double[] {7, 8, 9, 10, 11, 12}, new int[] {1, 6});
 
@@ -124,8 +128,9 @@ public class ConcatTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testConcat3d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcat3d(Nd4jBackend backend) {
         INDArray first = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 2, 3, 4);
         INDArray second = Nd4j.linspace(24, 36, 12, DataType.DOUBLE).reshape('c', 1, 3, 4);
         INDArray third = Nd4j.linspace(36, 48, 12, DataType.DOUBLE).reshape('c', 1, 3, 4);
@@ -171,8 +176,10 @@ public class ConcatTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
-    public void testConcat3dv2() {
+    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcat3dv2(Nd4jBackend backend) {
 
         INDArray first = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 2, 3, 4);
         INDArray second = Nd4j.linspace(24, 35, 12, DataType.DOUBLE).reshape('c', 1, 3, 4);
@@ -253,7 +260,8 @@ public class ConcatTests extends BaseNd4jTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void concatf(){
         char orderBefore = Nd4j.order();
         try {

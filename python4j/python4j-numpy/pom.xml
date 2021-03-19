@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -53,131 +53,15 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>python4j-core</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
-
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <inherited>true</inherited>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.nd4j</groupId>
-                                <artifactId>nd4j-native</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <environmentVariables>
-
-                            </environmentVariables>
-                            <testSourceDirectory>src/test/java</testSourceDirectory>
-                            <includes>
-                                <include>*.java</include>
-                                <include>**/*.java</include>
-                                <include>**/Test*.java</include>
-                                <include>**/*Test.java</include>
-                                <include>**/*TestCase.java</include>
-                            </includes>
-                            <junitArtifactName>junit:junit</junitArtifactName>
-                            <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>
-                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
-                                </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>
-                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
-                                </org.nd4j.linalg.tests.backendstorun>
-                            </systemPropertyVariables>
-                            <!--
-                                Maximum heap size was set to 8g, as a minimum required value for tests run.
-                                Depending on a build machine, default value is not always enough.
-
-                                For testing large zoo models, this may not be enough (so comment it out).
-                            -->
-                            <argLine> "</argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <id>nd4j-tests-cpu</id>
         </profile>
-
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-11.0</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.maven.surefire</groupId>
-                                <artifactId>surefire-junit47</artifactId>
-                                <version>2.19.1</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <environmentVariables>
-                            </environmentVariables>
-                            <testSourceDirectory>src/test/java</testSourceDirectory>
-                            <includes>
-                                <include>*.java</include>
-                                <include>**/*.java</include>
-                                <include>**/Test*.java</include>
-                                <include>**/*Test.java</include>
-                                <include>**/*TestCase.java</include>
-                            </includes>
-                            <junitArtifactName>junit:junit</junitArtifactName>
-                            <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>
-                                    org.nd4j.linalg.jcublas.JCublasBackend
-                                </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>
-                                    org.nd4j.linalg.jcublas.JCublasBackend
-                                </org.nd4j.linalg.tests.backendstorun>
-                            </systemPropertyVariables>
-                            <!--
-                                Maximum heap size was set to 6g, as a minimum required value for tests run.
-                                Depending on a build machine, default value is not always enough.
-                            -->
-                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <id>nd4j-tests-cuda</id>
         </profile>
     </profiles>
 </project>

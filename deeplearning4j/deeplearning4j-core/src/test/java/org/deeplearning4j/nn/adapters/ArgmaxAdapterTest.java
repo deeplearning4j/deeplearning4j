@@ -17,34 +17,34 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.adapters;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.*;
+@DisplayName("Argmax Adapter Test")
+class ArgmaxAdapterTest extends BaseDL4JTest {
 
-public class ArgmaxAdapterTest extends BaseDL4JTest {
     @Test
-    public void testSoftmax_2D_1() {
-        val in = new double[][] {{1, 3, 2}, { 4, 5, 6}};
-
+    @DisplayName("Test Softmax _ 2 D _ 1")
+    void testSoftmax_2D_1() {
+        val in = new double[][] { { 1, 3, 2 }, { 4, 5, 6 } };
         val adapter = new ArgmaxAdapter();
         val result = adapter.apply(Nd4j.create(in));
-
-        assertArrayEquals(new int[]{1, 2}, result);
+        assertArrayEquals(new int[] { 1, 2 }, result);
     }
 
     @Test
-    public void testSoftmax_1D_1() {
-        val in = new double[] {1, 3, 2};
-
+    @DisplayName("Test Softmax _ 1 D _ 1")
+    void testSoftmax_1D_1() {
+        val in = new double[] { 1, 3, 2 };
         val adapter = new ArgmaxAdapter();
         val result = adapter.apply(Nd4j.create(in));
-
-        assertArrayEquals(new int[]{1}, result);
+        assertArrayEquals(new int[] { 1 }, result);
     }
 }

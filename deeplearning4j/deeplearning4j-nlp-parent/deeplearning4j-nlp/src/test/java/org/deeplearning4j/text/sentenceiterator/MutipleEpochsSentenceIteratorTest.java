@@ -21,13 +21,17 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.resources.Resources;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled("Permissions issues on CI")
 public class MutipleEpochsSentenceIteratorTest extends BaseDL4JTest {
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(30000)
     public void hasNext() throws Exception {
         SentenceIterator iterator = new MutipleEpochsSentenceIterator(
                         new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 100);

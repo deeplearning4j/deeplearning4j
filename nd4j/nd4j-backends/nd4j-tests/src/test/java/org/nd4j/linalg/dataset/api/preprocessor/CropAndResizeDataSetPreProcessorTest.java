@@ -20,8 +20,10 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -29,65 +31,95 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTest {
+public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTestWithBackends {
 
-    public CropAndResizeDataSetPreProcessorTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_originalHeightIsZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_originalHeightIsZero_expect_IllegalArgumentException(Nd4jBackend backend) {
+       assertThrows(IllegalArgumentException.class,() -> {
+           CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+       });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_originalWidthIsZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_originalWidthIsZero_expect_IllegalArgumentException(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_yStartIsNegative_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_yStartIsNegative_expect_IllegalArgumentException(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_xStartIsNegative_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, -1, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_xStartIsNegative_expect_IllegalArgumentException(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, -1, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_heightIsNotGreaterThanZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 0, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_heightIsNotGreaterThanZero_expect_IllegalArgumentException(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 0, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_widthIsNotGreaterThanZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 0, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_widthIsNotGreaterThanZero_expect_IllegalArgumentException(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 0, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void when_numChannelsIsNotGreaterThanZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 0, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_numChannelsIsNotGreaterThanZero_expect_IllegalArgumentException(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 0, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+
+        });
     }
 
-    @Test(expected = NullPointerException.class)
-    public void when_dataSetIsNull_expect_NullPointerException() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_dataSetIsNull_expect_NullPointerException(Nd4jBackend backend) {
         // Assemble
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        assertThrows(NullPointerException.class,() -> {
+            CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
 
-        // Act
-        sut.preProcess(null);
+            // Act
+            sut.preProcess(null);
+        });
+
     }
 
-    @Test
-    public void when_dataSetIsEmpty_expect_emptyDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_dataSetIsEmpty_expect_emptyDataSet(Nd4jBackend backend) {
         // Assemble
         CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
         DataSet ds = new DataSet(null, null);
@@ -99,8 +131,9 @@ public class CropAndResizeDataSetPreProcessorTest extends BaseNd4jTest {
         assertTrue(ds.isEmpty());
     }
 
-    @Test
-    public void when_dataSetIs15wx10h_expect_3wx4hDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void when_dataSetIs15wx10h_expect_3wx4hDataSet(Nd4jBackend backend) {
         // Assemble
         int numChannels = 3;
         int height = 10;

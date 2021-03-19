@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.poi.excel;
 
 import lombok.val;
@@ -26,44 +25,45 @@ import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.nd4j.common.primitives.Triple;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.primitives.Triple;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
+@DisplayName("Excel Record Writer Test")
+class ExcelRecordWriterTest {
 
-public class ExcelRecordWriterTest {
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir
+    public Path testDir;
 
     @Test
-    public void testWriter() throws Exception  {
+    @DisplayName("Test Writer")
+    void testWriter() throws Exception {
         ExcelRecordWriter excelRecordWriter = new ExcelRecordWriter();
         val records = records();
-        File tmpDir = testDir.newFolder();
-        File outputFile = new File(tmpDir,"testexcel.xlsx");
+        File tmpDir = testDir.toFile();
+        File outputFile = new File(tmpDir, "testexcel.xlsx");
         outputFile.deleteOnExit();
         FileSplit fileSplit = new FileSplit(outputFile);
-        excelRecordWriter.initialize(fileSplit,new NumberOfRecordsPartitioner());
+        excelRecordWriter.initialize(fileSplit, new NumberOfRecordsPartitioner());
         excelRecordWriter.writeBatch(records.getRight());
         excelRecordWriter.close();
         File parentFile = outputFile.getParentFile();
-        assertEquals(1,parentFile.list().length);
-
+        assertEquals(1, parentFile.list().length);
         ExcelRecordReader excelRecordReader = new ExcelRecordReader();
         excelRecordReader.initialize(fileSplit);
         List<List<Writable>> next = excelRecordReader.next(10);
-        assertEquals(10,next.size());
-
+        assertEquals(10, next.size());
     }
 
-    private Triple<String,Schema,List<List<Writable>>> records() {
+    private Triple<String, Schema, List<List<Writable>>> records() {
         List<List<Writable>> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         int numColumns = 3;
@@ -80,13 +80,10 @@ public class ExcelRecordWriterTest {
             }
             list.add(temp);
         }
-
-
         Schema.Builder schemaBuilder = new Schema.Builder();
-        for(int i = 0; i < numColumns; i++) {
+        for (int i = 0; i < numColumns; i++) {
             schemaBuilder.addColumnInteger(String.valueOf(i));
         }
-
-        return Triple.of(sb.toString(),schemaBuilder.build(),list);
+        return Triple.of(sb.toString(), schemaBuilder.build(), list);
     }
 }

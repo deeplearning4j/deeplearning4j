@@ -20,28 +20,28 @@
 
 package org.nd4j.linalg.schedule;
 
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestSchedules extends BaseNd4jTest {
+public class TestSchedules extends BaseNd4jTestWithBackends {
 
-    public TestSchedules(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
-    public char ordering(){
+    public char ordering() {
         return 'c';
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJson() throws Exception {
 
         ObjectMapper om = new ObjectMapper();
@@ -68,8 +68,9 @@ public class TestSchedules extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testScheduleValues(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScheduleValues(Nd4jBackend backend) {
 
         double lr = 0.8;
         double decay = 0.9;
@@ -113,14 +114,15 @@ public class TestSchedules extends BaseNd4jTest {
                         throw new RuntimeException();
                     }
 
-                    assertEquals(s.toString() + ", " + st, e, now, 1e-6);
+                    assertEquals(e, now, 1e-6,s.toString() + ", " + st);
                 }
             }
         }
     }
 
-    @Test
-    public void testMapSchedule(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMapSchedule(Nd4jBackend backend) {
 
         ISchedule schedule = new MapSchedule.Builder(ScheduleType.ITERATION)
                 .add(0, 0.5)
@@ -135,8 +137,9 @@ public class TestSchedules extends BaseNd4jTest {
             }
         }
     }
-    @Test
-    public void testCycleSchedule(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCycleSchedule(Nd4jBackend backend) {
         ISchedule schedule = new CycleSchedule(ScheduleType.ITERATION, 1.5, 100);
         assertEquals(0.15, schedule.valueAt(0, 0), 1e-6);
         assertEquals(1.5, schedule.valueAt(45, 0), 1e-6);

@@ -20,11 +20,12 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,26 +35,23 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
-public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
-    DataType initialType;
+public class TestSerializationFloatToDouble extends BaseNd4jTestWithBackends {
 
-    public TestSerializationFloatToDouble(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
 
-    @After
+
+    @AfterEach
     public void after() {
         Nd4j.setDataType(this.initialType);
     }
 
-    @Test
-    public void testSerializationFullArrayNd4jWriteRead() throws Exception {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSerializationFullArrayNd4jWriteRead(Nd4jBackend backend) throws Exception {
         int length = 100;
 
         //WRITE OUT A FLOAT ARRAY
@@ -85,7 +83,8 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         assertTrue(Transforms.abs(arr1.sub(arr2).div(arr1)).maxNumber().doubleValue() < 0.01);
     }
 
-    @Test
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationFullArrayJava() throws Exception {
         int length = 100;
         Nd4j.create(1);
@@ -116,7 +115,8 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         assertTrue(Transforms.abs(arr1.sub(arr2).div(arr1)).maxNumber().doubleValue() < 0.01);
     }
 
-    @Test
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationOnViewsNd4jWriteRead() throws Exception {
         int length = 100;
         Nd4j.create(1);
@@ -146,7 +146,8 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
     }
 
-    @Test
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerializationOnViewsJava() throws Exception {
         int length = 100;
         Nd4j.create(1);

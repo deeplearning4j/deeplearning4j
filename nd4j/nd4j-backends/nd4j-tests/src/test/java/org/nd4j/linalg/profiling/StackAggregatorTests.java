@@ -21,11 +21,13 @@
 package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,36 +37,34 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.primitives.StackDescriptor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class StackAggregatorTests extends BaseNd4jTest {
+public class StackAggregatorTests extends BaseNd4jTestWithBackends {
 
-    public StackAggregatorTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
         return 'c';
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().stackTrace(true).build());
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
         OpProfiler.getInstance().reset();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
 
-    @Test
-    public void testBasicBranching1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBasicBranching1(Nd4jBackend backend) {
         StackAggregator aggregator = new StackAggregator();
 
         aggregator.incrementCount();
@@ -75,8 +75,9 @@ public class StackAggregatorTests extends BaseNd4jTest {
         assertEquals(2, aggregator.getUniqueBranchesNumber());
     }
 
-    @Test
-    public void testBasicBranching2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBasicBranching2(Nd4jBackend backend) {
         StackAggregator aggregator = new StackAggregator();
 
         for (int i = 0; i < 10; i++) {
@@ -90,8 +91,9 @@ public class StackAggregatorTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testTrailingFrames1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTrailingFrames1(Nd4jBackend backend) {
         StackAggregator aggregator = new StackAggregator();
         aggregator.incrementCount();
 
@@ -104,8 +106,9 @@ public class StackAggregatorTests extends BaseNd4jTest {
         assertTrue(descriptor.getStackTrace()[descriptor.size() - 1].getClassName().contains("StackAggregatorTests"));
     }
 
-    /*@Test
-    public void testTrailingFrames2() {
+    /*@ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTrailingFrames2(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new int[] {10, 10}, 'f');
         INDArray y = Nd4j.create(new int[] {10, 10}, 'c');
 
@@ -129,8 +132,8 @@ public class StackAggregatorTests extends BaseNd4jTest {
     }*/
 
     @Test
-    @Ignore
-    public void testScalarAggregator() {
+    @Disabled
+    public void testScalarAggregator(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10);
 
         x.putScalar(0, 1.0);

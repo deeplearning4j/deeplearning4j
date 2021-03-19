@@ -54,9 +54,9 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -69,14 +69,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 public class SequenceVectorsTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
@@ -270,7 +270,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testDeepWalk() throws Exception {
         Heartbeat.getInstance().disableHeartbeat();
 

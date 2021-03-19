@@ -20,10 +20,10 @@
 
 package org.nd4j.common.tools;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tools.BTools;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BToolsTest {
 	//

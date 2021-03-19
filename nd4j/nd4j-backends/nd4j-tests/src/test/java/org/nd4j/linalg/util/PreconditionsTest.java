@@ -20,9 +20,11 @@
 
 package org.nd4j.linalg.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -30,17 +32,14 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class PreconditionsTest extends BaseNd4jTest {
+public class PreconditionsTest extends BaseNd4jTestWithBackends {
 
-    public PreconditionsTest(Nd4jBackend backend) {
-        super(backend);
-    }
-
-    @Test
-    public void test(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void test(Nd4jBackend backend){
 
         INDArray arr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
 

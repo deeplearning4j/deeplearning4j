@@ -35,7 +35,7 @@ import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffDense;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,7 +48,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TestSameDiffDense extends BaseDL4JTest {
@@ -316,7 +316,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
                         INDArray i1 = m1.get(s);
                         INDArray i2 = m2.get(s);
 
-                        assertEquals(s, i2, i1);
+                        assertEquals(i2, i1, s);
                     }
 
                     assertEquals(gStd.gradient(), gSD.gradient());
@@ -398,9 +398,9 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 netSD.fit(ds);
                 netStandard.fit(ds);
                 String s = String.valueOf(i);
-                assertEquals(s, netStandard.getFlattenedGradients(), netSD.getFlattenedGradients());
-                assertEquals(s, netStandard.params(), netSD.params());
-                assertEquals(s, netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray());
+                assertEquals(netStandard.getFlattenedGradients(), netSD.getFlattenedGradients(), s);
+                assertEquals(netStandard.params(), netSD.params(), s);
+                assertEquals(netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray(), s);
             }
 
             //Sanity check on different minibatch sizes:
@@ -446,7 +446,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
 
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
 
                 TestUtils.testModelSerialization(net);
 

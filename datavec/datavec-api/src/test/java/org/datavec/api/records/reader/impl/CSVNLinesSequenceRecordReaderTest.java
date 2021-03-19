@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.SequenceRecord;
@@ -27,61 +26,53 @@ import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
-
 import java.util.ArrayList;
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
-
-public class CSVNLinesSequenceRecordReaderTest extends BaseND4JTest {
+@DisplayName("Csvn Lines Sequence Record Reader Test")
+class CSVNLinesSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test
-    public void testCSVNLinesSequenceRecordReader() throws Exception {
+    @DisplayName("Test CSVN Lines Sequence Record Reader")
+    void testCSVNLinesSequenceRecordReader() throws Exception {
         int nLinesPerSequence = 10;
-
         SequenceRecordReader seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
         seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         CSVRecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         int count = 0;
         while (seqRR.hasNext()) {
             List<List<Writable>> next = seqRR.sequenceRecord();
-
             List<List<Writable>> expected = new ArrayList<>();
             for (int i = 0; i < nLinesPerSequence; i++) {
                 expected.add(rr.next());
             }
-
             assertEquals(10, next.size());
             assertEquals(expected, next);
-
             count++;
         }
-
         assertEquals(150 / nLinesPerSequence, count);
     }
 
     @Test
-    public void testCSVNlinesSequenceRecordReaderMetaData() throws Exception {
+    @DisplayName("Test CSV Nlines Sequence Record Reader Meta Data")
+    void testCSVNlinesSequenceRecordReaderMetaData() throws Exception {
         int nLinesPerSequence = 10;
-
         SequenceRecordReader seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
         seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         CSVRecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         List<List<List<Writable>>> out = new ArrayList<>();
         while (seqRR.hasNext()) {
             List<List<Writable>> next = seqRR.sequenceRecord();
             out.add(next);
         }
-
         seqRR.reset();
         List<List<List<Writable>>> out2 = new ArrayList<>();
         List<SequenceRecord> out3 = new ArrayList<>();
@@ -92,11 +83,8 @@ public class CSVNLinesSequenceRecordReaderTest extends BaseND4JTest {
             meta.add(seq.getMetaData());
             out3.add(seq);
         }
-
         assertEquals(out, out2);
-
         List<SequenceRecord> out4 = seqRR.loadSequenceFromMetaData(meta);
         assertEquals(out3, out4);
     }
-
 }

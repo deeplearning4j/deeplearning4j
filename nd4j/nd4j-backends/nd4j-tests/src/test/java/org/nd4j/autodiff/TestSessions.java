@@ -20,7 +20,10 @@
 
 package org.nd4j.autodiff;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -30,7 +33,7 @@ import org.nd4j.autodiff.samediff.internal.FrameIter;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.memory.NoOpMemoryMgr;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,21 +46,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class TestSessions extends BaseNd4jTest {
-
-    public TestSessions(Nd4jBackend b){
-        super(b);
-    }
+public class TestSessions extends BaseNd4jTestWithBackends {
 
     @Override
-    public char ordering(){
+    public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testInferenceSessionBasic(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testInferenceSessionBasic(Nd4jBackend backend) {
         //So far: trivial test to check execution order
 
         SameDiff sd = SameDiff.create();
@@ -88,8 +88,9 @@ public class TestSessions extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testInferenceSessionBasic2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testInferenceSessionBasic2(Nd4jBackend backend) {
         //So far: trivial test to check execution order
 
         SameDiff sd = SameDiff.create();
@@ -124,8 +125,9 @@ public class TestSessions extends BaseNd4jTest {
         assertEquals(dExp, outMap.get("d"));
     }
 
-    @Test
-    public void testMergeSimple(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMergeSimple(Nd4jBackend backend) {
         //This isn't really a sensible graph, as merge op behaviour is undefined when multiple inputs are available...
 
         SameDiff sd = SameDiff.create();
@@ -160,8 +162,9 @@ public class TestSessions extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSwitchSimple(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSwitchSimple(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 3,3);
@@ -202,7 +205,8 @@ public class TestSessions extends BaseNd4jTest {
         assertEquals(expFalse, outMap.get(n));
     }
 
-    @Test(timeout = 20000L)
+    @Test()
+    @Timeout(20000L)
     public void testSwitchWhile() throws Exception{
 
         /*

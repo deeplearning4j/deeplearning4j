@@ -22,32 +22,29 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class CudaWorkspaceTests extends BaseNd4jTest {
-    private DataType initialType;
 
-    public CudaWorkspaceTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+public class CudaWorkspaceTests extends BaseNd4jTestWithBackends {
+    private DataType initialType = Nd4j.dataType();
 
 
-    @Test
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspaceReuse() {
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
@@ -61,7 +58,7 @@ public class CudaWorkspaceTests extends BaseNd4jTest {
             try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test")) {
                 final INDArray zeros = Nd4j.zeros(4, 'f');
                 //final INDArray zeros = Nd4j.create(4, 'f'); // Also fails, but maybe less of an issue as javadoc does not say that one can expect returned array to be all zeros.
-                assertEquals("Got non-zero array " + zeros + " after " + cnt + " iterations !", 0d, zeros.sumNumber().doubleValue(), 1e-10);
+                assertEquals( 0d, zeros.sumNumber().doubleValue(), 1e-10,"Got non-zero array " + zeros + " after " + cnt + " iterations !");
                 zeros.putScalar(0, 1);
             }
         }

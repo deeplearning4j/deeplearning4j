@@ -22,19 +22,24 @@ package org.deeplearning4j.integration;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffCNNCases;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffMLPTestCases;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
+
 
 public class IntegrationTestsSameDiff extends BaseDL4JTest {
+
+    @TempDir
+    static Path testDir;
 
     @Override
     public long getTimeoutMilliseconds() {
         return 300_000L;
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
 
     @Test

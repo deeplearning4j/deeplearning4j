@@ -44,7 +44,7 @@ import org.deeplearning4j.optimize.listeners.CollectScoresListener;
 import org.deeplearning4j.parallelism.ParallelInference;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.rules.TemporaryFolder;
+
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -74,10 +74,11 @@ import org.nd4j.shade.guava.reflect.ClassPath;
 import java.io.*;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class IntegrationTestRunner {
@@ -155,7 +156,7 @@ public class IntegrationTestRunner {
         evaluationClassesSeen = new HashMap<>();
     }
 
-    public static void runTest(TestCase tc, TemporaryFolder testDir) throws Exception {
+    public static void runTest(TestCase tc, Path testDir) throws Exception {
         BaseDL4JTest.skipUnlessIntegrationTests();      //Tests will ONLY be run if integration test profile is enabled.
         //This could alternatively be done via maven surefire configuration
 
@@ -163,10 +164,10 @@ public class IntegrationTestRunner {
         log.info("Starting test case: {} - type = {}", tc.getTestName(), modelType);
         long start = System.currentTimeMillis();
 
-        File workingDir = testDir.newFolder();
+        File workingDir = new File(testDir.toFile(),"workingDir");
         tc.initialize(workingDir);
 
-        File testBaseDir = testDir.newFolder();
+        File testBaseDir = new File(testDir.toFile(),"baseDir");
 //        new ClassPathResource("dl4j-integration-tests/" + tc.getTestName()).copyDirectory(testBaseDir);
         Resources.copyDirectory((modelType == ModelType.SAMEDIFF ? "samediff-integration-tests/" : "dl4j-integration-tests/") + tc.getTestName(), testBaseDir);
 
@@ -187,9 +188,9 @@ public class IntegrationTestRunner {
                 m = mln;
 
                 MultiLayerNetwork loaded = MultiLayerNetwork.load(savedModel, true);
-                assertEquals("Configs not equal", loaded.getLayerWiseConfigurations(), mln.getLayerWiseConfigurations());
-                assertEquals("Params not equal", loaded.params(), mln.params());
-                assertEquals("Param table not equal", loaded.paramTable(), mln.paramTable());
+                assertEquals(loaded.getLayerWiseConfigurations(), mln.getLayerWiseConfigurations(), "Configs not equal");
+                assertEquals(loaded.params(), mln.params(), "Params not equal");
+                assertEquals(loaded.paramTable(), mln.paramTable(), "Param table not equal");
             } else if(config instanceof ComputationGraphConfiguration ){
                 ComputationGraphConfiguration cgc = (ComputationGraphConfiguration) config;
                 cg = new ComputationGraph(cgc);
@@ -197,9 +198,9 @@ public class IntegrationTestRunner {
                 m = cg;
 
                 ComputationGraph loaded = ComputationGraph.load(savedModel, true);
-                assertEquals("Configs not equal", loaded.getConfiguration(), cg.getConfiguration());
-                assertEquals("Params not equal", loaded.params(), cg.params());
-                assertEquals("Param table not equal", loaded.paramTable(), cg.paramTable());
+                assertEquals(loaded.getConfiguration(), cg.getConfiguration(), "Configs not equal");
+                assertEquals(loaded.params(), cg.params(), "Params not equal");
+                assertEquals(loaded.paramTable(), cg.paramTable(), "Param table not equal");
             } else if(config instanceof SameDiff){
                 sd = (SameDiff)config;
                 SameDiff loaded = SameDiff.load(savedModel, true);
@@ -256,7 +257,7 @@ public class IntegrationTestRunner {
 
                     INDArray predictionExceedsRE = exceedsRelError(outSaved, out, tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
                     int countExceeds = predictionExceedsRE.sumNumber().intValue();
-                    assertEquals("Predictions do not match saved predictions - output", 0, countExceeds);
+                    assertEquals(0, countExceeds,"Predictions do not match saved predictions - output");
                 }
             } else if(modelType == ModelType.CG){
                 for (Pair<INDArray[], INDArray[]> p : inputs) {
@@ -274,7 +275,7 @@ public class IntegrationTestRunner {
                     for( int i=0; i<outSaved.length; i++ ){
                         INDArray predictionExceedsRE = exceedsRelError(outSaved[i], out[i], tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
                         int countExceeds = predictionExceedsRE.sumNumber().intValue();
-                        assertEquals("Predictions do not match saved predictions - output " + i, 0, countExceeds);
+                        assertEquals( 0, countExceeds,"Predictions do not match saved predictions - output " + i);
                     }
                 }
             } else {
@@ -294,7 +295,7 @@ public class IntegrationTestRunner {
                     for(String s : outNames){
                         INDArray predictionExceedsRE = exceedsRelError(outSaved.get(s), out.get(s), tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
                         int countExceeds = predictionExceedsRE.sumNumber().intValue();
-                        assertEquals("Predictions do not match saved predictions - output \"" + s + "\"", 0, countExceeds);
+                        assertEquals( 0, countExceeds,"Predictions do not match saved predictions - output \"" + s + "\"");
                     }
                 }
             }
@@ -350,7 +351,7 @@ public class IntegrationTestRunner {
                 if (count > 0) {
                     logFailedParams(20, "Gradient", layers, gradExceedsRE, gradientFlatSaved, gradientFlat);
                 }
-                assertEquals("Saved flattened gradients: not equal (using relative error)", 0, count);
+                assertEquals( 0, count,"Saved flattened gradients: not equal (using relative error)");
             }
 
             //Load the gradient table:
@@ -367,7 +368,7 @@ public class IntegrationTestRunner {
 
                 INDArray gradExceedsRE = exceedsRelError(loaded, now, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
                 int count = gradExceedsRE.sumNumber().intValue();
-                assertEquals("Gradients: not equal (using relative error) for parameter: " + key, 0, count);
+                assertEquals(0, count,"Gradients: not equal (using relative error) for parameter: " + key);
             }
         }
 
@@ -410,7 +411,7 @@ public class IntegrationTestRunner {
             if(count > 0){
                 logFailedParams(20, "Parameter", layers, exceedsRelError, expParams, paramsPostTraining);
             }
-            assertEquals("Number of parameters exceeding relative error", 0, count);
+            assertEquals(0, count,"Number of parameters exceeding relative error");
 
             //Set params to saved ones - to avoid accumulation of roundoff errors causing later failures...
             m.setParams(expParams);
@@ -496,7 +497,7 @@ public class IntegrationTestRunner {
             String[] s = FileUtils.readFileToString(f, StandardCharsets.UTF_8).split(",");
 
             if(tc.isTestTrainingCurves()) {
-                assertEquals("Different number of scores", s.length, scores.length);
+                assertEquals(s.length, scores.length,"Different number of scores");
 
                 boolean pass = true;
                 for (int i = 0; i < s.length; i++) {
@@ -521,7 +522,7 @@ public class IntegrationTestRunner {
                     if (count > 0) {
                         logFailedParams(20, "Parameter", layers, z, paramsExp, m.params());
                     }
-                    assertEquals("Number of params exceeded max relative error", 0, count);
+                    assertEquals( 0, count,"Number of params exceeded max relative error");
                 } else {
                     File dir = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_TRAIN_SAMEDIFF_DIR);
                     for(SDVariable v : sd.variables()){
@@ -535,7 +536,7 @@ public class IntegrationTestRunner {
                         if (count > 0) {
                             logFailedParams(20, "Parameter: " + v.name(), layers, z, exp, paramNow);
                         }
-                        assertEquals("Number of params exceeded max relative error for parameter: \"" + v.name() + "\"", 0, count);
+                        assertEquals(0, count,"Number of params exceeded max relative error for parameter: \"" + v.name() + "\"");
                     }
                 }
             }
@@ -582,7 +583,7 @@ public class IntegrationTestRunner {
                 }
 
 
-                assertEquals("Evaluation not equal: " + evals[i].getClass(), e, evals[i]);
+                assertEquals(e, evals[i], "Evaluation not equal: " + evals[i].getClass());
 
                 //Evaluation coverage information:
                 evaluationClassesSeen.put(evals[i].getClass(), evaluationClassesSeen.getOrDefault(evals[i].getClass(), 0) + 1);
@@ -597,8 +598,8 @@ public class IntegrationTestRunner {
         {
             log.info("Testing model serialization");
 
-            File f = testDir.newFile();
-            f.delete();
+            File f = new File(testDir.toFile(),"test-file");
+            f.deleteOnExit();
 
             if (modelType == ModelType.MLN) {
                 ModelSerializer.writeModel(m, f, true);
@@ -704,7 +705,7 @@ public class IntegrationTestRunner {
                     System.out.println("Relative error:");
                     System.out.println(re);
                 }
-                assertEquals("Number of outputs exceeded max relative error", 0, count);
+                assertEquals(0, count,"Number of outputs exceeded max relative error");
             }
 
             if(modelType != ModelType.SAMEDIFF) {
@@ -808,8 +809,8 @@ public class IntegrationTestRunner {
         }
 
         for(org.deeplearning4j.nn.api.Layer l : layers){
-            assertEquals("Epoch count", expEpoch, l.getEpochCount());
-            assertEquals("Iteration count", expIter, l.getIterationCount());
+            assertEquals(expEpoch, l.getEpochCount(),"Epoch count");
+            assertEquals(expIter, l.getIterationCount(),"Iteration count");
         }
     }
 
@@ -854,18 +855,18 @@ public class IntegrationTestRunner {
     public static void checkFrozenParams(Map<String,INDArray> copiesBeforeTraining, Model m){
         for(Map.Entry<String,INDArray> e : copiesBeforeTraining.entrySet()){
             INDArray actual = m.getParam(e.getKey());
-            assertEquals(e.getKey(), e.getValue(), actual);
+            assertEquals(e.getValue(), actual, e.getKey());
         }
     }
 
     public static void checkConstants(Map<String,INDArray> copiesBefore, SameDiff sd){
         for(Map.Entry<String,INDArray> e : copiesBefore.entrySet()){
             INDArray actual = sd.getArrForVarName(e.getKey());
-            assertEquals(e.getKey(), e.getValue(), actual);
+            assertEquals(e.getValue(), actual, e.getKey());
         }
     }
 
-    public static void printCoverageInformation(){
+    public static void printCoverageInformation() {
 
         log.info("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
 
@@ -1111,11 +1112,11 @@ public class IntegrationTestRunner {
         //Check constant and variable arrays:
         for(SDVariable v : sd1.variables()){
             String n = v.name();
-            assertEquals(n, v.getVariableType(), sd2.getVariable(n).getVariableType());
+            assertEquals(v.getVariableType(), sd2.getVariable(n).getVariableType(), n);
             if(v.isConstant() || v.getVariableType() == VariableType.VARIABLE){
                 INDArray a1 = v.getArr();
                 INDArray a2 = sd2.getVariable(n).getArr();
-                assertEquals(n, a1, a2);
+                assertEquals(a1, a2, n);
             }
         }
 

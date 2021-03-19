@@ -22,7 +22,8 @@ package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
@@ -31,12 +32,13 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class MeshOrganizerTest extends BaseND4JTest {
 
-    @Test(timeout = 1000L)
+    @Test()
+    @Timeout(1000L)
     public void testDescendantsCount_1() {
         val node = MeshOrganizer.Node.builder().build();
 

@@ -20,32 +20,31 @@
 
 package org.nd4j.linalg.shape.concat.padding;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class PaddingTests extends BaseNd4jTest {
 
-    public PaddingTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class PaddingTests extends BaseNd4jTestWithBackends {
 
 
 
-    @Test
-    public void testAppend() {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAppend(Nd4jBackend backend) {
         INDArray appendTo = Nd4j.ones(DataType.DOUBLE,3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
         assertArrayEquals(new long[] {3, 6}, ret.shape());
@@ -59,8 +58,9 @@ public class PaddingTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testPrepend() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPrepend(Nd4jBackend backend) {
         INDArray appendTo = Nd4j.ones(DataType.DOUBLE, 3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
         assertArrayEquals(new long[] {3, 6}, ret.shape());
@@ -75,18 +75,19 @@ public class PaddingTests extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testPad() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPad(Nd4jBackend backend) {
 
         INDArray start = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray ret = Nd4j.pad(start, 5, 5);
         double[][] data = new double[][] {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
-                        {0, 0, 0, 0, 0, 1, 4, 7, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 2, 5, 8, 0, 0, 0, 0, 0.},
-                        {0, 0, 0, 0, 0, 3, 6, 9, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}};
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
+                {0, 0, 0, 0, 0, 1, 4, 7, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 2, 5, 8, 0, 0, 0, 0, 0.},
+                {0, 0, 0, 0, 0, 3, 6, 9, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}};
         INDArray assertion = Nd4j.create(data);
         assertEquals(assertion, ret);
 

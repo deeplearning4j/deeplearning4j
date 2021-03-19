@@ -20,9 +20,12 @@
 
 package org.nd4j.evaluation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
@@ -30,25 +33,24 @@ import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class NewInstanceTest extends BaseNd4jTest {
+public class NewInstanceTest extends BaseNd4jTestWithBackends {
 
-    public NewInstanceTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testNewInstances() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
+    public void testNewInstances(Nd4jBackend backend) {
         boolean print = true;
         Nd4j.getRandom().setSeed(12345);
 

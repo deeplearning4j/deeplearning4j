@@ -21,13 +21,15 @@
 package org.nd4j.common.tools;
 
 import java.util.Properties;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import org.junit.Before;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tools.PropertyParser;
 
 /**
@@ -40,7 +42,7 @@ public class PropertyParserTest {
     public PropertyParserTest() {
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
     }
 
@@ -48,11 +50,11 @@ public class PropertyParserTest {
     public static void tearDownClass() {
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
     }
 
@@ -1330,5 +1332,5 @@ public class PropertyParserTest {
         result = instance.toChar("nonexistent", 't');
         assertEquals(expResult, result);
     }
-    
+
 }

@@ -26,8 +26,10 @@ import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,20 +37,22 @@ import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled("Permissions issues on CI")
 public class DeepWalkGradientCheck extends BaseDL4JTest {
 
     public static final double epsilon = 1e-8;
     public static final double MAX_REL_ERROR = 1e-3;
     public static final double MIN_ABS_ERROR = 1e-5;
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void checkGradients() throws IOException {
 
         ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/testgraph_7vertices.txt");
@@ -89,7 +93,7 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
                 assertTrue(probs[j] >= 0.0 && probs[j] <= 1.0);
                 sumProb += probs[j];
             }
-            assertTrue("Output probabilities do not sum to 1.0", Math.abs(sumProb - 1.0) < 1e-5);
+            assertTrue(Math.abs(sumProb - 1.0) < 1e-5, "Output probabilities do not sum to 1.0");
 
             for (int j = 0; j < 7; j++) { //out
                 //p(j|i)
@@ -195,7 +199,8 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
 
 
 
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000)
     public void checkGradients2() throws IOException {
 
         double minAbsError = 1e-5;
@@ -239,8 +244,8 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
                 assertTrue(probs[j] >= 0.0 && probs[j] <= 1.0);
                 sumProb += probs[j];
             }
-            assertTrue("Output probabilities do not sum to 1.0 (i=" + i + "), sum=" + sumProb,
-                            Math.abs(sumProb - 1.0) < 1e-5);
+            assertTrue(Math.abs(sumProb - 1.0) < 1e-5,
+                    "Output probabilities do not sum to 1.0 (i=" + i + "), sum=" + sumProb);
 
             for (int j = 0; j < nVertices; j++) { //out
                 //p(j|i)

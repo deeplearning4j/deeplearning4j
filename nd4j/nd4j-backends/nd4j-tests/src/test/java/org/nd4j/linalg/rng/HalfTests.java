@@ -22,30 +22,27 @@ package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class HalfTests extends BaseNd4jTest {
 
-    private DataType initialType;
+public class HalfTests extends BaseNd4jTestWithBackends {
 
-    public HalfTests(Nd4jBackend backend) {
-        super(backend);
-    }
-
-    @Before
+    private DataType initialType = Nd4j.dataType();
+    @BeforeEach
     public void setUp() {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
@@ -54,7 +51,7 @@ public class HalfTests extends BaseNd4jTest {
         Nd4j.setDataType(DataType.HALF);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
@@ -62,8 +59,9 @@ public class HalfTests extends BaseNd4jTest {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
-    public void testRandomNorman_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRandomNorman_1(Nd4jBackend backend) {
         val array = Nd4j.randn(new long[]{20, 30});
 
         val sum = Transforms.abs(array).sumNumber().doubleValue();

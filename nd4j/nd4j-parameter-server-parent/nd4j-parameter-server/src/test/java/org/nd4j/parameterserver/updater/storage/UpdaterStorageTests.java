@@ -20,27 +20,34 @@
 
 package org.nd4j.parameterserver.updater.storage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static junit.framework.TestCase.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UpdaterStorageTests extends BaseND4JTest {
 
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test()
     public void testNone() {
-        UpdateStorage updateStorage = new NoUpdateStorage();
-        NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
-        updateStorage.addUpdate(message);
-        assertEquals(1, updateStorage.numUpdates());
-        assertEquals(message, updateStorage.getUpdate(0));
-        updateStorage.close();
+        assertThrows(UnsupportedOperationException.class,() -> {
+            UpdateStorage updateStorage = new NoUpdateStorage();
+            NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
+            updateStorage.addUpdate(message);
+            assertEquals(1, updateStorage.numUpdates());
+            assertEquals(message, updateStorage.getUpdate(0));
+            updateStorage.close();
+        });
+
     }
 
-    @Test(timeout = 30000L)
+    @Test()
+    @Timeout(30000L)
     public void testInMemory() {
         UpdateStorage updateStorage = new InMemoryUpdateStorage();
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));

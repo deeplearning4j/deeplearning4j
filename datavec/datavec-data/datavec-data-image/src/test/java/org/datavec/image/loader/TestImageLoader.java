@@ -21,7 +21,7 @@
 package org.datavec.image.loader;
 
 import org.datavec.image.data.Image;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -32,7 +32,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class TestImageLoader {

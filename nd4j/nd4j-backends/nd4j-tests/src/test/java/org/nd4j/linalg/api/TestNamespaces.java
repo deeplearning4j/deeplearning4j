@@ -20,21 +20,20 @@
 
 package org.nd4j.linalg.api;
 
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class TestNamespaces extends BaseNd4jTest {
+public class TestNamespaces extends BaseNd4jTestWithBackends {
 
-    public TestNamespaces(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testBitwiseSimple(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBitwiseSimple(Nd4jBackend backend){
 
         INDArray x = Nd4j.rand(DataType.FLOAT, 1, 5).muli(100000).castTo(DataType.INT);
         INDArray y = Nd4j.rand(DataType.FLOAT, 1, 5).muli(100000).castTo(DataType.INT);
@@ -49,8 +48,9 @@ public class TestNamespaces extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testMathSimple(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMathSimple(Nd4jBackend backend) {
         INDArray x = Nd4j.rand(DataType.FLOAT, 1, 5).muli(2).subi(1);
         INDArray abs = Nd4j.math.abs(x);
 //        System.out.println(x);
@@ -64,16 +64,18 @@ public class TestNamespaces extends BaseNd4jTest {
 //        System.out.println(cm);
     }
 
-    @Test
-    public void testRandomSimple(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRandomSimple(Nd4jBackend backend){
         INDArray normal = Nd4j.random.normal(0, 1, DataType.FLOAT, 10);
 //        System.out.println(normal);
         INDArray uniform = Nd4j.random.uniform(0, 1, DataType.FLOAT, 10);
 //        System.out.println(uniform);
     }
 
-    @Test
-    public void testNeuralNetworkSimple(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNeuralNetworkSimple(Nd4jBackend backend){
         INDArray out = Nd4j.nn.elu(Nd4j.random.normal(0, 1, DataType.FLOAT, 10));
 //        System.out.println(out);
         INDArray out2 = Nd4j.nn.softmax(Nd4j.random.normal(0, 1, DataType.FLOAT, 4, 5), 1);

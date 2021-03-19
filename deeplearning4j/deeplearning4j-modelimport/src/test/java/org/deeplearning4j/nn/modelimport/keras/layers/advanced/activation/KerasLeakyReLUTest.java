@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activation;
 
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
@@ -26,23 +25,26 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasLeakyReLUTest extends BaseDL4JTest {
+@DisplayName("Keras Leaky Re LU Test")
+class KerasLeakyReLUTest extends BaseDL4JTest {
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testLeakyReLULayer() throws Exception {
+    @DisplayName("Test Leaky Re LU Layer")
+    void testLeakyReLULayer() throws Exception {
         Integer keras1 = 1;
         buildLeakyReLULayer(conf1, keras1);
         Integer keras2 = 2;
@@ -51,7 +53,6 @@ public class KerasLeakyReLUTest extends BaseDL4JTest {
 
     private void buildLeakyReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         double alpha = 0.3;
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LEAKY_RELU());
         Map<String, Object> config = new HashMap<>();
@@ -61,9 +62,8 @@ public class KerasLeakyReLUTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_NAME(), layerName);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         ActivationLayer layer = new KerasLeakyReLU(layerConfig).getActivationLayer();
-        assertEquals("leakyrelu(a=0.3)", layer.getActivationFn().toString());
+        assertEquals(layer.getActivationFn().toString(), "leakyrelu(a=0.3)");
         assertEquals(layerName, layer.getLayerName());
     }
 }

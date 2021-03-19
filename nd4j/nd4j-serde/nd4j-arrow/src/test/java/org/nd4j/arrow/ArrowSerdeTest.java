@@ -21,12 +21,12 @@
 package org.nd4j.arrow;
 
 import org.apache.arrow.flatbuf.Tensor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ArrowSerdeTest extends BaseND4JTest {
 

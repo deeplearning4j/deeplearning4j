@@ -25,15 +25,15 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestKryoSerialization extends BaseSparkTest {
 

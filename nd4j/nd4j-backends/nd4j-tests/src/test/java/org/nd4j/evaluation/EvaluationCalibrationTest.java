@@ -20,9 +20,11 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,21 +39,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class EvaluationCalibrationTest extends BaseNd4jTest {
+public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
 
-    public EvaluationCalibrationTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
-    public char ordering() {
+    public char ordering () {
         return 'c';
     }
 
-    @Test
-    public void testReliabilityDiagram() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReliabilityDiagram (Nd4jBackend backend) {
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
         EvaluationCalibration first = null;
@@ -142,8 +142,9 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testLabelAndPredictionCounts() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLabelAndPredictionCounts (Nd4jBackend backend) {
 
         int minibatch = 50;
         int nClasses = 3;
@@ -170,8 +171,9 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         assertArrayEquals(expPredictionCount, ec.getPredictionCountsEachClass());
     }
 
-    @Test
-    public void testResidualPlots() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testResidualPlots (Nd4jBackend backend) {
 
         int minibatch = 50;
         int nClasses = 3;
@@ -229,7 +231,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
             //            System.out.println(Arrays.toString(countsByClass[i]));
             //            System.out.println(Arrays.toString(rpCurrClassCounts));
 
-            assertArrayEquals("Class: " + i, countsByClass[i], rpCurrClassCounts);
+            assertArrayEquals(countsByClass[i], rpCurrClassCounts,"Class: " + i);
         }
 
 
@@ -271,7 +273,8 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         }
     }
 
-    @Test
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentation(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
             Nd4j.getRandom().setSeed(12345);
@@ -365,8 +368,9 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testEvaluationCalibration3d() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationCalibration3d (Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
 
@@ -397,8 +401,9 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         assertEquals(e2d.stats(), e3d.stats());
     }
 
-    @Test
-    public void testEvaluationCalibration3dMasking() {
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationCalibration3dMasking (Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
 

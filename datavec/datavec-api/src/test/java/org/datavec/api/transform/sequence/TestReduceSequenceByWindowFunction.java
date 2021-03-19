@@ -33,7 +33,7 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestReduceSequenceByWindowFunction extends BaseND4JTest {
 

@@ -20,31 +20,30 @@
 
 package org.nd4j.linalg.compression;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class CompressionMagicTests extends BaseNd4jTest {
-    public CompressionMagicTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Before
+public class CompressionMagicTests extends BaseNd4jTestWithBackends {
+
+    @BeforeEach
     public void setUp() {
 
     }
 
-    @Test
-    public void testMagicDecompression1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMagicDecompression1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
@@ -56,8 +55,9 @@ public class CompressionMagicTests extends BaseNd4jTest {
         assertEquals(array, compressed);
     }
 
-    @Test
-    public void testMagicDecompression4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMagicDecompression4(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
@@ -70,8 +70,9 @@ public class CompressionMagicTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testDupSkipDecompression1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDupSkipDecompression1(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
@@ -86,8 +87,9 @@ public class CompressionMagicTests extends BaseNd4jTest {
         assertEquals(array, newArray);
     }
 
-    @Test
-    public void testDupSkipDecompression2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDupSkipDecompression2(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
@@ -102,8 +104,9 @@ public class CompressionMagicTests extends BaseNd4jTest {
         assertEquals(array, newArray);
     }
 
-    @Test
-    public void testDupSkipDecompression3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDupSkipDecompression3(Nd4jBackend backend) {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");

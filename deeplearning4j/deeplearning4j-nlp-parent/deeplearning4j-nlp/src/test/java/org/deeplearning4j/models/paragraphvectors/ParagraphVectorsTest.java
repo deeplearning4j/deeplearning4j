@@ -31,8 +31,10 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
 import org.deeplearning4j.text.sentenceiterator.*;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+
+
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -55,8 +57,8 @@ import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIterato
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.CollectionUtils;
@@ -66,11 +68,13 @@ import org.nd4j.common.resources.Resources;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Disabled("Permissions issues on CI")
 public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Override
@@ -78,8 +82,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         return isIntegrationTests() ? 600_000 : 240_000;
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public DataType getDataType() {
@@ -124,7 +126,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 2400000)
+    @Test()
+    @Timeout(2400000)
     public void testParagraphVectorsVocabBuilding1() throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file); //UimaSentenceIterator.createWithPath(file.getAbsolutePath());
@@ -170,8 +173,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 3000000)
-    @Ignore("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - Issue #7657")
+    @Test()
+    @Timeout(3000000)
+    @Disabled("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - Issue #7657")
     public void testParagraphVectorsModelling1() throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
@@ -432,7 +436,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 300000)
+    @Timeout(300000)
     public void testParagraphVectorsDBOW() throws Exception {
         skipUnlessIntegrationTests();
 
@@ -509,7 +513,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     }
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(300000)
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
@@ -601,9 +606,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
      * @throws Exception
      */
     @Test
-    @Ignore
-    public void testParagraphVectorsReducedLabels1() throws Exception {
-        val tempDir = testDir.newFolder();
+    @Disabled
+    public void testParagraphVectorsReducedLabels1(@TempDir Path testDir) throws Exception {
+        val tempDir = testDir.toFile();
         ClassPathResource resource = new ClassPathResource("/labeled");
         resource.copyDirectory(tempDir);
 
@@ -650,7 +655,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("Similarity positive: " + simV);
     }
 
-    @Test(timeout = 300000)
+
+    @Test()
+    @Timeout(300000)
     public void testParallelIterator() throws IOException {
         TokenizerFactory factory = new DefaultTokenizerFactory();
         SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
@@ -674,9 +681,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testIterator() throws IOException {
-        val folder_labeled = testDir.newFolder();
-        val folder_unlabeled = testDir.newFolder();
+    public void testIterator(@TempDir Path testDir) throws IOException {
+        val folder_labeled = new File(testDir.toFile(),"labeled");
+        val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
         new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
@@ -721,7 +728,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         there's no need in this test within travis, use it manually only for problems detection
     */
     @Test
-    public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
+    public void testParagraphVectorsOverExistingWordVectorsModel(@TempDir Path testDir) throws Exception {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
             skipUnlessIntegrationTests(); //Skip CUDA except for integration tests due to very slow test speed
@@ -730,7 +737,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         // we build w2v from multiple sources, to cover everything
         File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
 
-        val folder_mixed = testDir.newFolder();
+        val folder_mixed = testDir.toFile();
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         resource_mixed.copyDirectory(folder_mixed);
 
@@ -756,8 +763,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         // At this moment we have ready w2v model. It's time to use it for ParagraphVectors
 
-        val folder_labeled = testDir.newFolder();
-        val folder_unlabeled = testDir.newFolder();
+        val folder_labeled = new File(testDir.toFile(),"labeled");
+        val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
         new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
@@ -866,7 +873,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     /**
      * Special test to check d2v inference against pre-trained gensim model and
      */
-    @Ignore
+    @Disabled
     @Test
     public void testGensimEquality() throws Exception {
 
@@ -1017,14 +1024,14 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore //AB 2020/02/06 - https://github.com/eclipse/deeplearning4j/issues/8677
-    public void testDirectInference() throws Exception {
+    @Disabled //AB 2020/02/06 - https://github.com/eclipse/deeplearning4j/issues/8677
+    public void testDirectInference(@TempDir Path testDir) throws Exception {
         boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator sentencesIter = getIterator(isIntegration, resource);
 
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
-        File local_resource_mixed = testDir.newFolder();
+        File local_resource_mixed = testDir.toFile();
         resource_mixed.copyDirectory(local_resource_mixed);
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
                         .addSentenceIterator(sentencesIter)
@@ -1050,7 +1057,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGoogleModelForInference() throws Exception {
         WordVectors googleVectors = WordVectorSerializer.readWord2VecModel(new File("/ext/GoogleNews-vectors-negative300.bin.gz"));
@@ -1069,7 +1076,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(300000)
     public void testHash() {
         VocabWord w1 = new VocabWord(1.0, "D1");
         VocabWord w2 = new VocabWord(1.0, "Bo");
@@ -1088,7 +1096,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
      *
      * @throws Exception
      */
-    @Ignore
+    @Disabled
     @Test
     public void testsParallelFit1() throws Exception {
         final File file = Resources.asFile("big/raw_sentences.txt");
@@ -1134,7 +1142,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(300000)
     public void testJSONSerialization() {
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().build();
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -1173,7 +1182,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 300000)
+    @Test()
+    @Timeout(300000)
     public void testDoubleFit() throws Exception {
         boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");

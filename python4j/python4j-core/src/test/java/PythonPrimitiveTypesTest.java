@@ -20,11 +20,14 @@
 
 
 import org.nd4j.python4j.*;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PythonPrimitiveTypesTest {
 
@@ -35,12 +38,12 @@ public class PythonPrimitiveTypesTest {
             PythonObject p = PythonTypes.INT.toPython(j);
             long j2 = PythonTypes.INT.toJava(p);
 
-            Assert.assertEquals(j, j2);
+            assertEquals(j, j2);
 
             PythonObject p2 = PythonTypes.convert(j);
             long j3 = PythonTypes.INT.toJava(p2);
 
-            Assert.assertEquals(j, j3);
+            assertEquals(j, j3);
         }
 
     }
@@ -52,12 +55,12 @@ public class PythonPrimitiveTypesTest {
             PythonObject p = PythonTypes.STR.toPython(s);
             String s2 = PythonTypes.STR.toJava(p);
 
-            Assert.assertEquals(s, s2);
+            assertEquals(s, s2);
 
             PythonObject p2 = PythonTypes.convert(s);
             String s3 = PythonTypes.STR.toJava(p2);
 
-            Assert.assertEquals(s, s3);
+            assertEquals(s, s3);
         }
 
     }
@@ -69,12 +72,12 @@ public class PythonPrimitiveTypesTest {
             PythonObject p = PythonTypes.FLOAT.toPython(f);
             double f2 = PythonTypes.FLOAT.toJava(p);
 
-            Assert.assertEquals(f, f2, 1e-5);
+            assertEquals(f, f2, 1e-5);
 
             PythonObject p2 = PythonTypes.convert(f);
             double f3 = PythonTypes.FLOAT.toJava(p2);
 
-            Assert.assertEquals(f, f3, 1e-5);
+            assertEquals(f, f3, 1e-5);
         }
 
     }
@@ -86,12 +89,12 @@ public class PythonPrimitiveTypesTest {
             PythonObject p = PythonTypes.BOOL.toPython(b);
             boolean b2 = PythonTypes.BOOL.toJava(p);
 
-            Assert.assertEquals(b, b2);
+            assertEquals(b, b2);
 
             PythonObject p2 = PythonTypes.convert(b);
             boolean b3 = PythonTypes.BOOL.toJava(p2);
 
-            Assert.assertEquals(b, b3);
+            assertEquals(b, b3);
         }
 
     }
@@ -108,7 +111,7 @@ public class PythonPrimitiveTypesTest {
             outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
             String code = "b2=b1";
             PythonExecutioner.exec(code, inputs, outputs);
-            Assert.assertArrayEquals(bytes, (byte[]) outputs.get(0).getValue());
+            assertArrayEquals(bytes, (byte[]) outputs.get(0).getValue());
         }
 
     }
@@ -124,8 +127,8 @@ public class PythonPrimitiveTypesTest {
             outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
             String code = "s1 = ''.join(chr(c) for c in b1)\nb2=b'def'";
             PythonExecutioner.exec(code, inputs, outputs);
-            Assert.assertEquals("abc", outputs.get(0).getValue());
-            Assert.assertArrayEquals(new byte[]{100, 101, 102}, (byte[]) outputs.get(1).getValue());
+            assertEquals("abc", outputs.get(0).getValue());
+            assertArrayEquals(new byte[]{100, 101, 102}, (byte[]) outputs.get(1).getValue());
 
         }
     }

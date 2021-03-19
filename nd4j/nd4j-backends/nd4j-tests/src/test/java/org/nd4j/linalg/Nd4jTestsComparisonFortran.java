@@ -22,11 +22,12 @@ package org.nd4j.linalg;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,30 +42,26 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
+
+public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
     private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparisonFortran.class);
 
     public static final int SEED = 123;
 
-    DataType initialType;
-
-    public Nd4jTestsComparisonFortran(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
 
 
-    @Before
+
+    @BeforeEach
     public void before() throws Exception {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(SEED);
 
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         DataTypeUtil.setDTypeForContext(initialType);
     }
@@ -74,8 +71,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
         return 'f';
     }
 
-    @Test
-    public void testCrash() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCrash(Nd4jBackend backend) {
         INDArray array3d = Nd4j.ones(1, 10, 10);
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 0);
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 1);
@@ -84,8 +82,9 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array4d, 0);
     }
 
-    @Test
-    public void testMmulWithOpsCommonsMath() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMmulWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
 
@@ -94,13 +93,14 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                 Pair<INDArray, String> p1 = first.get(i);
                 Pair<INDArray, String> p2 = second.get(j);
                 String errorMsg = getTestWithOpsErrorMsg(i, j, "mmul", p1, p2);
-                assertTrue(errorMsg, CheckUtil.checkMmul(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
+                assertTrue(CheckUtil.checkMmul(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6),errorMsg);
             }
         }
     }
 
-    @Test
-    public void testGemmWithOpsCommonsMath() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGemmWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
@@ -141,22 +141,23 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                         String errorMsgtf = getGemmErrorMsg(i, j, true, false, a, b, p1T, p2);
                         String errorMsgtt = getGemmErrorMsg(i, j, true, true, a, b, p1T, p2T);
 
-                        assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false, a,
-                                        b, 1e-4, 1e-6));
-                        assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true, a,
-                                        b, 1e-4, 1e-6));
-                        assertTrue(errorMsgtf, CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf, true, false, a,
-                                        b, 1e-4, 1e-6));
-                        assertTrue(errorMsgtt, CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt, true, true, a,
-                                        b, 1e-4, 1e-6));
+                        assertTrue(CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false, a,
+                                b, 1e-4, 1e-6),errorMsgff);
+                        assertTrue(CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true, a,
+                                b, 1e-4, 1e-6),errorMsgft);
+                        assertTrue(CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf, true, false, a,
+                                b, 1e-4, 1e-6),errorMsgtf);
+                        assertTrue(CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt, true, true, a,
+                                b, 1e-4, 1e-6),errorMsgtt);
                     }
                 }
             }
         }
     }
 
-    @Test
-    public void testGemvApacheCommons() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGemvApacheCommons(Nd4jBackend backend) {
 
         int[] rowsArr = new int[] {4, 4, 4, 8, 8, 8};
         int[] colsArr = new int[] {2, 1, 10, 2, 1, 10};
@@ -197,21 +198,22 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
                     assertArrayEquals(new long[] {rows, 1}, gemv.shape());
                     assertArrayEquals(new int[] {rows, 1},
-                                    new int[] {gemv2.getRowDimension(), gemv2.getColumnDimension()});
+                            new int[] {gemv2.getRowDimension(), gemv2.getColumnDimension()});
 
                     //Check entries:
                     for (int r = 0; r < rows; r++) {
                         double exp = gemv2.getEntry(r, 0);
                         double act = gemv.getDouble(r, 0);
-                        assertEquals(errorMsg, exp, act, 1e-5);
+                        assertEquals(exp, act, 1e-5,errorMsg);
                     }
                 }
             }
         }
     }
 
-    @Test
-    public void testAddSubtractWithOpsCommonsMath() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAddSubtractWithOpsCommonsMath(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         for (int i = 0; i < first.size(); i++) {
@@ -221,15 +223,16 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                 String errorMsg1 = getTestWithOpsErrorMsg(i, j, "add", p1, p2);
                 String errorMsg2 = getTestWithOpsErrorMsg(i, j, "sub", p1, p2);
                 boolean addFail = CheckUtil.checkAdd(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6);
-                assertTrue(errorMsg1, addFail);
+                assertTrue(addFail,errorMsg1);
                 boolean subFail = CheckUtil.checkSubtract(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6);
-                assertTrue(errorMsg2, subFail);
+                assertTrue(subFail,errorMsg2);
             }
         }
     }
 
-    @Test
-    public void testMulDivOnCheckUtilMatrices() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMulDivOnCheckUtilMatrices(Nd4jBackend backend) {
         List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         for (int i = 0; i < first.size(); i++) {
@@ -238,20 +241,20 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                 Pair<INDArray, String> p2 = second.get(j);
                 String errorMsg1 = getTestWithOpsErrorMsg(i, j, "mul", p1, p2);
                 String errorMsg2 = getTestWithOpsErrorMsg(i, j, "div", p1, p2);
-                assertTrue(errorMsg1, CheckUtil.checkMulManually(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
-                assertTrue(errorMsg2, CheckUtil.checkDivManually(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
+                assertTrue( CheckUtil.checkMulManually(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6),errorMsg1);
+                assertTrue(CheckUtil.checkDivManually(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6),errorMsg2);
             }
         }
     }
 
     private static String getTestWithOpsErrorMsg(int i, int j, String op, Pair<INDArray, String> first,
-                    Pair<INDArray, String> second) {
+                                                 Pair<INDArray, String> second) {
         return i + "," + j + " - " + first.getSecond() + "." + op + "(" + second.getSecond() + ")";
     }
 
     private static String getGemmErrorMsg(int i, int j, boolean transposeA, boolean transposeB, double alpha,
-                    double beta, Pair<INDArray, String> first, Pair<INDArray, String> second) {
+                                          double beta, Pair<INDArray, String> first, Pair<INDArray, String> second) {
         return i + "," + j + " - gemm(tA=" + transposeA + ",tB= " + transposeB + ",alpha=" + alpha + ",beta= " + beta
-                        + "). A=" + first.getSecond() + ", B=" + second.getSecond();
+                + "). A=" + first.getSecond() + ", B=" + second.getSecond();
     }
 }

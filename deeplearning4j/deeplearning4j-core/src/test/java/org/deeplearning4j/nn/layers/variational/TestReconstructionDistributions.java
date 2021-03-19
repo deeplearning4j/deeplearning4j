@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDist
 import org.deeplearning4j.nn.conf.layers.variational.ExponentialReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TestReconstructionDistributions extends BaseDL4JTest {

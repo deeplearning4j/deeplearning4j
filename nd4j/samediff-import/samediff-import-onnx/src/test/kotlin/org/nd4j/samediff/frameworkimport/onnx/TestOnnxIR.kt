@@ -20,10 +20,10 @@
 
 package org.nd4j.samediff.frameworkimport.onnx
 
-import junit.framework.Assert
-import junit.framework.Assert.*
+
 import onnx.Onnx
-import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
@@ -102,7 +102,7 @@ class TestOnnxIR {
 
 
     @Test
-    @Ignore
+    @Disabled
     fun testOpsMapped() {
         val onnxOpRegistry = registry()
 
@@ -164,11 +164,11 @@ class TestOnnxIR {
 
 
                 onnxOpDef.inputList.forEach { inputName ->
-                    Assert.assertTrue(onnxAssertionNames.contains(inputName))
+                    assertTrue(onnxAssertionNames.contains(inputName))
                 }
 
                 onnxOpDef.attributeList.map { attrDef -> attrDef.name }.forEach { attrName ->
-                    Assert.assertTrue(onnxAssertionNames.contains(attrName))
+                    assertTrue(onnxAssertionNames.contains(attrName))
                 }
 
 
@@ -184,19 +184,19 @@ class TestOnnxIR {
                              * we just log a warning for unmapped inputs. Otherwise we can do an assertion.
                              */
                             if(numRequiredInputs == nd4jInputs)
-                                assertTrue("Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name} has missing mapping ${argDef.name}", nd4jNamesMapped.contains(argDef.name))
+                                assertTrue(nd4jNamesMapped.contains(argDef.name),"Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name} has missing mapping ${argDef.name}")
                             else if(!nd4jNamesMapped.contains(argDef.name)) {
                                 println("Warning: Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name} has missing mapping ${argDef.name}")
                             }
                         }
                         OpNamespace.ArgDescriptor.ArgType.INT32,OpNamespace.ArgDescriptor.ArgType.INT64 -> {
-                            assertTrue("Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name}  has missing mapping ${argDef.name}", nd4jNamesMapped.contains(argDef.name))
+                            assertTrue(nd4jNamesMapped.contains(argDef.name),"Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name}  has missing mapping ${argDef.name}")
                         }
                         OpNamespace.ArgDescriptor.ArgType.DOUBLE, OpNamespace.ArgDescriptor.ArgType.FLOAT -> {
-                            assertTrue("Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name}  has missing mapping ${argDef.name}", nd4jNamesMapped.contains(argDef.name))
+                            assertTrue(nd4jNamesMapped.contains(argDef.name),"Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name}  has missing mapping ${argDef.name}")
                         }
                         OpNamespace.ArgDescriptor.ArgType.BOOL -> {
-                            assertTrue("Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name}  has missing mapping ${argDef.name}", nd4jNamesMapped.contains(argDef.name))
+                            assertTrue(nd4jNamesMapped.contains(argDef.name),"Nd4j op name ${opDef.name} with onnx mapping ${onnxOpDef.name}  has missing mapping ${argDef.name}")
                         }
                     }
 
@@ -206,6 +206,7 @@ class TestOnnxIR {
     }
 
     @Test
+    @Disabled
     fun testOpExecution() {
         val onnxOpRegistry = registry()
 
@@ -343,7 +344,7 @@ class TestOnnxIR {
                     val inputs = mapOf("input" to input)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $input",assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1))
+                    assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
                     finishedOps.add(nd4jOpDef.name)
 
                 } else if(scalarFloatOps.containsKey(nd4jOpDef.name)) {
@@ -371,7 +372,7 @@ class TestOnnxIR {
                     val inputs = mapOf("input" to input)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $input",assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1))
+                    assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
                     finishedOps.add(nd4jOpDef.name)
 
                 }
@@ -403,7 +404,7 @@ class TestOnnxIR {
                     val inputs = mapOf("input" to input)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $input",assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1))
+                    assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
                     finishedOps.add(nd4jOpDef.name)
 
                 }
@@ -438,7 +439,7 @@ class TestOnnxIR {
                     val inputs = mapOf("x" to x,"y" to y)
                     val result = importedGraph.output(inputs,"output")
                     val assertion = onnxGraphRunner.run(inputs)
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $x $y",assertion["output"]!!.getDouble(0),result["output"]!!.getDouble(0))
+                    assertEquals(assertion["output"]!!.getDouble(0),result["output"]!!.getDouble(0),"Function ${nd4jOpDef.name} failed with input $x $y")
                     finishedOps.add(nd4jOpDef.name)
 
                 }  else if(pairWiseBooleanInputs.containsKey(nd4jOpDef.name)) {
@@ -469,7 +470,7 @@ class TestOnnxIR {
                     val inputs = mapOf("x" to x,"y" to y)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $x $y",assertion["output"]!!.getDouble(0),result["output"]!!.getDouble(0))
+                    assertEquals(assertion["output"]!!.getDouble(0),result["output"]!!.getDouble(0),"Function ${nd4jOpDef.name} failed with input $x $y")
                     finishedOps.add(nd4jOpDef.name)
 
                 } else if(pairWiseBooleanOps.containsKey(nd4jOpDef.name)) {
@@ -502,7 +503,7 @@ class TestOnnxIR {
                     val inputs = mapOf("x" to x,"y" to y)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $x $y",assertion["output"]!!.getDouble(0),result["output"]!!.getDouble(0))
+                    assertEquals(assertion["output"]!!.getDouble(0),result["output"]!!.getDouble(0),"Function ${nd4jOpDef.name} failed with input $x $y")
                     finishedOps.add(nd4jOpDef.name)
 
                 }
@@ -573,7 +574,7 @@ class TestOnnxIR {
                     val result = importedGraph.output(inputs,"output")
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x"),listOf("output"))
                     val assertion = onnxGraphRunner.run(inputs)
-                    assertEquals("Function ${nd4jOpDef.name} failed with input $x",assertion["output"]!!.reshape(1,2),result["output"]!!.reshape(1,2))
+                    assertEquals(assertion["output"]!!.reshape(1,2),result["output"]!!.reshape(1,2),"Function ${nd4jOpDef.name} failed with input $x")
                     finishedOps.add(nd4jOpDef.name)
 
                 } else if(mappedOps.contains(nd4jOpDef.name)){
@@ -592,10 +593,10 @@ class TestOnnxIR {
                         assertEquals(assertion.keys,result.keys)
                         result.forEach { name,arr ->
                             if(arr.length().toInt() == 1) {
-                                assertEquals("Function ${nd4jOpDef.name} failed with input ${graph.inputNames}",assertion[name]!!.getDouble(0),arr.getDouble(0),1e-3)
+                                assertEquals(assertion[name]!!.getDouble(0),arr.getDouble(0),1e-3,"Function ${nd4jOpDef.name} failed with input ${graph.inputNames}")
                             }
                             else {
-                                assertEquals("Function ${nd4jOpDef.name} failed with input ${graph.inputNames}",assertion[name],arr)
+                                assertEquals(assertion[name],arr,"Function ${nd4jOpDef.name} failed with input ${graph.inputNames}")
                             }
                         }
 
@@ -630,9 +631,9 @@ class TestOnnxIR {
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
                     if(assertion["output"]!!.length() == 1L)
-                        assertEquals("Function ${nd4jOpDef.name} failed with input $input",assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1))
+                        assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
                     else
-                        assertEquals("Function ${nd4jOpDef.name} failed with input $input",assertion["output"]!!.ravel(),result["output"]!!.ravel())
+                        assertEquals(assertion["output"]!!.ravel(),result["output"]!!.ravel(),"Function ${nd4jOpDef.name} failed with input $input")
                     finishedOps.add(nd4jOpDef.name)
 
                 }

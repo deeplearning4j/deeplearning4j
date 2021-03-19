@@ -20,11 +20,13 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,21 +39,19 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ROCBinaryTest extends BaseNd4jTest {
-
-    public ROCBinaryTest(Nd4jBackend backend) {
-        super(backend);
-    }
+public class ROCBinaryTest extends BaseNd4jTestWithBackends {
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testROCBinary() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
+    public void testROCBinary(Nd4jBackend backend) {
         //Compare ROCBinary to ROC class
 
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
@@ -98,11 +98,11 @@ public class ROCBinaryTest extends BaseNd4jTest {
                                 double aucExp = r.calculateAUC();
                                 double auc = rb.calculateAUC(i);
 
-                                assertEquals(msg, aucExp, auc, eps);
+                                assertEquals( aucExp, auc, eps,msg);
 
                                 long apExp = r.getCountActualPositive();
                                 long ap = rb.getCountActualPositive(i);
-                                assertEquals(msg, ap, apExp);
+                                assertEquals(ap, apExp,msg);
 
                                 long anExp = r.getCountActualNegative();
                                 long an = rb.getCountActualNegative(i);
@@ -111,7 +111,7 @@ public class ROCBinaryTest extends BaseNd4jTest {
                                 PrecisionRecallCurve pExp = r.getPrecisionRecallCurve();
                                 PrecisionRecallCurve p = rb.getPrecisionRecallCurve(i);
 
-                                assertEquals(msg, pExp, p);
+                                assertEquals(pExp, p,msg);
                             }
 
                             String s = rb.stats();
@@ -145,8 +145,9 @@ public class ROCBinaryTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testRocBinaryMerging() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRocBinaryMerging(Nd4jBackend backend) {
         for (int nSteps : new int[]{30, 0}) { //0 == exact
             int nOut = 4;
             int[] shape1 = {30, nOut};
@@ -175,8 +176,9 @@ public class ROCBinaryTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testROCBinaryPerOutputMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testROCBinaryPerOutputMasking(Nd4jBackend backend) {
 
         for (int nSteps : new int[]{30, 0}) { //0 == exact
 
@@ -215,8 +217,9 @@ public class ROCBinaryTest extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testROCBinary3d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testROCBinary3d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
 
@@ -244,13 +247,14 @@ public class ROCBinaryTest extends BaseNd4jTest {
             for( int i=0; i<5; i++ ) {
                 double d1 = e3d.scoreForMetric(m, i);
                 double d2 = e2d.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
     }
 
-    @Test
-    public void testROCBinary4d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testROCBinary4d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
 
@@ -278,13 +282,14 @@ public class ROCBinaryTest extends BaseNd4jTest {
             for( int i=0; i<3; i++ ) {
                 double d1 = e4d.scoreForMetric(m, i);
                 double d2 = e2d.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals( d2, d1, 1e-6,m.toString());
             }
         }
     }
 
-    @Test
-    public void testROCBinary3dMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testROCBinary3dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
 
@@ -339,13 +344,14 @@ public class ROCBinaryTest extends BaseNd4jTest {
             for(int i=0; i<3; i++ ) {
                 double d1 = e4d_m2.scoreForMetric(m, i);
                 double d2 = e2d_m2.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
     }
 
-    @Test
-    public void testROCBinary4dMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testROCBinary4dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
 
@@ -376,7 +382,7 @@ public class ROCBinaryTest extends BaseNd4jTest {
             for( int i=0; i<3; i++ ) {
                 double d1 = e4d_m1.scoreForMetric(m, i);
                 double d2 = e2d_m1.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
 
@@ -405,7 +411,7 @@ public class ROCBinaryTest extends BaseNd4jTest {
             for( int i=0; i<3; i++) {
                 double d1 = e3d_m2.scoreForMetric(m, i);
                 double d2 = e2d_m2.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
     }

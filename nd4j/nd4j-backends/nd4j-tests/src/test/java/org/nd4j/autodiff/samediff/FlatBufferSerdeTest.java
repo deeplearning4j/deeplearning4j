@@ -22,16 +22,19 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.FlatConfiguration;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.graph.FlatNode;
 import org.nd4j.graph.FlatVariable;
 import org.nd4j.graph.IntPair;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -57,32 +60,31 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-public class FlatBufferSerdeTest extends BaseNd4jTest {
+public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
-    public FlatBufferSerdeTest(Nd4jBackend b){
-        super(b);
-    }
+    @TempDir Path testDir;
+
 
     @Override
     public char ordering(){
         return 'c';
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Test
-    public void testBasic() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBasic(Nd4jBackend backend) throws Exception {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
@@ -91,7 +93,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
         ByteBuffer bb = sd.asFlatBuffers(true);
 
-        File f = testDir.newFile();
+        File f = Files.createTempFile(testDir,"some-file","bin").toFile();
         f.delete();
 
         try(FileChannel fc = new FileOutputStream(f, false).getChannel()){
@@ -121,7 +123,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
         int numOutputs = fg.outputsLength();
         List<IntPair> outputs = new ArrayList<>(numOutputs);
-        for( int i=0; i<numOutputs; i++ ){
+        for( int i = 0; i < numOutputs; i++) {
             outputs.add(fg.outputs(i));
         }
 
@@ -136,9 +138,10 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
         assertEquals(sd.getLossVariables().size(), fg.lossVariablesLength());
     }
 
-    @Test
-    public void testSimple() throws Exception {
-        for( int i=0; i<10; i++ ) {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSimple(Nd4jBackend backend) throws Exception {
+        for( int i = 0; i < 10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
@@ -194,7 +197,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     sd.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
                 }
 
-                File f = testDir.newFile();
+                File f = Files.createTempFile(testDir,"some-file","fb").toFile();
                 f.delete();
                 sd.asFlatFile(f);
 
@@ -223,7 +226,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 Map<String,INDArray> m2 = restored.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
                 INDArray outRestored = m2.get(x.name());
 
-                assertEquals(String.valueOf(i), outOrig, outRestored);
+                assertEquals(outOrig, outRestored,String.valueOf(i));
 
 
                 //Check placeholders
@@ -231,15 +234,15 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 Map<String,SDVariable> vAfter = restored.variableMap();
                 assertEquals(vBefore.keySet(), vAfter.keySet());
                 for(String s : vBefore.keySet()){
-                    assertEquals(s, vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder());
-                    assertEquals(s, vBefore.get(s).isConstant(), vAfter.get(s).isConstant());
+                    assertEquals(vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder(),s);
+                    assertEquals(vBefore.get(s).isConstant(), vAfter.get(s).isConstant(),s);
                 }
 
 
                 //Check save methods
                 for(boolean withUpdaterState : new boolean[]{false, true}) {
 
-                    File f2 = testDir.newFile();
+                    File f2 = Files.createTempFile(testDir,"some-file-2","fb").toFile();
                     sd.save(f2, withUpdaterState);
                     SameDiff r2 = SameDiff.load(f2, withUpdaterState);
                     assertEquals(varsOrig.size(), r2.variables().size());
@@ -247,8 +250,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     assertEquals(sd.getLossVariables(), r2.getLossVariables());
 
                     //Save via stream:
-                    File f3 = testDir.newFile();
-                    try(OutputStream os = new BufferedOutputStream(new FileOutputStream(f3))){
+                    File f3 = Files.createTempFile(testDir,"some-file-3","fb").toFile();
+                    try(OutputStream os = new BufferedOutputStream(new FileOutputStream(f3))) {
                         sd.save(os, withUpdaterState);
                     }
 
@@ -265,8 +268,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testTrainingSerde() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTrainingSerde(Nd4jBackend backend) throws Exception {
 
         //Ensure 2 things:
         //1. Training config is serialized/deserialized correctly
@@ -301,12 +305,12 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
             DataSet ds = new DataSet(inArr, labelArr);
 
-            for (int i = 0; i < 10; i++){
+            for (int i = 0; i < 10; i++) {
                 sd.fit(ds);
             }
 
 
-            File dir = testDir.newFolder();
+            File dir = testDir.toFile();
             File f = new File(dir, "samediff.bin");
             sd.asFlatFile(f);
 
@@ -349,8 +353,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void pooling3DSerialization(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void pooling3DSerialization(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);
@@ -369,8 +374,9 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 deserialized.getVariableOutputOp("pool").getClass());
     }
 
-    @Test
-    public void pooling3DSerialization2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void pooling3DSerialization2(Nd4jBackend backend){
         SameDiff sd = SameDiff.create();
 
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);

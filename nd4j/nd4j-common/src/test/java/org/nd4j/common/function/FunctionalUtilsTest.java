@@ -20,13 +20,13 @@
 
 package org.nd4j.common.function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.function.FunctionalUtils;
 import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FunctionalUtilsTest {
 

@@ -35,11 +35,15 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,41 +52,48 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.NoOp;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
 public class YoloGradientCheckTests extends BaseDL4JTest {
 
     static {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
-    private CNN2DFormat format;
-    public YoloGradientCheckTests(CNN2DFormat format){
-        this.format = format;
-    }
-    @Parameterized.Parameters(name = "{0}")
-    public static Object[] params(){
-        return CNN2DFormat.values();
-    }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir Path testDir;
+
+    public static Stream<Arguments> params() {
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(CNN2DFormat format : CNN2DFormat.values()) {
+                args.add(Arguments.of(format,nd4jBackend));
+            }
+        }
+        return args.stream();
+    }
 
     @Override
     public long getTimeoutMilliseconds() {
         return 90000L;
     }
 
-    @Test
-    public void testYoloOutputLayer() {
+    @ParameterizedTest
+    @MethodSource("org.deeplearning4j.gradientcheck.YoloGradientCheckTests#params")
+    public void testYoloOutputLayer(CNN2DFormat format,Nd4jBackend backend) {
         int depthIn = 2;
         int c = 3;
         int b = 3;
@@ -154,18 +165,18 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                     .minAbsoluteError(1e-6)
                     .labels(labels).subset(true).maxPerParam(100));
 
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }
     }
 
-    private static INDArray yoloLabels(int mb, int c, int h, int w){
+    private static INDArray yoloLabels(int mb, int c, int h, int w) {
         int labelDepth = 4 + c;
         INDArray labels = Nd4j.zeros(mb, labelDepth, h, w);
         //put 1 object per minibatch, at positions (0,0), (1,1) etc.
         //Positions for label boxes: (1,1) to (2,2), (2,2) to (4,4) etc
 
-        for( int i=0; i<mb; i++ ){
+        for( int i = 0; i < mb; i++) {
             //Class labels
             labels.putScalar(i, 4 + i%c, i%h, i%w, 1);
 
@@ -180,15 +191,17 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     }
 
 
-    @Test
-    public void yoloGradientCheckRealData() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.deeplearning4j.gradientcheck.YoloGradientCheckTests#params")
+    public void yoloGradientCheckRealData(CNN2DFormat format,Nd4jBackend backend) throws Exception {
         Nd4j.getRandom().setSeed(12345);
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
         InputStream is4 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2008_003344.xml").getInputStream();
 
-        File dir = testDir.newFolder("testYoloOverfitting");
+        File dir = new File(testDir.toFile(),"testYoloOverfitting");
+        dir.mkdirs();
         File jpg = new File(dir, "JPEGImages");
         File annot = new File(dir, "Annotations");
         jpg.mkdirs();

@@ -20,10 +20,12 @@
 
 
 import org.nd4j.python4j.*;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @javax.annotation.concurrent.NotThreadSafe
@@ -44,7 +46,7 @@ public class PythonCollectionsTest {
           map.put("list2", Arrays.asList(4, "5", innerMap, false, true));
           PythonObject dict = PythonTypes.convert(map);
           Map map2 = PythonTypes.DICT.toJava(dict);
-          Assert.assertEquals(map.toString(), map2.toString());
+          assertEquals(map.toString(), map2.toString());
       }
 
     }
@@ -63,7 +65,7 @@ public class PythonCollectionsTest {
             list.add(map);
             PythonObject dict = PythonTypes.convert(list);
             List list2 = PythonTypes.LIST.toJava(dict);
-            Assert.assertEquals(list.toString(), list2.toString());
+            assertEquals(list.toString(), list2.toString());
         }
 
     }

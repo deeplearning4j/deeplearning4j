@@ -29,16 +29,16 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
@@ -46,6 +46,7 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
 
     @Test
+    @Disabled
     public void testBasicIndexing() {
         Schema.Builder schema = new Schema.Builder();
         for(int i = 0; i < 3; i++) {
@@ -54,9 +55,9 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
 
         List<List<Writable>> timeStep = Arrays.asList(
-                Arrays.<Writable>asList(new IntWritable(0),new IntWritable(1),new IntWritable(2)),
-                Arrays.<Writable>asList(new IntWritable(1),new IntWritable(2),new IntWritable(3)),
-                Arrays.<Writable>asList(new IntWritable(4),new IntWritable(5),new IntWritable(6))
+                Arrays.asList(new IntWritable(0),new IntWritable(1),new IntWritable(2)),
+                Arrays.asList(new IntWritable(1),new IntWritable(2),new IntWritable(3)),
+                Arrays.asList(new IntWritable(4),new IntWritable(5),new IntWritable(6))
         );
 
         int numTimeSteps = 5;
@@ -69,7 +70,7 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
         assertEquals(3,fieldVectors.size());
         for(FieldVector fieldVector : fieldVectors) {
             for(int i = 0; i < fieldVector.getValueCount(); i++) {
-                assertFalse("Index " + i + " was null for field vector " + fieldVector, fieldVector.isNull(i));
+                assertFalse( fieldVector.isNull(i),"Index " + i + " was null for field vector " + fieldVector);
             }
         }
 
@@ -79,7 +80,7 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
     @Test
     //not worried about this till after next release
-    @Ignore
+    @Disabled
     public void testVariableLengthTS() {
         Schema.Builder schema = new Schema.Builder()
                 .addColumnString("str")

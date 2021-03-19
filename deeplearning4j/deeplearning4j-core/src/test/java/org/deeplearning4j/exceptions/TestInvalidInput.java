@@ -29,14 +29,14 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class TestInvalidInput extends BaseDL4JTest {
@@ -291,7 +291,7 @@ public class TestInvalidInput extends BaseDL4JTest {
             } catch (Exception e) {
                 log.error("",e);
                 String msg = e.getMessage();
-                assertTrue(msg, msg != null && msg.contains("rnn") && msg.contains("batch"));
+                assertTrue(msg != null && msg.contains("rnn") && msg.contains("batch"), msg);
             }
         }
     }

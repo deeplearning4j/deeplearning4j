@@ -33,7 +33,7 @@ import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -46,7 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestFrozenLayers extends BaseSparkTest {
 
@@ -119,10 +119,10 @@ public class TestFrozenLayers extends BaseSparkTest {
 
             if (isFrozen) {
                 //Layer should be frozen -> no change
-                assertEquals(entry.getKey(), orig, now);
+                assertEquals(orig, now, entry.getKey());
             } else {
                 //Not frozen -> should be different
-                assertNotEquals(entry.getKey(), orig, now);
+                assertNotEquals(orig, now, entry.getKey());
             }
         }
     }
@@ -196,10 +196,10 @@ public class TestFrozenLayers extends BaseSparkTest {
 
             if (isFrozen) {
                 //Layer should be frozen -> no change
-                assertEquals(entry.getKey(), orig, now);
+                assertEquals(orig, now, entry.getKey());
             } else {
                 //Not frozen -> should be different
-                assertNotEquals(entry.getKey(), orig, now);
+                assertNotEquals(orig, now, entry.getKey());
             }
         }
     }

@@ -22,10 +22,7 @@ package org.nd4j.parameterserver.distributed;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -49,20 +46,20 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 @Deprecated
 public class VoidParameterServerStressTest extends BaseND4JTest {
     private static final int NUM_WORDS = 100000;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
@@ -71,7 +68,7 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
      * This test measures performance of blocking messages processing, VectorRequestMessage in this case
      */
     @Test
-    @Ignore
+    @Disabled
     public void testPerformanceStandalone1() {
         VoidConfiguration voidConfiguration =
                         VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
@@ -132,7 +129,7 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
      * This test measures performance of non-blocking messages processing, SkipGramRequestMessage in this case
      */
     @Test
-    @Ignore
+    @Disabled
     public void testPerformanceStandalone2() {
         VoidConfiguration voidConfiguration =
                         VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
@@ -193,7 +190,7 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testPerformanceMulticast1() throws Exception {
         VoidConfiguration voidConfiguration =
                         VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
@@ -288,7 +285,8 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
     /**
      * This is one of the MOST IMPORTANT tests
      */
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testPerformanceUnicast1() {
         List<String> list = new ArrayList<>();
         for (int t = 0; t < 1; t++) {
@@ -386,7 +384,7 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
      * Here we send non-blocking messages
      */
     @Test
-    @Ignore
+    @Disabled
     public void testPerformanceUnicast2() {
         List<String> list = new ArrayList<>();
         for (int t = 0; t < 5; t++) {
@@ -488,7 +486,8 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testPerformanceUnicast3() throws Exception {
         VoidConfiguration voidConfiguration = VoidConfiguration.builder().numberOfShards(1)
                         .shardAddresses(Arrays.asList("127.0.0.1:49823")).build();
@@ -534,7 +533,8 @@ public class VoidParameterServerStressTest extends BaseND4JTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 60000L)
+    @Test()
+    @Timeout(60000L)
     public void testPerformanceUnicast4() throws Exception {
         VoidConfiguration voidConfiguration = VoidConfiguration.builder().numberOfShards(1)
                         .shardAddresses(Arrays.asList("127.0.0.1:49823")).build();

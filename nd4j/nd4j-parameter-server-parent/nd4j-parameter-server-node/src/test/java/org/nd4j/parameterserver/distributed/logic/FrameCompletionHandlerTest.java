@@ -20,26 +20,25 @@
 
 package org.nd4j.parameterserver.distributed.logic;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 @Deprecated
 public class FrameCompletionHandlerTest extends BaseND4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(30);
+
 
     /**
      * This test emulates 2 frames being processed at the same time

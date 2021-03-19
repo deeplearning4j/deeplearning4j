@@ -89,14 +89,26 @@
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5-engine</artifactId>
+            <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit4</artifactId>
+            <artifactId>archunit-junit5-api</artifactId>
             <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
@@ -146,7 +158,7 @@
                                 <skip>${skipTestResourceEnforcement}</skip>
                                 <rules>
                                     <requireActiveProfile>
-                                        <profiles>test-nd4j-native,test-nd4j-cuda-11.0</profiles>
+                                        <profiles>nd4j-tests-cpu,nd4j-tests-cuda</profiles>
                                         <all>false</all>
                                     </requireActiveProfile>
                                 </rules>
@@ -154,24 +166,6 @@
                             </configuration>
                         </execution>
                     </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
-                    <configuration>
-                        <argLine> "</argLine>
-
-                        <!--
-                        By default: Surefire will set the classpath based on the manifest. Because tests are not included
-                        in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
-                        function correctly without this configuration.
-                        For example, tests for custom transforms (where the custom transform is defined in the test directory)
-                        will fail due to the custom transform not being found on the classpath.
-                        http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
-                        -->
-                        <useSystemClassLoader>true</useSystemClassLoader>
-                        <useManifestOnlyJar>false</useManifestOnlyJar>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -242,7 +236,7 @@
 
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
+            <id>nd4j-tests-cpu</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
@@ -259,7 +253,7 @@
             </dependencies>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
+            <id>nd4j-tests-cuda</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
@@ -279,9 +273,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

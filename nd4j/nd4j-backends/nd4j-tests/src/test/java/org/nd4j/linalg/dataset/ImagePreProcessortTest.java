@@ -20,10 +20,11 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
@@ -33,18 +34,16 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@RunWith(Parameterized.class)
-public class ImagePreProcessortTest extends BaseNd4jTest {
-    public ImagePreProcessortTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void simpleImageTest() {
+public class ImagePreProcessortTest extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void simpleImageTest(Nd4jBackend backend) {
         INDArray rChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(128);
         INDArray gChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(64);
         INDArray bChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(255);
@@ -103,8 +102,9 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
         assertEquals(orig, before);
     }
 
-    @Test
-    public void simpleImageTestMulti() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void simpleImageTestMulti(Nd4jBackend backend) {
         INDArray rChannels = Nd4j.zeros(10, 10).addi(128);
         INDArray gChannels = Nd4j.zeros(10, 10).addi(64);
         INDArray bChannels = Nd4j.zeros(10, 10).addi(255);
@@ -159,8 +159,9 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSegmentation(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSegmentation(Nd4jBackend backend){
 
         INDArray f = Nd4j.math().floor(Nd4j.rand(DataType.FLOAT, 3, 3, 16, 16).muli(255));
         INDArray l = Nd4j.math().floor(Nd4j.rand(DataType.FLOAT, 3, 10, 8, 8).muli(255));

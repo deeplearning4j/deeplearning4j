@@ -25,13 +25,13 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 public class WordVectorsImplTest extends BaseDL4JTest {
@@ -39,7 +39,7 @@ public class WordVectorsImplTest extends BaseDL4JTest {
     private WeightLookupTable weightLookupTable;
     private WordVectorsImpl<SequenceElement> wordVectors;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         vocabCache = Mockito.mock(VocabCache.class);
         weightLookupTable = Mockito.mock(WeightLookupTable.class);

@@ -36,14 +36,16 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.model.stats.StatsListener;
 import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.common.function.Function;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -52,15 +54,16 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Tamas Fenyvesi
  */
-@Slf4j @Ignore      //https://github.com/eclipse/deeplearning4j/issues/8891
+ @Disabled      //https://github.com/eclipse/deeplearning4j/issues/8891
 public class TestVertxUIMultiSession extends BaseDL4JTest {
+    private static Logger log = LoggerFactory.getLogger(TestVertxUIMultiSession.class.getName());
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         UIServer.stopInstance();
     }
@@ -184,19 +187,26 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
         }
     }
 
-    @Test (expected = DL4JException.class)
+    @Test ()
     public void testUIServerGetInstanceMultipleCalls1() {
-        UIServer uiServer = UIServer.getInstance();
-        assertFalse(uiServer.isMultiSession());
-        UIServer.getInstance(true, null);
+       assertThrows(DL4JException.class,() -> {
+           UIServer uiServer = UIServer.getInstance();
+           assertFalse(uiServer.isMultiSession());
+           UIServer.getInstance(true, null);
+       });
+
+
 
     }
 
-    @Test (expected = DL4JException.class)
+    @Test ()
     public void testUIServerGetInstanceMultipleCalls2() {
-        UIServer uiServer = UIServer.getInstance(true, null);
-        assertTrue(uiServer.isMultiSession());
-        UIServer.getInstance(false, null);
+        assertThrows(DL4JException.class,() -> {
+            UIServer uiServer = UIServer.getInstance(true, null);
+            assertTrue(uiServer.isMultiSession());
+            UIServer.getInstance(false, null);
+        });
+
     }
 
     /**

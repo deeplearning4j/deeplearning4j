@@ -21,17 +21,19 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestGraphHuffman extends BaseDL4JTest {
 
-    @Test(timeout = 10000L)
+    @Test()
+    @Timeout(10000)
     public void testGraphHuffman() {
         //Simple test case from Weiss - Data Structires and Algorithm Analysis in Java 3ed pg436
         //Huffman code is non-unique, but length of code for each node is same for all Huffman codes

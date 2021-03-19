@@ -25,13 +25,18 @@ import org.deeplearning4j.rl4j.environment.*;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.IPolicy;
-import org.junit.Rule;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.extension.ExtendWith;
+//import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.*;
+import org.mockito.exceptions.base.MockitoException;
 import org.mockito.junit.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -40,15 +45,16 @@ import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+//@RunWith(JUnitPlatform.class)
+@ExtendWith(MockitoExtension.class)
+@Disabled("Mockito")
 public class AgentTest {
     @Mock Environment environmentMock;
     @Mock TransformProcess transformProcessMock;
     @Mock IPolicy policyMock;
     @Mock AgentListener listenerMock;
 
-    @Rule
-    public MockitoRule mockitoRule = MockitoJUnit.rule();
+
 
     @Test
     public void when_buildingWithNullEnvironment_expect_exception() {

@@ -20,44 +20,36 @@
 
 package org.nd4j.linalg.dimensionalityreduction;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.johnsonLindenStraussMinDim;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.targetShape;
 
-@Ignore
-@RunWith(Parameterized.class)
-public class TestRandomProjection extends BaseNd4jTest {
+@Disabled
+
+public class TestRandomProjection extends BaseNd4jTestWithBackends {
 
     INDArray z1 = Nd4j.createUninitialized(new int[]{(int)1e6, 1000});
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
-
-    public TestRandomProjection(Nd4jBackend backend) {
-        super(backend);
-    }
-
-    @Test
-    public void testJohnsonLindenStraussDim() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testJohnsonLindenStraussDim(Nd4jBackend backend) {
         assertEquals(663, (int)johnsonLindenStraussMinDim((int) 1e6, 0.5).get(0));
         assertTrue(johnsonLindenStraussMinDim((int) 1e6, 0.5).equals(new ArrayList<Integer>(Arrays.asList(663))));
 
@@ -69,56 +61,45 @@ public class TestRandomProjection extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testTargetShape() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTargetShape(Nd4jBackend backend) {
         assertArrayEquals(targetShape(z1, 0.5), new long[]{1000, 663});
         assertArrayEquals(targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 225}), 0.5), new long[]{225, 221});
         // non-changing estimate
         assertArrayEquals(targetShape(z1, 700), new long[]{1000, 700});
     }
 
-    @Test
-    public void testTargetEpsilonChecks() {
-        exception.expect(IllegalArgumentException.class);
-        // wrong rel. error
-        targetShape(z1, 0.0);
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTargetEpsilonChecks(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            // wrong rel. error
+            targetShape(z1, 0.0);
+        });
+
     }
 
-    @Test
-    public void testTargetShapeTooHigh() {
-        exception.expect(ND4JIllegalStateException.class);
-        // original dimension too small
-        targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 1}), 0.5);
-        // target dimension too high
-        targetShape(z1, 1001);
-        // suggested dimension too high
-        targetShape(z1, 0.1);
-        // original samples too small
-        targetShape(Nd4j.createUninitialized(new int[]{1, 1000}), 0.5);
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTargetShapeTooHigh(Nd4jBackend backend) {
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            // original dimension too small
+            targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 1}), 0.5);
+            // target dimension too high
+            targetShape(z1, 1001);
+            // suggested dimension too high
+            targetShape(z1, 0.1);
+            // original samples too small
+            targetShape(Nd4j.createUninitialized(new int[]{1, 1000}), 0.5);
+        });
+
     }
 
 
-    private void makeRandomSparseData(int[] shape, double density) {
-        INDArray z1 = Nd4j.rand(shape);
-        // because this is rand with mean = 0, stdev = 1, abslessThan ~= density
-        BooleanIndexing.replaceWhere(z1, 0.0, Conditions.absLessThan(density));
-    }
-
-
-    private void testRandomProjectionDeterministicForSameShape(){
-        INDArray z1 = Nd4j.randn(1000, 500);
-        RandomProjection rp = new RandomProjection(50);
-        INDArray res1 = Nd4j.zeros(10000, 442);
-        rp.projecti(z1, res1);
-
-        INDArray res2 = Nd4j.zeros(10000, 442);
-        rp.projecti(z1, res2);
-
-        assertEquals(res1, res2);
-    }
-
-    @Test
-    public void testBasicEmbedding() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBasicEmbedding(Nd4jBackend backend) {
         INDArray z1 = Nd4j.randn(10000, 500);
         RandomProjection rp = new RandomProjection(0.5);
         INDArray res = Nd4j.zeros(10000, 442);
@@ -126,8 +107,9 @@ public class TestRandomProjection extends BaseNd4jTest {
         assertArrayEquals(new long[]{10000, 442}, z2.shape());
     }
 
-    @Test
-    public void testEmbedding(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEmbedding(Nd4jBackend backend) {
         INDArray z1 = Nd4j.randn(2000, 400);
         INDArray z2 = z1.dup();
         INDArray result = Transforms.allEuclideanDistances(z1, z2, 1);

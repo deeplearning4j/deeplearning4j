@@ -20,7 +20,6 @@
 
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
-import junit.framework.TestCase;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.NumberedFileInputSplit;
@@ -33,11 +32,11 @@ import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,24 +50,21 @@ import org.nd4j.common.resources.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FullModelComparisons extends BaseDL4JTest {
 
     ClassLoader classLoader = FullModelComparisons.class.getClassLoader();
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
 
     @Test
-    public void lstmTest() throws IOException, UnsupportedKerasConfigurationException,
+    public void lstmTest(@TempDir Path testDir) throws IOException, UnsupportedKerasConfigurationException,
             InvalidKerasConfigurationException, InterruptedException {
 
         String modelPath = "modelimport/keras/fullconfigs/lstm/lstm_th_keras_2_config.json";
@@ -106,26 +102,26 @@ public class FullModelComparisons extends BaseDL4JTest {
         //
         INDArray W = firstLstm.getParam("W");
         assertTrue(Arrays.equals(W.shape(), new long[]{nIn, 4 * nOut}));
-        TestCase.assertEquals(W.getDouble(0, 288), -0.30737767, 1e-7);
-        TestCase.assertEquals(W.getDouble(0, 289), -0.5845409, 1e-7);
-        TestCase.assertEquals(W.getDouble(1, 288), -0.44083247, 1e-7);
-        TestCase.assertEquals(W.getDouble(11, 288), 0.017539706, 1e-7);
-        TestCase.assertEquals(W.getDouble(0, 96), 0.2707935, 1e-7);
-        TestCase.assertEquals(W.getDouble(0, 192), -0.19856165, 1e-7);
-        TestCase.assertEquals(W.getDouble(0, 0), 0.15368782, 1e-7);
+        assertEquals(W.getDouble(0, 288), -0.30737767, 1e-7);
+        assertEquals(W.getDouble(0, 289), -0.5845409, 1e-7);
+        assertEquals(W.getDouble(1, 288), -0.44083247, 1e-7);
+        assertEquals(W.getDouble(11, 288), 0.017539706, 1e-7);
+        assertEquals(W.getDouble(0, 96), 0.2707935, 1e-7);
+        assertEquals(W.getDouble(0, 192), -0.19856165, 1e-7);
+        assertEquals(W.getDouble(0, 0), 0.15368782, 1e-7);
 
 
         INDArray RW = firstLstm.getParam("RW");
         assertTrue(Arrays.equals(RW.shape(), new long[]{nOut, 4 * nOut}));
-        TestCase.assertEquals(RW.getDouble(0, 288), 0.15112677, 1e-7);
+        assertEquals(RW.getDouble(0, 288), 0.15112677, 1e-7);
 
 
         INDArray b = firstLstm.getParam("b");
         assertTrue(Arrays.equals(b.shape(), new long[]{1, 4 * nOut}));
-        TestCase.assertEquals(b.getDouble(0, 288), -0.36940336, 1e-7); // Keras I
-        TestCase.assertEquals(b.getDouble(0, 96), 0.6031118, 1e-7);  // Keras F
-        TestCase.assertEquals(b.getDouble(0, 192), -0.13569744, 1e-7); // Keras O
-        TestCase.assertEquals(b.getDouble(0, 0), -0.2587392, 1e-7); // Keras C
+        assertEquals(b.getDouble(0, 288), -0.36940336, 1e-7); // Keras I
+        assertEquals(b.getDouble(0, 96), 0.6031118, 1e-7);  // Keras F
+        assertEquals(b.getDouble(0, 192), -0.13569744, 1e-7); // Keras O
+        assertEquals(b.getDouble(0, 0), -0.2587392, 1e-7); // Keras C
 
         // 2. Layer
         LSTM secondLstm = (LSTM) ((LastTimeStepLayer) model.getLayer(1)).getUnderlying();
@@ -142,21 +138,21 @@ public class FullModelComparisons extends BaseDL4JTest {
 
         W = secondLstm.getParam("W");
         assertTrue(Arrays.equals(W.shape(), new long[]{nIn, 4 * nOut}));
-        TestCase.assertEquals(W.getDouble(0, 288), -0.7559755, 1e-7);
+        assertEquals(W.getDouble(0, 288), -0.7559755, 1e-7);
 
         RW = secondLstm.getParam("RW");
         assertTrue(Arrays.equals(RW.shape(), new long[]{nOut, 4 * nOut}));
-        TestCase.assertEquals(RW.getDouble(0, 288), -0.33184892, 1e-7);
+        assertEquals(RW.getDouble(0, 288), -0.33184892, 1e-7);
 
 
         b = secondLstm.getParam("b");
         assertTrue(Arrays.equals(b.shape(), new long[]{1, 4 * nOut}));
-        TestCase.assertEquals(b.getDouble(0, 288), -0.2223678, 1e-7);
-        TestCase.assertEquals(b.getDouble(0, 96), 0.73556226, 1e-7);
-        TestCase.assertEquals(b.getDouble(0, 192), -0.63227624, 1e-7);
-        TestCase.assertEquals(b.getDouble(0, 0), 0.06636357, 1e-7);
+        assertEquals(b.getDouble(0, 288), -0.2223678, 1e-7);
+        assertEquals(b.getDouble(0, 96), 0.73556226, 1e-7);
+        assertEquals(b.getDouble(0, 192), -0.63227624, 1e-7);
+        assertEquals(b.getDouble(0, 0), 0.06636357, 1e-7);
 
-        File dataDir = testDir.newFolder();
+        File dataDir = testDir.toFile();
 
         SequenceRecordReader reader = new CSVSequenceRecordReader(0, ";");
         new ClassPathResource("deeplearning4j-modelimport/data/", classLoader).copyDirectory(dataDir);
@@ -179,19 +175,19 @@ public class FullModelComparisons extends BaseDL4JTest {
         INDArray kerasPredictions = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/lstm/predictions.npy"));
 
         for (int i = 0; i < 283; i++) {
-            TestCase.assertEquals(kerasPredictions.getDouble(i), dl4jPredictions.getDouble(i), 1e-7);
+            assertEquals(kerasPredictions.getDouble(i), dl4jPredictions.getDouble(i), 1e-7);
         }
 
 
         INDArray ones = Nd4j.ones(1, 4, 12);
         INDArray predOnes = model.output(ones);
-        TestCase.assertEquals(predOnes.getDouble(0, 0), 0.7216, 1e-4);
+        assertEquals(predOnes.getDouble(0, 0), 0.7216, 1e-4);
 
 
     }
 
     @Test()
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
 
 
     public void cnnBatchNormTest() throws IOException, UnsupportedKerasConfigurationException,
@@ -217,13 +213,13 @@ public class FullModelComparisons extends BaseDL4JTest {
         INDArray kerasOutput = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn/predictions.npy"));
 
         for (int i = 0; i < 5; i++) {
-            TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
+            assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
         }
     }
 
 
     @Test()
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void cnnBatchNormLargerTest() throws IOException, UnsupportedKerasConfigurationException,
             InvalidKerasConfigurationException {
 
@@ -249,7 +245,7 @@ public class FullModelComparisons extends BaseDL4JTest {
 
         for (int i = 0; i < 5; i++) {
             // TODO this should be a little closer
-            TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-2);
+            assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-2);
         }
     }
 

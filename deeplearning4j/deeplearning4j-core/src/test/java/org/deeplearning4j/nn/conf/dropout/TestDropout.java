@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
@@ -50,8 +50,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
@@ -241,7 +241,7 @@ public class TestDropout extends BaseDL4JTest {
 
             if(i < 5){
                 countTwos = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(2))).getInt(0);
-                assertEquals(String.valueOf(i), 100, countZeros + countTwos);  //Should only be 0 or 2
+                assertEquals( 100, countZeros + countTwos,String.valueOf(i));  //Should only be 0 or 2
                 //Stochastic, but this should hold for most cases
                 assertTrue(countZeros >= 25 && countZeros <= 75);
                 assertTrue(countTwos >= 25 && countTwos <= 75);

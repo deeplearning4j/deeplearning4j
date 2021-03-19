@@ -25,7 +25,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +33,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestSetGetParameters extends BaseDL4JTest {
 
@@ -63,7 +63,7 @@ public class TestSetGetParameters extends BaseDL4JTest {
         Map<String, INDArray> initParams2After = net.paramTable();
 
         for (String s : initParams2.keySet()) {
-            assertTrue("Params differ: " + s, initParams2.get(s).equals(initParams2After.get(s)));
+            assertTrue( initParams2.get(s).equals(initParams2After.get(s)),"Params differ: " + s);
         }
 
         assertEquals(initParams, initParamsAfter);
@@ -100,7 +100,7 @@ public class TestSetGetParameters extends BaseDL4JTest {
         Map<String, INDArray> initParams2After = net.paramTable();
 
         for (String s : initParams2.keySet()) {
-            assertTrue("Params differ: " + s, initParams2.get(s).equals(initParams2After.get(s)));
+            assertTrue( initParams2.get(s).equals(initParams2After.get(s)),"Params differ: " + s);
         }
 
         assertEquals(initParams, initParamsAfter);

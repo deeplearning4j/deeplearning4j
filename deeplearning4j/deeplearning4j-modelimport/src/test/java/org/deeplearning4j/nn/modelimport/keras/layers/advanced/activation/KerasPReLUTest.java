@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activation;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -29,27 +28,31 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasPReLU;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasPReLUTest extends BaseDL4JTest {
+@DisplayName("Keras P Re LU Test")
+class KerasPReLUTest extends BaseDL4JTest {
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     private final String INIT_KERAS = "glorot_normal";
+
     private final IWeightInit INIT_DL4J = new WeightInitXavier();
 
     @Test
-    public void testPReLULayer() throws Exception {
+    @DisplayName("Test P Re LU Layer")
+    void testPReLULayer() throws Exception {
         Integer keras1 = 1;
         buildPReLULayer(conf1, keras1);
         Integer keras2 = 2;
@@ -57,7 +60,6 @@ public class KerasPReLUTest extends BaseDL4JTest {
     }
 
     private void buildPReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LEAKY_RELU());
         Map<String, Object> config = new HashMap<>();
@@ -72,15 +74,11 @@ public class KerasPReLUTest extends BaseDL4JTest {
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put("alpha_initializer", init);
         }
-
         KerasPReLU kerasPReLU = new KerasPReLU(layerConfig);
-
-        kerasPReLU.getOutputType(InputType.convolutional(5,4,3));
-
+        kerasPReLU.getOutputType(InputType.convolutional(5, 4, 3));
         PReLULayer layer = kerasPReLU.getPReLULayer();
-        assertArrayEquals(layer.getInputShape(), new long[] {3, 5, 4});
+        assertArrayEquals(layer.getInputShape(), new long[] { 3, 5, 4 });
         assertEquals(INIT_DL4J, layer.getWeightInitFn());
-
         assertEquals(layerName, layer.getLayerName());
     }
 }

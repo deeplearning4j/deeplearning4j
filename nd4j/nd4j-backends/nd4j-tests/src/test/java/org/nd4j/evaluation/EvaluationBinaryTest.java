@@ -20,10 +20,12 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,21 +38,19 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.evaluation.classification.EvaluationBinary.Metric.*;
-public class EvaluationBinaryTest extends BaseNd4jTest {
+public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
 
-    public EvaluationBinaryTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testEvaluationBinary() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinary(Nd4jBackend backend) {
         //Compare EvaluationBinary to Evaluation class
         DataType dtypeBefore = Nd4j.defaultFloatingPointType();
         EvaluationBinary first = null;
@@ -135,8 +135,9 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testEvaluationBinaryMerging() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinaryMerging(Nd4jBackend backend) {
         int nOut = 4;
         int[] shape1 = {30, nOut};
         int[] shape2 = {50, nOut};
@@ -162,8 +163,9 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
         assertEquals(eb.stats(), eb1.stats());
     }
 
-    @Test
-    public void testEvaluationBinaryPerOutputMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinaryPerOutputMasking(Nd4jBackend backend) {
 
         //Provide a mask array: "ignore" the masked steps
 
@@ -172,7 +174,7 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
         INDArray labels = Nd4j.create(new double[][] {{1, 1, 1}, {0, 0, 0}, {1, 1, 1}, {0, 1, 1}, {1, 0, 1}});
 
         INDArray predicted = Nd4j.create(new double[][] {{0.9, 0.9, 0.9}, {0.7, 0.7, 0.7}, {0.6, 0.6, 0.6},
-                        {0.4, 0.4, 0.4}, {0.1, 0.1, 0.1}});
+                {0.4, 0.4, 0.4}, {0.1, 0.1, 0.1}});
 
         //Correct?
         //      Y Y m
@@ -205,8 +207,9 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
         assertEquals(1, eb.falseNegatives(2));
     }
 
-    @Test
-    public void testTimeSeriesEval() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTimeSeriesEval(Nd4jBackend backend) {
 
         int[] shape = {2, 4, 3};
         Nd4j.getRandom().setSeed(12345);
@@ -229,13 +232,14 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
         assertEquals(eb2.stats(), eb1.stats());
     }
 
-    @Test
-    public void testEvaluationBinaryWithROC() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinaryWithROC(Nd4jBackend backend) {
         //Simple test for nested ROCBinary in EvaluationBinary
 
         Nd4j.getRandom().setSeed(12345);
         INDArray l1 = Nd4j.getExecutioner()
-                        .exec(new BernoulliDistribution(Nd4j.createUninitialized(new int[] {50, 4}), 0.5));
+                .exec(new BernoulliDistribution(Nd4j.createUninitialized(new int[] {50, 4}), 0.5));
         INDArray p1 = Nd4j.rand(50, 4);
 
         EvaluationBinary eb = new EvaluationBinary(4, 30);
@@ -246,8 +250,9 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testEvaluationBinary3d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinary3d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
 
@@ -275,13 +280,14 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             for( int i=0; i<5; i++ ) {
                 double d1 = e3d.scoreForMetric(m, i);
                 double d2 = e2d.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
     }
 
-    @Test
-    public void testEvaluationBinary4d() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinary4d(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
 
@@ -309,13 +315,14 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             for( int i=0; i<3; i++ ) {
                 double d1 = e4d.scoreForMetric(m, i);
                 double d2 = e2d.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
     }
 
-    @Test
-    public void testEvaluationBinary3dMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinary3dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
 
@@ -370,13 +377,14 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             for(int i=0; i<3; i++ ) {
                 double d1 = e4d_m2.scoreForMetric(m, i);
                 double d2 = e2d_m2.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
     }
 
-    @Test
-    public void testEvaluationBinary4dMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEvaluationBinary4dMasking(Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
         INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
 
@@ -407,7 +415,7 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             for( int i=0; i<3; i++ ) {
                 double d1 = e4d_m1.scoreForMetric(m, i);
                 double d2 = e2d_m1.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals(d2, d1, 1e-6,m.toString());
             }
         }
 
@@ -436,7 +444,7 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             for( int i=0; i<3; i++) {
                 double d1 = e3d_m2.scoreForMetric(m, i);
                 double d2 = e2d_m2.scoreForMetric(m, i);
-                assertEquals(m.toString(), d2, d1, 1e-6);
+                assertEquals( d2, d1, 1e-6,m.toString());
             }
         }
     }

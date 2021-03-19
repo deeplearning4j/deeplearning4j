@@ -20,34 +20,36 @@
 
 package org.nd4j.linalg.lossfunctions;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
-public class TestLossFunctionsSizeChecks extends BaseNd4jTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    public TestLossFunctionsSizeChecks(Nd4jBackend b){
-        super(b);
-    }
+
+public class TestLossFunctionsSizeChecks extends BaseNd4jTestWithBackends {
+
 
     @Override
     public char ordering(){
         return 'c';
     }
 
-    @Test
-    public void testL2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testL2(Nd4jBackend backend) {
         LossFunction[] lossFunctionList = {LossFunction.MSE, LossFunction.L1, LossFunction.XENT,
-                        LossFunction.MCXENT, LossFunction.SQUARED_LOSS, LossFunction.RECONSTRUCTION_CROSSENTROPY,
-                        LossFunction.NEGATIVELOGLIKELIHOOD, LossFunction.COSINE_PROXIMITY, LossFunction.HINGE,
-                        LossFunction.SQUARED_HINGE, LossFunction.KL_DIVERGENCE, LossFunction.MEAN_ABSOLUTE_ERROR,
-                        LossFunction.L2, LossFunction.MEAN_ABSOLUTE_PERCENTAGE_ERROR,
-                        LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR, LossFunction.POISSON};
+                LossFunction.MCXENT, LossFunction.SQUARED_LOSS, LossFunction.RECONSTRUCTION_CROSSENTROPY,
+                LossFunction.NEGATIVELOGLIKELIHOOD, LossFunction.COSINE_PROXIMITY, LossFunction.HINGE,
+                LossFunction.SQUARED_HINGE, LossFunction.KL_DIVERGENCE, LossFunction.MEAN_ABSOLUTE_ERROR,
+                LossFunction.L2, LossFunction.MEAN_ABSOLUTE_PERCENTAGE_ERROR,
+                LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR, LossFunction.POISSON};
 
         testLossFunctions(lossFunctionList);
     }
@@ -69,34 +71,34 @@ public class TestLossFunctionsSizeChecks extends BaseNd4jTest {
             INDArray labels = Nd4j.create(100, 32);
             INDArray preOutput = Nd4j.create(100, 44);
             double score = loss.computeScore(labels, preOutput, Activation.IDENTITY.getActivationFunction(), null,
-                            true);
-            Assert.assertFalse(
-                            "Loss function " + loss.toString()
-                                            + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal",
-                            true);
+                    true);
+            assertFalse(
+                    true,
+                    "Loss function " + loss.toString()
+                                        + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal");
         } catch (IllegalArgumentException ex) {
             String exceptionMessage = ex.getMessage();
-            Assert.assertTrue(
-                            "Loss function exception " + loss.toString()
-                                            + " did not indicate size mismatch when vectors of incorrect size were used.",
-                            exceptionMessage.contains("shapes"));
+            assertTrue(
+                    exceptionMessage.contains("shapes"),
+                    "Loss function exception " + loss.toString()
+                                        + " did not indicate size mismatch when vectors of incorrect size were used.");
         }
 
         try {
             INDArray labels = Nd4j.create(100, 32);
             INDArray preOutput = Nd4j.create(100, 44);
             INDArray gradient =
-                            loss.computeGradient(labels, preOutput, Activation.IDENTITY.getActivationFunction(), null);
-            Assert.assertFalse(
-                            "Loss function " + loss.toString()
-                                            + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal",
-                            true);
+                    loss.computeGradient(labels, preOutput, Activation.IDENTITY.getActivationFunction(), null);
+            assertFalse(
+                    true,
+                    "Loss function " + loss.toString()
+                                        + "did not check for size mismatch.  This should fail to compute an activation function because the sizes of the vectors are not equal");
         } catch (IllegalArgumentException ex) {
             String exceptionMessage = ex.getMessage();
-            Assert.assertTrue(
-                            "Loss function exception " + loss.toString()
-                                            + " did not indicate size mismatch when vectors of incorrect size were used.",
-                            exceptionMessage.contains("shapes"));
+            assertTrue(
+                    exceptionMessage.contains("shapes"),
+                    "Loss function exception " + loss.toString()
+                                        + " did not indicate size mismatch when vectors of incorrect size were used.");
         }
 
     }

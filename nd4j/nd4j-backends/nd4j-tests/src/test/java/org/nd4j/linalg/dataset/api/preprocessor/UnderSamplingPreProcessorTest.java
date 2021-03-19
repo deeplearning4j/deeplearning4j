@@ -22,10 +22,11 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.extern.slf4j.Slf4j;
 import net.jcip.annotations.NotThreadSafe;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.DataSet;
@@ -41,16 +42,16 @@ import java.util.HashMap;
 import java.util.List;
 
 import static java.lang.Math.min;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author susaneraly
  */
 @Slf4j
-@RunWith(Parameterized.class)
+
 @NotThreadSafe
-public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
+public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
     int shortSeq = 10000;
     int longSeq = 20020; //not a perfect multiple of windowSize
     int window = 5000;
@@ -58,19 +59,17 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
     double targetDist = 0.3;
     double tolerancePerc = 0.03; //10% +/- because this is not a very large sample
 
-    public UnderSamplingPreProcessorTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void allMajority() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void allMajority(Nd4jBackend backend) {
         float[] someTargets = new float[] {0.01f, 0.1f, 0.5f};
         DataSet d = allMajorityDataSet(false);
         DataSet dToPreProcess;
         for (int i = 0; i < someTargets.length; i++) {
             //if all majority default is to mask all time steps
             UnderSamplingByMaskingPreProcessor preProcessor =
-                            new UnderSamplingByMaskingPreProcessor(someTargets[i], shortSeq / 2);
+                    new UnderSamplingByMaskingPreProcessor(someTargets[i], shortSeq / 2);
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
             INDArray exp = Nd4j.zeros(dToPreProcess.getLabelsMaskArray().shape());
@@ -83,18 +82,19 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
             preProcessor.preProcess(dToPreProcess);
             INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq);
             assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).castTo(Nd4j.defaultFloatingPointType()).equalsWithEps(percentagesNow,
-                            tolerancePerc));
+                    tolerancePerc));
         }
     }
 
-    @Test
-    public void allMinority() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void allMinority(Nd4jBackend backend) {
         float[] someTargets = new float[] {0.01f, 0.1f, 0.5f};
         DataSet d = allMinorityDataSet(false);
         DataSet dToPreProcess;
         for (int i = 0; i < someTargets.length; i++) {
             UnderSamplingByMaskingPreProcessor preProcessor =
-                            new UnderSamplingByMaskingPreProcessor(someTargets[i], shortSeq / 2);
+                    new UnderSamplingByMaskingPreProcessor(someTargets[i], shortSeq / 2);
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
             //all minority classes present  - check that no time steps are masked
@@ -115,8 +115,9 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         Different distribution of labels within a minibatch, different time series length within a minibatch
         Checks distribution of classes after preprocessing
      */
-    @Test
-    public void mixedDist() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void mixedDist(Nd4jBackend backend) {
 
         UnderSamplingByMaskingPreProcessor preProcessor = new UnderSamplingByMaskingPreProcessor(targetDist, window);
 
@@ -135,7 +136,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
             //check masks are zero where there are no time steps
             INDArray masks = dataSetToPreProcess.getLabelsMaskArray();
             INDArray shouldBeAllZeros =
-                            masks.get(NDArrayIndex.interval(0, 3), NDArrayIndex.interval(shortSeq, longSeq));
+                    masks.get(NDArrayIndex.interval(0, 3), NDArrayIndex.interval(shortSeq, longSeq));
             assertEquals(Nd4j.zeros(shouldBeAllZeros.shape()), shouldBeAllZeros);
 
             //check distribution of masks in window, going backwards from last time step
@@ -145,25 +146,25 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
                 int minIndex = min(0, maxIndex - window);
                 INDArray maskWindow = masks.get(NDArrayIndex.all(), NDArrayIndex.interval(minIndex, maxIndex));
                 INDArray labelWindow = labels.get(NDArrayIndex.all(), NDArrayIndex.point(0),
-                                NDArrayIndex.interval(minIndex, maxIndex));
+                        NDArrayIndex.interval(minIndex, maxIndex));
 
                 //calc minority class distribution
                 INDArray minorityDist = labelWindow.mul(maskWindow).sum(1).div(maskWindow.sum(1));
 
                 if (j < shortSeq / window) {
-                    assertEquals("Failed on window " + j + " batch 0, loop " + i, targetDist,
-                                    minorityDist.getFloat(0), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 1, loop " + i, targetDist,
-                                    minorityDist.getFloat(1), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2),
-                                    tolerancePerc); //should be unchanged as it was already above target dist
+                    assertEquals(targetDist,
+                            minorityDist.getFloat(0), tolerancePerc,"Failed on window " + j + " batch 0, loop " + i); //should now be close to target dist
+                    assertEquals( targetDist,
+                            minorityDist.getFloat(1), tolerancePerc,"Failed on window " + j + " batch 1, loop " + i); //should now be close to target dist
+                    assertEquals(0.8, minorityDist.getFloat(2),
+                            tolerancePerc,"Failed on window " + j + " batch 2, loop " + i); //should be unchanged as it was already above target dist
                 }
-                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5),
-                                tolerancePerc); //should be unchanged as it was already above target dist
+                assertEquals(targetDist, minorityDist.getFloat(3),
+                        tolerancePerc,"Failed on window " + j + " batch 3, loop " + i); //should now be close to target dist
+                assertEquals(targetDist, minorityDist.getFloat(4),
+                        tolerancePerc,"Failed on window " + j + " batch 4, loop " + i); //should now be close to target dist
+                assertEquals( 0.8, minorityDist.getFloat(5),
+                        tolerancePerc,"Failed on window " + j + " batch 5, loop " + i); //should be unchanged as it was already above target dist
             }
         }
     }
@@ -172,8 +173,9 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         Same as above but with one hot vectors instead of label size = 1
         Also checks minority override
     */
-    @Test
-    public void mixedDistOneHot() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void mixedDistOneHot(Nd4jBackend backend) {
 
         //preprocessor should give 30% minority class for every "window"
         UnderSamplingByMaskingPreProcessor preProcessor = new UnderSamplingByMaskingPreProcessor(targetDist, window);
@@ -194,7 +196,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
 
             //check masks are zero where there were no time steps
             INDArray shouldBeAllZeros =
-                            masks.get(NDArrayIndex.interval(0, 3), NDArrayIndex.interval(shortSeq, longSeq));
+                    masks.get(NDArrayIndex.interval(0, 3), NDArrayIndex.interval(shortSeq, longSeq));
             assertEquals(Nd4j.zeros(shouldBeAllZeros.shape()), shouldBeAllZeros);
 
             //check distribution of masks in the window length, going backwards from last time step
@@ -204,36 +206,37 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
                 int minIndex = min(0, maxIndex - window);
                 INDArray maskWindow = masks.get(NDArrayIndex.all(), NDArrayIndex.interval(minIndex, maxIndex));
                 INDArray labelWindow = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.interval(minIndex, maxIndex));
+                        NDArrayIndex.interval(minIndex, maxIndex));
 
                 //calc minority class distribution after accounting for masks
                 INDArray minorityClass = labelWindow.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all())
-                                .mul(maskWindow);
+                        .mul(maskWindow);
                 INDArray majorityClass = labelWindow.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all())
-                                .mul(maskWindow);
+                        .mul(maskWindow);
                 INDArray minorityDist = minorityClass.sum(1).div(majorityClass.add(minorityClass).sum(1));
 
                 if (j < shortSeq / window) {
-                    assertEquals("Failed on window " + j + " batch 0, loop " + i, targetDist,
-                                    minorityDist.getFloat(0), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 1, loop " + i, targetDist,
-                                    minorityDist.getFloat(1), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2),
-                                    tolerancePerc); //should be unchanged as it was already above target dist
+                    assertEquals(targetDist,
+                            minorityDist.getFloat(0), tolerancePerc,"Failed on window " + j + " batch 0, loop " + i); //should now be close to target dist
+                    assertEquals(targetDist,
+                            minorityDist.getFloat(1), tolerancePerc,"Failed on window " + j + " batch 1, loop " + i); //should now be close to target dist
+                    assertEquals(0.8, minorityDist.getFloat(2),
+                            tolerancePerc,"Failed on window " + j + " batch 2, loop " + i); //should be unchanged as it was already above target dist
                 }
-                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4),
-                                tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5),
-                                tolerancePerc); //should be unchanged as it was already above target dist
+                assertEquals(targetDist, minorityDist.getFloat(3),
+                        tolerancePerc,"Failed on window " + j + " batch 3, loop " + i); //should now be close to target dist
+                assertEquals( targetDist, minorityDist.getFloat(4),
+                        tolerancePerc,"Failed on window " + j + " batch 4, loop " + i); //should now be close to target dist
+                assertEquals(0.8, minorityDist.getFloat(5),
+                        tolerancePerc,"Failed on window " + j + " batch 5, loop " + i); //should be unchanged as it was already above target dist
             }
         }
     }
 
     //all the tests above into one multidataset
-    @Test
-    public void testForMultiDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testForMultiDataSet(Nd4jBackend backend) {
         DataSet dataSetA = knownDistVariedDataSet(new float[] {0.8f, 0.1f, 0.2f}, false);
         DataSet dataSetB = knownDistVariedDataSet(new float[] {0.2f, 0.9f, 0.8f}, true);
 
@@ -241,7 +244,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         targetDists.put(0, 0.5); //balance inputA
         targetDists.put(1, 0.3); //inputB dist = 0.2%
         UnderSamplingByMaskingMultiDataSetPreProcessor maskingMultiDataSetPreProcessor =
-                        new UnderSamplingByMaskingMultiDataSetPreProcessor(targetDists, window);
+                new UnderSamplingByMaskingMultiDataSetPreProcessor(targetDists, window);
         maskingMultiDataSetPreProcessor.overrideMinorityDefault(1);
 
         MultiDataSet multiDataSet = fromDataSet(dataSetA, dataSetB);
@@ -263,7 +266,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
 
         //datasetB - override is switched so grab index=0
         labels = multiDataSet.getLabels(1).get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all())
-                        .mul(multiDataSet.getLabelsMaskArray(1));
+                .mul(multiDataSet.getLabelsMaskArray(1));
         minorityCount = labels.sum(1);
         seqCount = multiDataSet.getLabelsMaskArray(1).sum(1);
         minorityDist = minorityCount.div(seqCount);

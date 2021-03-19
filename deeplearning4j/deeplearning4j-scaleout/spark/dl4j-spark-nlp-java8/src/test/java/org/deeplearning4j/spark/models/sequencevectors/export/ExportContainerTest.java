@@ -22,14 +22,14 @@ package org.deeplearning4j.spark.models.sequencevectors.export;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExportContainerTest extends BaseDL4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }

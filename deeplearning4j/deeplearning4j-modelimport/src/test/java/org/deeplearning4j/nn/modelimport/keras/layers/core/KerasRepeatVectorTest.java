@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
@@ -25,33 +24,37 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasRepeatVectorTest extends BaseDL4JTest {
+@DisplayName("Keras Repeat Vector Test")
+class KerasRepeatVectorTest extends BaseDL4JTest {
 
     String LAYER_NAME = "repeat";
+
     private int REPEAT = 4;
 
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
-
     @Test
-    public void testRepeatVectorLayer() throws Exception {
+    @DisplayName("Test Repeat Vector Layer")
+    void testRepeatVectorLayer() throws Exception {
         buildRepeatVectorLayer(conf1, keras1);
         buildRepeatVectorLayer(conf2, keras2);
     }
-
 
     private void buildRepeatVectorLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
@@ -61,11 +64,8 @@ public class KerasRepeatVectorTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_REPEAT_MULTIPLIER(), REPEAT);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         RepeatVector layer = new KerasRepeatVector(layerConfig).getRepeatVectorLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(layer.getN(), REPEAT);
     }
-
-
 }

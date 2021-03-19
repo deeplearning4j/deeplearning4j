@@ -17,51 +17,45 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.perf.listener;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.listener.HardwareMetric;
 import org.deeplearning4j.core.listener.SystemPolling;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.factory.Nd4j;
-
 import java.io.File;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+@Disabled("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
+@DisplayName("System Polling Test")
+class SystemPollingTest extends BaseDL4JTest {
 
-@Ignore("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
-public class SystemPollingTest extends BaseDL4JTest {
-
-    @Rule
-    public TemporaryFolder tempDir = new TemporaryFolder();
+    @TempDir
+    public Path tempDir;
 
     @Test
-    public void testPolling() throws Exception {
+    @DisplayName("Test Polling")
+    void testPolling() throws Exception {
         Nd4j.create(1);
-        File tmpDir = tempDir.newFolder();
-
-        SystemPolling systemPolling = new SystemPolling.Builder()
-                .outputDirectory(tmpDir).pollEveryMillis(1000)
-                .build();
+        File tmpDir = tempDir.toFile();
+        SystemPolling systemPolling = new SystemPolling.Builder().outputDirectory(tmpDir).pollEveryMillis(1000).build();
         systemPolling.run();
-
         Thread.sleep(8000);
-
         systemPolling.stopPolling();
-
         File[] files = tmpDir.listFiles();
         assertTrue(files != null && files.length > 0);
-        //System.out.println(Arrays.toString(files));
-
+        // System.out.println(Arrays.toString(files));
         String yaml = FileUtils.readFileToString(files[0]);
         HardwareMetric fromYaml = HardwareMetric.fromYaml(yaml);
         System.out.println(fromYaml);
     }
-
 }

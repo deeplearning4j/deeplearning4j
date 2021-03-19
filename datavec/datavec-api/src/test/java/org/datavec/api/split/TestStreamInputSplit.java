@@ -25,9 +25,10 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.function.Function;
 
@@ -37,22 +38,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class TestStreamInputSplit extends BaseND4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void testCsvSimple() throws Exception {
-        File dir = testDir.newFolder();
+    public void testCsvSimple(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         File f1 = new File(dir, "file1.txt");
         File f2 = new File(dir, "file2.txt");
 
@@ -93,9 +94,9 @@ public class TestStreamInputSplit extends BaseND4JTest {
 
 
     @Test
-    public void testCsvSequenceSimple() throws Exception {
+    public void testCsvSequenceSimple(@TempDir Path testDir) throws Exception {
 
-        File dir = testDir.newFolder();
+        File dir = testDir.toFile();
         File f1 = new File(dir, "file1.txt");
         File f2 = new File(dir, "file2.txt");
 
@@ -137,8 +138,8 @@ public class TestStreamInputSplit extends BaseND4JTest {
     }
 
     @Test
-    public void testShuffle() throws Exception {
-        File dir = testDir.newFolder();
+    public void testShuffle(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         File f1 = new File(dir, "file1.txt");
         File f2 = new File(dir, "file2.txt");
         File f3 = new File(dir, "file3.txt");

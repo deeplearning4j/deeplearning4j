@@ -22,15 +22,15 @@ package org.deeplearning4j.cuda.lstm;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.cuda.dropout.CudnnDropoutHelper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ValidateCudnnDropout extends BaseDL4JTest {
 

@@ -22,8 +22,8 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -36,12 +36,12 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class BaseCudaDataBufferTest extends BaseND4JTest {
 
-    @Before
+    @BeforeEach
     public void setUp() {
         //
     }

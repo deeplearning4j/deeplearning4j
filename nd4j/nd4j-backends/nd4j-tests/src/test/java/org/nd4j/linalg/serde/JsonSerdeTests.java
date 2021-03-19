@@ -24,8 +24,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.val;
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,13 +41,10 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JsonSerdeTests extends BaseNd4jTest {
+public class JsonSerdeTests extends BaseNd4jTestWithBackends {
 
-    public JsonSerdeTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
@@ -53,8 +52,9 @@ public class JsonSerdeTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testNDArrayTextSerializer() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNDArrayTextSerializer(Nd4jBackend backend) throws Exception {
         for(char order : new char[]{'c', 'f'}) {
             Nd4j.factory().setOrder(order);
             for (DataType globalDT : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
@@ -83,15 +83,16 @@ public class JsonSerdeTests extends BaseNd4jTest {
 //                    System.out.println("\n\n\n");
 
                     TestClass deserialized = om.readValue(s, TestClass.class);
-                    assertEquals(dt.toString(), tc, deserialized);
+                    assertEquals(tc, deserialized,dt.toString());
                 }
             }
         }
     }
 
 
-    @Test
-    public void testBackwardCompatability() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBackwardCompatability(Nd4jBackend backend) throws Exception {
         Nd4j.getNDArrayFactory().setOrder('f');
 
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {

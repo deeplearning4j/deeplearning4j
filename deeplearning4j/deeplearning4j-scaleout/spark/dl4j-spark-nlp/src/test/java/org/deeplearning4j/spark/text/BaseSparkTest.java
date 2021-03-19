@@ -24,8 +24,8 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -40,12 +40,12 @@ public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable
         return 120000L;
     }
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         sc = getContext();
     }
 
-    @After
+    @AfterEach
     public void after() {
         if(sc != null) {
             sc.close();

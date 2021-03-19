@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -25,94 +24,87 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVVariableSlidingWindowRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
-
 import java.util.LinkedList;
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
-
-public class CSVVariableSlidingWindowRecordReaderTest  extends BaseND4JTest {
+@DisplayName("Csv Variable Sliding Window Record Reader Test")
+class CSVVariableSlidingWindowRecordReaderTest extends BaseND4JTest {
 
     @Test
-    public void testCSVVariableSlidingWindowRecordReader() throws Exception {
+    @DisplayName("Test CSV Variable Sliding Window Record Reader")
+    void testCSVVariableSlidingWindowRecordReader() throws Exception {
         int maxLinesPerSequence = 3;
-
         SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence);
         seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         CSVRecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         int count = 0;
         while (seqRR.hasNext()) {
             List<List<Writable>> next = seqRR.sequenceRecord();
-
-            if(count==maxLinesPerSequence-1) {
+            if (count == maxLinesPerSequence - 1) {
                 LinkedList<List<Writable>> expected = new LinkedList<>();
                 for (int i = 0; i < maxLinesPerSequence; i++) {
                     expected.addFirst(rr.next());
                 }
                 assertEquals(expected, next);
-
             }
-            if(count==maxLinesPerSequence) {
+            if (count == maxLinesPerSequence) {
                 assertEquals(maxLinesPerSequence, next.size());
             }
-            if(count==0) { // first seq should be length 1
+            if (count == 0) {
+                // first seq should be length 1
                 assertEquals(1, next.size());
             }
-            if(count>151) { // last seq should be length 1
+            if (count > 151) {
+                // last seq should be length 1
                 assertEquals(1, next.size());
             }
-
             count++;
         }
-
         assertEquals(152, count);
     }
 
     @Test
-    public void testCSVVariableSlidingWindowRecordReaderStride() throws Exception {
+    @DisplayName("Test CSV Variable Sliding Window Record Reader Stride")
+    void testCSVVariableSlidingWindowRecordReaderStride() throws Exception {
         int maxLinesPerSequence = 3;
         int stride = 2;
-
         SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence, stride);
         seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         CSVRecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         int count = 0;
         while (seqRR.hasNext()) {
             List<List<Writable>> next = seqRR.sequenceRecord();
-
-            if(count==maxLinesPerSequence-1) {
+            if (count == maxLinesPerSequence - 1) {
                 LinkedList<List<Writable>> expected = new LinkedList<>();
-                for(int s = 0; s < stride; s++) {
+                for (int s = 0; s < stride; s++) {
                     expected = new LinkedList<>();
                     for (int i = 0; i < maxLinesPerSequence; i++) {
                         expected.addFirst(rr.next());
                     }
                 }
                 assertEquals(expected, next);
-
             }
-            if(count==maxLinesPerSequence) {
+            if (count == maxLinesPerSequence) {
                 assertEquals(maxLinesPerSequence, next.size());
             }
-            if(count==0) { // first seq should be length 2
+            if (count == 0) {
+                // first seq should be length 2
                 assertEquals(2, next.size());
             }
-            if(count>151) { // last seq should be length 1
+            if (count > 151) {
+                // last seq should be length 1
                 assertEquals(1, next.size());
             }
-
             count++;
         }
-
         assertEquals(76, count);
     }
 }

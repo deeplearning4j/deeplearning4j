@@ -21,11 +21,12 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,23 +39,19 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
-@Ignore
-@RunWith(Parameterized.class)
-public class LongTests extends BaseNd4jTest {
+@Disabled
 
-    DataType initialType;
+public class LongTests extends BaseNd4jTestWithBackends {
 
-    public LongTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+    DataType initialType = Nd4j.dataType();
 
-    @Test
-    public void testSomething1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSomething1(Nd4jBackend backend) {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(8000000, 300);
 
@@ -79,8 +76,9 @@ public class LongTests extends BaseNd4jTest {
         assertNotEquals(rowA, rowB);
     }
 
-    @Test
-    public void testSomething2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSomething2(Nd4jBackend backend) {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(100, 10);
 
@@ -105,8 +103,9 @@ public class LongTests extends BaseNd4jTest {
         assertNotEquals(rowA, rowB);
     }
 
-    @Test
-    public void testLongTadOffsets1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOffsets1(Nd4jBackend backend) {
         INDArray huge = Nd4j.create(230000000, 10);
 
         Pair<DataBuffer, DataBuffer> tad = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(huge, 1);
@@ -114,8 +113,9 @@ public class LongTests extends BaseNd4jTest {
         assertEquals(230000000, tad.getSecond().length());
     }
 
-    @Test
-    public void testLongTadOp1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOp1(Nd4jBackend backend) {
 
         double exp = Transforms.manhattanDistance(Nd4j.create(1000).assign(1.0), Nd4j.create(1000).assign(2.0));
 
@@ -123,7 +123,7 @@ public class LongTests extends BaseNd4jTest {
         INDArray hugeY = Nd4j.create(1, 1000).assign(2.0);
 
         for (int x = 0; x < hugeX.rows(); x++) {
-            assertEquals("Failed at row " + x, 1000, hugeX.getRow(x).sumNumber().intValue());
+            assertEquals(1000, hugeX.getRow(x).sumNumber().intValue(),"Failed at row " + x);
         }
 
         INDArray result = Nd4j.getExecutioner().exec(new ManhattanDistance(hugeX, hugeY, 1));
@@ -132,52 +132,57 @@ public class LongTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testLongTadOp2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOp2(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
         hugeX.addiRowVector(Nd4j.create(1000).assign(2.0));
 
         for (int x = 0; x < hugeX.rows(); x++) {
-            assertEquals("Failed at row " + x, 3000, hugeX.getRow(x).sumNumber().intValue());
+            assertEquals( hugeX.getRow(x).sumNumber().intValue(),3000,"Failed at row " + x);
         }
     }
 
-    @Test
-    public void testLongTadOp2_micro() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOp2_micro(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(230, 1000).assign(1.0);
         hugeX.addiRowVector(Nd4j.create(1000).assign(2.0));
 
         for (int x = 0; x < hugeX.rows(); x++) {
-            assertEquals("Failed at row " + x, 3000, hugeX.getRow(x).sumNumber().intValue());
+            assertEquals( 3000, hugeX.getRow(x).sumNumber().intValue(),"Failed at row " + x);
         }
     }
 
-    @Test
-    public void testLongTadOp3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOp3(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
         INDArray mean = hugeX.mean(1);
 
         for (int x = 0; x < hugeX.rows(); x++) {
-            assertEquals("Failed at row " + x, 1.0, mean.getDouble(x), 1e-5);
+            assertEquals( 1.0, mean.getDouble(x), 1e-5,"Failed at row " + x);
         }
     }
 
-    @Test
-    public void testLongTadOp4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOp4(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
         INDArray mean = hugeX.argMax(1);
 
         for (int x = 0; x < hugeX.rows(); x++) {
-            assertEquals("Failed at row " + x, 0.0, mean.getDouble(x), 1e-5);
+            assertEquals(0.0, mean.getDouble(x), 1e-5,"Failed at row " + x);
         }
     }
 
-    @Test
-    public void testLongTadOp5() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLongTadOp5(Nd4jBackend backend) {
 
         List<INDArray> list = new ArrayList<>();
         for (int i = 0; i < 2300000; i++) {
@@ -187,7 +192,7 @@ public class LongTests extends BaseNd4jTest {
         INDArray hugeX = Nd4j.vstack(list);
 
         for (int x = 0; x < hugeX.rows(); x++) {
-            assertEquals("Failed at row " + x, 2.0, hugeX.getRow(x).meanNumber().doubleValue(), 1e-5);
+            assertEquals(2.0, hugeX.getRow(x).meanNumber().doubleValue(), 1e-5,"Failed at row " + x);
         }
     }
 

@@ -20,8 +20,8 @@
 
 package org.nd4j.samediff.frameworkimport.tensorflow.loader
 
-import junit.framework.Assert.assertEquals
 import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
@@ -42,7 +42,7 @@ class TestTensorflowProcessLoader {
                 val process = registry().lookupOpMappingProcess(name)
                 val serialized = process.serialize()
                 val created = loader.createProcess(serialized)
-                assertEquals("Op name $name failed with process tensor rules ${process.tensorMappingRules()} and created tensor rules ${created.tensorMappingRules()} with attributes ${process.attributeMappingRules()} and created attribute rules ${created.attributeMappingRules()}",process,created)
+                assertEquals(process,created,"Op name $name failed with process tensor rules ${process.tensorMappingRules()} and created tensor rules ${created.tensorMappingRules()} with attributes ${process.attributeMappingRules()} and created attribute rules ${created.attributeMappingRules()}")
             }
 
         }

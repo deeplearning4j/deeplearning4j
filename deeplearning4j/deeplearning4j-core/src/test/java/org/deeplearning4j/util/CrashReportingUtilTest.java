@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.util;
 
 import org.apache.commons.io.FileUtils;
@@ -35,46 +34,50 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
 import java.io.File;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.*;
-
-public class CrashReportingUtilTest extends BaseDL4JTest {
+@DisplayName("Crash Reporting Util Test")
+class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
         return 120000;
     }
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir
+    public Path testDir;
 
     @Override
-    public DataType getDataType(){
+    public DataType getDataType() {
         return DataType.FLOAT;
     }
 
-    @After
-    public void after(){
-        //Reset dir
+    @AfterEach
+    void after() {
+        // Reset dir
         CrashReportingUtil.crashDumpOutputDirectory(null);
     }
 
     @Test
-    public void test() throws Exception {
-        File dir = testDir.newFolder();
+    @DisplayName("Test")
+    @Disabled
+    void test() throws Exception {
+        File dir = testDir.toFile();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
-
         int kernel = 2;
         int stride = 1;
         int padding = 0;
@@ -82,57 +85,28 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
         int inputDepth = 1;
         int height = 28;
         int width = 28;
-
-
-        MultiLayerConfiguration conf =
-                new NeuralNetConfiguration.Builder().updater(new NoOp())
-
-                        .dist(new NormalDistribution(0, 1))
-                        .list().layer(0,
-                        new ConvolutionLayer.Builder()
-                                .kernelSize(kernel, kernel)
-                                .stride(stride, stride)
-                                .padding(padding, padding)
-                                .nIn(inputDepth)
-                                .nOut(3).build())
-                        .layer(1, new SubsamplingLayer.Builder(poolingType)
-                                .kernelSize(kernel, kernel)
-                                .stride(stride, stride)
-                                .padding(padding, padding)
-                                .build())
-                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                .activation(Activation.SOFTMAX)
-                                .nOut(10).build())
-                        .setInputType(InputType.convolutionalFlat(height, width,
-                                inputDepth))
-                        .build();
-
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).dist(new NormalDistribution(0, 1)).list().layer(0, new ConvolutionLayer.Builder().kernelSize(kernel, kernel).stride(stride, stride).padding(padding, padding).nIn(inputDepth).nOut(3).build()).layer(1, new SubsamplingLayer.Builder(poolingType).kernelSize(kernel, kernel).stride(stride, stride).padding(padding, padding).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(10).build()).setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.addListeners(new ScoreIterationListener(1));
-
-        //Test net that hasn't been trained yet
+        // Test net that hasn't been trained yet
         Exception e = new Exception();
         CrashReportingUtil.writeMemoryCrashDump(net, e);
-
         File[] list = dir.listFiles();
         assertNotNull(list);
         assertEquals(1, list.length);
         String str = FileUtils.readFileToString(list[0]);
-//        System.out.println(str);
+        // System.out.println(str);
         assertTrue(str.contains("Network Information"));
         assertTrue(str.contains("Layer Helpers"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener"));
-
-
-        //Train:
+        // Train:
         DataSetIterator iter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 5);
         net.fit(iter);
-        dir = testDir.newFolder();
+        dir = testDir.toFile();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
         CrashReportingUtil.writeMemoryCrashDump(net, e);
-
         list = dir.listFiles();
         assertNotNull(list);
         assertEquals(1, list.length);
@@ -141,36 +115,26 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
         assertTrue(str.contains("Layer Helpers"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener(1)"));
-
-//        System.out.println("///////////////////////////////////////////////////////////");
-//        System.out.println(str);
-//        System.out.println("///////////////////////////////////////////////////////////");
-
-
-        //Also test manual memory info
+        // System.out.println("///////////////////////////////////////////////////////////");
+        // System.out.println(str);
+        // System.out.println("///////////////////////////////////////////////////////////");
+        // Also test manual memory info
         String mlnMemoryInfo = net.memoryInfo(32, InputType.convolutionalFlat(28, 28, 1));
-//        System.out.println("///////////////////////////////////////////////////////////");
-//        System.out.println(mlnMemoryInfo);
-//        System.out.println("///////////////////////////////////////////////////////////");
-
+        // System.out.println("///////////////////////////////////////////////////////////");
+        // System.out.println(mlnMemoryInfo);
+        // System.out.println("///////////////////////////////////////////////////////////");
         assertTrue(mlnMemoryInfo.contains("Network Information"));
         assertTrue(mlnMemoryInfo.contains("Layer Helpers"));
         assertTrue(mlnMemoryInfo.contains("JavaCPP"));
         assertTrue(mlnMemoryInfo.contains("ScoreIterationListener(1)"));
-
-
-
-        ////////////////////////////////////////
-        //Same thing on ComputationGraph:
-        dir = testDir.newFolder();
+        // //////////////////////////////////////
+        // Same thing on ComputationGraph:
+        dir = testDir.toFile();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
-
         ComputationGraph cg = net.toComputationGraph();
         cg.setListeners(new ScoreIterationListener(1));
-
-        //Test net that hasn't been trained yet
+        // Test net that hasn't been trained yet
         CrashReportingUtil.writeMemoryCrashDump(cg, e);
-
         list = dir.listFiles();
         assertNotNull(list);
         assertEquals(1, list.length);
@@ -179,13 +143,11 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
         assertTrue(str.contains("Layer Helpers"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener(1)"));
-
-        //Train:
+        // Train:
         cg.fit(iter);
-        dir = testDir.newFolder();
+        dir = testDir.toFile();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
         CrashReportingUtil.writeMemoryCrashDump(cg, e);
-
         list = dir.listFiles();
         assertNotNull(list);
         assertEquals(1, list.length);
@@ -194,24 +156,17 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
         assertTrue(str.contains("Layer Helpers"));
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener(1)"));
-
-//        System.out.println("///////////////////////////////////////////////////////////");
-//        System.out.println(str);
-//        System.out.println("///////////////////////////////////////////////////////////");
-
-
-        //Also test manual memory info
+        // System.out.println("///////////////////////////////////////////////////////////");
+        // System.out.println(str);
+        // System.out.println("///////////////////////////////////////////////////////////");
+        // Also test manual memory info
         String cgMemoryInfo = cg.memoryInfo(32, InputType.convolutionalFlat(28, 28, 1));
-//        System.out.println("///////////////////////////////////////////////////////////");
-//        System.out.println(cgMemoryInfo);
-//        System.out.println("///////////////////////////////////////////////////////////");
-
+        // System.out.println("///////////////////////////////////////////////////////////");
+        // System.out.println(cgMemoryInfo);
+        // System.out.println("///////////////////////////////////////////////////////////");
         assertTrue(cgMemoryInfo.contains("Network Information"));
         assertTrue(cgMemoryInfo.contains("Layer Helpers"));
         assertTrue(cgMemoryInfo.contains("JavaCPP"));
         assertTrue(cgMemoryInfo.contains("ScoreIterationListener(1)"));
-
     }
-
-
 }

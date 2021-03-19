@@ -26,19 +26,22 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TestJoin extends BaseND4JTest {
 
     @Test
-    public void testJoin() {
+    public void testJoin(@TempDir Path testDir) {
 
         Schema firstSchema =
                         new Schema.Builder().addColumnString("keyColumn").addColumnsInteger("first0", "first1").build();
@@ -46,20 +49,20 @@ public class TestJoin extends BaseND4JTest {
         Schema secondSchema = new Schema.Builder().addColumnString("keyColumn").addColumnsInteger("second0").build();
 
         List<List<Writable>> first = new ArrayList<>();
-        first.add(Arrays.asList((Writable) new Text("key0"), new IntWritable(0), new IntWritable(1)));
-        first.add(Arrays.asList((Writable) new Text("key1"), new IntWritable(10), new IntWritable(11)));
+        first.add(Arrays.asList(new Text("key0"), new IntWritable(0), new IntWritable(1)));
+        first.add(Arrays.asList(new Text("key1"), new IntWritable(10), new IntWritable(11)));
 
         List<List<Writable>> second = new ArrayList<>();
-        second.add(Arrays.asList((Writable) new Text("key0"), new IntWritable(100)));
-        second.add(Arrays.asList((Writable) new Text("key1"), new IntWritable(110)));
+        second.add(Arrays.asList(new Text("key0"), new IntWritable(100)));
+        second.add(Arrays.asList(new Text("key1"), new IntWritable(110)));
 
         Join join = new Join.Builder(Join.JoinType.Inner).setJoinColumns("keyColumn")
                         .setSchemas(firstSchema, secondSchema).build();
 
         List<List<Writable>> expected = new ArrayList<>();
-        expected.add(Arrays.asList((Writable) new Text("key0"), new IntWritable(0), new IntWritable(1),
+        expected.add(Arrays.asList(new Text("key0"), new IntWritable(0), new IntWritable(1),
                         new IntWritable(100)));
-        expected.add(Arrays.asList((Writable) new Text("key1"), new IntWritable(10), new IntWritable(11),
+        expected.add(Arrays.asList(new Text("key1"), new IntWritable(10), new IntWritable(11),
                         new IntWritable(110)));
 
 
@@ -94,27 +97,31 @@ public class TestJoin extends BaseND4JTest {
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testJoinValidation() {
+        assertThrows(IllegalArgumentException.class,() -> {
+            Schema firstSchema = new Schema.Builder().addColumnString("keyColumn1").addColumnsInteger("first0", "first1")
+                    .build();
 
-        Schema firstSchema = new Schema.Builder().addColumnString("keyColumn1").addColumnsInteger("first0", "first1")
-                        .build();
+            Schema secondSchema = new Schema.Builder().addColumnString("keyColumn2").addColumnsInteger("second0").build();
 
-        Schema secondSchema = new Schema.Builder().addColumnString("keyColumn2").addColumnsInteger("second0").build();
+            new Join.Builder(Join.JoinType.Inner).setJoinColumns("keyColumn1", "thisDoesntExist")
+                    .setSchemas(firstSchema, secondSchema).build();
+        });
 
-        new Join.Builder(Join.JoinType.Inner).setJoinColumns("keyColumn1", "thisDoesntExist")
-                        .setSchemas(firstSchema, secondSchema).build();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test()
     public void testJoinValidation2() {
+       assertThrows(IllegalArgumentException.class,() -> {
+           Schema firstSchema = new Schema.Builder().addColumnString("keyColumn1").addColumnsInteger("first0", "first1")
+                   .build();
 
-        Schema firstSchema = new Schema.Builder().addColumnString("keyColumn1").addColumnsInteger("first0", "first1")
-                        .build();
+           Schema secondSchema = new Schema.Builder().addColumnString("keyColumn2").addColumnsInteger("second0").build();
 
-        Schema secondSchema = new Schema.Builder().addColumnString("keyColumn2").addColumnsInteger("second0").build();
+           new Join.Builder(Join.JoinType.Inner).setJoinColumns("keyColumn1").setSchemas(firstSchema, secondSchema)
+                   .build();
+       });
 
-        new Join.Builder(Join.JoinType.Inner).setJoinColumns("keyColumn1").setSchemas(firstSchema, secondSchema)
-                        .build();
     }
 }

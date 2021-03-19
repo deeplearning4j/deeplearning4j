@@ -21,14 +21,14 @@
 package org.nd4j.common.primitives;
 
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.primitives.Atomic;
 import org.nd4j.common.util.SerializationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AtomicTest {
 

@@ -35,9 +35,10 @@ import org.datavec.image.transform.FlipImageTransform;
 import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.PipelineImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -46,24 +47,24 @@ import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestObjectDetectionRecordReader {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
-    public void test() throws Exception {
+    public void test(@TempDir Path testDir) throws Exception {
         for(boolean nchw : new boolean[]{true, false}) {
             ImageObjectLabelProvider lp = new TestImageObjectDetectionLabelProvider();
 
-            File f = testDir.newFolder();
+            File f = testDir.toFile();
             new ClassPathResource("datavec-data-image/objdetect/").copyDirectory(f);
 
             String path = new File(f, "000012.jpg").getParent();

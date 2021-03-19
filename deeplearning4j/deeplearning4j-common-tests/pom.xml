@@ -34,10 +34,18 @@
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -56,7 +64,7 @@
 
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
+            <id>nd4j-tests-cpu</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
@@ -67,7 +75,7 @@
             </dependencies>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
+            <id>nd4j-tests-cuda</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>

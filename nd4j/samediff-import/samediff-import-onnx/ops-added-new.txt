@@ -1,2 +1,3 @@
-Constant,input
-Exp,output
+Constant,x
+Constant,y
+Or,output

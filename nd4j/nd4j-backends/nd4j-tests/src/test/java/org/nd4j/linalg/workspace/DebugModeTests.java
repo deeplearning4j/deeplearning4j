@@ -22,12 +22,13 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -39,24 +40,21 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@RunWith(Parameterized.class)
-public class DebugModeTests extends BaseNd4jTest {
-    DataType initialType;
 
-    public DebugModeTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+public class DebugModeTests extends BaseNd4jTestWithBackends {
+    DataType initialType = Nd4j.dataType();
 
-    @Before
+
+
+    @BeforeEach
     public void turnMeUp() {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.DISABLED);
     }
 
-    @After
+    @AfterEach
     public void turnMeDown() {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.DISABLED);
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
@@ -68,8 +66,9 @@ public class DebugModeTests extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test
-    public void testDebugMode_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDebugMode_1(Nd4jBackend backend) {
         assertEquals(DebugMode.DISABLED, Nd4j.getWorkspaceManager().getDebugMode());
 
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
@@ -77,8 +76,9 @@ public class DebugModeTests extends BaseNd4jTest {
         assertEquals(DebugMode.SPILL_EVERYTHING, Nd4j.getWorkspaceManager().getDebugMode());
     }
 
-    @Test
-    public void testSpillMode_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpillMode_1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
 
         val basicConfig = WorkspaceConfiguration.builder()
@@ -103,8 +103,9 @@ public class DebugModeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testSpillMode_2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpillMode_2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
 
         val basicConfig = WorkspaceConfiguration.builder()
@@ -137,8 +138,9 @@ public class DebugModeTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testBypassMode_1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBypassMode_1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);
 
         val basicConfig = WorkspaceConfiguration.builder()

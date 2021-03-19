@@ -34,14 +34,14 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestComponentSerialization extends BaseDL4JTest {
 

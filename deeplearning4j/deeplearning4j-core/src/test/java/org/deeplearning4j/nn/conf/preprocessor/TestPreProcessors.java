@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +43,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestPreProcessors extends BaseDL4JTest {
 
@@ -186,8 +186,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             //Again epsilons and activations have same shape, we can do this (even though it's not the intended use)
             INDArray epsilon2d1 = proc.backprop(activations3dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             INDArray epsilon2d2 = proc.backprop(activations3df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-            assertEquals(msg, activations2dc, epsilon2d1);
-            assertEquals(msg, activations2dc, epsilon2d2);
+            assertEquals(activations2dc, epsilon2d1, msg);
+            assertEquals(activations2dc, epsilon2d2, msg);
 
             //Also check backprop with 3d activations in f order vs. c order:
             INDArray act3d_c = Nd4j.create(activations3dc.shape(), 'c');
@@ -195,8 +195,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             INDArray act3d_f = Nd4j.create(activations3dc.shape(), 'f');
             act3d_f.assign(activations3dc);
 
-            assertEquals(msg, activations2dc, proc.backprop(act3d_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces()));
-            assertEquals(msg, activations2dc, proc.backprop(act3d_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces()));
+            assertEquals(activations2dc, proc.backprop(act3d_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces()), msg);
+            assertEquals(activations2dc, proc.backprop(act3d_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces()), msg);
         }
     }
 
@@ -245,14 +245,14 @@ public class TestPreProcessors extends BaseDL4JTest {
                             //Check shape of outputs:
                             val prod = nChannels * inputHeight * inputWidth;
                             INDArray activationsRnn = proc.preProcess(activationsCnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-                            assertArrayEquals(msg, new long[] {miniBatchSize, prod, timeSeriesLength},
-                                            activationsRnn.shape());
+                            assertArrayEquals(new long[] {miniBatchSize, prod, timeSeriesLength},
+                                    activationsRnn.shape(),msg);
 
                             //Check backward pass. Given that activations and epsilons have same shape, they should
                             //be opposite operations - i.e., get the same thing back out
                             INDArray twiceProcessed = proc.backprop(activationsRnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-                            assertArrayEquals(msg, activationsCnn.shape(), twiceProcessed.shape());
-                            assertEquals(msg, activationsCnn, twiceProcessed);
+                            assertArrayEquals(activationsCnn.shape(), twiceProcessed.shape(),msg);
+                            assertEquals(activationsCnn, twiceProcessed, msg);
 
                             //Second way to check: compare to ComposableInputPreProcessor(CNNtoFF, FFtoRNN)
                             InputPreProcessor compProc = new ComposableInputPreProcessor(
@@ -260,7 +260,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             new FeedForwardToRnnPreProcessor());
 
                             INDArray activationsRnnComp = compProc.preProcess(activationsCnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-                            assertEquals(msg, activationsRnnComp, activationsRnn);
+                            assertEquals(activationsRnnComp, activationsRnn, msg);
 
                             INDArray epsilonsRnn = Nd4j.rand(new int[] {miniBatchSize,
                                             nChannels * inputHeight * inputWidth, timeSeriesLength});
@@ -276,7 +276,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                 System.out.println(Arrays.toString(epsilonsCnn.shape()));
                                 System.out.println(epsilonsCnn);
                             }
-                            assertEquals(msg, epsilonsCnnComp, epsilonsCnn);
+                            assertEquals(epsilonsCnnComp, epsilonsCnn, msg);
                         }
                     }
                 }

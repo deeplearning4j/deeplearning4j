@@ -32,8 +32,9 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -42,7 +43,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 public class TestConvolutionalListener {
 
     @Test
-    @Ignore //Should be run manually
+    @Disabled
     public void testUI() throws Exception {
 
         int nChannels = 1; // Number of input channels

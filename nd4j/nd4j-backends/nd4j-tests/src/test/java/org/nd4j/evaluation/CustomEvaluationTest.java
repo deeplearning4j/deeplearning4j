@@ -20,30 +20,30 @@
 
 package org.nd4j.evaluation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.evaluation.custom.CustomEvaluation;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.primitives.Pair;
 
-public class CustomEvaluationTest extends BaseNd4jTest {
+public class CustomEvaluationTest extends BaseNd4jTestWithBackends {
 
-    public CustomEvaluationTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
     @Override
     public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void customEvalTest(){
-        CustomEvaluation accuracyEval = new CustomEvaluation<Pair<Number, Long>>(
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void customEvalTest(Nd4jBackend backend){
+        CustomEvaluation accuracyEval = new CustomEvaluation<>(
                 (labels, pred, mask, meta) -> new Pair<>(labels.eq(pred).castTo(DataType.INT).sumNumber(), labels.size(0)),
                 CustomEvaluation.mergeConcatenate());
 
@@ -61,7 +61,7 @@ public class CustomEvaluationTest extends BaseNd4jTest {
                 }
         ));
 
-        assertEquals("Accuracy", acc, 3.0/5, 0.001);
+        assertEquals(acc, 3.0/5, 0.001,"Accuracy");
 
     }
 

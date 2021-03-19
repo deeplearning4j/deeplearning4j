@@ -79,9 +79,17 @@
             <artifactId>deeplearning4j-nn</artifactId>
             <version>${project.version}</version>
         </dependency>
+            <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.solr</groupId>
@@ -101,29 +109,12 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>nd4j-tests-cpu</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-11.0</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-11.0</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>nd4j-tests-cuda</id>
         </profile>
     </profiles>
 </project>

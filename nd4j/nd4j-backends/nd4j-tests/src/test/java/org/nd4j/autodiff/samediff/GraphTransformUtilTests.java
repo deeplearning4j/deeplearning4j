@@ -21,13 +21,15 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.transform.GraphTransformUtil;
 import org.nd4j.autodiff.samediff.transform.OpPredicate;
 import org.nd4j.autodiff.samediff.transform.SubGraph;
 import org.nd4j.autodiff.samediff.transform.SubGraphPredicate;
 import org.nd4j.autodiff.samediff.transform.SubGraphProcessor;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
@@ -37,24 +39,22 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class GraphTransformUtilTests extends BaseNd4jTest {
+public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
 
-    public GraphTransformUtilTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
     public char ordering(){
         return 'c';
     }
 
-    @Test
-    public void testBasic(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBasic(Nd4jBackend backend){
 
         SameDiff sd = SameDiff.create();
         SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, -1, 32);
@@ -92,8 +92,9 @@ public class GraphTransformUtilTests extends BaseNd4jTest {
         assertEquals(0, sg2.getChildNodes().size());
     }
 
-    @Test
-    public void testSubgraphReplace1(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSubgraphReplace1(Nd4jBackend backend){
 
         SameDiff sd = SameDiff.create();
         SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, -1, 4);

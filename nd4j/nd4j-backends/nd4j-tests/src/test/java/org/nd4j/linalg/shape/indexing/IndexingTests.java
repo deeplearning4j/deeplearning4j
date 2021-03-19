@@ -22,13 +22,13 @@ package org.nd4j.linalg.shape.indexing;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ErrorCollector;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Disabled;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,24 +37,19 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Gibson
  */
 @Slf4j
-@RunWith(Parameterized.class)
-public class IndexingTests extends BaseNd4jTest {
 
-    @Rule
-    public ErrorCollector collector = new ErrorCollector();
+public class IndexingTests extends BaseNd4jTestWithBackends {
 
-    public IndexingTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testGet() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGet(Nd4jBackend backend) {
 //        System.out.println("Testing sub-array put and get with a 3D array ...");
 
         INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
@@ -114,8 +109,9 @@ public class IndexingTests extends BaseNd4jTest {
     /*
         Simple test that checks indexing through different ways that fails
      */
-    @Test
-    public void testSimplePoint() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSimplePoint(Nd4jBackend backend) {
         INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
 
         /*
@@ -136,17 +132,18 @@ public class IndexingTests extends BaseNd4jTest {
         expected.putScalar(0, 1, 20);
         expected.putScalar(1, 0, 14);
         expected.putScalar(1, 1, 23);
-        assertEquals("View with two get", expected, viewTwo);
-        assertEquals("View with one get", expected, viewOne); //FAILS!
-        assertEquals("Two views should be the same", viewOne, viewTwo); //Obviously fails
+        assertEquals(expected, viewTwo,"View with two get");
+        assertEquals(expected, viewOne,"View with one get"); //FAILS!
+        assertEquals(viewOne, viewTwo,"Two views should be the same"); //Obviously fails
     }
 
     /*
     This is the same as the above test - just tests every possible window with a slice from the 0th dim
     They all fail - so it's possibly unrelated to the value of the index
     */
-    @Test
-    public void testPointIndexing() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPointIndexing(Nd4jBackend backend) {
         int slices = 5;
         int rows = 5;
         int cols = 5;
@@ -164,9 +161,9 @@ public class IndexingTests extends BaseNd4jTest {
                     INDArray sameView = A.get(ndi_Slice, ndi_I, ndi_J);
                     String failureMessage = String.format("Fails for (%d , %d - %d, %d - %d)\n", s, i, rows, j, cols);
                     try {
-                        assertEquals(failureMessage, aView, sameView);
+                        assertEquals(aView, sameView,failureMessage);
                     } catch (Throwable t) {
-                        collector.addError(t);
+                        log.error("Error with view",t);
                     }
                 }
             }
@@ -175,11 +172,11 @@ public class IndexingTests extends BaseNd4jTest {
 
 
     @Test
-    @Ignore //added recently: For some reason this is passing.
+    @Disabled //added recently: For some reason this is passing.
     // The test .equals fails on a comparison of row  vs column vector.
     //TODO: possibly figure out what's going on here at some point?
     // - Adam
-    public void testTensorGet() {
+    public void testTensorGet(Nd4jBackend backend) {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         /*
         * [[[  1.,   7.],
@@ -200,8 +197,9 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(secondAssertion, secondTest);
     }
 
-    @Test
-    public void concatGetBug() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void concatGetBug(Nd4jBackend backend) {
         int width = 5;
         int height = 4;
         int depth = 3;
@@ -225,8 +223,9 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(second, get); //Fails
     }
 
-    @Test
-    public void testShape() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testShape(Nd4jBackend backend) {
         INDArray ndarray = Nd4j.create(new float[][] {{1f, 2f}, {3f, 4f}});
         INDArray subarray = ndarray.get(NDArrayIndex.point(0), NDArrayIndex.all());
         assertTrue(subarray.isRowVector());
@@ -234,8 +233,9 @@ public class IndexingTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{2}, shape);
     }
 
-    @Test
-    public void testGetRows() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetRows(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray testAssertion = Nd4j.create(new double[][] {{5, 8}, {6, 9}});
 
@@ -244,8 +244,9 @@ public class IndexingTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testFirstColumn() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFirstColumn(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[][] {{5, 6}, {7, 8}});
 
         INDArray assertion = Nd4j.create(new double[] {5, 7});
@@ -254,8 +255,9 @@ public class IndexingTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testLinearIndex() {
+     @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLinearIndex(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         for (int i = 0; i < linspace.length(); i++) {
             assertEquals(i + 1, linspace.getDouble(i), 1e-1);

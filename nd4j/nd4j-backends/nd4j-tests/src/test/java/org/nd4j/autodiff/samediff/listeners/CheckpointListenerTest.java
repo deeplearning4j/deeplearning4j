@@ -20,15 +20,15 @@
 
 package org.nd4j.autodiff.samediff.listeners;
 
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.checkpoint.CheckpointListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -37,28 +37,24 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CheckpointListenerTest extends BaseNd4jTest {
+public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
+    @TempDir Path testDir;
 
-    public CheckpointListenerTest(Nd4jBackend backend){
-        super(backend);
-    }
 
     @Override
     public char ordering(){
         return 'c';
     }
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -96,9 +92,10 @@ public class CheckpointListenerTest extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testCheckpointEveryEpoch() throws Exception {
-        File dir = testDir.newFolder();
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCheckpointEveryEpoch(Nd4jBackend backend) throws Exception {
+        File dir = testDir.toFile();
 
         SameDiff sd = getModel();
         CheckpointListener l = CheckpointListener.builder(dir)
@@ -130,9 +127,10 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         assertTrue(found1 && found2 && found3);
     }
 
-    @Test
-    public void testCheckpointEvery5Iter() throws Exception {
-        File dir = testDir.newFolder();
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCheckpointEvery5Iter(Nd4jBackend backend) throws Exception {
+        File dir = testDir.toFile();
 
         SameDiff sd = getModel();
         CheckpointListener l = CheckpointListener.builder(dir)
@@ -163,15 +161,16 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         }
         assertEquals(5, files.length);  //4 checkpoints and 1 text file (metadata)
 
-        for( int i=0; i<found.length; i++ ){
-            assertTrue(names.get(i), found[i]);
+        for( int i = 0; i < found.length; i++) {
+            assertTrue(found[i], names.get(i));
         }
     }
 
 
-    @Test
-    public void testCheckpointListenerEveryTimeUnit() throws Exception {
-        File dir = testDir.newFolder();
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCheckpointListenerEveryTimeUnit(Nd4jBackend backend) throws Exception {
+        File dir = testDir.toFile();
         SameDiff sd = getModel();
 
         CheckpointListener l = new CheckpointListener.Builder(dir)
@@ -200,7 +199,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         for(File f : files){
             String s = f.getAbsolutePath();
 //            System.out.println(s);
-            for( int i=0; i<names.size(); i++ ){
+            for( int i = 0; i < names.size(); i++ ){
                 if(s.contains(names.get(i))){
                     found[i] = true;
                     break;
@@ -208,14 +207,15 @@ public class CheckpointListenerTest extends BaseNd4jTest {
             }
         }
 
-        for( int i=0; i<found.length; i++ ){
-            assertTrue(names.get(i), found[i]);
+        for( int i = 0; i < found.length; i++) {
+            assertTrue(found[i], names.get(i));
         }
     }
 
-    @Test
-    public void testCheckpointListenerKeepLast3AndEvery3() throws Exception {
-        File dir = testDir.newFolder();
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCheckpointListenerKeepLast3AndEvery3(Nd4jBackend backend) throws Exception {
+        File dir = testDir.toFile();
         SameDiff sd = getModel();
 
         CheckpointListener l = new CheckpointListener.Builder(dir)
@@ -236,7 +236,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         Set<Integer> cpNums = new HashSet<>();
         Set<Integer> epochNums = new HashSet<>();
         for(File f2 : files){
-            if(!f2.getPath().endsWith(".bin")){
+            if(!f2.getPath().endsWith(".bin")) {
                 continue;
             }
             count++;
@@ -251,9 +251,9 @@ public class CheckpointListenerTest extends BaseNd4jTest {
             cpNums.add(epochNum);
         }
 
-        assertEquals(cpNums.toString(), 5, cpNums.size());
-        Assert.assertTrue(cpNums.toString(), cpNums.containsAll(Arrays.asList(2, 5, 7, 8, 9)));
-        Assert.assertTrue(epochNums.toString(), epochNums.containsAll(Arrays.asList(5, 11, 15, 17, 19)));
+        assertEquals(5, cpNums.size(),cpNums.toString());
+        assertTrue(cpNums.containsAll(Arrays.asList(2, 5, 7, 8, 9)), cpNums.toString());
+        assertTrue(epochNums.containsAll(Arrays.asList(5, 11, 15, 17, 19)), epochNums.toString());
 
         assertEquals(5, l.availableCheckpoints().size());
     }

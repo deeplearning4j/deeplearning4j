@@ -20,7 +20,6 @@
 package org.nd4j.common.tests;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
@@ -28,8 +27,8 @@ import org.reflections.util.ConfigurationBuilder;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
 
 @Slf4j
 public abstract class AbstractAssertTestsClass extends BaseND4JTest {
@@ -46,7 +45,7 @@ public abstract class AbstractAssertTestsClass extends BaseND4JTest {
     }
 
     @Test
-    public void checkTestClasses(){
+    public void checkTestClasses() {
         Reflections reflections = new Reflections(new ConfigurationBuilder()
                 .setUrls(ClasspathHelper.forPackage(getPackageName()))
                 .setScanners(new MethodAnnotationsScanner()));

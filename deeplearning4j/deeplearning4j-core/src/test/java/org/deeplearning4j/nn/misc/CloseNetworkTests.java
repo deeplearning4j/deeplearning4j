@@ -28,14 +28,14 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CloseNetworkTests extends BaseDL4JTest {
 
@@ -92,14 +92,14 @@ public class CloseNetworkTests extends BaseDL4JTest {
                     net.output(f);
                 } catch (IllegalStateException e) {
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains("released"));
+                    assertTrue(msg.contains("released"),msg);
                 }
 
                 try {
                     net.fit(f, l);
                 } catch (IllegalStateException e) {
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains("released"));
+                    assertTrue(msg.contains("released"),msg);
                 }
             }
         }
@@ -140,14 +140,14 @@ public class CloseNetworkTests extends BaseDL4JTest {
                     net.output(f);
                 } catch (IllegalStateException e) {
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains("released"));
+                    assertTrue( msg.contains("released"),msg);
                 }
 
                 try {
                     net.fit(new INDArray[]{f}, new INDArray[]{l});
                 } catch (IllegalStateException e) {
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains("released"));
+                    assertTrue(msg.contains("released"),msg);
                 }
             }
         }

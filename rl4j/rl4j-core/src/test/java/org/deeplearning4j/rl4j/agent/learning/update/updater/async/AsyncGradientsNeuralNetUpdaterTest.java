@@ -23,7 +23,7 @@ package org.deeplearning4j.rl4j.agent.learning.update.updater.async;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;

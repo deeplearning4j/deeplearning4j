@@ -17,27 +17,28 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.datasets.iterator;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Adam Gibson
  */
-public class SamplingTest extends BaseDL4JTest {
+@DisplayName("Sampling Test")
+class SamplingTest extends BaseDL4JTest {
 
     @Test
-    public void testSample() throws Exception {
+    @DisplayName("Test Sample")
+    void testSample() throws Exception {
         DataSetIterator iter = new MnistDataSetIterator(10, 10);
-        //batch size and total
+        // batch size and total
         DataSetIterator sampling = new SamplingDataSetIterator(iter.next(), 10, 10);
         assertEquals(10, sampling.next().numExamples());
     }
-
 }

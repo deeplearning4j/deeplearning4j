@@ -26,14 +26,14 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCollectionRecordReaders extends BaseND4JTest {
 

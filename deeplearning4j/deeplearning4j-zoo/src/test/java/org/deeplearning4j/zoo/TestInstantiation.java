@@ -34,9 +34,9 @@ import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.transferlearning.TransferLearningHelper;
 import org.deeplearning4j.zoo.model.*;
 import org.deeplearning4j.zoo.model.helper.DarknetHelper;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,12 +47,12 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Slf4j
-@Ignore("Times out too often")
+@Disabled("Times out too often")
 public class TestInstantiation extends BaseDL4JTest {
 
     protected static void ignoreIfCuda(){
@@ -63,7 +63,7 @@ public class TestInstantiation extends BaseDL4JTest {
         }
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
@@ -86,7 +86,7 @@ public class TestInstantiation extends BaseDL4JTest {
         runTest(TinyYOLO.builder().numClasses(10).build(), "TinyYOLO", 10);
     }
 
-    @Test @Ignore("AB 2019/05/28 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
+    @Test @Disabled("AB 2019/05/28 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
     public void testCnnTrainingYOLO2() throws Exception {
         runTest(YOLO2.builder().numClasses(10).build(), "YOLO2", 10);
     }
@@ -162,12 +162,12 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitPretrained(VGG19.builder().numClasses(0).build(), new long[]{1,3,224,224}, new long[]{1,1000});
     }
 
-    @Test @Ignore("AB 2019/05/28 - JVM crash on linux CUDA CI machines - Issue 7657")
+    @Test @Disabled("AB 2019/05/28 - JVM crash on linux CUDA CI machines - Issue 7657")
     public void testInitPretrainedDarknet19() throws Exception {
         testInitPretrained(Darknet19.builder().numClasses(0).build(), new long[]{1,3,224,224}, new long[]{1,1000});
     }
 
-    @Test @Ignore("AB 2019/05/28 - JVM crash on linux CUDA CI machines - Issue 7657")
+    @Test @Disabled("AB 2019/05/28 - JVM crash on linux CUDA CI machines - Issue 7657")
     public void testInitPretrainedDarknet19S2() throws Exception {
         testInitPretrained(Darknet19.builder().numClasses(0).inputShape(new int[]{3,448,448}).build(), new long[]{1,3,448,448}, new long[]{1,1000});
     }
@@ -240,7 +240,7 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitRandomModel(Xception.builder().numClasses(1000).build(), new long[]{1,3,299,299}, new long[]{1,1000});
     }
 
-    @Test @Ignore("AB - 2019/05/28 - JVM crash on CI - intermittent? Issue 7657")
+    @Test @Disabled("AB - 2019/05/28 - JVM crash on CI - intermittent? Issue 7657")
     public void testInitRandomModelSqueezenet() throws IOException {
         testInitRandomModel(SqueezeNet.builder().numClasses(1000).build(), new long[]{1,3,227,227}, new long[]{1,1000});
     }
@@ -250,7 +250,7 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitRandomModel(FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build(), new long[]{1,3,64,64}, new long[]{1,10});
     }
 
-    @Test @Ignore("AB 2019/05/29 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
+    @Test @Disabled("AB 2019/05/29 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
     public void testInitRandomModelUNet() throws IOException {
         testInitRandomModel(UNet.builder().build(), new long[]{1,3,512,512}, new long[]{1,1,512,512});
     }
@@ -281,7 +281,7 @@ public class TestInstantiation extends BaseDL4JTest {
     @Test
     public void testYolo4635() throws Exception {
         ignoreIfCuda();
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4635
+        //https://github.com/eclipse/deeplearning4j/issues/4635
 
         int nClasses = 10;
         TinyYOLO model = TinyYOLO.builder().numClasses(nClasses).build();
@@ -292,7 +292,7 @@ public class TestInstantiation extends BaseDL4JTest {
     @Test
     public void testTransferLearning() throws Exception {
         ignoreIfCuda();
-        //https://github.com/deeplearning4j/deeplearning4j/issues/7193
+        //https://github.com/eclipse/deeplearning4j/issues/7193
 
         ComputationGraph cg = (ComputationGraph) ResNet50.builder().build().initPretrained();
 

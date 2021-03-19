@@ -34,8 +34,8 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -195,7 +195,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore   //https://github.com/deeplearning4j/deeplearning4j/issues/7272
+    @Test @Disabled   //https://github.com/eclipse/deeplearning4j/issues/7272
     public void validateLRN() {
 
         //Only run test if using nd4j-native backend

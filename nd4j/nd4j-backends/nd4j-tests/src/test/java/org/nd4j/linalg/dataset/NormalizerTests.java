@@ -20,11 +20,12 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -46,15 +47,12 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
-public class NormalizerTests extends BaseNd4jTest {
 
-    public NormalizerTests(Nd4jBackend backend) {
-        super(backend);
-    }
+public class NormalizerTests extends BaseNd4jTestWithBackends {
+
 
     private NormalizerStandardize stdScaler;
     private NormalizerMinMaxScaler minMaxScaler;
@@ -64,7 +62,7 @@ public class NormalizerTests extends BaseNd4jTest {
     private int lastBatch;
     private final float thresholdPerc = 2.0f; //this is the difference in percentage!
 
-    @Before
+    @BeforeEach
     public void randomData() {
         Nd4j.getRandom().setSeed(12345);
         batchSize = 13;
@@ -77,14 +75,15 @@ public class NormalizerTests extends BaseNd4jTest {
         minMaxScaler = new NormalizerMinMaxScaler();
     }
 
-    @Test
-    public void testPreProcessors() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPreProcessors(Nd4jBackend backend) {
         System.out.println("Running iterator vs non-iterator std scaler..");
         double d1 = testItervsDataset(stdScaler);
-        assertTrue(d1 + " < " + thresholdPerc, d1 < thresholdPerc);
+        assertTrue( d1 < thresholdPerc,d1 + " < " + thresholdPerc);
         System.out.println("Running iterator vs non-iterator min max scaler..");
         double d2 = testItervsDataset(minMaxScaler);
-        assertTrue(d2 + " < " + thresholdPerc, d2 < thresholdPerc);
+        assertTrue(d2 < thresholdPerc,d2 + " < " + thresholdPerc);
     }
 
     public float testItervsDataset(DataNormalization preProcessor) {
@@ -110,18 +109,19 @@ public class NormalizerTests extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testMasking() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMasking(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(235);
 
         DataNormalization[] normalizers =
-                        new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
+                new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
 
         DataNormalization[] normalizersNoMask =
-                        new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
+                new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
 
         DataNormalization[] normalizersByRow =
-                        new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
+                new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
 
 
         for (int i = 0; i < normalizers.length; i++) {
@@ -139,8 +139,8 @@ public class NormalizerTests extends BaseNd4jTest {
 
             INDArray arrPt1 = arr.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             INDArray arrPt2 =
-                            arr.get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.interval(0, 3))
-                                            .dup();
+                    arr.get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.interval(0, 3))
+                            .dup();
 
 
             INDArray mask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 0, 0}}).castTo(Nd4j.defaultFloatingPointType());
@@ -161,14 +161,14 @@ public class NormalizerTests extends BaseNd4jTest {
             List<DataSet> toFitRows = new ArrayList<>();
             for (int j = 0; j < 5; j++) {
                 INDArray row = arr.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(j, j, true))
-                                .transpose();
+                        .transpose();
                 assertTrue(row.isRowVector());
                 toFitRows.add(new DataSet(row, row));
             }
 
             for (int j = 0; j < 3; j++) {
                 INDArray row = arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(j, j, true))
-                                .transpose();
+                        .transpose();
                 assertTrue(row.isRowVector());
                 toFitRows.add(new DataSet(row, row));
             }
@@ -189,11 +189,11 @@ public class NormalizerTests extends BaseNd4jTest {
 
             //Second: ensure time steps post normalization (and post revert) are 0.0
             INDArray shouldBe0_1 = ds.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                            NDArrayIndex.interval(3, 5));
+                    NDArrayIndex.interval(3, 5));
             INDArray shouldBe0_2 = dsCopy1.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                            NDArrayIndex.interval(3, 5));
+                    NDArrayIndex.interval(3, 5));
             INDArray shouldBe0_3 = dsCopy2.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                            NDArrayIndex.interval(3, 5));
+                    NDArrayIndex.interval(3, 5));
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
 
@@ -212,11 +212,11 @@ public class NormalizerTests extends BaseNd4jTest {
             normFitSubset.revert(dsCopy1);
             normByRow.revert(dsCopy2);
             shouldBe0_1 = ds.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                            NDArrayIndex.interval(3, 5));
+                    NDArrayIndex.interval(3, 5));
             shouldBe0_2 = dsCopy1.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                            NDArrayIndex.interval(3, 5));
+                    NDArrayIndex.interval(3, 5));
             shouldBe0_3 = dsCopy2.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                            NDArrayIndex.interval(3, 5));
+                    NDArrayIndex.interval(3, 5));
 
             assertEquals(zeros, shouldBe0_1);
             assertEquals(zeros, shouldBe0_2);
@@ -226,7 +226,8 @@ public class NormalizerTests extends BaseNd4jTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNormalizerToStringHashCode(){
         //https://github.com/eclipse/deeplearning4j/issues/8565
 
@@ -261,7 +262,8 @@ public class NormalizerTests extends BaseNd4jTest {
         n.hashCode();
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiNormalizerToStringHashCode(){
         //https://github.com/eclipse/deeplearning4j/issues/8565
 

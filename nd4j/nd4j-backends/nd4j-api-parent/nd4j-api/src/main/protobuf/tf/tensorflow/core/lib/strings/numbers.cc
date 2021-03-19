@@ -182,7 +182,7 @@ size_t DoubleToBuffer(double value, char* buffer) {
   // DBL_DIG is 15 for IEEE-754 doubles, which are used on almost all
   // platforms these days.  Just in case some system exists where DBL_DIG
   // is significantly larger -- and risks overflowing our buffer -- we have
-  // this assert.
+  // this
   static_assert(DBL_DIG < 20, "DBL_DIG is too big");
 
   if (std::abs(value) <= kDoublePrecisionCheckMax) {
@@ -363,7 +363,7 @@ size_t FloatToBuffer(float value, char* buffer) {
   // FLT_DIG is 6 for IEEE-754 floats, which are used on almost all
   // platforms these days.  Just in case some system exists where FLT_DIG
   // is significantly larger -- and risks overflowing our buffer -- we have
-  // this assert.
+  // this
   static_assert(FLT_DIG < 10, "FLT_DIG is too big");
 
   int snprintf_result =

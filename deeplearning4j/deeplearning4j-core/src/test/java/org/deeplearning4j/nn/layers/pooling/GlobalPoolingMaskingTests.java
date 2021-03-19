@@ -29,7 +29,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,8 +41,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 public class GlobalPoolingMaskingTests extends BaseDL4JTest {
@@ -288,7 +288,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i, true);
 
-                assertEquals("minibatch: " + i, outSubset, outMaskedSubset);
+                assertEquals(outSubset, outMaskedSubset, "minibatch: " + i);
             }
         }
     }
@@ -347,7 +347,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i, true);
 
-                assertEquals("minibatch: " + i, outSubset, outMaskedSubset);
+                assertEquals(outSubset, outMaskedSubset, "minibatch: " + i);
             }
         }
     }
@@ -412,7 +412,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i,true);
 
-                assertEquals("minibatch: " + i + ", " + pt, outSubset, outMaskedSubset);
+                assertEquals(outSubset, outMaskedSubset, "minibatch: " + i + ", " + pt);
             }
         }
     }

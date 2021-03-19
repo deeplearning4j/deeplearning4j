@@ -20,8 +20,10 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -31,23 +33,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
-import static junit.framework.TestCase.assertNotNull;
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
+public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
 
-    public SameDiffSpecifiedLossVarsTests(Nd4jBackend b){
-        super(b);
-    }
 
     @Override
-    public char ordering(){
+    public char ordering() {
         return 'c';
     }
 
-    @Test
-    public void testSpecifiedLoss1(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpecifiedLoss1(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable ph1 = sd.var("ph", DataType.FLOAT, 3, 4);
         ph1.setArray(Nd4j.create(DataType.FLOAT, 3, 4));
@@ -67,9 +65,10 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
         assertNotNull(ph1.gradient());
     }
 
-    @Test
-    public void testSpecifiedLoss2(){
-        for( int i=0; i<2; i++ ) {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpecifiedLoss2(Nd4jBackend backend) {
+        for( int i = 0; i < 2; i++) {
             SameDiff sd = SameDiff.create();
             SDVariable ph = sd.placeHolder("ph", DataType.FLOAT, 3, 4);
             SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 5));
@@ -108,7 +107,7 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
 
             for(String s : new String[]{"w", "b", badd.name(), add.name(), "l1", "l2"}){
                 SDVariable gradVar = sd.getVariable(s).gradient();
-                assertNotNull(s, gradVar);
+                assertNotNull(gradVar,s);
             }
             //Unused:
             assertFalse(shape.hasGradient());
@@ -120,8 +119,9 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testTrainingDifferentLosses(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTrainingDifferentLosses(Nd4jBackend backend) {
         //Net with 2 losses: train on the first one, then change losses
         //Also check that if modifying via add/setLossVariables the training config changes
 
@@ -149,20 +149,20 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
         sd.setLossVariables("loss1");
         sd.createGradFunction();
         for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}){
-            assertNotNull(v.name(), v.gradient());
+            assertNotNull(v.gradient(),v.name());
         }
         for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}){
-            assertNull(v.name(), v.gradient());
+            assertNull(v.gradient(),v.name());
         }
 
         //Now, set to other loss function
         sd.setLossVariables("loss2");
         sd.createGradFunction();
         for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}){
-            assertNull(v.name(), v.gradient());
+            assertNull(v.gradient(),v.name());
         }
         for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}){
-            assertNotNull(v.name(), v.gradient());
+            assertNotNull(v.gradient(),v.name());
         }
 
         //Train the first side of the graph. The other side should remain unmodified!

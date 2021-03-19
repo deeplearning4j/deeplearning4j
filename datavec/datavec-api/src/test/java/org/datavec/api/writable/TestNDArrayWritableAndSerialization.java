@@ -21,14 +21,14 @@
 package org.datavec.api.writable;
 
 import org.datavec.api.transform.metadata.NDArrayMetaData;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestNDArrayWritableAndSerialization extends BaseND4JTest {
 

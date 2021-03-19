@@ -19,22 +19,20 @@
  */
 package org.nd4j.linalg.api;
 
-import org.junit.Test;
-import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.factory.Environment;
-import org.nd4j.linalg.factory.Nd4j;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class TestBackend extends BaseNd4jTest {
+public class TestBackend extends BaseNd4jTestWithBackends {
 
-    public TestBackend(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void TestBuildInfo(){ 
+      @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBuildInfo(Nd4jBackend backend){
         System.out.println("Backend build info: " +  backend.buildInfo());
     }
 }

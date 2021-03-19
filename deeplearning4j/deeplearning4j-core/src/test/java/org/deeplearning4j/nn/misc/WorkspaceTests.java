@@ -33,9 +33,9 @@ import org.deeplearning4j.nn.misc.iter.WSTestDataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -53,17 +53,17 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class WorkspaceTests extends BaseDL4JTest {
 
-    @Before
+    @BeforeEach
     public void before() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
@@ -88,7 +88,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
     @Test
     public void testWorkspaceIndependence() {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4337
+        //https://github.com/eclipse/deeplearning4j/issues/4337
         int depthIn = 2;
         int depthOut = 2;
         int nOut = 2;
@@ -143,7 +143,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
     @Test
     public void testWithPreprocessorsCG() {
-        //https://github.com/deeplearning4j/deeplearning4j/issues/4347
+        //https://github.com/eclipse/deeplearning4j/issues/4347
         //Cause for the above issue was layerVertex.setInput() applying the preprocessor, with the result
         // not being detached properly from the workspace...
 

@@ -21,8 +21,7 @@
 package org.nd4j.parameterserver.distributed.logic;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.*;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -32,24 +31,23 @@ import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Ignore
+@Disabled
 @Deprecated
 public class ClipboardTest extends BaseND4JTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }
 
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds(30);
+
 
     @Test
     public void testPin1() throws Exception {

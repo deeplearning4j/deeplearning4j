@@ -21,7 +21,7 @@
 package org.deeplearning4j.spark.data;
 
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestSparkDataUtils extends BaseSparkTest {
 

@@ -23,13 +23,14 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -45,25 +46,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Ignore
+@Disabled
 @Slf4j
-@RunWith(Parameterized.class)
-public class EndlessWorkspaceTests extends BaseNd4jTest {
-    DataType initialType;
 
-    public EndlessWorkspaceTests(Nd4jBackend backend) {
-        super(backend);
-        this.initialType = Nd4j.dataType();
-    }
+public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
+    DataType initialType = Nd4j.dataType();
 
-    @Before
+    @BeforeEach
     public void startUp() {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
     }
 
-    @After
+    @AfterEach
     public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -76,8 +72,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
      *
      * @throws Exception
      */
-    @Test
-    public void endlessTest1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTest1(Nd4jBackend backend) {
 
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
@@ -103,8 +100,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
      * This test checks for allocation from workspace AND spills
      * @throws Exception
      */
-    @Test
-    public void endlessTest2() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTest2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
 
@@ -137,8 +135,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
      *
      * @throws Exception
      */
-    @Test
-    public void endlessTest3() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTest3(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
 
@@ -166,8 +165,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void endlessTest4() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTest4(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
         while (true) {
@@ -187,8 +187,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void endlessTest5() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTest5(Nd4jBackend backend) throws Exception {
         while (true) {
             Thread thread = new Thread(new Runnable() {
                 @Override
@@ -209,8 +210,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void endlessTest6() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTest6(Nd4jBackend backend) {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                         .policyLearning(LearningPolicy.NONE).build();
@@ -226,8 +228,10 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void endlessValidation1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+
+    public void endlessValidation1(Nd4jBackend backend) {
         Nd4j.getMemoryManager().togglePeriodicGc(true);
 
         AtomicLong counter = new AtomicLong(0);
@@ -245,8 +249,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testPerf1() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPerf1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager()
                         .setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(50000L).build());
 
@@ -286,8 +291,9 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         log.info("Block: {} ns; Op: {} ns;", results.get(pos), resultsOp.get(pos));
     }
 
-    @Test
-    public void endlessTestSerDe1() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void endlessTestSerDe1(Nd4jBackend backend) throws Exception {
         INDArray features = Nd4j.create(32, 3, 224, 224);
         INDArray labels = Nd4j.create(32, 200);
         File tmp = File.createTempFile("12dadsad", "dsdasds");

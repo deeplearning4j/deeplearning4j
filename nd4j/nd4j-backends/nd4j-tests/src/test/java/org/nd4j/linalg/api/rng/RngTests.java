@@ -20,27 +20,26 @@
 
 package org.nd4j.linalg.api.rng;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class RngTests extends BaseNd4jTest {
-    public RngTests(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testRngConstitency() {
+public class RngTests extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRngConstitency(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(123);
         INDArray arr = Nd4j.rand(1, 5);
         Nd4j.getRandom().setSeed(123);
@@ -48,8 +47,9 @@ public class RngTests extends BaseNd4jTest {
         assertEquals(arr, arr2);
     }
 
-    @Test
-    public void testRandomWithOrder() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRandomWithOrder(Nd4jBackend backend) {
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -104,8 +104,9 @@ public class RngTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testRandomBinomial() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRandomBinomial(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         //silly tests. Just increasing the usage for randomBinomial to stop compiler warnings.
         INDArray x = Nd4j.randomBinomial(10, 0.5, 3,3);

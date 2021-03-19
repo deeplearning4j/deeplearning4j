@@ -27,7 +27,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestLineRecordReaderFunction  {
 

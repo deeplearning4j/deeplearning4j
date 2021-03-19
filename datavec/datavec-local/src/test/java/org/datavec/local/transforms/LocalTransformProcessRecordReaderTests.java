@@ -36,14 +36,14 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalTransformProcessRecordReaderTests {
 

@@ -20,33 +20,29 @@
 
 package org.nd4j.linalg.api.indexing.shape;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class IndexShapeTests extends BaseNd4jTest {
 
-    public IndexShapeTests(Nd4jBackend backend) {
-        super(backend);
-    }
-
-
+public class IndexShapeTests extends BaseNd4jTestWithBackends {
 
     private int[] shape = {1, 1, 2, 1, 3, 4, 5, 1};
 
-    @Test
-    public void testSinglePoint() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSinglePoint(Nd4jBackend backend) {
         /*
         Assumes all indexes are filled out.
         Test simple general point case
@@ -76,8 +72,9 @@ public class IndexShapeTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testInterval() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testInterval(Nd4jBackend backend) {
         int[] basicAssertion = {1, 1, 1, 1, 3, 1, 2, 1};
         INDArrayIndex[] basicTest = {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
                         NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(1, 2),
@@ -87,8 +84,9 @@ public class IndexShapeTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testNewAxis() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNewAxis(Nd4jBackend backend) {
         //normal prepend
         int[] prependAssertion = {1, 1, 1, 1, 2, 1, 3, 4, 5, 1};
         INDArrayIndex[] prependTest = {NDArrayIndex.newAxis(), NDArrayIndex.newAxis(), NDArrayIndex.all(),

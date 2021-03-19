@@ -1259,7 +1259,7 @@ char* DoubleToBuffer(double value, char* buffer) {
   // DBL_DIG is 15 for IEEE-754 doubles, which are used on almost all
   // platforms these days.  Just in case some system exists where DBL_DIG
   // is significantly larger -- and risks overflowing our buffer -- we have
-  // this assert.
+  // this
   GOOGLE_COMPILE_ASSERT(DBL_DIG < 20, DBL_DIG_is_too_big);
 
   if (value == std::numeric_limits<double>::infinity()) {
@@ -1377,7 +1377,7 @@ char* FloatToBuffer(float value, char* buffer) {
   // FLT_DIG is 6 for IEEE-754 floats, which are used on almost all
   // platforms these days.  Just in case some system exists where FLT_DIG
   // is significantly larger -- and risks overflowing our buffer -- we have
-  // this assert.
+  // this
   GOOGLE_COMPILE_ASSERT(FLT_DIG < 10, FLT_DIG_is_too_big);
 
   if (value == std::numeric_limits<double>::infinity()) {

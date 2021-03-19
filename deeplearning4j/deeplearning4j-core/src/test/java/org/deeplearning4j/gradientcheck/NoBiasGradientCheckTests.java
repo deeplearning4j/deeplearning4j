@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,8 +37,8 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
@@ -123,7 +123,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                    assertTrue(msg, gradOK);
+                    assertTrue(gradOK, msg);
 
                     TestUtils.testModelSerialization(mln);
                 }
@@ -180,7 +180,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
 
                 TestUtils.testModelSerialization(mln);
             }
@@ -242,7 +242,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
 
                 TestUtils.testModelSerialization(mln);
             }
@@ -308,7 +308,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
 
                 TestUtils.testModelSerialization(net);
             }

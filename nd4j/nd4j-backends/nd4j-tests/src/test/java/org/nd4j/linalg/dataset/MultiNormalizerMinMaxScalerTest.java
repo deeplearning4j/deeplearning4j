@@ -20,11 +20,12 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
@@ -33,10 +34,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Parameterized.class)
-public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
+
+public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTestWithBackends {
     private static final double TOLERANCE_PERC = 0.01; // 0.01% of correct value
     private static final int INPUT1_SCALE = 1, INPUT2_SCALE = 2, OUTPUT1_SCALE = 3, OUTPUT2_SCALE = 4;
 
@@ -46,7 +47,7 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
     private double naturalMin;
     private double naturalMax;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         SUT = new MultiNormalizerMinMaxScaler();
         SUT.fitLabel(true);
@@ -66,25 +67,25 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
         naturalMax = nSamples;
     }
 
-    public MultiNormalizerMinMaxScalerTest(Nd4jBackend backend) {
-        super(backend);
-    }
 
-    @Test
-    public void testMultipleInputsAndOutputsWithDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMultipleInputsAndOutputsWithDataSet(Nd4jBackend backend) {
         SUT.fit(data);
         assertExpectedMinMax();
     }
 
-    @Test
-    public void testMultipleInputsAndOutputsWithIterator() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMultipleInputsAndOutputsWithIterator(Nd4jBackend backend) {
         MultiDataSetIterator iter = new TestMultiDataSetIterator(1, data);
         SUT.fit(iter);
         assertExpectedMinMax();
     }
 
-    @Test
-    public void testRevertFeaturesINDArray() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRevertFeaturesINDArray(Nd4jBackend backend) {
         SUT.fit(data);
 
         MultiDataSet transformed = data.copy();
@@ -99,8 +100,9 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
         assertEquals(reverted, transformed.getFeatures(0));
     }
 
-    @Test
-    public void testRevertLabelsINDArray() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRevertLabelsINDArray(Nd4jBackend backend) {
         SUT.fit(data);
 
         MultiDataSet transformed = data.copy();
@@ -115,8 +117,9 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
         assertEquals(reverted, transformed.getLabels(0));
     }
 
-    @Test
-    public void testRevertMultiDataSet() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testRevertMultiDataSet(Nd4jBackend backend) {
         SUT.fit(data);
 
         MultiDataSet transformed = data.copy();
@@ -131,14 +134,15 @@ public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
         assertTrue(diffAfterRevert < TOLERANCE_PERC);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFullyMaskedData() {
         MultiDataSetIterator iter = new TestMultiDataSetIterator(1,
-                        new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {1}).reshape(1, 1, 1)},
-                                        new INDArray[] {Nd4j.create(new float[] {2}).reshape(1, 1, 1)}),
-                        new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {2}).reshape(1, 1, 1)},
-                                        new INDArray[] {Nd4j.create(new float[] {4}).reshape(1, 1, 1)}, null,
-                                        new INDArray[] {Nd4j.create(new float[] {0}).reshape(1, 1)}));
+                new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {1}).reshape(1, 1, 1)},
+                        new INDArray[] {Nd4j.create(new float[] {2}).reshape(1, 1, 1)}),
+                new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {2}).reshape(1, 1, 1)},
+                        new INDArray[] {Nd4j.create(new float[] {4}).reshape(1, 1, 1)}, null,
+                        new INDArray[] {Nd4j.create(new float[] {0}).reshape(1, 1)}));
 
         SUT.fit(iter);
 

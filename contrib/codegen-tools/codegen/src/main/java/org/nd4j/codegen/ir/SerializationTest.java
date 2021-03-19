@@ -17,13 +17,14 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.codegen.ir;
 
-public class SerializationTest {
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-    public static void main(String...args) {
+@DisplayName("Serialization Test")
+class SerializationTest {
 
+    public static void main(String... args) {
     }
-
 }

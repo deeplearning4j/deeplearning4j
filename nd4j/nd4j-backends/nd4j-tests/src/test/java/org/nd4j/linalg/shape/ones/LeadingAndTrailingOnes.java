@@ -20,10 +20,11 @@
 
 package org.nd4j.linalg.shape.ones;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,20 +33,18 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Adam Gibson
  */
-@RunWith(Parameterized.class)
-public class LeadingAndTrailingOnes extends BaseNd4jTest {
 
-    public LeadingAndTrailingOnes(Nd4jBackend backend) {
-        super(backend);
-    }
+public class LeadingAndTrailingOnes extends BaseNd4jTestWithBackends {
 
-    @Test
-    public void testSliceConstructor() {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSliceConstructor(Nd4jBackend backend) {
         List<INDArray> testList = new ArrayList<>();
         for (int i = 0; i < 5; i++)
             testList.add(Nd4j.scalar(DataType.DOUBLE, i + 1));
@@ -55,8 +54,9 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
         assertEquals(expected, test);
     }
 
-    @Test
-    public void testLeadAndTrail() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLeadAndTrail(Nd4jBackend backend) {
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
         assertEquals(2, fourD.length());
         for (int i = 0; i < fourD.length(); i++)
@@ -64,8 +64,9 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testCreateLeadingAndTrailingOnes() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCreateLeadingAndTrailingOnes(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(1, 10, 1, 1);
         arr.assign(1);
         arr.toString();

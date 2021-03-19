@@ -38,43 +38,50 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
 public class ConvDataFormatTests extends BaseDL4JTest {
 
-    private final DataType dataType;
 
-    public ConvDataFormatTests(DataType dataType){
-        this.dataType = dataType;
+    public static Stream<Arguments> params() {
+        List<Arguments> args = new ArrayList<>();
+        for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
+            for(DataType dataType : Arrays.asList(new DataType[]{DataType.FLOAT, DataType.DOUBLE})) {
+                args.add(Arguments.of(dataType,nd4jBackend));
+            }
+        }
+        return args.stream();
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Object[] params(){
-        return new DataType[]{DataType.FLOAT, DataType.DOUBLE};
-    }
 
     @Override
     public long getTimeoutMilliseconds() {
         return 999999999L;
     }
 
-    @Test
-    public void testConv2d() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testConv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -83,15 +90,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getConv2dNet(CNN2DFormat.NCHW, true, cm))
-                            .net2(getConv2dNet(CNN2DFormat.NCHW, false, cm))
-                            .net3(getConv2dNet(CNN2DFormat.NHWC, true, cm))
-                            .net4(getConv2dNet(CNN2DFormat.NHWC, false, cm))
+                            .net1(getConv2dNet(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getConv2dNet(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getConv2dNet(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getConv2dNet(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -106,8 +113,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testSubsampling2d() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testSubsampling2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -116,15 +124,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getSubsampling2dNet(CNN2DFormat.NCHW, true, cm))
-                            .net2(getSubsampling2dNet(CNN2DFormat.NCHW, false, cm))
-                            .net3(getSubsampling2dNet(CNN2DFormat.NHWC, true, cm))
-                            .net4(getSubsampling2dNet(CNN2DFormat.NHWC, false, cm))
+                            .net1(getSubsampling2dNet(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getSubsampling2dNet(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getSubsampling2dNet(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getSubsampling2dNet(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -139,8 +147,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testDepthwiseConv2d() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testDepthwiseConv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -149,15 +158,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getDepthwiseConv2dNet(CNN2DFormat.NCHW, true, cm))
-                            .net2(getDepthwiseConv2dNet(CNN2DFormat.NCHW, false, cm))
-                            .net3(getDepthwiseConv2dNet(CNN2DFormat.NHWC, true, cm))
-                            .net4(getDepthwiseConv2dNet(CNN2DFormat.NHWC, false, cm))
+                            .net1(getDepthwiseConv2dNet(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getDepthwiseConv2dNet(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getDepthwiseConv2dNet(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getDepthwiseConv2dNet(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -172,8 +181,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testSeparableConv2d() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testSeparableConv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -182,15 +192,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getSeparableConv2dNet(CNN2DFormat.NCHW, true, cm))
-                            .net2(getSeparableConv2dNet(CNN2DFormat.NCHW, false, cm))
-                            .net3(getSeparableConv2dNet(CNN2DFormat.NHWC, true, cm))
-                            .net4(getSeparableConv2dNet(CNN2DFormat.NHWC, false, cm))
+                            .net1(getSeparableConv2dNet(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getSeparableConv2dNet(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getSeparableConv2dNet(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getSeparableConv2dNet(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -205,8 +215,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testDeconv2d() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testDeconv2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -215,15 +226,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getDeconv2DNet2dNet(CNN2DFormat.NCHW, true, cm))
-                            .net2(getDeconv2DNet2dNet(CNN2DFormat.NCHW, false, cm))
-                            .net3(getDeconv2DNet2dNet(CNN2DFormat.NHWC, true, cm))
-                            .net4(getDeconv2DNet2dNet(CNN2DFormat.NHWC, false, cm))
+                            .net1(getDeconv2DNet2dNet(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getDeconv2DNet2dNet(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getDeconv2DNet2dNet(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getDeconv2DNet2dNet(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -238,8 +249,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testLRN() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testLRN(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -248,15 +260,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getLrnLayer(CNN2DFormat.NCHW, true, cm))
-                            .net2(getLrnLayer(CNN2DFormat.NCHW, false, cm))
-                            .net3(getLrnLayer(CNN2DFormat.NHWC, true, cm))
-                            .net4(getLrnLayer(CNN2DFormat.NHWC, false, cm))
+                            .net1(getLrnLayer(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getLrnLayer(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getLrnLayer(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getLrnLayer(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -271,8 +283,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testZeroPaddingLayer(){
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testZeroPaddingLayer(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -280,15 +293,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 String msg = helpers ? "With helpers" : "No helpers";
                 System.out.println(" --- " + msg + " ---");
 
-                INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                 INDArray labels = TestUtils.randomOneHot(2, 10);
 
                 TestCase tc = TestCase.builder()
                         .msg(msg)
-                        .net1(getZeroPaddingNet(CNN2DFormat.NCHW, true))
-                        .net2(getZeroPaddingNet(CNN2DFormat.NCHW, false))
-                        .net3(getZeroPaddingNet(CNN2DFormat.NHWC, true))
-                        .net4(getZeroPaddingNet(CNN2DFormat.NHWC, false))
+                        .net1(getZeroPaddingNet(dataType,CNN2DFormat.NCHW, true))
+                        .net2(getZeroPaddingNet(dataType,CNN2DFormat.NCHW, false))
+                        .net3(getZeroPaddingNet(dataType,CNN2DFormat.NHWC, true))
+                        .net4(getZeroPaddingNet(dataType,CNN2DFormat.NHWC, false))
                         .inNCHW(inNCHW)
                         .labelsNCHW(labels)
                         .labelsNHWC(labels)
@@ -302,8 +315,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testCropping2DLayer(){
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testCropping2DLayer(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -311,15 +325,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 String msg = helpers ? "With helpers" : "No helpers";
                 System.out.println(" --- " + msg + " ---");
 
-                INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                 INDArray labels = TestUtils.randomOneHot(2, 10);
 
                 TestCase tc = TestCase.builder()
                         .msg(msg)
-                        .net1(getCropping2dNet(CNN2DFormat.NCHW, true))
-                        .net2(getCropping2dNet(CNN2DFormat.NCHW, false))
-                        .net3(getCropping2dNet(CNN2DFormat.NHWC, true))
-                        .net4(getCropping2dNet(CNN2DFormat.NHWC, false))
+                        .net1(getCropping2dNet(dataType,CNN2DFormat.NCHW, true))
+                        .net2(getCropping2dNet(dataType,CNN2DFormat.NCHW, false))
+                        .net3(getCropping2dNet(dataType,CNN2DFormat.NHWC, true))
+                        .net4(getCropping2dNet(dataType,CNN2DFormat.NHWC, false))
                         .inNCHW(inNCHW)
                         .labelsNCHW(labels)
                         .labelsNHWC(labels)
@@ -333,8 +347,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testUpsampling2d(){
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testUpsampling2d(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -342,15 +357,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 String msg = helpers ? "With helpers" : "No helpers";
                 System.out.println(" --- " + msg + " ---");
 
-                INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                 INDArray labels = TestUtils.randomOneHot(2, 10);
 
                 TestCase tc = TestCase.builder()
                         .msg(msg)
-                        .net1(getUpsamplingNet(CNN2DFormat.NCHW, true))
-                        .net2(getUpsamplingNet(CNN2DFormat.NCHW, false))
-                        .net3(getUpsamplingNet(CNN2DFormat.NHWC, true))
-                        .net4(getUpsamplingNet(CNN2DFormat.NHWC, false))
+                        .net1(getUpsamplingNet(dataType,CNN2DFormat.NCHW, true))
+                        .net2(getUpsamplingNet(dataType,CNN2DFormat.NCHW, false))
+                        .net3(getUpsamplingNet(dataType,CNN2DFormat.NHWC, true))
+                        .net4(getUpsamplingNet(dataType,CNN2DFormat.NHWC, false))
                         .inNCHW(inNCHW)
                         .labelsNCHW(labels)
                         .labelsNHWC(labels)
@@ -364,8 +379,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testBatchNormNet(){
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testBatchNormNet(DataType dataType,Nd4jBackend backend) {
         try {
             for(boolean useLogStd : new boolean[]{true, false}) {
                 for (boolean helpers : new boolean[]{false, true}) {
@@ -374,15 +390,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = (helpers ? "With helpers" : "No helpers") + " - " + (useLogStd ? "logstd" : "std");
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getBatchNormNet(useLogStd, CNN2DFormat.NCHW, true))
-                            .net2(getBatchNormNet(useLogStd, CNN2DFormat.NCHW, false))
-                            .net3(getBatchNormNet(useLogStd, CNN2DFormat.NHWC, true))
-                            .net4(getBatchNormNet(useLogStd, CNN2DFormat.NHWC, false))
+                            .net1(getBatchNormNet(dataType,useLogStd, CNN2DFormat.NCHW, true))
+                            .net2(getBatchNormNet(dataType,useLogStd, CNN2DFormat.NCHW, false))
+                            .net3(getBatchNormNet(dataType,useLogStd, CNN2DFormat.NHWC, true))
+                            .net4(getBatchNormNet(dataType,useLogStd, CNN2DFormat.NHWC, false))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -397,8 +413,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testCnnLossLayer() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testCnnLossLayer(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -406,8 +423,8 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 String msg = helpers ? "With helpers" : "No helpers";
                 System.out.println(" --- " + msg + " ---");
 
-                INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
-                INDArray labelsNHWC = TestUtils.randomOneHot(this.dataType,2*6*6, 3);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
+                INDArray labelsNHWC = TestUtils.randomOneHot(dataType,2*6*6, 3);
                 labelsNHWC = labelsNHWC.reshape(2,6,6,3);
                 INDArray labelsNCHW = labelsNHWC.permute(0,3,1,2).dup();
 
@@ -433,8 +450,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testSpaceToDepthNet(){
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testSpaceToDepthNet(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -442,15 +460,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 String msg = helpers ? "With helpers" : "No helpers";
                 System.out.println(" --- " + msg + " ---");
 
-                INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                 INDArray labels = TestUtils.randomOneHot(2, 10);
 
                 TestCase tc = TestCase.builder()
                         .msg(msg)
-                        .net1(getSpaceToDepthNet(CNN2DFormat.NCHW, true))
-                        .net2(getSpaceToDepthNet(CNN2DFormat.NCHW, false))
-                        .net3(getSpaceToDepthNet(CNN2DFormat.NHWC, true))
-                        .net4(getSpaceToDepthNet(CNN2DFormat.NHWC, false))
+                        .net1(getSpaceToDepthNet(dataType,CNN2DFormat.NCHW, true))
+                        .net2(getSpaceToDepthNet(dataType,CNN2DFormat.NCHW, false))
+                        .net3(getSpaceToDepthNet(dataType,CNN2DFormat.NHWC, true))
+                        .net4(getSpaceToDepthNet(dataType,CNN2DFormat.NHWC, false))
                         .inNCHW(inNCHW)
                         .labelsNCHW(labels)
                         .labelsNHWC(labels)
@@ -464,8 +482,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testSpaceToBatchNet(){
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testSpaceToBatchNet(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 Nd4j.getRandom().setSeed(12345);
@@ -473,15 +492,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 String msg = helpers ? "With helpers" : "No helpers";
                 System.out.println(" --- " + msg + " ---");
 
-                INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 16, 16);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 16, 16);
                 INDArray labels = TestUtils.randomOneHot(8, 10);
 
                 TestCase tc = TestCase.builder()
                         .msg(msg)
-                        .net1(getSpaceToBatchNet(CNN2DFormat.NCHW, true))
-                        .net2(getSpaceToBatchNet(CNN2DFormat.NCHW, false))
-                        .net3(getSpaceToBatchNet(CNN2DFormat.NHWC, true))
-                        .net4(getSpaceToBatchNet(CNN2DFormat.NHWC, false))
+                        .net1(getSpaceToBatchNet(dataType,CNN2DFormat.NCHW, true))
+                        .net2(getSpaceToBatchNet(dataType,CNN2DFormat.NCHW, false))
+                        .net3(getSpaceToBatchNet(dataType,CNN2DFormat.NHWC, true))
+                        .net4(getSpaceToBatchNet(dataType,CNN2DFormat.NHWC, false))
                         .inNCHW(inNCHW)
                         .labelsNCHW(labels)
                         .labelsNHWC(labels)
@@ -495,8 +514,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testLocallyConnected() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testLocallyConnected(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
@@ -505,15 +525,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getLocallyConnectedNet(CNN2DFormat.NCHW, true, cm))
-                            .net2(getLocallyConnectedNet(CNN2DFormat.NCHW, false, cm))
-                            .net3(getLocallyConnectedNet(CNN2DFormat.NHWC, true, cm))
-                            .net4(getLocallyConnectedNet(CNN2DFormat.NHWC, false, cm))
+                            .net1(getLocallyConnectedNet(dataType,CNN2DFormat.NCHW, true, cm))
+                            .net2(getLocallyConnectedNet(dataType,CNN2DFormat.NCHW, false, cm))
+                            .net3(getLocallyConnectedNet(dataType,CNN2DFormat.NHWC, true, cm))
+                            .net4(getLocallyConnectedNet(dataType,CNN2DFormat.NHWC, false, cm))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -529,8 +549,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @Test
-    public void testGlobalPooling() {
+    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @ParameterizedTest
+    public void testGlobalPooling(DataType dataType,Nd4jBackend backend) {
         try {
             for (boolean helpers : new boolean[]{false, true}) {
                 for (PoolingType pt : PoolingType.values()) {
@@ -539,15 +560,15 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     String msg = helpers ? "With helpers (" + pt + ")" : "No helpers (" + pt + ")";
                     System.out.println(" --- " + msg + " ---");
 
-                    INDArray inNCHW = Nd4j.rand(this.dataType, 2, 3, 12, 12);
+                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
                     INDArray labels = TestUtils.randomOneHot(2, 10);
 
                     TestCase tc = TestCase.builder()
                             .msg(msg)
-                            .net1(getGlobalPoolingNet(CNN2DFormat.NCHW, pt, true))
-                            .net2(getGlobalPoolingNet(CNN2DFormat.NCHW, pt, false))
-                            .net3(getGlobalPoolingNet(CNN2DFormat.NHWC, pt, true))
-                            .net4(getGlobalPoolingNet(CNN2DFormat.NHWC, pt, false))
+                            .net1(getGlobalPoolingNet(dataType,CNN2DFormat.NCHW, pt, true))
+                            .net2(getGlobalPoolingNet(dataType,CNN2DFormat.NCHW, pt, false))
+                            .net3(getGlobalPoolingNet(dataType,CNN2DFormat.NHWC, pt, true))
+                            .net4(getGlobalPoolingNet(dataType,CNN2DFormat.NHWC, pt, false))
                             .inNCHW(inNCHW)
                             .labelsNCHW(labels)
                             .labelsNHWC(labels)
@@ -562,9 +583,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getConv2dNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getConv2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new ConvolutionLayer.Builder()
+            return getNetWithLayer(dataType,new ConvolutionLayer.Builder()
                     .kernelSize(3, 3)
                     .stride(2, 2)
                     .activation(Activation.TANH)
@@ -573,7 +594,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     .helperAllowFallback(false)
                     .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new ConvolutionLayer.Builder()
+            return getNetWithLayer(dataType,new ConvolutionLayer.Builder()
                     .kernelSize(3, 3)
                     .stride(2, 2)
                     .activation(Activation.TANH)
@@ -583,16 +604,16 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getSubsampling2dNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getSubsampling2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new SubsamplingLayer.Builder()
+            return getNetWithLayer(dataType,new SubsamplingLayer.Builder()
                             .kernelSize(2, 2)
                             .stride(1, 1)
                             .dataFormat(format)
                             .helperAllowFallback(false)
                             .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new SubsamplingLayer.Builder()
+            return getNetWithLayer(dataType,new SubsamplingLayer.Builder()
                             .kernelSize(2, 2)
                             .stride(1, 1)
                             .helperAllowFallback(false)
@@ -600,9 +621,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getSeparableConv2dNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getSeparableConv2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new SeparableConvolution2D.Builder()
+            return getNetWithLayer(dataType,new SeparableConvolution2D.Builder()
                     .kernelSize(3, 3)
                     .stride(2, 2)
                     .activation(Activation.TANH)
@@ -611,7 +632,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     .helperAllowFallback(false)
                     .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new SeparableConvolution2D.Builder()
+            return getNetWithLayer(dataType,new SeparableConvolution2D.Builder()
                     .kernelSize(3, 3)
                     .stride(2, 2)
                     .activation(Activation.TANH)
@@ -621,9 +642,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getDepthwiseConv2dNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getDepthwiseConv2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new DepthwiseConvolution2D.Builder()
+            return getNetWithLayer(dataType,new DepthwiseConvolution2D.Builder()
                     .depthMultiplier(2)
                     .kernelSize(3, 3)
                     .stride(2, 2)
@@ -633,7 +654,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     .helperAllowFallback(false)
                     .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new DepthwiseConvolution2D.Builder()
+            return getNetWithLayer(dataType,new DepthwiseConvolution2D.Builder()
                     .depthMultiplier(2)
                     .kernelSize(3, 3)
                     .stride(2, 2)
@@ -644,59 +665,59 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getLrnLayer(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getLrnLayer(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new LocalResponseNormalization.Builder()
+            return getNetWithLayer(dataType,new LocalResponseNormalization.Builder()
                     .dataFormat(format)
                     .helperAllowFallback(false)
                     .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new LocalResponseNormalization.Builder()
+            return getNetWithLayer(dataType,new LocalResponseNormalization.Builder()
                     .helperAllowFallback(false)
                     .build(), format, cm, null);
         }
     }
 
-    private MultiLayerNetwork getZeroPaddingNet(CNN2DFormat format, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getZeroPaddingNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new ZeroPaddingLayer.Builder(2,2)
+            return getNetWithLayer(dataType,new ZeroPaddingLayer.Builder(2,2)
                             .dataFormat(format).build(), format, ConvolutionMode.Same, null);
         } else {
-            return getNetWithLayer(new ZeroPaddingLayer.Builder(2,2).build(),
+            return getNetWithLayer(dataType,new ZeroPaddingLayer.Builder(2,2).build(),
                     format, ConvolutionMode.Same, null);
         }
     }
 
-    private MultiLayerNetwork getCropping2dNet(CNN2DFormat format, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getCropping2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-           return getNetWithLayer(new Cropping2D.Builder(2,2)
+           return getNetWithLayer(dataType,new Cropping2D.Builder(2,2)
                             .dataFormat(format).build(), format, ConvolutionMode.Same, null);
         } else {
-            return getNetWithLayer(new Cropping2D.Builder(2,2)
+            return getNetWithLayer(dataType,new Cropping2D.Builder(2,2)
                     .build(), format, ConvolutionMode.Same, null);
         }
     }
 
-    private MultiLayerNetwork getUpsamplingNet(CNN2DFormat format, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getUpsamplingNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new Upsampling2D.Builder(2)
+            return getNetWithLayer(dataType,new Upsampling2D.Builder(2)
                     .dataFormat(format).build(), format, ConvolutionMode.Same, null);
         } else {
-            return getNetWithLayer(new Upsampling2D.Builder(2)
+            return getNetWithLayer(dataType,new Upsampling2D.Builder(2)
                     .build(), format, ConvolutionMode.Same, null);
         }
     }
 
-    private MultiLayerNetwork getDeconv2DNet2dNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getDeconv2DNet2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new Deconvolution2D.Builder().nOut(2)
+            return getNetWithLayer(dataType,new Deconvolution2D.Builder().nOut(2)
                     .activation(Activation.TANH)
                     .kernelSize(2,2)
                     .dataFormat(format)
                     .stride(2,2)
                     .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new Deconvolution2D.Builder().nOut(2)
+            return getNetWithLayer(dataType,new Deconvolution2D.Builder().nOut(2)
                     .activation(Activation.TANH)
                     .kernelSize(2,2)
                     .dataFormat(format)
@@ -705,50 +726,50 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getBatchNormNet(boolean logStdev, CNN2DFormat format, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getBatchNormNet(DataType dataType,boolean logStdev, CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new BatchNormalization.Builder()
+            return getNetWithLayer(dataType,new BatchNormalization.Builder()
                     .useLogStd(logStdev)
                     .dataFormat(format)
                     .helperAllowFallback(false)
                     .nOut(3).build(), format, ConvolutionMode.Same, null);
         } else {
-            return getNetWithLayer(new BatchNormalization.Builder()
+            return getNetWithLayer(dataType,new BatchNormalization.Builder()
                     .useLogStd(logStdev)
                     .helperAllowFallback(false)
                     .nOut(3).build(), format, ConvolutionMode.Same, null);
         }
     }
 
-    private MultiLayerNetwork getSpaceToDepthNet(CNN2DFormat format, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getSpaceToDepthNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new SpaceToDepthLayer.Builder()
+            return getNetWithLayer(dataType,new SpaceToDepthLayer.Builder()
                     .blocks(2)
                     .dataFormat(format)
                     .build(), format, ConvolutionMode.Same, null);
         } else {
-            return getNetWithLayer(new SpaceToDepthLayer.Builder()
+            return getNetWithLayer(dataType,new SpaceToDepthLayer.Builder()
                     .blocks(2)
                     .build(), format, ConvolutionMode.Same, null);
         }
     }
 
-    private MultiLayerNetwork getSpaceToBatchNet(CNN2DFormat format, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getSpaceToBatchNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new SpaceToBatchLayer.Builder()
+            return getNetWithLayer(dataType,new SpaceToBatchLayer.Builder()
                     .blocks(2, 2)
                     .dataFormat(format)
                     .build(), format, ConvolutionMode.Same, InputType.convolutional(16, 16, 3, format));
         } else {
-            return getNetWithLayer(new SpaceToBatchLayer.Builder()
+            return getNetWithLayer(dataType,new SpaceToBatchLayer.Builder()
                     .blocks(2, 2)
                     .build(), format, ConvolutionMode.Same, InputType.convolutional(16, 16, 3, format));
         }
     }
 
-    private MultiLayerNetwork getLocallyConnectedNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
+    private MultiLayerNetwork getLocallyConnectedNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new LocallyConnected2D.Builder()
+            return getNetWithLayer(dataType,new LocallyConnected2D.Builder()
                     .kernelSize(3, 3)
                     .stride(2, 2)
                     .activation(Activation.TANH)
@@ -756,7 +777,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                     .nOut(3)
                     .build(), format, cm, null);
         } else {
-            return getNetWithLayer(new LocallyConnected2D.Builder()
+            return getNetWithLayer(dataType,new LocallyConnected2D.Builder()
                     .kernelSize(3, 3)
                     .stride(2, 2)
                     .activation(Activation.TANH)
@@ -765,9 +786,9 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    private MultiLayerNetwork getNetWithLayer(Layer layer, CNN2DFormat format, ConvolutionMode cm, InputType inputType) {
+    private MultiLayerNetwork getNetWithLayer(DataType dataType,Layer layer, CNN2DFormat format, ConvolutionMode cm, InputType inputType) {
         NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
-                .dataType(this.dataType)
+                .dataType(dataType)
                 .seed(12345)
                 .convolutionMode(cm)
                 .list()
@@ -794,13 +815,13 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         return net;
     }
 
-    private MultiLayerNetwork getGlobalPoolingNet(CNN2DFormat format, PoolingType pt, boolean setOnLayerAlso) {
+    private MultiLayerNetwork getGlobalPoolingNet(DataType dataType,CNN2DFormat format, PoolingType pt, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-            return getNetWithLayer(new GlobalPoolingLayer.Builder(pt)
+            return getNetWithLayer(dataType,new GlobalPoolingLayer.Builder(pt)
                     .poolingDimensions(format == CNN2DFormat.NCHW ? new int[]{2,3} : new int[]{1,2})
                     .build(), format, ConvolutionMode.Same, null);
         } else {
-            return getNetWithLayer(new GlobalPoolingLayer.Builder(pt)
+            return getNetWithLayer(dataType,new GlobalPoolingLayer.Builder(pt)
                     .build(), format, ConvolutionMode.Same, null);
         }
     }
@@ -865,13 +886,13 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         INDArray l0_3 = tc.net3.feedForward(inNHWC).get(tc.testLayerIdx + 1);
         INDArray l0_4 = tc.net4.feedForward(inNHWC).get(tc.testLayerIdx + 1);
 
-        assertEquals(tc.msg, l0_1, l0_2);
+        assertEquals(l0_1, l0_2,tc.msg);
         if(l0_1.rank() == 4) {
-            assertEquals(tc.msg, l0_1, l0_3.permute(0, 3, 1, 2));
-            assertEquals(tc.msg, l0_1, l0_4.permute(0, 3, 1, 2));
+            assertEquals(l0_1, l0_3.permute(0, 3, 1, 2),tc.msg);
+            assertEquals(l0_1, l0_4.permute(0, 3, 1, 2),tc.msg);
         } else {
-            assertEquals(tc.msg, l0_1, l0_3);
-            assertEquals(tc.msg, l0_1, l0_4);
+            assertEquals(l0_1, l0_3,tc.msg);
+            assertEquals( l0_1, l0_4,tc.msg);
         }
 
 
@@ -880,13 +901,13 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         INDArray out3 = tc.net3.output(inNHWC);
         INDArray out4 = tc.net4.output(inNHWC);
 
-        assertEquals(tc.msg, out1, out2);
+        assertEquals(out1, out2,tc.msg);
         if(!tc.nhwcOutput) {
-            assertEquals(tc.msg, out1, out3);
-            assertEquals(tc.msg, out1, out4);
+            assertEquals(out1, out3,tc.msg);
+            assertEquals( out1, out4,tc.msg);
         } else {
-            assertEquals(tc.msg, out1, out3.permute(0,3,1,2));      //NHWC to NCHW
-            assertEquals(tc.msg, out1, out4.permute(0,3,1,2));
+            assertEquals(out1, out3.permute(0,3,1,2),tc.msg);      //NHWC to NCHW
+            assertEquals(out1, out4.permute(0,3,1,2),tc.msg);
         }
 
         //Test backprop
@@ -896,29 +917,29 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         Pair<Gradient, INDArray> p4 = tc.net4.calculateGradients(inNHWC, tc.labelsNHWC, null, null);
 
             //Inpput gradients
-        assertEquals(tc.msg, p1.getSecond(), p2.getSecond());
-        assertEquals(tc.msg, p1.getSecond(), p3.getSecond().permute(0,3,1,2));  //Input gradients for NHWC input are also in NHWC format
-        assertEquals(tc.msg, p1.getSecond(), p4.getSecond().permute(0,3,1,2));
+        assertEquals( p1.getSecond(), p2.getSecond(),tc.msg);
+        assertEquals(p1.getSecond(), p3.getSecond().permute(0,3,1,2),tc.msg);  //Input gradients for NHWC input are also in NHWC format
+        assertEquals( p1.getSecond(), p4.getSecond().permute(0,3,1,2),tc.msg);
 
         List<String> diff12 = differentGrads(p1.getFirst(), p2.getFirst());
         List<String> diff13 = differentGrads(p1.getFirst(), p3.getFirst());
         List<String> diff14 = differentGrads(p1.getFirst(), p4.getFirst());
-        assertEquals(tc.msg + " " + diff12, 0, diff12.size());
-        assertEquals(tc.msg + " " + diff13, 0, diff13.size());
-        assertEquals(tc.msg + " " + diff14, 0, diff14.size());
+        assertEquals( 0, diff12.size(),tc.msg + " " + diff12);
+        assertEquals( 0, diff13.size(),tc.msg + " " + diff13);
+        assertEquals(0, diff14.size(),tc.msg + " " + diff14);
 
-        assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p2.getFirst().gradientForVariable());
-        assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p3.getFirst().gradientForVariable());
-        assertEquals(tc.msg, p1.getFirst().gradientForVariable(), p4.getFirst().gradientForVariable());
+        assertEquals(p1.getFirst().gradientForVariable(), p2.getFirst().gradientForVariable(),tc.msg);
+        assertEquals(p1.getFirst().gradientForVariable(), p3.getFirst().gradientForVariable(),tc.msg);
+        assertEquals( p1.getFirst().gradientForVariable(), p4.getFirst().gradientForVariable(),tc.msg);
 
         tc.net1.fit(inNCHW, tc.labelsNCHW);
         tc.net2.fit(inNCHW, tc.labelsNCHW);
         tc.net3.fit(inNHWC, tc.labelsNHWC);
         tc.net4.fit(inNHWC, tc.labelsNHWC);
 
-        assertEquals(tc.msg, tc.net1.params(), tc.net2.params());
-        assertEquals(tc.msg, tc.net1.params(), tc.net3.params());
-        assertEquals(tc.msg, tc.net1.params(), tc.net4.params());
+        assertEquals(tc.net1.params(), tc.net2.params(),tc.msg);
+        assertEquals(tc.net1.params(), tc.net3.params(),tc.msg);
+        assertEquals(tc.net1.params(), tc.net4.params(),tc.msg);
 
         //Test serialization
         MultiLayerNetwork net1a = TestUtils.testModelSerialization(tc.net1);
@@ -927,14 +948,14 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         MultiLayerNetwork net4a = TestUtils.testModelSerialization(tc.net4);
 
         out1 = tc.net1.output(inNCHW);
-        assertEquals(tc.msg, out1, net1a.output(inNCHW));
-        assertEquals(tc.msg, out1, net2a.output(inNCHW));
+        assertEquals(out1, net1a.output(inNCHW),tc.msg);
+        assertEquals(out1, net2a.output(inNCHW),tc.msg);
         if(!tc.nhwcOutput) {
-            assertEquals(tc.msg, out1, net3a.output(inNHWC));
-            assertEquals(tc.msg, out1, net4a.output(inNHWC));
+            assertEquals( out1, net3a.output(inNHWC),tc.msg);
+            assertEquals(out1, net4a.output(inNHWC),tc.msg);
         } else {
-            assertEquals(tc.msg, out1, net3a.output(inNHWC).permute(0,3,1,2));   //NHWC to NCHW
-            assertEquals(tc.msg, out1, net4a.output(inNHWC).permute(0,3,1,2));
+            assertEquals(out1, net3a.output(inNHWC).permute(0,3,1,2),tc.msg);   //NHWC to NCHW
+            assertEquals(out1, net4a.output(inNHWC).permute(0,3,1,2),tc.msg);
         }
 
     }
@@ -987,7 +1008,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
 
     @Test
-    public void testWrongFormatIn(){
+    public void testWrongFormatIn() {
 
         for(CNN2DFormat df : CNN2DFormat.values()) {
             for(int i = 0; i < 4; i++) {
@@ -1033,7 +1054,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 } catch (DL4JInvalidInputException e) {
 //                    e.printStackTrace();
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG) || msg.contains("input array channels does not match CNN layer configuration"));
+                    assertTrue(msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG) || msg.contains("input array channels does not match CNN layer configuration"),msg);
                 }
             }
         }

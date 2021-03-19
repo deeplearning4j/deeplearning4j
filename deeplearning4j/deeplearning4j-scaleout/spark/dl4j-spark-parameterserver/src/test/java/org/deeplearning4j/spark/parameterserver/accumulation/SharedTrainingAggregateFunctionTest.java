@@ -22,15 +22,15 @@ package org.deeplearning4j.spark.parameterserver.accumulation;
 
 import com.sun.jna.Platform;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SharedTrainingAggregateFunctionTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         //
     }
