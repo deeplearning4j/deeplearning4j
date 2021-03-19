@@ -23,6 +23,7 @@ package org.deeplearning4j.rl4j.trainer;
 import org.apache.commons.lang3.builder.Builder;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -34,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
+@Disabled("Mockito")
 public class SyncTrainerTest {
 
     @Mock

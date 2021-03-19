@@ -21,6 +21,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import org.deeplearning4j.rl4j.network.configuration.ActorCriticDenseNetworkConfiguration;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author saudet
  */
+@Disabled("File permissions on CI")
 public class ActorCriticTest {
 
     public static ActorCriticDenseNetworkConfiguration NET_CONF =

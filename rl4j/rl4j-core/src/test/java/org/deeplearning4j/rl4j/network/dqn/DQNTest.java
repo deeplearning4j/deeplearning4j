@@ -21,6 +21,7 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
 import org.deeplearning4j.rl4j.network.configuration.DQNDenseNetworkConfiguration;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.learning.config.RmsProp;
 
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author saudet
  */
+@Disabled("File permissions")
 public class DQNTest {
 
     private static DQNDenseNetworkConfiguration NET_CONF =
