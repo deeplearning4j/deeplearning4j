@@ -35,6 +35,7 @@ import org.deeplearning4j.spark.models.word2vec.SparkWord2VecTest;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.primitives.Counter;
 
@@ -87,6 +88,7 @@ public class SparkSequenceVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Timeout issue")
     public void testFrequenciesCount() throws Exception {
 
         if(Platform.isWindows()) {

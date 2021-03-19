@@ -90,8 +90,9 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
         for(boolean mds : new boolean[]{false, true}) {
             INDArray last = null;
+
             INDArray lastDup = null;
-            for (String s : new String[]{"paths", "direct", "export"}) {
+            for (String s : new String[]{"paths", "direSparkSequenceVectorsTestct", "export"}) {
                 System.out.println("--------------------------------------------------------------------------------------------------------------");
                 log.info("Starting: {} - {}", s, (mds ? "MultiDataSet" : "DataSet"));
                 boolean isPaths = "paths".equals(s);
