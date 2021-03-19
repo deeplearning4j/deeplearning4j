@@ -26,21 +26,20 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Disabled("Permissions issues on CI")
 public class BasicLabelAwareIteratorTest extends BaseDL4JTest {
 
 
 
     @BeforeEach
-    public void setUp() throws Exception {
-
-    }
+    public void setUp() throws Exception {}
 
     @Test
     public void testHasNextDocument1() throws Exception {
