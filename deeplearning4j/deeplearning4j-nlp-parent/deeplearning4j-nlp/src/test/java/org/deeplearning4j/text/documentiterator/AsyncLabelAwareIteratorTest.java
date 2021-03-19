@@ -23,12 +23,14 @@ package org.deeplearning4j.text.documentiterator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.resources.Resources;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled("Permissions issues on CI")
 public class AsyncLabelAwareIteratorTest extends BaseDL4JTest {
     @Test()
     @Timeout(30000)

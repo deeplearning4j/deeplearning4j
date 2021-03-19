@@ -23,6 +23,7 @@ package org.deeplearning4j.text.sentenceiterator;
 import org.deeplearning4j.BaseDL4JTest;
 
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ import java.io.File;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Disabled("Deprecated module")
 public class PrefetchingSentenceIteratorTest extends BaseDL4JTest {
 
 

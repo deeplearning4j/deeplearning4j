@@ -27,6 +27,7 @@ import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
 import org.deeplearning4j.iterator.provider.CollectionLabeledPairSentenceProvider;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -47,6 +48,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
+@Disabled("Permissions issues on CI")
 public class TestBertIterator extends BaseDL4JTest {
 
     private static File pathToVocab = Resources.asFile("other/vocab.txt");
@@ -56,8 +58,6 @@ public class TestBertIterator extends BaseDL4JTest {
     private static String sentenceA = "Goodnight noises everywhere";
     private static String sentenceB = "Goodnight moon";
 
-    public TestBertIterator() throws IOException {
-    }
 
     @Test()
     public void testBertSequenceClassification() throws Exception {

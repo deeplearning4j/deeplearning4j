@@ -24,6 +24,7 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
@@ -53,6 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled("Permissions issues on CI")
 public class VocabConstructorTest extends BaseDL4JTest {
 
 

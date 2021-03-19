@@ -25,6 +25,7 @@ import org.deeplearning4j.BaseDL4JTest;
 
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.resources.Resources;
@@ -36,6 +37,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Disabled("Permissions issues on CI")
 public class FilenamesLabelAwareIteratorTest extends BaseDL4JTest {
 
 
