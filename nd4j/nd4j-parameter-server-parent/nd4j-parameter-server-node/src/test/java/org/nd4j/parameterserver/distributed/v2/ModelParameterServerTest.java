@@ -23,6 +23,7 @@ package org.nd4j.parameterserver.distributed.v2;
 import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Disabled
 public class ModelParameterServerTest extends BaseND4JTest {
     private static final String rootId = "ROOT_NODE";
 
