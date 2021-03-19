@@ -33,6 +33,7 @@ import org.deeplearning4j.graph.models.GraphVectors;
 import org.deeplearning4j.graph.models.loader.GraphVectorSerializer;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.Timeout;
@@ -48,6 +49,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled("Permissions issues on CI")
 public class TestDeepWalk extends BaseDL4JTest {
 
 

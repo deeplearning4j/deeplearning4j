@@ -184,7 +184,7 @@ public class PythonExecutioner {
     private static String getWrappedCode(String code) {
 
         try (InputStream is = PythonExecutioner.class
-                .getResourceAsStream("pythonexec/pythonexec.py")) {
+                .getResourceAsStream("org/nd4j/python4j/pythonexec/pythonexec.py")) {
             String base = IOUtils.toString(is, StandardCharsets.UTF_8);
             String indentedCode = "    " + code.replace("\n", "\n    ");
             String out = base.replace("    pass", indentedCode);

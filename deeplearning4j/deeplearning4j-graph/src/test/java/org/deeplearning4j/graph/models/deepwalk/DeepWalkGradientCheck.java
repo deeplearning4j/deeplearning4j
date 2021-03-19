@@ -27,6 +27,7 @@ import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -38,6 +39,7 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled("Permissions issues on CI")
 public class DeepWalkGradientCheck extends BaseDL4JTest {
 
     public static final double epsilon = 1e-8;

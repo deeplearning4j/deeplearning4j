@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.util.ModelSerializer;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -47,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Slf4j
+@Disabled("Permissions issues on CI")
 public class ParallelWrapperMainTest extends BaseDL4JTest {
 
 

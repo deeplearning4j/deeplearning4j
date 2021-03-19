@@ -29,6 +29,7 @@ import org.deeplearning4j.graph.data.impl.DelimitedVertexLoader;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.io.ClassPathResource;
@@ -38,6 +39,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled("Permissions issues on CI")
 public class TestGraphLoading extends BaseDL4JTest {
 
     @Test()
