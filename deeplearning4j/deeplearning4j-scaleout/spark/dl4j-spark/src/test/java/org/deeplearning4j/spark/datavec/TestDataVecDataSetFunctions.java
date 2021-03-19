@@ -46,6 +46,7 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -244,6 +245,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
+    @Disabled
     public void testDataVecSequencePairDataSetFunction(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
@@ -343,6 +345,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     }
 
     @Test
+    @Disabled("Permissions issues")
     public void testDataVecSequencePairDataSetFunctionVariableLength(@TempDir Path testDir) throws Exception {
         //Same sort of test as testDataVecSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
         if(Platform.isWindows()) {

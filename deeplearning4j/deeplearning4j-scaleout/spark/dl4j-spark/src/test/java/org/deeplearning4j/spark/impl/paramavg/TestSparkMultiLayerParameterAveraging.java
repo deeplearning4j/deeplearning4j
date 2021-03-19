@@ -428,6 +428,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
     @Test
+    @Disabled("Permissions issues on CI")
     public void testFitViaStringPaths(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
@@ -495,6 +496,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     }
 
     @Test
+    @Disabled("Permissions issues on CI")
     public void testFitViaStringPathsSize1(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
@@ -579,6 +581,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
     @Test
+    @Disabled("Permissions issues on CI")
     public void testFitViaStringPathsCompGraph(@TempDir Path testDir) throws Exception {
         if(Platform.isWindows()) {
             //Spark tests don't run on windows
