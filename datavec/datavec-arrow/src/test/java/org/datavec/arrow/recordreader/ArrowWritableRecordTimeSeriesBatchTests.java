@@ -55,9 +55,9 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
 
         List<List<Writable>> timeStep = Arrays.asList(
-                Arrays.<Writable>asList(new IntWritable(0),new IntWritable(1),new IntWritable(2)),
-                Arrays.<Writable>asList(new IntWritable(1),new IntWritable(2),new IntWritable(3)),
-                Arrays.<Writable>asList(new IntWritable(4),new IntWritable(5),new IntWritable(6))
+                Arrays.asList(new IntWritable(0),new IntWritable(1),new IntWritable(2)),
+                Arrays.asList(new IntWritable(1),new IntWritable(2),new IntWritable(3)),
+                Arrays.asList(new IntWritable(4),new IntWritable(5),new IntWritable(6))
         );
 
         int numTimeSteps = 5;

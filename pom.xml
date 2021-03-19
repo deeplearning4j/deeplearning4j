@@ -1166,6 +1166,7 @@
                             <environmentVariables>
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
                             </environmentVariables>
+                            <argLine>-Xmx8g</argLine>
                         </configuration>
                         <dependencies>
                             <dependency>

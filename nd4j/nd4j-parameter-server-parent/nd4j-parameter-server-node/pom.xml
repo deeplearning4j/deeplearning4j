@@ -111,7 +111,7 @@
                                 <include>*.java</include>
                                 <include>**/*.java</include>
                             </includes>
-                            <argLine> </argLine>
+                            <argLine> -Xmx8g </argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -135,7 +135,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
+                            <argLine>-Xmx8g</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
