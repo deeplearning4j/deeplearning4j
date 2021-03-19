@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.cpython.global.python;
+import org.nd4j.common.io.ClassPathResource;
 
 import static org.bytedeco.cpython.global.python.*;
 import static org.bytedeco.cpython.helper.python.Py_SetPath;
@@ -182,9 +183,8 @@ public class PythonExecutioner {
 
 
     private static String getWrappedCode(String code) {
-
-        try (InputStream is = PythonExecutioner.class
-                .getResourceAsStream("org/nd4j/python4j/pythonexec/pythonexec.py")) {
+        ClassPathResource resource = new ClassPathResource("org/nd4j/python4j/pythonexec/pythonexec.py");
+        try (InputStream is = resource.getInputStream()) {
             String base = IOUtils.toString(is, StandardCharsets.UTF_8);
             String indentedCode = "    " + code.replace("\n", "\n    ");
             String out = base.replace("    pass", indentedCode);
