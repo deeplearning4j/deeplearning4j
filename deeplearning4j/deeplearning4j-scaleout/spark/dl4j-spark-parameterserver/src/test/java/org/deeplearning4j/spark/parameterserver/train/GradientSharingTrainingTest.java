@@ -85,6 +85,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
     @Test
+    @Disabled
     public void trainSanityCheck(@TempDir Path testDir) throws Exception {
 
         for(boolean mds : new boolean[]{false, true}) {
