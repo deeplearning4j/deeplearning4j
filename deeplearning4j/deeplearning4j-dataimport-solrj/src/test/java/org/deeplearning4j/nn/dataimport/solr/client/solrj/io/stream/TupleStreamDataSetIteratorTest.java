@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ThreadLeakFilters(defaultFilters = true, filters = { TupleStreamDataSetIteratorTest.PrivateDeallocatorThreadsFilter.class })
 @DisplayName("Tuple Stream Data Set Iterator Test")
+@Disabled("Permissions issues with temp dir")
 class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
     static {

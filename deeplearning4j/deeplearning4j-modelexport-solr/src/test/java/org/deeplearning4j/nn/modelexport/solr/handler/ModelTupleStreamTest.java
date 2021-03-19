@@ -54,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -92,6 +94,7 @@ class ModelTupleStreamTest {
 
     @Test
     @DisplayName("Test")
+    @Disabled("Permissions issues on CI")
     void test() throws Exception {
         int testsCount = 0;
         for (int numInputs = 1; numInputs <= 5; ++numInputs) {
