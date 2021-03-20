@@ -1,7 +1,7 @@
 # Interpreter
 
 ## Status
-Proposed
+Rejected
 
 Proposed by: Adam Gibson (28-09-2020)
 
