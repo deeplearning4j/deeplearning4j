@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.cuda.util.CuDNNValidationUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
@@ -54,6 +55,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Slf4j
+@NativeTag
 public class ValidateCuDNN extends BaseDL4JTest {
 
     @Override

@@ -28,8 +28,11 @@ import org.deeplearning4j.iterator.provider.CollectionLabeledPairSentenceProvide
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -49,6 +52,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @Disabled("Permissions issues on CI")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class TestBertIterator extends BaseDL4JTest {
 
     private static File pathToVocab = Resources.asFile("other/vocab.txt");

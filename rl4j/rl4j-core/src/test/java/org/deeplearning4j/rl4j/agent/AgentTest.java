@@ -27,6 +27,7 @@ import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,6 +38,8 @@ import org.mockito.*;
 import org.mockito.exceptions.base.MockitoException;
 import org.mockito.junit.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -48,6 +51,8 @@ import static org.mockito.Mockito.*;
 //@RunWith(JUnitPlatform.class)
 @ExtendWith(MockitoExtension.class)
 @Disabled("Mockito")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class AgentTest {
     @Mock Environment environmentMock;
     @Mock TransformProcess transformProcessMock;

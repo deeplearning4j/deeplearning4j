@@ -47,17 +47,19 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.*;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.DisplayName;
+
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.TagNames;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Jdbc Record Reader Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
 class JDBCRecordReaderTest {
 
     @TempDir

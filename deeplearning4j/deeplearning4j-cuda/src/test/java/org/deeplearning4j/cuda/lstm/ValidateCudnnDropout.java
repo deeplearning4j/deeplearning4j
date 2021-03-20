@@ -23,6 +23,7 @@ package org.deeplearning4j.cuda.lstm;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.cuda.dropout.CudnnDropoutHelper;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
@@ -32,6 +33,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@NativeTag
 public class ValidateCudnnDropout extends BaseDL4JTest {
 
     @Override
@@ -58,8 +60,8 @@ public class ValidateCudnnDropout extends BaseDL4JTest {
 //            System.out.println(countZero);
 //            System.out.println(countNonDropped);
 
-            assertTrue(String.valueOf(countZero), countZero >= 5 && countZero <= 90);
-            assertTrue(String.valueOf(countNonDropped), countNonDropped >= 5 && countNonDropped <= 95);
+            assertTrue(countZero >= 5 && countZero <= 90, String.valueOf(countZero));
+            assertTrue(countNonDropped >= 5 && countNonDropped <= 95, String.valueOf(countNonDropped));
             assertEquals(100, countZero + countNonDropped);
 
             //Test repeatability:

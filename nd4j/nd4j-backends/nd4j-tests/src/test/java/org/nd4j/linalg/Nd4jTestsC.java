@@ -26,11 +26,7 @@ import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,6 +34,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.common.util.MathUtils;
 import org.nd4j.enums.WeightsFormat;
@@ -151,7 +149,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Adam Gibson
  */
 @Slf4j
-
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();

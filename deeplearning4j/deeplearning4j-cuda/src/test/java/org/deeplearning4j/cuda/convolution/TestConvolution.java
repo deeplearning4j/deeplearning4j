@@ -46,6 +46,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -59,6 +60,7 @@ import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -70,8 +72,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class TestConvolution extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -176,7 +176,7 @@ public class TestConvolution extends BaseDL4JTest {
                     INDArray outCudnn = layerCudnn.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
                     INDArray outStd = layerStandard.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
 
-                    assertEquals(msg, outStd, outCudnn);
+                    assertEquals(outStd, outCudnn, msg);
 
 
                     //Check backprop:
@@ -190,13 +190,13 @@ public class TestConvolution extends BaseDL4JTest {
                     INDArray epsOutStd = pStd.getSecond();
                     INDArray epsOutCudnn = pCudnn.getSecond();
 
-                    assertTrue(msg, epsOutStd.equalsWithEps(epsOutCudnn, 1e-4));
+                    assertTrue(epsOutStd.equalsWithEps(epsOutCudnn, 1e-4), msg);
 
                     if (conv) {
                         INDArray gradStd = pStd.getFirst().gradient();
                         INDArray gradCudnn = pCudnn.getFirst().gradient();
 
-                        assertTrue(msg, gradStd.equalsWithEps(gradCudnn, 1e-4));
+                        assertTrue(gradStd.equalsWithEps(gradCudnn, 1e-4), msg);
                     }
                 }
             }
@@ -205,8 +205,8 @@ public class TestConvolution extends BaseDL4JTest {
 
 
     @Test
-    public void validateXceptionImport() throws Exception {
-        File dir = testDir.newFolder();
+    public void validateXceptionImport(@TempDir Path testDir) throws Exception {
+        File dir = testDir.toFile();
         File fSource = Resources.asFile("modelimport/keras/examples/xception/xception_tf_keras_2.h5");
         File fExtracted = new File(dir, "xception_tf_keras_2.h5" );
         FileUtils.copyFile(fSource, fExtracted);
@@ -226,8 +226,8 @@ public class TestConvolution extends BaseDL4JTest {
 
         assertEquals(withCudnn.keySet(), noCudnn.keySet());
 
-        for(String s : withCudnn.keySet()){
-            assertEquals(s, withCudnn.get(s), noCudnn.get(s));
+        for(String s : withCudnn.keySet()) {
+            assertEquals(withCudnn.get(s), noCudnn.get(s), s);
         }
     }
 

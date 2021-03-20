@@ -25,7 +25,9 @@ import lombok.val;
 import lombok.var;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
+@Tag(TagNames.JAVA_ONLY)
 public class DummyBlockDataSetIteratorTests extends BaseDL4JTest {
 
     @Test

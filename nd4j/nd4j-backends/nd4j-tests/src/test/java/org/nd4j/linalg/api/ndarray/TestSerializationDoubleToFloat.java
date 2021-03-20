@@ -23,10 +23,13 @@ package org.nd4j.linalg.api.ndarray;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -40,7 +43,8 @@ import java.io.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-
+@NativeTag
+@Tag(TagNames.NDARRAY_SERDE)
 public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();

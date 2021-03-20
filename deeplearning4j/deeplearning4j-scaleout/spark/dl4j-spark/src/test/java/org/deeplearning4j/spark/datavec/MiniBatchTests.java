@@ -26,7 +26,10 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.common.io.ClassPathResource;
 import org.slf4j.Logger;
@@ -36,7 +39,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class MiniBatchTests extends BaseSparkTest {
     private static final Logger log = LoggerFactory.getLogger(MiniBatchTests.class);
 

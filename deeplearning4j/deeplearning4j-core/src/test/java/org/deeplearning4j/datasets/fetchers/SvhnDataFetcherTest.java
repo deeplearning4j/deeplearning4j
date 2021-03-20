@@ -21,6 +21,7 @@ package org.deeplearning4j.datasets.fetchers;
 
 import org.deeplearning4j.BaseDL4JTest;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -28,11 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 /**
  * @author saudet
  */
 @DisplayName("Svhn Data Fetcher Test")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 class SvhnDataFetcherTest extends BaseDL4JTest {
 
     @Override

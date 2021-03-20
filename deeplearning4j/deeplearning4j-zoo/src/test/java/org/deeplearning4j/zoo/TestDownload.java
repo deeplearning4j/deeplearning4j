@@ -33,6 +33,8 @@ import org.deeplearning4j.zoo.util.darknet.DarknetLabels;
 import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -46,6 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @Disabled("Times out too often")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DL4J_OLD_API)
+@NativeTag
 public class TestDownload extends BaseDL4JTest {
     @TempDir
     static Path sharedTempDir;

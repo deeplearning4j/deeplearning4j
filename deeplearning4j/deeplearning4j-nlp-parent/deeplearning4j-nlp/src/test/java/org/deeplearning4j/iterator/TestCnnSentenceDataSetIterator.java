@@ -22,6 +22,9 @@ package org.deeplearning4j.iterator;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
@@ -38,7 +41,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
     @BeforeEach

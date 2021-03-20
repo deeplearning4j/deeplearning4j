@@ -26,7 +26,10 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +41,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @author Max Pumperla
  */
 @DisplayName("Keras Bidirectional Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 class KerasBidirectionalTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";

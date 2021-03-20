@@ -20,9 +20,11 @@
 
 package org.nd4j.linalg.schedule;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -31,7 +33,8 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JACKSON_SERDE)
+@Tag(TagNames.JAVA_ONLY)
 public class TestSchedules extends BaseNd4jTestWithBackends {
 
 

@@ -22,6 +22,7 @@ package org.nd4j.autodiff.ui;
 
 import com.google.flatbuffers.Table;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -31,6 +32,7 @@ import org.nd4j.autodiff.listeners.impl.UIListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.graph.UIEvent;
 import org.nd4j.graph.UIGraphStructure;
@@ -53,6 +55,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.UI)
+@Tag(TagNames.FILE_IO)
 public class UIListenerTest extends BaseNd4jTestWithBackends {
 
 

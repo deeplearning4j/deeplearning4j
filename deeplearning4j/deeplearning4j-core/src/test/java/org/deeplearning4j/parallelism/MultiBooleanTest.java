@@ -21,13 +21,18 @@ package org.deeplearning4j.parallelism;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.parallel.MultiBoolean;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Multi Boolean Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class MultiBooleanTest extends BaseDL4JTest {
 
     @Test

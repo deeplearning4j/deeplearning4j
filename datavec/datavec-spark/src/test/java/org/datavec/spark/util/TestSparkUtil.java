@@ -28,7 +28,9 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.utils.SparkUtils;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +40,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag(TagNames.SPARK)
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestSparkUtil extends BaseSparkTest {
 
     @Test
@@ -46,8 +51,8 @@ public class TestSparkUtil extends BaseSparkTest {
            return;
        }
         List<List<Writable>> l = new ArrayList<>();
-        l.add(Arrays.<Writable>asList(new Text("abc"), new DoubleWritable(2.0), new IntWritable(-1)));
-        l.add(Arrays.<Writable>asList(new Text("def"), new DoubleWritable(4.0), new IntWritable(-2)));
+        l.add(Arrays.asList(new Text("abc"), new DoubleWritable(2.0), new IntWritable(-1)));
+        l.add(Arrays.asList(new Text("def"), new DoubleWritable(4.0), new IntWritable(-2)));
 
         File f = File.createTempFile("testSparkUtil", "txt");
         f.deleteOnExit();

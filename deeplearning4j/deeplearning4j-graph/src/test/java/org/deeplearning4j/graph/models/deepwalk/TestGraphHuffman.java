@@ -21,15 +21,19 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class TestGraphHuffman extends BaseDL4JTest {
 
     @Test()

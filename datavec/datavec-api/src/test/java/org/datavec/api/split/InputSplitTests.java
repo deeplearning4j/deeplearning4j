@@ -20,7 +20,9 @@
 
 package org.datavec.api.split;
 
+import org.junit.jupiter.api.Tag;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;
@@ -42,6 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author saudet
  */
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class InputSplitTests extends BaseND4JTest {
 
     @Test

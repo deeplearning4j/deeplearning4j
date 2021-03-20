@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasPoolHelper;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
@@ -38,9 +39,15 @@ import java.net.URL;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @Slf4j
 @DisplayName("Keras Custom Layer Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
 class KerasCustomLayerTest extends BaseDL4JTest {
 
     @TempDir

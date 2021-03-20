@@ -24,11 +24,14 @@ import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.SameDiffLoss;
@@ -41,6 +44,11 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Keras Custom Loss Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
+@Tag(TagNames.LOSS_FUNCTIONS)
 class KerasCustomLossTest extends BaseDL4JTest {
 
     @TempDir

@@ -21,7 +21,10 @@
 package org.deeplearning4j.rl4j.observation.transform;
 
 import org.deeplearning4j.rl4j.observation.Observation;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class TransformProcessTest {
     @Test()
     public void when_noChannelNameIsSuppliedToBuild_expect_exception() {

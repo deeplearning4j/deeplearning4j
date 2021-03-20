@@ -32,7 +32,10 @@ import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -48,6 +51,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Log
 @DisplayName("Cnn 3 D Gradient Check Test")
+@Tag(TagNames.NDARRAY_ETL)
+@Tag(TagNames.TRAINING)
+@Tag(TagNames.DL4J_OLD_API)
+@NativeTag
 class CNN3DGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;

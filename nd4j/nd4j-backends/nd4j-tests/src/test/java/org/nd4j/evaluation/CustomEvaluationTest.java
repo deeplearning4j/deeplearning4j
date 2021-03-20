@@ -22,9 +22,12 @@ package org.nd4j.evaluation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.custom.CustomEvaluation;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -32,6 +35,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.primitives.Pair;
 
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
 public class CustomEvaluationTest extends BaseNd4jTestWithBackends {
 
 

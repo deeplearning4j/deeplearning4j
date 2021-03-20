@@ -54,6 +54,8 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.*;import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.*;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -86,6 +88,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 @DisplayName("Multi Layer Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class MultiLayerTest extends BaseDL4JTest {
 
     private static OpExecutioner.ProfilingMode origMode;

@@ -43,7 +43,10 @@ package org.nd4j.python4j;/*
 
 
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.python4j.NumpyArray;
@@ -54,6 +57,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NotThreadSafe
+@Tag(TagNames.FILE_IO)
+@NativeTag
+@Tag(TagNames.PYTHON)
 public class PythonNumpyServiceLoaderTest {
 
     @Test

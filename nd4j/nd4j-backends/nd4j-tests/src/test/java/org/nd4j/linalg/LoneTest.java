@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
@@ -48,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @Slf4j
-
+@NativeTag
 public class LoneTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

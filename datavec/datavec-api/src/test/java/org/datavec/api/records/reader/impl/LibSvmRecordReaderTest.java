@@ -26,6 +26,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
@@ -35,9 +36,13 @@ import static org.datavec.api.records.reader.impl.misc.LibSvmRecordReader.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.TagNames;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Lib Svm Record Reader Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class LibSvmRecordReaderTest extends BaseND4JTest {
 
     @Test

@@ -24,10 +24,13 @@ import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -50,7 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  */
-
+@Tag(TagNames.RNG)
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class Nd4jTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

@@ -25,8 +25,11 @@ import org.deeplearning4j.ui.model.stats.api.*;
 import org.deeplearning4j.ui.model.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.model.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.model.stats.impl.java.JavaStatsInitializationReport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -35,7 +38,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestStatsClasses extends BaseDL4JTest {
 
     @Test

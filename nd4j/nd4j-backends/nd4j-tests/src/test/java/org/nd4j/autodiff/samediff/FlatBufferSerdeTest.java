@@ -23,12 +23,15 @@ package org.nd4j.autodiff.samediff;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.graph.FlatConfiguration;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.graph.FlatNode;
@@ -70,6 +73,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SAMEDIFF)
+@NativeTag
 public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @TempDir Path testDir;
@@ -333,7 +339,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
 
             //Check training post deserialization
-            for( int i=0; i<3; i++ ){
+            for( int i = 0; i < 3; i++) {
                 sd.fit(ds);
                 sd2.fit(ds);
             }
@@ -355,7 +361,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void pooling3DSerialization(Nd4jBackend backend){
+    public void pooling3DSerialization(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);

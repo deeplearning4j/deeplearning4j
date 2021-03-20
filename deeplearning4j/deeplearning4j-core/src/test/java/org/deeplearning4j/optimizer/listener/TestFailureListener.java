@@ -28,7 +28,10 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.FailureTestingListener;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Adam;
@@ -44,6 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * They should be run manually, not as part of standard unit test run.
  */
 @Disabled
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.MANUAL)
 public class TestFailureListener extends BaseDL4JTest {
 
     @Disabled

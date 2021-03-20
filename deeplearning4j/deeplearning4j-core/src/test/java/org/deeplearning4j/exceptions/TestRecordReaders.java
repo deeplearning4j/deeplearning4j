@@ -29,7 +29,10 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.exception.DL4JException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -39,7 +42,10 @@ import java.util.Collection;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@NativeTag
+@Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.TRAINING)
+@Tag(TagNames.DL4J_OLD_API)
 public class TestRecordReaders extends BaseDL4JTest {
 
     @Test

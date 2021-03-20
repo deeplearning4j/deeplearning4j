@@ -43,6 +43,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled //AB 2019/08/23 Ignored for now
+
 public class OpConstructorTests extends BaseNd4jTestWithBackends {
 
     //Ignore individual classes

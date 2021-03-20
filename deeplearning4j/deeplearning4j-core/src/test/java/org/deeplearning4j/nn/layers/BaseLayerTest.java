@@ -29,7 +29,10 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,6 +44,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Base Layer Test")
+@NativeTag
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
+@Tag(TagNames.DL4J_OLD_API)
 class BaseLayerTest extends BaseDL4JTest {
 
     protected INDArray weight = Nd4j.create(new double[] { 0.10, -0.20, -0.15, 0.05 }, new int[] { 2, 2 });

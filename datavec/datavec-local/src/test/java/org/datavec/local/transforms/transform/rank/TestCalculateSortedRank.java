@@ -31,14 +31,17 @@ import org.datavec.api.writable.comparator.DoubleWritableComparator;
 
 
 import org.datavec.local.transforms.LocalTransformExecutor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
 public class TestCalculateSortedRank  {
 
     @Test

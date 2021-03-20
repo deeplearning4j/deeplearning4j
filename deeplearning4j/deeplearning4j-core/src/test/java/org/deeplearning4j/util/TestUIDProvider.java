@@ -22,10 +22,14 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.util.UIDProvider;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class TestUIDProvider extends BaseDL4JTest {
 
     @Test

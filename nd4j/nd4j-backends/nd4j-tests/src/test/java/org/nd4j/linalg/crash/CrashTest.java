@@ -23,10 +23,13 @@ package org.nd4j.linalg.crash;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -43,6 +46,8 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 @Slf4j
 
 @Disabled
+@NativeTag
+@Tag(TagNames.NDARRAY_INDEXING)
 public class CrashTest extends BaseNd4jTestWithBackends {
 
     private static final int ITERATIONS = 10;

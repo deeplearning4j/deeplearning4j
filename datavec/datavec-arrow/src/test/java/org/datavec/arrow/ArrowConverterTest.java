@@ -42,9 +42,11 @@ import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -62,6 +64,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
 @DisplayName("Arrow Converter Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class ArrowConverterTest extends BaseND4JTest {
 
     private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
@@ -142,8 +146,8 @@ class ArrowConverterTest extends BaseND4JTest {
         List<FieldVector> fieldVectorsBatch = ArrowConverter.toArrowColumnsString(bufferAllocator, schema.build(), batch);
         List<List<Writable>> batchRecords = ArrowConverter.toArrowWritables(fieldVectorsBatch, schema.build());
         List<List<Writable>> assertionBatch = new ArrayList<>();
-        assertionBatch.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(0)));
-        assertionBatch.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1)));
+        assertionBatch.add(Arrays.asList(new IntWritable(0), new IntWritable(0)));
+        assertionBatch.add(Arrays.asList(new IntWritable(1), new IntWritable(1)));
         assertEquals(assertionBatch, batchRecords);
     }
 
@@ -156,11 +160,11 @@ class ArrowConverterTest extends BaseND4JTest {
             schema.addColumnTime(String.valueOf(i), TimeZone.getDefault());
             single.add(String.valueOf(i));
         }
-        List<List<Writable>> input = Arrays.asList(Arrays.<Writable>asList(new LongWritable(0), new LongWritable(1)), Arrays.<Writable>asList(new LongWritable(2), new LongWritable(3)));
+        List<List<Writable>> input = Arrays.asList(Arrays.asList(new LongWritable(0), new LongWritable(1)), Arrays.<Writable>asList(new LongWritable(2), new LongWritable(3)));
         List<FieldVector> fieldVector = ArrowConverter.toArrowColumns(bufferAllocator, schema.build(), input);
         ArrowWritableRecordBatch writableRecordBatch = new ArrowWritableRecordBatch(fieldVector, schema.build());
-        List<Writable> assertion = Arrays.<Writable>asList(new LongWritable(4), new LongWritable(5));
-        writableRecordBatch.set(1, Arrays.<Writable>asList(new LongWritable(4), new LongWritable(5)));
+        List<Writable> assertion = Arrays.asList(new LongWritable(4), new LongWritable(5));
+        writableRecordBatch.set(1, Arrays.asList(new LongWritable(4), new LongWritable(5)));
         List<Writable> recordTest = writableRecordBatch.get(1);
         assertEquals(assertion, recordTest);
     }
@@ -174,11 +178,11 @@ class ArrowConverterTest extends BaseND4JTest {
             schema.addColumnInteger(String.valueOf(i));
             single.add(String.valueOf(i));
         }
-        List<List<Writable>> input = Arrays.asList(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(1)), Arrays.<Writable>asList(new IntWritable(2), new IntWritable(3)));
+        List<List<Writable>> input = Arrays.asList(Arrays.asList(new IntWritable(0), new IntWritable(1)), Arrays.<Writable>asList(new IntWritable(2), new IntWritable(3)));
         List<FieldVector> fieldVector = ArrowConverter.toArrowColumns(bufferAllocator, schema.build(), input);
         ArrowWritableRecordBatch writableRecordBatch = new ArrowWritableRecordBatch(fieldVector, schema.build());
-        List<Writable> assertion = Arrays.<Writable>asList(new IntWritable(4), new IntWritable(5));
-        writableRecordBatch.set(1, Arrays.<Writable>asList(new IntWritable(4), new IntWritable(5)));
+        List<Writable> assertion = Arrays.asList(new IntWritable(4), new IntWritable(5));
+        writableRecordBatch.set(1, Arrays.asList(new IntWritable(4), new IntWritable(5)));
         List<Writable> recordTest = writableRecordBatch.get(1);
         assertEquals(assertion, recordTest);
     }

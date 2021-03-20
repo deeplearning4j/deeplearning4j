@@ -24,8 +24,7 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -38,9 +37,9 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -48,6 +47,8 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled("Permissions issues on CI")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class InMemoryLookupTableTest extends BaseDL4JTest {
 
 

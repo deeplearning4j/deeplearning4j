@@ -25,6 +25,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.image.recordreader.ImageRecordReader;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
@@ -36,8 +37,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Label Generator Test")
+@NativeTag
+@Tag(TagNames.FILE_IO)
 class LabelGeneratorTest {
 
 

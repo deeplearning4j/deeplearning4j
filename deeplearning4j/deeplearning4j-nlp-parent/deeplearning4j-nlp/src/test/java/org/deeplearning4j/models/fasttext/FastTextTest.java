@@ -28,12 +28,15 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Disabled
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class FastTextTest extends BaseDL4JTest {
 
 

@@ -25,7 +25,10 @@ import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
 @DisplayName("Indexed Tail Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class IndexedTailTest extends BaseDL4JTest {
 
     @Test

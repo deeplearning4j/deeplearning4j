@@ -21,8 +21,11 @@
 package org.datavec.image.loader;
 
 import org.datavec.image.data.Image;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.awt.image.BufferedImage;
@@ -34,7 +37,8 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class TestImageLoader {
 
     private static long seed = 10;

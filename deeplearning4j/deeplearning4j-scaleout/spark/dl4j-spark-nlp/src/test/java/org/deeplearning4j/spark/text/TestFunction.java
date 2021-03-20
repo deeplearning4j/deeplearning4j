@@ -21,9 +21,15 @@
 package org.deeplearning4j.spark.text;
 
 import org.apache.spark.api.java.function.Function;
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.List;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestFunction implements Function<Integer, Integer> {
     public TestFunction(List<Integer> lst) {
         this.lst = lst;

@@ -21,10 +21,13 @@
 package org.nd4j.linalg.compression;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,7 +38,8 @@ import java.io.ByteArrayInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
+@NativeTag
+@Tag(TagNames.COMPRESSION)
 public class CompressionSerDeTests extends BaseNd4jTestWithBackends {
 
 

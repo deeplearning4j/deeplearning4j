@@ -28,6 +28,7 @@ import org.datavec.api.records.reader.impl.filebatch.FileBatchRecordReader;
 import org.datavec.api.records.reader.impl.filebatch.FileBatchSequenceRecordReader;
 import org.datavec.api.writable.Writable;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,9 +43,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 @DisplayName("File Batch Record Reader Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class FileBatchRecordReaderTest extends BaseND4JTest {
     @TempDir  Path testDir;
 

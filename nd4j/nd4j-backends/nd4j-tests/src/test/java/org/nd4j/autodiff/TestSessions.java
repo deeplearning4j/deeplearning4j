@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +33,8 @@ import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.FrameIter;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.memory.NoOpMemoryMgr;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -39,6 +42,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
 
 import java.io.File;
 import java.util.Arrays;
@@ -48,6 +52,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
 public class TestSessions extends BaseNd4jTestWithBackends {
 
     @Override
@@ -222,7 +228,8 @@ public class TestSessions extends BaseNd4jTestWithBackends {
 
         for( int numIter : new int[]{1,3}) {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
-            SameDiff sd = TFGraphMapper.importGraph(f);
+            TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
+            SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),null);
 
 //            System.out.println(sd.summary());
             sd.summary();
@@ -235,7 +242,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             String n2 = "while/Exit_1";
 
             Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null,
-                    Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
+                    Collections.emptyList(), null, At.defaultAt(Operation.TRAINING));
             assertEquals(2, m.size());
 
             INDArray exp = Nd4j.scalar((float)numIter);
@@ -246,7 +253,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             Map<AbstractSession.VarId,INDArray> outputs = is.getNodeOutputs();
             //Some sanity checks on the internal state:
             //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit
-            for( int i=0; i<numIter+1; i++ ){
+            for( int i = 0; i < numIter + 1; i++ ){
                 AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expLessVal = Nd4j.scalar(i != numIter);
                 assertTrue(outputs.containsKey(expVarId));
@@ -256,7 +263,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             assertFalse(outputs.containsKey(expVarId));
 
             //Check 2: Add should be executed numIter times...
-            for( int i=0; i<numIter; i++ ){
+            for( int i = 0; i < numIter; i++) {
                 expVarId = new AbstractSession.VarId("while/add","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expAddVal = Nd4j.scalar((float)(i+1));  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));

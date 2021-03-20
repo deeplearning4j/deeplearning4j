@@ -26,9 +26,12 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -56,6 +59,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *@author Adam Gibson
  */
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class BagOfWordsVectorizerTest extends BaseDL4JTest {
 
     @Test()
@@ -70,7 +75,7 @@ public class BagOfWordsVectorizerTest extends BaseDL4JTest {
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 
         BagOfWordsVectorizer vectorizer = new BagOfWordsVectorizer.Builder().setMinWordFrequency(1)
-                .setStopWords(new ArrayList<String>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
+                .setStopWords(new ArrayList<>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
                 .allowParallelTokenization(false)
                 //                .labels(labels)
                 //                .cleanup(true)

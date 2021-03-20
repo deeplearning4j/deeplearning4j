@@ -27,7 +27,10 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -38,6 +41,8 @@ import java.util.Collection;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class FlatModelUtilsTest extends BaseDL4JTest {
     private Word2Vec vec;
     private static final Logger log = LoggerFactory.getLogger(FlatModelUtilsTest.class);

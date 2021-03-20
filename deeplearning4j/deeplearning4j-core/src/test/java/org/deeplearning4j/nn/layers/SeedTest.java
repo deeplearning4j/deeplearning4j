@@ -24,7 +24,10 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -38,6 +41,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  */
 @DisplayName("Seed Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.RNG)
 class SeedTest extends BaseDL4JTest {
 
     private DataSetIterator irisIter = new IrisDataSetIterator(50, 50);

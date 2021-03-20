@@ -20,10 +20,12 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,6 +36,9 @@ import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.WORKSPACES)
 public class MemoryMgrTest extends BaseNd4jTestWithBackends {
 
 
@@ -73,7 +78,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
 
         //At this point: array store is full.
         //If we try to release more, the oldest (first released) values should be closed
-        for( int i=0; i<10; i++ ) {
+        for( int i=0; i < 10; i++) {
             INDArray toRelease = Nd4j.create(DataType.FLOAT, 25);
             mmgr.release(toRelease);
             //oldest N only should be closed by this point...

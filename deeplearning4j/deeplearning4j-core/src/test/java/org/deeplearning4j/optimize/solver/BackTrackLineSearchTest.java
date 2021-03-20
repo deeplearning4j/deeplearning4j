@@ -36,7 +36,10 @@ import org.deeplearning4j.optimize.solvers.BackTrackLineSearch;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -54,6 +57,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @author Adam Gibson
  */
 @DisplayName("Back Track Line Search Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.FILE_IO)
 class BackTrackLineSearchTest extends BaseDL4JTest {
 
     private DataSetIterator irisIter;

@@ -26,11 +26,17 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.serde.testClasses.CustomCondition;
 import org.datavec.api.transform.serde.testClasses.CustomFilter;
 import org.datavec.api.transform.serde.testClasses.CustomTransform;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JACKSON_SERDE)
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
 public class TestCustomTransformJsonYaml extends BaseND4JTest {
 
     @Test

@@ -20,10 +20,13 @@
 
 package org.nd4j.linalg.dataset;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
@@ -35,7 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Ede Meijer
  */
-
+@Tag(TagNames.NDARRAY_ETL)
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class MinMaxStatsTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

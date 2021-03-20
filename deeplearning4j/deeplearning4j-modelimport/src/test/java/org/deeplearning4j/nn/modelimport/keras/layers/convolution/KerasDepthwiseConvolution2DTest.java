@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolu
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasDepthwiseConvolution2D;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.base.Preconditions;
 import java.util.*;
@@ -38,11 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 /**
  * @author Max Pumperla
  */
 @DisplayName("Keras Depthwise Convolution 2 D Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 class KerasDepthwiseConvolution2DTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";

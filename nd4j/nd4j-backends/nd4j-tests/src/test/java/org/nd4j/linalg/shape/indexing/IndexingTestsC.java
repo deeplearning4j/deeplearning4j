@@ -23,10 +23,13 @@ package org.nd4j.linalg.shape.indexing;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,7 +46,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Adam Gibson
  */
 @Slf4j
-
+@NativeTag
+@Tag(TagNames.NDARRAY_INDEXING)
 public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
 

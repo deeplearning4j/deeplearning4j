@@ -45,8 +45,11 @@ import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -80,6 +83,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Slf4j
 @DisplayName("Keras Model End To End Test")
 @Disabled
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 class KerasModelEndToEndTest extends BaseDL4JTest {
 
     private static final String GROUP_ATTR_INPUTS = "inputs";

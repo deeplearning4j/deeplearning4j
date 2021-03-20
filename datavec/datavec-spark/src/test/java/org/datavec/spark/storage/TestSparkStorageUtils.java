@@ -21,6 +21,8 @@
 package org.datavec.spark.storage;
 
 import com.sun.jna.Platform;
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.shade.guava.io.Files;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -37,7 +39,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestSparkStorageUtils extends BaseSparkTest {
 
     @Test
@@ -46,11 +51,11 @@ public class TestSparkStorageUtils extends BaseSparkTest {
             return;
         }
         List<List<Writable>> l = new ArrayList<>();
-        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0),
+        l.add(Arrays.asList(new Text("zero"), new IntWritable(0),
                         new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))));
-        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(11),
+        l.add(Arrays.asList(new Text("one"), new IntWritable(11),
                         new DoubleWritable(11.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 11.0))));
-        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(22),
+        l.add(Arrays.asList(new Text("two"), new IntWritable(22),
                         new DoubleWritable(22.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 22.0))));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(l);
@@ -92,17 +97,17 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         }
         List<List<List<Writable>>> l = new ArrayList<>();
         l.add(Arrays.asList(
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0),
+                        Arrays.asList(new Text("zero"), new IntWritable(0),
                                         new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(1),
+                        Arrays.asList(new Text("one"), new IntWritable(1),
                                         new DoubleWritable(1.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 1.0))),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(2),
+                        Arrays.asList(new Text("two"), new IntWritable(2),
                                         new DoubleWritable(2.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 2.0)))));
 
         l.add(Arrays.asList(
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bzero"), new IntWritable(10),
+                        Arrays.asList(new Text("Bzero"), new IntWritable(10),
                                         new DoubleWritable(10), new NDArrayWritable(Nd4j.valueArrayOf(10, 10.0))),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bone"), new IntWritable(11),
+                        Arrays.asList(new Text("Bone"), new IntWritable(11),
                                         new DoubleWritable(11.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 11.0))),
                         Arrays.<org.datavec.api.writable.Writable>asList(new Text("Btwo"), new IntWritable(12),
                                         new DoubleWritable(12.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 12.0)))));

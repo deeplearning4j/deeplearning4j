@@ -27,14 +27,20 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.common.repartition.HashingBalancedPartitioner.LinearCongruentialGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import scala.Tuple2;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class HashingBalancedPartitionerTest extends BaseSparkTest {
 
     // e.g. we have 3 partitions, with red and blue elements, red is indexed by 0, blue by 1:

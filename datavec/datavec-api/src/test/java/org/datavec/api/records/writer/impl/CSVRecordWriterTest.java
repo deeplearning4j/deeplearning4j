@@ -26,6 +26,7 @@ import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import java.io.File;
@@ -34,8 +35,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Csv Record Writer Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class CSVRecordWriterTest extends BaseND4JTest {
 
     @BeforeEach

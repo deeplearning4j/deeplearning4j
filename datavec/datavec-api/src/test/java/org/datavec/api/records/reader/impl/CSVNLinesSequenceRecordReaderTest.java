@@ -26,6 +26,7 @@ import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
@@ -34,12 +35,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Csvn Lines Sequence Record Reader Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class CSVNLinesSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test
-    @DisplayName("Test CSVN Lines Sequence Record Reader")
+    @DisplayName("Test CSV Lines Sequence Record Reader")
     void testCSVNLinesSequenceRecordReader() throws Exception {
         int nLinesPerSequence = 10;
         SequenceRecordReader seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);

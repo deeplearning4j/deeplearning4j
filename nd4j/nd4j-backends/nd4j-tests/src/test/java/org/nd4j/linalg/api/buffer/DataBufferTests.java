@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -46,7 +47,7 @@ import java.nio.ByteOrder;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-
+@NativeTag
 public class DataBufferTests extends BaseNd4jTestWithBackends {
 
 
@@ -406,7 +407,7 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEnsureLocation(){
         //https://github.com/eclipse/deeplearning4j/issues/8783

@@ -43,6 +43,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -220,7 +221,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
             mln1.fit(new DataSet(input, labels));
             mln2.fit(new DataSet(input, labels));
 
-            assertEquals("Iteration: " + x, mln1.params(), mln2.params());
+            assertEquals("Iteration: " + x, mln1.params(), (Supplier<String>) mln2.params());
         }
     }
 
@@ -348,7 +349,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
                 INDArray step1 = mln1.rnnTimeStep(input);
                 INDArray step2 = mln2.rnnTimeStep(input);
 
-                assertEquals("Step: " + x, step1, step2);
+                assertEquals("Step: " + x, step1, (Supplier<String>) step2);
             }
 
             assertEquals(mln1.params(), mln2.params());

@@ -25,8 +25,11 @@ import org.deeplearning4j.core.listener.HardwareMetric;
 import org.deeplearning4j.core.listener.SystemPolling;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 import java.io.File;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,6 +40,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Disabled("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
 @DisplayName("System Polling Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class SystemPollingTest extends BaseDL4JTest {
 
     @TempDir

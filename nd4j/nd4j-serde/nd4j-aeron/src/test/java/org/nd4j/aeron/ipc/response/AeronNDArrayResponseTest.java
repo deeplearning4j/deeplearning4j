@@ -28,9 +28,12 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.*;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -43,6 +46,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 @NotThreadSafe
 @Disabled("Tests are too flaky")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class AeronNDArrayResponseTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
 

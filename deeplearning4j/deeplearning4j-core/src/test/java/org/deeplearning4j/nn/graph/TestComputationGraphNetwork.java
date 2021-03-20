@@ -63,6 +63,8 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -93,6 +95,8 @@ import static org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional.Mode.CON
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {

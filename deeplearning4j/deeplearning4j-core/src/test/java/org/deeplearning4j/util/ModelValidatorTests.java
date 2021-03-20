@@ -30,9 +30,12 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.common.validation.ValidationResult;
 
@@ -54,7 +57,8 @@ import java.util.zip.ZipOutputStream;
 
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class ModelValidatorTests extends BaseDL4JTest {
 
 

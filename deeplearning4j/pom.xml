@@ -40,7 +40,7 @@
 
 
     <scm>
-        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
+        <connection>scm:git://github.com:eclipse/deeplearning4j.git</connection>
         <developerConnection>scm:git:git@github.com:eclipse/deeplearning4j.git
         </developerConnection>
         <url>git@github.com:eclipse/deeplearning4j.git</url>
@@ -125,6 +125,24 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.android</groupId>
+            <artifactId>android</artifactId>
+            <version>4.1.1.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common-tests</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -297,6 +315,11 @@
                     <artifactId>nd4j-cuda-11.0</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>deeplearning4j-cuda-11.0</artifactId>
+                    <version>${nd4j.version}</version>
                 </dependency>
             </dependencies>
         </profile>

@@ -20,10 +20,9 @@
 
 package org.nd4j.linalg.api.blas.params;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Adam Gibson
  */
-
+@NativeTag
 public class ParamsTestsF extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

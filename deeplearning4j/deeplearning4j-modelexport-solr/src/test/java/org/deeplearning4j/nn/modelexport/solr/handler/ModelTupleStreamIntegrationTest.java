@@ -38,21 +38,21 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 import org.nd4j.rng.deallocator.NativeRandomDeallocator;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ThreadLeakFilters(defaultFilters = true, filters = { ModelTupleStreamIntegrationTest.PrivateDeallocatorThreadsFilter.class })
 @DisplayName("Model Tuple Stream Integration Test")
 @Disabled("Timeout issue")
+@Tag(TagNames.SOLR)
+@Tag(TagNames.DIST_SYSTEMS)
 class ModelTupleStreamIntegrationTest extends SolrCloudTestCase {
 
     static {

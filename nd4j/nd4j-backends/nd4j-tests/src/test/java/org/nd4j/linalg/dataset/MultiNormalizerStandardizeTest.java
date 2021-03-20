@@ -21,10 +21,13 @@
 package org.nd4j.linalg.dataset;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -36,7 +39,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@Tag(TagNames.NDARRAY_ETL)
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class MultiNormalizerStandardizeTest extends BaseNd4jTestWithBackends {
     private static final double TOLERANCE_PERC = 0.01; // 0.01% of correct value
     private static final int INPUT1_SCALE = 1, INPUT2_SCALE = 2, OUTPUT1_SCALE = 3, OUTPUT2_SCALE = 4;

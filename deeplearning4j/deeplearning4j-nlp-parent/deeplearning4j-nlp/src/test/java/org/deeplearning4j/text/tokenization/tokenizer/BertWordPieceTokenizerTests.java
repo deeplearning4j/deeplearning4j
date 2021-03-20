@@ -27,10 +27,13 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.BertWordPiece
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -44,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Disabled
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class BertWordPieceTokenizerTests extends BaseDL4JTest {
 
     private File pathToVocab =  Resources.asFile("other/vocab.txt");

@@ -47,6 +47,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.core.util.ModelGuesser;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,6 +61,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Scoring Model Test")
+@Tag(TagNames.SOLR)
+@Tag(TagNames.DIST_SYSTEMS)
 class ScoringModelTest {
 
     @DisplayName("Dummy Feature")

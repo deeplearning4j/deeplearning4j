@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -44,8 +45,9 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
 public class LossOpValidation extends BaseOpValidation {
-   
+
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -65,7 +67,7 @@ public class LossOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         int totalRun = 0;
-        for (String fn : new String[]{
+        for (String fn : new String[] {
                 "log_poisson", "log_poisson_full",
                 "absdiff", "cosine", "hinge", "huber", "log", "mse",
                 "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse",

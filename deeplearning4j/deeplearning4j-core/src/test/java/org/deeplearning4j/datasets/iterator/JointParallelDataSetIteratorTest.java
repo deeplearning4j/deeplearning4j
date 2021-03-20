@@ -24,7 +24,10 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.parallel.JointParallelDataSetIterator;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
@@ -36,6 +39,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
 @DisplayName("Joint Parallel Data Set Iterator Test")
+@NativeTag
+@Tag(TagNames.FILE_IO)
 class JointParallelDataSetIteratorTest extends BaseDL4JTest {
 
     /**

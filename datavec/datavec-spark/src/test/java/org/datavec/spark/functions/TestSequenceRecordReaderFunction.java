@@ -34,10 +34,12 @@ import org.datavec.api.writable.Writable;
 import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -46,7 +48,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestSequenceRecordReaderFunction extends BaseSparkTest {
 
 

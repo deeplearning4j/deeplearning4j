@@ -20,9 +20,12 @@
 
 package org.nd4j.evaluation;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -40,6 +43,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.evaluation.classification.EvaluationBinary.Metric.*;
+@Tag(TagNames.EVAL_METRICS)
+@NativeTag
 public class EvaluationBinaryTest extends BaseNd4jTestWithBackends {
 
 

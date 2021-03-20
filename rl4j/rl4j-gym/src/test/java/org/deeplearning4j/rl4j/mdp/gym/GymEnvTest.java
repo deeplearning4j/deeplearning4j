@@ -25,7 +25,10 @@ import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,14 +38,16 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
  *
  * @author saudet
  */
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class GymEnvTest {
 
     @Test
     @Disabled("Permissions issues on CI")
     public void testCartpole() {
         GymEnv mdp = new GymEnv("CartPole-v0", false, false);
-        assertArrayEquals(new int[] {4}, ((ArrayObservationSpace)mdp.getObservationSpace()).getShape());
-        assertEquals(2, ((DiscreteSpace)mdp.getActionSpace()).getSize());
+        assertArrayEquals(new int[] {4}, mdp.getObservationSpace().getShape());
+        assertEquals(2, mdp.getActionSpace().getSize());
         assertEquals(false, mdp.isDone());
         Box o = (Box)mdp.reset();
         StepReply r = mdp.step(0);

@@ -23,6 +23,8 @@ package org.nd4j.parameterserver.distributed;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -53,6 +55,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Disabled
 @Deprecated
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class VoidParameterServerTest extends BaseND4JTest {
     private static List<String> localIPs;
     private static List<String> badIPs;

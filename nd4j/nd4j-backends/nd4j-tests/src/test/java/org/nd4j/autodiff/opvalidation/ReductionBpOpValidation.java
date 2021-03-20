@@ -28,6 +28,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.CumSumBp;
@@ -49,6 +50,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Slf4j
+@NativeTag
 public class ReductionBpOpValidation extends BaseOpValidation {
 
     private DataType initialType;

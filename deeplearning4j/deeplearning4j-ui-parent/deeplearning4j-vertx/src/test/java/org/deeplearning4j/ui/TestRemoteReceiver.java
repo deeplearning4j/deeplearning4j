@@ -39,7 +39,10 @@ import org.deeplearning4j.ui.model.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.model.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.model.storage.impl.SbeStorageMetaData;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -52,6 +55,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestRemoteReceiver extends BaseDL4JTest {
 
     @Test

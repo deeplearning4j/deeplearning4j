@@ -21,10 +21,13 @@
 package org.nd4j.linalg.shape;
 
 import lombok.val;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
@@ -34,7 +37,8 @@ import org.nd4j.common.util.ArrayUtil;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@NativeTag
+@Tag(TagNames.NDARRAY_INDEXING)
 public class ShapeBufferTests extends BaseNd4jTestWithBackends {
 
     @Override

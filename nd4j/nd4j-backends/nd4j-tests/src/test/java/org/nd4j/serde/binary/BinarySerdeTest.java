@@ -21,10 +21,13 @@
 package org.nd4j.serde.binary;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,7 +42,8 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@NativeTag
+@Tag(TagNames.NDARRAY_SERDE)
 public class BinarySerdeTest extends BaseNd4jTestWithBackends {
 
 

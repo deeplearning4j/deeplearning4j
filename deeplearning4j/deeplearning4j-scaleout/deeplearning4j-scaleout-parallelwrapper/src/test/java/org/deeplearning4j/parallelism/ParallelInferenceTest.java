@@ -33,6 +33,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.jupiter.api.*;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -61,6 +63,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Disabled("Permissions issues on CI")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class ParallelInferenceTest extends BaseDL4JTest {
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;

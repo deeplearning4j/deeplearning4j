@@ -23,15 +23,21 @@ package org.nd4j.parameterserver.distributed.logic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled
 @Deprecated
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class FrameCompletionHandlerTest extends BaseND4JTest {
     @BeforeEach
     public void setUp() throws Exception {

@@ -22,10 +22,13 @@ package org.nd4j.linalg.dimensionalityreduction;
 
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -41,7 +44,8 @@ import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.johnsonLi
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.targetShape;
 
 @Disabled
-
+@Tag(TagNames.NDARRAY_ETL)
+@NativeTag
 public class TestRandomProjection extends BaseNd4jTestWithBackends {
 
     INDArray z1 = Nd4j.createUninitialized(new int[]{(int)1e6, 1000});

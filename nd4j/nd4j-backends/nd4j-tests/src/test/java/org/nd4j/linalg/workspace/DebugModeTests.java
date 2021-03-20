@@ -24,10 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -43,7 +46,8 @@ import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-
+@Tag(TagNames.WORKSPACES)
+@NativeTag
 public class DebugModeTests extends BaseNd4jTestWithBackends {
     DataType initialType = Nd4j.dataType();
 

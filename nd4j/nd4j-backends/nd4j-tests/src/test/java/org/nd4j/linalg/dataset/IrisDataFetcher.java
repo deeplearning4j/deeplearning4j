@@ -20,11 +20,16 @@
 
 package org.nd4j.linalg.dataset;
 
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.BaseDataFetcher;
 
 import java.io.IOException;
 
-
+@Tag(TagNames.NDARRAY_ETL)
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class IrisDataFetcher extends BaseDataFetcher {
 
 

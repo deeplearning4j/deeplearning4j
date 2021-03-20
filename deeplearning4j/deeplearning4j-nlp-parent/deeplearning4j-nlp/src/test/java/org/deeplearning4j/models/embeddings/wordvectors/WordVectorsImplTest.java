@@ -20,6 +20,9 @@
 
 package org.deeplearning4j.models.embeddings.wordvectors;
 
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.shade.guava.collect.Lists;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -33,7 +36,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class WordVectorsImplTest extends BaseDL4JTest {
     private VocabCache vocabCache;
     private WeightLookupTable weightLookupTable;

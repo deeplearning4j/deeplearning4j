@@ -24,11 +24,10 @@ import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -40,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @Slf4j
 @NotThreadSafe
 @Disabled("Tests are too flaky")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class LargeNdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private Aeron.Context ctx;

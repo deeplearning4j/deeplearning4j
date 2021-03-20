@@ -22,9 +22,9 @@ package org.deeplearning4j.nn.weights;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,10 +34,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.DisplayName;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Legacy Weight Init Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class LegacyWeightInitTest extends BaseDL4JTest {
 
     private RandomFactory prevFactory;

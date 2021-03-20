@@ -23,7 +23,10 @@ package org.datavec.image.loader;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
@@ -39,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  *
  */
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class LoaderTests {
 
     private static void ensureDataAvailable(){
@@ -81,7 +86,7 @@ public class LoaderTests {
         String subDir = "cifar/cifar-10-batches-bin/data_batch_1.bin";
         String path = FilenameUtils.concat(System.getProperty("user.home"), subDir);
         byte[] fullDataExpected = new byte[3073];
-        FileInputStream inExpected = new FileInputStream(new File(path));
+        FileInputStream inExpected = new FileInputStream(path);
         inExpected.read(fullDataExpected);
 
         byte[] fullDataActual = new byte[3073];
@@ -94,7 +99,7 @@ public class LoaderTests {
         subDir = "cifar/cifar-10-batches-bin/test_batch.bin";
         path = FilenameUtils.concat(System.getProperty("user.home"), subDir);
         fullDataExpected = new byte[3073];
-        inExpected = new FileInputStream(new File(path));
+        inExpected = new FileInputStream(path);
         inExpected.read(fullDataExpected);
 
         fullDataActual = new byte[3073];

@@ -36,7 +36,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,13 +49,14 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Arrays;
 import static org.deeplearning4j.nn.conf.ConvolutionMode.Same;
 import static org.deeplearning4j.nn.conf.ConvolutionMode.Truncate;
-import static org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Created by nyghtowl on 9/1/15.
  */
+@NativeTag
 @DisplayName("Cnn Gradient Check Test")
 class CNNGradientCheckTest extends BaseDL4JTest {
 
@@ -115,7 +118,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                         double scoreAfter = mln.score();
                         // Can't test in 'characteristic mode of operation' if not learning
                         String msg = name + " - score did not (sufficiently) decrease during learning - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                        assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                        assertTrue(scoreAfter < 0.8 * scoreBefore, msg);
                     }
                     if (PRINT_RESULTS) {
                         System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
@@ -174,7 +177,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 double scoreAfter = mln.score();
                 // Can't test in 'characteristic mode of operation' if not learning
                 String msg = testName + "- score did not (sufficiently) decrease during learning - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                assertTrue(scoreAfter < 0.8 * scoreBefore, msg);
             }
             if (PRINT_RESULTS) {
                 System.out.println(testName + "- activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
@@ -218,7 +221,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     // System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                 }
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
                 TestUtils.testModelSerialization(net);
             }
         }
@@ -256,7 +259,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                         // System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                    assertTrue(msg, gradOK);
+                    assertTrue(gradOK, msg);
                     TestUtils.testModelSerialization(net);
                 }
             }
@@ -290,7 +293,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 // System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
             }
             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -328,7 +331,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                         // System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                    assertTrue(msg, gradOK);
+                    assertTrue(gradOK, msg);
                     TestUtils.testModelSerialization(net);
                 }
             }
@@ -364,7 +367,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
                     System.out.println(msg);
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                    assertTrue(msg, gradOK);
+                    assertTrue(gradOK, msg);
                     TestUtils.testModelSerialization(net);
                 }
             }
@@ -401,7 +404,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                         String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
                         System.out.println(msg);
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                        assertTrue(msg, gradOK);
+                        assertTrue(gradOK, msg);
                         TestUtils.testModelSerialization(net);
                     }
                 }
@@ -436,7 +439,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             String msg = "Minibatch=" + minibatchSize + ", inDepth=" + inputDepth + ", height=" + height + ", kernelSize=" + k;
             System.out.println(msg);
             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -473,7 +476,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                             String msg = "Minibatch=" + minibatchSize + ", inDepth=" + inputDepth + ", height=" + height + ", kernelSize=" + k + ", stride = " + stride + ", convLayer first = " + convFirst;
                             System.out.println(msg);
                             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(128));
-                            assertTrue(msg, gradOK);
+                            assertTrue(gradOK, msg);
                             TestUtils.testModelSerialization(net);
                         }
                     }
@@ -516,7 +519,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 // System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
             }
             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -559,7 +562,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
             System.out.println(msg);
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(100));
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -597,7 +600,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", nIn=" + nIn + ", depthMul=" + depthMultiplier + ", s=" + s + ", cm=" + cm;
             System.out.println(msg);
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(256));
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -640,7 +643,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
             System.out.println(msg);
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(50));
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -688,7 +691,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             String msg = (subsampling ? "subsampling" : "conv") + " - mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
             System.out.println(msg);
             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(net);
         }
     }
@@ -727,7 +730,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                         System.out.println(msg);
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(160));
-                    assertTrue(msg, gradOK);
+                    assertTrue(gradOK, msg);
                     TestUtils.testModelSerialization(net);
                 }
             }

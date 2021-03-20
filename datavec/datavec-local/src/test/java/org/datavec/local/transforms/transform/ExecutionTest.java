@@ -31,7 +31,10 @@ import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.*;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -42,6 +45,8 @@ import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 @DisplayName("Execution Test")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 class ExecutionTest {
 
     @Test
@@ -71,18 +76,12 @@ class ExecutionTest {
         Schema schema = new Schema.Builder().addColumnInteger("col0").addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").addColumnFloat("col3").build();
         TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1").doubleMathOp("col2", MathOp.Add, 10.0).floatMathOp("col3", MathOp.Add, 5f).build();
         List<List<Writable>> inputData = new ArrayList<>();
-        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1), new FloatWritable(0.3f)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1), new FloatWritable(1.7f)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1), new FloatWritable(3.6f)));
+        inputData.add(Arrays.asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1), new FloatWritable(0.3f)));
+        inputData.add(Arrays.asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1), new FloatWritable(1.7f)));
+        inputData.add(Arrays.asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1), new FloatWritable(3.6f)));
         List<List<Writable>> rdd = (inputData);
         List<List<Writable>> out = new ArrayList<>(LocalTransformExecutor.execute(rdd, tp));
-        Collections.sort(out, new Comparator<List<Writable>>() {
-
-            @Override
-            public int compare(List<Writable> o1, List<Writable> o2) {
-                return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
-            }
-        });
+        Collections.sort(out, (o1, o2) -> Integer.compare(o1.get(0).toInt(), o2.get(0).toInt()));
         List<List<Writable>> expected = new ArrayList<>();
         expected.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1), new FloatWritable(5.3f)));
         expected.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1), new FloatWritable(6.7f)));
@@ -95,9 +94,9 @@ class ExecutionTest {
     void testFilter() {
         Schema filterSchema = new Schema.Builder().addColumnDouble("col1").addColumnDouble("col2").addColumnDouble("col3").build();
         List<List<Writable>> inputData = new ArrayList<>();
-        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new DoubleWritable(1), new DoubleWritable(0.1)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new DoubleWritable(3), new DoubleWritable(1.1)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new DoubleWritable(3), new DoubleWritable(2.1)));
+        inputData.add(Arrays.asList(new IntWritable(0), new DoubleWritable(1), new DoubleWritable(0.1)));
+        inputData.add(Arrays.asList(new IntWritable(1), new DoubleWritable(3), new DoubleWritable(1.1)));
+        inputData.add(Arrays.asList(new IntWritable(2), new DoubleWritable(3), new DoubleWritable(2.1)));
         TransformProcess transformProcess = new TransformProcess.Builder(filterSchema).filter(new DoubleColumnCondition("col1", ConditionOp.LessThan, 1)).build();
         List<List<Writable>> execute = LocalTransformExecutor.execute(inputData, transformProcess);
         assertEquals(2, execute.size());
@@ -110,31 +109,25 @@ class ExecutionTest {
         TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1").doubleMathOp("col2", MathOp.Add, 10.0).build();
         List<List<List<Writable>>> inputSequences = new ArrayList<>();
         List<List<Writable>> seq1 = new ArrayList<>();
-        seq1.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
-        seq1.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
-        seq1.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+        seq1.add(Arrays.asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
+        seq1.add(Arrays.asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
+        seq1.add(Arrays.asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
         List<List<Writable>> seq2 = new ArrayList<>();
-        seq2.add(Arrays.<Writable>asList(new IntWritable(3), new Text("state0"), new DoubleWritable(3.1)));
-        seq2.add(Arrays.<Writable>asList(new IntWritable(4), new Text("state1"), new DoubleWritable(4.1)));
+        seq2.add(Arrays.asList(new IntWritable(3), new Text("state0"), new DoubleWritable(3.1)));
+        seq2.add(Arrays.asList(new IntWritable(4), new Text("state1"), new DoubleWritable(4.1)));
         inputSequences.add(seq1);
         inputSequences.add(seq2);
         List<List<List<Writable>>> rdd = (inputSequences);
         List<List<List<Writable>>> out = LocalTransformExecutor.executeSequenceToSequence(rdd, tp);
-        Collections.sort(out, new Comparator<List<List<Writable>>>() {
-
-            @Override
-            public int compare(List<List<Writable>> o1, List<List<Writable>> o2) {
-                return -Integer.compare(o1.size(), o2.size());
-            }
-        });
+        Collections.sort(out, (o1, o2) -> -Integer.compare(o1.size(), o2.size()));
         List<List<List<Writable>>> expectedSequence = new ArrayList<>();
         List<List<Writable>> seq1e = new ArrayList<>();
-        seq1e.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
-        seq1e.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
-        seq1e.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
+        seq1e.add(Arrays.asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
+        seq1e.add(Arrays.asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
+        seq1e.add(Arrays.asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
         List<List<Writable>> seq2e = new ArrayList<>();
-        seq2e.add(Arrays.<Writable>asList(new IntWritable(3), new IntWritable(0), new DoubleWritable(13.1)));
-        seq2e.add(Arrays.<Writable>asList(new IntWritable(4), new IntWritable(1), new DoubleWritable(14.1)));
+        seq2e.add(Arrays.asList(new IntWritable(3), new IntWritable(0), new DoubleWritable(13.1)));
+        seq2e.add(Arrays.asList(new IntWritable(4), new IntWritable(1), new DoubleWritable(14.1)));
         expectedSequence.add(seq1e);
         expectedSequence.add(seq2e);
         assertEquals(expectedSequence, out);
@@ -143,26 +136,26 @@ class ExecutionTest {
     @Test
     @DisplayName("Test Reduction Global")
     void testReductionGlobal() {
-        List<List<Writable>> in = Arrays.asList(Arrays.<Writable>asList(new Text("first"), new DoubleWritable(3.0)), Arrays.<Writable>asList(new Text("second"), new DoubleWritable(5.0)));
+        List<List<Writable>> in = Arrays.asList(Arrays.asList(new Text("first"), new DoubleWritable(3.0)), Arrays.<Writable>asList(new Text("second"), new DoubleWritable(5.0)));
         List<List<Writable>> inData = in;
         Schema s = new Schema.Builder().addColumnString("textCol").addColumnDouble("doubleCol").build();
         TransformProcess tp = new TransformProcess.Builder(s).reduce(new Reducer.Builder(ReduceOp.TakeFirst).takeFirstColumns("textCol").meanColumns("doubleCol").build()).build();
         List<List<Writable>> outRdd = LocalTransformExecutor.execute(inData, tp);
         List<List<Writable>> out = outRdd;
-        List<List<Writable>> expOut = Collections.singletonList(Arrays.<Writable>asList(new Text("first"), new DoubleWritable(4.0)));
+        List<List<Writable>> expOut = Collections.singletonList(Arrays.asList(new Text("first"), new DoubleWritable(4.0)));
         assertEquals(expOut, out);
     }
 
     @Test
     @DisplayName("Test Reduction By Key")
     void testReductionByKey() {
-        List<List<Writable>> in = Arrays.asList(Arrays.<Writable>asList(new IntWritable(0), new Text("first"), new DoubleWritable(3.0)), Arrays.<Writable>asList(new IntWritable(0), new Text("second"), new DoubleWritable(5.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(30.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("s"), new DoubleWritable(50.0)));
+        List<List<Writable>> in = Arrays.asList(Arrays.asList(new IntWritable(0), new Text("first"), new DoubleWritable(3.0)), Arrays.<Writable>asList(new IntWritable(0), new Text("second"), new DoubleWritable(5.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(30.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("s"), new DoubleWritable(50.0)));
         List<List<Writable>> inData = in;
         Schema s = new Schema.Builder().addColumnInteger("intCol").addColumnString("textCol").addColumnDouble("doubleCol").build();
         TransformProcess tp = new TransformProcess.Builder(s).reduce(new Reducer.Builder(ReduceOp.TakeFirst).keyColumns("intCol").takeFirstColumns("textCol").meanColumns("doubleCol").build()).build();
         List<List<Writable>> outRdd = LocalTransformExecutor.execute(inData, tp);
         List<List<Writable>> out = outRdd;
-        List<List<Writable>> expOut = Arrays.asList(Arrays.<Writable>asList(new IntWritable(0), new Text("first"), new DoubleWritable(4.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(40.0)));
+        List<List<Writable>> expOut = Arrays.asList(Arrays.asList(new IntWritable(0), new Text("first"), new DoubleWritable(4.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(40.0)));
         out = new ArrayList<>(out);
         Collections.sort(out, Comparator.comparingInt(o -> o.get(0).toInt()));
         assertEquals(expOut, out);

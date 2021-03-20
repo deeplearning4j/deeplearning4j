@@ -33,8 +33,11 @@ import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.Bas
 import org.deeplearning4j.text.sentenceiterator.*;
 
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -75,6 +78,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Disabled("Permissions issues on CI")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Override

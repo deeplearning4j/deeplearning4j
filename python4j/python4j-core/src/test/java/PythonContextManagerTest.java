@@ -20,6 +20,9 @@
  */
 
 
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.python4j.Python;
 import org.nd4j.python4j.PythonContextManager;
 import org.nd4j.python4j.PythonExecutioner;
@@ -32,6 +35,10 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NotThreadSafe
+@Tag(TagNames.FILE_IO)
+@NativeTag
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.PYTHON)
 public class PythonContextManagerTest {
 
     @Test

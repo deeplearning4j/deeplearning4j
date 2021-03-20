@@ -19,6 +19,9 @@
  */
 
 
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.python4j.*;
 
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @javax.annotation.concurrent.NotThreadSafe
+@Tag(TagNames.FILE_IO)
+@NativeTag
+@Tag(TagNames.PYTHON)
 public class PythonCollectionsTest {
 
 

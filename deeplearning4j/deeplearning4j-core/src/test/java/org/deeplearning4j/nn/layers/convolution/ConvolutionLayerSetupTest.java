@@ -36,8 +36,11 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -60,6 +63,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @author Adam Gibson
  */
 @DisplayName("Convolution Layer Setup Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @TempDir

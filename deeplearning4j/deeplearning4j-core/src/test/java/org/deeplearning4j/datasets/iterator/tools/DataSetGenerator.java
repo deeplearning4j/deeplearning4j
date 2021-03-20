@@ -30,7 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class DataSetGenerator implements DataSetIterator{
+public class DataSetGenerator implements DataSetIterator {
     protected final int[] shapeFeatures;
     protected final int[] shapeLabels;
     protected final long totalBatches;

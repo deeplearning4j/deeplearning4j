@@ -26,6 +26,8 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.AtomicBoolean;
@@ -52,6 +54,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @Disabled
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class DelayedModelParameterServerTest extends BaseND4JTest {
     private static final String rootId = "ROOT_NODE";
 

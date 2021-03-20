@@ -28,6 +28,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
@@ -55,6 +56,7 @@ import java.util.List;
 import java.util.Set;
 
 @Slf4j
+@NativeTag
 public class OpsMappingTests extends BaseNd4jTestWithBackends {
 
 
@@ -113,7 +115,7 @@ public class OpsMappingTests extends BaseNd4jTestWithBackends {
     protected boolean opMapped(List<Operation> haystack, Operation needle) {
         for (val c: haystack) {
             if (needle.getFirst().longValue() == -1L) {
-                if (c.getSecond().toLowerCase().equals(needle.getSecond().toLowerCase()))
+                if (c.getSecond().equalsIgnoreCase(needle.getSecond()))
                     return true;
             } else {
                 if (c.getFirst().longValue() == needle.getFirst().longValue())
