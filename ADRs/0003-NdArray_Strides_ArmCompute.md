@@ -1,9 +1,8 @@
 
-﻿
 # Libnd4j NdArray padded buffers, strides for Arm_Compute Library wrapper
 
 ## Status
-PROPOSED 
+Implemented 
 
 Proposed by: Abdelrauf (23/09/2020)
 

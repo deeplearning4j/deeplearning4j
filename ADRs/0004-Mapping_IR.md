@@ -1,7 +1,7 @@
 # Import IR
 
 ## Status
-Proposed
+Implemented
 
 Proposed by: Adam Gibson (28-09-2020)
 
