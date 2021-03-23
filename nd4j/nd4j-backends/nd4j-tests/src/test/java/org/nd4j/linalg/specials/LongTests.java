@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
 @NativeTag
+@Isolated
 public class LongTests extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();

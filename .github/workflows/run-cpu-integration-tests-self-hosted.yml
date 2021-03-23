@@ -1,19 +1,7 @@
 on:
   workflow_dispatch:
 jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: self-hosted
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux-x86_64:
-    needs: pre-ci
     runs-on: [self-hosted]
     steps:
       - uses: AutoModality/action-clean@v1
@@ -34,5 +22,5 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn   -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cpu   clean test
+          mvn   -DexcludedGroups=long-running-tests -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cpu   clean test
 
