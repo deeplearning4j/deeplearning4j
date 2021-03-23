@@ -8591,7 +8591,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
     private static INDArray fwd(INDArray input, INDArray W, INDArray b){
-        INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));
+        INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1)).castTo(DataType.DOUBLE);
         input.mmuli(W, ret);
         ret.addiRowVector(b);
         return ret;
