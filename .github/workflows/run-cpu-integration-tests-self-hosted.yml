@@ -2,7 +2,6 @@ on:
   workflow_dispatch:
 jobs:
   linux-x86_64:
-    needs: pre-ci
     runs-on: [self-hosted]
     steps:
       - uses: AutoModality/action-clean@v1
