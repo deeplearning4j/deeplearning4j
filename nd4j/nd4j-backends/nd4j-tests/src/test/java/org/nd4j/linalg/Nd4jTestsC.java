@@ -2413,7 +2413,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutAtIntervalIndexWithStride(Nd4jBackend backend) {
-        INDArray n1 = Nd4j.create(3, 3).assign(0.0).castTo(DataType.DOUBLE));
+        INDArray n1 = Nd4j.create(3, 3).assign(0.0).castTo(DataType.DOUBLE);
         INDArrayIndex[] indices = {NDArrayIndex.interval(0, 2, 3), NDArrayIndex.all()};
         n1.put(indices, 1);
         INDArray expected = Nd4j.create(new double[][] {{1d, 1d, 1d}, {0d, 0d, 0d}, {1d, 1d, 1d}});
