@@ -74,7 +74,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class SequenceVectorsTest extends BaseDL4JTest {
@@ -275,7 +274,6 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled
     public void testDeepWalk() throws Exception {
         Heartbeat.getInstance().disableHeartbeat();
 

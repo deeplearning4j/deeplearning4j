@@ -40,7 +40,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class FilenamesLabelAwareIteratorTest extends BaseDL4JTest {

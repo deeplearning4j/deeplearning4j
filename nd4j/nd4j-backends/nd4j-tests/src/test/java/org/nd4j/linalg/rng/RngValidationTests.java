@@ -129,7 +129,6 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void validateRngDistributions(Nd4jBackend backend){
         List<TestCase> testCases = new ArrayList<>();
         for(DataType type : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {

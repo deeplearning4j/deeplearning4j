@@ -1272,18 +1272,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = z == null ? null : ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
 
         if (x != null && y != null && z != null) {
+            DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
             // triple arg call
             loop.execRandom3(null, op.opNum(), rng.getStatePointer(), // rng state ptr
                     xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                     yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                     zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                    op.extraArgsDataBuff(z.dataType()).addressPointer());
+                    dataBuffer != null ? dataBuffer.addressPointer() : null);
         } else if (x != null && z != null) {
+            DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
             //double arg call
             loop.execRandom2(null, op.opNum(), rng.getStatePointer(), // rng state ptr
                     xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                     zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                    op.extraArgsDataBuff(z.dataType()).addressPointer());
+                    dataBuffer != null ? dataBuffer.addressPointer() : null);
         } else {
             // single arg call
             loop.execRandom(null, op.opNum(), rng.getStatePointer(), // rng state ptr

@@ -27,6 +27,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.RandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -45,6 +46,10 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
         Preconditions.checkNotNull(i_v, "Input variable can't be null with this constructor");
         this.sameDiff = sameDiff;
         this.xVertexId = i_v.name();
+        if(i_v.getShape() != null)
+            this.shape = i_v.getShape();
+        else if(i_v.getArr().shape() != null)
+            this.shape = i_v.getArr().shape();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
     }
 
@@ -71,14 +76,7 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
         return calculateOutputShape(null);
     }
 
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext opContext) {
-        if(shape != null){
-            return Collections.singletonList(LongShapeDescriptor.fromShape(shape, dataType));
-        } else {
-            return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Shape.pickPairwiseDataType(args()[0].dataType(), Nd4j.dataType())));
-        }
-    }
+
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {

@@ -853,10 +853,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         DataSetIterator iter = new IrisDataSetIterator(1, 1);
 
         Gradient expectedGradient = new DefaultGradient();
-        expectedGradient.setGradientFor("first_W", Nd4j.ones(4, 5));
-        expectedGradient.setGradientFor("first_b", Nd4j.ones(1, 5));
-        expectedGradient.setGradientFor("output_W", Nd4j.ones(5, 3));
-        expectedGradient.setGradientFor("output_b", Nd4j.ones(1, 3));
+        expectedGradient.setGradientFor("first_W", Nd4j.ones(4, 5).castTo(Nd4j.defaultFloatingPointType()));
+        expectedGradient.setGradientFor("first_b", Nd4j.ones(1, 5).castTo(Nd4j.defaultFloatingPointType()));
+        expectedGradient.setGradientFor("output_W", Nd4j.ones(5, 3).castTo(Nd4j.defaultFloatingPointType()));
+        expectedGradient.setGradientFor("output_b", Nd4j.ones(1, 3).castTo(Nd4j.defaultFloatingPointType()));
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
@@ -875,11 +875,11 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(expectedGradient.getGradientFor("first_W"), actualGradient.getGradientFor("first_W"));
 
         // Update params with set
-        net.setParam("first_W", Nd4j.ones(4, 5));
-        net.setParam("first_b", Nd4j.ones(1, 5));
-        net.setParam("output_W", Nd4j.ones(5, 3));
-        net.setParam("output_b", Nd4j.ones(1, 3));
-        INDArray actualParams = net.params();
+        net.setParam("first_W", Nd4j.ones(4, 5).castTo(Nd4j.defaultFloatingPointType()));
+        net.setParam("first_b", Nd4j.ones(1, 5).castTo(Nd4j.defaultFloatingPointType()));
+        net.setParam("output_W", Nd4j.ones(5, 3).castTo(Nd4j.defaultFloatingPointType()));
+        net.setParam("output_b", Nd4j.ones(1, 3).castTo(Nd4j.defaultFloatingPointType()));
+        INDArray actualParams = net.params().castTo(Nd4j.defaultFloatingPointType());
 
         // Confirm params
         assertEquals(Nd4j.ones(1, 43), actualParams);

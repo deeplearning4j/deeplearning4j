@@ -1,0 +1,6749 @@
+mappings {
+  frameworkName: "onnx"
+  opName: "add"
+  inputFrameworkOpName: "Add"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Add"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Add"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "tan"
+  inputFrameworkOpName: "Tan"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Tan"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Tan"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "or"
+  inputFrameworkOpName: "Or"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Or"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Or"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "comparable"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "comparable"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "Or"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_max"
+  inputFrameworkOpName: "ReduceMax"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceMax"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceMax"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceMax"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "maxpool2d"
+  inputFrameworkOpName: "MaxPool"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isNCHW"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNCHW"
+        argType: INT64
+        argIndex: 10
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "extraParam0"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "extraParam0"
+        argType: INT64
+        argIndex: 9
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isSameMode"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isSameMode"
+        argType: INT64
+        argIndex: 8
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dH"
+    outputIntName: "dH"
+    inputFloatName: "dilations"
+    inputToOutput {
+      key: "dH"
+      value: "dilations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "dH"
+      transformerArgs {
+        name: "dilations"
+        argIndex: 6
+      }
+      transformerArgs {
+        name: "dH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    transformerArgs {
+      key: "dH"
+      transformerArgs {
+        name: "dilations"
+        argIndex: 6
+      }
+      transformerArgs {
+        name: "dH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dW"
+    outputIntName: "dW"
+    inputFloatName: "dilations"
+    inputToOutput {
+      key: "dW"
+      value: "dilations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "dW"
+      transformerArgs {
+        name: "dilations"
+        int64Value: 1
+        argIndex: 7
+      }
+      transformerArgs {
+        name: "dW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    transformerArgs {
+      key: "dW"
+      transformerArgs {
+        name: "dilations"
+        int64Value: 1
+        argIndex: 7
+      }
+      transformerArgs {
+        name: "dW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
+    outputIntName: "pH"
+    inputFloatName: "pads"
+    inputToOutput {
+      key: "pH"
+      value: "pads"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "pads"
+        argType: INT64
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "pads"
+        argType: INT64
+        argIndex: 4
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
+    outputIntName: "pW"
+    inputFloatName: "pads"
+    inputToOutput {
+      key: "pW"
+      value: "pads"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 1
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "pads"
+        argType: INT64
+        argIndex: 5
+      }
+    }
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 1
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "pads"
+        argType: INT64
+        argIndex: 5
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "sH"
+    outputIntName: "sH"
+    inputFloatName: "strides"
+    inputToOutput {
+      key: "sH"
+      value: "strides"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "sH"
+      transformerArgs {
+        name: "strides"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "sH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    transformerArgs {
+      key: "sH"
+      transformerArgs {
+        name: "strides"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "sH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "sW"
+    outputIntName: "sW"
+    inputFloatName: "strides"
+    inputToOutput {
+      key: "sW"
+      value: "strides"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "sW"
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "sW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    transformerArgs {
+      key: "sW"
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "sW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "kH"
+    inputFloatName: "kernel_shape"
+    inputToOutput {
+      key: "kH"
+      value: "kernel_shape"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "kH"
+      transformerArgs {
+        name: "kernel_shape"
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "kW"
+    inputFloatName: "kernel_shape"
+    inputToOutput {
+      key: "kW"
+      value: "kernel_shape"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "kW"
+      transformerArgs {
+        name: "kernel_shape"
+        int64Value: 1
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "MaxPool"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "size"
+  inputFrameworkOpName: "Size"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Size"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "lrn"
+  inputFrameworkOpName: "LRN"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LRN"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "size"
+    outputIntName: "depth"
+    inputFloatName: "alpha"
+    inputFloatName: "beta"
+    inputFloatName: "bias"
+    outputDoubleName: "alpha"
+    outputDoubleName: "beta"
+    outputDoubleName: "bias"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    inputToOutput {
+      key: "beta"
+      value: "beta"
+    }
+    inputToOutput {
+      key: "bias"
+      value: "bias"
+    }
+    inputToOutput {
+      key: "depth"
+      value: "size"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LRN"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "LRN"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "isinf"
+  inputFrameworkOpName: "IsInf"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "IsInf"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "IsInf"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "batchnorm"
+  inputFrameworkOpName: "BatchNormalization"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "mean"
+    inputTensorName: "var"
+    inputTensorName: "scale"
+    outputTensorName: "input"
+    outputTensorName: "mean"
+    outputTensorName: "variance"
+    outputTensorName: "gamma"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "mean"
+      value: "mean"
+    }
+    inputToOutput {
+      key: "variance"
+      value: "var"
+    }
+    inputToOutput {
+      key: "gamma"
+      value: "scale"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "epsilon"
+    outputDoubleName: "epsilon"
+    inputToOutput {
+      key: "epsilon"
+      value: "epsilon"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "applyGamma"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyGamma"
+        boolValue: true
+        argType: BOOL
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "applyBeta"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyBeta"
+        boolValue: true
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "applyScale"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyScale"
+        int64Value: 1
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "applyOffset"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyOffset"
+        int64Value: 1
+        argType: INT64
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "elu"
+  inputFrameworkOpName: "Elu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Elu"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "alpha"
+    outputDoubleName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Elu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "concat"
+  inputFrameworkOpName: "Concat"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "inputs"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "inputs"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Concat"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "concatDimension"
+    inputToOutput {
+      key: "concatDimension"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Concat"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "isDynamicAxis"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isDynamicAxis"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Concat"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "top_k"
+  inputFrameworkOpName: "TopK"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "TopK"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "sorted"
+    outputBooleanName: "needSort"
+    inputToOutput {
+      key: "needSort"
+      value: "sorted"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "TopK"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "k"
+    inputToOutput {
+      key: "k"
+      value: "K"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "TopK"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "equals"
+  inputFrameworkOpName: "Equal"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Equal"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Equal"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "matmul"
+  inputFrameworkOpName: "MatMul"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeX"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeX"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeY"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeY"
+        argType: BOOL
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeZ"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeZ"
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "alpha"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "alpha"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "beta"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "beta"
+        doubleValue: 1.0
+        argType: DOUBLE
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_min"
+  inputFrameworkOpName: "ReduceMin"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceMin"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceMin"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceMin"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sinh"
+  inputFrameworkOpName: "Sinh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sinh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sinh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "asinh"
+  inputFrameworkOpName: "Asinh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Asinh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Asinh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "gather_nd"
+  inputFrameworkOpName: "GatherND"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "indices"
+    inputTensorName: "data"
+    outputTensorName: "indices"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "GatherND"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "checkIndices"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "checkIndices"
+        boolValue: true
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "GatherND"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "squeeze"
+  inputFrameworkOpName: "Squeeze"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Squeeze"
+  }
+  rule {
+    ruleName: "convertinputnumberlisttondarray"
+    functionName: "convertinputnumberlisttondarray"
+    inputToOutput {
+      key: "a"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Squeeze"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "_a"
+    inputToOutput {
+      key: "_a"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Squeeze"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "identity"
+  inputFrameworkOpName: "Identity"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Identity"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Identity"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "less"
+  inputFrameworkOpName: "Less"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Less"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Less"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "softplus"
+  inputFrameworkOpName: "Softplus"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Softplus"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Softplus"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_sum"
+  inputFrameworkOpName: "ReduceSum"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceSum"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceSum"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceSum"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "tanh"
+  inputFrameworkOpName: "Tanh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Tanh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Tanh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "subtract"
+  inputFrameworkOpName: "Sub"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sub"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sub"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_prod"
+  inputFrameworkOpName: "ReduceProd"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceProd"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceProd"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceProd"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "multiply"
+  inputFrameworkOpName: "Mul"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Mul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Mul"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "log"
+  inputFrameworkOpName: "Log"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Log"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Log"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "flatten_2d"
+  inputFrameworkOpName: "Flatten"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Flatten"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "flattenDimension"
+    inputToOutput {
+      key: "flattenDimension"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Flatten"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "range"
+  inputFrameworkOpName: "Range"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "start"
+    inputTensorName: "limit"
+    inputTensorName: "delta"
+    outputTensorName: "from"
+    outputTensorName: "to"
+    outputTensorName: "step"
+    inputToOutput {
+      key: "from"
+      value: "start"
+    }
+    inputToOutput {
+      key: "to"
+      value: "limit"
+    }
+    inputToOutput {
+      key: "step"
+      value: "delta"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Range"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "from"
+    inputToOutput {
+      key: "from"
+      value: "start"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Range"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "to"
+    inputToOutput {
+      key: "to"
+      value: "limit"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Range"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "step"
+    inputToOutput {
+      key: "step"
+      value: "delta"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Range"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "transpose"
+  inputFrameworkOpName: "Transpose"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Transpose"
+  }
+  rule {
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
+    inputToOutput {
+      key: "permuteDims"
+      value: "perm"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Transpose"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "gather"
+  inputFrameworkOpName: "Gather"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "indices"
+    inputTensorName: "data"
+    outputTensorName: "indices"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Gather"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Gather"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Gather"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "argmax"
+  inputFrameworkOpName: "ArgMax"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ArgMax"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ArgMax"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ArgMax"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "not"
+  inputFrameworkOpName: "Not"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Not"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "comparable"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "comparable"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "Not"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_mean"
+  inputFrameworkOpName: "ReduceMean"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceMean"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceMean"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceMean"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reshape"
+  inputFrameworkOpName: "Reshape"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    inputTensorName: "shape"
+    outputTensorName: "input"
+    outputTensorName: "shape"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "shape"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Reshape"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "shapeArr"
+    inputToOutput {
+      key: "shapeArr"
+      value: "shape"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Reshape"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "randomuniform"
+  inputFrameworkOpName: "RandomUniform"
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "low"
+    inputFloatName: "high"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
+    inputToOutput {
+      key: "min"
+      value: "low"
+    }
+    inputToOutput {
+      key: "max"
+      value: "high"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "RandomUniform"
+  }
+  rule {
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
+    inputToOutput {
+      key: "shape"
+      value: "shape"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "RandomUniform"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "boolean_and"
+  inputFrameworkOpName: "And"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "And"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "softmax"
+  inputFrameworkOpName: "Softmax"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Softmax"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimension"
+    inputToOutput {
+      key: "dimension"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Softmax"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Softmax"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "leakyrelu"
+  inputFrameworkOpName: "LeakyRelu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LeakyRelu"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "alpha"
+    outputDoubleName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LeakyRelu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "erf"
+  inputFrameworkOpName: "Erf"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Erf"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Erf"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "pow_pairwise"
+  inputFrameworkOpName: "Pow"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "Y"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "y"
+      value: "Y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Pow"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Pow"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "acos"
+  inputFrameworkOpName: "Acos"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Acos"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Acos"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sin"
+  inputFrameworkOpName: "Sin"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sin"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sin"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "bitwise_xor"
+  inputFrameworkOpName: "Xor"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Xor"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Xor"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "ceil"
+  inputFrameworkOpName: "Ceil"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Ceil"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Ceil"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "relu"
+  inputFrameworkOpName: "Relu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Relu"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Relu"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "cutoff"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "cutoff"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "Relu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "split"
+  inputFrameworkOpName: "Split"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "a"
+    inputToOutput {
+      key: "a"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Split"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Split"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "numSplit"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "numSplit"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "Split"
+  }
+  rule {
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
+    inputToOutput {
+      key: "b"
+      value: "split"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Split"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_logsumexp"
+  inputFrameworkOpName: "ReduceLogSumExp"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceLogSumExp"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputDoubleName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceLogSumExp"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "keepdims"
+    outputDoubleName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceLogSumExp"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceLogSumExp"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "matmul"
+  inputFrameworkOpName: "Gemm"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Gemm"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "transA"
+    inputIntName: "transB"
+    inputFloatName: "alpha"
+    inputFloatName: "beta"
+    outputDoubleName: "alpha"
+    outputDoubleName: "beta"
+    outputBooleanName: "transposeX"
+    outputBooleanName: "transposeY"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    inputToOutput {
+      key: "beta"
+      value: "beta"
+    }
+    inputToOutput {
+      key: "transposeX"
+      value: "transA"
+    }
+    inputToOutput {
+      key: "transposeY"
+      value: "transB"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Gemm"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transZ"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transZ"
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "Gemm"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeZ"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeZ"
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "Gemm"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "transA"
+    inputIntName: "transB"
+    outputIntName: "transX"
+    outputIntName: "transY"
+    inputToOutput {
+      key: "transX"
+      value: "transA"
+    }
+    inputToOutput {
+      key: "transY"
+      value: "transB"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Gemm"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "acosh"
+  inputFrameworkOpName: "Acosh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Acosh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Acosh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "less_equal"
+  inputFrameworkOpName: "LessOrEqual"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LessOrEqual"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "LessOrEqual"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "cosh"
+  inputFrameworkOpName: "Cosh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Cosh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Cosh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "non_max_suppression_v3"
+  inputFrameworkOpName: "NonMaxSuppression"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "boxes"
+    inputTensorName: "scores"
+    inputTensorName: "max_output_boxes_per_class"
+    inputTensorName: "iou_threshold"
+    inputTensorName: "score_threshold"
+    outputTensorName: "boxes"
+    outputTensorName: "scales"
+    outputTensorName: "maxOutSize"
+    outputTensorName: "iouThreshold"
+    outputTensorName: "scoreThreshold"
+    inputToOutput {
+      key: "boxes"
+      value: "boxes"
+    }
+    inputToOutput {
+      key: "scales"
+      value: "scores"
+    }
+    inputToOutput {
+      key: "maxOutSize"
+      value: "max_output_boxes_per_class"
+    }
+    inputToOutput {
+      key: "iouThreshold"
+      value: "iou_threshold"
+    }
+    inputToOutput {
+      key: "scoreThreshold"
+      value: "score_threshold"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "NonMaxSuppression"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "maxOutputSize"
+    inputToOutput {
+      key: "maxOutputSize"
+      value: "max_output_boxes_per_class"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "NonMaxSuppression"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "log_softmax"
+  inputFrameworkOpName: "LogSoftmax"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LogSoftmax"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimension"
+    inputToOutput {
+      key: "dimension"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LogSoftmax"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "shape_of"
+  inputFrameworkOpName: "Shape"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Shape"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Shape"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "random_normal"
+  inputFrameworkOpName: "RandomNormal"
+  rule {
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
+    inputToOutput {
+      key: "input"
+      value: "shape"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "RandomNormal"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "hard_sigmoid"
+  inputFrameworkOpName: "HardSigmoid"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "HardSigmoid"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "HardSigmoid"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Constant"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "cumsum"
+  inputFrameworkOpName: "CumSum"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "x"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "CumSum"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "exclusive"
+    inputIntName: "reverse"
+    outputIntName: "exclusive"
+    outputIntName: "reverse"
+    inputToOutput {
+      key: "exclusive"
+      value: "exclusive"
+    }
+    inputToOutput {
+      key: "reverse"
+      value: "reverse"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "CumSum"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "CumSum"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "scatter_update"
+  inputFrameworkOpName: "ScatterElements"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    inputTensorName: "updates"
+    inputTensorName: "indices"
+    outputTensorName: "operand"
+    outputTensorName: "updates"
+    outputTensorName: "indices"
+    inputToOutput {
+      key: "operand"
+      value: "data"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
+    }
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ScatterElements"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "gruCell"
+  inputFrameworkOpName: "GRU"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "R"
+    inputTensorName: "W"
+    inputTensorName: "B"
+    inputTensorName: "initial_h"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "Wru"
+    outputTensorName: "Wc"
+    outputTensorName: "bc"
+    outputTensorName: "hLast"
+    outputTensorName: "bru"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "Wru"
+      value: "R"
+    }
+    inputToOutput {
+      key: "Wc"
+      value: "W"
+    }
+    inputToOutput {
+      key: "bc"
+      value: "B"
+    }
+    inputToOutput {
+      key: "hLast"
+      value: "initial_h"
+    }
+    inputToOutput {
+      key: "bru"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "GRU"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_norm1"
+  inputFrameworkOpName: "ReduceL1"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceL1"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceL1"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceL1"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "abs"
+  inputFrameworkOpName: "Abs"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Abs"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Abs"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "fill"
+  inputFrameworkOpName: "ConstantOfShape"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "shape"
+    inputToOutput {
+      key: "shape"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ConstantOfShape"
+  }
+  rule {
+    ruleName: "attributendarraytoscalarattribute"
+    functionName: "attributendarraytoscalarattribute"
+    outputDoubleName: "value"
+    inputTensorName: "value"
+    inputToOutput {
+      key: "value"
+      value: "value"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ConstantOfShape"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "outputDataType"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "outputDataType"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "ConstantOfShape"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_norm2"
+  inputFrameworkOpName: "ReduceL2"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceL2"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceL2"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceL2"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "round"
+  inputFrameworkOpName: "Round"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Round"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Round"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "selu"
+  inputFrameworkOpName: "Selu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Selu"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Selu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "argmin"
+  inputFrameworkOpName: "ArgMin"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ArgMin"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ArgMin"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ArgMin"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sigmoid"
+  inputFrameworkOpName: "Sigmoid"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sigmoid"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sigmoid"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "avgpool2d"
+  inputFrameworkOpName: "AveragePool"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "isNCHW"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNCHW"
+        int64Value: 1
+        argIndex: 10
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "dH"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "dH"
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "dW"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "dW"
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "extraParam0"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "extraParam0"
+        argType: INT64
+        argIndex: 9
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "stringcontains"
+    functionName: "stringcontains"
+    inputStringAttrName: "auto_pad"
+    outputIntName: "isSameMode"
+    inputFloatName: "auto_pad"
+    inputToOutput {
+      key: "isSameMode"
+      value: "auto_pad"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "isSameMode"
+      transformerArgs {
+        name: "auto_pad"
+        argIndex: 8
+        stringValue: "SAME"
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "pH"
+    inputFloatName: "pads"
+    inputToOutput {
+      key: "pH"
+      value: "pads"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        argIndex: 4
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "pW"
+    inputFloatName: "pads"
+    inputToOutput {
+      key: "pW"
+      value: "pads"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 1
+        argIndex: 5
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "sH"
+    inputFloatName: "strides"
+    inputToOutput {
+      key: "sH"
+      value: "strides"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "sH"
+      transformerArgs {
+        name: "strides"
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "sW"
+    inputFloatName: "strides"
+    inputToOutput {
+      key: "sW"
+      value: "strides"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "sW"
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argIndex: 3
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "kW"
+    inputFloatName: "kernel_shape"
+    inputToOutput {
+      key: "kW"
+      value: "kernel_shape"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "kW"
+      transformerArgs {
+        name: "kernel_shape"
+        int64Value: 1
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "kH"
+    inputFloatName: "kernel_shape"
+    inputToOutput {
+      key: "kH"
+      value: "kernel_shape"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "kH"
+      transformerArgs {
+        name: "kernel_shape"
+      }
+    }
+    inputFrameworkOpName: "AveragePool"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "dropout_inverted"
+  inputFrameworkOpName: "Dropout"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Dropout"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "p"
+    inputToOutput {
+      key: "p"
+      value: "ratio"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Dropout"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "atan"
+  inputFrameworkOpName: "Atan"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Atan"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Atan"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "floor"
+  inputFrameworkOpName: "Floor"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Floor"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Floor"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "prelu"
+  inputFrameworkOpName: "PRelu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "slope"
+    outputTensorName: "input"
+    outputTensorName: "alpha"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "alpha"
+      value: "slope"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "PRelu"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "sharedAxes"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "sharedAxes"
+        int64Value: -1
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "PRelu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "atanh"
+  inputFrameworkOpName: "Atanh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Atanh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Atanh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "mod"
+  inputFrameworkOpName: "Mod"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Mod"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Mod"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "lstmLayer"
+  inputFrameworkOpName: "LSTM"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "W"
+    inputTensorName: "R"
+    inputTensorName: "P"
+    inputTensorName: "B"
+    inputTensorName: "sequence_lens"
+    inputTensorName: "initial_h"
+    inputTensorName: "initial_c"
+    outputTensorName: "input"
+    outputTensorName: "Wx"
+    outputTensorName: "Wr"
+    outputTensorName: "Wp"
+    outputTensorName: "b"
+    outputTensorName: "seqLen"
+    outputTensorName: "hI"
+    outputTensorName: "cI"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "Wx"
+      value: "W"
+    }
+    inputToOutput {
+      key: "Wr"
+      value: "R"
+    }
+    inputToOutput {
+      key: "Wp"
+      value: "P"
+    }
+    inputToOutput {
+      key: "b"
+      value: "B"
+    }
+    inputToOutput {
+      key: "seqLen"
+      value: "sequence_lens"
+    }
+    inputToOutput {
+      key: "hI"
+      value: "initial_h"
+    }
+    inputToOutput {
+      key: "cI"
+      value: "initial_c"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "clip"
+    outputDoubleName: "cellClip"
+    inputToOutput {
+      key: "cellClip"
+      value: "clip"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "stringtoindex"
+    functionName: "stringtoindex"
+    inputStringAttrName: "direction"
+    outputIntName: "directionMode"
+    inputFloatName: "directionMode"
+    inputFloatName: "directionMode"
+    inputFloatName: "directionMode"
+    inputToOutput {
+      key: "directionMode"
+      value: "direction"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "directionMode"
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "forward"
+      }
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "reverse"
+      }
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "bidirectional"
+      }
+    }
+    transformerArgs {
+      key: "directionMode"
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "forward"
+      }
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "reverse"
+      }
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "bidirectional"
+      }
+    }
+    transformerArgs {
+      key: "directionMode"
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "forward"
+      }
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "reverse"
+      }
+      transformerArgs {
+        name: "directionMode"
+        argIndex: 1
+        stringValue: "bidirectional"
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "dataFormat"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "dataFormat"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "hasBiases"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "hasBiases"
+        boolValue: true
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "hasSeqLen"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "hasSeqLen"
+        boolValue: true
+        argType: BOOL
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "hasInitH"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "hasInitH"
+        boolValue: true
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "hasInitC"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "hasInitC"
+        boolValue: true
+        argType: BOOL
+        argIndex: 3
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "hasPH"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "hasPH"
+        boolValue: true
+        argType: BOOL
+        argIndex: 4
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "retFullSeq"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "retFullSeq"
+        boolValue: true
+        argType: BOOL
+        argIndex: 5
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "retLastH"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "retLastH"
+        boolValue: true
+        argType: BOOL
+        argIndex: 6
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "retLastC"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "retLastC"
+        boolValue: true
+        argType: BOOL
+        argIndex: 7
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputFloatName: "activation_alpha"
+    outputDoubleName: "gateAlpha"
+    inputToOutput {
+      key: "gateAlpha"
+      value: "activation_alpha"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "gateAlpha"
+      transformerArgs {
+        name: "activation_alpha"
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputFloatName: "activation_alpha"
+    outputDoubleName: "cellAlpha"
+    inputToOutput {
+      key: "cellAlpha"
+      value: "activation_alpha"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "cellAlpha"
+      transformerArgs {
+        name: "activation_alpha"
+        int64Value: 1
+        argIndex: 3
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputFloatName: "activation_alpha"
+    outputDoubleName: "outAlpha"
+    inputToOutput {
+      key: "outAlpha"
+      value: "activation_alpha"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "outAlpha"
+      transformerArgs {
+        name: "activation_alpha"
+        int64Value: 2
+        argIndex: 5
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputFloatName: "activation_beta"
+    outputDoubleName: "gateBeta"
+    inputToOutput {
+      key: "gateBeta"
+      value: "activation_beta"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "gateBeta"
+      transformerArgs {
+        name: "activation_beta"
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputFloatName: "activation_beta"
+    outputDoubleName: "cellBeta"
+    inputToOutput {
+      key: "cellBeta"
+      value: "activation_beta"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "cellBeta"
+      transformerArgs {
+        name: "activation_beta"
+        int64Value: 1
+        argIndex: 4
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputFloatName: "activation_beta"
+    outputDoubleName: "outBeta"
+    inputToOutput {
+      key: "outBeta"
+      value: "activation_beta"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "outBeta"
+      transformerArgs {
+        name: "activation_beta"
+        int64Value: 2
+        argIndex: 6
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "mapstringtoindex"
+    functionName: "mapstringtoindex"
+    outputIntName: "gateAct"
+    inputFloatName: "Relu"
+    inputFloatName: "Tanh"
+    inputFloatName: "Sigmoid"
+    inputFloatName: "Affine"
+    inputFloatName: "LeakyRelu"
+    inputFloatName: "ThresholdedRelu"
+    inputFloatName: "ScaledTanh"
+    inputFloatName: "HardSigmoid"
+    inputFloatName: "Elu"
+    inputFloatName: "Softsign"
+    inputFloatName: "Softplus"
+    inputFloatName: "index"
+    inputToOutput {
+      key: "gateAct"
+      value: "activations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "gateAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "index"
+      transformerArgs {
+        name: "index"
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "mapstringtoindex"
+    functionName: "mapstringtoindex"
+    outputIntName: "cellAct"
+    inputFloatName: "Relu"
+    inputFloatName: "Tanh"
+    inputFloatName: "Sigmoid"
+    inputFloatName: "Affine"
+    inputFloatName: "LeakyRelu"
+    inputFloatName: "ThresholdedRelu"
+    inputFloatName: "ScaledTanh"
+    inputFloatName: "HardSigmoid"
+    inputFloatName: "Elu"
+    inputFloatName: "Softsign"
+    inputFloatName: "Softplus"
+    inputFloatName: "index"
+    inputToOutput {
+      key: "cellAct"
+      value: "activations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "cellAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "index"
+      transformerArgs {
+        name: "index"
+        int64Value: 1
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+  rule {
+    ruleName: "mapstringtoindex"
+    functionName: "mapstringtoindex"
+    outputIntName: "outAct"
+    inputFloatName: "Relu"
+    inputFloatName: "Tanh"
+    inputFloatName: "Sigmoid"
+    inputFloatName: "Affine"
+    inputFloatName: "LeakyRelu"
+    inputFloatName: "ThresholdedRelu"
+    inputFloatName: "ScaledTanh"
+    inputFloatName: "HardSigmoid"
+    inputFloatName: "Elu"
+    inputFloatName: "Softsign"
+    inputFloatName: "Softplus"
+    inputFloatName: "index"
+    inputToOutput {
+      key: "outAct"
+      value: "activations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "outAct"
+      transformerArgs {
+        name: "Relu"
+        int64Value: 1
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Tanh"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Sigmoid"
+        int64Value: 2
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Affine"
+        int64Value: 3
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "LeakyRelu"
+        int64Value: 4
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ThresholdedRelu"
+        int64Value: 5
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "ScaledTanh"
+        int64Value: 6
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "HardSigmoid"
+        int64Value: 7
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Elu"
+        int64Value: 8
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softsign"
+        int64Value: 9
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "Softplus"
+        int64Value: 10
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "index"
+      transformerArgs {
+        name: "index"
+        int64Value: 2
+      }
+    }
+    inputFrameworkOpName: "LSTM"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "cos"
+  inputFrameworkOpName: "Cos"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Cos"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Cos"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sqrt"
+  inputFrameworkOpName: "Sqrt"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sqrt"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sqrt"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "asin"
+  inputFrameworkOpName: "Asin"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Asin"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Asin"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "space_to_depth"
+  inputFrameworkOpName: "SpaceToDepth"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SpaceToDepth"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "blocksize"
+    outputIntName: "block_size"
+    inputToOutput {
+      key: "block_size"
+      value: "blocksize"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "SpaceToDepth"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isNHWC"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNHWC"
+        int64Value: 1
+        argType: INT64
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "SpaceToDepth"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "tile"
+  inputFrameworkOpName: "Tile"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    inputTensorName: "repeats"
+    outputTensorName: "input"
+    outputTensorName: "reps_vector"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    inputToOutput {
+      key: "reps_vector"
+      value: "repeats"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Tile"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "is_static_reps"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "is_static_reps"
+        boolValue: true
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Tile"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "dimensions"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "dimensions"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "Tile"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "greater_equal"
+  inputFrameworkOpName: "GreaterOrEqual"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "GreaterOrEqual"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "GreaterOrEqual"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "depth_to_space"
+  inputFrameworkOpName: "DepthToSpace"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "DepthToSpace"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "blocksize"
+    outputIntName: "block_size"
+    inputToOutput {
+      key: "block_size"
+      value: "blocksize"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "DepthToSpace"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isNHWC"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNHWC"
+        int64Value: 1
+        argType: INT64
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "DepthToSpace"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "isnan"
+  inputFrameworkOpName: "IsNaN"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "IsNaN"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "IsNaN"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "divide"
+  inputFrameworkOpName: "Div"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Div"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Div"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "neg"
+  inputFrameworkOpName: "Neg"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Neg"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Neg"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "matrix_determinant"
+  inputFrameworkOpName: "Det"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Det"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Det"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "pad"
+  inputFrameworkOpName: "Pad"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    inputTensorName: "pads"
+    outputTensorName: "input"
+    outputTensorName: "paddings"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    inputToOutput {
+      key: "paddings"
+      value: "pads"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Pad"
+  }
+  rule {
+    ruleName: "stringtoindex"
+    functionName: "stringtoindex"
+    inputStringAttrName: "mode"
+    outputIntName: "mode"
+    inputFloatName: "mode"
+    inputFloatName: "mode"
+    inputFloatName: "mode"
+    inputToOutput {
+      key: "mode"
+      value: "mode"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "mode"
+      transformerArgs {
+        name: "mode"
+        stringValue: "constant"
+      }
+      transformerArgs {
+        name: "mode"
+        stringValue: "reflect"
+      }
+      transformerArgs {
+        name: "mode"
+        stringValue: "edge"
+      }
+    }
+    transformerArgs {
+      key: "mode"
+      transformerArgs {
+        name: "mode"
+        stringValue: "constant"
+      }
+      transformerArgs {
+        name: "mode"
+        stringValue: "reflect"
+      }
+      transformerArgs {
+        name: "mode"
+        stringValue: "edge"
+      }
+    }
+    transformerArgs {
+      key: "mode"
+      transformerArgs {
+        name: "mode"
+        stringValue: "constant"
+      }
+      transformerArgs {
+        name: "mode"
+        stringValue: "reflect"
+      }
+      transformerArgs {
+        name: "mode"
+        stringValue: "edge"
+      }
+    }
+    inputFrameworkOpName: "Pad"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "padValue"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "padValue"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "Pad"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "conv2d"
+  inputFrameworkOpName: "Conv"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "W"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "weights"
+    outputTensorName: "bias"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "weights"
+      value: "W"
+    }
+    inputToOutput {
+      key: "bias"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isNCHW"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNCHW"
+        argType: INT64
+        argIndex: 9
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "wFormat"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "wFormat"
+        int64Value: 1
+        argType: INT64
+        argIndex: 10
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "stringequals"
+    functionName: "stringequals"
+    inputStringAttrName: "auto_pad"
+    outputIntName: "isSameMode"
+    inputFloatName: "auto_pad"
+    inputToOutput {
+      key: "isSameMode"
+      value: "auto_pad"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "isSameMode"
+      transformerArgs {
+        name: "auto_pad"
+        argIndex: 8
+        stringValue: "SAME"
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dH"
+    outputIntName: "dH"
+    inputFloatName: "dilations"
+    inputToOutput {
+      key: "dH"
+      value: "dilations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "dH"
+      transformerArgs {
+        name: "dilations"
+        argIndex: 6
+      }
+      transformerArgs {
+        name: "dH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    transformerArgs {
+      key: "dH"
+      transformerArgs {
+        name: "dilations"
+        argIndex: 6
+      }
+      transformerArgs {
+        name: "dH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 6
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dW"
+    outputIntName: "dW"
+    inputFloatName: "dilations"
+    inputToOutput {
+      key: "dW"
+      value: "dilations"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "dW"
+      transformerArgs {
+        name: "dilations"
+        int64Value: 1
+        argIndex: 7
+      }
+      transformerArgs {
+        name: "dW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    transformerArgs {
+      key: "dW"
+      transformerArgs {
+        name: "dilations"
+        int64Value: 1
+        argIndex: 7
+      }
+      transformerArgs {
+        name: "dW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 7
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "pH"
+    inputFloatName: "pads"
+    inputToOutput {
+      key: "pH"
+      value: "pads"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        argIndex: 4
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "pW"
+    inputFloatName: "pads"
+    inputToOutput {
+      key: "pW"
+      value: "pads"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 1
+        argIndex: 5
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
+    outputIntName: "sH"
+    inputFloatName: "strides"
+    inputToOutput {
+      key: "sH"
+      value: "strides"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "sH"
+      transformerArgs {
+        name: "strides"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argType: INT64
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "sH"
+      transformerArgs {
+        name: "strides"
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argType: INT64
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
+    outputIntName: "sW"
+    inputFloatName: "strides"
+    inputToOutput {
+      key: "sW"
+      value: "strides"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "sW"
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argType: INT64
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "sW"
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argType: INT64
+        argIndex: 3
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "kW"
+    inputFloatName: "kernel_shape"
+    inputToOutput {
+      key: "kW"
+      value: "kernel_shape"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "kW"
+      transformerArgs {
+        name: "kernel_shape"
+        int64Value: 1
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+  rule {
+    ruleName: "listattributevaluelookuptoindex"
+    functionName: "listattributevaluelookuptoindex"
+    outputIntName: "kH"
+    inputFloatName: "kernel_shape"
+    inputToOutput {
+      key: "kH"
+      value: "kernel_shape"
+    }
+    ruleType: "attribute"
+    transformerArgs {
+      key: "kH"
+      transformerArgs {
+        name: "kernel_shape"
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "Conv"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "greater"
+  inputFrameworkOpName: "Greater"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Greater"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Greater"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sign"
+  inputFrameworkOpName: "Sign"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sign"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sign"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "softsign"
+  inputFrameworkOpName: "Softsign"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Softsign"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Softsign"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "exp"
+  inputFrameworkOpName: "Exp"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Exp"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Exp"
+  }
+}

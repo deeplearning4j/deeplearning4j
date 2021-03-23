@@ -1408,15 +1408,6 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-/*      @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDepth(Nd4jBackend backend) {
-        SameDiff sameDiff = SameDiff.create();
-        SDVariable x = sameDiff.one("one",new long[]{2,2});
-        assertEquals(0,x.depth());
-        SDVariable sigmoid = sameDiff.sigmoid("sigmoid",x);
-        assertEquals(1,sigmoid.depth());
-    }*/
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1451,10 +1442,9 @@ public class TransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBooleanAnd(Nd4jBackend backend) {
-        Nd4j.setDataType(DataType.FLOAT);
-        INDArray arr1 = Nd4j.create(new long[]{3, 4});
-        INDArray arr2 = Nd4j.create(new long[]{3, 4});
-        INDArray out = Nd4j.create(new long[]{3, 4});
+        INDArray arr1 = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
+        INDArray arr2 = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
+        INDArray out = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
 
         DynamicCustomOp op = DynamicCustomOp.builder("boolean_and")
                 .addInputs(arr1, arr2)

@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class ParallelTransformerIteratorTest extends BaseDL4JTest {

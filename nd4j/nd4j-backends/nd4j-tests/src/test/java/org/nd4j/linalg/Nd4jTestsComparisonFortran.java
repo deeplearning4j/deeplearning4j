@@ -122,13 +122,13 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
                     for (int m = 0; m < beta.length; m++) {
                         //System.out.println((String.format("Running iteration %d %d %d %d", i, j, k, m)));
 
-                        INDArray cff = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray cff = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         cff.assign(cOrig);
-                        INDArray cft = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray cft = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         cft.assign(cOrig);
-                        INDArray ctf = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray ctf = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         ctf.assign(cOrig);
-                        INDArray ctt = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray ctt = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         ctt.assign(cOrig);
 
                         double a = alpha[k];

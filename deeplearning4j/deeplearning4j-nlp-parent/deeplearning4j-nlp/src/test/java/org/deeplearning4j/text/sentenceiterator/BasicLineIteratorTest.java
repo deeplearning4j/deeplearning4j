@@ -33,7 +33,6 @@ import java.io.FileInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled("Permissions issues on CI")
 public class BasicLineIteratorTest extends BaseDL4JTest {
 
 

@@ -3539,7 +3539,7 @@ public class Shape {
         return shape.length;
     }
 
-    public static int rankFromShape(long[] shape){
+    public static int rankFromShape(long[] shape) {
         if(shape == null){
             throw new ND4JIllegalStateException("Cannot get rank from null shape array");
         }
@@ -3551,7 +3551,7 @@ public class Shape {
     }
 
     public static void assertBroadcastable(@NonNull int[] x, @NonNull int[] y){
-        if(!areShapesBroadcastable(x, y)){
+        if(!areShapesBroadcastable(x, y)) {
             throw new ND4JIllegalStateException("Arrays are different shape and are not broadcastable." +
                     " Array 1 shape = " + Arrays.toString(x) + ", array 2 shape = " + Arrays.toString(y));
         }
@@ -3570,7 +3570,7 @@ public class Shape {
     }
 
     public static boolean areShapesBroadcastable(@NonNull int[] x, @NonNull int[] y){
-        //Ported from: https://github.com/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
+        //Ported from: https://github.com/eclipse/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
 
         int minRank = Math.min(x.length, y.length);
         for( int i=-1; i>= -minRank; i--){
@@ -3583,7 +3583,7 @@ public class Shape {
     }
 
     public static boolean areShapesBroadcastable(@NonNull long[] left, @NonNull long[] right){
-        //Ported from: https://github.com/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
+        //Ported from: https://github.com/eclipse/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
 
         int minRank = Math.min(left.length, right.length);
 

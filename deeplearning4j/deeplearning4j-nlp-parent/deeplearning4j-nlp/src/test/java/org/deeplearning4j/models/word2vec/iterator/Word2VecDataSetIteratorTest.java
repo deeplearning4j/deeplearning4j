@@ -61,7 +61,6 @@ public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
      * Basically all we want from this test - being able to finish without exceptions.
      */
     @Test
-    @Disabled
     public void testIterator1() throws Exception {
 
         File inputFile = Resources.asFile("big/raw_sentences.txt");

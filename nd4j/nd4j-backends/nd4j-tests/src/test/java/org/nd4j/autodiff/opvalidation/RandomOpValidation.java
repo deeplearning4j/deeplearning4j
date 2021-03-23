@@ -391,7 +391,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAllEmptyReduce(){
+    public void testAllEmptyReduce(Nd4jBackend backend) {
         INDArray x = Nd4j.createFromArray(true, true, true);
         All all = new All(x);
         all.setEmptyReduce(true);   //For TF compatibility - empty array for axis (which means no-op - and NOT all array reduction)
@@ -401,9 +401,9 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUniformDtype(){
+    public void testUniformDtype(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
-        for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE, }){
+        for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
             SameDiff sd = SameDiff.create();
             SDVariable shape = sd.constant("shape", Nd4j.createFromArray(1, 100));
             SDVariable out = sd.random.uniform(0, 10, t, 1, 100);

@@ -47,10 +47,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@Disabled("Times out too often")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
 public class TestDownload extends BaseDL4JTest {
     @TempDir
     static Path sharedTempDir;

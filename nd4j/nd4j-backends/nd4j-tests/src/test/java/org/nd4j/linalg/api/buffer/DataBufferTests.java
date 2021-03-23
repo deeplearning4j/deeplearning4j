@@ -51,8 +51,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DataBufferTests extends BaseNd4jTestWithBackends {
 
 
-    @Test
-    @Disabled("AB 2019/06/03 - CI issue: \"CUDA stream synchronization failed\" - see issue 7657")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoArgCreateBufferFromArray(Nd4jBackend backend) {

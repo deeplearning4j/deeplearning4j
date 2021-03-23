@@ -55,7 +55,7 @@ public class TestNDArrayToWritablesFunction {
     @Test
     public void testNDArrayToWritablesArray() throws Exception {
         INDArray arr = Nd4j.arange(5);
-        List<Writable> expected = Arrays.asList((Writable) new NDArrayWritable(arr));
+        List<Writable> expected = Arrays.asList(new NDArrayWritable(arr));
         List<Writable> actual = new NDArrayToWritablesFunction(true).call(arr);
         assertEquals(expected, actual);
     }

@@ -52,6 +52,8 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.UUID;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.nd4j.common.tests.tags.TagNames;
 
@@ -60,10 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @DisplayName("Jdbc Record Reader Test")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.JAVA_ONLY)
-class JDBCRecordReaderTest {
+public class JDBCRecordReaderTest {
 
-    @TempDir
-    public Path testDir;
 
     Connection conn;
 
@@ -75,8 +75,6 @@ class JDBCRecordReaderTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        File f = testDir.toFile();
-        System.setProperty("derby.system.home", f.getAbsolutePath());
         dataSource = new EmbeddedDataSource();
         dataSource.setDatabaseName(dbName);
         dataSource.setCreateDatabase("create");
@@ -92,7 +90,10 @@ class JDBCRecordReaderTest {
 
     @Test
     @DisplayName("Test Simple Iter")
-    void testSimpleIter() throws Exception {
+    void testSimpleIter(  @TempDir Path testDir) throws Exception {
+        File f = testDir.resolve("new-folder").toFile();
+        assertTrue(f.mkdirs());
+        System.setProperty("derby.system.home", f.getAbsolutePath());
         try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
             List<List<Writable>> records = new ArrayList<>();
             while (reader.hasNext()) {

@@ -41,7 +41,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
 
-@Disabled
 @NativeTag
 @Tag(TagNames.RNG)
 public class RandomTests extends BaseDL4JTest {

@@ -87,7 +87,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         m.put("y", y);
 
         Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m, null,
-                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
+                Collections.emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         assertEquals(outExp, outMap.get("out"));
@@ -125,7 +125,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         m.put("y", y);
 
         Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null,
-                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
+                Collections.emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         assertEquals(dExp, outMap.get("d"));
@@ -160,7 +160,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
 //        String outName = merge.name();
         String outName = outVar.name();
         Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null,
-                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
+                Collections.emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         INDArray out = outMap.get(outName);
@@ -196,7 +196,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         String n = merge.name();
 
 //        System.out.println("----------------------------------");
-        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(),
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.emptyList(),
                 null, At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
@@ -206,14 +206,17 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
-        outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
+        outMap = is.output(Collections.singletonList(n), m, null, Collections.emptyList(), null,
+                At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expFalse, outMap.get(n));
     }
 
-    @Test()
     @Timeout(20000L)
-    public void testSwitchWhile() throws Exception{
+    @Tag(TagNames.FILE_IO)
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSwitchWhile(Nd4jBackend backend) throws Exception{
 
         /*
         Test case:
@@ -229,7 +232,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         for( int numIter : new int[]{1,3}) {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
             TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-            SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),null);
+            SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap());
 
 //            System.out.println(sd.summary());
             sd.summary();

@@ -181,7 +181,7 @@ public class ExcelRecordReader extends FileRecordReader {
         List<Writable> ret = new ArrayList<>(currRow.getLastCellNum());
         for(Cell cell: currRow) {
             String cellValue = dataFormatter.formatCellValue(cell);
-            switch(cell.getCellTypeEnum()) {
+            switch(cell.getCellType()) {
                 case BLANK: ret.add(new Text("")); break;
                 case STRING: ret.add(new Text("")); break;
                 case BOOLEAN: ret.add(new BooleanWritable(Boolean.valueOf(cellValue))); break;

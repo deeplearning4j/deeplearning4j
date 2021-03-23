@@ -220,7 +220,6 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testNpy(Nd4jBackend backend) throws Exception {
         for(boolean empty : new boolean[]{false, true}) {
             val dir = testDir.toFile();

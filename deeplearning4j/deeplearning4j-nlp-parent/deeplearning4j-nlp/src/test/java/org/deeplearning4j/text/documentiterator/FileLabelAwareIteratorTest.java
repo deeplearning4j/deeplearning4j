@@ -38,7 +38,6 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class FileLabelAwareIteratorTest extends BaseDL4JTest {
@@ -51,7 +50,8 @@ public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testExtractLabelFromPath1(@TempDir Path testDir) throws Exception {
-        val dir = testDir.toFile();
+        val dir = testDir.resolve("new-folder").toFile();
+        dir.mkdirs();
         val resource = new ClassPathResource("/labeled/");
         resource.copyDirectory(dir);
 
@@ -79,8 +79,12 @@ public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testExtractLabelFromPath2(@TempDir Path testDir) throws Exception {
+        testDir = testDir.resolve("new-folder");
+        testDir.toFile().mkdirs();
         val dir0 = new File(testDir.toFile(),"dir-0");
         val dir1 = new File(testDir.toFile(),"dir-1");
+        dir0.mkdirs();
+        dir1.mkdirs();
         val resource = new ClassPathResource("/labeled/");
         val resource2 = new ClassPathResource("/rootdir/");
         resource.copyDirectory(dir0);

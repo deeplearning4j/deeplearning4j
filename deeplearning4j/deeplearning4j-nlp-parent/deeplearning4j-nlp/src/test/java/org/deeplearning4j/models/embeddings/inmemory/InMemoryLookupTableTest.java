@@ -46,7 +46,6 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class InMemoryLookupTableTest extends BaseDL4JTest {

@@ -30,7 +30,6 @@ import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled("Permissions issues on CI")
 public class AggregatingSentenceIteratorTest extends BaseDL4JTest {
 
     @Test()

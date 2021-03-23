@@ -230,7 +230,6 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
     }
 
     @Test
-    @Disabled
     public void testBadTad4(Nd4jBackend backend) {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 

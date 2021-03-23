@@ -27,9 +27,12 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -56,7 +59,7 @@ public class GaussianDistribution extends BaseRandomOp {
         super();
     }
 
-    public GaussianDistribution(double mean, double stddev, DataType datatype, long... shape){
+    public GaussianDistribution(double mean, double stddev, DataType datatype, long... shape) {
         this(Nd4j.createUninitialized(datatype, shape), mean, stddev);
     }
 
@@ -75,7 +78,6 @@ public class GaussianDistribution extends BaseRandomOp {
 
 
     public GaussianDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
-        super(z, means, z);
         if (z.length() != means.length())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
@@ -84,6 +86,7 @@ public class GaussianDistribution extends BaseRandomOp {
 
         this.mean = 0.0;
         this.stddev = stddev;
+        this.z = z;
         this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
@@ -124,18 +127,22 @@ public class GaussianDistribution extends BaseRandomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-    @Override
-    public void setZ(INDArray z){
-        //We want all 3 args set to z for this op
-        this.x = z;
-        this.y = z;
-        this.z = z;
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.emptyList();
+    }
+
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
     }
 
     @Override

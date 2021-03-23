@@ -40,17 +40,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
 
-    @TempDir Path testDir;
 
     @Override
     public char ordering() {
@@ -61,9 +63,7 @@ public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void testProfilingListenerSimple(Nd4jBackend backend) throws Exception {
-
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 3);
         SDVariable label = sd.placeHolder("label", DataType.FLOAT, 1, 2);
@@ -75,16 +75,17 @@ public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
         INDArray i = Nd4j.rand(DataType.FLOAT, 1, 3);
         INDArray l = Nd4j.rand(DataType.FLOAT, 1, 2);
 
-
-        File dir = testDir.toFile();
+        Path testDir = Paths.get(new File(System.getProperty("java.io.tmpdir")).toURI());
+        File dir = testDir.resolve("new-dir-" + UUID.randomUUID().toString()).toFile();
+        dir.mkdirs();
         File f = new File(dir, "test.json");
+        f.deleteOnExit();
         ProfilingListener listener = ProfilingListener.builder(f)
                 .recordAll()
                 .warmup(5)
                 .build();
 
         sd.setListeners(listener);
-
         Map<String,INDArray> ph = new HashMap<>();
         ph.put("in", i);
 
@@ -95,7 +96,6 @@ public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
         String content = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
 //        System.out.println(content);
         assertFalse(content.isEmpty());
-
         //Should be 2 begins and 2 ends for each entry
         //5 warmup iterations, 5 profile iterations, x2 for both the op name and the op "instance" name
         String[] opNames = {"matmul", "add", "softmax"};
@@ -103,32 +103,8 @@ public class ProfilingListenerTest extends BaseNd4jTestWithBackends {
             assertEquals( 10, StringUtils.countMatches(content, s),s);
         }
 
-
         System.out.println("///////////////////////////////////////////");
-        ProfileAnalyzer.summarizeProfile(f, ProfileAnalyzer.ProfileFormat.SAMEDIFF);
+        //ProfileAnalyzer.summarizeProfile(f, ProfileAnalyzer.ProfileFormat.SAMEDIFF);
 
     }
-
-    /*
-      @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testLoadTfProfile(){
-        File f = new File("C:\\Temp\\sd_profiler\\tf_profile.json");
-        ProfileAnalyzer.summarizeProfile(f, ProfileAnalyzer.ProfileFormat.TENSORFLOW);
-    }
-
-      @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testLoadTfProfileDir(){
-        File f = new File("C:\\Temp\\sd_profiler\\tf_multiple_profiles");
-        ProfileAnalyzer.summarizeProfileDirectory(f, ProfileAnalyzer.ProfileFormat.TENSORFLOW);
-    }
-
-      @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testLoadTfProfileDir2(){
-        File f = new File("C:\\DL4J\\Git\\dl4j-dev-tools\\import-tests\\profiling\\mobilenet_v2_1.0_224_batch32_tf-1.15.0");
-        ProfileAnalyzer.summarizeProfileDirectory(f, ProfileAnalyzer.ProfileFormat.TENSORFLOW);
-    }
-    */
 }

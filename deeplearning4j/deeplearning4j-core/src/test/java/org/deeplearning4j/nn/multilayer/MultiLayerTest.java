@@ -464,11 +464,15 @@ public class MultiLayerTest extends BaseDL4JTest {
     void testGradientUpdate() throws Exception {
         DataSetIterator iter = new IrisDataSetIterator(1, 1);
         Gradient expectedGradient = new DefaultGradient();
-        expectedGradient.setGradientFor("0_W", Nd4j.ones(4, 5));
-        expectedGradient.setGradientFor("0_b", Nd4j.ones(1, 5));
-        expectedGradient.setGradientFor("1_W", Nd4j.ones(5, 3));
-        expectedGradient.setGradientFor("1_b", Nd4j.ones(1, 3));
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(1.0)).activation(Activation.RELU).weightInit(WeightInit.XAVIER).list().layer(0, new DenseLayer.Builder().name("dnn1").nIn(4).nOut(5).build()).layer(1, new OutputLayer.Builder().name("output").nIn(5).nOut(3).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build()).build();
+        expectedGradient.setGradientFor("0_W", Nd4j.ones(4, 5).castTo(DataType.DOUBLE));
+        expectedGradient.setGradientFor("0_b", Nd4j.ones(1, 5).castTo(DataType.DOUBLE));
+        expectedGradient.setGradientFor("1_W", Nd4j.ones(5, 3).castTo(DataType.DOUBLE));
+        expectedGradient.setGradientFor("1_b", Nd4j.ones(1, 3).castTo(DataType.DOUBLE));
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Sgd(1.0)).activation(Activation.RELU)
+                .weightInit(WeightInit.XAVIER).list().layer(0, new DenseLayer.Builder().name("dnn1").nIn(4).nOut(5).build())
+                .layer(1, new OutputLayer.Builder().name("output").nIn(5).nOut(3).activation(Activation.SOFTMAX)
+                        .weightInit(WeightInit.XAVIER).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.fit(iter.next());
@@ -479,16 +483,16 @@ public class MultiLayerTest extends BaseDL4JTest {
         actualGradient = net.gradient;
         assertEquals(expectedGradient.getGradientFor("0_W"), actualGradient.getGradientFor("0_W"));
         // Update params with set
-        net.setParam("0_W", Nd4j.ones(4, 5));
-        net.setParam("0_b", Nd4j.ones(1, 5));
-        net.setParam("1_W", Nd4j.ones(5, 3));
-        net.setParam("1_b", Nd4j.ones(1, 3));
-        INDArray actualParams = net.params();
+        net.setParam("0_W", Nd4j.ones(4, 5).castTo(DataType.DOUBLE));
+        net.setParam("0_b", Nd4j.ones(1, 5).castTo(DataType.DOUBLE));
+        net.setParam("1_W", Nd4j.ones(5, 3).castTo(DataType.DOUBLE));
+        net.setParam("1_b", Nd4j.ones(1, 3).castTo(DataType.DOUBLE));
+        INDArray actualParams = net.params().castTo(DataType.DOUBLE);
         // Confirm params
         assertEquals(expectedGradient.gradient(), actualParams);
         net.update(expectedGradient);
-        actualParams = net.params();
-        assertEquals(Nd4j.ones(1, 43).addi(1), actualParams);
+        actualParams = net.params().castTo(DataType.DOUBLE);
+        assertEquals(Nd4j.ones(1, 43).addi(1).castTo(DataType.DOUBLE), actualParams);
     }
 
     @Test
@@ -827,12 +831,14 @@ public class MultiLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Input Activation Gradient")
     void testInputActivationGradient() {
-        Nd4j.setDataType(DataType.DOUBLE);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).seed(12345).activation(Activation.TANH).list().layer(new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(new OutputLayer.Builder().nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE).seed(12345).activation(Activation.TANH)
+                .list().layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        INDArray in = Nd4j.rand(1, 10);
-        INDArray label = Nd4j.rand(1, 10);
+        INDArray in = Nd4j.rand(1, 10).castTo(DataType.DOUBLE);
+        INDArray label = Nd4j.rand(1, 10).castTo(DataType.DOUBLE);
         Pair<Gradient, INDArray> p = net.calculateGradients(in, label, null, null);
         // Quick gradient check:
         double eps = 1e-6;
@@ -918,10 +924,12 @@ public class MultiLayerTest extends BaseDL4JTest {
         int w = 6;
         int h = 6;
         INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[] { w, h }).castTo(Nd4j.defaultFloatingPointType()));
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.01).list().layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1, 1).build()).layer(new Yolo2OutputLayer.Builder().boundingBoxPriors(bbPrior).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.01).list()
+                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1, 1).build())
+                .layer(new Yolo2OutputLayer.Builder().boundingBoxPriors(bbPrior).build()).build();
         MultiLayerConfiguration conf2 = conf.clone();
-        INDArray bb1 = ((Yolo2OutputLayer) conf.getConf(1).getLayer()).getBoundingBoxes();
-        INDArray bb2 = ((Yolo2OutputLayer) conf2.getConf(1).getLayer()).getBoundingBoxes();
+        INDArray bb1 = ((Yolo2OutputLayer) conf.getConf(1).getLayer()).getBoundingBoxes().castTo(Nd4j.defaultFloatingPointType());
+        INDArray bb2 = ((Yolo2OutputLayer) conf2.getConf(1).getLayer()).getBoundingBoxes().castTo(Nd4j.defaultFloatingPointType());
         assertFalse(bb1 == bb2);
         assertEquals(bb1, bb2);
     }

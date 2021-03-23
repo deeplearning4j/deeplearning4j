@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.datasets.base.MnistFetcher;
@@ -54,7 +55,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected static final long[] CHECKSUMS_TRAIN = new long[]{CHECKSUM_TRAIN_FEATURES, CHECKSUM_TRAIN_LABELS};
     protected static final long[] CHECKSUMS_TEST = new long[]{CHECKSUM_TEST_FEATURES, CHECKSUM_TEST_LABELS};
 
-    protected transient MnistManager man;
     protected boolean binarize = true;
     protected boolean train;
     protected int[] order;
@@ -65,6 +65,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     protected boolean firstShuffle = true;
     protected final int numExamples;
+    protected String images,labels;
+    //note: we default to zero here on purpose, otherwise when first initializes an error is thrown.
+    private long lastCursor = 0;
 
 
     /**
@@ -82,8 +85,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
         }
 
         String MNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "MNIST").getAbsolutePath();
-        String images;
-        String labels;
         long[] checksums;
         if (train) {
             images = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.TRAINING_FILES_FILENAME_UNZIPPED);
@@ -99,16 +100,21 @@ public class MnistDataFetcher extends BaseDataFetcher {
         String[] files = new String[]{images, labels};
 
         try {
-            man = new MnistManager(images, labels, train);
+            MnistManager man = new MnistManager(images, labels, train);
             validateFiles(files, checksums);
+            man.close();
         } catch (Exception e) {
             try {
                 FileUtils.deleteDirectory(new File(MNIST_ROOT));
             } catch (Exception e2){ }
             new MnistFetcher().downloadAndUntar();
-            man = new MnistManager(images, labels, train);
+            MnistManager man = new MnistManager(images, labels, train);
+            lastCursor = man.getCurrent();
             validateFiles(files, checksums);
+            man.close();
         }
+
+        MnistManager man = new MnistManager(images, labels, train);
 
         numOutcomes = 10;
         this.binarize = binarize;
@@ -127,6 +133,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         rng = new Random(rngSeed);
         this.numExamples = numExamples;
         reset(); //Shuffle order
+        man.close();
     }
 
     private boolean mnistExists() {
@@ -147,7 +154,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         return true;
     }
 
-    private void validateFiles(String[] files, long[] checksums){
+    private void validateFiles(String[] files, long[] checksums) {
         //Validate files:
         try {
             for (int i = 0; i < files.length; i++) {
@@ -170,16 +177,19 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     private float[][] featureData = null;
 
+    @SneakyThrows
     @Override
     public void fetch(int numExamples) {
         if (!hasMore()) {
             throw new IllegalStateException("Unable to get more; there are no more images");
         }
 
+        MnistManager man = new MnistManager(images, labels, totalExamples);
+        man.setCurrent((int) lastCursor);
         INDArray labels = Nd4j.zeros(DataType.FLOAT, numExamples, numOutcomes);
 
         if(featureData == null || featureData.length < numExamples){
-            featureData = new float[numExamples][28*28];
+            featureData = new float[numExamples][28 * 28];
         }
 
         int actualExamples = 0;
@@ -188,6 +198,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
             if (!hasMore())
                 break;
 
+            man.setCurrent(cursor);
+            lastCursor = cursor;
             byte[] img = man.readImageUnsafe(order[cursor]);
 
             if (fOrder) {
@@ -236,6 +248,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         }
 
         curr = new DataSet(features, labels);
+        man.close();
     }
 
     @Override
@@ -261,6 +274,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
     public DataSet next() {
         DataSet next = super.next();
         return next;
+    }
+
+    public void close() {
     }
 
 }

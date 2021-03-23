@@ -44,7 +44,6 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 @Slf4j
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class ParameterServerParallelWrapperTest extends BaseDL4JTest {

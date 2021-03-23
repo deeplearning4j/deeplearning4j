@@ -79,7 +79,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         RegressionEvaluation eval = new RegressionEvaluation(nCols);
 
         for (int i = 0; i < nTestArrays; i++) {
-            INDArray rand = Nd4j.rand(valuesPerTestArray, nCols);
+            INDArray rand = Nd4j.rand(valuesPerTestArray, nCols).castTo(DataType.DOUBLE);
             eval.eval(rand, rand);
         }
 
@@ -172,8 +172,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         for (int i = 0; i < nEvalInstances; i++) {
             list.add(new RegressionEvaluation(nCols));
             for (int j = 0; j < numMinibatches; j++) {
-                INDArray p = Nd4j.rand(nRows, nCols);
-                INDArray act = Nd4j.rand(nRows, nCols);
+                INDArray p = Nd4j.rand(nRows, nCols).castTo(Nd4j.defaultFloatingPointType());
+                INDArray act = Nd4j.rand(nRows, nCols).castTo(Nd4j.defaultFloatingPointType());
 
                 single.eval(act, p);
 

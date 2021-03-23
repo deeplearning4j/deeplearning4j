@@ -25,7 +25,11 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+
+import java.util.Arrays;
 import java.util.List;
 
 @NoArgsConstructor
@@ -36,8 +40,8 @@ public class DropOut extends BaseRandomOp {
     public DropOut(SameDiff sameDiff, SDVariable input, double p) {
         super(sameDiff, input);
         this.p = p;
-        //https://github.com/eclipse/deeplearning4j/issues/5650
-        throw new UnsupportedOperationException("Dropout SameDiff support disabled pending backprop support");
+        this.extraArgs = new Object[] {p};
+
     }
 
     public DropOut(@NonNull INDArray x, double p) {
@@ -63,6 +67,12 @@ public class DropOut extends BaseRandomOp {
     @Override
     public Type opType() {
         return Type.RANDOM ;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        INDArray input = oc.getInputArray(0);
+        return Arrays.asList(input.shapeDescriptor());
     }
 
     @Override

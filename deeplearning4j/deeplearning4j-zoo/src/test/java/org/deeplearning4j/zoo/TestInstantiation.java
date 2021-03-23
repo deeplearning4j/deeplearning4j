@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
 public class TestInstantiation extends BaseDL4JTest {
 
     protected static void ignoreIfCuda(){

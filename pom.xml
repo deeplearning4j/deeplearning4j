@@ -473,6 +473,11 @@
                         </dependency>
                     </dependencies>
                     <configuration>
+                        <forkCount>${cpu.core.count}</forkCount>
+                        <reuseForks>false</reuseForks>
+                        <environmentVariables>
+                            <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+                        </environmentVariables>
                         <classpathDependencyExcludes>
                             <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
                             <classpathDependencyExclude>com.google.android:android
@@ -623,6 +628,15 @@
                                         </directory>
                                     </resource>
                                 </resources>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>get-cpu-count</id>
+                            <goals>
+                                <goal>cpu-count</goal>
+                            </goals>
+                            <configuration>
+                                <cpuCount>cpu.core.count</cpuCount>
                             </configuration>
                         </execution>
                     </executions>
@@ -943,6 +957,15 @@
                                     </removeAll><!-- remove all versions of built artifacts including all versions.  Install phase will regenerate -->
                                 </configuration>
                             </execution>
+                            <execution>
+                                <id>get-cpu-count</id>
+                                <goals>
+                                    <goal>cpu-count</goal>
+                                </goals>
+                                <configuration>
+                                    <cpuCount>system.numCores</cpuCount>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -1163,10 +1186,16 @@
                         <version>${maven-surefire-plugin.version}</version>
                         <inherited>true</inherited>
                         <configuration>
+                            <forkCount>${cpu.core.count}</forkCount>
+                            <reuseForks>false</reuseForks>
+
                             <environmentVariables>
+                                <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
                             </environmentVariables>
                             <argLine>-Xmx8g</argLine>
+                            <forkCount>${cpu.core.count}</forkCount>
+                            <reuseForks>false</reuseForks>
                         </configuration>
                         <dependencies>
                             <dependency>

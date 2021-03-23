@@ -20,12 +20,18 @@
 
 package org.deeplearning4j.spark.impl.paramavg.util;
 
+import com.sun.jna.Platform;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.resources.Downloader;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,8 +42,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Ede Meijer
  */
+@Slf4j
 public class ExportSupportTest {
     private static final String FS_CONF = "spark.hadoop.fs.defaultFS";
+
+    @SneakyThrows
+    @BeforeEach
+    void before() {
+        if(Platform.isWindows()) {
+            File hadoopHome = new File(System.getProperty("java.io.tmpdir"),"hadoop-tmp");
+            File binDir = new File(hadoopHome,"bin");
+            if(!binDir.exists())
+                binDir.mkdirs();
+            File outputFile = new File(binDir,"winutils.exe");
+            if(!outputFile.exists()) {
+                log.info("Fixing spark for windows");
+                Downloader.download("winutils.exe",
+                        URI.create("https://github.com/cdarlint/winutils/blob/master/hadoop-2.6.5/bin/winutils.exe?raw=true").toURL(),
+                        outputFile,"db24b404d2331a1bec7443336a5171f1",3);
+            }
+
+            System.setProperty("hadoop.home.dir", hadoopHome.getAbsolutePath());
+        }
+    }
 
     @Test
     public void testLocalSupported() throws IOException {

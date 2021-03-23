@@ -260,7 +260,6 @@ public class TestImageTransform {
         assertEquals(22, transformed[1], 0);
     }
 
-    @Disabled
     @Test
     public void testFilterImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 4);

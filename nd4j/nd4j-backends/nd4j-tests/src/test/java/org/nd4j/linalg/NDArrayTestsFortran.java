@@ -1086,8 +1086,8 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[] {6, 3, 4, 5}, shape);
     }
 
-    @Test
-    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorDot(Nd4jBackend backend) {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape('f', 3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2).castTo(DataType.DOUBLE);

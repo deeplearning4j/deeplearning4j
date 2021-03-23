@@ -56,11 +56,11 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author Adam Gibson
  */
-@Disabled("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
 @NativeTag
 public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();
+    @TempDir Path tempDir;
 
     @BeforeEach
     public void before() {
@@ -98,8 +98,9 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSerialization(@TempDir Path tempDir,Nd4jBackend backend) throws Exception {
-        File dir = tempDir.toFile();
+    public void testSerialization(Nd4jBackend backend) throws Exception {
+        File dir = tempDir.resolve("new-dir-1").toFile();
+        dir.mkdirs();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
         File file = new File(dir, fileName);

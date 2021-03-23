@@ -37,10 +37,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
-@Disabled("Times out too often")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
 public class MiscTests extends BaseDL4JTest {
 
     @Override

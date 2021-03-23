@@ -31,7 +31,6 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.python.PythonTransform;
 import org.datavec.spark.BaseSparkTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -94,8 +93,8 @@ class ExecutionTest extends BaseSparkTest {
         seq1e.add(Arrays.asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
         seq1e.add(Arrays.asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
         List<List<Writable>> seq2e = new ArrayList<>();
-        seq2e.add(Arrays.asList(new IntWritable(3), new IntWritable(0), new DoubleWritable(13.1)));
         seq2e.add(Arrays.asList(new IntWritable(4), new IntWritable(1), new DoubleWritable(14.1)));
+        seq2e.add(Arrays.asList(new IntWritable(3), new IntWritable(0), new DoubleWritable(13.1)));
         expectedSequence.add(seq1e);
         expectedSequence.add(seq2e);
         assertEquals(expectedSequence, out);
@@ -125,7 +124,7 @@ class ExecutionTest extends BaseSparkTest {
         List<List<Writable>> out = outRdd.collect();
         List<List<Writable>> expOut = Arrays.asList(Arrays.asList(new IntWritable(0), new Text("first"), new DoubleWritable(4.0)), Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(40.0)));
         out = new ArrayList<>(out);
-        Collections.sort(out, (o1, o2) -> Integer.compare(o1.get(0).toInt(), o2.get(0).toInt()));
+        Collections.sort(out, Comparator.comparingInt(o -> o.get(0).toInt()));
         assertEquals(expOut, out);
     }
 
@@ -154,29 +153,6 @@ class ExecutionTest extends BaseSparkTest {
         assertTrue(c1.contains(new Text("state0")) && c1.contains(new Text("state1")) && c1.contains(new Text("state2")));
     }
 
-    @Test
-    @Disabled("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
-    @DisplayName("Test Python Execution")
-    void testPythonExecution() {
-        assertTimeout(ofMillis(60000), () -> {
-            Schema schema = new Schema.Builder().addColumnInteger("col0").addColumnString("col1").addColumnDouble("col2").build();
-            Schema finalSchema = new Schema.Builder().addColumnInteger("col0").addColumnInteger("col1").addColumnDouble("col2").build();
-            String pythonCode = "col1 = ['state0', 'state1', 'state2'].index(col1)\ncol2 += 10.0";
-            TransformProcess tp = new TransformProcess.Builder(schema).transform(PythonTransform.builder().code("first = np.sin(first)\nsecond = np.cos(second)").outputSchema(finalSchema).build()).build();
-            List<List<Writable>> inputData = new ArrayList<>();
-            inputData.add(Arrays.asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
-            inputData.add(Arrays.asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
-            inputData.add(Arrays.asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
-            JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
-            List<List<Writable>> out = new ArrayList<>(SparkTransformExecutor.execute(rdd, tp).collect());
-            Collections.sort(out, Comparator.comparingInt(o -> o.get(0).toInt()));
-            List<List<Writable>> expected = new ArrayList<>();
-            expected.add(Arrays.asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
-            expected.add(Arrays.asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
-            expected.add(Arrays.asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
-            assertEquals(expected, out);
-        });
-    }
 
 
     @Test
@@ -190,7 +166,7 @@ class ExecutionTest extends BaseSparkTest {
         List<List<Writable>> out = SparkTransformExecutor.execute(rdd, tp).collect();
         assertEquals(1, out.size());
         List<Writable> l = out.get(0);
-        List<Writable> exp = Arrays.<Writable>asList(// 0
+        List<Writable> exp = Arrays.asList(// 0
         new IntWritable(0), // 1
         new IntWritable(0), // 2
         new IntWritable(3), // 3

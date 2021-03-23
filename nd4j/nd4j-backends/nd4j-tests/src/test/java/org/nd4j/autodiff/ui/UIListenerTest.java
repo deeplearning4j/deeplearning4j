@@ -115,7 +115,8 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
         SameDiff sd1 = getSimpleNet();
         SameDiff sd2 = getSimpleNet();
 
-        File dir = testDir.toFile();
+        File dir = testDir.resolve("new-dir-1").toFile();
+        dir.mkdirs();
         File f = new File(dir, "logFileNoContinue.bin");
         f.delete();
         UIListener l1 = UIListener.builder(f)
@@ -205,7 +206,8 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
         IrisDataSetIterator iter = new IrisDataSetIterator(150, 150);
         SameDiff sd1 = getSimpleNet();
 
-        File dir = testDir.toFile();
+        File dir = testDir.resolve("new-dir-2").toFile();
+        dir.mkdirs();
         File f = new File(dir, "logFile.bin");
         f.delete();
         UIListener l1 = UIListener.builder(f)

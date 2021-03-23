@@ -190,7 +190,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Disabled
     @Test
     @DisplayName("Test Cnn With Space To Depth")
     void testCnnWithSpaceToDepth() {

@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@Disabled
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class FileDocumentIteratorTest extends BaseDL4JTest {

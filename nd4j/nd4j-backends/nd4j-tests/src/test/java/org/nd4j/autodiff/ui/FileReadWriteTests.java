@@ -92,7 +92,8 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
         SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
         SDVariable sum = v.sum();
 
-        File f = testDir.toFile();
+        File f = testDir.resolve("new-dir-1").toFile();
+        f.mkdirs();
         if (f.exists())
             f.delete();
         System.out.println(f.getAbsolutePath());
@@ -185,7 +186,7 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
             FlatArray fa = (FlatArray) events.get(i).getRight();
             INDArray arr = Nd4j.createFromFlatArray(fa);
 
-            INDArray exp = Nd4j.scalar(0.5 + (i-1) * 0.1);
+            INDArray exp = Nd4j.scalar(0.5 + (i - 1) * 0.1);
             assertEquals(exp, arr);
         }
     }
@@ -193,7 +194,8 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNullBinLabels(Nd4jBackend backend) throws Exception{
-        File dir = testDir.toFile();
+        File dir = testDir.resolve("new-dir").toFile();
+        dir.mkdirs();
         File f = new File(dir, "temp.bin");
         LogFileWriter w = new LogFileWriter(f);
 

@@ -178,14 +178,11 @@
             <groupId>org.nd4j</groupId>
             <artifactId>samediff-import-tensorflow</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>samediff-import-onnx</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
-
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -272,7 +269,11 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <forkCount>${cpu.core.count}</forkCount>
+                            <reuseForks>false</reuseForks>
                             <environmentVariables>
+                                <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+
                                 <LD_LIBRARY_PATH>
                                     ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
                                 </LD_LIBRARY_PATH>
@@ -346,11 +347,6 @@
                                 <groupId>org.bytedeco</groupId>
                                 <artifactId>cuda-platform</artifactId>
                                 <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.apache.maven.surefire</groupId>
-                                <artifactId>surefire-junit47</artifactId>
-                                <version>2.19.1</version>
                             </dependency>
                         </dependencies>
                         <configuration>

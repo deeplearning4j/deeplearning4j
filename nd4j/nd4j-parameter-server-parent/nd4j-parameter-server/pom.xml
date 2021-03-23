@@ -98,6 +98,8 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <forkCount>${cpu.core.count}</forkCount>
+                            <reuseForks>false</reuseForks>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
                                 <include>*.java</include>

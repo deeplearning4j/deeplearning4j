@@ -31,7 +31,6 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
 
 import org.junit.jupiter.api.Tag;
@@ -125,85 +124,5 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
 
 
 
-    @Test
-    public void testSequenceRecordReaderFunctionVideo(@TempDir Path testDir) throws Exception {
-        JavaSparkContext sc = getContext();
 
-        File f = testDir.toFile();
-        new ClassPathResource("datavec-spark/video/").copyDirectory(f);
-
-        String path = f.getAbsolutePath() + "/*";
-
-        JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
-        //        System.out.println(origData.collectAsMap().keySet());
-        assertEquals(4, origData.count()); //4 video files
-
-        //Load 64x64, 25 frames - originally, 130x130, 150 frames
-        SequenceRecordReader sparkSeqReader = new CodecRecordReader();
-        Configuration conf = new Configuration();
-        conf.set(CodecRecordReader.RAVEL, "true");
-        conf.set(CodecRecordReader.START_FRAME, "0");
-        conf.set(CodecRecordReader.TOTAL_FRAMES, "25");
-        conf.set(CodecRecordReader.ROWS, "64");
-        conf.set(CodecRecordReader.COLUMNS, "64");
-        Configuration confCopy = new Configuration(conf);
-        sparkSeqReader.setConf(conf);
-
-        SequenceRecordReaderFunction srrf = new SequenceRecordReaderFunction(sparkSeqReader);
-        JavaRDD<List<List<Writable>>> rdd = origData.map(srrf);
-        List<List<List<Writable>>> listSpark = rdd.collect();
-
-        assertEquals(4, listSpark.size());
-        for (int i = 0; i < 4; i++) {
-            List<List<Writable>> thisSequence = listSpark.get(i);
-            assertEquals(25, thisSequence.size()); //Expect exactly 25 time steps (frames) in sequence
-            for (List<Writable> c : thisSequence) {
-                assertEquals(1, c.size()); //64*64 videos, RGB
-                assertEquals(64 * 64 * 3, ((ArrayWritable) c.iterator().next()).length());
-            }
-        }
-
-        //Load normally, and check that we get the same results (order not withstanding)
-        InputSplit is = new FileSplit(f, new String[] {"mp4"}, true);
-        //        System.out.println("Locations:");
-        //        System.out.println(Arrays.toString(is.locations()));
-
-        SequenceRecordReader srr = new CodecRecordReader();
-        srr.initialize(is);
-        srr.setConf(confCopy);
-
-
-        List<List<List<Writable>>> list = new ArrayList<>(4);
-        while (srr.hasNext()) {
-            list.add(srr.sequenceRecord());
-        }
-        assertEquals(4, list.size());
-
-        //        System.out.println("Spark list:");
-        //        for(List<List<Writable>> c : listSpark ) System.out.println(c);
-        //        System.out.println("Local list:");
-        //        for(List<List<Writable>> c : list ) System.out.println(c);
-
-        //Check that each of the values from Spark equals exactly one of the values doing it locally
-        boolean[] found = new boolean[4];
-        for (int i = 0; i < 4; i++) {
-            int foundIndex = -1;
-            List<List<Writable>> collection = listSpark.get(i);
-            for (int j = 0; j < 4; j++) {
-                if (collection.equals(list.get(j))) {
-                    if (foundIndex != -1)
-                        fail(); //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)
-                    foundIndex = j;
-                    if (found[foundIndex])
-                        fail(); //One of the other spark values was equal to this one -> suggests duplicates in Spark list
-                    found[foundIndex] = true; //mark this one as seen before
-                }
-            }
-        }
-        int count = 0;
-        for (boolean b : found)
-            if (b)
-                count++;
-        assertEquals(4, count); //Expect all 4 and exactly 4 pairwise matches between spark and local versions
-    }
 }

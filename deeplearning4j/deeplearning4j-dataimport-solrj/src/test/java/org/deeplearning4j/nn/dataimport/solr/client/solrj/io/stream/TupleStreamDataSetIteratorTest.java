@@ -46,7 +46,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ThreadLeakFilters(defaultFilters = true, filters = { TupleStreamDataSetIteratorTest.PrivateDeallocatorThreadsFilter.class })
 @DisplayName("Tuple Stream Data Set Iterator Test")
-@Disabled("Permissions issues with temp dir")
 @Tag(TagNames.SOLR)
 @Tag(TagNames.DIST_SYSTEMS)
 class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
@@ -97,7 +96,7 @@ class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection("mySolrCollection", "conf", numShards, numReplicas).setMaxShardsPerNode(maxShardsPerNode).process(cluster.getSolrClient());
         // compose an update request
         final UpdateRequest updateRequest = new UpdateRequest();
-        final List<Integer> docIds = new ArrayList<Integer>();
+        final List<Integer> docIds = new ArrayList<>();
         for (int phase = 1; phase <= 2; ++phase) {
             int docIdsIdx = 0;
             if (phase == 2) {

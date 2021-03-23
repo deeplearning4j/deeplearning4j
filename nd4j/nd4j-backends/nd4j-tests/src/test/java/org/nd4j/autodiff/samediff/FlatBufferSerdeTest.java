@@ -276,6 +276,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testTrainingSerde(Nd4jBackend backend) throws Exception {
 
         //Ensure 2 things:

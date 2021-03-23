@@ -33,7 +33,6 @@ import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class AsyncLabelAwareIteratorTest extends BaseDL4JTest {

@@ -22,11 +22,13 @@ package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -44,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Slf4j
-@Disabled
 @NativeTag
 public class LongTests extends BaseNd4jTestWithBackends {
 
@@ -52,6 +53,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testSomething1(Nd4jBackend backend) {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(8000000, 300);
@@ -79,6 +81,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testSomething2(Nd4jBackend backend) {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(100, 10);
@@ -106,6 +109,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOffsets1(Nd4jBackend backend) {
         INDArray huge = Nd4j.create(230000000, 10);
 
@@ -116,6 +120,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOp1(Nd4jBackend backend) {
 
         double exp = Transforms.manhattanDistance(Nd4j.create(1000).assign(1.0), Nd4j.create(1000).assign(2.0));
@@ -135,6 +140,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOp2(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
@@ -147,6 +153,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOp2_micro(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(230, 1000).assign(1.0);
@@ -159,6 +166,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOp3(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
@@ -171,6 +179,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOp4(Nd4jBackend backend) {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
@@ -183,6 +192,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testLongTadOp5(Nd4jBackend backend) {
 
         List<INDArray> list = new ArrayList<>();

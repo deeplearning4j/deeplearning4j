@@ -21,7 +21,9 @@
 package org.deeplearning4j.datasets.mnist;
 
 
+import lombok.SneakyThrows;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.nd4j.common.base.Preconditions;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -60,6 +62,13 @@ public class MnistManager {
 
     }
 
+    @SneakyThrows
+    public long getCurrent() {
+        return labels.getCurrentIndex();
+    }
+
+
+
     /**
      * Constructs an instance managing the two given data files. Supports
      * <code>NULL</code> value for one of the arguments in case reading only one
@@ -76,6 +85,8 @@ public class MnistManager {
     public MnistManager(String imagesFile, String labelsFile, boolean train) throws IOException {
         this(imagesFile, labelsFile, train ? MnistDataFetcher.NUM_EXAMPLES : MnistDataFetcher.NUM_EXAMPLES_TEST);
     }
+
+
 
     public MnistManager(String imagesFile, String labelsFile, int numExamples) throws IOException {
         if (imagesFile != null) {
@@ -106,6 +117,7 @@ public class MnistManager {
     }
 
     public byte[] readImageUnsafe(int i) {
+        Preconditions.checkArgument(i < imagesArr.length);
         return imagesArr[i];
     }
 

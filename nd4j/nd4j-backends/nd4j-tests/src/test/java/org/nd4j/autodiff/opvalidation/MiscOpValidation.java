@@ -35,6 +35,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -81,7 +82,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.*;
 
 @Slf4j
-@Tag("samediff")
+@Tag(TagNames.SAMEDIFF)
 public class MiscOpValidation extends BaseOpValidation {
 
 
@@ -665,48 +666,6 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
-    public void testMmulGradientManual(Nd4jBackend backend) {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
-        Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("x", sumInput);
-        inputs.put("y", sumInput.dup());
-
-        sameDiff.defineFunction("mmulGradient", (sameDiff1, inputs1, variableInputs) -> {
-            SDVariable input = sameDiff1.var("x", inputs1.get("x"));
-            SDVariable input2 = sameDiff1.var("y", inputs1.get("y"));
-            SDVariable exp = sameDiff1.mmul(input, input2);
-            SDVariable sum = sameDiff1.sum(exp, Integer.MAX_VALUE);
-            return new SDVariable[]{sum};
-        }, inputs);
-
-
-        assertNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
-        assertNotNull(sameDiff.getFunction("mmulGradient").grad("x"));
-        assertNotNull(sameDiff.getFunction("mmulGradient").grad("y"));
-
-        SDVariable gradWrtX = sameDiff.getFunction("mmulGradient").grad("x");
-        SDVariable gradWrtY = sameDiff.getFunction("mmulGradient").grad("y");
-        assertNotNull(gradWrtX.getArr());
-        assertNotNull(gradWrtY.getArr());
-
-
-        INDArray xGradAssertion = Nd4j.create(new double[][]{
-                {3, 7},
-                {3, 7}
-        });
-
-        INDArray yGradAssertion = Nd4j.create(new double[][]{
-                {4, 4},
-                {6, 6}
-        });
-
-        assertEquals(xGradAssertion, gradWrtX.getArr());
-        assertEquals(yGradAssertion, gradWrtY.getArr());
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

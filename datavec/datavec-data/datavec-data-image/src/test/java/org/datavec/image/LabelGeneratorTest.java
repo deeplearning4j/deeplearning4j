@@ -36,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
+import java.util.UUID;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
@@ -48,11 +50,11 @@ class LabelGeneratorTest {
 
     @Test
     @DisplayName("Test Parent Path Label Generator")
-    @Disabled
     void testParentPathLabelGenerator(@TempDir Path testDir) throws Exception {
         File orig = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile();
         for (String dirPrefix : new String[] { "m.", "m" }) {
-            File f = testDir.toFile();
+            File f = testDir.resolve("new-dir-" + UUID.randomUUID().toString()).toFile();
+            f.mkdirs();
             int numDirs = 3;
             int filesPerDir = 4;
             for (int i = 0; i < numDirs; i++) {

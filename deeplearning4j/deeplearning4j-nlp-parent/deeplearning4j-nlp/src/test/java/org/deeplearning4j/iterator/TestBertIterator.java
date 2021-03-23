@@ -51,7 +51,6 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-@Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class TestBertIterator extends BaseDL4JTest {

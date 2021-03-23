@@ -117,7 +117,6 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
 
     @Test
-    @Disabled
     public void testDistance() throws Exception {
         INDArray matrix = Nd4j.rand(new int[] {400,10});
         INDArray rowVector = matrix.getRow(70);

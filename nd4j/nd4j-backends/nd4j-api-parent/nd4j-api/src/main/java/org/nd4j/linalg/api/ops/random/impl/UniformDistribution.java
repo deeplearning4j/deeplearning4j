@@ -25,11 +25,16 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +46,7 @@ public class UniformDistribution extends BaseRandomOp {
         super();
     }
 
-    public UniformDistribution(SameDiff sd, double from, double to, long[] shape){
+    public UniformDistribution(SameDiff sd, double from, double to, long[] shape) {
         super(sd, shape);
         this.from = from;
         this.to = to;
@@ -55,6 +60,7 @@ public class UniformDistribution extends BaseRandomOp {
 
     public UniformDistribution(double min, double max, DataType datatype, long... shape){
         this(Nd4j.createUninitialized(datatype, shape), min, max);
+        this.shape = shape;
     }
 
     /**
@@ -68,6 +74,7 @@ public class UniformDistribution extends BaseRandomOp {
         this.from = from;
         this.to = to;
         this.extraArgs = new Object[] {this.from, this.to};
+        this.shape = z.shape();
     }
 
     /**
@@ -107,7 +114,18 @@ public class UniformDistribution extends BaseRandomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
         //Input data type specifies the shape; output data type should be any float
         //TODO MAKE CONFIGUREABLE - https://github.com/eclipse/deeplearning4j/issues/6854

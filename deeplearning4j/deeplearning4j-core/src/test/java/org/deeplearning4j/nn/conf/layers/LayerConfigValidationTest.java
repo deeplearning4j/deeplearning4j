@@ -88,16 +88,7 @@ class LayerConfigValidationTest extends BaseDL4JTest {
         });
     }
 
-    @Test
-    @Disabled
-    @DisplayName("Test Reg Not Set L 2 Local")
-    void testRegNotSetL2Local() {
-        assertThrows(IllegalStateException.class, () -> {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build()).layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-        });
-    }
+
 
     @Test
     @DisplayName("Test Weight Init Dist Not Set")

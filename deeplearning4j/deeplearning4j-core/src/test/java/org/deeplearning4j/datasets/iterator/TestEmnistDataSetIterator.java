@@ -50,9 +50,8 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
     public void testEmnistDataSetIterator() throws Exception {
-
-
         int batchSize = 128;
 
         EmnistDataSetIterator.Set[] sets;

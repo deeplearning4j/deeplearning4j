@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @Slf4j
-@Disabled("AB 2019/05/23 - JVM crash on linux-x86_64-cpu-avx512 - issue #7657")
 @Tag(TagNames.JACKSON_SERDE)
 @NativeTag
 public class LargeSerDeTests extends BaseNd4jTestWithBackends {

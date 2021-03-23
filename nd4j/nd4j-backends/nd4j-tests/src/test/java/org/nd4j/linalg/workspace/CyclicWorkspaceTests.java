@@ -66,7 +66,6 @@ public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
     }
 
     @Test
-    @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGc(Nd4jBackend backend) {

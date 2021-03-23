@@ -49,8 +49,6 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
 
 
         String EMNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "EMNIST").getAbsolutePath();
-        String images;
-        String labels;
         if (train) {
             images = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTrainingFilesFilename_unzipped());
             labels = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTrainingFileLabelsFilename_unzipped());
@@ -60,7 +58,7 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
             labels = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTestFileLabelsFilename_unzipped());
             totalExamples = EmnistDataSetIterator.numExamplesTest(dataSet);
         }
-
+        MnistManager man;
         try {
             man = new MnistManager(images, labels, totalExamples);
         } catch (Exception e) {
@@ -73,6 +71,7 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
         numOutcomes = EmnistDataSetIterator.numLabels(dataSet);
         this.binarize = binarize;
         cursor = 0;
+        man.setCurrent(cursor);
         inputColumns = man.getImages().getEntryLength();
         this.train = train;
         this.shuffle = shuffle;
@@ -92,6 +91,7 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
             oneIndexed = false;
         }
         this.fOrder = true; //MNIST is C order, EMNIST is F order
+        man.close();
     }
 
     private boolean emnistExists(EmnistFetcher e) {

@@ -454,7 +454,7 @@ public class CompressionTests extends BaseNd4jTestWithBackends {
 
         Nd4j.getExecutioner().bitmapDecode(enc, target);
         log.info("Target: {}", Arrays.toString(target.data().asFloat()));
-        assertEquals(exp_1, target);
+        assertEquals(exp_1, target.castTo(exp_1.dataType()));
     }
 
 

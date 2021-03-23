@@ -57,10 +57,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@Disabled("Times out too often")
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
 public class TestImageNet extends BaseDL4JTest {
 
     @Override
