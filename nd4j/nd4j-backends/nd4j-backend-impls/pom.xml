@@ -139,7 +139,7 @@
                             Maximum heap size was set to 8g, as a minimum required value for tests run.
                             Depending on a build machine, default value is not always enough.
                         -->
-                        <argLine>-Xmx8g</argLine>
+                        <argLine>-Xmx2g</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
