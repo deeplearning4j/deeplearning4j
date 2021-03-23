@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.junit.jupiter.api.Tag;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.primitives.Pair;
 import org.datavec.image.data.ImageWritable;
@@ -37,6 +38,8 @@ import java.util.List;
 import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
@@ -46,6 +49,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author saudet
  */
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class TestImageTransform {
     static final long seed = 10;
     static final Random rng = new Random(seed);
@@ -255,7 +260,6 @@ public class TestImageTransform {
         assertEquals(22, transformed[1], 0);
     }
 
-    @Disabled
     @Test
     public void testFilterImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 4);

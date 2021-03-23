@@ -31,10 +31,13 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,6 +63,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  * @author saudet
  */
 @Slf4j
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class TestNativeImageLoader {
     static final long seed = 10;
     static final Random rng = new Random(seed);

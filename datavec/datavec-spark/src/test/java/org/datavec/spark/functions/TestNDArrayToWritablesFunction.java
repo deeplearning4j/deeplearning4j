@@ -24,7 +24,10 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.misc.NDArrayToWritablesFunction;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -33,7 +36,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestNDArrayToWritablesFunction {
 
     @Test
@@ -49,7 +55,7 @@ public class TestNDArrayToWritablesFunction {
     @Test
     public void testNDArrayToWritablesArray() throws Exception {
         INDArray arr = Nd4j.arange(5);
-        List<Writable> expected = Arrays.asList((Writable) new NDArrayWritable(arr));
+        List<Writable> expected = Arrays.asList(new NDArrayWritable(arr));
         List<Writable> actual = new NDArrayToWritablesFunction(true).call(arr);
         assertEquals(expected, actual);
     }

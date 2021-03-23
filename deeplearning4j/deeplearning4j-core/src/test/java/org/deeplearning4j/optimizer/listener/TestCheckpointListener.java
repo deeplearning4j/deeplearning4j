@@ -30,9 +30,12 @@ import org.deeplearning4j.optimize.listeners.Checkpoint;
 import org.deeplearning4j.optimize.listeners.CheckpointListener;
 import org.deeplearning4j.util.ModelSerializer;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -47,7 +50,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class TestCheckpointListener extends BaseDL4JTest {
 
     @Override

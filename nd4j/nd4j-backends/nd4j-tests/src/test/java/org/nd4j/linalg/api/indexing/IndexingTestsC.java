@@ -20,9 +20,12 @@
 
 package org.nd4j.linalg.api.indexing;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -42,7 +45,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 /**
  * @author Adam Gibson
  */
-
+@Tag(TagNames.NDARRAY_INDEXING)
+@NativeTag
 public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
 

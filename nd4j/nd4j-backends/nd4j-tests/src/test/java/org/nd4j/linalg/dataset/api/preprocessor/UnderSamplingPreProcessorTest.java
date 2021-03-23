@@ -22,10 +22,13 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.extern.slf4j.Slf4j;
 import net.jcip.annotations.NotThreadSafe;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -51,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 
 @NotThreadSafe
+@Tag(TagNames.NDARRAY_ETL)
+@NativeTag
 public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
     int shortSeq = 10000;
     int longSeq = 20020; //not a perfect multiple of windowSize

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -61,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 
 @Slf4j
+@NativeTag
 public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
@@ -1084,8 +1086,8 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[] {6, 3, 4, 5}, shape);
     }
 
-    @Test
-    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorDot(Nd4jBackend backend) {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape('f', 3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2).castTo(DataType.DOUBLE);

@@ -21,9 +21,12 @@
 package org.nd4j.evaluation;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.classification.ROCMultiClass;
@@ -42,6 +45,8 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag(TagNames.EVAL_METRICS)
+@NativeTag
 public class ROCTest extends BaseNd4jTestWithBackends {
 
 

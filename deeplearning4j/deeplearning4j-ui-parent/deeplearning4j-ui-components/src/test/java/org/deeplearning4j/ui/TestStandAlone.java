@@ -29,10 +29,16 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.standalone.StaticPageUtil;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.awt.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestStandAlone extends BaseDL4JTest {
 
     @Test

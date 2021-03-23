@@ -24,13 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -71,7 +70,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-
+@Tag(TagNames.RNG)
+@NativeTag
+@Tag(TagNames.LONG_TEST)
 public class RandomTests extends BaseNd4jTestWithBackends {
 
     private DataType initialType;
@@ -439,6 +440,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
     public void testStepOver1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -919,7 +921,6 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, sampled);
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeallocation1() throws Exception {
@@ -1370,7 +1371,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void reproducabilityTest(){
+    public void reproducabilityTest(Nd4jBackend backend) {
         int numBatches = 1;
 
         for (int t = 0; t < 10; t++) {
@@ -1397,7 +1398,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBernoulli(){
+    public void testBernoulli(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
         Nd4j.exec(new BernoulliDistribution(arr, 0.5));
@@ -1419,7 +1420,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testRngRepeatabilityUniform(){
+    public void testRngRepeatabilityUniform(Nd4jBackend backend) {
         val nexp = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.getRandom().setSeed(12345);
         val out1 = Nd4j.create(DataType.FLOAT, 10);
@@ -1435,7 +1436,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testRngRepeatabilityBernoulli(){
+    public void testRngRepeatabilityBernoulli(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray out1 = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.exec(new RandomBernoulli(Nd4j.createFromArray(10L), out1, 0.5));
@@ -1449,7 +1450,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGamma(){
+    public void testGamma(Nd4jBackend backend){
         Nd4j.getRandom().setSeed(12345);
         INDArray shape = Nd4j.createFromArray(new int[] {1000,1000});
         INDArray alpha = Nd4j.createFromArray(new float[]{2.f});
@@ -1471,7 +1472,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPoisson(){
+    public void testPoisson(Nd4jBackend backend){
         Nd4j.getRandom().setSeed(12345);
         INDArray shape = Nd4j.createFromArray(new int[] {1,3});
         INDArray alpha = Nd4j.rand(1,3);
@@ -1485,7 +1486,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testShuffle(){
+    public void testShuffle(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray alpha = Nd4j.rand(1,3);
         val randomShuffle = new RandomShuffle(alpha);

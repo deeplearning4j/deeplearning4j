@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,11 +44,16 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 /**
  * @author Max Pumperla
  */
 @DisplayName("Keras LSTM Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 class KerasLSTMTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";

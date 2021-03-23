@@ -25,7 +25,10 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 
 import org.datavec.local.transforms.misc.WritablesToNDArrayFunction;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class TestWritablesToNDArrayFunction {
 
     @Test

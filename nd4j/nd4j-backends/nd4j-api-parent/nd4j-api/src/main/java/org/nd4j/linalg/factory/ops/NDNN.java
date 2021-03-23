@@ -23,6 +23,7 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.PadMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -131,7 +132,7 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, double inputRetainProbability) {
     NDValidation.validateNumerical("dropout", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.DropOut(input, inputRetainProbability));
+    return Nd4j.exec((Op) new org.nd4j.linalg.api.ops.random.impl.DropOut(input, inputRetainProbability));
   }
 
   /**

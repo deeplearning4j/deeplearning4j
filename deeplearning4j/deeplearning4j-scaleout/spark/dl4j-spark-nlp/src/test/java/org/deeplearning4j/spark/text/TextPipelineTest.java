@@ -37,7 +37,10 @@ import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.common.primitives.Pair;
@@ -54,6 +57,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Jeffrey Tang
  */
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TextPipelineTest extends BaseSparkTest {
 
     private List<String> sentenceList;

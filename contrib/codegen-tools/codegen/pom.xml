@@ -124,6 +124,15 @@
                             </sources>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>get-cpu-count</id>
+                        <goals>
+                            <goal>cpu-count</goal>
+                        </goals>
+                        <configuration>
+                            <cpuCount>cpu.core.count</cpuCount>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 

@@ -30,7 +30,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
@@ -48,6 +51,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Element Wise Vertex Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class ElementWiseVertexTest extends BaseDL4JTest {
 
     @Test

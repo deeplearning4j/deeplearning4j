@@ -29,7 +29,10 @@ import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -38,7 +41,10 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestRepartitioning extends BaseSparkTest {
 
     @Override

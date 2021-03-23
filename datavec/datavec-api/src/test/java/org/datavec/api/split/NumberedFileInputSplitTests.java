@@ -20,13 +20,16 @@
 
 package org.datavec.api.split;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.net.URI;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class NumberedFileInputSplitTests  extends BaseND4JTest {
     @Test
     public void testNumberedFileInputSplitBasic() {

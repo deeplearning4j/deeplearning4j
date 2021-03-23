@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.cuda.util.CuDNNValidationUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
@@ -54,6 +55,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Slf4j
+@NativeTag
 public class ValidateCuDNN extends BaseDL4JTest {
 
     @Override
@@ -190,7 +192,6 @@ public class ValidateCuDNN extends BaseDL4JTest {
         validateLayers(net, classesToTest, false, fShape, lShape, CuDNNValidationUtil.MAX_REL_ERROR, CuDNNValidationUtil.MIN_ABS_ERROR);
     }
 
-    @Test @Disabled //AB 2019/05/20 - https://github.com/eclipse/deeplearning4j/issues/5088 - ignored to get to "all passing" state for CI, and revisit later
     public void validateConvLayersLRN() {
         //Test ONLY LRN - no other CuDNN functionality (i.e., DL4J impls for everything else)
         Nd4j.getRandom().setSeed(12345);

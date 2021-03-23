@@ -35,7 +35,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -52,6 +55,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  */
 @DisplayName("Local Response Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class LocalResponseTest extends BaseDL4JTest {
 
     private INDArray x = Nd4j.create(new double[] { 0.88128096, -0.96666986, -0.61832994, 0.26418415, 0.05694608, 0.2950289, 0.99222249, 0.24541704, 0.4219842, 0.96430975, 0.19299535, -0.06658337, -0.27603117, 0.24216647, 0.21834095, 0.03863283, -0.82313406, -0.37236378, -0.77667993, 0.66295379, -0.34406275, -0.25924176, 0.26652309, -0.58964926, -0.46907067, 0.34666502, 0.81208313, -0.17042427, -0.22470538, 0.8348338, 0.50494033, 0.45004508, 0.58735144, -0.87217808, -0.74788797, -0.04363599, 0.72276866, 0.52476895, -0.52383977, 0.1311436, 0.2628099, 0.77274454, 0.86400729, -0.35246921, -0.03399619, -0.502312, 0.42834607, 0.85534132, 0.90083021, 0.24571614, 0.63058525, -0.82919437, 0.57236177, -0.0913529, -0.7102778, 0.81631756, -0.89004314, 0.43995622, -0.26112801, -0.76135367, 0.65180862, -0.54667377, 0.94908774, 0.59298772, 0.36457643, 0.58892179, -0.52951556, 0.31559938, -0.55268252, 0.8272332, 0.37911707, -0.96299696, -0.40717798, 0.43324658, 0.2589654, -0.15605508, 0.96334064, -0.31666604, 0.19781154, 0.09908111, 0.64796048, -0.99037546, 0.67919868, 0.43810204 }, new int[] { 2, 7, 3, 2 });

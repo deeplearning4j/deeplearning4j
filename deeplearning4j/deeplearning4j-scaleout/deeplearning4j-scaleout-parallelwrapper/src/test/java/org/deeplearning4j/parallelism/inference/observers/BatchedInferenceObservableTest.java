@@ -24,7 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -38,6 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class BatchedInferenceObservableTest extends BaseDL4JTest {
     @BeforeEach
     public void setUp() throws Exception {}

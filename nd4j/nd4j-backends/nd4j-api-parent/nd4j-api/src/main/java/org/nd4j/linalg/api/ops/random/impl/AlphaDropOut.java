@@ -24,8 +24,11 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class AlphaDropOut extends BaseRandomOp {
@@ -70,6 +73,17 @@ public class AlphaDropOut extends BaseRandomOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
     }
 
     @Override

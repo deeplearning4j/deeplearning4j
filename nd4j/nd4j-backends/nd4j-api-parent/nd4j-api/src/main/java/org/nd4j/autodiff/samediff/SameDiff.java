@@ -3842,9 +3842,10 @@ public class SameDiff extends SDBaseOps {
             SDVariable[] ret = new SDVariable[num_outputs];
 
             //Infer the output types: we can always determine datatype but not always shapes
-            Preconditions.checkState(isImport || (outputDataTypes != null && outputDataTypes.size() == num_outputs),
-                    "Incorrect number of output datatypes: got %s but expected datatypes for %s outputs - %s (op: %s)",
-                    (outputDataTypes == null ? null : outputDataTypes.size()), num_outputs, outputDataTypes, function.getClass().getSimpleName());
+            if(isImport || (outputDataTypes != null && outputDataTypes.size() == num_outputs))
+                log.warn(
+                        "Incorrect number of output datatypes: got %s but expected datatypes for %s outputs - %s (op: %s), could be due to variable input types.",
+                        (outputDataTypes == null ? null : outputDataTypes.size()), num_outputs, outputDataTypes, function.getClass().getSimpleName());
 
             //dynamic shapes
             //When importing from TF: convention is "unstack", "unstack:1", "unstack:2", ...

@@ -24,22 +24,26 @@ import org.datavec.api.transform.StringReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TestReduce extends BaseND4JTest {
 
     @Test
     public void testReducerDouble() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable) new Text("1"), new Text("2")));
-        inputs.add(Arrays.asList((Writable) new Text("1"), new Text("2")));
-        inputs.add(Arrays.asList((Writable) new Text("1"), new Text("2")));
+        inputs.add(Arrays.asList(new Text("1"), new Text("2")));
+        inputs.add(Arrays.asList(new Text("1"), new Text("2")));
+        inputs.add(Arrays.asList(new Text("1"), new Text("2")));
 
         Map<StringReduceOp, String> exp = new LinkedHashMap<>();
         exp.put(StringReduceOp.MERGE, "12");

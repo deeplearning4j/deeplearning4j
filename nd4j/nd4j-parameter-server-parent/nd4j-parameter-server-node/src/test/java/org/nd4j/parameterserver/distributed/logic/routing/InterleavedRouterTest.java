@@ -23,9 +23,12 @@ package org.nd4j.parameterserver.distributed.logic.routing;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
@@ -40,6 +43,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled
 @Deprecated
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class InterleavedRouterTest extends BaseND4JTest {
     VoidConfiguration configuration;
     Transport transport;

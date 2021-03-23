@@ -23,10 +23,13 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -37,7 +40,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 @Slf4j
-
+@Tag(TagNames.WORKSPACES)
+@NativeTag
 public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
@@ -62,7 +66,6 @@ public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
     }
 
     @Test
-    @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGc(Nd4jBackend backend) {

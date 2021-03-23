@@ -28,7 +28,10 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.junit.jupiter.api.Disabled;
 
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.io.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
@@ -69,7 +72,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
-
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class TestYolo2OutputLayer extends BaseDL4JTest {
 
 

@@ -21,7 +21,10 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.util.MovingWindowMatrix;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
@@ -30,6 +33,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Moving Window Matrix Test")
+@NativeTag
+@Tag(TagNames.NDARRAY_ETL)
 class MovingWindowMatrixTest extends BaseDL4JTest {
 
     @Test

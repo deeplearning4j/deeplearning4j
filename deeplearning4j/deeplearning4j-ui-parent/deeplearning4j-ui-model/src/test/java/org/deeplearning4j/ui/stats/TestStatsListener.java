@@ -32,7 +32,10 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.model.stats.J7StatsListener;
 import org.deeplearning4j.ui.model.stats.StatsListener;
 import org.deeplearning4j.ui.model.storage.mapdb.MapDBStatsStorage;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -41,7 +44,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestStatsListener extends BaseDL4JTest {
 
     @Test

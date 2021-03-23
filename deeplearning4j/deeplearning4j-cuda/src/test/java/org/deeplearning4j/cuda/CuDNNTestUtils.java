@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.layers.normalization.BatchNormalization;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.tests.tags.NativeTag;
 
 import java.lang.reflect.Field;
 
@@ -35,6 +36,7 @@ import java.lang.reflect.Field;
  *
  * @author Alex Black
  */
+@NativeTag
 public class CuDNNTestUtils {
 
     private CuDNNTestUtils(){ }

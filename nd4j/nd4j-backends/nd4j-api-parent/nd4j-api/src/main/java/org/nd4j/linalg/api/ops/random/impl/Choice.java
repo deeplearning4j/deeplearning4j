@@ -25,8 +25,11 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Choice extends BaseRandomOp {
@@ -39,7 +42,7 @@ public class Choice extends BaseRandomOp {
         super(source, probabilities, z);
         Preconditions.checkArgument(source.dataType() == probabilities.dataType() && z.dataType() == source.dataType(), "Data types of all arguments should match");
         Preconditions.checkState(source.length() == probabilities.length(), "From & probabilities length mismatch: %s vs. %s",
-                            source.length(), probabilities.length());
+                source.length(), probabilities.length());
         if (probabilities.elementWiseStride() < 1 || source.elementWiseStride() < 1)
             throw new IllegalStateException("Source and probabilities should have element-wise stride >= 1");
         this.extraArgs = new Object[] {0.0};
@@ -67,7 +70,18 @@ public class Choice extends BaseRandomOp {
     }
 
     @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("Choice does not have a derivative");
     }
 }

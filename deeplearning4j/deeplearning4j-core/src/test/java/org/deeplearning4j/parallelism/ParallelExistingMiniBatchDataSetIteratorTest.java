@@ -21,6 +21,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.BaseDL4JTest;
@@ -28,6 +29,8 @@ import org.deeplearning4j.datasets.iterator.callbacks.DataSetDeserializer;
 import org.deeplearning4j.datasets.iterator.parallel.FileSplitParallelDataSetIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.common.primitives.Pair;
 import java.io.File;
@@ -127,6 +130,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
     }
     */
 @DisplayName("Parallel Existing Mini Batch Data Set Iterator Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class ParallelExistingMiniBatchDataSetIteratorTest extends BaseDL4JTest {
 
     @TempDir

@@ -49,7 +49,7 @@ public class MnistDataSetIterator extends BaseDatasetIterator {
      */
     public MnistDataSetIterator(int batchSize, boolean train, int seed) throws IOException {
         this(batchSize, (train ? MnistDataFetcher.NUM_EXAMPLES : MnistDataFetcher.NUM_EXAMPLES_TEST), false, train,
-                        true, seed);
+                true, seed);
     }
 
     /**Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
@@ -61,7 +61,13 @@ public class MnistDataSetIterator extends BaseDatasetIterator {
      * @param rngSeed random number generator seed to use when shuffling examples
      */
     public MnistDataSetIterator(int batch, int numExamples, boolean binarize, boolean train, boolean shuffle,
-                    long rngSeed) throws IOException {
+                                long rngSeed) throws IOException {
         super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed, numExamples));
     }
+
+    public void close() {
+        MnistDataFetcher mnistDataFetcher = (MnistDataFetcher) fetcher;
+        mnistDataFetcher.close();
+    }
+
 }

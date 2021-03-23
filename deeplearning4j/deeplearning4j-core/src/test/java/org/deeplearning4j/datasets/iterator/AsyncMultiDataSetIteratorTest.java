@@ -24,6 +24,7 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.VariableMultiTimeseriesGenerator;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
@@ -84,6 +85,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
     }
     */
 @DisplayName("Async Multi Data Set Iterator Test")
+@NativeTag
 class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
 
     /**

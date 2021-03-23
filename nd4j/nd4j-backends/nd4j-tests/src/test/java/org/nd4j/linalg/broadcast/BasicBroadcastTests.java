@@ -23,10 +23,13 @@ package org.nd4j.linalg.broadcast;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-
+@NativeTag
+@Tag(TagNames.NDARRAY_INDEXING)
 public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
@@ -170,7 +174,6 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
     public void basicBroadcastFailureTest_4(Nd4jBackend backend) {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);

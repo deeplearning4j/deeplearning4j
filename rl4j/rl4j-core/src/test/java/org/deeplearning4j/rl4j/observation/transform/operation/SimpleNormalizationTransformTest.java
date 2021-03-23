@@ -20,13 +20,17 @@
 
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class SimpleNormalizationTransformTest {
     @Test()
     public void when_maxIsLessThanMin_expect_exception() {

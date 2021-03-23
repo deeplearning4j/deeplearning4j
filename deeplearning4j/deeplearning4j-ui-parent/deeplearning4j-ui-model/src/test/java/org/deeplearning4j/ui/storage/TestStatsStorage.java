@@ -38,8 +38,11 @@ import org.deeplearning4j.ui.model.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.ui.model.storage.sqlite.J7FileStatsStorage;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 
 import java.io.File;
@@ -48,7 +51,10 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestStatsStorage extends BaseDL4JTest {
 
 

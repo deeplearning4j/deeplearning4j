@@ -2609,8 +2609,14 @@ public class WordVectorSerializer {
 
             String tokenPreProcessorClassName = configuration.getTokenPreProcessor();
             if (StringUtils.isNotEmpty(tokenPreProcessorClassName)) {
-                TokenPreProcess preProcessor = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
-                factory.setTokenPreProcessor(preProcessor);
+                Object preProcessor = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
+                if(preProcessor instanceof TokenPreProcess) {
+                    TokenPreProcess tokenPreProcess = (TokenPreProcess) preProcessor;
+                    factory.setTokenPreProcessor(tokenPreProcess);
+                }
+                else {
+                    log.warn("Found instance of {}, was not actually a pre processor. Ignoring.",tokenPreProcessorClassName);
+                }
             }
 
             return factory;
@@ -2668,7 +2674,7 @@ public class WordVectorSerializer {
         Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
         CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>().useInplaceCompression(false)
-                        .setCompressor(new NoOp()).emulateIsAbsent(false).build();
+                .setCompressor(new NoOp()).emulateIsAbsent(false).build();
 
         VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -2944,7 +2950,7 @@ public class WordVectorSerializer {
     public static <T extends SequenceElement>  void writeLookupTable(WeightLookupTable<T> weightLookupTable,
                                                                      @NonNull File file) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),
-                                                                                StandardCharsets.UTF_8))) {
+                StandardCharsets.UTF_8))) {
             int numWords = weightLookupTable.getVocabCache().numWords();
             int layersSize = weightLookupTable.layerSize();
             long totalNumberOfDocs = weightLookupTable.getVocabCache().totalNumberOfDocs();
@@ -3059,8 +3065,8 @@ public class WordVectorSerializer {
      * @return Word2Vec
      */
     public static Word2Vec readWord2Vec(
-                @NonNull InputStream stream,
-                boolean readExtendedTable) throws IOException {
+            @NonNull InputStream stream,
+            boolean readExtendedTable) throws IOException {
         SequenceVectors<VocabWord> vectors = readSequenceVectors(stream, readExtendedTable);
 
         Word2Vec word2Vec = new Word2Vec
@@ -3103,7 +3109,7 @@ public class WordVectorSerializer {
      *
      * @param path File
      */
-     public static FastText readWordVectors(File path) {
+    public static FastText readWordVectors(File path) {
         FastText result = null;
         try {
             FileInputStream fileIn = new FileInputStream(path);
@@ -3112,7 +3118,7 @@ public class WordVectorSerializer {
                 result = (FastText) in.readObject();
             } catch (ClassNotFoundException ex) {
 
-             }
+            }
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         } catch (IOException ex) {
@@ -3150,8 +3156,8 @@ public class WordVectorSerializer {
     }
 
     /**
-    *   Helper static methods to read data from input stream.
-    */
+     *   Helper static methods to read data from input stream.
+     */
     public static class ReadHelper {
         /**
          * Read a float from a data input stream Credit to:

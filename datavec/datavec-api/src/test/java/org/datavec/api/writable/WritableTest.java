@@ -20,8 +20,10 @@
 package org.datavec.api.writable;
 
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,6 +39,8 @@ import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Writable Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class WritableTest extends BaseND4JTest {
 
     @Test

@@ -46,6 +46,7 @@ import org.nd4j.common.primitives.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -175,13 +176,15 @@ public class LogFileWriter {
                 //Read header
                 ByteBuffer bb = ByteBuffer.allocate(lengthHeader);
                 f.getChannel().read(bb);
-                bb.flip();      //Flip for reading
+                Buffer buffer = (Buffer) bb;
+                buffer.flip();      //Flip for reading
                 UIStaticInfoRecord r = UIStaticInfoRecord.getRootAsUIStaticInfoRecord(bb);
 
                 //Read content
                 bb = ByteBuffer.allocate(lengthContent);
                 f.getChannel().read(bb);
-                bb.flip();      //Flip for reading
+                Buffer buffer1 = (Buffer) bb;
+                buffer1.flip();      //Flip for reading
 
                 byte infoType = r.infoType();
                 Table t;
@@ -248,13 +251,15 @@ public class LogFileWriter {
                 //Read header
                 ByteBuffer bb = ByteBuffer.allocate(lengthHeader);
                 f.getChannel().read(bb);
-                bb.flip();      //Flip for reading
+                Buffer buffer2 = (Buffer) bb;
+                buffer2.flip();//Flip for reading
                 UIEvent e = UIEvent.getRootAsUIEvent(bb);
 
                 //Read Content
                 bb = ByteBuffer.allocate(lengthContent);
                 f.getChannel().read(bb);
-                bb.flip();      //Flip for reading
+                Buffer buffer3 = (Buffer) bb;
+                buffer3.flip();  //Flip for reading
 
                 byte infoType = e.eventType();
                 Table t;
@@ -637,7 +642,8 @@ public class LogFileWriter {
             int l2 = bb2 == null ? 0 : bb2.remaining();
             header.putInt(l1);
             header.putInt(l2);
-            header.flip();
+            Buffer buffer = (Buffer) header;
+            buffer.flip();
 
             //System.out.println("Lengths - header, content: " + l1 + ", " + l2);
 

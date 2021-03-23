@@ -30,8 +30,10 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,13 +41,15 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
     private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
 
 
     @Test
+    @Tag(TagNames.NEEDS_VERIFY)
     @Disabled
     public void testBasicIndexing() {
         Schema.Builder schema = new Schema.Builder();
@@ -79,8 +83,9 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
     }
 
     @Test
-    //not worried about this till after next release
+    @Tag(TagNames.NEEDS_VERIFY)
     @Disabled
+    //not worried about this till after next release
     public void testVariableLengthTS() {
         Schema.Builder schema = new Schema.Builder()
                 .addColumnString("str")
@@ -88,13 +93,13 @@ public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
                 .addColumnDouble("dbl");
 
         List<List<Writable>> firstSeq = Arrays.asList(
-                Arrays.<Writable>asList(new Text("00"),new IntWritable(0),new DoubleWritable(2.0)),
-                Arrays.<Writable>asList(new Text("01"),new IntWritable(1),new DoubleWritable(2.1)),
-                Arrays.<Writable>asList(new Text("02"),new IntWritable(2),new DoubleWritable(2.2)));
+                Arrays.asList(new Text("00"),new IntWritable(0),new DoubleWritable(2.0)),
+                Arrays.asList(new Text("01"),new IntWritable(1),new DoubleWritable(2.1)),
+                Arrays.asList(new Text("02"),new IntWritable(2),new DoubleWritable(2.2)));
 
         List<List<Writable>> secondSeq = Arrays.asList(
-                Arrays.<Writable>asList(new Text("10"),new IntWritable(10),new DoubleWritable(12.0)),
-                Arrays.<Writable>asList(new Text("11"),new IntWritable(11),new DoubleWritable(12.1)));
+                Arrays.asList(new Text("10"),new IntWritable(10),new DoubleWritable(12.0)),
+                Arrays.asList(new Text("11"),new IntWritable(11),new DoubleWritable(12.1)));
 
         List<List<List<Writable>>> sequences = Arrays.asList(firstSeq, secondSeq);
 

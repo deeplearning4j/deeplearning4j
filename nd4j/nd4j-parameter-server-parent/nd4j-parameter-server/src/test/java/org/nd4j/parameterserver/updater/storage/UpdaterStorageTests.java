@@ -20,16 +20,21 @@
 
 package org.nd4j.parameterserver.updater.storage;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class UpdaterStorageTests extends BaseND4JTest {
 
 

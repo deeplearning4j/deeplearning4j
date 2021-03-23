@@ -19,7 +19,9 @@
  */
 package org.datavec.api.writable;
 
+import org.junit.jupiter.api.Tag;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.shade.guava.collect.Lists;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.ndarray.RecordConverter;
@@ -36,6 +38,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Record Converter Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class RecordConverterTest extends BaseND4JTest {
 
     @Test

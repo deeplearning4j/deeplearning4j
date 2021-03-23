@@ -20,12 +20,16 @@
 
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class ArrayToINDArrayTransformTest {
 
     @Test

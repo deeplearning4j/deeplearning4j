@@ -29,11 +29,14 @@ import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,6 +55,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Mask Zero Layer Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class MaskZeroLayerTest extends BaseDL4JTest {
 
 

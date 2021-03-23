@@ -25,6 +25,7 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
@@ -42,6 +43,8 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -61,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Adam Gibson
  */
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class TfidfVectorizerTest extends BaseDL4JTest {
 
 

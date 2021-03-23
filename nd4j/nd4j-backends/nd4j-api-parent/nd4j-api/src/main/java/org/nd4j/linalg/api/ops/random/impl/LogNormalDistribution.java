@@ -27,9 +27,12 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,14 +44,14 @@ public class LogNormalDistribution extends BaseRandomOp {
         super();
     }
 
-    public LogNormalDistribution(SameDiff sd, double mean, double stdev, long... shape){
+    public LogNormalDistribution(SameDiff sd, double mean, double stdev, long... shape) {
         super(sd, shape);
         this.mean = mean;
         this.stddev = stdev;
         this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
-    public LogNormalDistribution(SameDiff sd, double mean, double stdev, DataType dataType, long... shape){
+    public LogNormalDistribution(SameDiff sd, double mean, double stdev, DataType dataType, long... shape) {
         this(sd, mean, stdev,shape);
         this.dataType = dataType;
     }
@@ -125,6 +128,17 @@ public class LogNormalDistribution extends BaseRandomOp {
         this.x = z;
         this.y = z;
         this.z = z;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
     }
 
     @Override

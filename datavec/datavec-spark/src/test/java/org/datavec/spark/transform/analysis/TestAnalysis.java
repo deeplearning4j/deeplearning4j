@@ -38,7 +38,9 @@ import org.datavec.local.transforms.AnalyzeLocal;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.AnalyzeSpark;
 import org.joda.time.DateTimeZone;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
@@ -48,7 +50,10 @@ import java.nio.file.Files;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestAnalysis extends BaseSparkTest {
 
     @Test

@@ -29,13 +29,16 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TestTransformProcess extends BaseND4JTest {
 
     @Test

@@ -29,7 +29,10 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
@@ -151,6 +154,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 */
 @DisplayName("Layer Config Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class LayerConfigTest extends BaseDL4JTest {
 
     @Test

@@ -29,6 +29,8 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.client.ParameterServerClient;
@@ -39,6 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @Disabled
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class RemoteParameterServerClientTests extends BaseND4JTest {
     private int parameterLength = 1000;
     private Aeron.Context ctx;

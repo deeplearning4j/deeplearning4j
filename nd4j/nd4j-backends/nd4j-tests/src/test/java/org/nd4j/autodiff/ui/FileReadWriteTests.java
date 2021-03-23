@@ -24,6 +24,7 @@ import com.google.flatbuffers.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -35,6 +36,8 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.graph.UIAddName;
 import org.nd4j.graph.UIEvent;
@@ -62,6 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class FileReadWriteTests extends BaseNd4jTestWithBackends {
 
     @TempDir Path testDir;
@@ -87,7 +92,8 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
         SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
         SDVariable sum = v.sum();
 
-        File f = testDir.toFile();
+        File f = testDir.resolve("new-dir-1").toFile();
+        f.mkdirs();
         if (f.exists())
             f.delete();
         System.out.println(f.getAbsolutePath());
@@ -180,7 +186,7 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
             FlatArray fa = (FlatArray) events.get(i).getRight();
             INDArray arr = Nd4j.createFromFlatArray(fa);
 
-            INDArray exp = Nd4j.scalar(0.5 + (i-1) * 0.1);
+            INDArray exp = Nd4j.scalar(0.5 + (i - 1) * 0.1);
             assertEquals(exp, arr);
         }
     }
@@ -188,7 +194,8 @@ public class FileReadWriteTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNullBinLabels(Nd4jBackend backend) throws Exception{
-        File dir = testDir.toFile();
+        File dir = testDir.resolve("new-dir").toFile();
+        dir.mkdirs();
         File f = new File(dir, "temp.bin");
         LogFileWriter w = new LogFileWriter(f);
 

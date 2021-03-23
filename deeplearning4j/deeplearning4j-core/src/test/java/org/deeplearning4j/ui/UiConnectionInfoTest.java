@@ -22,12 +22,18 @@ package org.deeplearning4j.ui;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.ui.UiConnectionInfo;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Ui Connection Info Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.UI)
 class UiConnectionInfoTest extends BaseDL4JTest {
 
     @BeforeEach

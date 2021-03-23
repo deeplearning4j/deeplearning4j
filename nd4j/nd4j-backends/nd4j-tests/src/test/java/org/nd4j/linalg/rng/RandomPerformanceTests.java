@@ -23,11 +23,16 @@ package org.nd4j.linalg.rng;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 
 @Slf4j
 
 @Disabled
+@Tag(TagNames.RNG)
+@NativeTag
 public class RandomPerformanceTests extends BaseNd4jTestWithBackends {
 
 

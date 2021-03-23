@@ -37,10 +37,13 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,6 +56,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
 public class SameDiffCustomLayerTests extends BaseDL4JTest {
     private DataType initialType;
 

@@ -30,8 +30,11 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +43,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class MiscRegressionTests extends BaseDL4JTest {
 
     @Test

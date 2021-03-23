@@ -23,7 +23,10 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.DataSetGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +37,8 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class DataSetSplitterTests extends BaseDL4JTest {
     @Test
     public void testSplitter_1() throws Exception {

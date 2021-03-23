@@ -20,9 +20,9 @@
 
 package org.nd4j.list;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -31,6 +31,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@NativeTag
 public class NDArrayListTest extends BaseNd4jTestWithBackends {
 
 

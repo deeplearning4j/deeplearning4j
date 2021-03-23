@@ -12,7 +12,7 @@ DL4J was a junit 4 based code based for testing.
 It's now based on junit 5's jupiter API, which has support for [Tags](https://junit.org/junit5/docs/5.0.1/api/org/junit/jupiter/api/Tag.html).
 
 DL4j's code base has a number of different kinds of tests that fall in to several categories:
-1. Long and flaky involving distributed systems (spark, parameter server)
+1. Long and flaky involving distributed systems (spark, parameter-server)
 2. Code that requires large downloads, but runs quickly
 3. Quick tests that test basic functionality
 4. Comprehensive integration tests that test several parts of a code  base
@@ -38,8 +38,10 @@ A few kinds of tags exist:
 3. Distributed systems: spark, multi-threaded
 4. Functional cross-cutting concerns: multi module tests, similar functionality (excludes time based)
 5. Platform specific tests that can vary on different hardware: cpu, gpu
-6. JVM crash: Tests with native code can crash the JVM for tests. It's useful to be able to turn those off when debugging.: jvm-crash
-
+6. JVM crash: (jvm-crash) Tests with native code can crash the JVM for tests. It's useful to be able to turn those off when debugging.: jvm-crash
+7. RNG: (rng) for RNG related tests
+8. Samediff:(samediff) samediff related tests
+9. Training related functionality
 
 
 ## Consequences

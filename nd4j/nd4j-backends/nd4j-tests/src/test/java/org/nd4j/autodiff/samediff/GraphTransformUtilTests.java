@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -29,6 +30,7 @@ import org.nd4j.autodiff.samediff.transform.OpPredicate;
 import org.nd4j.autodiff.samediff.transform.SubGraph;
 import org.nd4j.autodiff.samediff.transform.SubGraphPredicate;
 import org.nd4j.autodiff.samediff.transform.SubGraphProcessor;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
+@Tag(TagNames.SAMEDIFF)
 public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
 
 
@@ -54,7 +57,7 @@ public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBasic(Nd4jBackend backend){
+    public void testBasic(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();
         SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, -1, 32);

@@ -22,10 +22,13 @@ package org.datavec.image.recordreader.objdetect;
 
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -34,7 +37,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
 public class TestVocLabelProvider {
 
 

@@ -22,12 +22,17 @@ package org.nd4j.parameterserver.distributed.messages;
 
 import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled
 @Deprecated
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class VoidMessageTest extends BaseND4JTest {
     @BeforeEach
     public void setUp() throws Exception {

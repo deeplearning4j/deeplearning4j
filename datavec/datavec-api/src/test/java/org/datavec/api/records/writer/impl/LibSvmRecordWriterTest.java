@@ -29,8 +29,10 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
@@ -46,6 +48,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Lib Svm Record Writer Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class LibSvmRecordWriterTest extends BaseND4JTest {
 
     @Test

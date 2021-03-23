@@ -22,16 +22,15 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.enums.DataFormat;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -92,6 +91,8 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
 public class TransformOpValidation extends BaseOpValidation {
 
     private DataType initialType;
@@ -1407,15 +1408,6 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-/*      @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDepth(Nd4jBackend backend) {
-        SameDiff sameDiff = SameDiff.create();
-        SDVariable x = sameDiff.one("one",new long[]{2,2});
-        assertEquals(0,x.depth());
-        SDVariable sigmoid = sameDiff.sigmoid("sigmoid",x);
-        assertEquals(1,sigmoid.depth());
-    }*/
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1450,10 +1442,9 @@ public class TransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBooleanAnd(Nd4jBackend backend) {
-        Nd4j.setDataType(DataType.FLOAT);
-        INDArray arr1 = Nd4j.create(new long[]{3, 4});
-        INDArray arr2 = Nd4j.create(new long[]{3, 4});
-        INDArray out = Nd4j.create(new long[]{3, 4});
+        INDArray arr1 = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
+        INDArray arr2 = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
+        INDArray out = Nd4j.create(new long[]{3, 4}).castTo(DataType.FLOAT);
 
         DynamicCustomOp op = DynamicCustomOp.builder("boolean_and")
                 .addInputs(arr1, arr2)

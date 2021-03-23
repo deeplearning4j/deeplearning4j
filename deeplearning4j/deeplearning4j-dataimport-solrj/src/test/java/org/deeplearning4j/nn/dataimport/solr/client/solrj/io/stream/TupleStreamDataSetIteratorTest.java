@@ -35,20 +35,19 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 import org.nd4j.rng.deallocator.NativeRandomDeallocator;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ThreadLeakFilters(defaultFilters = true, filters = { TupleStreamDataSetIteratorTest.PrivateDeallocatorThreadsFilter.class })
 @DisplayName("Tuple Stream Data Set Iterator Test")
-@Disabled("Permissions issues with temp dir")
+@Tag(TagNames.SOLR)
+@Tag(TagNames.DIST_SYSTEMS)
 class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
     static {
@@ -97,7 +96,7 @@ class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection("mySolrCollection", "conf", numShards, numReplicas).setMaxShardsPerNode(maxShardsPerNode).process(cluster.getSolrClient());
         // compose an update request
         final UpdateRequest updateRequest = new UpdateRequest();
-        final List<Integer> docIds = new ArrayList<Integer>();
+        final List<Integer> docIds = new ArrayList<>();
         for (int phase = 1; phase <= 2; ++phase) {
             int docIdsIdx = 0;
             if (phase == 2) {

@@ -21,7 +21,10 @@ package org.deeplearning4j.nn.adapters;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +34,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Regression 2 d Adapter Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class Regression2dAdapterTest extends BaseDL4JTest {
 
     @Test

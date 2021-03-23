@@ -21,6 +21,7 @@
 package org.nd4j.aeron.util;
 
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**
@@ -65,7 +66,8 @@ public class BufferUtil {
             all.put(curr);
         }
 
-        all.flip();
+        Buffer buffer = (Buffer) all;
+        buffer.flip();
         return all;
     }
 

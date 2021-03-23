@@ -31,7 +31,10 @@ import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffMSELossLayer;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffMSEOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -42,6 +45,10 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.CUSTOM_FUNCTIONALITY)
+@Tag(TagNames.DL4J_OLD_API)
 public class TestSameDiffOutput extends BaseDL4JTest {
 
     @Test

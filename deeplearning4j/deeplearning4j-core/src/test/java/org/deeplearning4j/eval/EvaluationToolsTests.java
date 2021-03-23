@@ -29,7 +29,10 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -40,7 +43,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 import java.util.Random;
-
+@NativeTag
+@Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.JACKSON_SERDE)
+@Tag(TagNames.TRAINING)
+@Tag(TagNames.DL4J_OLD_API)
 public class EvaluationToolsTests extends BaseDL4JTest {
 
     @Test

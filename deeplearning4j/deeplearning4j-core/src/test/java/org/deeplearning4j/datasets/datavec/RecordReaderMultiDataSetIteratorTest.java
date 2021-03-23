@@ -21,6 +21,8 @@ package org.deeplearning4j.datasets.datavec;
 
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.shade.guava.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -70,6 +72,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Record Reader Multi Data Set Iterator Test")
 @Disabled
+@Tag(TagNames.FILE_IO)
 class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @TempDir

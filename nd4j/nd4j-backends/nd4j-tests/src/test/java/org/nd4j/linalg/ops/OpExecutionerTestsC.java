@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -79,7 +80,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @Slf4j
-
+@NativeTag
 public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     DataType initialType = Nd4j.dataType();
 
@@ -1048,10 +1049,10 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     public void testPile2(Nd4jBackend backend) {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(10, 10, 10).assign(i));
+            arrays.add(Nd4j.create(10, 10, 10).assign(i).castTo(DataType.FLOAT));
         }
 
-        INDArray pile = Nd4j.pile(arrays);
+        INDArray pile = Nd4j.pile(arrays).castTo(DataType.FLOAT);
 
         assertEquals(4, pile.rank());
         for (int i = 0; i < 10; i++) {
@@ -1113,8 +1114,8 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
      *
      * @throws Exception
      */
-    @Test
-    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadEws(Nd4jBackend backend) {
         INDArray array = Nd4j.create(32, 5, 10);
         assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());

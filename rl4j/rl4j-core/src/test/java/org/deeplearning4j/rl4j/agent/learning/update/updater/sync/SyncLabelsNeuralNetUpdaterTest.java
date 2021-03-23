@@ -23,16 +23,21 @@ package org.deeplearning4j.rl4j.agent.learning.update.updater.sync;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class SyncLabelsNeuralNetUpdaterTest {
 
     @Mock

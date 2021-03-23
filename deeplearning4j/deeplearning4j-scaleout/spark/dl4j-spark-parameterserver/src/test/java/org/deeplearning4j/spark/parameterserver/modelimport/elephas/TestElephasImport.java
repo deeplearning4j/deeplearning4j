@@ -27,8 +27,11 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -36,7 +39,10 @@ import java.nio.file.StandardCopyOption;
 
 import static java.io.File.createTempFile;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestElephasImport extends BaseSparkTest {
 
     @Test

@@ -23,13 +23,12 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -50,7 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
 @Slf4j
-
+@Tag(TagNames.WORKSPACES)
+@NativeTag
 public class EndlessWorkspaceTests extends BaseNd4jTestWithBackends {
     DataType initialType = Nd4j.dataType();
 

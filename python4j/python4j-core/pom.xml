@@ -35,6 +35,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20190722</version>

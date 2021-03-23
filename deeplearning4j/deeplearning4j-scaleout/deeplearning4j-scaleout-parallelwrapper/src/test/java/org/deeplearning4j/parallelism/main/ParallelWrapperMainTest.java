@@ -35,9 +35,12 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.util.ModelSerializer;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -49,6 +52,8 @@ import java.nio.file.Path;
 
 @Slf4j
 @Disabled("Permissions issues on CI")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class ParallelWrapperMainTest extends BaseDL4JTest {
 
 

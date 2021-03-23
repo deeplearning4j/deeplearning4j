@@ -24,14 +24,18 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.io.InputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class DefaultDocumentIteratorTest extends BaseDL4JTest {
 
     @Test

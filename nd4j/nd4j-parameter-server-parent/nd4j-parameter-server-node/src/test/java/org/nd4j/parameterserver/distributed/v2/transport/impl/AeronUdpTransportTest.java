@@ -23,13 +23,19 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class AeronUdpTransportTest extends BaseND4JTest {
     private static final String IP = "127.0.0.1";
     private static final int ROOT_PORT = 40781;

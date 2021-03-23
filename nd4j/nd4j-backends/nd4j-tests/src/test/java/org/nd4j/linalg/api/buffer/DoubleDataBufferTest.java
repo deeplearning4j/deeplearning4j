@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -56,23 +57,22 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Adam Gibson
  */
 
-@Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
+@NativeTag
 public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
 
 
     DataType initialType = Nd4j.dataType();
-
+    @TempDir Path testDir;
 
 
     @BeforeEach
-    public void before(Nd4jBackend backend) {
-
+    public void before() {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @AfterEach
-    public void after(Nd4jBackend backend) {
+    public void after() {
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
@@ -86,7 +86,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(other.asDouble(), buffer.asDouble(), 0.001);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetSet(Nd4jBackend backend) {
         double[] d1 = new double[] {1, 2, 3, 4};
@@ -98,9 +98,9 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSerialization2() throws Exception {
+    public void testSerialization2(Nd4jBackend backend) throws Exception {
         INDArray[] arr = new INDArray[] {Nd4j.ones(1, 10),
                 //      Nd4j.ones(5,10).getRow(2)
         };
@@ -122,14 +122,14 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
             INDArray aDeserialized = (INDArray) ois.readObject();
 
             System.out.println(aDeserialized);
-            assertEquals(Nd4j.ones(1, 10), aDeserialized);
+            assertEquals(Nd4j.ones(1, 10).castTo(aDeserialized.dataType()), aDeserialized);
         }
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSerialization(@TempDir Path testDir) throws Exception {
+    public void testSerialization(Nd4jBackend backend) throws Exception {
         File dir = testDir.toFile();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
@@ -150,7 +150,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDup(Nd4jBackend backend) {
         double[] d1 = new double[] {1, 2, 3, 4};
@@ -161,7 +161,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPut(Nd4jBackend backend) {
         double[] d1 = new double[] {1, 2, 3, 4};
@@ -173,7 +173,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
@@ -189,7 +189,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetOffsetRange(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
@@ -205,7 +205,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAssign(Nd4jBackend backend) {
         DataBuffer assertion = Nd4j.createBuffer(new double[] {1, 2, 3});
@@ -217,7 +217,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOffset(Nd4jBackend backend) {
         DataBuffer create = Nd4j.createBuffer(new double[] {1, 2, 3, 4}, 2);
@@ -228,7 +228,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocation(Nd4jBackend backend) {
         DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
@@ -239,7 +239,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(old, Arrays.copyOf(buffer.asDouble(), 4), 1e-1);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReallocationWorkspace(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
@@ -257,7 +257,7 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddressPointer(){
         if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){

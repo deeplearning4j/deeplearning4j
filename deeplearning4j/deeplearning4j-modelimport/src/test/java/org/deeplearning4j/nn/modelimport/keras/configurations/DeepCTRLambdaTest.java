@@ -24,10 +24,13 @@ import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import java.io.InputStream;
@@ -36,7 +39,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Deep CTR Lambda Test")
-class DeepCTRLambdaTest {
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
+public class DeepCTRLambdaTest {
 
     @DisplayName("Tensors Sum")
     class TensorsSum extends SameDiffLambdaLayer {

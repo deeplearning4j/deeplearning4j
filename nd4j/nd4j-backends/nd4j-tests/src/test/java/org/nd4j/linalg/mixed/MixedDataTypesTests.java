@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -53,6 +54,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
 public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
 
 

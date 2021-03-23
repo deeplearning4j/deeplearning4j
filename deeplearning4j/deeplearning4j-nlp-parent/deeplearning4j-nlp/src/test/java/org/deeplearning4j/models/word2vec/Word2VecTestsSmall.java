@@ -35,7 +35,10 @@ import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,6 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class Word2VecTestsSmall extends BaseDL4JTest {
     WordVectors word2vec;
 

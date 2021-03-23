@@ -25,12 +25,15 @@ import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,6 +49,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.NDARRAY_SERDE)
 public class TestNdArrReadWriteTxt extends BaseNd4jTestWithBackends {
 
     @TempDir Path testDir;

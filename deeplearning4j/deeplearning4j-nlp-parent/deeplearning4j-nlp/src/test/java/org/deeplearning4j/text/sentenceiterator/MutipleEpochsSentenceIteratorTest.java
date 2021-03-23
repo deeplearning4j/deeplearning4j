@@ -28,7 +28,6 @@ import org.nd4j.common.resources.Resources;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled("Permissions issues on CI")
 public class MutipleEpochsSentenceIteratorTest extends BaseDL4JTest {
     @Test()
     @Timeout(30000)

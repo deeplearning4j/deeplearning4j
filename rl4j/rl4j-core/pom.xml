@@ -53,6 +53,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>rl4j-api</artifactId>
             <version>${project.version}</version>

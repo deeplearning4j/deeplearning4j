@@ -34,7 +34,10 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
@@ -55,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class TestDropout extends BaseDL4JTest {
 
     @Test

@@ -35,7 +35,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -56,6 +59,10 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.WORKSPACES)
 public class WorkspaceTests extends BaseDL4JTest {
 
     @BeforeEach

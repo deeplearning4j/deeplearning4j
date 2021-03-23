@@ -33,8 +33,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -50,6 +53,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
 @DisplayName("Multi Layer Neural Net Configuration Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
     @TempDir

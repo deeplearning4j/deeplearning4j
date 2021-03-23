@@ -21,11 +21,14 @@
 package org.datavec.api.transform.schema;
 
 import org.datavec.api.transform.ColumnType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TestSchemaMethods extends BaseND4JTest {
 
     @Test

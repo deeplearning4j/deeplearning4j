@@ -30,7 +30,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -51,6 +54,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Back Prop MLP Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class BackPropMLPTest extends BaseDL4JTest {
 
     @Test

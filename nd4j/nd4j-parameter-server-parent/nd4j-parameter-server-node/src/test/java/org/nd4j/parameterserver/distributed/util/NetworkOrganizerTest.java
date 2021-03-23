@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.*;
 
@@ -31,6 +33,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Disabled
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class NetworkOrganizerTest extends BaseND4JTest {
     @BeforeEach
     public void setUp() throws Exception {

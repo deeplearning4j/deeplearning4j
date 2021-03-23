@@ -20,9 +20,12 @@
 
 package org.nd4j.linalg.lossfunctions;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -46,7 +49,10 @@ import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.LOSS_FUNCTIONS)
+@Tag(TagNames.TRAINING)
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class LossFunctionTest extends BaseNd4jTestWithBackends {
 
 

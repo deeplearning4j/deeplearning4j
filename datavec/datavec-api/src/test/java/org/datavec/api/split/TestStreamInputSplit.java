@@ -26,11 +26,13 @@ import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.function.Function;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,7 +48,8 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TestStreamInputSplit extends BaseND4JTest {
 
 

@@ -34,11 +34,11 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.*;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -46,11 +46,14 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.io.File;
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.DisplayName;
+
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Crash Reporting Util Test")
+@NativeTag
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Override

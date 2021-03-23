@@ -19,15 +19,16 @@
  */
 package org.deeplearning4j.datasets;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.base.MnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
@@ -41,28 +42,31 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.DisplayName;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Mnist Fetcher Test")
+@NativeTag
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.NDARRAY_ETL)
 class MnistFetcherTest extends BaseDL4JTest {
 
-
+    @TempDir public static Path tempPath;
 
     @BeforeAll
-    static void setup(@TempDir Path tempPath) throws Exception {
+    static void setup() throws Exception {
         DL4JResources.setBaseDirectory(tempPath.toFile());
     }
 
     @AfterAll
-    static void after() {
+    static void after() throws Exception {
         DL4JResources.resetBaseDirectoryLocation();
     }
 
     @Test
     @DisplayName("Test Mnist")
     void testMnist() throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(32, 60000, false, true, false, -1);
+        MnistDataSetIterator iter = new MnistDataSetIterator(32, 60000, false, true, false, -1);
         int count = 0;
         while (iter.hasNext()) {
             DataSet ds = iter.next();
@@ -82,6 +86,7 @@ class MnistFetcherTest extends BaseDL4JTest {
             count++;
         }
         assertEquals((int) Math.ceil(10000 / 32.0), count);
+        iter.close();
     }
 
     @Test
@@ -90,9 +95,10 @@ class MnistFetcherTest extends BaseDL4JTest {
         MnistFetcher mnistFetcher = new MnistFetcher();
         File mnistDir = mnistFetcher.downloadAndUntar();
         assertTrue(mnistDir.isDirectory());
+
     }
 
-    // @Test
+    @Test
     public void testMnistSubset() throws Exception {
         final int numExamples = 100;
         MnistDataSetIterator iter1 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
@@ -104,7 +110,9 @@ class MnistFetcherTest extends BaseDL4JTest {
         }
         assertEquals(10, itCount1);
         assertEquals(100, examples1);
+        iter1.close();
         MnistDataSetIterator iter2 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
+        iter2.close();
         int examples2 = 0;
         int itCount2 = 0;
         for (int i = 0; i < 10; i++) {
@@ -115,6 +123,7 @@ class MnistFetcherTest extends BaseDL4JTest {
         assertEquals(10, itCount2);
         assertEquals(100, examples2);
         MnistDataSetIterator iter3 = new MnistDataSetIterator(19, numExamples, false, true, true, 123);
+        iter3.close();
         int examples3 = 0;
         int itCount3 = 0;
         while (iter3.hasNext()) {
@@ -129,18 +138,21 @@ class MnistFetcherTest extends BaseDL4JTest {
             count4 += iter4.next().numExamples();
         }
         assertEquals(60000, count4);
+        iter4.close();
+        iter1.close();
     }
 
     @Test
     @DisplayName("Test Subset Repeatability")
     void testSubsetRepeatability() throws Exception {
-        DataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0);
+        MnistDataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0);
         DataSet d1 = it.next();
         for (int i = 0; i < 10; i++) {
             it.reset();
             DataSet d2 = it.next();
             assertEquals(d1.get(0).getFeatures(), d2.get(0).getFeatures());
         }
+        it.close();
         // Check larger number:
         it = new MnistDataSetIterator(8, 32, false, false, true, 12345);
         Set<String> featureLabelSet = new HashSet<>();
@@ -153,6 +165,7 @@ class MnistFetcherTest extends BaseDL4JTest {
             }
         }
         assertEquals(32, featureLabelSet.size());
+        it.close();
         for (int i = 0; i < 3; i++) {
             it.reset();
             Set<String> flSet2 = new HashSet<>();
@@ -166,5 +179,6 @@ class MnistFetcherTest extends BaseDL4JTest {
             }
             assertEquals(featureLabelSet, flSet2);
         }
+
     }
 }

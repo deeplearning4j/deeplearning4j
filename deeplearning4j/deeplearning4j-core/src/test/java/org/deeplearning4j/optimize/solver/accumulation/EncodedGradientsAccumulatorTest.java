@@ -25,7 +25,10 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.util.PrintAffinity;
@@ -38,6 +41,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
 @DisplayName("Encoded Gradients Accumulator Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
 
     @Override

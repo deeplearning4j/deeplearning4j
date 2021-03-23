@@ -25,9 +25,12 @@ import org.deeplearning4j.datasets.iterator.file.FileDataSetIterator;
 import org.deeplearning4j.datasets.iterator.file.FileMultiDataSetIterator;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -42,6 +45,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled
+@NativeTag
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.NDARRAY_ETL)
 public class TestFileIterators extends BaseDL4JTest {
 
 

@@ -23,10 +23,13 @@ package org.deeplearning4j.ui;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.api.UIServer;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,6 +42,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 @Disabled
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestSameDiffUI extends BaseDL4JTest {
     private static Logger log = LoggerFactory.getLogger(TestSameDiffUI.class.getName());
 

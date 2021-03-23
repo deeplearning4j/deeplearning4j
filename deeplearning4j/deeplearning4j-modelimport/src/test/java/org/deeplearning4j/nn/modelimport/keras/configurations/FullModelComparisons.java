@@ -34,9 +34,12 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,7 +60,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 public class FullModelComparisons extends BaseDL4JTest {
 
     ClassLoader classLoader = FullModelComparisons.class.getClassLoader();

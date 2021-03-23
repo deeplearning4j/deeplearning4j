@@ -38,7 +38,10 @@ import org.deeplearning4j.zoo.util.darknet.DarknetLabels;
 import org.deeplearning4j.zoo.util.darknet.VOCLabels;
 import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -54,7 +57,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@Disabled("Times out too often")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DL4J_OLD_API)
+@NativeTag
+@Tag(TagNames.LONG_TEST)
 public class TestImageNet extends BaseDL4JTest {
 
     @Override

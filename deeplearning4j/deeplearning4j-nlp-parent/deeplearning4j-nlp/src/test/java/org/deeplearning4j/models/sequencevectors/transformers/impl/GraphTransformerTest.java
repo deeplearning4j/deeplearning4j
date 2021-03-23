@@ -30,12 +30,16 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class GraphTransformerTest extends BaseDL4JTest {
 
     private static IGraph<VocabWord, Double> graph;

@@ -27,12 +27,11 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 
 
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.io.InputStream;
@@ -47,7 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-@Disabled
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class FileDocumentIteratorTest extends BaseDL4JTest {
 
 

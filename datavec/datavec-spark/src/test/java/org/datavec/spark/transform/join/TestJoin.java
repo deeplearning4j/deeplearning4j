@@ -27,12 +27,17 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestJoin extends BaseSparkTest {
 
     @Test

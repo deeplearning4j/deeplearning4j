@@ -30,9 +30,11 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +43,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TransformProcessRecordReaderTests extends BaseND4JTest {
 
     @Test
@@ -74,11 +78,11 @@ public class TransformProcessRecordReaderTests extends BaseND4JTest {
     public void simpleTransformTestSequence() {
         List<List<Writable>> sequence = new ArrayList<>();
         //First window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L), new IntWritable(0),
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L), new IntWritable(0),
                         new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 100L), new IntWritable(1),
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 100L), new IntWritable(1),
                         new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 200L), new IntWritable(2),
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 200L), new IntWritable(2),
                         new IntWritable(0)));
 
         Schema schema = new SequenceSchema.Builder().addColumnTime("timecolumn", DateTimeZone.UTC)

@@ -25,11 +25,14 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +46,7 @@ public class DropOutInverted extends BaseRandomOp {
     public DropOutInverted(SameDiff sameDiff, SDVariable input, double p) {
         super(sameDiff, input);
         this.p = p;
+        this.extraArgs = new Object[]{p};
     }
 
     public DropOutInverted(@NonNull INDArray x, double p) {
@@ -82,6 +86,18 @@ public class DropOutInverted extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("DropOutInverted does not have a derivative.");
     }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
+    }
+
 }

@@ -36,7 +36,10 @@ import org.deeplearning4j.nn.weights.*;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
@@ -53,6 +56,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Neural Net Configuration Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     final DataSet trainingSet = createData();

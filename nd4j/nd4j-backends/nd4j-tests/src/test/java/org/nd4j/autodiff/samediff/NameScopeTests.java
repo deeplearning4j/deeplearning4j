@@ -20,11 +20,13 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -37,6 +39,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
+@Tag(TagNames.SAMEDIFF)
+@NativeTag
 public class NameScopeTests extends BaseNd4jTestWithBackends {
 
 

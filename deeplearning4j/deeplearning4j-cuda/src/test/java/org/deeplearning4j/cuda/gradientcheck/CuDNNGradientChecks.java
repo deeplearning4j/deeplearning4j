@@ -49,6 +49,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.function.Consumer;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -70,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Created by Alex on 09/09/2016.
  */
 @Slf4j
+@NativeTag
 public class CuDNNGradientChecks extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -171,7 +173,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                         String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
                                         + afn + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore
                                         + ", scoreAfter=" + scoreAfter + ")";
-                        assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                        assertTrue(scoreAfter < 0.8 * scoreBefore, msg);
                     }
 
                     if (PRINT_RESULTS) {
@@ -255,7 +257,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
-                assertTrue(name, gradOK);
+                assertTrue(gradOK, name);
             }
         }
     }
@@ -589,7 +591,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
-                assertTrue(msg, gradOK);
+                assertTrue(gradOK, msg);
             }
         }
     }
@@ -671,7 +673,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                             .exitOnFirstError(RETURN_ON_FIRST_FAILURE)
                             .input(f).labels(l).callEachIter(c));
 
-            assertTrue(msg, gradOK);
+            assertTrue(gradOK, msg);
             TestUtils.testModelSerialization(mln);
         }
     }

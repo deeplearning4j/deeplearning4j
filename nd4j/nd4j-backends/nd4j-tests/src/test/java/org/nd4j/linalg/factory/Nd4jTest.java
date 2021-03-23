@@ -24,10 +24,13 @@ import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -50,7 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  */
-
+@Tag(TagNames.RNG)
+@NativeTag
+@Tag(TagNames.FILE_IO)
 public class Nd4jTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
@@ -226,7 +231,6 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
 
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNumpyConversion() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
@@ -264,7 +268,6 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
 
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNumpyWrite() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
@@ -276,7 +279,6 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
-    @Disabled("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNpyByteArray() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         byte[] bytes = Nd4j.toNpyByteArray(linspace);

@@ -22,11 +22,15 @@ package org.datavec.api.transform.schema;
 
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.joda.time.DateTimeZone;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JACKSON_SERDE)
 public class TestJsonYaml extends BaseND4JTest {
 
     @Test

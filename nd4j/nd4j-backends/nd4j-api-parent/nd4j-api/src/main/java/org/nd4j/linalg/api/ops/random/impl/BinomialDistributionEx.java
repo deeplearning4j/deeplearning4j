@@ -25,8 +25,11 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class BinomialDistributionEx extends BaseRandomOp {
@@ -105,6 +108,17 @@ public class BinomialDistributionEx extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("BinomialDistributionEx does not have a derivative.");
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
     }
 }

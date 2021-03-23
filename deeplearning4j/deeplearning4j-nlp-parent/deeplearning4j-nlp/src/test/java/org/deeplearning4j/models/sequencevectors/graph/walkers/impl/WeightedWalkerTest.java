@@ -29,11 +29,15 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class WeightedWalkerTest extends BaseDL4JTest {
     private static Graph<VocabWord, Integer> basicGraph;
 

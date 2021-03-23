@@ -26,6 +26,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -38,8 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Csv Line Sequence Record Reader Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class CSVLineSequenceRecordReaderTest extends BaseND4JTest {
 
     @TempDir
@@ -54,8 +58,8 @@ class CSVLineSequenceRecordReaderTest extends BaseND4JTest {
         FileUtils.writeStringToFile(source, str, StandardCharsets.UTF_8);
         SequenceRecordReader rr = new CSVLineSequenceRecordReader();
         rr.initialize(new FileSplit(source));
-        List<List<Writable>> exp0 = Arrays.asList(Collections.<Writable>singletonList(new Text("a")), Collections.<Writable>singletonList(new Text("b")), Collections.<Writable>singletonList(new Text("c")));
-        List<List<Writable>> exp1 = Arrays.asList(Collections.<Writable>singletonList(new Text("1")), Collections.<Writable>singletonList(new Text("2")), Collections.<Writable>singletonList(new Text("3")), Collections.<Writable>singletonList(new Text("4")));
+        List<List<Writable>> exp0 = Arrays.asList(Collections.singletonList(new Text("a")), Collections.singletonList(new Text("b")), Collections.<Writable>singletonList(new Text("c")));
+        List<List<Writable>> exp1 = Arrays.asList(Collections.singletonList(new Text("1")), Collections.singletonList(new Text("2")), Collections.<Writable>singletonList(new Text("3")), Collections.<Writable>singletonList(new Text("4")));
         for (int i = 0; i < 3; i++) {
             int count = 0;
             while (rr.hasNext()) {

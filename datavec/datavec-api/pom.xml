@@ -105,6 +105,12 @@
             <artifactId>fastutil</artifactId>
             <version>${fastutil.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

@@ -22,10 +22,13 @@ package org.nd4j.aeron.ipc.chunk;
 
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.util.BufferUtil;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -36,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NotThreadSafe
 @Disabled("Tests are too flaky")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class NDArrayMessageChunkTests extends BaseND4JTest {
 
     @Test

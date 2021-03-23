@@ -22,13 +22,18 @@ package org.deeplearning4j.optimizer.listener;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.listeners.CollectScoresIterationListener;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Score Stat Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class ScoreStatTest extends BaseDL4JTest {
 
     @Test

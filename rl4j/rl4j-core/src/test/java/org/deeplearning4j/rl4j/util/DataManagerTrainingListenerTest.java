@@ -34,11 +34,15 @@ import org.deeplearning4j.rl4j.support.MockDataManager;
 import org.deeplearning4j.rl4j.support.MockHistoryProcessor;
 import org.deeplearning4j.rl4j.support.MockMDP;
 import org.deeplearning4j.rl4j.support.MockObservationSpace;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class DataManagerTrainingListenerTest {
 
     @Test

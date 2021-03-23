@@ -23,9 +23,12 @@ package org.nd4j.linalg.custom;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -95,6 +98,7 @@ import static java.lang.Float.NaN;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
 public class CustomOpsTests extends BaseNd4jTestWithBackends {
 
 
@@ -1276,17 +1280,18 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, x);
     }
 
-    @Disabled("AS failed 2019/12/04")
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.NEEDS_VERIFY)
+    @Disabled("Implementation needs verification")
     public void testPolygamma(Nd4jBackend backend) {
-        INDArray n = Nd4j.linspace(DataType.FLOAT, 1.0, 1.0, 9).reshape(3,3);
-        INDArray x = Nd4j.create(DataType.FLOAT, 3,3);
+        INDArray n = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        INDArray x = Nd4j.create(DataType.DOUBLE, 3,3);
         x.assign(0.5);
-        INDArray expected = Nd4j.createFromArray(new float[]{4.934802f, -16.828796f, 97.409088f, -771.474243f,
-                7691.113770f, -92203.460938f, 1290440.250000f, -20644900.000000f, 3.71595e+08f}).reshape(3,3);
-        INDArray output = Nd4j.create(DataType.FLOAT, expected.shape());
+        INDArray expected = Nd4j.createFromArray(new double[]{4.934802, -16.828796, 97.409088, -771.474243,
+                7691.113770f, -92203.460938f, 1290440.250000, -20644900.000000, 3.71595e+08}).reshape(3,3);
+        INDArray output = Nd4j.create(DataType.DOUBLE, expected.shape());
         val op = new Polygamma(x,n,output);
         Nd4j.exec(op);
         assertEquals(expected, output);

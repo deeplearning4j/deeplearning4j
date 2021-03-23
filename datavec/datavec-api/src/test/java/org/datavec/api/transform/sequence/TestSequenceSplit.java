@@ -27,8 +27,10 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,7 +38,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TestSequenceSplit extends BaseND4JTest {
 
     @Test
@@ -46,13 +49,13 @@ public class TestSequenceSplit extends BaseND4JTest {
                         .build();
 
         List<List<Writable>> inputSequence = new ArrayList<>();
-        inputSequence.add(Arrays.asList((Writable) new LongWritable(0), new Text("t0")));
-        inputSequence.add(Arrays.asList((Writable) new LongWritable(1000), new Text("t1")));
+        inputSequence.add(Arrays.asList(new LongWritable(0), new Text("t0")));
+        inputSequence.add(Arrays.asList(new LongWritable(1000), new Text("t1")));
         //Second split: 74 seconds later
-        inputSequence.add(Arrays.asList((Writable) new LongWritable(75000), new Text("t2")));
-        inputSequence.add(Arrays.asList((Writable) new LongWritable(100000), new Text("t3")));
+        inputSequence.add(Arrays.asList(new LongWritable(75000), new Text("t2")));
+        inputSequence.add(Arrays.asList(new LongWritable(100000), new Text("t3")));
         //Third split: 1 minute and 1 milliseconds later
-        inputSequence.add(Arrays.asList((Writable) new LongWritable(160001), new Text("t4")));
+        inputSequence.add(Arrays.asList(new LongWritable(160001), new Text("t4")));
 
         SequenceSplit seqSplit = new SequenceSplitTimeSeparation("time", 1, TimeUnit.MINUTES);
         seqSplit.setInputSchema(schema);
@@ -61,13 +64,13 @@ public class TestSequenceSplit extends BaseND4JTest {
         assertEquals(3, splits.size());
 
         List<List<Writable>> exp0 = new ArrayList<>();
-        exp0.add(Arrays.asList((Writable) new LongWritable(0), new Text("t0")));
-        exp0.add(Arrays.asList((Writable) new LongWritable(1000), new Text("t1")));
+        exp0.add(Arrays.asList(new LongWritable(0), new Text("t0")));
+        exp0.add(Arrays.asList(new LongWritable(1000), new Text("t1")));
         List<List<Writable>> exp1 = new ArrayList<>();
-        exp1.add(Arrays.asList((Writable) new LongWritable(75000), new Text("t2")));
-        exp1.add(Arrays.asList((Writable) new LongWritable(100000), new Text("t3")));
+        exp1.add(Arrays.asList(new LongWritable(75000), new Text("t2")));
+        exp1.add(Arrays.asList(new LongWritable(100000), new Text("t3")));
         List<List<Writable>> exp2 = new ArrayList<>();
-        exp2.add(Arrays.asList((Writable) new LongWritable(160001), new Text("t4")));
+        exp2.add(Arrays.asList(new LongWritable(160001), new Text("t4")));
 
         assertEquals(exp0, splits.get(0));
         assertEquals(exp1, splits.get(1));

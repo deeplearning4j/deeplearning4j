@@ -144,7 +144,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.junit.AfterClass;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -171,6 +174,8 @@ import java.util.Set;
 
 @Slf4j
 @Disabled
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class DTypeTests extends BaseDL4JTest {
 
     protected static Set<Class<?>> seenLayers = new HashSet<>();

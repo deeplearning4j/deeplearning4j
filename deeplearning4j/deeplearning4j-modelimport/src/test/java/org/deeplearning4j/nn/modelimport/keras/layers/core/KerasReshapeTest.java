@@ -29,7 +29,10 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import java.util.*;
@@ -41,6 +44,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @author Max Pumperla
  */
 @DisplayName("Keras Reshape Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 class KerasReshapeTest extends BaseDL4JTest {
 
     private Integer keras1 = 1;

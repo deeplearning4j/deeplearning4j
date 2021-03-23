@@ -23,11 +23,14 @@ package org.deeplearning4j.rl4j.experience;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -37,6 +40,8 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 @Disabled("Mockito")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class ReplayMemoryExperienceHandlerTest {
 
     @Mock

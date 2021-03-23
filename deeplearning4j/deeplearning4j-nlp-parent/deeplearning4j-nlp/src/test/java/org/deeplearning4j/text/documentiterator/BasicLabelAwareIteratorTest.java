@@ -27,13 +27,17 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-@Disabled("Permissions issues on CI")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class BasicLabelAwareIteratorTest extends BaseDL4JTest {
 
 
@@ -43,7 +47,6 @@ public class BasicLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testHasNextDocument1() throws Exception {
-
         File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 

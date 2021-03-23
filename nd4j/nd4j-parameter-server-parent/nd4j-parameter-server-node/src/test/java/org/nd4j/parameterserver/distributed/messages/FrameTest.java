@@ -21,11 +21,10 @@
 package org.nd4j.parameterserver.distributed.messages;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -40,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled
 @Deprecated
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class FrameTest extends BaseND4JTest {
     @BeforeEach
     public void setUp() throws Exception {

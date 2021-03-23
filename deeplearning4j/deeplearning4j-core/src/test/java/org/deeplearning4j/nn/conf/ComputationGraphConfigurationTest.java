@@ -41,7 +41,10 @@ import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,6 +56,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Slf4j
 @DisplayName("Computation Graph Configuration Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class ComputationGraphConfigurationTest extends BaseDL4JTest {
 
     @Test

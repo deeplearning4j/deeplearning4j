@@ -29,8 +29,10 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +40,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 public class TestWindowFunctions extends BaseND4JTest {
 
     @Test
@@ -49,15 +52,15 @@ public class TestWindowFunctions extends BaseND4JTest {
         //Create some data.
         List<List<Writable>> sequence = new ArrayList<>();
         //First window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L), new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 100L), new IntWritable(1)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 200L), new IntWritable(2)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L), new IntWritable(0)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 100L), new IntWritable(1)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 200L), new IntWritable(2)));
         //Second window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new IntWritable(3)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 1000L), new IntWritable(3)));
         //Third window: empty
         //Fourth window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new IntWritable(4)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 3100L), new IntWritable(5)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 3000L), new IntWritable(4)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 3100L), new IntWritable(5)));
 
         Schema schema = new SequenceSchema.Builder().addColumnTime("timecolumn", DateTimeZone.UTC)
                         .addColumnInteger("intcolumn").build();
@@ -100,15 +103,15 @@ public class TestWindowFunctions extends BaseND4JTest {
         //Create some data.
         List<List<Writable>> sequence = new ArrayList<>();
         //First window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L), new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 100L), new IntWritable(1)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 200L), new IntWritable(2)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L), new IntWritable(0)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 100L), new IntWritable(1)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 200L), new IntWritable(2)));
         //Second window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new IntWritable(3)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 1000L), new IntWritable(3)));
         //Third window: empty
         //Fourth window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new IntWritable(4)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 3100L), new IntWritable(5)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 3000L), new IntWritable(4)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 3100L), new IntWritable(5)));
 
         Schema schema = new SequenceSchema.Builder().addColumnTime("timecolumn", DateTimeZone.UTC)
                         .addColumnInteger("intcolumn").build();
@@ -150,15 +153,15 @@ public class TestWindowFunctions extends BaseND4JTest {
         //Create some data.
         List<List<Writable>> sequence = new ArrayList<>();
         //First window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L), new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 100L), new IntWritable(1)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 200L), new IntWritable(2)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L), new IntWritable(0)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 100L), new IntWritable(1)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 200L), new IntWritable(2)));
         //Second window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new IntWritable(3)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 1000L), new IntWritable(3)));
         //Third window: empty
         //Fourth window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new IntWritable(4)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1451606400000L + 3100L), new IntWritable(5)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 3000L), new IntWritable(4)));
+        sequence.add(Arrays.asList(new LongWritable(1451606400000L + 3100L), new IntWritable(5)));
 
         Schema schema = new SequenceSchema.Builder().addColumnTime("timecolumn", DateTimeZone.UTC)
                         .addColumnInteger("intcolumn").build();
@@ -188,13 +191,13 @@ public class TestWindowFunctions extends BaseND4JTest {
         //Create some data.
         List<List<Writable>> sequence = new ArrayList<>();
         //First window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(0), new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(100), new IntWritable(1)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(200), new IntWritable(2)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1000), new IntWritable(3)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1500), new IntWritable(4)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(2000), new IntWritable(5)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(5000), new IntWritable(7)));
+        sequence.add(Arrays.asList(new LongWritable(0), new IntWritable(0)));
+        sequence.add(Arrays.asList(new LongWritable(100), new IntWritable(1)));
+        sequence.add(Arrays.asList(new LongWritable(200), new IntWritable(2)));
+        sequence.add(Arrays.asList(new LongWritable(1000), new IntWritable(3)));
+        sequence.add(Arrays.asList(new LongWritable(1500), new IntWritable(4)));
+        sequence.add(Arrays.asList(new LongWritable(2000), new IntWritable(5)));
+        sequence.add(Arrays.asList(new LongWritable(5000), new IntWritable(7)));
 
 
         Schema schema = new SequenceSchema.Builder().addColumnTime("timecolumn", DateTimeZone.UTC)
@@ -207,32 +210,32 @@ public class TestWindowFunctions extends BaseND4JTest {
 
         //First window: -1000 to 1000
         List<List<Writable>> exp0 = new ArrayList<>();
-        exp0.add(Arrays.asList((Writable) new LongWritable(0), new IntWritable(0)));
-        exp0.add(Arrays.asList((Writable) new LongWritable(100), new IntWritable(1)));
-        exp0.add(Arrays.asList((Writable) new LongWritable(200), new IntWritable(2)));
+        exp0.add(Arrays.asList(new LongWritable(0), new IntWritable(0)));
+        exp0.add(Arrays.asList(new LongWritable(100), new IntWritable(1)));
+        exp0.add(Arrays.asList(new LongWritable(200), new IntWritable(2)));
         //Second window: 0 to 2000
         List<List<Writable>> exp1 = new ArrayList<>();
-        exp1.add(Arrays.asList((Writable) new LongWritable(0), new IntWritable(0)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(100), new IntWritable(1)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(200), new IntWritable(2)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(1000), new IntWritable(3)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(1500), new IntWritable(4)));
+        exp1.add(Arrays.asList(new LongWritable(0), new IntWritable(0)));
+        exp1.add(Arrays.asList(new LongWritable(100), new IntWritable(1)));
+        exp1.add(Arrays.asList(new LongWritable(200), new IntWritable(2)));
+        exp1.add(Arrays.asList(new LongWritable(1000), new IntWritable(3)));
+        exp1.add(Arrays.asList(new LongWritable(1500), new IntWritable(4)));
         //Third window: 1000 to 3000
         List<List<Writable>> exp2 = new ArrayList<>();
-        exp2.add(Arrays.asList((Writable) new LongWritable(1000), new IntWritable(3)));
-        exp2.add(Arrays.asList((Writable) new LongWritable(1500), new IntWritable(4)));
-        exp2.add(Arrays.asList((Writable) new LongWritable(2000), new IntWritable(5)));
+        exp2.add(Arrays.asList(new LongWritable(1000), new IntWritable(3)));
+        exp2.add(Arrays.asList(new LongWritable(1500), new IntWritable(4)));
+        exp2.add(Arrays.asList(new LongWritable(2000), new IntWritable(5)));
         //Fourth window: 2000 to 4000
         List<List<Writable>> exp3 = new ArrayList<>();
-        exp3.add(Arrays.asList((Writable) new LongWritable(2000), new IntWritable(5)));
+        exp3.add(Arrays.asList(new LongWritable(2000), new IntWritable(5)));
         //Fifth window: 3000 to 5000
         List<List<Writable>> exp4 = new ArrayList<>();
         //Sixth window: 4000 to 6000
         List<List<Writable>> exp5 = new ArrayList<>();
-        exp5.add(Arrays.asList((Writable) new LongWritable(5000), new IntWritable(7)));
+        exp5.add(Arrays.asList(new LongWritable(5000), new IntWritable(7)));
         //Seventh window: 5000 to 7000
         List<List<Writable>> exp6 = new ArrayList<>();
-        exp6.add(Arrays.asList((Writable) new LongWritable(5000), new IntWritable(7)));
+        exp6.add(Arrays.asList(new LongWritable(5000), new IntWritable(7)));
 
         List<List<List<Writable>>> windowsExp = Arrays.asList(exp0, exp1, exp2, exp3, exp4, exp5, exp6);
 
@@ -250,13 +253,13 @@ public class TestWindowFunctions extends BaseND4JTest {
         //Create some data.
         List<List<Writable>> sequence = new ArrayList<>();
         //First window:
-        sequence.add(Arrays.asList((Writable) new LongWritable(0), new IntWritable(0)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(100), new IntWritable(1)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(200), new IntWritable(2)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1000), new IntWritable(3)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(1500), new IntWritable(4)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(2000), new IntWritable(5)));
-        sequence.add(Arrays.asList((Writable) new LongWritable(5000), new IntWritable(7)));
+        sequence.add(Arrays.asList(new LongWritable(0), new IntWritable(0)));
+        sequence.add(Arrays.asList(new LongWritable(100), new IntWritable(1)));
+        sequence.add(Arrays.asList(new LongWritable(200), new IntWritable(2)));
+        sequence.add(Arrays.asList(new LongWritable(1000), new IntWritable(3)));
+        sequence.add(Arrays.asList(new LongWritable(1500), new IntWritable(4)));
+        sequence.add(Arrays.asList(new LongWritable(2000), new IntWritable(5)));
+        sequence.add(Arrays.asList(new LongWritable(5000), new IntWritable(7)));
 
 
         Schema schema = new SequenceSchema.Builder().addColumnTime("timecolumn", DateTimeZone.UTC)
@@ -272,31 +275,31 @@ public class TestWindowFunctions extends BaseND4JTest {
 
         //First window: -1000 to 1000
         List<List<Writable>> exp0 = new ArrayList<>();
-        exp0.add(Arrays.asList((Writable) new LongWritable(0), new IntWritable(0)));
-        exp0.add(Arrays.asList((Writable) new LongWritable(100), new IntWritable(1)));
-        exp0.add(Arrays.asList((Writable) new LongWritable(200), new IntWritable(2)));
+        exp0.add(Arrays.asList(new LongWritable(0), new IntWritable(0)));
+        exp0.add(Arrays.asList(new LongWritable(100), new IntWritable(1)));
+        exp0.add(Arrays.asList(new LongWritable(200), new IntWritable(2)));
         //Second window: 0 to 2000
         List<List<Writable>> exp1 = new ArrayList<>();
-        exp1.add(Arrays.asList((Writable) new LongWritable(0), new IntWritable(0)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(100), new IntWritable(1)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(200), new IntWritable(2)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(1000), new IntWritable(3)));
-        exp1.add(Arrays.asList((Writable) new LongWritable(1500), new IntWritable(4)));
+        exp1.add(Arrays.asList(new LongWritable(0), new IntWritable(0)));
+        exp1.add(Arrays.asList(new LongWritable(100), new IntWritable(1)));
+        exp1.add(Arrays.asList(new LongWritable(200), new IntWritable(2)));
+        exp1.add(Arrays.asList(new LongWritable(1000), new IntWritable(3)));
+        exp1.add(Arrays.asList(new LongWritable(1500), new IntWritable(4)));
         //Third window: 1000 to 3000
         List<List<Writable>> exp2 = new ArrayList<>();
-        exp2.add(Arrays.asList((Writable) new LongWritable(1000), new IntWritable(3)));
-        exp2.add(Arrays.asList((Writable) new LongWritable(1500), new IntWritable(4)));
-        exp2.add(Arrays.asList((Writable) new LongWritable(2000), new IntWritable(5)));
+        exp2.add(Arrays.asList(new LongWritable(1000), new IntWritable(3)));
+        exp2.add(Arrays.asList(new LongWritable(1500), new IntWritable(4)));
+        exp2.add(Arrays.asList(new LongWritable(2000), new IntWritable(5)));
         //Fourth window: 2000 to 4000
         List<List<Writable>> exp3 = new ArrayList<>();
-        exp3.add(Arrays.asList((Writable) new LongWritable(2000), new IntWritable(5)));
+        exp3.add(Arrays.asList(new LongWritable(2000), new IntWritable(5)));
         //Fifth window: 3000 to 5000 -> Empty: excluded
         //Sixth window: 4000 to 6000
         List<List<Writable>> exp5 = new ArrayList<>();
-        exp5.add(Arrays.asList((Writable) new LongWritable(5000), new IntWritable(7)));
+        exp5.add(Arrays.asList(new LongWritable(5000), new IntWritable(7)));
         //Seventh window: 5000 to 7000
         List<List<Writable>> exp6 = new ArrayList<>();
-        exp6.add(Arrays.asList((Writable) new LongWritable(5000), new IntWritable(7)));
+        exp6.add(Arrays.asList(new LongWritable(5000), new IntWritable(7)));
 
         List<List<List<Writable>>> windowsExp = Arrays.asList(exp0, exp1, exp2, exp3, exp5, exp6);
 

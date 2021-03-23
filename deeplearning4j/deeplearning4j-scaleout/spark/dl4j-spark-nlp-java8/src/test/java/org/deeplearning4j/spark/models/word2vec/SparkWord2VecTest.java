@@ -34,10 +34,9 @@ import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
 import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.learning.elements.SparkSkipGram;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.io.Serializable;
@@ -45,7 +44,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class SparkWord2VecTest extends BaseDL4JTest {
 
     @Override

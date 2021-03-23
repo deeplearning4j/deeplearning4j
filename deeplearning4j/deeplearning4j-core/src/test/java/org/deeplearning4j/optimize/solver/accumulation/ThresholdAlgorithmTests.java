@@ -24,7 +24,10 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,6 +35,8 @@ import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 public class ThresholdAlgorithmTests extends BaseDL4JTest {
 
     @Test

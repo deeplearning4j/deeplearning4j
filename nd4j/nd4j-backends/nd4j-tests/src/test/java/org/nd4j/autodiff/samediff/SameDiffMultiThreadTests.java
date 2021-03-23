@@ -21,11 +21,13 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -40,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Slf4j
+@Tag(TagNames.SAMEDIFF)
+@Tag(TagNames.MULTI_THREADED)
 public class SameDiffMultiThreadTests extends BaseND4JTest {
 
 
@@ -105,7 +109,7 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
                               String inName, String outName,
                               AtomicBoolean[] failuresByThread, AtomicInteger[] counters, Semaphore s, CountDownLatch latch){
 
-        for( int i=0; i<nThreads; i++ ){
+        for( int i = 0; i < nThreads; i++) {
             failuresByThread[i] = new AtomicBoolean(false);
             counters[i] = new AtomicInteger(0);
             final int j=i;
@@ -114,7 +118,7 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
                 public void run() {
                     try{
                         s.acquire(1);
-                        for( int i=0; i<nRuns; i++ ){
+                        for( int i=0; i < nRuns; i++ ){
                             INDArray out = sd.outputSingle(Collections.singletonMap(inName, inputArrs[j]), outName);
                             Nd4j.getExecutioner().commit();
                             INDArray exp = expOut[j];

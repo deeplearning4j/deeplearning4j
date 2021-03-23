@@ -36,9 +36,12 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.junit.jupiter.api.BeforeEach;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -57,6 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class WordVectorSerializerTest extends BaseDL4JTest {
     private AbstractCache<VocabWord> cache;
 

@@ -22,6 +22,7 @@ package org.nd4j.autodiff.listeners.profiler.comparison;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.profiler.ProfilingListener;
 import org.nd4j.autodiff.listeners.profiler.data.Phase;
@@ -35,8 +36,8 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.list.NDArrayList;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -140,12 +141,19 @@ public class ProfileAnalyzer {
     public static TraceEvent[] getTraceEvents(File file, ProfileFormat profileFormat, boolean aggregateTFSubOps) {
         ObjectMapper json = ProfilingListener.jsonMapper();
 
-        String content;
-        try {
-            content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+        String content = null;
+        try(BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file))) {
+            try {
+                content = IOUtils.toString(bufferedInputStream, Charset.defaultCharset());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
+
 
         if (!content.matches(".*]\\s*")) {
             if (content.endsWith(",")) {
@@ -190,7 +198,7 @@ public class ProfileAnalyzer {
             }
 
 
-            if(aggregateTFSubOps){
+            if(aggregateTFSubOps) {
                 //For CUDA ops, TF will log sub-ops like:
                 //fire2/e1x1/Conv2D:Conv2D#id=74,device=/job:localhost/replica:0/task:0/device:GPU:0,async=false#@@cudnn::maxwell::gemm::computeOffsetsKernel(cudnn::maxwell::gemm::ComputeOffsetsParams)
                 //fire2/e1x1/Conv2D:Conv2D#id=74,device=/job:localhost/replica:0/task:0/device:GPU:0,async=false#@@maxwell_scudnn_128x64_relu_interior_nn
@@ -218,7 +226,7 @@ public class ProfileAnalyzer {
                     }
 
                     last = te;
-                    if(te.getArgs() == null || te.getArgs().isEmpty()){
+                    if(te.getArgs() == null || te.getArgs().isEmpty()) {
                         out.add(te);
                         continue;
                     }
@@ -260,7 +268,7 @@ public class ProfileAnalyzer {
                 }
 
                 //Strip everything after ":" in "fire2/e1x1/Conv2D:Conv2D#id=74,device=/job:localhost/..."
-                for( int i=0; i<out.size(); i++ ){
+                for( int i = 0; i < out.size(); i++) {
                     TraceEvent te = out.get(i);
                     if(te.getArgs() == null || te.getArgs().isEmpty()){
                         continue;

@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,6 +31,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,6 +54,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.RNG)
 public class RandomOpValidation extends BaseOpValidation {
 
 
@@ -386,7 +391,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAllEmptyReduce(){
+    public void testAllEmptyReduce(Nd4jBackend backend) {
         INDArray x = Nd4j.createFromArray(true, true, true);
         All all = new All(x);
         all.setEmptyReduce(true);   //For TF compatibility - empty array for axis (which means no-op - and NOT all array reduction)
@@ -396,9 +401,9 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUniformDtype(){
+    public void testUniformDtype(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
-        for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE, }){
+        for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE}) {
             SameDiff sd = SameDiff.create();
             SDVariable shape = sd.constant("shape", Nd4j.createFromArray(1, 100));
             SDVariable out = sd.random.uniform(0, 10, t, 1, 100);

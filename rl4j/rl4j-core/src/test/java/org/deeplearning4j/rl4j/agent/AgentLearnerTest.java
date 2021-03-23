@@ -29,6 +29,7 @@ import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -36,6 +37,8 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -48,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(MockitoJUnitRunner.class)
 @Disabled("Mockito")
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class AgentLearnerTest {
 
     @Mock

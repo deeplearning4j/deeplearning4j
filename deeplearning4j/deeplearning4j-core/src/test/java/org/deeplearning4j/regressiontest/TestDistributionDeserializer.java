@@ -23,12 +23,18 @@ package org.deeplearning4j.regressiontest;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.*;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.JACKSON_SERDE)
 public class TestDistributionDeserializer extends BaseDL4JTest {
 
     @Override

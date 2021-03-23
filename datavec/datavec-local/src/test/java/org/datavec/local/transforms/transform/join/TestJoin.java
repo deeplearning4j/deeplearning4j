@@ -28,12 +28,15 @@ import org.datavec.api.writable.*;
 
 
 import org.datavec.local.transforms.LocalTransformExecutor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
 public class TestJoin  {
 
     @Test
@@ -46,27 +49,27 @@ public class TestJoin  {
                         .addColumnDouble("amount").build();
 
         List<List<Writable>> infoList = new ArrayList<>();
-        infoList.add(Arrays.<Writable>asList(new LongWritable(12345), new Text("Customer12345")));
-        infoList.add(Arrays.<Writable>asList(new LongWritable(98765), new Text("Customer98765")));
-        infoList.add(Arrays.<Writable>asList(new LongWritable(50000), new Text("Customer50000")));
+        infoList.add(Arrays.asList(new LongWritable(12345), new Text("Customer12345")));
+        infoList.add(Arrays.asList(new LongWritable(98765), new Text("Customer98765")));
+        infoList.add(Arrays.asList(new LongWritable(50000), new Text("Customer50000")));
 
         List<List<Writable>> purchaseList = new ArrayList<>();
-        purchaseList.add(Arrays.<Writable>asList(new LongWritable(1000000), new LongWritable(12345),
+        purchaseList.add(Arrays.asList(new LongWritable(1000000), new LongWritable(12345),
                         new DoubleWritable(10.00)));
-        purchaseList.add(Arrays.<Writable>asList(new LongWritable(1000001), new LongWritable(12345),
+        purchaseList.add(Arrays.asList(new LongWritable(1000001), new LongWritable(12345),
                         new DoubleWritable(20.00)));
-        purchaseList.add(Arrays.<Writable>asList(new LongWritable(1000002), new LongWritable(98765),
+        purchaseList.add(Arrays.asList(new LongWritable(1000002), new LongWritable(98765),
                         new DoubleWritable(30.00)));
 
         Join join = new Join.Builder(Join.JoinType.RightOuter).setJoinColumns("customerID")
                         .setSchemas(customerInfoSchema, purchasesSchema).build();
 
         List<List<Writable>> expected = new ArrayList<>();
-        expected.add(Arrays.<Writable>asList(new LongWritable(12345), new Text("Customer12345"),
+        expected.add(Arrays.asList(new LongWritable(12345), new Text("Customer12345"),
                         new LongWritable(1000000), new DoubleWritable(10.00)));
-        expected.add(Arrays.<Writable>asList(new LongWritable(12345), new Text("Customer12345"),
+        expected.add(Arrays.asList(new LongWritable(12345), new Text("Customer12345"),
                         new LongWritable(1000001), new DoubleWritable(20.00)));
-        expected.add(Arrays.<Writable>asList(new LongWritable(98765), new Text("Customer98765"),
+        expected.add(Arrays.asList(new LongWritable(98765), new Text("Customer98765"),
                         new LongWritable(1000002), new DoubleWritable(30.00)));
 
 
@@ -77,12 +80,7 @@ public class TestJoin  {
         List<List<Writable>> joined = LocalTransformExecutor.executeJoin(join, info, purchases);
         List<List<Writable>> joinedList = new ArrayList<>(joined);
         //Sort by order ID (column 3, index 2)
-        Collections.sort(joinedList, new Comparator<List<Writable>>() {
-            @Override
-            public int compare(List<Writable> o1, List<Writable> o2) {
-                return Long.compare(o1.get(2).toLong(), o2.get(2).toLong());
-            }
-        });
+        Collections.sort(joinedList, (o1, o2) -> Long.compare(o1.get(2).toLong(), o2.get(2).toLong()));
         assertEquals(expected, joinedList);
 
         assertEquals(3, joinedList.size());
@@ -110,12 +108,7 @@ public class TestJoin  {
         List<List<Writable>> joined2 = LocalTransformExecutor.executeJoin(join2, purchases, info);
         List<List<Writable>> joinedList2 = new ArrayList<>(joined2);
         //Sort by order ID (column 0)
-        Collections.sort(joinedList2, new Comparator<List<Writable>>() {
-            @Override
-            public int compare(List<Writable> o1, List<Writable> o2) {
-                return Long.compare(o1.get(0).toLong(), o2.get(0).toLong());
-            }
-        });
+        Collections.sort(joinedList2, (o1, o2) -> Long.compare(o1.get(0).toLong(), o2.get(0).toLong()));
         assertEquals(3, joinedList2.size());
 
         assertEquals(expectedManyToOne, joinedList2);
@@ -189,29 +182,26 @@ public class TestJoin  {
                             new ArrayList<>(LocalTransformExecutor.executeJoin(join, firstRDD, secondRDD));
 
             //Sort output by column 0, then column 1, then column 2 for comparison to expected...
-            Collections.sort(out, new Comparator<List<Writable>>() {
-                @Override
-                public int compare(List<Writable> o1, List<Writable> o2) {
-                    Writable w1 = o1.get(0);
-                    Writable w2 = o2.get(0);
-                    if (w1 instanceof NullWritable)
-                        return 1;
-                    else if (w2 instanceof NullWritable)
-                        return -1;
-                    int c = Long.compare(w1.toLong(), w2.toLong());
-                    if (c != 0)
-                        return c;
-                    c = o1.get(1).toString().compareTo(o2.get(1).toString());
-                    if (c != 0)
-                        return c;
-                    w1 = o1.get(2);
-                    w2 = o2.get(2);
-                    if (w1 instanceof NullWritable)
-                        return 1;
-                    else if (w2 instanceof NullWritable)
-                        return -1;
-                    return Long.compare(w1.toLong(), w2.toLong());
-                }
+            Collections.sort(out, (o1, o2) -> {
+                Writable w1 = o1.get(0);
+                Writable w2 = o2.get(0);
+                if (w1 instanceof NullWritable)
+                    return 1;
+                else if (w2 instanceof NullWritable)
+                    return -1;
+                int c = Long.compare(w1.toLong(), w2.toLong());
+                if (c != 0)
+                    return c;
+                c = o1.get(1).toString().compareTo(o2.get(1).toString());
+                if (c != 0)
+                    return c;
+                w1 = o1.get(2);
+                w2 = o2.get(2);
+                if (w1 instanceof NullWritable)
+                    return 1;
+                else if (w2 instanceof NullWritable)
+                    return -1;
+                return Long.compare(w1.toLong(), w2.toLong());
             });
 
             switch (jt) {

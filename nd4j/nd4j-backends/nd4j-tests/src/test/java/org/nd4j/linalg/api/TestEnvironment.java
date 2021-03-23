@@ -19,16 +19,19 @@
  */
 package org.nd4j.linalg.api;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-
+@NativeTag
 public class TestEnvironment extends BaseNd4jTestWithBackends {
 
 

@@ -140,6 +140,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <forkCount>${cpu.core.count}</forkCount>
+                    <reuseForks>false</reuseForks>
                     <environmentVariables>
                         <LD_LIBRARY_PATH>
                             ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/

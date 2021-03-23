@@ -21,10 +21,13 @@
 package org.nd4j.linalg.activations;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.activations.impl.ActivationCube;
 import org.nd4j.linalg.activations.impl.ActivationELU;
@@ -58,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
+@NativeTag
 public class TestActivation extends BaseNd4jTestWithBackends {
 
 
@@ -88,12 +92,12 @@ public class TestActivation extends BaseNd4jTestWithBackends {
         INDArray in = Nd4j.linspace(-10, 10, 1000, DataType.DOUBLE);
         double[] dIn = in.data().asDouble();
 
-        for( int i=0; i<max.length; i++ ){
+        for( int i=0; i<max.length; i++) {
             ActivationReLU r = new ActivationReLU(max[i], threshold[i], negativeSlope[i]);
             INDArray out = r.getActivation(in.dup(), true);
             double[] exp = new double[dIn.length];
-            for( int j=0; j<exp.length; j++ ){
-                if(max[i] != null && dIn[j] >= max[i]){
+            for( int j = 0; j < exp.length; j++ ){
+                if(max[i] != null && dIn[j] >= max[i]) {
                     exp[j] = max[i];
                 } else if(dIn[j] < threshold[i]){
                     exp[j] = negativeSlope[i] * (dIn[j] - threshold[i]);
@@ -108,7 +112,7 @@ public class TestActivation extends BaseNd4jTestWithBackends {
         //Test backprop
         INDArray eps = Nd4j.arange(in.length()).castTo(DataType.DOUBLE);
         double[] dEps = eps.data().asDouble();
-        for( int i=0; i<max.length; i++ ){
+        for( int i = 0; i < max.length; i++) {
             ActivationReLU r = new ActivationReLU(max[i], threshold[i], negativeSlope[i]);
             Pair<INDArray,INDArray> p = r.backprop(in.dup(), eps.dup());
             INDArray grad = p.getFirst();
@@ -132,6 +136,7 @@ public class TestActivation extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.JACKSON_SERDE)
     public void testJson(Nd4jBackend backend) throws Exception {
 
         IActivation[] activations = new IActivation[] {new ActivationCube(), new ActivationELU(0.25),

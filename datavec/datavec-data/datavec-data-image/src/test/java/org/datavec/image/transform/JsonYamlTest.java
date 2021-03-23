@@ -20,6 +20,7 @@
 package org.datavec.image.transform;
 
 import org.datavec.image.data.ImageWritable;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
@@ -28,8 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Json Yaml Test")
+@NativeTag
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JACKSON_SERDE)
 class JsonYamlTest {
 
     @Test

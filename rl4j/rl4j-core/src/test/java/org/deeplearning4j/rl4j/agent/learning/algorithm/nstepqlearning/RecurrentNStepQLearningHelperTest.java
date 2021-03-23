@@ -26,8 +26,11 @@ import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -37,7 +40,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class RecurrentNStepQLearningHelperTest {
 
     private final RecurrentNStepQLearningHelper sut = new RecurrentNStepQLearningHelper(3);

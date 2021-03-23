@@ -29,11 +29,14 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.autodiff.listeners.records.History;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -57,6 +60,9 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.TRAINING)
+@Tag(TagNames.SAMEDIFF)
 public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
 

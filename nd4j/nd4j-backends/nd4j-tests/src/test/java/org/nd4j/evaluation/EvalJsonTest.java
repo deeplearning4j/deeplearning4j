@@ -20,9 +20,12 @@
 
 package org.nd4j.evaluation;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
@@ -41,7 +44,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@Tag(TagNames.EVAL_METRICS)
+@NativeTag
 public class EvalJsonTest extends BaseNd4jTestWithBackends {
 
 
@@ -56,8 +60,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         boolean print = false;
 
         IEvaluation[] arr = new IEvaluation[] {new Evaluation(), new EvaluationBinary(), new ROCBinary(10),
-                        new ROCMultiClass(10), new RegressionEvaluation(3), new RegressionEvaluation(),
-                        new EvaluationCalibration()};
+                new ROCMultiClass(10), new RegressionEvaluation(3), new RegressionEvaluation(),
+                new EvaluationCalibration()};
 
         for (IEvaluation e : arr) {
             String json = e.toJson();
@@ -71,7 +75,7 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerde(Nd4jBackend backend) {
         boolean print = false;
@@ -120,7 +124,7 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSerdeExactRoc(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -199,13 +203,13 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJsonYamlCurves(Nd4jBackend backend) {
         ROC roc = new ROC(0);
 
         INDArray evalLabel =
-                        Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(100, 1), 0.5));
+                Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(100, 1), 0.5));
         INDArray evalProb = Nd4j.rand(100, 1);
         roc.eval(evalLabel, evalProb);
 
@@ -236,8 +240,8 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
         ec.eval(evalLabel, evalProb);
 
         Histogram[] histograms = new Histogram[] {ec.getResidualPlotAllClasses(), ec.getResidualPlot(0),
-                        ec.getResidualPlot(1), ec.getProbabilityHistogramAllClasses(), ec.getProbabilityHistogram(0),
-                        ec.getProbabilityHistogram(1)};
+                ec.getResidualPlot(1), ec.getProbabilityHistogramAllClasses(), ec.getProbabilityHistogram(0),
+                ec.getProbabilityHistogram(1)};
 
         for (Histogram h : histograms) {
             String json = h.toJson();
@@ -252,7 +256,7 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJsonWithCustomThreshold(Nd4jBackend backend) {
 

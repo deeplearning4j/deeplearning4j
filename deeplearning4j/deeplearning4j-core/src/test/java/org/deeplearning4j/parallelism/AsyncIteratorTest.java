@@ -21,13 +21,18 @@ package org.deeplearning4j.parallelism;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.parallelism.AsyncIterator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @DisplayName("Async Iterator Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class AsyncIteratorTest extends BaseDL4JTest {
 
     @Test

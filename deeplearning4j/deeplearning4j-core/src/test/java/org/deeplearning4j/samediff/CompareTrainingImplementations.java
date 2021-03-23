@@ -30,10 +30,13 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
@@ -57,6 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
 public class CompareTrainingImplementations extends BaseDL4JTest {
 
     @Test

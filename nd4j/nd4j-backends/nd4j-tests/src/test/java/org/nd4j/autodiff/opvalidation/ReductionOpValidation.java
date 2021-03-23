@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -77,7 +78,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-
+@NativeTag
 public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest

@@ -31,8 +31,15 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class TestKryoWarning {
 
     private static void doTestMLN(SparkConf sparkConf) {

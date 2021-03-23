@@ -28,7 +28,10 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,6 +47,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayName("Roc Test")
+@NativeTag
+@Tag(TagNames.EVAL_METRICS)
+@Tag(TagNames.JACKSON_SERDE)
+@Tag(TagNames.TRAINING)
+@Tag(TagNames.DL4J_OLD_API)
 class ROCTest extends BaseDL4JTest {
 
     private static Map<Double, Double> expTPR;

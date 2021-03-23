@@ -20,16 +20,18 @@
 
 package org.deeplearning4j.rl4j.agent.learning.behavior;
 
-import org.deeplearning4j.rl4j.agent.learning.behavior.LearningBehavior;
 import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -41,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class LearningBehaviorTest {
 
     @Mock

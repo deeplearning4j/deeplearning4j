@@ -24,7 +24,10 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
@@ -42,6 +45,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @author Jeffrey Tang.
  */
 @DisplayName("Layer Builder Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class LayerBuilderTest extends BaseDL4JTest {
 
     final double DELTA = 1e-15;

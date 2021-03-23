@@ -24,11 +24,16 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class NGramTokenizerFactoryTest extends BaseDL4JTest {
 
     @Test

@@ -21,7 +21,10 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
@@ -35,6 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @author Max Pumperla
  */
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 public class TokenizerTest extends BaseDL4JTest {
 
     @Test

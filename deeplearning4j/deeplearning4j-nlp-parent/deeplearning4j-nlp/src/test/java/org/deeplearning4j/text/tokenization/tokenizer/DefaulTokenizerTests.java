@@ -22,10 +22,13 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.jupiter.api.Tag;
 import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +36,8 @@ import java.io.ByteArrayInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class DefaulTokenizerTests extends BaseDL4JTest {
 
     protected static final Logger log = LoggerFactory.getLogger(DefaulTokenizerTests.class);

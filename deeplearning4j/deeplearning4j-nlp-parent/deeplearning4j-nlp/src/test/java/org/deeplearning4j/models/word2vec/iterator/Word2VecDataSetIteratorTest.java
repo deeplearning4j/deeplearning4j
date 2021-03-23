@@ -33,7 +33,10 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.common.resources.Resources;
@@ -45,7 +48,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
 
     @Override
@@ -57,7 +61,6 @@ public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
      * Basically all we want from this test - being able to finish without exceptions.
      */
     @Test
-    @Disabled
     public void testIterator1() throws Exception {
 
         File inputFile = Resources.asFile("big/raw_sentences.txt");

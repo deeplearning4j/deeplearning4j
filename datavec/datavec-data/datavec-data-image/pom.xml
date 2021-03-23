@@ -100,6 +100,17 @@
             <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg-platform</artifactId>
+            <version>${ffmpeg.version}-${javacpp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

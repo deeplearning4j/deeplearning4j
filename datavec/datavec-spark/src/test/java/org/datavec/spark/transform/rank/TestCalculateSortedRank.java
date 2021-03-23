@@ -30,24 +30,29 @@ import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.comparator.DoubleWritableComparator;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestCalculateSortedRank extends BaseSparkTest {
 
     @Test
     public void testCalculateSortedRank() {
 
         List<List<Writable>> data = new ArrayList<>();
-        data.add(Arrays.asList((Writable) new Text("0"), new DoubleWritable(0.0)));
-        data.add(Arrays.asList((Writable) new Text("3"), new DoubleWritable(0.3)));
-        data.add(Arrays.asList((Writable) new Text("2"), new DoubleWritable(0.2)));
-        data.add(Arrays.asList((Writable) new Text("1"), new DoubleWritable(0.1)));
+        data.add(Arrays.asList(new Text("0"), new DoubleWritable(0.0)));
+        data.add(Arrays.asList(new Text("3"), new DoubleWritable(0.3)));
+        data.add(Arrays.asList(new Text("2"), new DoubleWritable(0.2)));
+        data.add(Arrays.asList(new Text("1"), new DoubleWritable(0.1)));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 

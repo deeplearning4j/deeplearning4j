@@ -30,13 +30,16 @@ import org.datavec.api.writable.Writable;
 
 import org.datavec.local.transforms.misc.SequenceWritablesToStringFunction;
 import org.datavec.local.transforms.misc.WritablesToStringFunction;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
 public class TestWritablesToStringFunctions  {
 
 
@@ -44,7 +47,7 @@ public class TestWritablesToStringFunctions  {
     @Test
     public void testWritablesToString() throws Exception {
 
-        List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1.5), new Text("someValue"));
+        List<Writable> l = Arrays.asList(new DoubleWritable(1.5), new Text("someValue"));
         String expected = l.get(0).toString() + "," + l.get(1).toString();
 
         assertEquals(expected, new WritablesToStringFunction(",").apply(l));
@@ -53,8 +56,8 @@ public class TestWritablesToStringFunctions  {
     @Test
     public void testSequenceWritablesToString() throws Exception {
 
-        List<List<Writable>> l = Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(1.5), new Text("someValue")),
-                        Arrays.<Writable>asList(new DoubleWritable(2.5), new Text("otherValue")));
+        List<List<Writable>> l = Arrays.asList(Arrays.asList(new DoubleWritable(1.5), new Text("someValue")),
+                        Arrays.asList(new DoubleWritable(2.5), new Text("otherValue")));
 
         String expected = l.get(0).get(0).toString() + "," + l.get(0).get(1).toString() + "\n"
                         + l.get(1).get(0).toString() + "," + l.get(1).get(1).toString();

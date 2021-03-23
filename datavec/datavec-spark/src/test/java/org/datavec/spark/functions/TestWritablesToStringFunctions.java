@@ -29,7 +29,9 @@ import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.misc.SequenceWritablesToStringFunction;
 import org.datavec.spark.transform.misc.WritablesToStringFunction;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -37,7 +39,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class TestWritablesToStringFunctions extends BaseSparkTest {
 
     @Test
@@ -57,19 +62,9 @@ public class TestWritablesToStringFunctions extends BaseSparkTest {
 
 
         JavaSparkContext sc = getContext();
-        JavaPairRDD<String, String> left = sc.parallelize(leftMap).mapToPair(new PairFunction<Tuple2<String, String>, String, String>() {
-            @Override
-            public Tuple2<String, String> call(Tuple2<String, String> stringStringTuple2) throws Exception {
-                return stringStringTuple2;
-            }
-        });
+        JavaPairRDD<String, String> left = sc.parallelize(leftMap).mapToPair((PairFunction<Tuple2<String, String>, String, String>) stringStringTuple2 -> stringStringTuple2);
 
-        JavaPairRDD<String, String> right = sc.parallelize(rightMap).mapToPair(new PairFunction<Tuple2<String, String>, String, String>() {
-            @Override
-            public Tuple2<String, String> call(Tuple2<String, String> stringStringTuple2) throws Exception {
-                return stringStringTuple2;
-            }
-        });
+        JavaPairRDD<String, String> right = sc.parallelize(rightMap).mapToPair((PairFunction<Tuple2<String, String>, String, String>) stringStringTuple2 -> stringStringTuple2);
 
         System.out.println(left.cogroup(right).collect());
     }
@@ -77,7 +72,7 @@ public class TestWritablesToStringFunctions extends BaseSparkTest {
     @Test
     public void testWritablesToString() throws Exception {
 
-        List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1.5), new Text("someValue"));
+        List<Writable> l = Arrays.asList(new DoubleWritable(1.5), new Text("someValue"));
         String expected = l.get(0).toString() + "," + l.get(1).toString();
 
         assertEquals(expected, new WritablesToStringFunction(",").call(l));
@@ -86,8 +81,8 @@ public class TestWritablesToStringFunctions extends BaseSparkTest {
     @Test
     public void testSequenceWritablesToString() throws Exception {
 
-        List<List<Writable>> l = Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(1.5), new Text("someValue")),
-                        Arrays.<Writable>asList(new DoubleWritable(2.5), new Text("otherValue")));
+        List<List<Writable>> l = Arrays.asList(Arrays.asList(new DoubleWritable(1.5), new Text("someValue")),
+                        Arrays.asList(new DoubleWritable(2.5), new Text("otherValue")));
 
         String expected = l.get(0).get(0).toString() + "," + l.get(0).get(1).toString() + "\n"
                         + l.get(1).get(0).toString() + "," + l.get(1).get(1).toString();

@@ -20,9 +20,11 @@
 
 package org.nd4j.autodiff.samediff;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,12 +35,15 @@ import org.nd4j.linalg.learning.config.Sgd;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
 public class SameDiffOutputTest extends BaseNd4jTestWithBackends {
 
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void outputTest(Nd4jBackend backend){
+    public void outputTest(Nd4jBackend backend) {
         DataSet data = new DataSet(Nd4j.zeros(10, 10), Nd4j.zeros(10, 10));
         SameDiff sd = SameDiff.create();
 

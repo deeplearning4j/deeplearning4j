@@ -24,9 +24,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.val;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,6 +46,8 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@NativeTag
+@Tag(TagNames.JACKSON_SERDE)
 public class JsonSerdeTests extends BaseNd4jTestWithBackends {
 
 

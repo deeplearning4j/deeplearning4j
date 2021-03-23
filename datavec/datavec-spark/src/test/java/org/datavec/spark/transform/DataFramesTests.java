@@ -30,14 +30,19 @@ import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
 public class DataFramesTests extends BaseSparkTest {
 
     @Test
@@ -110,15 +115,15 @@ public class DataFramesTests extends BaseSparkTest {
     public void testNormalize() {
         List<List<Writable>> data = new ArrayList<>();
 
-        data.add(Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(10)));
-        data.add(Arrays.<Writable>asList(new DoubleWritable(2), new DoubleWritable(20)));
-        data.add(Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(30)));
+        data.add(Arrays.asList(new DoubleWritable(1), new DoubleWritable(10)));
+        data.add(Arrays.asList(new DoubleWritable(2), new DoubleWritable(20)));
+        data.add(Arrays.asList(new DoubleWritable(3), new DoubleWritable(30)));
 
 
         List<List<Writable>> expMinMax = new ArrayList<>();
-        expMinMax.add(Arrays.<Writable>asList(new DoubleWritable(0.0), new DoubleWritable(0.0)));
-        expMinMax.add(Arrays.<Writable>asList(new DoubleWritable(0.5), new DoubleWritable(0.5)));
-        expMinMax.add(Arrays.<Writable>asList(new DoubleWritable(1.0), new DoubleWritable(1.0)));
+        expMinMax.add(Arrays.asList(new DoubleWritable(0.0), new DoubleWritable(0.0)));
+        expMinMax.add(Arrays.asList(new DoubleWritable(0.5), new DoubleWritable(0.5)));
+        expMinMax.add(Arrays.asList(new DoubleWritable(1.0), new DoubleWritable(1.0)));
 
         double m1 = (1 + 2 + 3) / 3.0;
         double s1 = new StandardDeviation().evaluate(new double[] {1, 2, 3});
@@ -127,11 +132,11 @@ public class DataFramesTests extends BaseSparkTest {
 
         List<List<Writable>> expStandardize = new ArrayList<>();
         expStandardize.add(
-                        Arrays.<Writable>asList(new DoubleWritable((1 - m1) / s1), new DoubleWritable((10 - m2) / s2)));
+                        Arrays.asList(new DoubleWritable((1 - m1) / s1), new DoubleWritable((10 - m2) / s2)));
         expStandardize.add(
-                        Arrays.<Writable>asList(new DoubleWritable((2 - m1) / s1), new DoubleWritable((20 - m2) / s2)));
+                        Arrays.asList(new DoubleWritable((2 - m1) / s1), new DoubleWritable((20 - m2) / s2)));
         expStandardize.add(
-                        Arrays.<Writable>asList(new DoubleWritable((3 - m1) / s1), new DoubleWritable((30 - m2) / s2)));
+                        Arrays.asList(new DoubleWritable((3 - m1) / s1), new DoubleWritable((30 - m2) / s2)));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 
@@ -178,13 +183,13 @@ public class DataFramesTests extends BaseSparkTest {
         List<List<List<Writable>>> sequences = new ArrayList<>();
 
         List<List<Writable>> seq1 = new ArrayList<>();
-        seq1.add(Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(10), new DoubleWritable(100)));
-        seq1.add(Arrays.<Writable>asList(new DoubleWritable(2), new DoubleWritable(20), new DoubleWritable(200)));
-        seq1.add(Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(30), new DoubleWritable(300)));
+        seq1.add(Arrays.asList(new DoubleWritable(1), new DoubleWritable(10), new DoubleWritable(100)));
+        seq1.add(Arrays.asList(new DoubleWritable(2), new DoubleWritable(20), new DoubleWritable(200)));
+        seq1.add(Arrays.asList(new DoubleWritable(3), new DoubleWritable(30), new DoubleWritable(300)));
 
         List<List<Writable>> seq2 = new ArrayList<>();
-        seq2.add(Arrays.<Writable>asList(new DoubleWritable(4), new DoubleWritable(40), new DoubleWritable(400)));
-        seq2.add(Arrays.<Writable>asList(new DoubleWritable(5), new DoubleWritable(50), new DoubleWritable(500)));
+        seq2.add(Arrays.asList(new DoubleWritable(4), new DoubleWritable(40), new DoubleWritable(400)));
+        seq2.add(Arrays.asList(new DoubleWritable(5), new DoubleWritable(50), new DoubleWritable(500)));
 
         sequences.add(seq1);
         sequences.add(seq2);
@@ -199,21 +204,21 @@ public class DataFramesTests extends BaseSparkTest {
 
         //Min/max normalization:
         List<List<Writable>> expSeq1MinMax = new ArrayList<>();
-        expSeq1MinMax.add(Arrays.<Writable>asList(new DoubleWritable((1 - 1.0) / (5.0 - 1.0)),
+        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((1 - 1.0) / (5.0 - 1.0)),
                         new DoubleWritable((10 - 10.0) / (50.0 - 10.0)),
                         new DoubleWritable((100 - 100.0) / (500.0 - 100.0))));
-        expSeq1MinMax.add(Arrays.<Writable>asList(new DoubleWritable((2 - 1.0) / (5.0 - 1.0)),
+        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((2 - 1.0) / (5.0 - 1.0)),
                         new DoubleWritable((20 - 10.0) / (50.0 - 10.0)),
                         new DoubleWritable((200 - 100.0) / (500.0 - 100.0))));
-        expSeq1MinMax.add(Arrays.<Writable>asList(new DoubleWritable((3 - 1.0) / (5.0 - 1.0)),
+        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((3 - 1.0) / (5.0 - 1.0)),
                         new DoubleWritable((30 - 10.0) / (50.0 - 10.0)),
                         new DoubleWritable((300 - 100.0) / (500.0 - 100.0))));
 
         List<List<Writable>> expSeq2MinMax = new ArrayList<>();
-        expSeq2MinMax.add(Arrays.<Writable>asList(new DoubleWritable((4 - 1.0) / (5.0 - 1.0)),
+        expSeq2MinMax.add(Arrays.asList(new DoubleWritable((4 - 1.0) / (5.0 - 1.0)),
                         new DoubleWritable((40 - 10.0) / (50.0 - 10.0)),
                         new DoubleWritable((400 - 100.0) / (500.0 - 100.0))));
-        expSeq2MinMax.add(Arrays.<Writable>asList(new DoubleWritable((5 - 1.0) / (5.0 - 1.0)),
+        expSeq2MinMax.add(Arrays.asList(new DoubleWritable((5 - 1.0) / (5.0 - 1.0)),
                         new DoubleWritable((50 - 10.0) / (50.0 - 10.0)),
                         new DoubleWritable((500 - 100.0) / (500.0 - 100.0))));
 
@@ -246,17 +251,17 @@ public class DataFramesTests extends BaseSparkTest {
         double s3 = new StandardDeviation().evaluate(new double[] {100, 200, 300, 400, 500});
 
         List<List<Writable>> expSeq1Std = new ArrayList<>();
-        expSeq1Std.add(Arrays.<Writable>asList(new DoubleWritable((1 - m1) / s1), new DoubleWritable((10 - m2) / s2),
+        expSeq1Std.add(Arrays.asList(new DoubleWritable((1 - m1) / s1), new DoubleWritable((10 - m2) / s2),
                         new DoubleWritable((100 - m3) / s3)));
-        expSeq1Std.add(Arrays.<Writable>asList(new DoubleWritable((2 - m1) / s1), new DoubleWritable((20 - m2) / s2),
+        expSeq1Std.add(Arrays.asList(new DoubleWritable((2 - m1) / s1), new DoubleWritable((20 - m2) / s2),
                         new DoubleWritable((200 - m3) / s3)));
-        expSeq1Std.add(Arrays.<Writable>asList(new DoubleWritable((3 - m1) / s1), new DoubleWritable((30 - m2) / s2),
+        expSeq1Std.add(Arrays.asList(new DoubleWritable((3 - m1) / s1), new DoubleWritable((30 - m2) / s2),
                         new DoubleWritable((300 - m3) / s3)));
 
         List<List<Writable>> expSeq2Std = new ArrayList<>();
-        expSeq2Std.add(Arrays.<Writable>asList(new DoubleWritable((4 - m1) / s1), new DoubleWritable((40 - m2) / s2),
+        expSeq2Std.add(Arrays.asList(new DoubleWritable((4 - m1) / s1), new DoubleWritable((40 - m2) / s2),
                         new DoubleWritable((400 - m3) / s3)));
-        expSeq2Std.add(Arrays.<Writable>asList(new DoubleWritable((5 - m1) / s1), new DoubleWritable((50 - m2) / s2),
+        expSeq2Std.add(Arrays.asList(new DoubleWritable((5 - m1) / s1), new DoubleWritable((50 - m2) / s2),
                         new DoubleWritable((500 - m3) / s3)));
 
 

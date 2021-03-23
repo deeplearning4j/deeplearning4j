@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.resources.Resources;
@@ -37,9 +38,14 @@ import java.nio.file.StandardCopyOption;
 import org.junit.jupiter.api.DisplayName;
 import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 @Slf4j
 @DisplayName("Keras Yolo 9000 Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 class KerasYolo9000Test extends BaseDL4JTest {
 
     private static final String TEMP_MODEL_FILENAME = "tempModel";

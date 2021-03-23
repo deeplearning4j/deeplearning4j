@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,7 +45,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@NativeTag
 public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
     private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparisonFortran.class);
 
@@ -121,13 +122,13 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTestWithBackends {
                     for (int m = 0; m < beta.length; m++) {
                         //System.out.println((String.format("Running iteration %d %d %d %d", i, j, k, m)));
 
-                        INDArray cff = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray cff = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         cff.assign(cOrig);
-                        INDArray cft = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray cft = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         cft.assign(cOrig);
-                        INDArray ctf = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray ctf = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         ctf.assign(cOrig);
-                        INDArray ctt = Nd4j.create(cOrig.shape(), 'f');
+                        INDArray ctt = Nd4j.create(cOrig.shape(), 'f').castTo(DataType.DOUBLE);
                         ctt.assign(cOrig);
 
                         double a = alpha[k];

@@ -23,10 +23,14 @@ package org.deeplearning4j.models.sequencevectors.serialization;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class VocabWordFactoryTest extends BaseDL4JTest {
 
     @BeforeEach

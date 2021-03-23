@@ -23,12 +23,17 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffCNNCases;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffMLPTestCases;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.nio.file.Path;
 
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SAMEDIFF)
+@NativeTag
 public class IntegrationTestsSameDiff extends BaseDL4JTest {
 
     @TempDir

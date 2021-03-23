@@ -20,9 +20,11 @@
 
 package org.nd4j.evaluation;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -41,6 +43,8 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag(TagNames.EVAL_METRICS)
+@NativeTag
 public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
 
 
@@ -49,7 +53,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReliabilityDiagram (Nd4jBackend backend) {
 
@@ -142,7 +146,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLabelAndPredictionCounts (Nd4jBackend backend) {
 
@@ -171,7 +175,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         assertArrayEquals(expPredictionCount, ec.getPredictionCountsEachClass());
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResidualPlots (Nd4jBackend backend) {
 
@@ -273,7 +277,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSegmentation(){
         for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
@@ -368,7 +372,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         }
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationCalibration3d (Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
@@ -401,7 +405,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTestWithBackends {
         assertEquals(e2d.stats(), e3d.stats());
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvaluationCalibration3dMasking (Nd4jBackend backend) {
         INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);

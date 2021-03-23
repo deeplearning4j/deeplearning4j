@@ -37,10 +37,12 @@ import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -49,7 +51,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.UI)
 public class TestUI extends BaseND4JTest {
 
 

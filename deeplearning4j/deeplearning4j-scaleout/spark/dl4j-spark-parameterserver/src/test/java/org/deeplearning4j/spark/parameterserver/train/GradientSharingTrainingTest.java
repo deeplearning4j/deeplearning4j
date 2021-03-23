@@ -48,9 +48,12 @@ import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -75,6 +78,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 //@Disabled("AB 2019/05/21 - Failing - Issue #7657")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class GradientSharingTrainingTest extends BaseSparkTest {
 
 

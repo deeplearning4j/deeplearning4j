@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +38,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -69,6 +72,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.SAMEDIFF)
 public class ShapeOpValidation extends BaseOpValidation {
 
     /*
@@ -201,7 +206,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testRank(){
+    public void testRank(Nd4jBackend backend) {
 
         List<long[]> inShape = Arrays.asList(null, new long[]{1}, new long[]{6}, new long[]{3,4}, new long[]{3,4,5});
 
@@ -837,7 +842,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTileBp(){
+    public void testTileBp(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
         INDArray in = Nd4j.create(1,2,3);   //Values aren't used in backprop, just shape
@@ -871,7 +876,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTileBp2(){
+    public void testTileBp2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
         INDArray in = Nd4j.create(3,4,5);   //Values aren't used in backprop, just shape
@@ -960,7 +965,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTransposeOp(){
+    public void testTransposeOp(Nd4jBackend backend) {
 
         INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
         INDArray out = Nd4j.create(Nd4j.defaultFloatingPointType(), new long[]{3,5}, 'c');
@@ -1020,7 +1025,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPermute(){
+    public void testPermute(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
         INDArray exp = in.permute(0,1,2);   //No op
 
@@ -1035,7 +1040,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPermute2(){
+    public void testPermute2(Nd4jBackend backend) {
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
             INDArray exp = in.permute(perm).dup('c');
@@ -1056,8 +1061,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConstant(){
-        //OpValidationSuite.ignoreFailing();
+    public void testConstant(Nd4jBackend backend) {
 
         //Case 0: no shape
         SameDiff sd = SameDiff.create();
@@ -1084,7 +1088,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUnstackEdgeCase2(){
+    public void testUnstackEdgeCase2(Nd4jBackend backend) {
         for( int i=0; i<3; i++ ) {
 
             INDArray arr = Nd4j.rand(new long[]{1, 1, 1});
@@ -1117,7 +1121,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGatherNd(){
+    public void testGatherNd(Nd4jBackend backend) {
 
         List<INDArray> indices = new ArrayList<>();
         List<INDArray> params = new ArrayList<>();
@@ -1203,9 +1207,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMatrixDeterminant(){
-        OpValidationSuite.ignoreFailing();  //Gradient check failing
-
+    @Disabled("MatrixDeterminant does not have a gradient yet.")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testMatrixDeterminant(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
 
@@ -1225,9 +1229,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDeterminant22(){
-        OpValidationSuite.ignoreFailing();  //Gradient check failing
-
+    @Disabled("MatrixDeterminant does not have a gradient yet.")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testDeterminant22(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.create(new double[][]{{1, 2.5}, {3.5, 4.5}});
 
@@ -1250,8 +1254,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMatrixDeterminant3(){
-        OpValidationSuite.ignoreFailing();  //Gradient checks failing
+    @Disabled("MatrixDeterminant does not have a gradient yet.")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testMatrixDeterminant3(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [3,3],  stride: [3,1]
@@ -1282,8 +1287,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMatrixDeterminant4(){
-        OpValidationSuite.ignoreFailing();  //Gradient checks failing
+    @Disabled("MatrixDeterminant does not have a gradient yet.")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testMatrixDeterminant4(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(4,4);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [4,4],  stride: [4,1]
@@ -1303,8 +1309,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSegmentOps(){
-        OpValidationSuite.ignoreFailing();
+    public void testSegmentOps(Nd4jBackend backend) {
         //https://github.com/eclipse/deeplearning4j/issues/6952
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
@@ -1396,7 +1401,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSegmentMean(){
+    public void testSegmentMean(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(DataType.FLOAT, 1, 18, 1).reshape(6, 3);
         INDArray segmentIds = Nd4j.createFromArray(0, 0, 1, 1, 2, 2);
 
@@ -1452,7 +1457,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMeshGrid(){
+    public void testMeshGrid(Nd4jBackend backend) {
         List<String> failed = new ArrayList<>();
 
         for( int rank=2; rank<=4; rank++ ){
@@ -1509,7 +1514,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGather(){
+    public void testGather(Nd4jBackend backend) {
         List<INDArray> inArrs = new ArrayList<>();
         List<Integer> axis = new ArrayList<>();
         List<INDArray> indices = new ArrayList<>();
@@ -1832,7 +1837,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEye(){
+    public void testEye(Nd4jBackend backend) {
         int[] rows = new int[]{3,3,3,3};
         int[] cols = new int[]{3,2,2,2};
         int[][] batch = new int[][]{null, null, {4}, {3,3}};
@@ -1871,7 +1876,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSplit1(){
+    public void testSplit1(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1,10,10).reshape(10);
         INDArray axis = Nd4j.scalar(-1);
 
@@ -1890,7 +1895,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSplit2(){
+    public void testSplit2(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1,24,24).reshape(3,8);
         INDArray axis = Nd4j.scalar(-1);
 
@@ -1909,7 +1914,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDistancesExec(){
+    public void testDistancesExec(Nd4jBackend backend) {
         //https://github.com/eclipse/deeplearning4j/issues/7001
         for(String s : new String[]{"euclidean", "manhattan", "cosinesim", "cosinedist", "jaccard"}) {
             log.info("Starting: {}", s);
@@ -1965,7 +1970,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testReductionShape(){
+    public void testReductionShape(Nd4jBackend backend) {
 
         INDArray shape = Nd4j.createFromArray(4,2);
         INDArray axis = Nd4j.scalar(0);
@@ -1984,7 +1989,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void gatherTest(){
+    public void gatherTest(Nd4jBackend backend) {
         INDArray in = Nd4j.createFromArray(new double[][]{
                 {1,2,3,4,5},
                 {6,7,8,9,10},
@@ -2004,7 +2009,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSliceShape(){
+    public void testSliceShape(Nd4jBackend backend) {
 
         INDArray arr = Nd4j.arange(0, 25).reshape(1,5,5).castTo(DataType.INT);
 //        System.out.println(Arrays.toString(arr.shape()));
@@ -2026,7 +2031,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testWhereAllFalse(){
+    public void testWhereAllFalse(Nd4jBackend backend) {
         INDArray in = Nd4j.create(DataType.BOOL, 1917);
         DynamicCustomOp op = DynamicCustomOp.builder("Where")
                 .addInputs(in)
@@ -2041,7 +2046,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGatherScalar(){
+    public void testGatherScalar(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(100, 200, 100, DataType.FLOAT).reshape(100);
         INDArray indices = Nd4j.scalar(0);
         INDArray axis = Nd4j.scalar(0);
@@ -2066,7 +2071,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCastEmpty(){
+    public void testCastEmpty(Nd4jBackend backend) {
         INDArray emptyLong = Nd4j.empty(DataType.LONG);
         int dtype = 9;  //INT = 9 - https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
         DynamicCustomOp op = DynamicCustomOp.builder("cast")
@@ -2083,7 +2088,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGatherEmpty(){
+    public void testGatherEmpty(Nd4jBackend backend) {
         /*
         tf.reset_default_graph()
         emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
@@ -2116,7 +2121,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSplitEmpty(){
+    public void testSplitEmpty(Nd4jBackend backend) {
         /*
         tf.reset_default_graph()
         # Hack to create empty array
@@ -2154,7 +2159,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConcatEmpty(){
+    public void testConcatEmpty(Nd4jBackend backend) {
         /*
         TF behaviour with concatenatioun of empty arrays:
         concat(empty,empty,empty) -> empty
@@ -2204,7 +2209,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConcatEmpty2(){
+    public void testConcatEmpty2(Nd4jBackend backend) {
         INDArray empty10a = Nd4j.create(DataType.INT, 1, 0);
         INDArray empty10b = Nd4j.create(DataType.INT, 1, 0);
 
@@ -2237,7 +2242,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEmptyGather(){
+    public void testEmptyGather(Nd4jBackend backend) {
         /*
         tf.reset_default_graph()
         inputFloat = tf.constant([], shape=[0,2,3], dtype=tf.float32)
@@ -2270,7 +2275,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBroadcastDynamicShape1(){
+    public void testBroadcastDynamicShape1(Nd4jBackend backend) {
 
         //Test case: [2,1] and [4]: expect [2,4]
         INDArray out = Nd4j.create(DataType.INT, 2);
@@ -2292,7 +2297,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBroadcastDynamicShape2(){
+    public void testBroadcastDynamicShape2(Nd4jBackend backend) {
 
         //Test case: [2,1,4] and [2,2,4]: expect [2,2,4]
         INDArray out = Nd4j.create(DataType.INT, 3);
@@ -2315,7 +2320,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testStridedSliceShrinkAxis(){
+    public void testStridedSliceShrinkAxis(Nd4jBackend backend) {
         INDArray in = Nd4j.create(DataType.DOUBLE, 3,2,2);
         INDArray begin = Nd4j.createFromArray(2);
         INDArray end = Nd4j.createFromArray(3);         //Should be ignored due to shrink_axis_mask
@@ -2341,7 +2346,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testStridedSliceEmpty(){
+    public void testStridedSliceEmpty(Nd4jBackend backend) {
 
         INDArray in = Nd4j.createFromArray(10); //Integer, Length 1, rank 1, value 10   - Not used due to begin mask!
         INDArray from = Nd4j.createFromArray(0);
@@ -2364,7 +2369,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testStridedSliceEdgeCase(){
+    public void testStridedSliceEdgeCase(Nd4jBackend backend) {
         INDArray in = Nd4j.scalar(10).reshape(1);   //Int [1]
         INDArray begin = Nd4j.ones(DataType.INT, 1);
         INDArray end = Nd4j.zeros(DataType.INT, 1);
@@ -2390,7 +2395,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEmptySlice1(){
+    public void testEmptySlice1(Nd4jBackend backend) {
         INDArray in = Nd4j.createFromArray(38);
         INDArray begin = Nd4j.createFromArray(1);
         INDArray size = Nd4j.createFromArray(-1);
@@ -2410,7 +2415,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEmptySlice2(){
+    public void testEmptySlice2(Nd4jBackend backend) {
         INDArray in = Nd4j.createFromArray(38);
         INDArray begin = Nd4j.createFromArray(0);
         INDArray size = Nd4j.createFromArray(0);
@@ -2430,7 +2435,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testFill(){
+    public void testFill(Nd4jBackend backend) {
 
         INDArray shape = Nd4j.createFromArray(0,4);
         INDArray value = Nd4j.scalar(1.0f);
@@ -2450,7 +2455,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testFill2(){
+    public void testFill2(Nd4jBackend backend) {
 
         INDArray shape = Nd4j.createFromArray(0,4);
         INDArray value = Nd4j.scalar(1.0f);
@@ -2468,7 +2473,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPermuteShapeDynamicAxis(){
+    public void testPermuteShapeDynamicAxis(Nd4jBackend backend) {
 
         DynamicCustomOp op = DynamicCustomOp.builder("permute")
                 .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4),
@@ -2498,7 +2503,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGather2(){
+    public void testGather2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
         SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0));
@@ -2518,7 +2523,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPermute3(){
+    public void testPermute3(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
         INDArray permute = Nd4j.createFromArray(1,0);
 
@@ -2537,7 +2542,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPermute4(){
+    public void testPermute4(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
         INDArray permute = Nd4j.createFromArray(1,0);
 
@@ -2568,7 +2573,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testInvertPermutation(){
+    public void testInvertPermutation(Nd4jBackend backend) {
         DynamicCustomOp op = DynamicCustomOp.builder("invert_permutation")
                 .addInputs(Nd4j.createFromArray(1, 0))
                 .build();
@@ -2590,7 +2595,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBroadcastInt2(){
+    public void testBroadcastInt2(Nd4jBackend backend) {
         INDArray out = Nd4j.create(DataType.INT, 2);
         DynamicCustomOp op = DynamicCustomOp.builder("broadcast_dynamic_shape")
                 .addInputs(Nd4j.createFromArray(2, 2), Nd4j.createFromArray(1))
@@ -2602,8 +2607,9 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
 
-    @Test @Disabled //AB 2020/04/01 - https://github.com/eclipse/deeplearning4j/issues/8592
-    public void testReshapeZeros(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeZeros(Nd4jBackend backend) {
         int[][] shapes = new int[][]{{2,0}, {10,0},    {10, 0},  {2,0,0,10}, {10, 0},   {0, 0, 10},  {0,2,10}, {1,2,0}};
         int[][] reshape = new int[][]{{2,-1}, {2,0,-1}, {5,2,-1}, {2,0,-1},   {-1, 2, 0}, {2, -1, 0}, {2, 0, 0, 0, -1}, {2,0,-1}};
         int[][] expected = new int[][]{{2,0}, {2,0,5}, {5,2,0}, {2,0,10}, {5,2,0}, {2,5,0}, {2,0,0,0,10}, {2,0,1}};

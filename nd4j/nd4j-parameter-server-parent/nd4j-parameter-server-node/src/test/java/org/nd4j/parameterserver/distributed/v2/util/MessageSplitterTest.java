@@ -22,8 +22,11 @@ package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Atomic;
 import org.nd4j.common.primitives.Optional;
@@ -34,6 +37,9 @@ import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
 public class MessageSplitterTest extends BaseND4JTest {
 
     @Test

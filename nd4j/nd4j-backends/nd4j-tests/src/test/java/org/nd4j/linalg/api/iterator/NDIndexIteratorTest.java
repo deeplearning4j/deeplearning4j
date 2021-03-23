@@ -21,10 +21,13 @@
 package org.nd4j.linalg.api.iterator;
 
 import lombok.val;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -34,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 /**
  * @author Adam Gibson
  */
-
+@Tag(TagNames.JAVA_ONLY)
+@NativeTag
 public class NDIndexIteratorTest extends BaseNd4jTestWithBackends {
 
 

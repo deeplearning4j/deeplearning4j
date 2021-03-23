@@ -19,14 +19,21 @@
  */
 package org.datavec.spark;
 
+import com.sun.jna.Platform;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+
+import java.io.File;
 import java.io.Serializable;
+import java.net.URI;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.resources.Downloader;
 
 @Slf4j
 @DisplayName("Base Spark Test")
@@ -34,8 +41,24 @@ public abstract class BaseSparkTest implements Serializable {
 
     protected static JavaSparkContext sc;
 
+    @SneakyThrows
     @BeforeEach
     void before() {
+        if(Platform.isWindows()) {
+            File hadoopHome = new File(System.getProperty("java.io.tmpdir"),"hadoop-tmp");
+            File binDir = new File(hadoopHome,"bin");
+            if(!binDir.exists())
+                binDir.mkdirs();
+            File outputFile = new File(binDir,"winutils.exe");
+            if(!outputFile.exists()) {
+                log.info("Fixing spark for windows");
+                Downloader.download("winutils.exe",
+                        URI.create("https://github.com/cdarlint/winutils/blob/master/hadoop-2.6.5/bin/winutils.exe?raw=true").toURL(),
+                        outputFile,"db24b404d2331a1bec7443336a5171f1",3);
+            }
+
+            System.setProperty("hadoop.home.dir", hadoopHome.getAbsolutePath());
+        }
         sc = getContext();
     }
 

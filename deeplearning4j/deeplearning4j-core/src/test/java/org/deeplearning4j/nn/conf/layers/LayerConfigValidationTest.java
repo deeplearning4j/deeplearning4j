@@ -35,7 +35,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -52,6 +55,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Layer Config Validation Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class LayerConfigValidationTest extends BaseDL4JTest {
 
     @Test
@@ -83,16 +88,7 @@ class LayerConfigValidationTest extends BaseDL4JTest {
         });
     }
 
-    @Test
-    @Disabled
-    @DisplayName("Test Reg Not Set L 2 Local")
-    void testRegNotSetL2Local() {
-        assertThrows(IllegalStateException.class, () -> {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build()).layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-        });
-    }
+
 
     @Test
     @DisplayName("Test Weight Init Dist Not Set")

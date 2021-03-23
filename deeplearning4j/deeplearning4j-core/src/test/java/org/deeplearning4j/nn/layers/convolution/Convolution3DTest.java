@@ -27,7 +27,10 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -42,6 +45,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @author Max Pumperla
  */
 @DisplayName("Convolution 3 D Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class Convolution3DTest extends BaseDL4JTest {
 
     private int nExamples = 1;

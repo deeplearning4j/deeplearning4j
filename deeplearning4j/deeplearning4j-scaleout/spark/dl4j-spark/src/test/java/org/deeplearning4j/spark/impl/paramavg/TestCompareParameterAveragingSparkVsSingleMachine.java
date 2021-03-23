@@ -21,6 +21,8 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 import com.sun.jna.Platform;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -40,7 +42,11 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.resources.Downloader;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -50,16 +56,41 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.SPARK)
+@Tag(TagNames.DIST_SYSTEMS)
+@NativeTag
+@Slf4j
 public class TestCompareParameterAveragingSparkVsSingleMachine {
     @BeforeEach
     public void setUp() {
         //CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(false);
+    }
+    @SneakyThrows
+    @BeforeEach
+    void before() {
+        if(Platform.isWindows()) {
+            File hadoopHome = new File(System.getProperty("java.io.tmpdir"),"hadoop-tmp");
+            File binDir = new File(hadoopHome,"bin");
+            if(!binDir.exists())
+                binDir.mkdirs();
+            File outputFile = new File(binDir,"winutils.exe");
+            if(!outputFile.exists()) {
+                log.info("Fixing spark for windows");
+                Downloader.download("winutils.exe",
+                        URI.create("https://github.com/cdarlint/winutils/blob/master/hadoop-2.6.5/bin/winutils.exe?raw=true").toURL(),
+                        outputFile,"db24b404d2331a1bec7443336a5171f1",3);
+            }
+
+            System.setProperty("hadoop.home.dir", hadoopHome.getAbsolutePath());
+        }
     }
 
 

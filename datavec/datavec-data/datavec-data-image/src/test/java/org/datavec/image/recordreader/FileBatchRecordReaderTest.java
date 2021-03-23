@@ -28,9 +28,12 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.loader.NativeImageLoader;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.loader.FileBatch;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.io.ClassPathResource;
 import java.io.File;
@@ -41,6 +44,8 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("File Batch Record Reader Test")
+@NativeTag
+@Tag(TagNames.FILE_IO)
 class FileBatchRecordReaderTest {
 
     @TempDir

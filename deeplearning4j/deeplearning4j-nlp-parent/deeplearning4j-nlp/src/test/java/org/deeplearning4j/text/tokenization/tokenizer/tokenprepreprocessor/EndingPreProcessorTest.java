@@ -23,10 +23,14 @@ package org.deeplearning4j.text.tokenization.tokenizer.tokenprepreprocessor;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.EndingPreProcessor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Tag(TagNames.FILE_IO)
+@NativeTag
 public class EndingPreProcessorTest extends BaseDL4JTest {
     @Test
     public void testPreProcessor() {

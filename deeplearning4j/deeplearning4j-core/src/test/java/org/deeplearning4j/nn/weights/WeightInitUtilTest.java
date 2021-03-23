@@ -24,7 +24,10 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,6 +36,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Weight Init Util Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class WeightInitUtilTest extends BaseDL4JTest {
 
     protected int fanIn = 3;

@@ -22,7 +22,11 @@ package org.deeplearning4j.datasets.iterator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -34,6 +38,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Early Termination Multi Data Set Iterator Test")
+@NativeTag
+@Tag(TagNames.FILE_IO)
 class EarlyTerminationMultiDataSetIteratorTest extends BaseDL4JTest {
 
     int minibatchSize = 5;

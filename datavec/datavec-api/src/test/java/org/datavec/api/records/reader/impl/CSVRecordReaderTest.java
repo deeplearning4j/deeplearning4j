@@ -34,9 +34,12 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.TagNames;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -50,6 +53,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @DisplayName("Csv Record Reader Test")
+@Tag(TagNames.JAVA_ONLY)
+@Tag(TagNames.FILE_IO)
 class CSVRecordReaderTest extends BaseND4JTest {
 
     @Test

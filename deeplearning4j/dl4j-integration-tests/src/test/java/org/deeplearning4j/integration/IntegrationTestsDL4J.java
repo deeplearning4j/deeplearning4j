@@ -24,13 +24,19 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.integration.testcases.dl4j.*;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.nio.file.Path;
 
 
 //@Disabled("AB - 2019/05/27 - Integration tests need to be updated")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.DL4J_OLD_API)
+@NativeTag
 public class IntegrationTestsDL4J extends BaseDL4JTest {
     @TempDir
     static Path testDir;

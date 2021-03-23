@@ -45,7 +45,10 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.activations.Activation;
@@ -67,6 +70,11 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@NativeTag
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.NDARRAY_ETL)
+@Tag(TagNames.TRAINING)
+@Tag(TagNames.DL4J_OLD_API)
 public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
 
     @Override

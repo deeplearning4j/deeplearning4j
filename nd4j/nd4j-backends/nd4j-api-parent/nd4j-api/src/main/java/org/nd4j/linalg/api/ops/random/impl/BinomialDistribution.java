@@ -27,9 +27,12 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -121,7 +124,16 @@ public class BinomialDistribution extends BaseRandomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return calculateOutputShape();
+    }
 
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
+        return Arrays.asList(longShapeDescriptor);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

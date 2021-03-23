@@ -29,9 +29,12 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.resources.Resources;
@@ -48,6 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
 public class KerasWeightSettingTests extends BaseDL4JTest {
 
 

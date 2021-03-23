@@ -30,7 +30,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,6 +50,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @DisplayName("Graves LSTM Test")
+@NativeTag
+@Tag(TagNames.DL4J_OLD_API)
 class GravesLSTMTest extends BaseDL4JTest {
 
     @Test
