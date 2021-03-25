@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.workspace;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
@@ -65,8 +66,11 @@ public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
+    @SneakyThrows
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testGc(Nd4jBackend backend) {
         val indArray = Nd4j.create(4, 4);
         indArray.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));
@@ -76,7 +80,7 @@ public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
 
         for (int i = 0; i < 100000000; i++) {
             indArray.getRow(i % 3);
-            //Thread.sleep(1);
+            Thread.sleep(1);
         }
     }
 

@@ -52,10 +52,6 @@ public class TestValidation extends BaseSparkTest {
 
     @Test
     public void testDataSetValidation(@TempDir Path folder) throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         File f = folder.toFile();
 
         for( int i = 0; i < 3; i++ ) {

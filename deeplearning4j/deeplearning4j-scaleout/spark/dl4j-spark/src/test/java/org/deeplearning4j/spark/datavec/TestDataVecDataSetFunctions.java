@@ -76,10 +76,6 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
     @Test
     public void testDataVecDataSetFunction(@TempDir Path testDir) throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         JavaSparkContext sc = getContext();
 
         File f = testDir.toFile();

@@ -124,6 +124,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <forkCount>${cpu.core.count}</forkCount>
                         <reuseForks>false</reuseForks>
                         <environmentVariables>
@@ -139,7 +140,12 @@
                             Maximum heap size was set to 8g, as a minimum required value for tests run.
                             Depending on a build machine, default value is not always enough.
                         -->
-                        <argLine>-Xmx2g</argLine>
+                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
+                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+
                     </configuration>
                 </plugin>
                 <plugin>

@@ -42,6 +42,17 @@ A few kinds of tags exist:
 7. RNG: (rng) for RNG related tests
 8. Samediff:(samediff) samediff related tests
 9. Training related functionality
+10. long-running-tests: The longer running tests that take a longer execution time
+11. large-resources: tests requiring a large amount of ram/cpu (>= 2g up to 16g)
+
+
+New maven properties for maven surefire:
+test.offheap.size: tunes off heap size for javacpp
+test.heap.size: tunes heap size of test jvms
+
+
+Auto tuning the number of CPU cores for tests relative to the number of CPUs present
+
 
 
 ## Consequences

@@ -75,7 +75,8 @@ public class BinarySerde {
         ByteBuffer byteBuffer = buffer.hasArray() ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
                 .order(ByteOrder.nativeOrder()) : buffer.order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
-        byteBuffer.position(offset);
+        Buffer buffer1 = (Buffer) byteBuffer;
+        buffer1.position(offset);
         int rank = byteBuffer.getInt();
         if (rank < 0)
             throw new IllegalStateException("Found negative integer. Corrupt serialization?");
@@ -99,7 +100,8 @@ public class BinarySerde {
             DataBuffer buff = Nd4j.createBuffer(slice, type, (int) Shape.length(shapeBuff));
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
-            byteBuffer.position(position);
+            Buffer buffer2 = (Buffer) byteBuffer;
+            buffer2.position(position);
             //create the final array
             //TODO: see how to avoid dup here
             INDArray arr = Nd4j.createArrayFromShapeBuffer(buff.dup(), shapeBuff.dup());
@@ -116,7 +118,8 @@ public class BinarySerde {
             INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer.dup(), shapeBuff.dup());
             //advance past the data
             int compressLength = (int) compressionDescriptor.getCompressedLength();
-            byteBuffer.position(byteBuffer.position() + compressLength);
+            Buffer buffer2 = (Buffer) byteBuffer;
+            buffer2.position(buffer2.position() + compressLength);
             return Pair.of(arr, byteBuffer);
         }
 

@@ -48,6 +48,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Tuple Stream Data Set Iterator Test")
 @Tag(TagNames.SOLR)
 @Tag(TagNames.DIST_SYSTEMS)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
     static {

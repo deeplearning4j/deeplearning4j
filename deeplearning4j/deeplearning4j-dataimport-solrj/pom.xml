@@ -47,8 +47,9 @@
                     <configuration>
                         <forkCount>${cpu.core.count}</forkCount>
                         <reuseForks>false</reuseForks>
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <argLine>-Ddtype=float -Dfile.encoding=UTF-8
-                            -Dtest.solr.allowed.securerandom=NativePRNG
+                            -Dtest.solr.allowed.securerandom=NativePRNG -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}
                         </argLine>
                         <includes>
                             <!-- Default setting only runs tests that start/end with "Test" -->

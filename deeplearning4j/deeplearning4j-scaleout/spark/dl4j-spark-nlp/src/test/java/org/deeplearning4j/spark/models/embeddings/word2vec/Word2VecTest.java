@@ -21,11 +21,15 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import com.sun.jna.Platform;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
@@ -41,11 +45,14 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.resources.Downloader;
+import org.nd4j.common.resources.strumpf.StrumpfResolver;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -53,21 +60,37 @@ import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.SPARK)
 @Tag(TagNames.DIST_SYSTEMS)
 @NativeTag
+@Slf4j
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class Word2VecTest {
+    @BeforeAll
+    @SneakyThrows
+    public static void beforeAll() {
+        if(Platform.isWindows()) {
+            File hadoopHome = new File(System.getProperty("java.io.tmpdir"),"hadoop-tmp");
+            File binDir = new File(hadoopHome,"bin");
+            if(!binDir.exists())
+                binDir.mkdirs();
+            File outputFile = new File(binDir,"winutils.exe");
+            if(!outputFile.exists()) {
+                log.info("Fixing spark for windows");
+                Downloader.download("winutils.exe",
+                        URI.create("https://github.com/cdarlint/winutils/blob/master/hadoop-2.6.5/bin/winutils.exe?raw=true").toURL(),
+                        outputFile,"db24b404d2331a1bec7443336a5171f1",3);
+            }
 
+            System.setProperty("hadoop.home.dir", hadoopHome.getAbsolutePath());
+        }
+    }
 
 
     @Test
     public void testConcepts(@TempDir Path testDir) throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         // These are all default values for word2vec
         SparkConf sparkConf = new SparkConf().setMaster("local[8]")
                 .set("spark.driver.host", "localhost")

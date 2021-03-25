@@ -54,10 +54,6 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning() {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         List<String> list = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             list.add(String.valueOf(i));

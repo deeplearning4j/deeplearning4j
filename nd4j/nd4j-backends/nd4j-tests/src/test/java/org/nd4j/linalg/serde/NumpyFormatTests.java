@@ -42,6 +42,7 @@ import org.nd4j.common.io.ClassPathResource;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,7 +57,8 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToNpyFormat(Nd4jBackend backend) throws Exception {
 
-        val dir = testDir.toFile();
+        val dir = testDir.resolve("new-dir-" + UUID.randomUUID().toString()).toFile();
+        assertTrue(dir.mkdirs());
         new ClassPathResource("numpy_arrays/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
@@ -107,14 +109,15 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     public void testToNpyFormatScalars(Nd4jBackend backend) throws Exception {
 //        File dir = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays\\scalar");
 
-        val dir = testDir.toFile();
+        val dir = testDir.resolve("new-path0" + UUID.randomUUID().toString()).toFile();
+        dir.mkdirs();
         new ClassPathResource("numpy_arrays/scalar/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
         int cnt = 0;
 
         for(File f : files){
-            if(!f.getPath().endsWith(".npy")){
+            if(!f.getPath().endsWith(".npy")) {
                 log.warn("Skipping: {}", f);
                 continue;
             }
@@ -161,7 +164,8 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNpzReading(Nd4jBackend backend) throws Exception {
 
-        val dir = testDir.toFile();
+        val dir = testDir.resolve("new-folder-npz").toFile();
+        dir.mkdirs();
         new ClassPathResource("numpy_arrays/npz/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
@@ -222,7 +226,8 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNpy(Nd4jBackend backend) throws Exception {
         for(boolean empty : new boolean[]{false, true}) {
-            val dir = testDir.toFile();
+            val dir = testDir.resolve("new-dir-1-" + UUID.randomUUID().toString()).toFile();
+            assertTrue(dir.mkdirs());
             if(!empty) {
                 new ClassPathResource("numpy_arrays/npy/3,4/").copyDirectory(dir);
             } else {

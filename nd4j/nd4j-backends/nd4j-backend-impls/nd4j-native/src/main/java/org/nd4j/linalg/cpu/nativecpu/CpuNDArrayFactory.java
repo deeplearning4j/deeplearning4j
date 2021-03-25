@@ -526,7 +526,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         Preconditions.checkArgument(matrices.size() > 0, "toFlattened expects > 0 operands");
 
-        return Nd4j.exec(new Flatten(order, matrices.toArray(new INDArray[matrices.size()])))[0];
+        return Nd4j.exec(new Flatten(order, matrices.toArray(new INDArray[matrices.size()])))[0]
+                .castTo(matrices.iterator().next().dataType());
     }
 
     @Override

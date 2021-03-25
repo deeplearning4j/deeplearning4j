@@ -50,4 +50,5 @@ public class TagNames {
     public final static String PYTHON = "python";
     public final static String LONG_TEST = "long-running-test";
     public final static String NEEDS_VERIFY = "needs-verify"; //tests that need verification of issue
+    public final static String LARGE_RESOURCES = "large-resources";
 }

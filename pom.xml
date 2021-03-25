@@ -320,7 +320,8 @@
         <neoitertools.version>1.0.0</neoitertools.version>
         <rxjava.version>2.2.0</rxjava.version>
         <kotlin.version>1.4.31</kotlin.version>
-
+        <test.heap.size>512m</test.heap.size>
+        <test.offheap.size>512m</test.offheap.size>
     </properties>
 
 
@@ -473,6 +474,7 @@
                         </dependency>
                     </dependencies>
                     <configuration>
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <forkCount>${cpu.core.count}</forkCount>
                         <reuseForks>false</reuseForks>
                         <environmentVariables>
@@ -485,6 +487,12 @@
                         </classpathDependencyExcludes>
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
+                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+
                     </configuration>
                 </plugin>
                 <plugin>
@@ -1186,6 +1194,7 @@
                         <version>${maven-surefire-plugin.version}</version>
                         <inherited>true</inherited>
                         <configuration>
+                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
 
@@ -1193,9 +1202,14 @@
                                 <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
                             </environmentVariables>
-                            <argLine>-Xmx8g</argLine>
+                            <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
+                            <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                            <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                            <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                            <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+
                         </configuration>
                         <dependencies>
                             <dependency>

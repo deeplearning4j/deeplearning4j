@@ -76,6 +76,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class SequenceVectorsTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);

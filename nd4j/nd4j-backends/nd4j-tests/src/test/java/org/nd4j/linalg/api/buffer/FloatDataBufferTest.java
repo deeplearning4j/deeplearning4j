@@ -59,18 +59,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
 
-    DataType initialType = Nd4j.dataType();
     @TempDir Path tempDir;
 
     @BeforeEach
     public void before() {
-        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         System.out.println("DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @AfterEach
     public void after() {
-        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 
@@ -191,7 +188,7 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAsBytes(Nd4jBackend backend) {
-        INDArray arr = Nd4j.create(5);
+        INDArray arr = Nd4j.create(DataType.FLOAT,5);
         byte[] d = arr.data().asBytes();
         assertEquals(4 * 5, d.length,getFailureMessage(backend));
         INDArray rand = Nd4j.rand(3, 3);
@@ -245,7 +242,9 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         buffer.reallocate(6);
         float[] newBuf = buffer.asFloat();
         assertEquals(6, buffer.capacity());
-        assertArrayEquals(old, newBuf, 1e-4F);
+        //note: old and new buf are not equal because java automatically populates the arrays with zeros
+        //the new buffer is actually 1,2,3,4,0,0 because of this
+        assertArrayEquals(new float[]{1,2,3,4,0,0}, newBuf, 1e-4F);
     }
 
     @ParameterizedTest
@@ -253,17 +252,17 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
     public void testReallocationWorkspace(Nd4jBackend backend) {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                         .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
-        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
-
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
-        assertTrue(buffer.isAttached());
-        float[] old = buffer.asFloat();
-        assertEquals(4, buffer.capacity());
-        buffer.reallocate(6);
-        assertEquals(6, buffer.capacity());
-        float[] newBuf = buffer.asFloat();
-        assertArrayEquals(old, newBuf, 1e-4F);
-        workspace.close();
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID")) {
+            DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
+            assertTrue(buffer.isAttached());
+            float[] old = buffer.asFloat();
+            assertEquals(4, buffer.capacity());
+            buffer.reallocate(6);
+            assertEquals(6, buffer.capacity());
+            float[] newBuf = buffer.asFloat();
+            //note: java creates new zeros by default for empty array spots
+            assertArrayEquals(new float[]{1,2,3,4,0,0}, newBuf, 1e-4F);
+        }
     }
 
     @ParameterizedTest

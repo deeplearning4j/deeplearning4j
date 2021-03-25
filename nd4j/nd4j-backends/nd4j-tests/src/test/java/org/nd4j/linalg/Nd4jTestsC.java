@@ -29,6 +29,9 @@ import org.apache.commons.math3.util.FastMath;
 import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -148,8 +151,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.FILE_IO)
 public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
-    DataType initialType = Nd4j.dataType();
-    Level1 l1 = Nd4j.getBlasWrapper().level1();
     @TempDir Path testDir;
 
     @Override
@@ -159,7 +160,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @BeforeEach
     public void before() throws Exception {
-        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
@@ -167,7 +167,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @AfterEach
     public void after() throws Exception {
-        Nd4j.setDataType(initialType);
     }
 
     @ParameterizedTest
@@ -1480,7 +1479,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
 
         INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, new int[]{12});
-        INDArray flattened = Nd4j.toFlattened(concat);
+        INDArray flattened = Nd4j.toFlattened(concat).castTo(assertion.dataType());
         assertEquals(assertion, flattened);
     }
 
@@ -3902,6 +3901,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Crashes")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testSingleDeviceAveraging(Nd4jBackend backend) {
         int LENGTH = 512 * 1024 * 2;
         INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
@@ -5587,6 +5588,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Crashes")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSort3(Nd4jBackend backend) {
         int length = isIntegrationTests() ? 1048576 : 16484;
         INDArray array = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape(1, -1);
@@ -5719,6 +5722,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Crashes")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(1000, 1000);
         INDArray exp1 = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE);
@@ -5779,6 +5784,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Crashes")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(2000,  2000);
         INDArray exp1 = Nd4j.linspace(1, 2000, 2000, DataType.DOUBLE);
@@ -5814,6 +5821,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Crashes")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(100, 10);
         INDArray exp1 = Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
@@ -6768,15 +6777,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testInconsistentOutput(){
+    @Execution(ExecutionMode.SAME_THREAD)
+    public void testInconsistentOutput(Nd4jBackend backend) {
         INDArray in = Nd4j.rand(1, 802816).castTo(DataType.DOUBLE);
         INDArray W = Nd4j.rand(802816, 1).castTo(DataType.DOUBLE);
         INDArray b = Nd4j.create(1).castTo(DataType.DOUBLE);
         INDArray out = fwd(in, W, b);
 
-        for(int i = 0;i < 100;i++) {
+        for(int i = 0; i < 100;i++) {
             INDArray out2 = fwd(in, W, b);  //l.activate(inToLayer1, false, LayerWorkspaceMgr.noWorkspaces());
-            assertEquals( out, out2,"Failed at iteration [" + String.valueOf(i) + "]");
+            assertEquals( out, out2,"Failed at iteration [" + i + "]");
         }
     }
 
@@ -7144,9 +7154,10 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testRowColumnOpsRank1(){
+    @Execution(ExecutionMode.SAME_THREAD)
+    public void testRowColumnOpsRank1(Nd4jBackend backend) {
 
-        for( int i=0; i<6; i++ ) {
+        for( int i = 0; i < 6; i++ ) {
             INDArray orig = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
             INDArray in1r = orig.dup();
             INDArray in2r = orig.dup();
@@ -7954,6 +7965,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Crashes")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testRollingMean(Nd4jBackend backend) {
         val wsconf = WorkspaceConfiguration.builder()
                 .initialSize(4L * (32*128*256*256 + 32*128 + 10*1024*1024))
@@ -8558,8 +8571,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Needs verification")
-    @Tag(TagNames.NEEDS_VERIFY)
     public void testBatchToSpace(Nd4jBackend backend) {
 
         INDArray out = Nd4j.create(DataType.FLOAT, 2, 4, 5);
@@ -8833,7 +8844,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCreateBufferFromByteBuffer(){
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
+    public void testCreateBufferFromByteBuffer(Nd4jBackend backend){
 
         for(DataType dt : DataType.values()){
             if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)

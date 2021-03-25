@@ -19,31 +19,26 @@
  */
 package org.deeplearning4j.datasets;
 
-import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.datasets.base.MnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.datasets.base.MnistFetcher;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
-
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Mnist Fetcher Test")
 @NativeTag
@@ -65,6 +60,9 @@ class MnistFetcherTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Mnist")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.FILE_IO)
     void testMnist() throws Exception {
         MnistDataSetIterator iter = new MnistDataSetIterator(32, 60000, false, true, false, -1);
         int count = 0;
@@ -91,6 +89,9 @@ class MnistFetcherTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Mnist Data Fetcher")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.FILE_IO)
     void testMnistDataFetcher() throws Exception {
         MnistFetcher mnistFetcher = new MnistFetcher();
         File mnistDir = mnistFetcher.downloadAndUntar();
@@ -99,6 +100,9 @@ class MnistFetcherTest extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.FILE_IO)
     public void testMnistSubset() throws Exception {
         final int numExamples = 100;
         MnistDataSetIterator iter1 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
@@ -144,6 +148,9 @@ class MnistFetcherTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Subset Repeatability")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.FILE_IO)
     void testSubsetRepeatability() throws Exception {
         MnistDataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0);
         DataSet d1 = it.next();

@@ -77,10 +77,6 @@ public class TestSparkDl4jMultiLayer extends BaseSparkTest {
 
     @Test
     public void testEvaluationSimple() throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         Nd4j.getRandom().setSeed(12345);
 
         for( int evalWorkers : new int[]{1, 4, 8}) {

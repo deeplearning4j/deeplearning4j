@@ -441,6 +441,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testStepOver1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -466,6 +467,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testSum_119(Nd4jBackend backend) {
         INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
         val sum = z2.sumNumber().doubleValue();
@@ -474,6 +477,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testLegacyDistribution1(Nd4jBackend backend) {
         NormalDistribution distribution = new NormalDistribution(new DefaultRandom(), 0.0, 1.0);
         INDArray z1 = distribution.sample(new int[] {1, 1000000});
@@ -923,9 +928,10 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testDeallocation1() throws Exception {
-
-        while (true) {
+        for(int i = 0; i < 1000; i++) {
             Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
             random1.nextInt();
 
@@ -933,6 +939,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
             Thread.sleep(50);
         }
     }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

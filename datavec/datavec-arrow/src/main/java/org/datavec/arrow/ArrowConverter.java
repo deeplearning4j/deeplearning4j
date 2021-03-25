@@ -58,6 +58,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -171,7 +172,8 @@ public class ArrowConverter {
         ByteBuffer direct = ByteBuffer.allocateDirect(fieldVector.getDataBuffer().capacity());
         direct.order(ByteOrder.nativeOrder());
         fieldVector.getDataBuffer().getBytes(0,direct);
-        direct.rewind();
+        Buffer buffer1 = (Buffer) direct;
+        buffer1.rewind();
         switch(type) {
             case Integer:
                 buffer = Nd4j.createBuffer(direct, DataType.INT,cols,0);

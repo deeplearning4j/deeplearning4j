@@ -61,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
 @Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestImageNet extends BaseDL4JTest {
 
     @Override

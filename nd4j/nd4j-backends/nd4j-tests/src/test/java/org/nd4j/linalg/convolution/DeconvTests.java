@@ -61,6 +61,7 @@ public class DeconvTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LARGE_RESOURCES)
     public void compareKeras(Nd4jBackend backend) throws Exception {
         File newFolder = testDir.toFile();
         new ClassPathResource("keras/deconv/").copyDirectory(newFolder);

@@ -51,10 +51,6 @@ public class TestExport extends BaseSparkTest {
 
     @Test
     public void testBatchAndExportDataSetsFunction() throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         String baseDir = System.getProperty("java.io.tmpdir");
         baseDir = FilenameUtils.concat(baseDir, "dl4j_spark_testBatchAndExport/");
         baseDir = baseDir.replaceAll("\\\\", "/");

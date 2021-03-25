@@ -24,6 +24,7 @@ import lombok.Getter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -45,10 +46,13 @@ import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,83 +65,91 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @NativeTag
 @Tag(TagNames.FILE_IO)
 public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
-    private File tmpFile;
+     @TempDir  File tmpFile;
     private NormalizerSerializer SUT;
 
 
     @BeforeEach
     public void setUp() throws IOException {
-        tmpFile = File.createTempFile("test", "preProcessor");
-        tmpFile.deleteOnExit();
-
         SUT = NormalizerSerializer.getDefault();
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testImagePreProcessingScaler() throws Exception {
+    public void testImagePreProcessingScaler(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
         ImagePreProcessingScaler imagePreProcessingScaler = new ImagePreProcessingScaler(0,1);
-        SUT.write(imagePreProcessingScaler,tmpFile);
+        SUT.write(imagePreProcessingScaler,normalizerFile);
 
-        ImagePreProcessingScaler restored = SUT.restore(tmpFile);
+        ImagePreProcessingScaler restored = SUT.restore(normalizerFile);
         assertEquals(imagePreProcessingScaler,restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNormalizerStandardizeNotFitLabels() throws Exception {
+    public void testNormalizerStandardizeNotFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1),
                 Nd4j.create(new double[] {2.5, 3.5}).reshape(1, -1));
 
-        SUT.write(original, tmpFile);
-        NormalizerStandardize restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        NormalizerStandardize restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNormalizerStandardizeFitLabels() throws Exception {
+    public void testNormalizerStandardizeFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1),
                 Nd4j.create(new double[] {2.5, 3.5}).reshape(1, -1), Nd4j.create(new double[] {4.5, 5.5}).reshape(1, -1),
                 Nd4j.create(new double[] {6.5, 7.5}).reshape(1, -1));
         original.fitLabel(true);
 
-        SUT.write(original, tmpFile);
-        NormalizerStandardize restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        NormalizerStandardize restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNormalizerMinMaxScalerNotFitLabels() throws Exception {
+    public void testNormalizerMinMaxScalerNotFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         NormalizerMinMaxScaler original = new NormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1), Nd4j.create(new double[] {2.5, 3.5}).reshape(1, -1));
 
-        SUT.write(original, tmpFile);
-        NormalizerMinMaxScaler restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        NormalizerMinMaxScaler restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNormalizerMinMaxScalerFitLabels() throws Exception {
+    public void testNormalizerMinMaxScalerFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         NormalizerMinMaxScaler original = new NormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5}));
         original.setLabelStats(Nd4j.create(new double[] {4.5, 5.5}), Nd4j.create(new double[] {6.5, 7.5}));
         original.fitLabel(true);
 
-        SUT.write(original, tmpFile);
-        NormalizerMinMaxScaler restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        NormalizerMinMaxScaler restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerStandardizeNotFitLabels() throws Exception {
+    public void testMultiNormalizerStandardizeNotFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerStandardize original = new MultiNormalizerStandardize();
         original.setFeatureStats(asList(
                 new DistributionStats(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1),
@@ -145,15 +157,17 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
                 new DistributionStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}).reshape(1, -1),
                         Nd4j.create(new double[] {7.5, 8.5, 9.5}).reshape(1, -1))));
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerStandardize restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerStandardize restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerStandardizeFitLabels() throws Exception {
+    public void testMultiNormalizerStandardizeFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerStandardize original = new MultiNormalizerStandardize();
         original.setFeatureStats(asList(
                 new DistributionStats(Nd4j.create(new double[] {0.5, 1.5}).reshape(1, -1),
@@ -168,30 +182,34 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
                         Nd4j.create(new double[] {7.5, 8.5, 9.5}).reshape(1, -1))));
         original.fitLabel(true);
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerStandardize restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerStandardize restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerMinMaxScalerNotFitLabels() throws Exception {
+    public void testMultiNormalizerMinMaxScalerNotFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerMinMaxScaler original = new MultiNormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(asList(
                 new MinMaxStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5})),
                 new MinMaxStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
                         Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerMinMaxScaler restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerMinMaxScaler restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerMinMaxScalerFitLabels() throws Exception {
+    public void testMultiNormalizerMinMaxScalerFitLabels(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerMinMaxScaler original = new MultiNormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(asList(
                 new MinMaxStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5})),
@@ -204,28 +222,32 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
                         Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
         original.fitLabel(true);
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerMinMaxScaler restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerMinMaxScaler restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerHybridEmpty() throws Exception {
+    public void testMultiNormalizerHybridEmpty(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerHybrid original = new MultiNormalizerHybrid();
-        original.setInputStats(new HashMap<Integer, NormalizerStats>());
-        original.setOutputStats(new HashMap<Integer, NormalizerStats>());
+        original.setInputStats(new HashMap<>());
+        original.setOutputStats(new HashMap<>());
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerHybrid restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerHybrid restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerHybridGlobalStats() throws Exception {
+    public void testMultiNormalizerHybridGlobalStats(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerHybrid original = new MultiNormalizerHybrid().minMaxScaleAllInputs().standardizeAllOutputs();
 
         Map<Integer, NormalizerStats> inputStats = new HashMap<>();
@@ -239,15 +261,17 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
         original.setInputStats(inputStats);
         original.setOutputStats(outputStats);
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerHybrid restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerHybrid restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMultiNormalizerHybridGlobalAndSpecificStats() throws Exception {
+    public void testMultiNormalizerHybridGlobalAndSpecificStats(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MultiNormalizerHybrid original = new MultiNormalizerHybrid().standardizeAllInputs().minMaxScaleInput(0, -5, 5)
                 .minMaxScaleAllOutputs(-10, 10).standardizeOutput(1);
 
@@ -262,29 +286,35 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
         original.setInputStats(inputStats);
         original.setOutputStats(outputStats);
 
-        SUT.write(original, tmpFile);
-        MultiNormalizerHybrid restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MultiNormalizerHybrid restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }
 
-    @Test()
-    public void testCustomNormalizerWithoutRegisteredStrategy() throws Exception {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCustomNormalizerWithoutRegisteredStrategy(Nd4jBackend backend) throws Exception {
         assertThrows(RuntimeException.class, () -> {
-            SUT.write(new MyNormalizer(123), tmpFile);
+            File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
+            SUT.write(new MyNormalizer(123), normalizerFile);
 
         });
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCustomNormalizer() throws Exception {
+    public void testCustomNormalizer(Nd4jBackend backend) throws Exception {
+        File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
+
         MyNormalizer original = new MyNormalizer(42);
 
         SUT.addStrategy(new MyNormalizerSerializerStrategy());
 
-        SUT.write(original, tmpFile);
-        MyNormalizer restored = SUT.restore(tmpFile);
+        SUT.write(original, normalizerFile);
+        MyNormalizer restored = SUT.restore(normalizerFile);
 
         assertEquals(original, restored);
     }

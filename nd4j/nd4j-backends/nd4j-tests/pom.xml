@@ -269,6 +269,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
                             <environmentVariables>
@@ -304,7 +305,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine>-Dfile.encoding=UTF-8 </argLine>
+                            <argLine>-Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -350,6 +351,7 @@
                             </dependency>
                         </dependencies>
                         <configuration>
+                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <environmentVariables>
                                 <LD_LIBRARY_PATH>
                                     ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes
@@ -379,7 +381,12 @@
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
                             -->
-                            <argLine> -Dfile.encoding=UTF-8  -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
+                            <argLine>-Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
+                            <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                            <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                            <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                            <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+
                         </configuration>
                     </plugin>
                 </plugins>

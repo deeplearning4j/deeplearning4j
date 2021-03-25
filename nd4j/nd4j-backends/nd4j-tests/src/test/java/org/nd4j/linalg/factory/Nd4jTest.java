@@ -42,6 +42,7 @@ import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -248,7 +249,8 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         byte[] dataTwo = new byte[floatBuffer.capacity()];
         floatBuffer.get(dataTwo);
         assertArrayEquals(originalData,dataTwo);
-        floatBuffer.position(0);
+        Buffer buffer = (Buffer) floatBuffer;
+        buffer.position(0);
 
         DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length(), DataType.FLOAT);
         assertArrayEquals(new float[]{1,2,3,4}, dataBuffer.asFloat(), 1e-5f);

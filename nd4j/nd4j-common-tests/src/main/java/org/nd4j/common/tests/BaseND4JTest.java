@@ -55,7 +55,7 @@ public abstract class BaseND4JTest {
      * Override this method to set the default timeout for methods in the test class
      */
     public long getTimeoutMilliseconds(){
-        return 90_000;
+        return 180_000;
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class BaseND4JTest {
     /**
      * @return True if integration tests maven profile is enabled, false otherwise.
      */
-    public boolean isIntegrationTests(){
+    public boolean isIntegrationTests() {
         if(integrationTest == null){
             String prop = System.getenv("DL4J_INTEGRATION_TESTS");
             integrationTest = Boolean.parseBoolean(prop);

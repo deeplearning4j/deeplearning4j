@@ -51,6 +51,8 @@ import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
+import org.nd4j.common.tests.tags.TagNames
 
 
 data class GraphInput(val graphDef: GraphDef,val inputNames: List<String>,val outputNames: List<String>,
@@ -318,6 +320,7 @@ class TestTensorflowIR {
 
 
     @Test
+    @Tag(TagNames.LARGE_RESOURCES)
     fun loadModelTest() {
         val tensorflowOpRegistry = registry()
         val importGraph = ImportGraph<GraphDef,NodeDef,OpDef,TensorProto,OpDef.AttrDef,AttrValue,DataType>()

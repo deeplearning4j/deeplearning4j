@@ -82,11 +82,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 @Slf4j
 @NativeTag
 public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
-    DataType initialType = Nd4j.dataType();
 
     @AfterEach
     public void after() {
-        Nd4j.setDataType(this.initialType);
     }
 
 

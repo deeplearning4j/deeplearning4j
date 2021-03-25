@@ -44,9 +44,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 @Tag(TagNames.JACKSON_SERDE)
 @NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class LargeSerDeTests extends BaseNd4jTestWithBackends {
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLargeArraySerDe_1(Nd4jBackend backend) throws Exception {
         val arrayA = Nd4j.rand(new long[] {1, 135079944});

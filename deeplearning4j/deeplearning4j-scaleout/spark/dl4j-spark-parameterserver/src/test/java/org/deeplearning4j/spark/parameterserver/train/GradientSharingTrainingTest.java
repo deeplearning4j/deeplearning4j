@@ -44,7 +44,6 @@ import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.junit.jupiter.api.Disabled;
 
@@ -75,6 +74,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 
 @Slf4j
 //@Disabled("AB 2019/05/21 - Failing - Issue #7657")
@@ -82,6 +82,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.SPARK)
 @Tag(TagNames.DIST_SYSTEMS)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class GradientSharingTrainingTest extends BaseSparkTest {
 
 
@@ -339,11 +341,12 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
 
-    @Test @Disabled
+    @Test
     public void testEpochUpdating(@TempDir Path testDir) throws Exception {
         //Ensure that epoch counter is incremented properly on the workers
 
-        File temp = testDir.toFile();
+        File temp = testDir.resolve("new-dir-" + UUID.randomUUID().toString()).toFile();
+        temp.mkdirs();
 
         //TODO this probably won't work everywhere...
         String controller = Inet4Address.getLocalHost().getHostAddress();
@@ -394,7 +397,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
         }
 
         JavaRDD<String> pathRdd = sc.parallelize(paths);
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++) {
             ThresholdAlgorithm ta = tm.getThresholdAlgorithm();
             sparkNet.fitPaths(pathRdd);
             //Check also that threshold algorithm was updated/averaged

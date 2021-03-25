@@ -38,11 +38,17 @@
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
         <module>deeplearning4j-ui-model</module>
-        <module>deeplearning4j-ui-standalone</module>
         <module>deeplearning4j-vertx</module>
     </modules>
 
     <profiles>
+        <profile>
+            <id>ui-jar</id>
+            <modules>
+                <module>deeplearning4j-ui-standalone</module>
+            </modules>
+        </profile>
+
         <profile>
             <id>nd4j-tests-cpu</id>
         </profile>

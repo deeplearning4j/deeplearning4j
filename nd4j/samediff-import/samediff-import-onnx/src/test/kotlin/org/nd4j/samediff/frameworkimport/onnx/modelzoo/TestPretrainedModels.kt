@@ -40,6 +40,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.common.resources.Downloader
+import org.nd4j.common.tests.tags.ExpensiveTest
 import org.nd4j.common.util.ArchiveUtils
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
@@ -50,7 +51,7 @@ import java.io.File
 import java.net.URI
 
 data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
-@Disabled
+@ExpensiveTest
 class TestPretrainedModels {
 
     val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
