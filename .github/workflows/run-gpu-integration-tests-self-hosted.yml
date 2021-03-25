@@ -34,6 +34,6 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn  -DexcludedGroups="long-running-tests,large-resources"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cuda   clean test --fail-never
-          mvn -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g  clean test --fail-never
+          mvn  -DexcludedGroups="long-running-tests, large-resources"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cuda   clean test --fail-never
+          mvn -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g   test --fail-never
 
