@@ -43,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TagNames.JAVA_ONLY)
 @Tag(TagNames.SPARK)
 @Tag(TagNames.DIST_SYSTEMS)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class DataFramesTests extends BaseSparkTest {
 
     @Test
