@@ -35,5 +35,5 @@ jobs:
           protoc --version
           export OMP_NUM_THREADS=1
           mvn  -DexcludedGroups="long-running-tests, large-resources"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cuda   clean test --fail-never
-          mvn -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g   test --fail-never
+          mvn -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g  -Dsurefire.parallel.forcedTimeout=200 0Dsurefire.parallel.timeout=200  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=200 test --fail-never
 
