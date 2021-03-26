@@ -21,11 +21,10 @@
 package org.nd4j.linalg.dataset;
 
 import lombok.Getter;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -296,6 +295,7 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Execution(ExecutionMode.SAME_THREAD)
     public void testCustomNormalizerWithoutRegisteredStrategy(Nd4jBackend backend) throws Exception {
         assertThrows(RuntimeException.class, () -> {
             File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
