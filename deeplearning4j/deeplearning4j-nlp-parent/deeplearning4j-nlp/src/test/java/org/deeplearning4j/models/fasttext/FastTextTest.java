@@ -51,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class FastTextTest extends BaseDL4JTest {
 
 

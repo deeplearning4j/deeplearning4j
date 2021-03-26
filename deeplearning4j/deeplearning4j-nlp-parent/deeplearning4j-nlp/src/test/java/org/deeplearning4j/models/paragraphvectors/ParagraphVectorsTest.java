@@ -662,6 +662,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     public void testIterator(@TempDir Path testDir) throws IOException {
         val folder_labeled = new File(testDir.toFile(),"labeled");
         val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
+        assertTrue(folder_labeled.mkdirs());
+        assertTrue(folder_labeled.mkdirs());
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
         new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 

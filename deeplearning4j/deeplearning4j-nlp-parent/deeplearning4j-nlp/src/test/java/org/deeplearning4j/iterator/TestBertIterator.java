@@ -53,6 +53,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class TestBertIterator extends BaseDL4JTest {
 
     private static File pathToVocab = Resources.asFile("other/vocab.txt");
