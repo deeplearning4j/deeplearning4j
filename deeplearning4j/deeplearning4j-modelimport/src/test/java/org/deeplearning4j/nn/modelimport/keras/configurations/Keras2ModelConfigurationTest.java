@@ -293,6 +293,8 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("One Lstm Layer Test")
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
     void oneLstmLayerTest() throws Exception {
         try (InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/one_lstm_no_sequences_tf_keras_2.json")) {
             MultiLayerConfiguration config = new KerasModel().modelBuilder().modelJsonInputStream(is).enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
