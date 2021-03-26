@@ -21,6 +21,7 @@
 package org.nd4j.linalg.dataset;
 
 import lombok.Getter;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -65,12 +66,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @NativeTag
 @Tag(TagNames.FILE_IO)
 public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
-     @TempDir  File tmpFile;
-    private NormalizerSerializer SUT;
+    @TempDir  File tmpFile;
+    private static NormalizerSerializer SUT;
 
 
-    @BeforeEach
-    public void setUp() throws IOException {
+    @BeforeAll
+    public static void setUp() throws IOException {
         SUT = NormalizerSerializer.getDefault();
     }
 
@@ -298,7 +299,6 @@ public class NormalizerSerializerTest extends BaseNd4jTestWithBackends {
     public void testCustomNormalizerWithoutRegisteredStrategy(Nd4jBackend backend) throws Exception {
         assertThrows(RuntimeException.class, () -> {
             File normalizerFile = Files.createTempFile(tmpFile.toPath(),"pre-process-" + UUID.randomUUID().toString(),"bin").toFile();
-
             SUT.write(new MyNormalizer(123), normalizerFile);
 
         });
