@@ -87,6 +87,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.NDARRAY_ETL)
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class TestEarlyStopping extends BaseDL4JTest {
 
 
