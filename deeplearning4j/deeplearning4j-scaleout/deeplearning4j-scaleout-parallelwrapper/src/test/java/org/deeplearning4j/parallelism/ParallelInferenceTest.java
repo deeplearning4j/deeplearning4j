@@ -64,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class ParallelInferenceTest extends BaseDL4JTest {
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;

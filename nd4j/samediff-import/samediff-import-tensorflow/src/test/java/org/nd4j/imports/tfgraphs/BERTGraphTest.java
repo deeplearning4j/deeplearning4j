@@ -277,7 +277,6 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
         assertEquals(exp3, softmax.getRow(3));
     }
 
-    @Test //@Disabled   //AB ignored 08/04/2019 until fixed
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBertTraining(Nd4jBackend backend) throws Exception {

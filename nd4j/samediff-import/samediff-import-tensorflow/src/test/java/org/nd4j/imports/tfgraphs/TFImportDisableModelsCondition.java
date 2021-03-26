@@ -1,56 +1,40 @@
 /*
- *  ******************************************************************************
- *  *
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Apache License, Version 2.0 which is available at
- *  * https://www.apache.org/licenses/LICENSE-2.0.
- *  *
- *  *  See the NOTICE file distributed with this work for additional
- *  *  information regarding copyright ownership.
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  * License for the specific language governing permissions and limitations
- *  * under the License.
- *  *
- *  * SPDX-License-Identifier: Apache-2.0
- *  *****************************************************************************
+ *
+ *  *  ******************************************************************************
+ *  *  *
+ *  *  *
+ *  *  * This program and the accompanying materials are made available under the
+ *  *  * terms of the Apache License, Version 2.0 which is available at
+ *  *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *  *
+ *  *  *  See the NOTICE file distributed with this work for additional
+ *  *  *  information regarding copyright ownership.
+ *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  *  * License for the specific language governing permissions and limitations
+ *  *  * under the License.
+ *  *  *
+ *  *  * SPDX-License-Identifier: Apache-2.0
+ *  *  *****************************************************************************
+ *
+ *
  */
 
 package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.nd4j.common.tests.tags.TagNames;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @Slf4j
-@Tag(TagNames.LONG_TEST)
-@Tag(TagNames.LARGE_RESOURCES)
-public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
-
-    private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
-    private static final String BASE_DIR = "tf_graphs/examples";
-    private static final String MODEL_FILENAME = "frozen_model.pb";
+public class TFImportDisableModelsCondition implements ExecutionCondition {
 
     /**
      * NOTE: If this is empty or the tests names are wrong,
@@ -145,25 +129,13 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
 
 
-    public static Stream<Arguments> data() throws IOException {
-        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-
-        // if this variable isn't set - we're using dl4j-tests-resources
-        if (localPath == null) {
-            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-            List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-            return params.stream().map(input -> Arguments.of(input));
-        } else {
-            File baseDir = new File(localPath);
-            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir).stream().map(input -> Arguments.of(input));
-        }
+    private ExtensionContext.Store getStore(ExtensionContext context) {
+        return context.getStore(ExtensionContext.Namespace.create(getClass(), context.getRequiredTestMethod()));
     }
 
-    @ParameterizedTest(name = "{2}")
-    @MethodSource("data")
-    //@DisableIfModelFound
-    public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
-        Nd4j.create(1);
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext extensionContext) {
+        String modelName = getStore(extensionContext).toString();
         if(EXECUTE_ONLY_MODELS.isEmpty()) {
             for(String s : IGNORE_REGEXES)  {
                 if(modelName.matches(s)) {
@@ -178,30 +150,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         }
 
 
-
-        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
-        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
-        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
-
-        boolean verboseDebugMode = true;
-        if(debugModeRegexes != null) {
-            for(String regex : debugModeRegexes) {
-                if(modelName.matches(regex)){
-                    verboseDebugMode = true;
-                    break;
-                }
-            }
-        }
-
-        try {
-            // TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,TFGraphTestAllHelper.LOADER,maxRE,minAbs,localTestDir,true);
-
-            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
-        } catch (Throwable t){
-            log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
-            throw t;
-        }
-        //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
+        return ConditionEvaluationResult.disabled("Method found");
     }
-
 }

@@ -46,6 +46,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class ParameterServerParallelWrapperTest extends BaseDL4JTest {
 
     @Test

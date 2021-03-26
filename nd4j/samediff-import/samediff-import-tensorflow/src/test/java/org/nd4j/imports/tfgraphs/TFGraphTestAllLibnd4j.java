@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 
 @Slf4j
 @Tag(TagNames.LONG_TEST)
@@ -130,20 +132,18 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
     @ParameterizedTest
     @MethodSource("data")
     public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
-
-
         Nd4j.create(1);
         for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
-                //OpValidationSuite.ignoreFailing();
+                assumeFalse(true);
             }
         }
 
         for(String s : SKIP_FOR_LIBND4J_EXEC) {
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX - SKIP LIBND4J EXEC ONLY: {} - regex {}", modelName, s);
-                //OpValidationSuite.ignoreFailing();
+                assumeFalse(true);
             }
         }
 
