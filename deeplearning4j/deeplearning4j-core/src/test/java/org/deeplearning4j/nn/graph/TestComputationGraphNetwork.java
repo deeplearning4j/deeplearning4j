@@ -599,6 +599,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testPreTraining() {
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder()
