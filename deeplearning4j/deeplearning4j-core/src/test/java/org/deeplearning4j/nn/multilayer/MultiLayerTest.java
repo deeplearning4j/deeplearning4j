@@ -90,6 +90,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @DisplayName("Multi Layer Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class MultiLayerTest extends BaseDL4JTest {
 
     private static OpExecutioner.ProfilingMode origMode;
@@ -872,6 +874,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Multiple Epochs Simple")
+
     void testMultipleEpochsSimple() {
         // Mainly a simple sanity check on the preconditions in the method...
         DataSetIterator iter = new IrisDataSetIterator(10, 150);

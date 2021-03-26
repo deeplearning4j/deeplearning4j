@@ -54,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestCompGraphUnsupervised extends BaseDL4JTest {
 
     @Override

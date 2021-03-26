@@ -80,6 +80,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Batch Normalization Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 class BatchNormalizationTest extends BaseDL4JTest {
 
     static {

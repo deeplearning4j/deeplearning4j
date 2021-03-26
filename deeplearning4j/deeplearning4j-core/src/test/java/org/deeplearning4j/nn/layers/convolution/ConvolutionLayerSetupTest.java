@@ -65,6 +65,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Convolution Layer Setup Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LARGE_RESOURCES)
 class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @TempDir
