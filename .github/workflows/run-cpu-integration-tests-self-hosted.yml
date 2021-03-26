@@ -24,6 +24,6 @@ jobs:
           export OMP_NUM_THREADS=1
           mkdir -p ${GITHUB_WORKSPACE}/resources
           mkdir -p ${GITHUB_WORKSPACE}/cache
-          mvn -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -DexcludedGroups="long-running-tests, large-resources, distributed-systems"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cuda   clean test --fail-never
-          mvn -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -Dgroups="long-running-tests, large-resources, distributed-systems" -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g  -Dsurefire.parallel.forcedTimeout=200 0Dsurefire.parallel.timeout=200  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=200 test --fail-never
+          mvn -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -DexcludedGroups="long-running-tests, large-resources, distributed-systems"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cpu   clean test --fail-never
+          mvn -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -Dgroups="long-running-tests, large-resources, distributed-systems" -Ptestresources -Pnd4j-tests-cpu  -Dtest.offheap.size=14g -Dtest.heap.size=6g  -Dsurefire.parallel.forcedTimeout=200 -Dsurefire.parallel.timeout=200  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=200 test --fail-never
 
