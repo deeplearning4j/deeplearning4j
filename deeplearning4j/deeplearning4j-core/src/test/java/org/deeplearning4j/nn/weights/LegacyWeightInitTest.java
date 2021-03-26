@@ -153,6 +153,8 @@ class LegacyWeightInitTest extends BaseDL4JTest {
      */
     @Test
     @DisplayName("Serialize Deserialize Distribution Json")
+    @Disabled("")
+    @Tag(TagNames.NEEDS_VERIFY)
     void serializeDeserializeDistributionJson() throws IOException {
         // To make identity happy
         final long[] shape = { 3, 7 };

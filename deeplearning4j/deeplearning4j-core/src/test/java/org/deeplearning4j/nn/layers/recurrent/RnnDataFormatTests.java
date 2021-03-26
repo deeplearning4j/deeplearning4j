@@ -65,6 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @AllArgsConstructor
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class RnnDataFormatTests extends BaseDL4JTest {
 
 

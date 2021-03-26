@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -58,6 +59,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @NativeTag
 @DisplayName("Cnn Gradient Check Test")
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 class CNNGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -81,6 +84,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Gradient CNNMLN")
+
     void testGradientCNNMLN() {
         // Parameterized test, testing combinations of:
         // (a) activation function

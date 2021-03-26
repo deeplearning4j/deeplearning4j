@@ -22,6 +22,6 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn   -DexcludedGroups="long-running-tests,large-resources, distributed-systems" -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cpu   clean test
+          mvn   -DexcludedGroups="long-running-tests,large-resources, distributed-systems" -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cpu   clean test -rf :deeplearning4j-core
           mvn -Dgroups="long-running-tests, large-resources, distributed-systems" -Ptestresources -Pnd4j-tests-cpu  -Dtest.offheap.size=14g -Dtest.heap.size=6g -Dsurefire.parallel.forcedTimeout=200 0Dsurefire.parallel.timeout=200  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=200 test
 

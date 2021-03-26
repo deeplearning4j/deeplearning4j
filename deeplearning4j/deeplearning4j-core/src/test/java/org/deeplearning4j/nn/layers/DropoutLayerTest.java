@@ -81,6 +81,8 @@ class DropoutLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Dropout Layer Without Training")
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
     void testDropoutLayerWithoutTraining() throws Exception {
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(3648).list().layer(0, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25).activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).dropOut(0.25).nOut(4).build()).setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
         MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
