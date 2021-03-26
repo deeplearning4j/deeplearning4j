@@ -50,6 +50,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.DIST_SYSTEMS)
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
+@Disabled("Permissions issue")
+@Tag(TagNames.NEEDS_VERIFY)
 class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
     static {

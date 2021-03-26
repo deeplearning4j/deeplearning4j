@@ -26,6 +26,7 @@ import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,12 +43,6 @@ import java.util.stream.Stream;
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
 public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
-
-
-    private Map<String, INDArray> inputs;
-    private Map<String, INDArray> predictions;
-    private String modelName;
-    private File localTestDir;
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
     private static final String BASE_DIR = "tf_graphs/examples";
@@ -144,8 +139,8 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      */
     private final List<String> debugModeRegexes = Arrays.asList("fused_batch_norm/float16_nhwc");
 
- @BeforeAll
- public static void beforeClass() {
+    @BeforeAll
+    public static void beforeClass() {
         Nd4j.scalar(1.0);
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
@@ -176,17 +171,9 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         }
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
-        this.inputs = inputs;
-        this.predictions = predictions;
-        this.modelName = modelName;
-        this.localTestDir = localTestDir;
-    }
-
-    @Test//(timeout = 25000L)
     @ParameterizedTest
-    public void testOutputOnly() throws Exception {
-
+    @MethodSource("data")
+    public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
         Nd4j.create(1);
         if(EXECUTE_ONLY_MODELS.isEmpty()) {
             for(String s : IGNORE_REGEXES) {

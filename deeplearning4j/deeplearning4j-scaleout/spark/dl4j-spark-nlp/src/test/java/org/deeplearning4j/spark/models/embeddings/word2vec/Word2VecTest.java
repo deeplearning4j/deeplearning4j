@@ -67,6 +67,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
+@Disabled("Permissions issues on CI")
+@Tag(TagNames.NEEDS_VERIFY)
 public class Word2VecTest {
     @BeforeAll
     @SneakyThrows

@@ -317,7 +317,7 @@ public class VoidConfiguration implements Serializable {
             throw new UnsupportedOperationException("Not supported. Use portSupplier method instead");
         }
 
-        private VoidConfigurationBuilder faultToleranceStrategy(FaultToleranceStrategy faultToleranceStrategy){
+        private VoidConfigurationBuilder faultToleranceStrategy(FaultToleranceStrategy faultToleranceStrategy) {
             throw new UnsupportedOperationException("Reserved for future use");
         }
 
