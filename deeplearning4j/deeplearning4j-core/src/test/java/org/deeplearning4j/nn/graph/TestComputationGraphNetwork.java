@@ -292,6 +292,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
     public void testIrisFit() {
 
         ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
@@ -1267,6 +1269,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testEpochCounter() throws Exception {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -1304,6 +1308,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testSummary() {
         int V_WIDTH = 130;
         int V_HEIGHT = 130;

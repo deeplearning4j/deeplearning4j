@@ -502,6 +502,8 @@ class BatchNormalizationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Check Mean Variance Estimate CNN Compare Modes")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     void checkMeanVarianceEstimateCNNCompareModes() throws Exception {
         Nd4j.getRandom().setSeed(12345);
         // Check that the internal global mean/variance estimate is approximately correct
