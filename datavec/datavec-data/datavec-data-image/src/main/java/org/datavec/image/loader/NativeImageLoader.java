@@ -65,6 +65,8 @@ public class NativeImageLoader extends BaseImageLoader {
      * Loads images with no scaling or conversion.
      */
     public NativeImageLoader() {
+        converter = new OpenCVFrameConverter.ToMat();
+
     }
 
     /**
