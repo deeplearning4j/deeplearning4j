@@ -57,14 +57,15 @@ public class NativeImageLoader extends BaseImageLoader {
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
                     "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
-    protected OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
+    protected OpenCVFrameConverter.ToMat converter;
 
     boolean direct = !Loader.getPlatform().startsWith("android");
 
     /**
      * Loads images with no scaling or conversion.
      */
-    public NativeImageLoader() {}
+    public NativeImageLoader() {
+    }
 
     /**
      * Instantiate an image with the given
@@ -76,6 +77,7 @@ public class NativeImageLoader extends BaseImageLoader {
     public NativeImageLoader(long height, long width) {
         this.height = height;
         this.width = width;
+        converter = new OpenCVFrameConverter.ToMat();
     }
 
 
@@ -90,6 +92,7 @@ public class NativeImageLoader extends BaseImageLoader {
         this.height = height;
         this.width = width;
         this.channels = channels;
+        converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**
@@ -103,6 +106,7 @@ public class NativeImageLoader extends BaseImageLoader {
     public NativeImageLoader(long height, long width, long channels, boolean centerCropIfNeeded) {
         this(height, width, channels);
         this.centerCropIfNeeded = centerCropIfNeeded;
+        converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**
@@ -116,6 +120,7 @@ public class NativeImageLoader extends BaseImageLoader {
     public NativeImageLoader(long height, long width, long channels, ImageTransform imageTransform) {
         this(height, width, channels);
         this.imageTransform = imageTransform;
+        converter = new OpenCVFrameConverter.ToMat();
     }
     
     /**
@@ -129,6 +134,7 @@ public class NativeImageLoader extends BaseImageLoader {
     public NativeImageLoader(long height, long width, long channels, MultiPageMode mode) {
         this(height, width, channels);
         this.multiPageMode = mode;
+        converter = new OpenCVFrameConverter.ToMat();
     }
 
     protected NativeImageLoader(NativeImageLoader other) {
@@ -138,6 +144,7 @@ public class NativeImageLoader extends BaseImageLoader {
         this.centerCropIfNeeded = other.centerCropIfNeeded;
         this.imageTransform = other.imageTransform;
         this.multiPageMode = other.multiPageMode;
+        converter = new OpenCVFrameConverter.ToMat();
     }
 
     @Override
