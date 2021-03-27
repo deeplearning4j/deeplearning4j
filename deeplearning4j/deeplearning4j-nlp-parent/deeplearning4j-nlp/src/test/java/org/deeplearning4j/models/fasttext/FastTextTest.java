@@ -237,6 +237,8 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Similarities seem arbitrary, needs verification")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testWordsStatistics(@TempDir Path testDir) throws IOException {
         File output = Files.createTempFile(testDir,"output","bin").toFile();
 

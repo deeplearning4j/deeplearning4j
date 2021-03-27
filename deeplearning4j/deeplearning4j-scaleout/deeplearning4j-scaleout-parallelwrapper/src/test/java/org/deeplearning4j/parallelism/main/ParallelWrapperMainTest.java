@@ -54,6 +54,8 @@ import java.nio.file.Path;
 @Disabled("Permissions issues on CI")
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class ParallelWrapperMainTest extends BaseDL4JTest {
 
 

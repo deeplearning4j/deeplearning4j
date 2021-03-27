@@ -78,6 +78,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
+@Tag(TagNames.NEEDS_VERIFY)
+@Disabled("Permissions issues on CI")
 public class SequenceVectorsTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
@@ -222,6 +224,7 @@ public class SequenceVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+
     public void testInternalVocabConstruction() throws Exception {
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
         File file = resource.getFile();

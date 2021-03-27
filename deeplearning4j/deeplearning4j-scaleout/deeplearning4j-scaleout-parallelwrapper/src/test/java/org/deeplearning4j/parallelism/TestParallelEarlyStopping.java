@@ -53,6 +53,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestParallelEarlyStopping extends BaseDL4JTest {
 
     // parallel training results vary wildly with expected result
