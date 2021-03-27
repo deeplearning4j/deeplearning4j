@@ -41,6 +41,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
+                        <trimStackTrace>false</trimStackTrace>
                         <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx${test.heap.size}
                             -Dtest.solr.allowed.securerandom=NativePRNG

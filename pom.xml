@@ -474,6 +474,7 @@
                         </dependency>
                     </dependencies>
                     <configuration>
+                        <trimStackTrace>false</trimStackTrace>
                         <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <forkCount>${cpu.core.count}</forkCount>
                         <reuseForks>false</reuseForks>
@@ -1197,7 +1198,7 @@
                             <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
-
+                            <trimStackTrace>false</trimStackTrace>
                             <environmentVariables>
                                 <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>

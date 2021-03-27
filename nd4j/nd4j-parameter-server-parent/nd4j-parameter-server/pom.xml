@@ -107,7 +107,7 @@
                                 <include>**/*.java</include>
                             </includes>
                             <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
-
+                            <trimStackTrace>false</trimStackTrace>
                         </configuration>
                     </plugin>
                 </plugins>

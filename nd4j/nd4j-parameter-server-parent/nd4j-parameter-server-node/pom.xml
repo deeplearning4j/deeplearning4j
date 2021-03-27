@@ -109,6 +109,7 @@
                             <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
+                            <trimStackTrace>false</trimStackTrace>
                             <environmentVariables>
                                 <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                             </environmentVariables>
@@ -146,7 +147,7 @@
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
                             <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
-
+                            <trimStackTrace>false</trimStackTrace>
                         </configuration>
                     </plugin>
                 </plugins>

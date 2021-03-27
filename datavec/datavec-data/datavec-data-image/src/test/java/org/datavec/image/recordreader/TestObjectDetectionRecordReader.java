@@ -59,6 +59,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestObjectDetectionRecordReader {
 
 
