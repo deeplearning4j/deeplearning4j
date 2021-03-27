@@ -67,6 +67,7 @@ public class LongTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testSomething1(Nd4jBackend backend) {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(DataType.INT8,8000000, 300);
