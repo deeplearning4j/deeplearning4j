@@ -1103,6 +1103,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
+    @Disabled("Takes too long for CI")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testsParallelFit1(Nd4jBackend backend) throws Exception {
         final File file = Resources.asFile("big/raw_sentences.txt");
 

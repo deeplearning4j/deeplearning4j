@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @Isolated
 @Execution(ExecutionMode.SAME_THREAD)
 @Tag(TagNames.LARGE_RESOURCES)
+@Disabled("Too long of a timeout to be used in CI")
 public class LongTests extends BaseNd4jTestWithBackends {
 
     DataType initialType = Nd4j.dataType();
