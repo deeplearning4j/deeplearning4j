@@ -38,11 +38,13 @@ jobs:
           mkdir -p ${GITHUB_WORKSPACE}/cache
           echo "Running tests for cuda 11.0"
           export PATH="/opt/protobuf/bin:/usr/local/cuda-11.2/bin:$PATH"
+          mvn  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode install  -DskipTests
           mvn -Pcuda -Dlibnd4j.chip=cuda  -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -DexcludedGroups="long-running-tests, large-resources, distributed-systems"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cuda   clean test --fail-never
           mvn -Pcuda -Dlibnd4j.chip=cuda -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -Dgroups="long-running-tests, large-resources, distributed-systems" -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g  -Dsurefire.parallel.forcedTimeout=200 -Dsurefire.parallel.timeout=200  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=200 test --fail-never -rf :nd4j
           echo "Running tests for cuda 11.2"
           ${GITHUB_WORKSPACE}/change-cuda-versions.sh 11.2
           export PATH="/opt/protobuf/bin:/usr/local/cuda-11.2/bin:$PATH"
+          mvn  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j"  --also-make  -Pcuda clean  --batch-mode install  -DskipTests
           mvn -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.chip=cuda -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -DexcludedGroups="long-running-tests, large-resources, distributed-systems"  -DskipTestResourceEnforcement=true -Ptestresources  -Pintegration-tests  -Pnd4j-tests-cuda   clean test --fail-never
           mvn -Pcuda -Dlibnd4j.chip=cuda  -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -Dgroups="long-running-tests, large-resources, distributed-systems" -Ptestresources -Pnd4j-tests-cuda  -Dtest.offheap.size=14g -Dtest.heap.size=6g  -Dsurefire.parallel.forcedTimeout=200 -Dsurefire.parallel.timeout=200  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=200 test --fail-never -rf :nd4j
 
