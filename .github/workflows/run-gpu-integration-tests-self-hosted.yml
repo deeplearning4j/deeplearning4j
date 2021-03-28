@@ -23,7 +23,7 @@ jobs:
           access_token: ${{ github.token }}
       - uses: ./.github/actions/download-dl4j-test-resources-linux
       - uses: actions/checkout@v2
-      - name: Run cpu tests
+      - name: Run gpu tests
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
