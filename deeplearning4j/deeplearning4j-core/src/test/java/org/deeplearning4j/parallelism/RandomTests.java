@@ -61,6 +61,7 @@ public class RandomTests extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     @Execution(ExecutionMode.SAME_THREAD)
+    @Test
     public void testModelInitialParamsEquality1() throws Exception {
         final List<Model> models = new CopyOnWriteArrayList<>();
 

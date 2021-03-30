@@ -20,8 +20,7 @@
 
 package org.nd4j.linalg.rng;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.jupiter.api.*;
@@ -61,6 +60,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.rng.NativeRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,14 +70,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
 @Tag(TagNames.RNG)
 @NativeTag
 @Tag(TagNames.LONG_TEST)
 public class RandomTests extends BaseNd4jTestWithBackends {
 
     private DataType initialType;
-
+    private static Logger log = LoggerFactory.getLogger(RandomTests.class.getName());
 
     @BeforeEach
     public void setUp() {
@@ -130,8 +130,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDistribution2(Nd4jBackend backend) {
-        val random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
-        val random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         log.info("States cpu: {}/{}", random1.rootState(), random1.nodeState());
 
@@ -320,8 +320,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
 
-        val d1 = z1.toDoubleVector();
-        val d2 = z2.toDoubleVector();
+        double[] d1 = z1.toDoubleVector();
+        double[] d2 = z2.toDoubleVector();
 
         assertArrayEquals(d1, d2, 1e-4);
 
@@ -410,7 +410,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
 
-        val n = z1.length();
+        long n = z1.length();
         //using this just for the cdf
         Distribution nd = new NormalDistribution(random1, 0.0, 1.0);
         Nd4j.sort(z1, true);
@@ -471,7 +471,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @Tag(TagNames.LARGE_RESOURCES)
     public void testSum_119(Nd4jBackend backend) {
         INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
-        val sum = z2.sumNumber().doubleValue();
+        double sum = z2.sumNumber().doubleValue();
         assertEquals(0.0, sum, 1e-5);
     }
 
@@ -632,8 +632,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         Nd4j.getRandom().setSeed(7);
         int length = 100;
 
-        val jarray_A = new int[length];
-        val jarray_B = new int[length];
+        int[] jarray_A = new int[length];
+        int[] jarray_B = new int[length];
 
         for (int e = 0; e < length; e++)
             jarray_A[e] = Nd4j.getRandom().nextInt(0, 1000);
@@ -1358,22 +1358,22 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrthogonalDistribution1(Nd4jBackend backend) {
-        val dist = new OrthogonalDistribution(1.0);
-        val array = dist.sample(new int[] {6, 9});
+        OrthogonalDistribution dist = new OrthogonalDistribution(1.0);
+        INDArray array = dist.sample(new int[] {6, 9});
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrthogonalDistribution2(Nd4jBackend backend) {
-        val dist = new OrthogonalDistribution(1.0);
-        val array = dist.sample(new int[] {9, 6});
+        OrthogonalDistribution dist = new OrthogonalDistribution(1.0);
+        INDArray array = dist.sample(new int[] {9, 6});
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOrthogonalDistribution3(Nd4jBackend backend) {
-        val dist = new OrthogonalDistribution(1.0);
-        val array = dist.sample(new int[] {9, 9});
+        OrthogonalDistribution dist = new OrthogonalDistribution(1.0);
+        INDArray array = dist.sample(new int[] {9, 9});
     }
 
     @ParameterizedTest
@@ -1397,7 +1397,7 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJavaInt_1(Nd4jBackend backend) {
         for (int e = 0; e < 100000; e++) {
-            val i = Nd4j.getRandom().nextInt(10, 20);
+            int i = Nd4j.getRandom().nextInt(10, 20);
 
             assertTrue(i >= 10 && i < 20);
         }
@@ -1428,13 +1428,13 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRngRepeatabilityUniform(Nd4jBackend backend) {
-        val nexp = Nd4j.create(DataType.FLOAT, 10);
+        INDArray nexp = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.getRandom().setSeed(12345);
-        val out1 = Nd4j.create(DataType.FLOAT, 10);
+        INDArray out1 = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.exec(new DistributionUniform(Nd4j.createFromArray(10L), out1, 0.0, 1.0));
 
         Nd4j.getRandom().setSeed(12345);
-        val out2 = Nd4j.create(DataType.FLOAT, 10);
+        INDArray out2 = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.exec(new DistributionUniform(Nd4j.createFromArray(10L), out2, 0.0, 1.0));
 
         assertEquals(out1, out2);
@@ -1462,14 +1462,14 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         INDArray shape = Nd4j.createFromArray(new int[] {1000,1000});
         INDArray alpha = Nd4j.createFromArray(new float[]{2.f});
         INDArray beta = Nd4j.createFromArray(new float[]{2.f});
-        val randomGamma = new RandomGamma(shape, alpha, beta);
+        RandomGamma randomGamma = new RandomGamma(shape, alpha, beta);
         INDArray[] res = Nd4j.exec(randomGamma);
 
-        val randomGamma1 = new RandomGamma(shape, alpha, beta);
+        RandomGamma randomGamma1 = new RandomGamma(shape, alpha, beta);
         INDArray[] res1 = Nd4j.exec(randomGamma1);
 
-        val meanOp0 = new Mean(res[0]);
-        val meanOp1 = new Mean(res1[0]);
+        Mean meanOp0 = new Mean(res[0]);
+        Mean meanOp1 = new Mean(res1[0]);
 
         INDArray mean0 = Nd4j.exec(meanOp0);
         INDArray mean1 = Nd4j.exec(meanOp1);
@@ -1483,10 +1483,10 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         Nd4j.getRandom().setSeed(12345);
         INDArray shape = Nd4j.createFromArray(new int[] {1,3});
         INDArray alpha = Nd4j.rand(1,3);
-        val randomPoisson = new RandomPoisson(shape, alpha);
+        RandomPoisson randomPoisson = new RandomPoisson(shape, alpha);
         INDArray[] res = Nd4j.exec(randomPoisson);
 
-        val randomPoisson1 = new RandomPoisson(shape, alpha);
+        RandomPoisson randomPoisson1 = new RandomPoisson(shape, alpha);
         INDArray[] res1 = Nd4j.exec(randomPoisson1);
         assertEquals(res[0], res1[0]);
     }
@@ -1496,10 +1496,10 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     public void testShuffle(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         INDArray alpha = Nd4j.rand(1,3);
-        val randomShuffle = new RandomShuffle(alpha);
+        RandomShuffle randomShuffle = new RandomShuffle(alpha);
         INDArray[] res = Nd4j.exec(randomShuffle);
 
-        val randomShuffle1 = new RandomShuffle(alpha);
+        RandomShuffle randomShuffle1 = new RandomShuffle(alpha);
         INDArray[] res1 = Nd4j.exec(randomShuffle1);
         assertEquals(res[0], res1[0]);
     }
@@ -1507,14 +1507,14 @@ public class RandomTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandom(Nd4jBackend backend) {
-        val r1 = new java.util.Random(119);
-        val r2 = Nd4j.getRandom();
+        java.util.Random r1 = new java.util.Random(119);
+        Random r2 = Nd4j.getRandom();
         r2.setSeed(119);
         float jmax = 0.0f;
         float nmax = 0.0f;
         for (int e = 0; e < 100_000_000; e++) {
-            val f = r1.nextFloat();
-            val n = r2.nextFloat();
+            float f = r1.nextFloat();
+            float n = r2.nextFloat();
             if (f > jmax)
                 jmax = f;
 
