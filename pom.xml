@@ -218,7 +218,6 @@
         <commons-io.version>${commonsio.version}</commons-io.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
-
         <spark.version>2.4.7</spark.version>
         <spark.major.version>2</spark.major.version>
         <args4j.version>2.0.29</args4j.version>
@@ -505,7 +504,9 @@
                         <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                         <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
                         <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-
+                        <forkCount>0</forkCount>
+                        <threadCount>1</threadCount>
+                        <perCoreThreadCount>false</perCoreThreadCount>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -1225,7 +1226,9 @@
                             <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                             <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
                             <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
                         <dependencies>
                             <dependency>

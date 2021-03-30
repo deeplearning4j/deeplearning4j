@@ -293,6 +293,7 @@
                     <artifactId>cuda-platform-redist</artifactId>
                     <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
                 </dependency>
+
             </dependencies>
             <build>
                 <plugins>
@@ -343,11 +344,11 @@
                                 Depending on a build machine, default value is not always enough.
                             -->
                             <argLine>-Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
-                            <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
-                            <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
-                            <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
-                            <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-
+                            <parallel>false</parallel>
+                            <parallelMavenExecution>false</parallelMavenExecution>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -148,6 +148,11 @@
                             <reuseForks>false</reuseForks>
                             <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
                             <trimStackTrace>false</trimStackTrace>
+                            <parallelMavenExecution>false</parallelMavenExecution>
+                            <parallel>false</parallel>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -75,7 +75,13 @@
                             <useFile>false</useFile>
                             <reuseForks>false</reuseForks>
                             <forkCount>1</forkCount>
+                            <parallel>false</parallel>
+                            <parallelMavenExecution>false</parallelMavenExecution>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
+
                     </plugin>
                 </plugins>
             </build>
