@@ -36,7 +36,6 @@ jobs:
         with:
           msystem: MSYS
       - uses: ./.github/actions/msys2-base-setup
-        -
       - name: Run windows cpu build
         shell: cmd
         env:
