@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 jobs:
   windows-x86_64:
-    needs: pre-ci
     runs-on: windows-2016
     steps:
       - name: Cancel Previous Runs
