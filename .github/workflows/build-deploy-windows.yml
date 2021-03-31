@@ -26,13 +26,15 @@ jobs:
           msystem: MINGW64
           update: true
           install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
+
+      - run: |
+            set "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%"
+            rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
+            mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-        run: |
-            set "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%"
-            rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
-            mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
