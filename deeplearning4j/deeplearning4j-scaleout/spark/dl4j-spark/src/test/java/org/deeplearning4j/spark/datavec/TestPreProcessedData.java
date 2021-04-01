@@ -70,6 +70,10 @@ public class TestPreProcessedData extends BaseSparkTest {
     @Test
     public void testPreprocessedData() {
         //Test _loading_ of preprocessed data
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 10;
 

@@ -44,9 +44,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.earlystopping.SparkDataSetLossCalculator;
 import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingTrainer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -62,14 +60,14 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Tag(TagNames.LARGE_RESOURCES)
-@Tag(TagNames.LONG_TEST)
-@Tag(TagNames.DIST_SYSTEMS)
-@Tag(TagNames.SPARK)
 public class TestEarlyStoppingSpark extends BaseSparkTest {
 
     @Test
     public void testEarlyStoppingIris() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()

@@ -32,6 +32,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
+import java.nio.Buffer;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NotThreadSafe
@@ -45,7 +47,8 @@ public class NDArrayMessageTest extends BaseND4JTest {
     public void testNDArrayMessageToAndFrom() {
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
         DirectBuffer bufferConvert = NDArrayMessage.toBuffer(message);
-        bufferConvert.byteBuffer().rewind();
+        Buffer buffer = (Buffer) bufferConvert.byteBuffer();
+        buffer.rewind();
         NDArrayMessage newMessage = NDArrayMessage.fromBuffer(bufferConvert, 0);
         assertEquals(message, newMessage);
 

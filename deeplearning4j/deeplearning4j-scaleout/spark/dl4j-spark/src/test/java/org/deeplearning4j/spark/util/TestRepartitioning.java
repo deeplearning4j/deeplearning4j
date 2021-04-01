@@ -54,6 +54,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             list.add(String.valueOf(i));
@@ -101,7 +105,7 @@ public class TestRepartitioning extends BaseSparkTest {
             int valuesPerPartition = 10;
             int nPartitions = 32;
 
-            JavaRDD<String>[] splits = org.deeplearning4j.spark.util.SparkUtils.balancedRandomSplit(
+            JavaRDD<String>[] splits = SparkUtils.balancedRandomSplit(
                             totalDataSetObjectCount, dataSetObjectsPerSplit, rdd, new Random().nextLong());
 
             List<Integer> counts = new ArrayList<>();

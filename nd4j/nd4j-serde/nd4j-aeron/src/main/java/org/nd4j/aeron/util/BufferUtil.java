@@ -44,8 +44,8 @@ public class BufferUtil {
             ByteBuffer curr = buffers[i].slice();
             all.put(curr);
         }
-
-        all.rewind();
+        Buffer buffer = (Buffer) all;
+        buffer.rewind();
         return all;
     }
 

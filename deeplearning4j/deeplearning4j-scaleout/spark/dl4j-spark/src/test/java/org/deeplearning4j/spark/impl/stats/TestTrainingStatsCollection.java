@@ -61,6 +61,10 @@ public class TestTrainingStatsCollection extends BaseSparkTest {
 
     @Test
     public void testStatsCollection() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int nWorkers = numExecutors();
 
         JavaSparkContext sc = getContext();

@@ -52,6 +52,10 @@ public class TestCustomLayer extends BaseSparkTest {
 
     @Test
     public void testSparkWithCustomLayer() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         //Basic test - checks whether exceptions etc are thrown with custom layers + spark
         //Custom layers are tested more extensively in dl4j core
         MultiLayerConfiguration conf =

@@ -32,6 +32,7 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -67,11 +68,13 @@ public class NDArrayMessageChunkTests extends BaseND4JTest {
         //test equality of direct byte buffer contents vs chunked
         ByteBuffer byteBuffer = buffer.byteBuffer();
         ByteBuffer concatAll = BufferUtil.concat(concat, buffer.capacity());
+        Buffer concatAllBuffer = (Buffer) concatAll;
+        Buffer byteBuffer1 = (Buffer)  byteBuffer;
         byte[] arrays = new byte[byteBuffer.capacity()];
-        byteBuffer.rewind();
+        byteBuffer1.rewind();
         byteBuffer.get(arrays);
         byte[] arrays2 = new byte[concatAll.capacity()];
-        concatAll.rewind();
+        concatAllBuffer.rewind();
         concatAll.get(arrays2);
         assertArrayEquals(arrays, arrays2);
         NDArrayMessage message1 = NDArrayMessage.fromChunks(chunks);

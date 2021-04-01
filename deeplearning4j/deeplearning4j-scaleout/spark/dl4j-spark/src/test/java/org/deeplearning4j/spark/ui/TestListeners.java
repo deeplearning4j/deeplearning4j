@@ -60,6 +60,10 @@ public class TestListeners extends BaseSparkTest {
 
     @Test
     public void testStatsCollection() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaSparkContext sc = getContext();
         int nExecutors = numExecutors();
 

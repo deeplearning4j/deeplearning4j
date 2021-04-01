@@ -148,9 +148,9 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.1)
                         .seed(123).updater(new Nesterovs(0.1, 0.9)).graphBuilder()
                         .addInputs("in")
-                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
+                        .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build(), "in")
-                        .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                        .addLayer("1", new OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
                                                         .activation(Activation.SOFTMAX).build(),
                                         "0")
@@ -227,9 +227,9 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
-                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(4)
+                        .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(4)
                                         .activation(Activation.TANH).build(), "in")
-                        .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                        .addLayer("1", new OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                                         .build(),
                                         "0")
@@ -412,14 +412,14 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         val labelSize = 2;
         val random = new Random(0);
 
-        List<org.nd4j.linalg.dataset.api.MultiDataSet> l = new ArrayList<>();
+        List<MultiDataSet> l = new ArrayList<>();
         for( int i=0; i<10; i++ ) {
             org.nd4j.linalg.dataset.MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(
                     new INDArray[]{Nd4j.rand(batchSize, featSize).castTo(DataType.DOUBLE), Nd4j.rand(batchSize, featSize).castTo(DataType.DOUBLE)},
                     new INDArray[]{Nd4j.rand(batchSize, labelSize).castTo(DataType.DOUBLE)});
             l.add(mds);
         }
-        JavaRDD<org.nd4j.linalg.dataset.api.MultiDataSet> rdd = sc.parallelize(l);
+        JavaRDD<MultiDataSet> rdd = sc.parallelize(l);
 
         // simple model
         val modelConf = new NeuralNetConfiguration.Builder()
