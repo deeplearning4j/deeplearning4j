@@ -43,6 +43,8 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
@@ -62,6 +64,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Data Set Iterator Test")
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 class DataSetIteratorTest extends BaseDL4JTest {
 
     @Override

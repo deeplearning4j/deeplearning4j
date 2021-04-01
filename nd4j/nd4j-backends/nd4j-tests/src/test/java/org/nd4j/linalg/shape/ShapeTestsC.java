@@ -403,13 +403,13 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRavel(Nd4jBackend backend) {
-        INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray asseriton = Nd4j.linspace(1, 4, 4);
+        INDArray linspace = Nd4j.linspace(1, 4, 4,DataType.DOUBLE).reshape(2, 2);
+        INDArray asseriton = Nd4j.linspace(1, 4, 4,DataType.DOUBLE);
         INDArray raveled = linspace.ravel();
         assertEquals(asseriton, raveled);
 
-        INDArray tensorLinSpace = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
-        INDArray linspaced = Nd4j.linspace(1, 16, 16);
+        INDArray tensorLinSpace = Nd4j.linspace(1, 16, 16,DataType.DOUBLE).reshape(2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 16, 16,DataType.DOUBLE);
         INDArray tensorLinspaceRaveled = tensorLinSpace.ravel();
         assertEquals(linspaced, tensorLinspaceRaveled);
 

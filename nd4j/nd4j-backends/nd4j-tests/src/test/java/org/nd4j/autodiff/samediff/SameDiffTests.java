@@ -94,7 +94,6 @@ import org.nd4j.weightinit.impl.UniformInitScheme;
 @Tag(TagNames.SAMEDIFF)
 public class SameDiffTests extends BaseNd4jTestWithBackends {
 
-    private DataType initialType;
 
 
     @Override
@@ -112,16 +111,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @BeforeEach
     public void before() {
         Nd4j.create(1);
-        initialType = Nd4j.dataType();
-
-        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }
 
     @AfterEach
     public void after() {
-        Nd4j.setDataType(initialType);
-
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -136,7 +130,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         INDArray labels = Nd4j.create(new double[]{1, 1, 0, 1}).reshape(4, 1);
 
-        INDArray weights = Nd4j.zeros(3, 1);
+        INDArray weights = Nd4j.zeros(3, 1).castTo(labels.dataType());
 
         Map<String, INDArray> inputMap = new HashMap<>();
         inputMap.put("x", inputs);
@@ -155,7 +149,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         val nodeA = sd.math().square(input);
         val nodeB = sd.math().square(nodeA);
 
-        sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}), input);
+        sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}).castTo(input.dataType()), input);
 
         sd.outputAll(null);
 
@@ -2627,7 +2621,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, 1, 3);
-        SDVariable w = sd.constant("w", Nd4j.rand(DataType.FLOAT, 3, 4));
+        INDArray const1 =  Nd4j.rand(DataType.FLOAT, 3, 4);
+        SDVariable w = sd.constant("w",const1);
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 4));
         SDVariable mmul = in.mmul(w);
         SDVariable add = mmul.add(b);

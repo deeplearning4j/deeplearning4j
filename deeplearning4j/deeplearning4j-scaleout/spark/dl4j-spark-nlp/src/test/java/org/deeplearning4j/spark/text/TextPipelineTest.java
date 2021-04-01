@@ -21,6 +21,7 @@
 package org.deeplearning4j.spark.text;
 
 import com.sun.jna.Platform;
+import lombok.SneakyThrows;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -35,10 +36,8 @@ import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.stopwords.StopWords;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.nd4j.common.resources.Downloader;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,6 +47,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
+import java.io.File;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -72,6 +73,26 @@ public class TextPipelineTest extends BaseSparkTest {
 
     public JavaRDD<String> getCorpusRDD(JavaSparkContext sc) {
         return sc.parallelize(sentenceList, 2);
+    }
+
+    @BeforeAll
+    @SneakyThrows
+    public static void beforeAll() {
+        if(Platform.isWindows()) {
+            File hadoopHome = new File(System.getProperty("java.io.tmpdir"),"hadoop-tmp");
+            File binDir = new File(hadoopHome,"bin");
+            if(!binDir.exists())
+                binDir.mkdirs();
+            File outputFile = new File(binDir,"winutils.exe");
+            if(!outputFile.exists()) {
+                log.info("Fixing spark for windows");
+                Downloader.download("winutils.exe",
+                        URI.create("https://github.com/cdarlint/winutils/blob/master/hadoop-2.6.5/bin/winutils.exe?raw=true").toURL(),
+                        outputFile,"db24b404d2331a1bec7443336a5171f1",3);
+            }
+
+            System.setProperty("hadoop.home.dir", hadoopHome.getAbsolutePath());
+        }
     }
 
     @BeforeEach
@@ -102,10 +123,6 @@ public class TextPipelineTest extends BaseSparkTest {
 
     @Test
     public void testTokenizer() throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());

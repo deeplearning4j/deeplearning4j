@@ -29,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.base.Preconditions;
@@ -70,6 +72,7 @@ import java.util.Map;
 @Slf4j
 @NativeTag
 @Tag(TagNames.RNG)
+@Execution(ExecutionMode.SAME_THREAD)
 public class RngValidationTests extends BaseNd4jTestWithBackends {
 
 
@@ -129,6 +132,8 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
+    @Tag(TagNames.NEEDS_VERIFY)
     public void validateRngDistributions(Nd4jBackend backend){
         List<TestCase> testCases = new ArrayList<>();
         for(DataType type : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
@@ -264,7 +269,7 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
 
 
         int count = 1;
-        for(TestCase tc : testCases){
+        for(TestCase tc : testCases) {
             log.info("Starting test case: {} of {}", count, testCases.size());
             log.info("{}", tc);
 
@@ -314,7 +319,7 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             assertEquals(z, z2);
 
             //Check mean, stdev
-            if(tc.getExpectedMean() != null){
+            if(tc.getExpectedMean() != null) {
                 double mean = z.meanNumber().doubleValue();
                 double re = relError(tc.getExpectedMean(), mean);
                 double ae = Math.abs(tc.getExpectedMean() - mean);

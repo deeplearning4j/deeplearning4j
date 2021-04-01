@@ -608,7 +608,7 @@ public class TestUpdaters extends BaseDL4JTest {
                     assertTrue(gu instanceof SgdUpdater);
                     break;
                 case 1:
-                    assertTrue(gu instanceof org.nd4j.linalg.learning.NoOpUpdater);
+                    assertTrue(gu instanceof NoOpUpdater);
                     break;
                 case 2:
                     assertTrue(gu instanceof AdaGradUpdater);

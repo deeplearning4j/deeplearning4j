@@ -41,6 +41,7 @@ import java.io.File;
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
 @Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class MiscTests extends BaseDL4JTest {
 
     @Override

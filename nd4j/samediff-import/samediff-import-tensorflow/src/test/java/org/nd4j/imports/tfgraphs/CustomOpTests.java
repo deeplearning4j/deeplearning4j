@@ -44,7 +44,7 @@ public class CustomOpTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPad(Nd4jBackend backend){
+    public void testPad(Nd4jBackend backend) {
 
         INDArray in = Nd4j.create(DataType.FLOAT, 1, 28, 28, 264);
         INDArray pad = Nd4j.createFromArray(new int[][]{{0,0},{0,1},{0,1},{0,0}});

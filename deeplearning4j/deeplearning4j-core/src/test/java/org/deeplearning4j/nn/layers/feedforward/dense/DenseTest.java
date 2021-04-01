@@ -116,7 +116,7 @@ class DenseTest extends BaseDL4JTest {
         int numInputs = 4;
         int outputNum = 3;
         long seed = 6;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new Sgd(1e-3)).l1(0.3).l2(1e-3).list().layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(numInputs).nOut(3).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(3).nOut(2).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).nIn(2).nOut(outputNum).activation(Activation.SOFTMAX).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new Sgd(1e-3)).l1(0.3).l2(1e-3).list().layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(1, new DenseLayer.Builder().nIn(3).nOut(2).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).nIn(2).nOut(outputNum).activation(Activation.SOFTMAX).build()).build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
         return model;

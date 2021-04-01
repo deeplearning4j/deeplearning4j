@@ -40,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Early Termination Multi Data Set Iterator Test")
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 class EarlyTerminationMultiDataSetIteratorTest extends BaseDL4JTest {
 
     int minibatchSize = 5;

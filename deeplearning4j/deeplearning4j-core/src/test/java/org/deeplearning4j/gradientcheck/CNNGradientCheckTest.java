@@ -71,6 +71,8 @@ import org.nd4j.shade.guava.collect.Lists;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 class CNNGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;

@@ -25,6 +25,9 @@ import lombok.val;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -52,6 +55,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.COMPRESSION)
+@Isolated
+@Execution(ExecutionMode.SAME_THREAD)
 public class CompressionTests extends BaseNd4jTestWithBackends {
 
 
@@ -412,9 +417,11 @@ public class CompressionTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testBitmapEncoding2(Nd4jBackend backend) {
-        INDArray initial = Nd4j.create(40000000);
-        INDArray target = Nd4j.create(initial.length());
+        INDArray initial = Nd4j.create(DataType.FLOAT,40000000);
+        INDArray target = Nd4j.create(DataType.FLOAT,initial.length());
 
         initial.addi(1e-3);
 

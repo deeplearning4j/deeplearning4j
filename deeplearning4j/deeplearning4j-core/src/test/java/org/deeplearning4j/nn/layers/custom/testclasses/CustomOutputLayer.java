@@ -68,7 +68,7 @@ public class CustomOutputLayer extends BaseOutputLayer {
     }
 
     @NoArgsConstructor
-    public static class Builder extends BaseOutputLayer.Builder<CustomOutputLayer.Builder> {
+    public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder(LossFunctions.LossFunction lossFunction) {
             super.lossFunction(lossFunction);

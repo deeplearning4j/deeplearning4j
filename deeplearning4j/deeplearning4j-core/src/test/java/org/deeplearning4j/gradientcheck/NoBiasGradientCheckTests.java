@@ -294,7 +294,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                                 .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
                                         .hasBias(cnnHasBias)
                                         .nOut(2).build()) //Output: (3-2+0)/1+1 = 2
-                                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                .layer(new OutputLayer.Builder(LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX)
                                         .nOut(4).build())
                                 .setInputType(InputType.convolutionalFlat(height, width, inputDepth))

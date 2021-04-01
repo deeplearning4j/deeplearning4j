@@ -51,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class FastTextTest extends BaseDL4JTest {
 
 
@@ -235,6 +237,8 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Similarities seem arbitrary, needs verification")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testWordsStatistics(@TempDir Path testDir) throws IOException {
         File output = Files.createTempFile(testDir,"output","bin").toFile();
 

@@ -27,6 +27,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -52,6 +55,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @NativeTag
+@Isolated
+@Execution(ExecutionMode.SAME_THREAD)
 public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
 
@@ -229,9 +234,10 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBadTad4(Nd4jBackend backend) {
-        INDArray x = Nd4j.create(2, 4, 5, 6);
+        INDArray x = Nd4j.create(DataType.DOUBLE,2, 4, 5, 6);
 
         Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 3);
 
@@ -473,7 +479,7 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNanPanic(){
+    public void testNanPanic(Nd4jBackend backend) {
         try {
             DynamicCustomOp op = DynamicCustomOp.builder("add")
                     .addInputs(Nd4j.valueArrayOf(10, Double.NaN).castTo(DataType.DOUBLE), Nd4j.scalar(0.0))

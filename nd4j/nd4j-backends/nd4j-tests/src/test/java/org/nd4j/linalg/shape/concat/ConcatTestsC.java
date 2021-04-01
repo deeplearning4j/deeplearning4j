@@ -227,7 +227,7 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, concat2);
     }
 
-     @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatVector(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
@@ -236,7 +236,6 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
         });
     }
 
-    @Test
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3dv2(Nd4jBackend backend) {

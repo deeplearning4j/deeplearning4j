@@ -79,7 +79,7 @@ class MaskZeroLayerTest extends BaseDL4JTest {
         INDArray ex1 = Nd4j.create(new double[][] { new double[] { 0, 3, 5 }, new double[] { 0, 0, 2 } });
         INDArray ex2 = Nd4j.create(new double[][] { new double[] { 0, 0, 2 }, new double[] { 0, 0, 2 } });
         // A LSTM which adds one for every non-zero timestep
-        org.deeplearning4j.nn.conf.layers.LSTM underlying = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().activation(Activation.IDENTITY).gateActivationFunction(Activation.IDENTITY).nIn(2).nOut(1).dataFormat(rnnDataFormat).build();
+        LSTM underlying = new LSTM.Builder().activation(Activation.IDENTITY).gateActivationFunction(Activation.IDENTITY).nIn(2).nOut(1).dataFormat(rnnDataFormat).build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration();
         conf.setLayer(underlying);
         INDArray params = Nd4j.zeros(new int[] { 1, 16 });

@@ -275,10 +275,10 @@ class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
     void testBiasLr() {
         // setup the network
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(1e-2)).biasUpdater(new Adam(0.5)).list().layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build()).layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutional(28, 28, 1)).build();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l0 = (BaseLayer) conf.getConf(0).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l1 = (BaseLayer) conf.getConf(1).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
+        BaseLayer l0 = (BaseLayer) conf.getConf(0).getLayer();
+        BaseLayer l1 = (BaseLayer) conf.getConf(1).getLayer();
+        BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
+        BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
         assertEquals(0.5, ((Adam) l0.getUpdaterByParam("b")).getLearningRate(), 1e-6);
         assertEquals(1e-2, ((Adam) l0.getUpdaterByParam("W")).getLearningRate(), 1e-6);
         assertEquals(0.5, ((Adam) l1.getUpdaterByParam("b")).getLearningRate(), 1e-6);

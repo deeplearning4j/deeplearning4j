@@ -123,7 +123,7 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
 //
 //        sd.evaluateMultiple(iter, evalMap);
 
-        e = (Evaluation) hist.finalTrainingEvaluations().evaluation(predictions);
+        e = hist.finalTrainingEvaluations().evaluation(predictions);
 
         System.out.println(e.stats());
 

@@ -688,7 +688,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                                         .nOut(10).activation(Activation.TANH).build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(10)
                                                         .nOut(10).activation(Activation.TANH).build())
-                                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
                                         .inputPreProcessor(0, new FeedForwardToRnnPreProcessor())
                                         .build();
@@ -710,7 +710,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .activation(Activation.TANH).build(), "in")
                         .addLayer("1", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(10).nOut(10)
                                         .activation(Activation.TANH).build(), "0")
-                        .addLayer("2", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .addLayer("2", new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "1")
                         .setOutputs("2").inputPreProcessor("0", new FeedForwardToRnnPreProcessor())
                         .build();

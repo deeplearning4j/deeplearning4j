@@ -52,6 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class ParallelWrapperTest extends BaseDL4JTest {
     private static final Logger log = LoggerFactory.getLogger(ParallelWrapperTest.class);
 

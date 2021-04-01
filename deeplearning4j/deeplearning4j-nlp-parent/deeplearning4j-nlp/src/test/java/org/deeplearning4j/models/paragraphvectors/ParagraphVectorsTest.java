@@ -111,6 +111,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsVocabBuilding1() throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file); //UimaSentenceIterator.createWithPath(file.getAbsolutePath());
@@ -160,6 +161,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsModelling1(Nd4jBackend backend) throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
@@ -288,7 +291,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         SerializationUtils.saveObject(vec, tempFile);
 
 
-        ParagraphVectors vec2 = (ParagraphVectors) SerializationUtils.readObject(tempFile);
+        ParagraphVectors vec2 = SerializationUtils.readObject(tempFile);
         INDArray day2 = vec2.getWordVectorMatrix("day").dup();
 
         List<String> labelsBinary = vec2.labelsSource.getLabels();
@@ -352,6 +355,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsDM() throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
@@ -416,6 +421,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
 
     @Timeout(300000)
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsDBOW() throws Exception {
         skipUnlessIntegrationTests();
 
@@ -494,6 +501,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test()
     @Timeout(300000)
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
@@ -585,6 +594,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
      * @throws Exception
      */
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsReducedLabels1(@TempDir Path testDir) throws Exception {
         val tempDir = testDir.toFile();
         ClassPathResource resource = new ClassPathResource("/labeled");
@@ -636,6 +647,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test()
     @Timeout(300000)
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParallelIterator() throws IOException {
         TokenizerFactory factory = new DefaultTokenizerFactory();
         SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
@@ -659,9 +672,13 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testIterator(@TempDir Path testDir) throws IOException {
         val folder_labeled = new File(testDir.toFile(),"labeled");
         val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
+        assertTrue(folder_labeled.mkdirs());
+        assertTrue(folder_labeled.mkdirs());
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
         new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
@@ -706,6 +723,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         there's no need in this test within travis, use it manually only for problems detection
     */
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsOverExistingWordVectorsModel(@TempDir Path testDir) throws Exception {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
@@ -852,6 +871,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
      * Special test to check d2v inference against pre-trained gensim model and
      */
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testGensimEquality() throws Exception {
 
         INDArray expA = Nd4j.create(new double[] {-0.02461922, -0.00801059, -0.01821643, 0.0167951, 0.02240154,
@@ -1001,6 +1022,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testDirectInference(@TempDir Path testDir) throws Exception {
         boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");
@@ -1034,6 +1057,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
     @Test
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testGoogleModelForInference() throws Exception {
         WordVectors googleVectors = WordVectorSerializer.readWord2VecModel(new File("/ext/GoogleNews-vectors-negative300.bin.gz"));
 
@@ -1053,6 +1078,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test()
     @Timeout(300000)
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testHash() {
         VocabWord w1 = new VocabWord(1.0, "D1");
         VocabWord w2 = new VocabWord(1.0, "Bo");
@@ -1074,7 +1101,11 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testsParallelFit1() throws Exception {
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Disabled("Takes too long for CI")
+    @Tag(TagNames.NEEDS_VERIFY)
+    public void testsParallelFit1(Nd4jBackend backend) throws Exception {
         final File file = Resources.asFile("big/raw_sentences.txt");
 
         for (int i = 0; i < 1000; i++) {
@@ -1117,6 +1148,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test()
     @Timeout(300000)
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testJSONSerialization() {
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().build();
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -1158,6 +1191,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Test()
     @Timeout(300000)
     @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testDoubleFit() throws Exception {
         boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");

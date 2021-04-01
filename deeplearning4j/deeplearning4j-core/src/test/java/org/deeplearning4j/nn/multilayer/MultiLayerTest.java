@@ -90,6 +90,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @DisplayName("Multi Layer Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class MultiLayerTest extends BaseDL4JTest {
 
     private static OpExecutioner.ProfilingMode origMode;
@@ -134,7 +136,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     @DisplayName("Test Batch Norm")
     void testBatchNorm() {
         Nd4j.getRandom().setSeed(123);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(2, new BatchNormalization.Builder().nOut(2).build()).layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(2, new BatchNormalization.Builder().nOut(2).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3).build()).build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         network.setListeners(new ScoreIterationListener(1));
@@ -153,7 +155,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     @DisplayName("Test Back Prop")
     void testBackProp() {
         Nd4j.getRandom().setSeed(123);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3).build()).build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         network.setListeners(new ScoreIterationListener(1));
@@ -242,7 +244,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     }
 
     private static MultiLayerConfiguration getConf() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).dist(new NormalDistribution(0, 1)).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).dist(new NormalDistribution(0, 1)).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).dist(new NormalDistribution(0, 1)).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).dist(new NormalDistribution(0, 1)).build()).build();
         return conf;
     }
 
@@ -258,7 +260,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     void testFeedForwardToLayer() {
         int nIn = 30;
         int nOut = 25;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new Sgd(1e-3)).list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(600).dist(new NormalDistribution(0, 1e-5)).build()).layer(1, new DenseLayer.Builder().nIn(600).nOut(250).dist(new NormalDistribution(0, 1e-5)).build()).layer(2, new DenseLayer.Builder().nIn(250).nOut(100).dist(new NormalDistribution(0, 1e-5)).build()).layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(100).nOut(25).activation(Activation.SOFTMAX).weightInit(new NormalDistribution(0, 1e-5)).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new Sgd(1e-3)).list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(600).dist(new NormalDistribution(0, 1e-5)).build()).layer(1, new DenseLayer.Builder().nIn(600).nOut(250).dist(new NormalDistribution(0, 1e-5)).build()).layer(2, new DenseLayer.Builder().nIn(250).nOut(100).dist(new NormalDistribution(0, 1e-5)).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(100).nOut(25).activation(Activation.SOFTMAX).weightInit(new NormalDistribution(0, 1e-5)).build()).build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         INDArray input = Nd4j.rand(5, nIn);
@@ -542,7 +544,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     }
 
     public MultiLayerNetwork getAeModel(boolean preTrain, int nIn, int nOut) {
-        MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder().seed(42).updater(new NoOp()).weightInit(WeightInit.UNIFORM).list(new AutoEncoder.Builder().activation(Activation.IDENTITY).nOut(nIn).build(), new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY).activation(Activation.IDENTITY).nOut(nOut).build()).setInputType(InputType.feedForward(nOut)).build();
+        MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder().seed(42).updater(new NoOp()).weightInit(WeightInit.UNIFORM).list(new AutoEncoder.Builder().activation(Activation.IDENTITY).nOut(nIn).build(), new OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY).activation(Activation.IDENTITY).nOut(nOut).build()).setInputType(InputType.feedForward(nOut)).build();
         MultiLayerNetwork network = new MultiLayerNetwork(vae);
         network.init();
         return network;
@@ -552,7 +554,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     @DisplayName("Test Iteration Count And Persistence")
     void testIterationCountAndPersistence() throws IOException {
         Nd4j.getRandom().setSeed(123);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build()).build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         DataSetIterator iter = new IrisDataSetIterator(50, 150);
@@ -577,8 +579,8 @@ public class MultiLayerTest extends BaseDL4JTest {
     @DisplayName("Test Bias L 1 L 2")
     void testBiasL1L2() {
         Nd4j.getRandom().setSeed(123);
-        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).weightInit(WeightInit.XAVIER).activation(Activation.TANH).seed(123).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10).build()).build();
-        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l1Bias(0.1).l2Bias(0.2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).seed(123).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10).build()).build();
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).weightInit(WeightInit.XAVIER).activation(Activation.TANH).seed(123).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10).build()).build();
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l1Bias(0.1).l2Bias(0.2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).seed(123).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10).build()).build();
         MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
         net1.init();
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
@@ -872,6 +874,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Multiple Epochs Simple")
+
     void testMultipleEpochsSimple() {
         // Mainly a simple sanity check on the preconditions in the method...
         DataSetIterator iter = new IrisDataSetIterator(10, 150);

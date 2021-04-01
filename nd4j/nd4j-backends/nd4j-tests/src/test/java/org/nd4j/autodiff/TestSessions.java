@@ -216,6 +216,8 @@ public class TestSessions extends BaseNd4jTestWithBackends {
     @Tag(TagNames.FILE_IO)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testSwitchWhile(Nd4jBackend backend) throws Exception{
 
         /*

@@ -172,12 +172,12 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
                 assertEquals(((ROC) e).getRocCurve(), ((ROC) fromJson).getRocCurve());
                 assertEquals(((ROC) e).getPrecisionRecallCurve(), ((ROC) fromJson).getPrecisionRecallCurve());
             } else if (e instanceof ROCBinary) {
-                org.nd4j.evaluation.classification.ROC[] rocs = ((ROCBinary) fromJson).getUnderlying();
-                org.nd4j.evaluation.classification.ROC[] origRocs = ((ROCBinary) e).getUnderlying();
+                ROC[] rocs = ((ROCBinary) fromJson).getUnderlying();
+                ROC[] origRocs = ((ROCBinary) e).getUnderlying();
                 //                for(ROC r : rocs ){
                 for (int i = 0; i < origRocs.length; i++) {
-                    org.nd4j.evaluation.classification.ROC r = rocs[i];
-                    org.nd4j.evaluation.classification.ROC origR = origRocs[i];
+                    ROC r = rocs[i];
+                    ROC origR = origRocs[i];
                     //Shouldn't have probAndLabel, but should have stored AUC and AUPRC, AND stored curves
                     assertNull(r.getProbAndLabel());
                     assertEquals(origR.calculateAUC(), origR.calculateAUC(), 1e-6);
@@ -187,11 +187,11 @@ public class EvalJsonTest extends BaseNd4jTestWithBackends {
                 }
 
             } else if (e instanceof ROCMultiClass) {
-                org.nd4j.evaluation.classification.ROC[] rocs = ((ROCMultiClass) fromJson).getUnderlying();
-                org.nd4j.evaluation.classification.ROC[] origRocs = ((ROCMultiClass) e).getUnderlying();
+                ROC[] rocs = ((ROCMultiClass) fromJson).getUnderlying();
+                ROC[] origRocs = ((ROCMultiClass) e).getUnderlying();
                 for (int i = 0; i < origRocs.length; i++) {
-                    org.nd4j.evaluation.classification.ROC r = rocs[i];
-                    org.nd4j.evaluation.classification.ROC origR = origRocs[i];
+                    ROC r = rocs[i];
+                    ROC origR = origRocs[i];
                     //Shouldn't have probAndLabel, but should have stored AUC and AUPRC, AND stored curves
                     assertNull(r.getProbAndLabel());
                     assertEquals(origR.calculateAUC(), origR.calculateAUC(), 1e-6);

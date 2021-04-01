@@ -38,6 +38,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class InplaceParallelInferenceTest extends BaseDL4JTest {
 
     @Test
