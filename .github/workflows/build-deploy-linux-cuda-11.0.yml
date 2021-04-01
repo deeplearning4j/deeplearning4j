@@ -23,13 +23,13 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - name: Maximize build space
-          uses: easimon/maximize-build-space@master
-          with:
-            root-reserve-mb: 2048
-            swap-size-mb: 8192
-            remove-dotnet: 'true'
-            remove-haskell: 'true'
-            remove-android: 'true'
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 2048
+          swap-size-mb: 8192
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
       - uses: actions/checkout@v2
       - uses: ./.github/actions/update-deps-linux
       - uses: ./.github/actions/remove-unneeded-tools-linux
