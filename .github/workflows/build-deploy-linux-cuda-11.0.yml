@@ -58,6 +58,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
         run: |
+          sudo apt list --installed
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
           mvn --version
           cmake --version
