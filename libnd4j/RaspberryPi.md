@@ -10,6 +10,7 @@
 | -a or --arch | arm64  | cross compiles for pi/linux 64bit
 | -a or --arch | android-arm  | cross compiles for android 32bit
 | -a or --arch | android-arm64  | cross compiles for android 64bit
+| -a or --arch | jetson-arm64  | cross compiles for jetson nano 64bit
 |-m or --mvn |  | if provided will build dl4j using maven
 
 example:  
