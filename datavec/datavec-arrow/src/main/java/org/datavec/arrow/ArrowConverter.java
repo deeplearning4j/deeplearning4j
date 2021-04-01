@@ -46,18 +46,19 @@ import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
 import org.nd4j.serde.binary.BinarySerde;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -171,7 +172,8 @@ public class ArrowConverter {
         ByteBuffer direct = ByteBuffer.allocateDirect(fieldVector.getDataBuffer().capacity());
         direct.order(ByteOrder.nativeOrder());
         fieldVector.getDataBuffer().getBytes(0,direct);
-        direct.rewind();
+        Buffer buffer1 = (Buffer) direct;
+        buffer1.rewind();
         switch(type) {
             case Integer:
                 buffer = Nd4j.createBuffer(direct, DataType.INT,cols,0);
