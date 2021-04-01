@@ -32,7 +32,7 @@ jobs:
             remove-android: 'true'
       - uses: actions/checkout@v2
       - uses: ./.github/actions/update-deps-linux
-      - uses: ./.github/actions/removeunneeded-tools-linux
+      - uses: ./.github/actions/remove-unneeded-tools-linux
       - uses: ./.github/actions/install-protobuf-linux
       - uses: ./.github/actions/install-cmake-linux
       - name: Set up Java for publishing to GitHub Packages
