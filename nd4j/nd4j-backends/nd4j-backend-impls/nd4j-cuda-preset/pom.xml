@@ -37,6 +37,7 @@
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
+        <!-- Note there could be different versions of javacpp for different cuda versions. -->
         <cuda.version>11.0</cuda.version>
         <cudnn.version>8.0</cudnn.version>
         <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
@@ -80,14 +81,10 @@
             <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>

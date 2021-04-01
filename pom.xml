@@ -104,7 +104,6 @@
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
         <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
         <archetype.encoding>${encoding}</archetype.encoding>
-
         <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
@@ -219,8 +218,7 @@
         <commons-io.version>${commonsio.version}</commons-io.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
-
-        <spark.version>2.4.5</spark.version>
+        <spark.version>2.4.7</spark.version>
         <spark.major.version>2</spark.major.version>
         <args4j.version>2.0.29</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
@@ -320,7 +318,8 @@
         <neoitertools.version>1.0.0</neoitertools.version>
         <rxjava.version>2.2.0</rxjava.version>
         <kotlin.version>1.4.31</kotlin.version>
-
+        <test.heap.size>512m</test.heap.size>
+        <test.offheap.size>512m</test.offheap.size>
     </properties>
 
 
@@ -454,8 +453,21 @@
                 <version>${junit4git.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <!-- <sourceDirectory>contrib</sourceDirectory>-->
@@ -473,6 +485,8 @@
                         </dependency>
                     </dependencies>
                     <configuration>
+                        <trimStackTrace>false</trimStackTrace>
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <forkCount>${cpu.core.count}</forkCount>
                         <reuseForks>false</reuseForks>
                         <environmentVariables>
@@ -485,6 +499,14 @@
                         </classpathDependencyExcludes>
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
+                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+                        <forkCount>0</forkCount>
+                        <threadCount>1</threadCount>
+                        <perCoreThreadCount>false</perCoreThreadCount>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -551,7 +573,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>1.4.1</version>
+                    <version>${maven-enforcer-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>enforce-maven</id>
@@ -751,6 +773,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+
+                </configuration>
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -1186,16 +1211,24 @@
                         <version>${maven-surefire-plugin.version}</version>
                         <inherited>true</inherited>
                         <configuration>
+                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
-
+                            <trimStackTrace>false</trimStackTrace>
                             <environmentVariables>
                                 <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
                             </environmentVariables>
-                            <argLine>-Xmx8g</argLine>
+                            <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
+                            <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                            <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                            <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                            <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
                         <dependencies>
                             <dependency>

@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -51,8 +51,59 @@
         <profile>
             <id>nd4j-tests-cpu</id>
         </profile>
+        <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
             <id>nd4j-tests-cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <inherited>true</inherited>
+                        <!-- GPU tests fail automatically on multi gpu-->
+                        <configuration>
+                            <environmentVariables>
+                                <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
+                            </environmentVariables>
+                            <parallelMavenExecution>
+                                false
+                            </parallelMavenExecution>
+                            <trimStackTrace>false</trimStackTrace>
+                            <useFile>false</useFile>
+                            <reuseForks>false</reuseForks>
+                            <forkCount>1</forkCount>
+                            <parallel>false</parallel>
+                            <parallelMavenExecution>false</parallelMavenExecution>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
+                        </configuration>
+
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-11.0</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>deeplearning4j-cuda-11.0</artifactId>
+                    <version>${nd4j.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

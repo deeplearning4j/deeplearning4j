@@ -105,46 +105,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${maven-shade-plugin.version}</version>
-                <configuration>
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <createDependencyReducedPom>false</createDependencyReducedPom>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>org/datanucleus/**</exclude>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-
-                </configuration>
-
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>reference.conf</resource>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -269,8 +229,10 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <forkCount>${cpu.core.count}</forkCount>
                             <reuseForks>false</reuseForks>
+                            <trimStackTrace>false</trimStackTrace>
                             <environmentVariables>
                                 <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
 
@@ -304,7 +266,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine>-Dfile.encoding=UTF-8 </argLine>
+                            <argLine>-Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -331,6 +293,7 @@
                     <artifactId>cuda-platform-redist</artifactId>
                     <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
                 </dependency>
+
             </dependencies>
             <build>
                 <plugins>
@@ -350,6 +313,7 @@
                             </dependency>
                         </dependencies>
                         <configuration>
+                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                             <environmentVariables>
                                 <LD_LIBRARY_PATH>
                                     ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes
@@ -379,7 +343,12 @@
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
                             -->
-                            <argLine> -Dfile.encoding=UTF-8  -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
+                            <argLine>-Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
+                            <parallel>false</parallel>
+                            <parallelMavenExecution>false</parallelMavenExecution>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
                     </plugin>
                 </plugins>
