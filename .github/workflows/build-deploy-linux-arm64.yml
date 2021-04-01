@@ -48,6 +48,10 @@ jobs:
           CURRENT_TARGET: arm64
           PUBLISH_TO: ossrh
           DEPLOY_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+
         run: |
           mvn --version
           cmake --version
