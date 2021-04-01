@@ -55,7 +55,8 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <java.version>1.8</java.version>
     <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
-
+    <test.heap.size>2g</test.heap.size>
+    <test.offheap.size>2g</test.offheap.size>
   </properties>
 
 
@@ -150,7 +151,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
           <executions>
             <!-- Replacing default-compile as it is treated specially by maven -->
             <execution>
@@ -226,6 +226,21 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <parallelMavenExecution>false</parallelMavenExecution>
+              <parallel>false</parallel>
+              <forkCount>0</forkCount>
+              <threadCount>1</threadCount>
+              <perCoreThreadCount>false</perCoreThreadCount>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 

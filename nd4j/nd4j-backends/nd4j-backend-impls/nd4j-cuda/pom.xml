@@ -86,14 +86,10 @@
             <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -140,6 +136,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <trimStackTrace>false</trimStackTrace>
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                     <forkCount>${cpu.core.count}</forkCount>
                     <reuseForks>false</reuseForks>
                     <environmentVariables>
@@ -162,7 +160,8 @@
                         Maximum heap size was set to 6g, as a minimum required value for tests run.
                         Depending on a build machine, default value is not always enough.
                     -->
-                    <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
+                    <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
+
                 </configuration>
             </plugin>
             <plugin>

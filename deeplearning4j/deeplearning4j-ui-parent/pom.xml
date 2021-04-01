@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -38,16 +38,54 @@
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
         <module>deeplearning4j-ui-model</module>
-        <module>deeplearning4j-ui-standalone</module>
         <module>deeplearning4j-vertx</module>
     </modules>
 
     <profiles>
         <profile>
+            <id>ui-jar</id>
+            <modules>
+                <module>deeplearning4j-ui-standalone</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>nd4j-tests-cpu</id>
         </profile>
         <profile>
             <id>nd4j-tests-cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-11.0</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <parallelMavenExecution>false</parallelMavenExecution>
+                            <parallel>false</parallel>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
