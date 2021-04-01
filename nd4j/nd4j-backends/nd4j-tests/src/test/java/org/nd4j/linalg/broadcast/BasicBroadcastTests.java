@@ -175,9 +175,11 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void basicBroadcastFailureTest_4(Nd4jBackend backend) {
-        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
-        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
-        val z = x.addi(y);
+        assertThrows(IllegalStateException.class,() -> {
+            val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+            val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+            val z = x.addi(y);
+        });
     }
 
     @ParameterizedTest

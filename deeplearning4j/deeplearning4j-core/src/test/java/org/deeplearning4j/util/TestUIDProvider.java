@@ -34,8 +34,8 @@ public class TestUIDProvider extends BaseDL4JTest {
 
     @Test
     public void testUIDProvider() {
-        String jvmUID = org.deeplearning4j.core.util.UIDProvider.getJVMUID();
-        String hardwareUID = org.deeplearning4j.core.util.UIDProvider.getHardwareUID();
+        String jvmUID = UIDProvider.getJVMUID();
+        String hardwareUID = UIDProvider.getHardwareUID();
 
         assertNotNull(jvmUID);
         assertNotNull(hardwareUID);
@@ -43,7 +43,7 @@ public class TestUIDProvider extends BaseDL4JTest {
         assertTrue(!jvmUID.isEmpty());
         assertTrue(!hardwareUID.isEmpty());
 
-        assertEquals(jvmUID, org.deeplearning4j.core.util.UIDProvider.getJVMUID());
+        assertEquals(jvmUID, UIDProvider.getJVMUID());
         assertEquals(hardwareUID, UIDProvider.getHardwareUID());
 
         System.out.println("JVM uid:      " + jvmUID);

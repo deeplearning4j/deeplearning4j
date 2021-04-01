@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.performance.primitives.AveragingTransactionsHolder;
@@ -60,7 +61,7 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveragedHolder_1(Nd4jBackend backend) {
-        val holder = new AveragingTransactionsHolder();
+        AveragingTransactionsHolder holder = new AveragingTransactionsHolder();
 
         holder.addValue(MemcpyDirection.HOST_TO_HOST,50L);
         holder.addValue(MemcpyDirection.HOST_TO_HOST,150L);
@@ -71,7 +72,7 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAveragedHolder_2(Nd4jBackend backend) {
-        val holder = new AveragingTransactionsHolder();
+        AveragingTransactionsHolder holder = new AveragingTransactionsHolder();
 
         holder.addValue(MemcpyDirection.HOST_TO_HOST, 50L);
         holder.addValue(MemcpyDirection.HOST_TO_HOST,150L);
@@ -83,20 +84,20 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerformanceTracker_1(Nd4jBackend backend) {
-        val perf = PerformanceTracker.getInstance();
+        PerformanceTracker perf = PerformanceTracker.getInstance();
 
         // 100 nanoseconds spent for 5000 bytes. result should be around 50000 bytes per microsecond
-        val res = perf.addMemoryTransaction(0, 100, 5000);
+        long res = perf.addMemoryTransaction(0, 100, 5000);
         assertEquals(50000, res);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerformanceTracker_2(Nd4jBackend backend) {
-        val perf = PerformanceTracker.getInstance();
+        PerformanceTracker perf = PerformanceTracker.getInstance();
 
         // 10 nanoseconds spent for 5000 bytes. result should be around 500000 bytes per microsecond
-        val res = perf.addMemoryTransaction(0, 10, 5000, MemcpyDirection.HOST_TO_HOST);
+        long res = perf.addMemoryTransaction(0, 10, 5000, MemcpyDirection.HOST_TO_HOST);
         assertEquals(500000, res);
     }
 
@@ -117,8 +118,8 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("native"))
             return;
 
-        val fa = new float[100000000];
-        val array = Nd4j.create(fa, new int[]{10000, 10000});
+        float[] fa = new float[100000000];
+        INDArray array = Nd4j.create(fa, new int[]{10000, 10000});
 
         val map = PerformanceTracker.getInstance().getCurrentBandwidth();
 

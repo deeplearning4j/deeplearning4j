@@ -74,6 +74,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @DisplayName("Convolution Layer Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 class ConvolutionLayerTest extends BaseDL4JTest {
 
     @Override

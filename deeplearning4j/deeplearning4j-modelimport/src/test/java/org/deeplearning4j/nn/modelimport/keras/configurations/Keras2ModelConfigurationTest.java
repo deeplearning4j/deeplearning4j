@@ -21,31 +21,29 @@ package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.resources.Resources;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -293,6 +291,8 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("One Lstm Layer Test")
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
     void oneLstmLayerTest() throws Exception {
         try (InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/one_lstm_no_sequences_tf_keras_2.json")) {
             MultiLayerConfiguration config = new KerasModel().modelBuilder().modelJsonInputStream(is).enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();

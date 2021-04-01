@@ -41,6 +41,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -378,7 +379,8 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
 
             INDArray arr2 = Nd4j.create(dt, arr.shape());
             ByteBuffer bb = arr2.data().pointer().asByteBuffer();
-            bb.position(0);
+            Buffer buffer = (Buffer) bb;
+            buffer.position(0);
             bb.put(b);
 
             Nd4j.getAffinityManager().tagLocation(arr2, AffinityManager.Location.HOST);

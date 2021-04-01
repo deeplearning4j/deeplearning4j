@@ -26,6 +26,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -62,12 +64,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
     public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
-        Nd4j.setDataType(this.initialType);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled
+    @Execution(ExecutionMode.SAME_THREAD)
     public void testVariableTimeSeries1(Nd4jBackend backend) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration
                 .builder()
@@ -80,28 +81,28 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 .build();
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
-            Nd4j.create(500);
-            Nd4j.create(500);
+            Nd4j.create(DataType.DOUBLE,500);
+            Nd4j.create(DataType.DOUBLE,500);
         }
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1");
 
         assertEquals(0, workspace.getStepNumber());
 
-        long requiredMemory = 1000 * Nd4j.sizeOfDataType();
+        long requiredMemory = 1000 * DataType.DOUBLE.width();
         long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
-            Nd4j.create(2000);
+            Nd4j.create(DataType.DOUBLE,2000);
         }
 
         assertEquals(0, workspace.getStepNumber());
 
-        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
-        assertEquals(2000 * Nd4j.sizeOfDataType(), workspace.getPinnedSize());
+        assertEquals(1000 * DataType.DOUBLE.width(), workspace.getSpilledSize());
+        assertEquals(2000 * DataType.DOUBLE.width(), workspace.getPinnedSize());
 
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -116,8 +117,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         for (int e = 0; e < 4; e++) {
             for (int i = 0; i < 4; i++) {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
-                    Nd4j.create(500);
-                    Nd4j.create(500);
+                    Nd4j.create(DataType.DOUBLE,500);
+                    Nd4j.create(DataType.DOUBLE,500);
                 }
 
                 assertEquals((i + 1) * workspace.getInitialBlockSize(),
@@ -144,9 +145,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         // we just do huge loop now, with pinned stuff in it
         for (int i = 0; i < 100; i++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
-                Nd4j.create(500);
-                Nd4j.create(500);
-                Nd4j.create(500);
+                Nd4j.create(DataType.DOUBLE,500);
+                Nd4j.create(DataType.DOUBLE,500);
+                Nd4j.create(DataType.DOUBLE,500);
 
                 assertEquals(1500 * Nd4j.sizeOfDataType(), workspace.getThisCycleAllocations());
             }
@@ -160,8 +161,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         // and we do another clean loo, without pinned stuff in it, to ensure all pinned allocates are gone
         for (int i = 0; i < 100; i++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
-                Nd4j.create(500);
-                Nd4j.create(500);
+                Nd4j.create(DataType.DOUBLE,500);
+                Nd4j.create(DataType.DOUBLE,500);
             }
         }
 
@@ -186,13 +187,12 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 //        workspace.enableDebug(true);
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
-            Nd4j.create(500);
-            Nd4j.create(500);
+            Nd4j.create(DataType.DOUBLE,500);
+            Nd4j.create(DataType.DOUBLE,500);
         }
 
         assertEquals(0, workspace.getStepNumber());
-
-        long requiredMemory = 1000 * Nd4j.sizeOfDataType();
+        long requiredMemory = 1000 * DataType.DOUBLE.width();
         long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
@@ -200,9 +200,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         for (int i = 0; i < 100; i++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
-                Nd4j.create(500);
-                Nd4j.create(500);
-                Nd4j.create(500);
+                Nd4j.create(DataType.DOUBLE,500);
+                Nd4j.create(DataType.DOUBLE,500);
+                Nd4j.create(DataType.DOUBLE,500);
             }
         }
 
@@ -226,11 +226,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         Nd4jWorkspace workspace =
                 (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS109");
 
-        INDArray row = Nd4j.linspace(1, 10, 10);
-        INDArray exp = Nd4j.create(10).assign(2.0);
+        INDArray row = Nd4j.linspace(1, 10, 10).castTo(DataType.DOUBLE);
+        INDArray exp = Nd4j.create(DataType.DOUBLE,10).assign(2.0);
         INDArray result = null;
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS109")) {
-            INDArray matrix = Nd4j.create(10, 10);
+            INDArray matrix = Nd4j.create(DataType.DOUBLE,10, 10);
             for (int e = 0; e < matrix.rows(); e++)
                 matrix.getRow(e).assign(row);
 

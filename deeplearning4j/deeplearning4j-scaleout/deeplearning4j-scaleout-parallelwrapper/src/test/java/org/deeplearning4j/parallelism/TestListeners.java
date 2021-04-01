@@ -54,6 +54,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestListeners extends BaseDL4JTest {
 
     @Test

@@ -65,6 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @AllArgsConstructor
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class RnnDataFormatTests extends BaseDL4JTest {
 
 
@@ -155,6 +157,8 @@ public class RnnDataFormatTests extends BaseDL4JTest {
 
     @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     @ParameterizedTest
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
     public void testGraveLSTM(boolean helpers,
                               boolean lastTimeStep,
                               boolean maskZeros,Nd4jBackend backend) {

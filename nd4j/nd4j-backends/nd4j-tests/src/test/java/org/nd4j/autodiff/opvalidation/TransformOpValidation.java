@@ -2209,7 +2209,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable inputY = sd.var(Nd4j.rand(2, 3));
 
 
-        SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd, inputX, inputY).outputVariable().std(true);
+        SDVariable out = new Max(sd, inputX, inputY).outputVariable().std(true);
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);

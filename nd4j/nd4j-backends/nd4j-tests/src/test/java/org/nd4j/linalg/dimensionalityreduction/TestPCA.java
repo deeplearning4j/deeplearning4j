@@ -53,7 +53,7 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         INDArray A = Nd4j.create(f, new int[] {m, n}, 'f');
 
         INDArray A1 = A.dup('f');
-        INDArray Factor = org.nd4j.linalg.dimensionalityreduction.PCA.pca_factor(A1, 3, true);
+        INDArray Factor = PCA.pca_factor(A1, 3, true);
         A1 = A.subiRowVector(A.mean(0));
 
         INDArray Reduced = A1.mmul(Factor);
@@ -77,7 +77,7 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         INDArray A = Nd4j.create(f, new long[] {m, n}, 'f');
 
         INDArray A1 = A.dup('f');
-        INDArray factor = org.nd4j.linalg.dimensionalityreduction.PCA.pca_factor(A1, 3, true);
+        INDArray factor = PCA.pca_factor(A1, 3, true);
         A1 = A.subiRowVector(A.mean(0));
 
         INDArray reduced = A1.mmul(factor);
@@ -101,7 +101,7 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         INDArray A = Nd4j.create(f, new int[] {m, n}, 'f');
 
         INDArray A1 = A.dup('f');
-        INDArray Factor1 = org.nd4j.linalg.dimensionalityreduction.PCA.pca_factor(A1, 0.95, true);
+        INDArray Factor1 = PCA.pca_factor(A1, 0.95, true);
         A1 = A.subiRowVector(A.mean(0));
         INDArray Reduced1 = A1.mmul(Factor1);
         INDArray Reconstructed1 = Reduced1.mmul(Factor1.transpose());
@@ -110,7 +110,7 @@ public class TestPCA extends BaseNd4jTestWithBackends {
             assertEquals( 0.0, Diff1.getDouble(i), 0.1,"Reconstructed matrix is very different from the original.");
         }
         INDArray A2 = A.dup('f');
-        INDArray Factor2 = org.nd4j.linalg.dimensionalityreduction.PCA.pca_factor(A2, 0.50, true);
+        INDArray Factor2 = PCA.pca_factor(A2, 0.50, true);
         assertTrue(Factor1.columns() > Factor2.columns(),"Variance differences should change factor sizes.");
     }
 

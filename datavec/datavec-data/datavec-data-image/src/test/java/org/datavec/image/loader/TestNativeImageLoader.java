@@ -28,20 +28,21 @@ import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.leptonica.PIX;
+import org.bytedeco.leptonica.PIXCMAP;
+import org.bytedeco.opencv.opencv_core.Mat;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.io.ClassPathResource;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -49,14 +50,9 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Random;
 
-import org.bytedeco.leptonica.*;
-import org.bytedeco.opencv.opencv_core.*;
 import static org.bytedeco.leptonica.global.lept.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -65,6 +61,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Slf4j
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class TestNativeImageLoader {
     static final long seed = 10;
     static final Random rng = new Random(seed);

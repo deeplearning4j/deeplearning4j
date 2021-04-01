@@ -95,7 +95,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
                                 .build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX).nIn(3).nOut(3).build())
                 .build();
 
@@ -516,7 +516,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                     .addLayer("elementWiseMul", new ElementWiseMultiplicationLayer.Builder().nIn(4).nOut(4)
                             .activation(a)
                             .build(), "dense")
-                    .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                    .addLayer("loss", new LossLayer.Builder(LossFunction.COSINE_PROXIMITY)
                             .activation(Activation.IDENTITY).build(), "elementWiseMul")
                     .setOutputs("loss")
                     .build();

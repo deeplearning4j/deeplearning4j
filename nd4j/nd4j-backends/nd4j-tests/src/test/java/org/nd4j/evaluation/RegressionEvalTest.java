@@ -79,7 +79,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         RegressionEvaluation eval = new RegressionEvaluation(nCols);
 
         for (int i = 0; i < nTestArrays; i++) {
-            INDArray rand = Nd4j.rand(valuesPerTestArray, nCols).castTo(DataType.DOUBLE);
+            INDArray rand = Nd4j.rand(DataType.DOUBLE,valuesPerTestArray, nCols);
             eval.eval(rand, rand);
         }
 
@@ -172,8 +172,8 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         for (int i = 0; i < nEvalInstances; i++) {
             list.add(new RegressionEvaluation(nCols));
             for (int j = 0; j < numMinibatches; j++) {
-                INDArray p = Nd4j.rand(nRows, nCols).castTo(Nd4j.defaultFloatingPointType());
-                INDArray act = Nd4j.rand(nRows, nCols).castTo(Nd4j.defaultFloatingPointType());
+                INDArray p = Nd4j.rand(DataType.DOUBLE,nRows, nCols);
+                INDArray act = Nd4j.rand(DataType.DOUBLE,nRows, nCols);
 
                 single.eval(act, p);
 
@@ -383,7 +383,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         List<INDArray> rowsL = new ArrayList<>();
 
         //Check per-example masking:
-        INDArray mask1dPerEx = Nd4j.createFromArray(1, 0);
+        INDArray mask1dPerEx = Nd4j.createFromArray(1, 0).castTo(DataType.FLOAT);
 
         NdIndexIterator iter = new NdIndexIterator(2, 10, 10);
         while (iter.hasNext()) {
@@ -409,7 +409,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         }
 
         //Check per-output masking:
-        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape());
+        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape()).castTo(DataType.FLOAT);
         rowsP.clear();
         rowsL.clear();
         List<INDArray> rowsM = new ArrayList<>();

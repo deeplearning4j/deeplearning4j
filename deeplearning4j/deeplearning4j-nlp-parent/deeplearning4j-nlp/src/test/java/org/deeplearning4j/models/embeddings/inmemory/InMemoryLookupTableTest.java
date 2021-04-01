@@ -106,6 +106,8 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
 
     @Test()
     @Timeout(300000)
+    @Disabled("d file hash does not match expected hash: https://dl4jtest.blob.core.windows.net/resources/big/raw_sentences.txt.gzx.v1 ")
+    @Tag(TagNames.NEEDS_VERIFY)
     public void testConsumeOnNonEqualVocabs(@TempDir Path testDir) throws Exception {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

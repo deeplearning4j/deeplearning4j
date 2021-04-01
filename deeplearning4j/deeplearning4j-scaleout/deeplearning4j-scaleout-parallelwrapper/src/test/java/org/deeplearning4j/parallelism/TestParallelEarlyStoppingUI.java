@@ -53,6 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestParallelEarlyStoppingUI extends BaseDL4JTest {
 
     @Test

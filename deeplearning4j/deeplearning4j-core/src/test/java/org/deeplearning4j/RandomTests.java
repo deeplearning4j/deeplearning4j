@@ -46,6 +46,8 @@ import java.util.concurrent.CountDownLatch;
 public class RandomTests extends BaseDL4JTest {
 
     @Test
+    @Tag(TagNames.LARGE_RESOURCES)
+    @Tag(TagNames.LONG_TEST)
     public void testReproduce() throws Exception {
 
         final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())

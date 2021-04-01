@@ -20,6 +20,7 @@
 
 package org.nd4j.imports.tfgraphs;
 
+import org.apache.commons.io.FileUtils;
 import org.nd4j.imports.listeners.ExecPrintListener;
 import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
 import lombok.extern.slf4j.Slf4j;
@@ -111,21 +112,6 @@ public class TFGraphTestAllHelper {
 
     public static final DefaultGraphLoader LOADER = new DefaultGraphLoader();
 
-    @BeforeAll
-    public void beforeClass(){
-        log.info("Starting tests for class: " + getClass().getName());
-    }
-
-    @BeforeEach
-    public void setup(){
-        Nd4j.setDataType(DataType.FLOAT);
-    }
-
-    @AfterEach
-    public void tearDown() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
-    }
 
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
             .executionMode(ExecutionMode.SEQUENTIAL)
@@ -559,32 +545,29 @@ public class TFGraphTestAllHelper {
         val dtypes = new HashMap<String, DataType>();
 
         List<Pair<Resource,Resource>> resources = new ArrayList<>();
-        if(recursive){
+        if(recursive) {
             String nameRegex = pattern.replace("**.",".*\\.") + "\\.shape";
-//            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "/" + modelName);
-//            baseDir.mkdirs();
-//            baseDir.deleteOnExit();
-//            new ClassPathResource(modelDir).copyDirectory(baseDir);
-
             // checking out, if local folder declared
             String localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-            if(localPath != null && (!localPath.contains("src/main/resources") && !localPath.contains("src\\main\\resources"))){
+            if(localPath != null && (!localPath.contains("src/main/resources") && !localPath.contains("src\\main\\resources"))) {
                 localPath = FilenameUtils.concat(localPath, "src/main/resources");
             }
+
 
             // baseDir will differ, depending on run mode
             File baseDir = localPath == null ? new File(localTestDir, "extracted/" + modelName) : new File(localPath, base_dir + "/" + modelName);
             String[] arr = baseDir.list();
 
-            if(!baseDir.exists() || arr == null || arr.length == 0){
+            if(!baseDir.exists() || arr == null || arr.length == 0) {
                 // we're skipping extraction if we're using local copy of dl4j-tests-resources
                 if (localPath == null) {
                     baseDir.mkdirs();
-                    baseDir.deleteOnExit();
+                    FileUtils.forceDeleteOnExit(baseDir);
                     String md = modelDir;
                     if(!md.endsWith("/") && !md.endsWith("\\")){
                         md = md + "/";
                     }
+
                     new ClassPathResource(md).copyDirectory(baseDir);
                 } else{
                     throw new IllegalStateException("local directory declared but could not find files: " + baseDir.getAbsolutePath());
@@ -595,7 +578,7 @@ public class TFGraphTestAllHelper {
             LinkedList<File> queue = new LinkedList<>();
             queue.add(baseDir);
 
-            while(!queue.isEmpty()){
+            while(!queue.isEmpty()) {
                 File subdir = queue.remove();
                 File[] files = subdir.listFiles();
                 if (files != null) {
@@ -665,7 +648,7 @@ public class TFGraphTestAllHelper {
 
 //        Preconditions.checkState(!dtypes.isEmpty(), "No datatypes file was found");
 
-        val dtype = Nd4j.dataType();
+
         for (int i = 0; i < resources.size(); i++) {
             URI u = resources.get(i).getFirst().getURI();
             String varName = u.toString();
@@ -730,7 +713,7 @@ public class TFGraphTestAllHelper {
                 }
             } else {
                 int[] varShape = new int[filtered.size()];
-                for( int j=0; j<filtered.size(); j++ ){
+                for( int j = 0; j < filtered.size(); j++) {
                     varShape[j] = Integer.parseInt(filtered.get(j));
                 }
 
@@ -801,8 +784,8 @@ public class TFGraphTestAllHelper {
                                 break;
                             case BOOL:
                                 boolean[] bArr = new boolean[cLines.length];
-                                int z=0;
-                                while(z < bArr.length){
+                                int z = 0;
+                                while(z < bArr.length) {
                                     bArr[z] = parseBoolean(cLines[z]);
                                     z++;
                                 }
@@ -828,7 +811,7 @@ public class TFGraphTestAllHelper {
         return varMap;
     }
 
-    private static long parseLong(String line){
+    private static long parseLong(String line) {
         line = line.trim();       //Handle whitespace
         if(line.matches("-?\\d+\\.0+")){
             //Annoyingly, some integer data is stored with redundant/unnecessary zeros - like "-7.0000000"

@@ -35,18 +35,16 @@ import org.datavec.image.transform.FlipImageTransform;
 import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.PipelineImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.net.URI;
@@ -57,8 +55,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TestObjectDetectionRecordReader {
 
 

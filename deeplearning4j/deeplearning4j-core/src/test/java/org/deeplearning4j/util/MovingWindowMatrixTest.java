@@ -41,10 +41,10 @@ class MovingWindowMatrixTest extends BaseDL4JTest {
     @DisplayName("Test Moving Window")
     void testMovingWindow() {
         INDArray ones = Nd4j.ones(4, 4);
-        org.deeplearning4j.core.util.MovingWindowMatrix m = new org.deeplearning4j.core.util.MovingWindowMatrix(ones, 2, 2);
+        MovingWindowMatrix m = new MovingWindowMatrix(ones, 2, 2);
         List<INDArray> windows = m.windows();
         assertEquals(4, windows.size());
-        org.deeplearning4j.core.util.MovingWindowMatrix m2 = new MovingWindowMatrix(ones, 2, 2, true);
+        MovingWindowMatrix m2 = new MovingWindowMatrix(ones, 2, 2, true);
         List<INDArray> windowsRotate = m2.windows();
         assertEquals(16, windowsRotate.size());
     }

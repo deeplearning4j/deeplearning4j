@@ -65,14 +65,14 @@ public class TestVAE extends BaseDL4JTest {
 
         MultiLayerConfiguration mlc =
                         new NeuralNetConfiguration.Builder().list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                                        .layer(0, new VariationalAutoencoder.Builder()
                                                         .nIn(10).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13)
                                                         .build())
                                         .build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
-        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+        VariationalAutoencoder vae =
+                        (VariationalAutoencoder) c.getLayer();
 
         long allParams = vae.initializer().numParams(c);
 
@@ -102,13 +102,13 @@ public class TestVAE extends BaseDL4JTest {
         for (int i = 0; i < encLayerSizes.length; i++) {
 
             MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().list().layer(0,
-                            new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder().nIn(10)
+                            new VariationalAutoencoder.Builder().nIn(10)
                                             .nOut(5).encoderLayerSizes(encLayerSizes[i]).decoderLayerSizes(13).build())
                             .build();
 
             NeuralNetConfiguration c = mlc.getConf(0);
-            org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                            (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+            VariationalAutoencoder vae =
+                            (VariationalAutoencoder) c.getLayer();
 
             MultiLayerNetwork net = new MultiLayerNetwork(mlc);
             net.init();
@@ -128,13 +128,13 @@ public class TestVAE extends BaseDL4JTest {
         int inputSize = 3;
 
         MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(0, new VariationalAutoencoder.Builder()
                                         .nIn(inputSize).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
                         .build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
-        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+        VariationalAutoencoder vae =
+                        (VariationalAutoencoder) c.getLayer();
 
         long allParams = vae.initializer().numParams(c);
 
@@ -166,13 +166,13 @@ public class TestVAE extends BaseDL4JTest {
     public void testParamGradientOrderAndViews() {
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(0, new VariationalAutoencoder.Builder()
                                         .nIn(10).nOut(5).encoderLayerSizes(12, 13).decoderLayerSizes(14, 15).build())
                         .build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
-        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+        VariationalAutoencoder vae =
+                        (VariationalAutoencoder) c.getLayer();
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
@@ -224,15 +224,15 @@ public class TestVAE extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().seed(12345).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(0, new VariationalAutoencoder.Builder()
                                         .nIn(10).nOut(5).encoderLayerSizes(12, 13).decoderLayerSizes(14, 15).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(6)
                                         .activation(new ActivationTanH()).build())
                         .build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
-        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+        VariationalAutoencoder vae =
+                        (VariationalAutoencoder) c.getLayer();
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
@@ -276,22 +276,22 @@ public class TestVAE extends BaseDL4JTest {
     public void testJsonYaml() {
 
         MultiLayerConfiguration config = new NeuralNetConfiguration.Builder().seed(12345).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(0, new VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .nIn(3).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(1, new VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.TANH))
                                         .nIn(7).nOut(8).encoderLayerSizes(9).decoderLayerSizes(10).build())
-                        .layer(2, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(2, new VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new BernoulliReconstructionDistribution()).nIn(11)
                                         .nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
-                        .layer(3, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(3, new VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new ExponentialReconstructionDistribution(Activation.TANH))
                                         .nIn(11).nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
-                        .layer(4, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(4, new VariationalAutoencoder.Builder()
                                         .lossFunction(new ActivationTanH(), LossFunctions.LossFunction.MSE).nIn(11)
                                         .nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
-                        .layer(5, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .layer(5, new VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new CompositeReconstructionDistribution.Builder()
                                                         .addDistribution(5, new GaussianReconstructionDistribution())
                                                         .addDistribution(5,
@@ -467,7 +467,7 @@ public class TestVAE extends BaseDL4JTest {
                     .seed(12345L)
                     .trainingWorkspaceMode(ws ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                     .inferenceWorkspaceMode(ws ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
-                    .weightNoise(new WeightNoise(new org.deeplearning4j.nn.conf.distribution.NormalDistribution(0.1, 0.3)))
+                    .weightNoise(new WeightNoise(new NormalDistribution(0.1, 0.3)))
                     .list().layer(0,
                             new VariationalAutoencoder.Builder().nIn(10).nOut(3)
                                     .encoderLayerSizes(5).decoderLayerSizes(6)

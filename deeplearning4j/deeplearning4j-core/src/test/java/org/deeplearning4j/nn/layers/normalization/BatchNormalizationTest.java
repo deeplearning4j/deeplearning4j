@@ -80,6 +80,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Batch Normalization Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 class BatchNormalizationTest extends BaseDL4JTest {
 
     static {
@@ -502,6 +504,8 @@ class BatchNormalizationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Check Mean Variance Estimate CNN Compare Modes")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     void checkMeanVarianceEstimateCNNCompareModes() throws Exception {
         Nd4j.getRandom().setSeed(12345);
         // Check that the internal global mean/variance estimate is approximately correct

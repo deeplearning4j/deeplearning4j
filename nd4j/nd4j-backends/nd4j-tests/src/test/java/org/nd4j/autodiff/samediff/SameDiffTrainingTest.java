@@ -68,6 +68,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void irisTrainingSanityCheck(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);

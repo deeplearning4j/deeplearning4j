@@ -35,15 +35,15 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  */
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
 public class LoaderTests {
 
     private static void ensureDataAvailable(){

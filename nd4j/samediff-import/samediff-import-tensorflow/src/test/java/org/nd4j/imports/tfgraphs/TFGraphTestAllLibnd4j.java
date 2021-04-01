@@ -25,8 +25,11 @@ import lombok.val;
 import org.junit.jupiter.api.*;import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 
+import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -39,15 +42,13 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 
 @Slf4j
-@Disabled("AB 2019/05/21 - JVM Crashes - Issue #7657")
+@Tag(TagNames.LONG_TEST)
+@Tag(TagNames.LARGE_RESOURCES)
 public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
-
-    private Map<String, INDArray> inputs;
-    private Map<String, INDArray> predictions;
-    private String modelName;
-    private File localTestDir;
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
     private static final String BASE_DIR = "tf_graphs/examples";
@@ -97,7 +98,8 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
             "rnn/lstmblockfusedcell/.*",
     };
 
- @BeforeAll    public static void beforeClass() {
+    @BeforeAll
+    public static void beforeClass() {
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
@@ -127,26 +129,25 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         }
     }
 
-
-    @Test//(timeout = 25000L)
-    public void test() throws Exception {
-
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
         Nd4j.create(1);
         for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
-                //OpValidationSuite.ignoreFailing();
+                assumeFalse(true);
             }
         }
 
-        for(String s : SKIP_FOR_LIBND4J_EXEC){
+        for(String s : SKIP_FOR_LIBND4J_EXEC) {
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX - SKIP LIBND4J EXEC ONLY: {} - regex {}", modelName, s);
-                //OpValidationSuite.ignoreFailing();
+                assumeFalse(true);
             }
         }
 
-        log.info("Starting test: {}", this.modelName);
+        log.info("Starting test: {}", modelName);
         Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());

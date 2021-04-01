@@ -501,6 +501,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testGatherGradient(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 

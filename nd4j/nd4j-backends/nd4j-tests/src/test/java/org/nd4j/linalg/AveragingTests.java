@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -45,18 +47,15 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
     private final int THREADS = 16;
     private final int LENGTH = 51200 * 4;
 
-    DataType initialType = Nd4j.dataType();
 
 
 
     @BeforeEach
     public void setUp() {
-        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @AfterEach
     public void shutUp() {
-        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 
@@ -111,6 +110,7 @@ public class AveragingTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Execution(ExecutionMode.SAME_THREAD)
     public void testSingleDeviceAveraging2(Nd4jBackend backend) {
         INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH);
         List<INDArray> arrays = new ArrayList<>();

@@ -65,6 +65,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Convolution Layer Setup Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
+@Tag(TagNames.LARGE_RESOURCES)
 class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @TempDir
@@ -152,22 +153,22 @@ class ConvolutionLayerSetupTest extends BaseDL4JTest {
     }
 
     public MultiLayerConfiguration.Builder incompleteLRN() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(2, new LocalResponseNormalization.Builder().build()).layer(3, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(4, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2).activation(Activation.SOFTMAX).build());
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(2, new LocalResponseNormalization.Builder().build()).layer(3, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(4, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2).activation(Activation.SOFTMAX).build());
         return builder;
     }
 
     public MultiLayerConfiguration.Builder incompleteLFW() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(4, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX).nOut(2).build());
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(2, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(3, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(4, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX).nOut(2).build());
         return builder;
     }
 
     public MultiLayerConfiguration.Builder incompleteMnistLenet() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(1).nOut(20).build()).layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 2, 2 }, new int[] { 2, 2 }).build()).layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(20).nOut(50).build()).layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 2, 2 }, new int[] { 2, 2 }).build()).layer(4, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(500).build()).layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX).nOut(10).build());
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(1).nOut(20).build()).layer(1, new SubsamplingLayer.Builder(new int[] { 2, 2 }, new int[] { 2, 2 }).build()).layer(2, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(20).nOut(50).build()).layer(3, new SubsamplingLayer.Builder(new int[] { 2, 2 }, new int[] { 2, 2 }).build()).layer(4, new DenseLayer.Builder().nOut(500).build()).layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX).nOut(10).build());
         return builder;
     }
 
     public MultiLayerConfiguration mnistLenet() {
-        MultiLayerConfiguration builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(1).nOut(6).build()).layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 5, 5 }, new int[] { 2, 2 }).build()).layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(1).nOut(6).build()).layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[] { 5, 5 }, new int[] { 2, 2 }).build()).layer(4, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(150).nOut(10).build()).build();
+        MultiLayerConfiguration builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(1).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(new int[] { 5, 5 }, new int[] { 2, 2 }).build()).layer(2, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nIn(1).nOut(6).build()).layer(3, new SubsamplingLayer.Builder(new int[] { 5, 5 }, new int[] { 2, 2 }).build()).layer(4, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(150).nOut(10).build()).build();
         return builder;
     }
 
@@ -175,7 +176,7 @@ class ConvolutionLayerSetupTest extends BaseDL4JTest {
         int nChannels = 1;
         int outputNum = 10;
         int seed = 123;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 10, 10 }, new int[] { 2, 2 }).nIn(nChannels).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build());
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 10, 10 }, new int[] { 2, 2 }).nIn(nChannels).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build());
         return builder;
     }
 
@@ -185,7 +186,7 @@ class ConvolutionLayerSetupTest extends BaseDL4JTest {
         int nChannels = 1;
         int outputNum = 10;
         int seed = 123;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] { 10, 10 }, new int[] { 2, 2 }).nIn(nChannels).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(// 216
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 10, 10 }, new int[] { 2, 2 }).nIn(nChannels).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(// 216
         5 * 5 * 1 * 6).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, nChannels)).inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6));
         return builder;
     }

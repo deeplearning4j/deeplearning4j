@@ -23,6 +23,8 @@ package org.nd4j.linalg.profiling;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -39,6 +41,7 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @NativeTag
+@Execution(ExecutionMode.SAME_THREAD)
 public class InfNanTests extends BaseNd4jTestWithBackends {
 
 

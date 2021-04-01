@@ -23,6 +23,8 @@ package org.nd4j.linalg.ops;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -116,8 +118,10 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     }
 
 
-    @Test
-    public void testDistance() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Execution(ExecutionMode.SAME_THREAD)
+    public void testDistance(Nd4jBackend backend) throws Exception {
         INDArray matrix = Nd4j.rand(new int[] {400,10});
         INDArray rowVector = matrix.getRow(70);
         INDArray resultArr = Nd4j.zeros(400,1);
@@ -126,8 +130,6 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
             Nd4j.getExecutioner().exec(new EuclideanDistance(matrix, rowVector, resultArr, -1));
             System.out.println("Ran!");
         });
-
-        Thread.sleep(600000);
 
     }
 
