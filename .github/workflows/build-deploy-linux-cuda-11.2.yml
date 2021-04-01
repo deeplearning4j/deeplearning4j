@@ -32,10 +32,6 @@ jobs:
           remove-android: 'true'
 
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 11.2.1_461
-          GCC: 9
       - uses: ./.github/actions/update-deps-linux
       - uses: ./.github/actions/install-protobuf-linux
       - uses: ./.github/actions/install-cmake-linux
@@ -49,6 +45,10 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
+        env:
+          cuda: 11.2.1_461
+          GCC: 9
       - name: Run cuda compilation on linux-x86_64
         shell: bash
         env:
