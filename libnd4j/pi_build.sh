@@ -332,7 +332,7 @@ message $command
 eval $command &>/dev/null
 cd ${BASE_DIR} 
 fi
-check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPUTE_DIR}/build/libarm_compute_core-static.a"
+#check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPUTE_DIR}/build/libarm_compute_core-static.a"
 
 export ARMCOMPUTE_ROOT="${ARMCOMPUTE_DIR}"
 
