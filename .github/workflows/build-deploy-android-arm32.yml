@@ -51,8 +51,8 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           DEPLOY_TO: ossrh
-          OPENBLAS_PATH: ${HOME}/.javacpp/cache/openblas-0.3.13-1.5.5-android-arm.jar/lib/armeabi-v7a
           LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
+          LIBND4J_PLATFORM_EXT: arm32
         run: |
           mvn --version
           cmake --version
