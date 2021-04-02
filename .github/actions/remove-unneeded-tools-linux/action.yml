@@ -14,3 +14,5 @@ runs:
            sudo apt remove -y apache2-bin* azure-cli dotnet-* ghc-* google-cloud-sdk* heroku* libboost-* libmono-* libobjc-* moby-* mono-* mysql* postgresql* r-* ruby* sqlite3* swig*
            sudo apt-get clean
            sudo apt-get autoclean
+           sudo rm -rf "/usr/local/share/boost"
+           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
