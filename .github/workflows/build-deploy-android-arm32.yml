@@ -51,12 +51,18 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           DEPLOY_TO: ossrh
+          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/armeabi-v7a
           LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
-          LIBND4J_PLATFORM_EXT: arm32
         run: |
           mvn --version
           cmake --version
           protoc --version
+          sudo apt install -y unzip wget
+          mkdir "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-arm.jar
+          unzip openblas-0.3.13-1.5.5-android-arm.jar
+          cd ..
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
 

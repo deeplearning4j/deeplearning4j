@@ -48,6 +48,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           DEPLOY_TO: ossrh
         run: |
           echo "Verifying programs on path. Path is $PATH"
@@ -56,6 +57,12 @@ jobs:
           cmake --version
           protoc --version
           clang --version
+          sudo apt install -y unzip wget
+          mkdir "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-x86_64.jar
+          unzip openblas-0.3.13-1.5.5-android-x86_64.jar
+          cd ..
 
           export LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j
           mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
