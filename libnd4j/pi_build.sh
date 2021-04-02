@@ -75,10 +75,7 @@ for i in "${!TARGET_ARRS[@]}"; do
    fi
 done
 
-if [ ${TARGET_INDEX} -eq -1 ];then
-	message "could not find  ${CURRENT_TARGET} in ${TARGET_ARRS[@]}"
-	exit -1
-fi
+
 
 #BASE_DIR=${HOME}/pi
 #https://stackoverflow.com/questions/59895/how-to-get-the-source-directory-of-a-bash-script-from-within-the-script-itself
