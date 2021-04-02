@@ -68,7 +68,7 @@ jobs:
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
-          -Dlibnd4j.buildthreads=1
+          -Dlibnd4j.buildthreads=1 \
            -DskipTestResourceEnforcement=true \
           -Dlibnd4j.platform=android-x86_64  \
           --batch-mode clean deploy -DskipTests
