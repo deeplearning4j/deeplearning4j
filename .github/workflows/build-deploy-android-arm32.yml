@@ -45,14 +45,15 @@ jobs:
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
           TARGET_OS: android
-          CURRENT_TARGET: arm32
+          CURRENT_TARGET: arm
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           DEPLOY_TO: ossrh
-          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/armeabi-v7a
+          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a
           LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
+          LIBND4J_PLATFORM: android-arm
         run: |
           mvn --version
           cmake --version
