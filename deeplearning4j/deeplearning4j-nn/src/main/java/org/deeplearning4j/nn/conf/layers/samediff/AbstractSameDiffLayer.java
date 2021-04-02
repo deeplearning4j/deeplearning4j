@@ -52,8 +52,14 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Data@EqualsAndHashCode(callSuper = true, doNotUseGetters = true) 
+//@EqualsAndHashCode(callSuper = true) Won't work correctly for this class due to
+//java.lang.NullPointerException
+//at org.deeplearning4j.nn.conf.layers.LocallyConnected2D.defineParameters(LocallyConnected2D.java:151)
+//at org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer.getLayerParams(AbstractSameDiffLayer.java:103)
+//at org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer.hashCode(AbstractSameDiffLayer.java:52)
+//at org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer.hashCode(SameDiffLayer.java:56)
+//at org.deeplearning4j.nn.conf.layers.LocallyConnected2D.hashCode(LocallyConnected2D.java:51)
 public abstract class AbstractSameDiffLayer extends Layer {
 
     protected List<Regularization> regularization;
