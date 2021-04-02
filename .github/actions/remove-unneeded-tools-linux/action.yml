@@ -11,3 +11,4 @@ runs:
            sudo rm -rf /usr/local/share/gecko_driver*
            sudo rm -rf /usr/local/lib/lein*
            sudo rm -rf /usr/share/miniconda*
+           sudo apt remove -y apache2-bin* azure-cli dotnet-* ghc-* google-cloud-sdk* heroku* libboost-* libmono-* libobjc-* moby-* mono-* mysql* postgresql* r-* ruby* sqlite3* swig*
