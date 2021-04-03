@@ -37,10 +37,14 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r18b
       - name: Build on android-arm64
         shell: bash
         env:
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           DEPLOY: 1
@@ -55,6 +59,7 @@ jobs:
           LIBND4J_PLATFORM_EXT: arm64
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
           LIBND4J_PLATFORM: android-arm64
+          DEPLOY_TO: ossrh
         run: |
           mvn --version
           cmake --version

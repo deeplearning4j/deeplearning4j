@@ -37,9 +37,14 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase:  MAVEN_GPG_PASSPHRASE
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r18b
       - name: Build on  android-arm32
         shell: bash
         env:
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           DEPLOY: 1
