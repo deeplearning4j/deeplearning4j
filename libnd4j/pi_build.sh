@@ -337,8 +337,8 @@ fi #if armcompute
 
 
 if [ "${TARGET_OS}" = "android" ];then
-	export ANDROID_NDK=${CROSS_COMPILER_DIR}
-	XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl \":libnd4j,:nd4j-native\" "
+	#export ANDROID_NDK=${CROSS_COMPILER_DIR}
+	#XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl \":libnd4j,:nd4j-native\" "
 else
 	 if [ "${CURRENT_TARGET}" == "jetson_arm64" ];then
 	 	message  "jetson cuda build "
