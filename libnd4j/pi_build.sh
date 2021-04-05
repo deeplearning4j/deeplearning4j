@@ -376,11 +376,11 @@ cd $BASE_DIR/..
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  message mvn -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
-   mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  message mvn -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=/opt/protobuf/bin/protoc  -DprotocExecutable=/opt/protobuf/bin/protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+   mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=/opt/protobuf/bin/protoc -DprotocExecutable=/opt/protobuf/bin/protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 else
   message "Installing to local repo"
-  mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -Dlibnd4j.buildthreads=1 install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -Dlibnd4j.buildthreads=1 install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc   -DprotocExecutable=/opt/protobuf/bin/protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 fi
 
 fi
