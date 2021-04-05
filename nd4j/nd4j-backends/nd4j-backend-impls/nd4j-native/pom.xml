@@ -170,10 +170,13 @@
                         <includePath>${libnd4jhome}/include/performance</includePath>
                     </includePaths>
                     <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
-                    <linkPath>${env.OPENBLAS_HOME}/lib</linkPath>
+                    <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
+                    <linkPath>${env.OPENBLAS_PATH}/</linkPath>
+
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
                         <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
+                        <buildResource>/lib/</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/
