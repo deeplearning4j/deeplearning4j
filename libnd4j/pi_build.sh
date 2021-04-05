@@ -30,6 +30,7 @@ if [ -z "${ARMCOMPUTE_TAG}" ]; then export  ARMCOMPUTE_TAG=v20.05; fi
 if [ -z "${LIBND4J_BUILD_MODE}" ]; then export  LIBND4J_BUILD_MODE=Release; fi
 if [ -z "${ANDROID_VERSION}" ]; then export  ANDROID_VERSION=21; fi
 if [ -z "${CUDA_VER}" ]; then export  CUDA_VER=10.2; fi
+if [ -z "${LIBND4J_BUILD_THREADS}" ]; then export  LIBND4J_BUILD_THREADS=1; fi
 
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
@@ -95,6 +96,7 @@ if [ -z "${LIBND4J_PLATFORM_EXT}" ]; then export LIBND4J_PLATFORM_EXT=${LIBND4J_
 
 export BLAS_TARGET_NAME=${OPENBLAS_TARGETS[$TARGET_INDEX]}
 export ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGETS[$TARGET_INDEX]}
+if [ -z "${ARMCOMPUTE_TARGET}" ]; then export ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGETS[$TARGET_INDEX]}; fi
 if [ -z "${TARGET_OS}" ]; then export TARGET_OS=${OS_LIST[$TARGET_INDEX]}; fi
 if [ -z "${LIBND4J_PLATFORM}" ]; then export LIBND4J_PLATFORM=${TARGET_OS}-${LIBND4J_PLATFORM_EXT}; fi
 echo "RESOLVED PLATFORM TO $LIBND4J_PLATFORM"
@@ -374,11 +376,11 @@ cd $BASE_DIR/..
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  message mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
-   mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  message mvn -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+   mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 else
   message "Installing to local repo"
-  mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -Dlibnd4j.buildthreads=1 install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 fi
 
 fi

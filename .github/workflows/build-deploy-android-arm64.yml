@@ -60,6 +60,8 @@ jobs:
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
           LIBND4J_PLATFORM: android-arm64
           DEPLOY_TO: ossrh
+          ARMCOMPUTE_TARGET: arm64-v8a
+          LIBND4J_BUILD_THREADS: 1
         run: |
           mvn --version
           cmake --version

@@ -59,6 +59,8 @@ jobs:
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a
           LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
           LIBND4J_PLATFORM: android-arm
+          ARMCOMPUTE_TARGET: armv7a
+          LIBND4J_BUILD_THREADS: 1
         run: |
           mvn --version
           cmake --version
