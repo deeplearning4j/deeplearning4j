@@ -53,7 +53,7 @@ import java.util.Map;
 
 @Slf4j
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, doNotUseGetters = true)
 public abstract class AbstractSameDiffLayer extends Layer {
 
     protected List<Regularization> regularization;
