@@ -60,7 +60,7 @@ jobs:
           LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
           LIBND4J_PLATFORM: android-arm
           ARMCOMPUTE_TARGET: armv7a
-          LIBND4J_BUILD_THREADS: 1
+          LIBND4J_BUILD_THREADS: 64
         run: |
           mvn --version
           cmake --version
