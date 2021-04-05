@@ -72,7 +72,6 @@ jobs:
           unzip openblas-0.3.13-1.5.5-android-arm.jar
           cd ..
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a/
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OPENBLAS_PATH/lib
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
 

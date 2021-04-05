@@ -66,7 +66,6 @@ jobs:
 
           export LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OPENBLAS_PATH/lib
           mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
           -Dlibnd4j.buildthreads=1 \
