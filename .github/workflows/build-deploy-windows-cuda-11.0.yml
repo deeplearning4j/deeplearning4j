@@ -22,9 +22,11 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
-      - name: Use existing msys2 to setup environment
-        uses: ./.github/actions/msys2-base-setup
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.0.167
@@ -52,6 +54,7 @@ jobs:
           which cmake
           dir "%CUDA_PATH%"
           dir "%CUDA_PATH%\lib"
+          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
           set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\lib\x64;%PATH%"
           echo "Running cuda build"
           mvn -Possrh  -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean  --batch-mode deploy -DskipTests

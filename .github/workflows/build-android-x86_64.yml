@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#  pre-ci:
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 1
+#    steps:
+#      - name: 'Block Concurrent Executions'
+#        uses: softprops/turnstyle@v1
+#        with:
+#          poll-interval-seconds: 10
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   android-x86_64:
-    needs: pre-ci
-    runs-on: ubuntu-16.04
+    #needs: pre-ci
+    runs-on: self-hosted
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -48,8 +48,9 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          OPENBLAS_PATH: ${HOME}/.javacpp/cache/openblas-0.3.13-1.5.5-android-x86_64.jar/lib/
+          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           DEPLOY_TO: ossrh
+          LIBND4J_BUILD_THREADS: 64
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -57,12 +58,20 @@ jobs:
           cmake --version
           protoc --version
           clang --version
+          sudo apt install -y unzip wget
+          mkdir "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-x86_64.jar
+          unzip openblas-0.3.13-1.5.5-android-x86_64.jar
+          cd ..
+
           export LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j
-          export OPENBLAS_PATH=${HOME}/.javacpp/cache/openblas-0.3.13-1.5.5-android-x86_64.jar/lib/
+          export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
+          -Dlibnd4j.buildthreads=${LIBND4J_BUILD_THREADS} \
            -DskipTestResourceEnforcement=true \
-          -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
+          -Dlibnd4j.platform=android-x86_64  \
           --batch-mode clean deploy -DskipTests
 
 

@@ -22,19 +22,9 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 8192
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 11.0.167
-          GCC: 9
       - uses: ./.github/actions/update-deps-linux
+      - uses: ./.github/actions/remove-unneeded-tools-linux
       - uses: ./.github/actions/install-protobuf-linux
       - uses: ./.github/actions/install-cmake-linux
       - name: Set up Java for publishing to GitHub Packages
@@ -47,6 +37,12 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      - run: |
+              sudo apt list --installed
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
+        env:
+          cuda: 11.0.167
+          GCC: 9
       - name: Build cuda
         shell: bash
         env:
@@ -57,6 +53,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
         run: |
+          sudo apt list --installed
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
           mvn --version
           cmake --version

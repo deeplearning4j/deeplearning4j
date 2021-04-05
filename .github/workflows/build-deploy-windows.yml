@@ -3,19 +3,7 @@ on:
     - cron: "0 */12 * * *"
   workflow_dispatch:
 jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows-x86_64:
-    needs: pre-ci
     runs-on: windows-2016
     steps:
       - name: Cancel Previous Runs
@@ -23,7 +11,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/msys2-base-setup
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
@@ -33,15 +20,22 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
+
       - name: Run windows cpu build
         shell: cmd
+        run: |
+            set "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%"
+            rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
+            mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-        run: |
-          set MSYSTEM=MINGW64
-          set "PATH=C:\msys64\usr\bin;%PATH%"
-          mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
