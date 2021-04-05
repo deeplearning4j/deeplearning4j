@@ -50,6 +50,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           DEPLOY_TO: ossrh
+          LIBND4J_BUILD_THREADS: 64
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
