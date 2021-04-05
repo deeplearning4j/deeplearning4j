@@ -89,7 +89,7 @@ public class Reshape extends DynamicCustomOp {
             return;
         } else if(nodeDef.getInputCount() == 1){
             val shape = nodeDef.getAttrOrThrow("Tshape");
-            if (shape.getShape() != null) {
+            if (shape.getShape() == null) {
                 val shapeRet = new long[2];
                 shapeRet[0] = 1;
                 shapeRet[1] = shape.getValueCase().getNumber();
