@@ -17,7 +17,7 @@ jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   android-arm32:
     #needs: pre-ci
-    runs-on: self-hosted
+    runs-on: ubuntu-16.04
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
