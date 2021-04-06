@@ -2,21 +2,26 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
-#  pre-ci:
-#    runs-on: ubuntu-latest
-#    timeout-minutes: 1
-#    steps:
-#      - name: 'Block Concurrent Executions'
-#        uses: softprops/turnstyle@v1
-#        with:
-#          poll-interval-seconds: 10
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   android-arm32:
-    #needs: pre-ci
+    needs: pre-ci
     runs-on: ubuntu-16.04
     steps:
       - uses: AutoModality/action-clean@v1
@@ -57,7 +62,8 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           DEPLOY_TO: ossrh
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
-          LIBND4J_BUILD_THREADS: 64
+          # note: we don't pass this in directly, this is for the pi_build.sh script
+          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
         run: |
           mvn --version
           cmake --version

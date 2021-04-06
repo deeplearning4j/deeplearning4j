@@ -2,21 +2,26 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
-#  pre-ci:
-#    runs-on: ubuntu-latest
-#    timeout-minutes: 1
-#    steps:
-#      - name: 'Block Concurrent Executions'
-#        uses: softprops/turnstyle@v1
-#        with:
-#          poll-interval-seconds: 10
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   android-x86_64:
-    #needs: pre-ci
-    runs-on: self-hosted
+    needs: pre-ci
+    runs-on: ubuntu-16.04
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -50,7 +55,6 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           DEPLOY_TO: ossrh
-          LIBND4J_BUILD_THREADS: 64
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -69,7 +73,7 @@ jobs:
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
-          -Dlibnd4j.buildthreads=${LIBND4J_BUILD_THREADS} \
+          -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} \
            -DskipTestResourceEnforcement=true \
           -Dlibnd4j.platform=android-x86_64  \
           --batch-mode clean deploy -DskipTests

@@ -2,6 +2,11 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
 jobs:
   windows-x86_64:
     runs-on: windows-2016
@@ -31,7 +36,7 @@ jobs:
         run: |
             set "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%"
             rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
-            mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
+            mvn -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

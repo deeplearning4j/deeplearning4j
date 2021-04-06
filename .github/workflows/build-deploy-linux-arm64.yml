@@ -2,6 +2,11 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
@@ -51,6 +56,8 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
+          PROTO_EXEC: /opt/protobuf/bin/protoc
 
         run: |
           mvn --version
