@@ -30,6 +30,8 @@ if [ -z "${ARMCOMPUTE_TAG}" ]; then export  ARMCOMPUTE_TAG=v20.05; fi
 if [ -z "${LIBND4J_BUILD_MODE}" ]; then export  LIBND4J_BUILD_MODE=Release; fi
 if [ -z "${ANDROID_VERSION}" ]; then export  ANDROID_VERSION=21; fi
 if [ -z "${CUDA_VER}" ]; then export  CUDA_VER=10.2; fi
+if [ -z "${LIBND4J_BUILD_THREADS}" ]; then export  LIBND4J_BUILD_THREADS=1; fi
+if [ -z "${PROTOBUF_HOME}" ]; then export  PROTOBUF_HOME=/opt/protobuf/bin; fi
 
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
@@ -393,10 +395,10 @@ cd "$BASE_DIR/.."
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 else
   message "Installing to local repo"
-  command="mvn clean install -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
+  command="mvn clean install -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
   message $command
   eval $command
 fi
