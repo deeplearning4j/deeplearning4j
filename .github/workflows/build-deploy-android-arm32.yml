@@ -44,25 +44,20 @@ jobs:
       - name: Build on  android-arm32
         shell: bash
         env:
-          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
+          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
-          TARGET_OS: android
-          CURRENT_TARGET: arm
+          NDK_VERSION: r18b
+          CURRENT_TARGET: android-arm
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           DEPLOY_TO: ossrh
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a
-          LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
-          LIBND4J_PLATFORM: android-arm
-          ARMCOMPUTE_TARGET: armv7a
           LIBND4J_BUILD_THREADS: 64
-          ANDROID_TOOLCHAIN: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64
-          COMPILER_PREFIX: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/
         run: |
           mvn --version
           cmake --version

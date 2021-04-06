@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#  pre-ci:
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 1
+#    steps:
+#      - name: 'Block Concurrent Executions'
+#        uses: softprops/turnstyle@v1
+#        with:
+#          poll-interval-seconds: 10
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
-  android-arm64:
-    needs: pre-ci
+  android-arm32:
+    #needs: pre-ci
     runs-on: self-hosted
     steps:
       - uses: AutoModality/action-clean@v1
@@ -36,12 +36,12 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          gpg-passphrase:  MAVEN_GPG_PASSPHRASE
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: r18b
-      - name: Build on android-arm64
+      - name: Build on  android-x86_64
         shell: bash
         env:
           CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
@@ -50,13 +50,13 @@ jobs:
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
           NDK_VERSION: r18b
-          CURRENT_TARGET: android-arm64
+          CURRENT_TARGET: android-x86_64
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           DEPLOY_TO: ossrh
-          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
+          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
           LIBND4J_BUILD_THREADS: 64
         run: |
           mvn --version
@@ -65,10 +65,11 @@ jobs:
           sudo apt install -y unzip wget
           mkdir "${GITHUB_WORKSPACE}/openblas_home"
           cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-arm64.jar
-          unzip openblas-0.3.13-1.5.5-android-arm64.jar
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-x86_64.jar
+          unzip openblas-0.3.13-1.5.5-android-x86_64.jar
           cd ..
-          export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
+          export PATH=/opt/protobuf/bin:$PATH
+          export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64/
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
 
