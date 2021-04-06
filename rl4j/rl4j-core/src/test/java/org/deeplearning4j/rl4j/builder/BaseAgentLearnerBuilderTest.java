@@ -32,15 +32,16 @@ import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-@Disabled("Mockito integration doesn't work yet")
+@ExtendWith(MockitoExtension.class)
 public class BaseAgentLearnerBuilderTest {
     @Mock
     BaseAgentLearnerBuilder.Configuration configuration;

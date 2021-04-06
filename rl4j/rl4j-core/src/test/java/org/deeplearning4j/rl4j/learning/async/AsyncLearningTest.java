@@ -28,10 +28,12 @@ import org.deeplearning4j.rl4j.space.Box;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,8 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-@RunWith(MockitoJUnitRunner.class)
-@Disabled("Mockito")
+@ExtendWith(MockitoExtension.class)
 public class AsyncLearningTest {
 
     AsyncLearning<Box, INDArray, ActionSpace<INDArray>, NeuralNet> asyncLearning;

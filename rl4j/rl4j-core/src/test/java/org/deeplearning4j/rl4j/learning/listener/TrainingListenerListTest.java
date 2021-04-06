@@ -25,7 +25,9 @@ import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,7 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@Disabled("Mockito")
+@ExtendWith(MockitoExtension.class)
 public class TrainingListenerListTest {
 
     @Mock

@@ -48,9 +48,7 @@ import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
-//@RunWith(JUnitPlatform.class)
 @ExtendWith(MockitoExtension.class)
-@Disabled("Mockito")
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class AgentTest {

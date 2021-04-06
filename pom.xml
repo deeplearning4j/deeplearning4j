@@ -288,7 +288,8 @@
         <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
         <maven-replacer-plugin.version>1.5.3</maven-replacer-plugin.version>
         <protoc-jar-maven-plugin.version>3.8.0</protoc-jar-maven-plugin.version>
-        <mockito.version>2.2.6</mockito.version>
+        <mockito.version>3.8.0</mockito.version>
+        <mockito.jupter.version>3.8.0</mockito.jupter.version>
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
         <jetspeed-mvn-maven-plugin.version>2.3.1</jetspeed-mvn-maven-plugin.version>
 

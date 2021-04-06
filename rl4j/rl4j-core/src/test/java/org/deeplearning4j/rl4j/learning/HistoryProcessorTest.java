@@ -22,6 +22,8 @@ package org.deeplearning4j.rl4j.learning;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -31,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @author saudet
  */
-@Disabled("Mockito")
+@ExtendWith(MockitoExtension.class)
 public class HistoryProcessorTest {
 
     @Test
