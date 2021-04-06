@@ -40,7 +40,7 @@ jobs:
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r18b
+          ndk-version: r21d
       - name: Build on  android-arm32
         shell: bash
         env:
@@ -49,7 +49,7 @@ jobs:
           GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
-          NDK_VERSION: r18b
+          NDK_VERSION: r21d
           CURRENT_TARGET: android-arm
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
@@ -58,6 +58,7 @@ jobs:
           DEPLOY_TO: ossrh
           OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a
           LIBND4J_BUILD_THREADS: 64
+          PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
           mvn --version
           cmake --version
