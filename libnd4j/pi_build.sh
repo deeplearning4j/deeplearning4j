@@ -30,9 +30,9 @@ if [ -z "${ARMCOMPUTE_TAG}" ]; then export  ARMCOMPUTE_TAG=v20.05; fi
 if [ -z "${LIBND4J_BUILD_MODE}" ]; then export  LIBND4J_BUILD_MODE=Release; fi
 if [ -z "${ANDROID_VERSION}" ]; then export  ANDROID_VERSION=21; fi
 if [ -z "${CUDA_VER}" ]; then export  CUDA_VER=10.2; fi
-if [ -z "${LIBND4J_BUILD_THREADS}" ]; then export  LIBND4J_BUILD_THREADS=1; fi
-if [ -z "${PROTOBUF_HOME}" ]; then export  PROTOBUF_HOME=/opt/protobuf/bin; fi
-
+if [ -z "${LIBND4J_BUILD_THREADS}" ]; then export  LIBND4J_BUILD_THREADS=$(nproc); fi
+if [ -z "${PROTO_EXEC}" ]; then export PROTO_EXEC="protoc"; fi
+if [ -z "${NDK_VERSION}" ]; then export NDK_VERSION="r21d"; fi
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
 do
@@ -57,12 +57,12 @@ done
 
 CC_URL32="https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf.tar.xz?revision=e09a1c45-0ed3-4a8e-b06b-db3978fd8d56&la=en&hash=93ED4444B8B3A812B893373B490B90BBB28FD2E3"
 CC_URL64="https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu.tar.xz?revision=2e88a73f-d233-4f96-b1f4-d8b36e9bb0b9&la=en&hash=167687FADA00B73D20EED2A67D0939A197504ACD"
-CC_ANDROID="https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip"
+CC_ANDROID="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux-x86_64.zip"
 CC_L4T64="https://developer.nvidia.com/embedded/dlc/l4t-gcc-7-3-1-toolchain-64-bit"
 TARGET_ARRS=( arm32 arm64 android-arm android-arm64 android-x86 android-x86_64 jetson-arm64)
 COMPILER_ARRS=( "${CC_URL32}" "${CC_URL64}" "${CC_ANDROID}" "${CC_ANDROID}" "${CC_ANDROID}" "${CC_ANDROID}" "${CC_L4T64}" )
 COMPILER_DOWNLOAD_CMD_LIST=( download_extract_xz download_extract_xz download_extract_unzip download_extract_unzip download_extract_unzip download_extract_unzip download_extract_xz)
-COMPILER_DESTDIR=( "arm32" "arm64" "android" "android" "android" "android" "l4t" )
+COMPILER_DESTDIR=( "arm32" "arm64" "android${NDK_VERSION}" "android${NDK_VERSION}" "android${NDK_VERSION}" "android${NDK_VERSION}" "l4t" )
 TEMP_DIR=${TEMP_DIR-/tmp}
 OPENBLAS_TARGETS=( ARMV7 ARMV8 ARMV7 ARMV8 ATOM ATOM ARMV8)
 ARMCOMPUTE_TARGETS=( armv7a arm64-v8a armv7a arm64-v8a None None None)
@@ -92,9 +92,15 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
+DOWNLOAD_CROSS=""
+if [ "${CROSS_COMPILER_DIR-}" == "" ]; then
 export CROSS_COMPILER_URL=${COMPILER_ARRS[$TARGET_INDEX]}
 export CROSS_COMPILER_DIR="${TEMP_DIR}/compile_tools/cross_compiler_${COMPILER_DESTDIR[$TARGET_INDEX]}"
 export COMPILER_DOWNLOAD_CMD=${COMPILER_DOWNLOAD_CMD_LIST[$TARGET_INDEX]}
+mkdir -p "${CROSS_COMPILER_DIR}"
+DOWNLOAD_CROSS="ok"
+fi
+
 export DETECT=${DETECT_LIST[$TARGET_INDEX]}
 export LIBND4J_PLATFORM_EXT=${LIBND4J_PLATFORM_EXT_LIST[$TARGET_INDEX]}
 export BLAS_TARGET_NAME=${OPENBLAS_TARGETS[$TARGET_INDEX]}
@@ -117,7 +123,7 @@ ARMCOMPUTE_DIR="${THIRD_PARTY}"/arm_compute_dir
 OPENBLAS_GIT_URL="https://github.com/xianyi/OpenBLAS.git"
 OPENBLAS_DIR="${THIRD_PARTY}"/OpenBLAS
 
-mkdir -p "${CROSS_COMPILER_DIR}"
+
 mkdir -p "${BASE_DIR}"
 mkdir -p "${THIRD_PARTY}"
 
@@ -206,17 +212,6 @@ function fix_pi_linker {
   chmod +x "${1}/ld" 
 }
 
-#when ndk in folder with space names its bash scripts fail
-function fix_android_ndk_space {
-	ldir="$1"
-	ltarget="$2"
-	printf '#!/usr/bin/env bash\n'"\"${ldir}/clang\" --target=$ltarget \$*">"${ldir}/my-clang"
-	printf '#!/usr/bin/env bash\n'"\"${ldir}/clang++\" --target=$ltarget \$*">"${ldir}/my-clang++"
-	chmod +x "${ldir}/my-clang"
-	chmod +x "${ldir}/my-clang++"  
-	
-}
-
 function cuda_cross_setup {
 		# $1 is local  cuda toolkit version
 		# $2 the folder where cross cuda toolkit will be
@@ -247,6 +242,10 @@ function cuda_cross_setup {
 		export CUDA_TOOLKIT_ROOT="${loc_DIR}"/cuda
 }
 
+#check if we should download cross
+
+if [ "${DOWNLOAD_CROSS}" == "ok" ]; then
+
 if [ ! -d "${CROSS_COMPILER_DIR}/folder" ]; then
 	#out file
 	message "download CROSS_COMPILER"
@@ -257,18 +256,35 @@ fi
 
 export CROSS_COMPILER_DIR="${CROSS_COMPILER_DIR}"/folder
 
+fi #DOWNLOAD_CROSS
+
+message "Cross compiler directory for the target: ${CROSS_COMPILER_DIR}"
+
 if [ "${TARGET_OS}" = "android" ];then
-	export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}"/toolchains/llvm/prebuilt/linux-x86_64
+	ND_VER=${NDK_VERSION:1:${#NDK_VERSION}-2}
+	SUFFIX=
+	ABI_PREFIX=
+	if [ $ND_VER -lt 19 ]; then
+		message "old ndk version is in use. we wil try to make standalone toolchain"
+		command="bash \"${CROSS_COMPILER_DIR}\"/build//tools/make-standalone-toolchain.sh  --arch=${LIBND4J_PLATFORM_EXT} --platform=android-${ANDROID_VERSION} --install-dir=\"${CROSS_COMPILER_DIR}\"/toolchain${LIBND4J_PLATFORM_EXT} --verbose --force"
+		message $command
+		eval $command
+		export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}/toolchain${LIBND4J_PLATFORM_EXT}"
+	else
+		export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
+		SUFFIX=${ANDROID_VERSION}
+		ABI_PREFIX="v7a"
+	fi
+	
 	COMPILER_PREFIX_DIR="${ANDROID_TOOLCHAIN}/bin/"
-	NDK_TARGET="${PREFIX}${ANDROID_VERSION}"
+	NDK_TARGET="${PREFIX}${SUFFIX}"
 	export TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
 	if [ "$BLAS_TARGET_NAME" = "ARMV7" ];then
 	    BLAS_XTRA="ARM_SOFTFP_ABI=1 "
-		NDK_TARGET="armv7a-linux-androideabi${ANDROID_VERSION}"
+		NDK_TARGET="arm${ABI_PREFIX}-linux-androideabi${SUFFIX}"
 	fi
 
-	fix_android_ndk_space "${COMPILER_PREFIX_DIR}" "${NDK_TARGET}"
-	export COMPILER_PREFIX="${COMPILER_PREFIX_DIR}/my"
+	export COMPILER_PREFIX="${COMPILER_PREFIX_DIR}/${NDK_TARGET}"
 	export CC_EXE="clang"
 	export CXX_EXE="clang++"
 	export AR="${TOOLCHAIN_PREFIX}-ar"
@@ -395,10 +411,12 @@ cd "$BASE_DIR/.."
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  mvn  -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  command="mvn  -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true "
+  message $command
+  eval $command
 else
   message "Installing to local repo"
-  command="mvn clean install -Dlibnd4j.buildthreads="${LIBND4J_BUILD_THREADS}" -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
+  command="mvn  install  -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}   -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\"  -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true "
   message $command
   eval $command
 fi
