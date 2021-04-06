@@ -1,0 +1,21 @@
+name: Remove un needed packages for linux
+runs:
+  using: composite
+  steps:
+    - name: Initial install
+      shell: bash
+      run: |
+           sudo apt remove -y mongodb-org *google-chrome* firefox apache2  bazel kubectl esl-erlang hhvm nginx php* libpq-dev postgresql postgresql-client ruby-full powershell r-base mono-complete nuget
+           sudo rm -rf /usr/share/java/selnium*
+           sudo rm -rf /usr/local/share/phantomjs*
+           sudo rm -rf /usr/local/share/gecko_driver*
+           sudo rm -rf /usr/local/lib/lein*
+           sudo rm -rf /usr/share/miniconda*
+           sudo apt remove -y apache2-bin* azure-cli dotnet-* ghc-* google-cloud-sdk* heroku* libboost-* libmono-* libobjc-* moby-* mono-* mysql* postgresql* r-* ruby* sqlite3* swig*
+           sudo apt-get autoclean
+           sudo rm -rf "/usr/local/share/boost"
+           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+           sudo swapoff -a
+           sudo rm -f /swapfile
+           sudo apt clean
+           df -h

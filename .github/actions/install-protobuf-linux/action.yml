@@ -5,12 +5,12 @@ runs:
     - name: Install protobuf linux
       shell: bash
       run: |
-        curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+        curl -fsSL https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz \
                                | tar xz && \
-                               cd protobuf-3.5.1 && \
+                               cd protobuf-3.8.0 && \
                                ./configure --prefix=/opt/protobuf && \
                                make -j2 && \
-                               make install && \
+                               sudo make install && \
                                cd .. && \
-                               rm -rf protobuf-3.5.1
+                               rm -rf protobuf-3.8.0
         echo "/opt/protobuf/bin" >> $GITHUB_PATH
