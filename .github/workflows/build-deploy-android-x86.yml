@@ -9,7 +9,7 @@ on:
         default: 1
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
-#  pre-ci:
+  pre-ci:
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
@@ -20,7 +20,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
-  android-arm32:
+  android-x86:
     #needs: pre-ci
     runs-on: ubuntu-16.04
     steps:
