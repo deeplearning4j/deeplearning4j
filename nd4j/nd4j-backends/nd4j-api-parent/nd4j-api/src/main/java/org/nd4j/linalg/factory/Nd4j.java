@@ -2911,7 +2911,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(long seed, @NonNull long... shape) {
-        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(Nd4j.defaultFloatingPointType());//;INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         return rand(ret, seed);
     }
 
