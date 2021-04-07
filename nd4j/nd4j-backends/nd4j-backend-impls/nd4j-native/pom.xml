@@ -238,6 +238,11 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
@@ -320,7 +325,7 @@
                </property>
             </activation>
             <properties>
-                <javacpp.build.output.path>${project.build.directory}/classes/${javacpp.platform.library.path}</javacpp.build.output.path>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/armeabi-v7a</javacpp.build.output.path>
             </properties>
         </profile>
         <profile>
@@ -332,7 +337,7 @@
                 </property>
             </activation>
             <properties>
-                <javacpp.build.output.path>${project.build.directory}/classes/${javacpp.platform.library.path}</javacpp.build.output.path>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
             </properties>
         </profile>
 
@@ -345,7 +350,7 @@
                 </property>
             </activation>
             <properties>
-                <javacpp.build.output.path>${project.build.directory}/classes/${javacpp.platform.library.path}</javacpp.build.output.path>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/x86</javacpp.build.output.path>
             </properties>
         </profile>
 
@@ -358,7 +363,7 @@
                 </property>
             </activation>
             <properties>
-                <javacpp.build.output.path>${project.build.directory}/classes/${javacpp.platform.library.path}</javacpp.build.output.path>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
             </properties>
         </profile>
 
