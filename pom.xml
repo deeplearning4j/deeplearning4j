@@ -1087,6 +1087,7 @@
                 <os.name>windows</os.name>
             </properties>
         </profile>
+
         <profile>
             <id>arm</id>
             <activation>
@@ -1098,6 +1099,19 @@
                 <os.arch>armhf</os.arch>
             </properties>
         </profile>
+
+        <profile>
+            <id>android</id>
+            <activation>
+                <os><name>android</name></os>
+            </activation>
+            <properties>
+                <os.kernel>linux</os.kernel>
+                <os.name>android</os.name>
+                <os.arch>arm</os.arch>
+            </properties>
+        </profile>
+
         <profile>
             <id>aarch64</id>
             <activation>
