@@ -297,7 +297,7 @@ public class KerasLayerUtils {
             layer = new KerasUpsampling1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
             layer = new KerasUpsampling2D(layerConfig, enforceTrainingConfig);
-        }else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
+        }else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_3D())) {
             layer = new KerasUpsampling3D(layerConfig, enforceTrainingConfig);
         }  else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
             layer = new KerasCropping3D(layerConfig, enforceTrainingConfig);
