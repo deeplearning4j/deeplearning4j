@@ -35,6 +35,11 @@
 
     <name>nd4j-native</name>
 
+    <properties>
+        <!-- Try to avoid setting this. This is mainly for being able to override for where we put binaries in javacpp jars for android. -->
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}</javacpp.build.output.path>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${dependency.groupId}</groupId>
@@ -173,11 +178,10 @@
                         <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
                         <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                         <linkPath>${env.OPENBLAS_PATH}/</linkPath>
-
                     </linkPaths>
 
                     <buildResources>
-                        <buildResource>/${javacpp.plTrainingSessionatform.library.path}/</buildResource>
+                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
                         <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                         <buildResource>/lib/</buildResource>
                     </buildResources>
@@ -226,10 +230,15 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
-                            <outputDirectory>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
             </plugin>
 
             <plugin>
@@ -307,6 +316,57 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>android-arm-32-output</id>
+            <activation>
+               <property>
+                   <name>javacpp.platform</name>
+                  <value>android-arm</value>
+               </property>
+            </activation>
+            <properties>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/armeabi-v7a</javacpp.build.output.path>
+            </properties>
+        </profile>
+        <profile>
+            <id>android-arm-64-output</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-arm64</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>android-x86-output</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-x86</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/x86</javacpp.build.output.path>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>android-x86_64-output</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-x86_64</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
+            </properties>
+        </profile>
+
         <profile>
             <id>mkl</id>
             <activation>

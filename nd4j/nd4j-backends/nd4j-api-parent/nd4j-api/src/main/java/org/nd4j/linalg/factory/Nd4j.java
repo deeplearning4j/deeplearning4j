@@ -2806,7 +2806,7 @@ public class Nd4j {
     public static INDArray rand(@NonNull DataType dataType, @NonNull long... shape) {
         Preconditions.checkArgument(dataType.isFPType(),
                 "Can't create a random array of a non-floating point data type");
-        INDArray ret = createUninitialized(dataType, shape, order()).castTo(Nd4j.defaultFloatingPointType()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         return rand(ret);
     }
 
@@ -2829,7 +2829,7 @@ public class Nd4j {
      */
     @Deprecated
     public static INDArray rand(@NonNull DataType dataType, int[] shape, char order) {
-        return rand(dataType, order, ArrayUtil.toLongArray(shape)).castTo(Nd4j.defaultFloatingPointType());
+        return rand(dataType, order, ArrayUtil.toLongArray(shape));
     }
 
     /**
@@ -2837,7 +2837,7 @@ public class Nd4j {
      */
     @Deprecated
     public static INDArray rand(@NonNull DataType dataType, char order, @NonNull int... shape) {
-        return rand(dataType, order, ArrayUtil.toLongArray(shape)).castTo(Nd4j.defaultFloatingPointType());
+        return rand(dataType, order, ArrayUtil.toLongArray(shape));
     }
 
     /**
@@ -2851,7 +2851,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull DataType dataType, char order, @NonNull long... shape) {
-        INDArray ret = Nd4j.createUninitialized(dataType, shape, order).castTo(Nd4j.defaultFloatingPointType());
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
         return rand(ret);
     }
 
@@ -2866,7 +2866,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull DataType dataType, @NonNull int... shape) {
-        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order()).castTo(Nd4j.defaultFloatingPointType());
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order());
         return rand(ret);
     }
 
@@ -2911,7 +2911,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(long seed, @NonNull long... shape) {
-        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(Nd4j.defaultFloatingPointType());//;INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         return rand(ret, seed);
     }
 
