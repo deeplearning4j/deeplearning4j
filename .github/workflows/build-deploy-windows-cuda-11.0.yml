@@ -44,6 +44,7 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - uses: actions/checkout@v2
       - name: Run windows build
         shell: cmd
         env:
