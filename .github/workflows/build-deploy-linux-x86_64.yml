@@ -27,6 +27,11 @@ on:
         description: 'Release repository id'
         required: false
         default: deeplearning4j-release-M1
+
+      serverId:
+        description: 'Server id to publish to'
+        required: false
+        default: sonatype-nexus-snapshots
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
@@ -56,7 +61,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-          server-id: sonatype-nexus-snapshots
+          server-id:  ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
