@@ -108,6 +108,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
+        <dl4j.release.server>sonatype-nextus-snapshots</dl4j.release.server>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
         <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
         <rxjava.version>2.2.21</rxjava.version>
@@ -762,7 +763,7 @@
                 </executions>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>sonatype-nexus-snapshots</serverId>
+                    <serverId>${dl4j.release.server}</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                 </configuration>
