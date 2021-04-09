@@ -61,9 +61,6 @@ mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$
 # In its normal state, repo should contain a snapshot version stanza
 sed -i "s/<version>.*-SNAPSHOT<\/version>/<version>$RELEASE_VERSION<\/version>/" pom.xml
 
-sed -i "s/\"currentVersion\", default = \".*\"/\"currentVersion\", default = \"$RELEASE_VERSION\"/" nd4s/build.sbt
-sed -i "s/\"nd4jVersion\", default = \".*\"/\"nd4jVersion\", default = \"$RELEASE_VERSION\"/" nd4s/build.sbt
-
 if [[ "${SKIP_BUILD}" == "0" ]]; then
     echo "Performing build... (Note: Does not currently support partial builds without CUDA, etc.)"
 
@@ -91,15 +88,6 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
     source change-spark-versions.sh 1
     source change-scala-versions.sh 2.11
     source change-cuda-versions.sh 9.2
-
-    # ~/.ivy2/.credentials needs to look like this:
-    # realm=Sonatype Nexus Repository Manager
-    # host=oss.sonatype.org
-    # user=xxx
-    # password=xxx
-    cd nd4s
-    sbt -DrepoType=$RELEASE_PROFILE -DstageRepoId=$STAGING_REPOSITORY +publishSigned
-    cd ..
 fi
 git commit -s -a -m "Update to version $RELEASE_VERSION"
 git tag -s -a -m "deeplearning4j-$RELEASE_VERSION" "deeplearning4j-$RELEASE_VERSION"

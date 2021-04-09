@@ -19,12 +19,12 @@ on:
         default: 1.0.0-M1
 
       snapshotVersion:
-        description: 'Snapshot version target'
+        description: 'Release version target'
         required: false
         default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
-        description: 'Release repository id'
+        description: 'Snapshot repository id'
         required: false
         default: deeplearning4j-release-M1
 jobs:
@@ -40,11 +40,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
-  android-arm32:
+  linux-x86_64:
     needs: pre-ci
     runs-on: ubuntu-16.04
     steps:
-      - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
@@ -61,46 +60,31 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase:  MAVEN_GPG_PASSPHRASE
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r21d
-      - name: Build on  android-x86_64
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Build on  linux-x86_64
         shell: bash
         env:
-          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY: 1
-          BUILD_USING_MAVEN: 1
-          NDK_VERSION: r21d
-          CURRENT_TARGET: android-x86_64
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          DEPLOY_TO: ossrh
-          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/x86_64
-          # note: we don't pass this in directly, this is for the pi_build.sh script
-          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-
         run: |
           mvn --version
           cmake --version
           protoc --version
-          sudo apt install -y unzip wget
-          mkdir "${GITHUB_WORKSPACE}/openblas_home"
-          cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-x86_64.jar
-          unzip openblas-0.3.13-1.5.5-android-x86_64.jar
-          cd ..
-          export PATH=/opt/protobuf/bin:$PATH
-          export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64/
-          ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
-
-
+          sudo apt-get autoremove
+          sudo apt-get clean
+          command="mvn  -X -Possrh -pl \"!:nd4j-native,!\"libnd4j\"  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests"
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+                    echo "Performing release"
+                   ../release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                   else
+                       "Running build and deploying to snapshots"
+                       eval "$command"
+          fi

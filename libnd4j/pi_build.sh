@@ -33,6 +33,12 @@ if [ -z "${CUDA_VER}" ]; then export  CUDA_VER=10.2; fi
 if [ -z "${LIBND4J_BUILD_THREADS}" ]; then export  LIBND4J_BUILD_THREADS=$(nproc); fi
 if [ -z "${PROTO_EXEC}" ]; then export PROTO_EXEC="protoc"; fi
 if [ -z "${NDK_VERSION}" ]; then export NDK_VERSION="r21d"; fi
+if [ -z "${PERFORM_RELEASE}" ]; then export PERFORM_RELEASE=0; fi
+if [ -z "${RELEASE_VERSION}" ]; then export RELEASE_VERSION="1.0.0-M1"; fi
+if [ -z "${SNAPSHOT_VERSION}" ]; then export SNAPSHOT_VERSION="1.0.0-SNAPSHOT"; fi
+if [ -z "${RELEASE_REPO_ID}" ]; then export RELEASE_REPO_ID="deeplearning4j-release-${RELEASE_VERSION}"; fi
+
+
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
 do
@@ -411,9 +417,14 @@ cd "$BASE_DIR/.."
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  command="mvn  -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true "
-  message $command
-  eval $command
+  command="mvn  -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
+  message "$command"
+  if [ "$PERFORM_RELEASE" == 1 ]; then
+      ../release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+      else
+          eval "$command"
+  fi
+
 else
   message "Installing to local repo"
   command="mvn  install  -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}   -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\"  -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true "
