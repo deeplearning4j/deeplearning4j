@@ -90,7 +90,7 @@ jobs:
           command="mvn -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -pl \":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j\"  --also-make -Dlibnd4j.chip=cuda --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
-                   ../release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
                        "Running build and deploying to snapshots"
                        eval "$command"

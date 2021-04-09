@@ -83,7 +83,7 @@ jobs:
           command="mvn  -X -Possrh  -pl \":nd4j-native,\"libnd4j\"    -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
-                   ../release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
                        "Running build and deploying to snapshots"
                        eval "$command"
