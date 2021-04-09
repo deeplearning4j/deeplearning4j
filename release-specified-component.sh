@@ -46,7 +46,7 @@ if [[ ! -z $(git tag -l "deeplearning4j-$RELEASE_VERSION") ]]; then
     exit 1
 fi
 
-./update-versions.sh "$SNAPSHOT_VERSION" "$RELEASE_VERSION"
+bash ./update-versions.sh "$SNAPSHOT_VERSION" "$RELEASE_VERSION"
 
 #    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=8.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 # add flags specific to release, assumes an mvn deploy command is given
@@ -67,7 +67,7 @@ git commit -s -a -m "Update to version $RELEASE_VERSION"
 git tag -s -a -m "deeplearning4j-$RELEASE_VERSION" "deeplearning4j-$RELEASE_VERSION"
 git tag -s -a -f -m "deeplearning4j-$RELEASE_VERSION" "latest_release"
 
-./update-versions.sh "$RELEASE_VERSION" "$SNAPSHOT_VERSION"
+bash /update-versions.sh "$RELEASE_VERSION" "$SNAPSHOT_VERSION"
 
 git commit -s -a -m "Update to version $SNAPSHOT_VERSION"
 
