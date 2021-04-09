@@ -50,7 +50,7 @@ bash ./update-versions.sh "$SNAPSHOT_VERSION" "$RELEASE_VERSION"
 
 #    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=8.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 # add flags specific to release, assumes an mvn deploy command is given
-DEPLOY_COMMAND="${DEPLOY_COMMAND} -Dgpg.executable=gpg2 -Prelease  -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY"
+DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY"
 eval "$DEPLOY_COMMAND"
 
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then
