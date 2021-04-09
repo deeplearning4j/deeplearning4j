@@ -19,12 +19,12 @@ on:
         default: 1.0.0-M1
 
       snapshotVersion:
-        description: 'Release version target'
+        description: 'Snapshot version target'
         required: false
         default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
-        description: 'Snapshot repository id'
+        description: 'Release repository id'
         required: false
         default: deeplearning4j-release-M1
 jobs:
