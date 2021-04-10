@@ -88,8 +88,8 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          sudo apt-get autoremove
-          sudo apt-get clean
+          sudo apt-get -y autoremove
+          sudo apt-get -y clean
           command="mvn  -X -Possrh  -pl \":nd4j-native,:libnd4j\"  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --also-make  --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
