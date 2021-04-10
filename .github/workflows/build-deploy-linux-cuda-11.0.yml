@@ -32,10 +32,16 @@ on:
         description: 'Server id to publish to'
         required: false
         default: sonatype-nexus-snapshots
+
+
+      runsOn:
+        description: 'Server id to publish to'
+        required: false
+        default: ubuntu-16.04
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
-    runs-on: ubuntu-16.04
+    runs-on: ${{ github.event.inputs.runsOn }}
     timeout-minutes: 1
     steps:
       - name: 'Block Concurrent Executions'

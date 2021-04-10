@@ -32,9 +32,15 @@ on:
         description: 'Server id to publish to'
         required: false
         default: sonatype-nexus-snapshots
+
+
+      runsOn:
+        description: 'Server id to publish to'
+        required: false
+        default: ubuntu-16.04
 jobs:
   windows-x86_64:
-    runs-on: windows-2016
+    runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0

@@ -32,6 +32,12 @@ on:
         description: 'Server id to publish to'
         required: false
         default: sonatype-nexus-snapshots
+
+
+      runsOn:
+        description: 'Server id to publish to'
+        required: false
+        default: ubuntu-16.04
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
@@ -47,7 +53,7 @@ jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
     needs: pre-ci
-    runs-on: ubuntu-16.04
+    runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
