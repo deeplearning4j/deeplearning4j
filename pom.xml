@@ -764,7 +764,6 @@
                 <extensions>true</extensions>
                 <configuration>
                     <detail>true</detail>
-                    <detectBuildFailures>true</detectBuildFailures>
                     <serverId>${dl4j.release.server}</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                 </configuration>
