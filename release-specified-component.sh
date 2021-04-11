@@ -51,7 +51,7 @@ bash ./update-versions.sh "$SNAPSHOT_VERSION" "$RELEASE_VERSION"
 #    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=8.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 # add flags specific to release, assumes an mvn deploy command is given
 # Note: we add javadoc fail on error here to avoid javadoc errors blocking a release
-DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY  -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=sonatype-nexus-releases"
+DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY  -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=sonatype-nexus-releases"
 eval "$DEPLOY_COMMAND"
 
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then

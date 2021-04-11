@@ -34,7 +34,7 @@ on:
         default: sonatype-nexus-snapshots
 
       runsOn:
-        description: 'Server id to publish to'
+        description: 'System to run on'
         required: false
         default: ubuntu-16.04
 jobs:
