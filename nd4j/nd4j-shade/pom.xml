@@ -58,6 +58,8 @@
                                 <goal>shade</goal>
                             </goals>
                             <configuration>
+                                <createSourcesJar>true</createSourcesJar>
+                                <createDependencyReducedPom>true</createDependencyReducedPom>
                                 <transformers>
                                     <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
