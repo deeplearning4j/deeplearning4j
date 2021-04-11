@@ -767,7 +767,6 @@
                     <detectBuildFailures>true</detectBuildFailures>
                     <serverId>${dl4j.release.server}</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <stagingProfileId>dl4j-release-${project.version}</stagingProfileId>
                 </configuration>
             </plugin>
             <plugin>
