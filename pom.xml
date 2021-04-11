@@ -108,7 +108,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
-        <dl4j.release.server>sonatype-nextus-snapshots</dl4j.release.server>
+        <dl4j.release.server>sonatype-nexus-snapshots</dl4j.release.server>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
         <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
         <rxjava.version>2.2.21</rxjava.version>
@@ -848,13 +848,13 @@
             <id>ossrh</id>
             <distributionManagement>
                 <repository>
-                    <id>sonatype-nexus-releases</id>
+                    <id>ossrh</id>
                     <name>Nexus Release Repository</name>
                     <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
 
                 <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
+                    <id>ossrh</id>
                     <name>Sonatype Nexus snapshot repository</name>
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>

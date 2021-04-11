@@ -31,7 +31,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: sonatype-nexus-snapshots
+        default: ossrh
 
       runsOn:
         description: 'Server id to publish to'

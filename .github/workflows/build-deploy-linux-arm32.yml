@@ -31,7 +31,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: sonatype-nexus-snapshots
+        default: ossrh
 
 
       runsOn:
@@ -68,7 +68,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-          server-id: sonatype-nexus-snapshots
+          server-id: ossrh
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
