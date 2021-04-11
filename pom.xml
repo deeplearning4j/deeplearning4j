@@ -43,7 +43,13 @@
         </license>
     </licenses>
 
-
+   <developers>
+       <developer>
+           <organization>Eclipse Foundation</organization>
+           <url>https://github.com/eclipse/deeplearning4j</url>
+           <organizationUrl>https://eclipse.org/</organizationUrl>
+       </developer>
+   </developers>
 
     <modules>
         <module>libnd4j</module>
