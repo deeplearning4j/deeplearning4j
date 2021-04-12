@@ -60,7 +60,11 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
     if [[ ! $(grep stagingRepository.id target/nexus-staging/staging/*.properties) =~ ^stagingRepository.id=(.*) ]]; then
         echo "Setting empty staging repository"
         STAGING_REPOSITORY=
-        STAGING_REPO_FLAG=
+        # note: the reason we set this is to ensure when bootstrapping a build we're not trying to download from a repo that doesn't exist
+        # this --also-make flag handles any transitive dependencies and uploads those. The reason this is important is if a build tries to upload
+        # an already existing dependency, sonatype nexus returns a 400 bad request. So we need deps that haven't already been uploaded.
+        # this is because repos are immutable by default, no overrides are allowed whereas for snapshots this is not the case.
+        STAGING_REPO_FLAG=" --also-make"
     else
         echo "Using staging repository ${STAGING_REPOSITORY}"
         #STAGING_REPOSITORY="${BASH_REMATCH[1]}"
@@ -69,7 +73,7 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
     fi
     else
         STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY}"
-                echo "USING STAGING_REPOSITORY ${STAGING_REPOSITORY}, setting flag to ${STAGING_REPO_FLAG}"
+        echo "USING STAGING_REPOSITORY ${STAGING_REPOSITORY}, setting flag to ${STAGING_REPO_FLAG}"
 fi
 
 DEPLOY_COMMAND="${DEPLOY_COMMAND} ${STAGING_REPO_FLAG}"
