@@ -420,7 +420,8 @@ if [ "${DEPLOY-}" != "" ]; then
   command="mvn   -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\"  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
   message "$command"
   if [ "$PERFORM_RELEASE" == 1 ]; then
-      ../release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+      # Note the base dir/.. above means we are in the dl4j root where this script is expected to be
+      ./release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
       else
           eval "$command"
   fi
