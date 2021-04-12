@@ -43,10 +43,10 @@ fi
 echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $RELEASE_PROFILE $STAGING_REPOSITORY"
 echo "========================================================================================================="
 
-if [[ ! -z $(git tag -l "deeplearning4j-$RELEASE_VERSION") ]]; then
-    echo "Error: Version $RELEASE_VERSION has already been released!"
-    exit 1
-fi
+#if [[ ! -z $(git tag -l "deeplearning4j-$RELEASE_VERSION") ]]; then
+#    echo "Error: Version $RELEASE_VERSION has already been released!"
+#    exit 1
+#fi
 
 bash ./update-versions.sh "$SNAPSHOT_VERSION" "$RELEASE_VERSION"
 
