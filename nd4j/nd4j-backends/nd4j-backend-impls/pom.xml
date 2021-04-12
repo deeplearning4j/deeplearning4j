@@ -109,7 +109,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <skip>false</skip>
+                            <skip>true</skip>
                             <classifier>javadoc</classifier>
                             <classesDirectory>${basedir}/javadoc</classesDirectory>
                         </configuration>
