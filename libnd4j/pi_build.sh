@@ -421,7 +421,7 @@ if [ "${DEPLOY-}" != "" ]; then
   message "$command"
   if [ "$PERFORM_RELEASE" == 1 ]; then
       # Note the base dir/.. above means we are in the dl4j root where this script is expected to be
-      ./release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+      bash /release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
       else
           eval "$command"
   fi
