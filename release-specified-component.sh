@@ -67,6 +67,9 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
         #only specify a staging repo if it's not empty
         STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY}"
     fi
+    else
+        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY}"
+                echo "USING STAGING_REPOSITORY ${STAGING_REPOSITORY}, setting flag to ${STAGING_REPO_FLAG}"
 fi
 
 DEPLOY_COMMAND="${DEPLOY_COMMAND} ${STAGING_REPO_FLAG}"
