@@ -772,6 +772,7 @@
                     <detail>true</detail>
                     <serverId>${dl4j.release.server}</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
                 </configuration>
             </plugin>
             <plugin>
