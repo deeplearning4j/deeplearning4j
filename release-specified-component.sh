@@ -58,10 +58,12 @@ DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Dlocal.software.repository=$RELEA
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then
     # create new staging repository with everything in it
     if [[ ! $(grep stagingRepository.id target/nexus-staging/staging/*.properties) =~ ^stagingRepository.id=(.*) ]]; then
+        echo "Setting empty staging repository"
         STAGING_REPOSITORY=
         STAGING_REPO_FLAG=
     else
-        STAGING_REPOSITORY="${BASH_REMATCH[1]}"
+        echo "Using staging repository ${STAGING_REPOSITORY}"
+        #STAGING_REPOSITORY="${BASH_REMATCH[1]}"
         #only specify a staging repo if it's not empty
         STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY}"
     fi
