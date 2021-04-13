@@ -72,7 +72,7 @@ jobs:
         shell: bash
         run: |
              brew install gnu-sed
-             echo "/usr/local/bin" >> $GITHUB_PATH
+             echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
       - name: Build and install
         shell: bash
         env:
