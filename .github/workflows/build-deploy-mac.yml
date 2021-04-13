@@ -35,7 +35,7 @@ on:
 
 
       runsOn:
-        description: 'Server id to publish to'
+        description: 'Runs on:'
         required: false
         default: macos-10.15
 jobs:
@@ -82,6 +82,7 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
         run: |
           brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+          brew install gnu-sed --with-default-names
           command="mvn -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
