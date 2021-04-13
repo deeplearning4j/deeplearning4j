@@ -18,6 +18,12 @@ on:
         required: false
         default: 1.0.0-M1
 
+      serverId:
+        description: 'Server id to publish to'
+        required: false
+        default: ossrh
+
+
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
@@ -93,6 +99,6 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
+          sudo ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
 
