@@ -25,7 +25,7 @@ on:
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default: deeplearning4j-release-M1
+        default:
 
       serverId:
         description: 'Server id to publish to'
