@@ -69,8 +69,8 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Update path for gnu sed
-      - shell: bash
-      - run: |
+        shell: bash
+        run: |
              brew install gnu-sed
              echo "/usr/local/bin" >> $GITHUB_PATH
       - name: Build and install
