@@ -69,10 +69,10 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
         echo "Using staging repository ${STAGING_REPOSITORY}"
         #STAGING_REPOSITORY="${BASH_REMATCH[1]}"
         #only specify a staging repo if it's not empty
-        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY} --also-mak"
+        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY} --also-make"
     fi
     else
-        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY} --also-mak"
+        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY} --also-make"
         echo "USING STAGING_REPOSITORY ${STAGING_REPOSITORY}, setting flag to ${STAGING_REPO_FLAG}"
 fi
 
