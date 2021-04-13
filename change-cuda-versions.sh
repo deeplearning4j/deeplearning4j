@@ -84,7 +84,7 @@ case $VERSION in
 esac
 
 sed_i() {
-  sed -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
+  sed -i "" -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
 }
 
 export -f sed_i
