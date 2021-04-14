@@ -37,7 +37,7 @@ on:
       runsOn:
         description: 'Server id to publish to'
         required: false
-        default: windows-2016
+        default: windows-2019
 jobs:
   windows-x86_64:
     runs-on: ${{ github.event.inputs.runsOn }}

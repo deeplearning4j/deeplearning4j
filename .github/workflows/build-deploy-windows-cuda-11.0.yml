@@ -37,7 +37,7 @@ on:
       runsOn:
         description: 'Server id to publish to'
         required: false
-        default: windows-2016
+        default: windows-2019
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
