@@ -78,7 +78,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup windows path
         shell: powershell
-        run: echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\lib\x64;" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        run: |
+            echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\lib\x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Run windows build
         shell: cmd
@@ -95,9 +97,8 @@ jobs:
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          SET MSYSTEM=MINGW64
-          dir "%CUDA_PATH%"
-          dir "%CUDA_PATH%\lib"
+          echo "Invoked vcvars64.bat"
+          set MSYSTEM=MINGW64
           echo "Running cuda build"
           cd "%GITHUB_WORKSPACE%"
           bash ./change-cuda-versions.sh 11.0
