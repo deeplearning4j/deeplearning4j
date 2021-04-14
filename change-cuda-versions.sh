@@ -59,11 +59,11 @@ case $VERSION in
     ;;
   11.1)
     VERSION2="8.0"
-    VERSION3="1.5.5-SNAPSHOT"
+    VERSION3="1.5.5"
     ;;
   11.0)
     VERSION2="8.0"
-    VERSION3="1.5.4"
+    VERSION3="1.5.5"
     ;;
   10.2)
     VERSION2="7.6"
