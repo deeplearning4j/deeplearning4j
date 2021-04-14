@@ -67,14 +67,22 @@ jobs:
         env:
           cuda: 11.2.1
       - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: 1.8
+          java-version: 8
+          distribution: 'zulu'
           server-id: ${{ github.event.inputs.deployToReleaseStaging }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
       - name: Setup windows path
         shell: powershell
         run: echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64;" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -94,9 +102,6 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
-          dir "%CUDA_PATH%"
-          dir "%CUDA_PATH%\lib"
-          which cmake
           echo "Running cuda build"
           bash ./change-cuda-versions.sh 11.2
           set command="mvn -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64  -pl \":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests"
