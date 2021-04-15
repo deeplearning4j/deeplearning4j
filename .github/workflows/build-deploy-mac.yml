@@ -8,6 +8,7 @@ on:
         required: true
         default: 1
 
+
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
@@ -32,6 +33,7 @@ on:
         description: 'Server id to publish to'
         required: false
         default: ossrh
+
 
 
       runsOn:
@@ -97,7 +99,7 @@ jobs:
         run: |
           brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
           # use gnu-sed not mac sed
-          command="mvn -T 1 -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests"
+          command="mvn ${{ github.event.inputs.buildThreads }} ${ -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
