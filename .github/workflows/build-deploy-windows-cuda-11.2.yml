@@ -34,7 +34,7 @@ on:
         default: ossrh
 
       runsOn:
-        description: 'Server id to publish to'
+        description: 'OS to run on'
         required: false
         default: windows-2019
 jobs:
@@ -66,7 +66,15 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.2.1
-      - name: Set up Java for publishing to GitHub Packages
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v2
         with:
           java-version: 8
@@ -76,12 +84,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
 
       - name: Setup windows path
         shell: powershell
