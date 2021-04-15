@@ -31,7 +31,17 @@ RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 #STAGING_REPOSITORY=
 STAGING_REPOSITORY=$3
-DEPLOY_COMMAND=$4
+
+if [ -z "${COMMAND}" ]; then
+  if [ -z "$4" ]; then
+    echo "Please specify a command environment variable or a 4th parameter specifying the maven command."
+    exit 1
+    else
+        COMMAND="$4"
+  fi
+fi
+
+DEPLOY_COMMAND="$COMMMAND"
 STAGING_REPO_FLAG=
 RELEASE_PROFILE=${RELEASE_PROFILE:-sonatype}
 if [[ "$2" != *-SNAPSHOT ]]
