@@ -96,7 +96,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          COMMAND: "mvn -T  ${{ github.event.inputs.buildThreads }}  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests"
+          COMMAND: "mvn   -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests"
         run: |
           brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
           # use gnu-sed not mac sed
