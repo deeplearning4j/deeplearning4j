@@ -238,6 +238,7 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
                         <configuration>
                             <properties>${javacpp.platform}</properties>
                             <compilerOptions>
