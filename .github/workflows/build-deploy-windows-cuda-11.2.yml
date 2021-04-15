@@ -111,6 +111,7 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
           echo "Running cuda build"
+          echo "Command is %COMMAND%"
           bash ./change-cuda-versions.sh 11.2
           if "%PERFORM_RELEASE%"=="1" (
               echo "Running release"
