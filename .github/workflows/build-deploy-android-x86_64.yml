@@ -87,6 +87,7 @@ jobs:
       - name: Build on  android-x86_64
         shell: bash
         env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}

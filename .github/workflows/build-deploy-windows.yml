@@ -92,6 +92,7 @@ jobs:
                  )
             )
         env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}

@@ -83,6 +83,7 @@ jobs:
       - name: Build on  linux-arm32
         shell: bash
         env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           DEPLOY: 1
