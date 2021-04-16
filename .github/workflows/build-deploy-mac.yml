@@ -111,15 +111,9 @@ jobs:
           env
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
-                    sudo bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
-                    sudo chmod -R +rwx /cores/* # Enable access to core dumps (doesn't need to be in same run block)
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
+                    #chmod -R +rwx /cores/* # Enable access to core dumps (doesn't need to be in same run block)
           else
                   "Running build and deploying to snapshots"
                    eval "$command"
           fi
-
-      - uses: actions/upload-artifact@master # capture all crashes as build artifacts
-        with:
-            name: crashes
-            path: /cores
-
