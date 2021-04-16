@@ -20,7 +20,6 @@
 #  ******************************************************************************/
 #
 
-set -eu
 
 if [[ $# < 2 ]]; then
     echo "Usage: bash release-specified-component.sh release_version snapshot_version [staging_repository]"
@@ -39,6 +38,8 @@ if [ -z "${COMMAND}" ]; then
     else
         COMMAND="$4"
   fi
+  else
+      COMMAND=
 fi
 
 DEPLOY_COMMAND="$COMMAND"
