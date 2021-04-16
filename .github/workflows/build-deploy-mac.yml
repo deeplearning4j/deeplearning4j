@@ -77,6 +77,12 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      - name: Import GPG Key
+        uses: crazy-max/ghaction-import-gpg@v1
+        env:
+            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
       - name: Update path for gnu sed
         shell: bash
         run: |
