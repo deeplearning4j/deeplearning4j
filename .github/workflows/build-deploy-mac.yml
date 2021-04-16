@@ -106,6 +106,7 @@ jobs:
         run: |
           ulimit -c unlimited         # Enable core dumps to be captured (must be in same run block)
           gpg --version
+          gpg1 --version
           env
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
