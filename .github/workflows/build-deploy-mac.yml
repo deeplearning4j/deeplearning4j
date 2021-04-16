@@ -105,7 +105,6 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           COMMAND: mvn -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  deploy -DskipTests
         run: |
-          ulimit -c unlimited         # Enable core dumps to be captured (must be in same run block)
           gpg --version
           gpg1 --version
           env
