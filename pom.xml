@@ -975,6 +975,7 @@
                         <version>${maven-gpg-plugin.version}</version>
                         <configuration>
                             <useAgent>false</useAgent>
+                            <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
                         </configuration>
                         <executions>
                             <execution>
