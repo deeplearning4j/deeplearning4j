@@ -976,8 +976,6 @@
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>${maven-gpg-plugin.version}</version>
                         <configuration>
-                            <keyname>${env.MAVEN_GPG_KEY}</keyname>
-                            <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
                             <gpgArguments>
                                 <arg>--pinentry-mode</arg>
                                 <arg>loopback</arg>
