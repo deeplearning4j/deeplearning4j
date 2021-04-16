@@ -978,7 +978,12 @@
                         <configuration>
                             <useAgent>false</useAgent>
                             <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
                         </configuration>
+
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
