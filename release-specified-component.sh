@@ -32,7 +32,7 @@ SNAPSHOT_VERSION=$2
 #STAGING_REPOSITORY=
 STAGING_REPOSITORY=$3
 
-if [ -z "${COMMAND}" ]; then
+if [ -z "$COMMAND" ]; then
   if [ -z "$4" ]; then
     echo "Please specify a command environment variable or a 4th parameter specifying the maven command."
     exit 1
