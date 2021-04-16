@@ -75,7 +75,7 @@ case "${unameOut}" in
 esac
 echo ${machine}
 
-if [[ ${"machine"} == "Mac" ]]; then
+if [[ "${machine}" == "Mac" ]]; then
    echo "Adding osx specific parameters for gpg signing"
    DEPLOY_COMMAND="${DEPLOY_COMMAND}  -X  -Dgpg.executable=gpg1 "
 fi
