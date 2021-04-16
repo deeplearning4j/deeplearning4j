@@ -98,11 +98,11 @@ jobs:
         run: |
           brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
           # use gnu-sed not mac sed
-           ulimit -c unlimited         # Enable core dumps to be captured (must be in same run block)
+          ulimit -c unlimited         # Enable core dumps to be captured (must be in same run block)
           env
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
-                    sudo bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}"
+                    sudo bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                     sudo chmod -R +rwx /cores/* # Enable access to core dumps (doesn't need to be in same run block)
           else
                   "Running build and deploying to snapshots"
