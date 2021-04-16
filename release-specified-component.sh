@@ -65,7 +65,22 @@ bash ./update-versions.sh "$SNAPSHOT_VERSION" "$RELEASE_VERSION"
 #    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=8.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 # add flags specific to release, assumes an mvn deploy command is given
 # Note: we add javadoc fail on error here to avoid javadoc errors blocking a release
-DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Dgpg.passphrase=${MAVEN_GPG_PASSPHRASE} -Dgpg.keyname=${MAVEN_GPG_KEY} -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=Linux;;
+    Darwin*)    machine=Mac;;
+    CYGWIN*)    machine=Cygwin;;
+    MINGW*)     machine=MinGw;;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
+echo ${machine}
+
+if [[ ${"machine"} == "Mac" ]]; then
+   echo "Adding osx specific parameters for gpg signing"
+   DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Dgpg.executable=gpg1 -Dgpg.passphrase=${MAVEN_GPG_PASSPHRASE} "
+fi
+
+DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
  #-DstagingRepositoryId=$STAGING_REPOSITORY
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then
     # create new staging repository with everything in it
