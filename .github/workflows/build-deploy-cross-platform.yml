@@ -1,6 +1,4 @@
 on:
-  schedule:
-    - cron: "0 */12 * * *"
   workflow_dispatch:
     inputs:
       buildThreads:
@@ -32,7 +30,6 @@ on:
         description: 'Server id to publish to'
         required: false
         default: ossrh
-
 
       runsOn:
         description: 'Server id to publish to'
