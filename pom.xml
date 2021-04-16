@@ -977,6 +977,7 @@
                         <version>${maven-gpg-plugin.version}</version>
                         <configuration>
                             <useAgent>false</useAgent>
+                            <keyname>${env.MAVEN_GPG_KEY}</keyname>
                             <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
                             <gpgArguments>
                                 <arg>--pinentry-mode</arg>
