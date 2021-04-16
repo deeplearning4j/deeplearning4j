@@ -26,6 +26,7 @@ if [[ $# < 2 ]]; then
     exit 1
 fi
 
+
 RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 #STAGING_REPOSITORY=
