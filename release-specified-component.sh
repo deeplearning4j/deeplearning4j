@@ -39,8 +39,7 @@ if [ -z "$COMMAND" ]; then
     else
         COMMAND="$4"
   fi
-  else
-      COMMAND=
+
 fi
 
 DEPLOY_COMMAND="$COMMAND"
