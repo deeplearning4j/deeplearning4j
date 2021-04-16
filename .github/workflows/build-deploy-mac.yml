@@ -81,7 +81,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install gpg2 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Import GPG Key
@@ -102,7 +102,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          COMMAND: "mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  deploy -DskipTests"
+          COMMAND: "mvn -Dgpg.executable=gpg2 -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  deploy -DskipTests"
         run: |
           ulimit -c unlimited         # Enable core dumps to be captured (must be in same run block)
           env
