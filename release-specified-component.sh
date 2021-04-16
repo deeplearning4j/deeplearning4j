@@ -77,7 +77,7 @@ echo ${machine}
 
 if [[ "${machine}" == "Mac" ]]; then
    echo "Adding osx specific parameters for gpg signing"
-   DEPLOY_COMMAND="${DEPLOY_COMMAND}  -X  "
+   #DEPLOY_COMMAND="${DEPLOY_COMMAND}  -X  "
 fi
 
 DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
