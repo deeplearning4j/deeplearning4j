@@ -103,8 +103,8 @@ jobs:
                     echo "Performing release"
                     sudo bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}"
                     sudo chmod -R +rwx /cores/* # Enable access to core dumps (doesn't need to be in same run block)
-                   else
-                       "Running build and deploying to snapshots"
+          else
+                  "Running build and deploying to snapshots"
                        eval "$command"
           fi
 
