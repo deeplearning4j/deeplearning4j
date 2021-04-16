@@ -115,7 +115,7 @@ jobs:
                     sudo chmod -R +rwx /cores/* # Enable access to core dumps (doesn't need to be in same run block)
           else
                   "Running build and deploying to snapshots"
-                       eval "$command"
+                   eval "$command"
           fi
 
       - uses: actions/upload-artifact@master # capture all crashes as build artifacts
