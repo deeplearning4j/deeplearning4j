@@ -78,7 +78,8 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-
+      - run: |
+             sudo /var/packages/mono/target/bin/cert-sync /etc/ssl/certs/ca-certificates.crt
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 11.2.1_461
