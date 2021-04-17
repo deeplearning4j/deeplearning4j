@@ -72,7 +72,7 @@ jobs:
         with:
           java-version: 8
           distribution: 'zulu'
-          server-id:  ${{ github.event.inputs.releaseRepoId }}
+          server-id:  ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
