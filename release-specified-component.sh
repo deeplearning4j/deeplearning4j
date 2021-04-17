@@ -80,6 +80,7 @@ if [[ "${machine}" == "Mac" ]]; then
 fi
 
 DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
+
  #-DstagingRepositoryId=$STAGING_REPOSITORY
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then
     # create new staging repository with everything in it
