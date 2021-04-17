@@ -107,7 +107,10 @@ jobs:
         run: |
           gpg --version
           gpg1 --version
-          env
+          brew list
+          brew list --cask
+        
+          df -h
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
