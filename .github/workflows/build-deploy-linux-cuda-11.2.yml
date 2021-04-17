@@ -67,6 +67,9 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      - name: Clean up dpkg cache
+      - run: |
+              sudo dpkg ––configure –a
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
