@@ -32,12 +32,16 @@ on:
         required: false
         default: ossrh
 
-
-
       runsOn:
         description: 'Runs on:'
         required: false
         default: macos-10.15
+
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
@@ -89,7 +93,6 @@ jobs:
         env:
             GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
             PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-
       - name: Build and install
         shell: bash
         env:
@@ -109,7 +112,7 @@ jobs:
           gpg1 --version
           brew list
           brew list --cask
-        
+          brew uninstall ant aliyun-cli aws-sam-cli azure-cli go mongodb-community mongo-db-database-tools nginx node php postgresql selenium-server-standalone chromedriver firefox google-chrome julia microsoft-edge powershell vagrant virtualbox
           df -h
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
@@ -118,3 +121,8 @@ jobs:
                   "Running build and deploying to snapshots"
                    eval "${COMMAND}"
           fi
+
+      - name: Setup tmate session
+          uses: mxschmitt/action-tmate@v3
+          if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+
