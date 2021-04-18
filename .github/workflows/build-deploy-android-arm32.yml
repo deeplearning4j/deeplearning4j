@@ -68,7 +68,7 @@ jobs:
             key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
             restore-keys: ${{ runner.os }}-m2
       - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v2
+        uses: konduitai/setup-java@master
         with:
           java-version: 8
           distribution: 'zulu'
