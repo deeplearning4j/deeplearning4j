@@ -104,3 +104,8 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+

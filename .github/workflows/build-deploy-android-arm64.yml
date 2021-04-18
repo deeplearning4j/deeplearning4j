@@ -124,4 +124,9 @@ jobs:
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+
+
 
