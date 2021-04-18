@@ -112,8 +112,6 @@ jobs:
           gpg1 --version
           brew list
           brew list --cask
-          brew uninstall ant aliyun-cli aws-sam-cli azure-cli  mongodb-community mongo-db-database-tools nginx node php postgresql selenium-server-standalone chromedriver firefox google-chrome julia microsoft-edge powershell vagrant virtualbox
-          df -h
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
                     mvn -Djavacpp.platform=macosx-x86_64  -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  install -DskipTests
