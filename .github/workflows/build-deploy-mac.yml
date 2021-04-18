@@ -107,6 +107,8 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           COMMAND: "mvn -Possrh   -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests"
+          COMMAND2: "mvn -Possrh   -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":nd4j-native\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests"
+
         run: |
           gpg --version
           gpg1 --version
@@ -116,6 +118,9 @@ jobs:
                     echo "Performing release with command ${COMMAND}"
                     mvn -Djavacpp.platform=macosx-x86_64  -pl \":libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  install -DskipTests
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
+                    mvn -Djavacpp.platform=macosx-x86_64  -pl \":nd4j-native\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  install -DskipTests
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND2}"
+
           else
                   "Running build and deploying to snapshots"
                    eval "${COMMAND}"
