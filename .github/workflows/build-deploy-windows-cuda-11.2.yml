@@ -73,7 +73,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Java for publishing to OSSRH
-        uses: konduitai/setup-java@master
+        uses: actions/setup-java@v2
         with:
           java-version: 8
           distribution: 'zulu'
