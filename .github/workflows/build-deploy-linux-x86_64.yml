@@ -98,7 +98,7 @@ jobs:
           protoc --version
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          command="mvn  -X -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu -pl \":samediff-import-api,:samediff-import-onnx,:samediff-import-tensorflow\" --also-make clean --batch-mode deploy -DskipTests"
+          command="mvn  -X -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make clean --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"

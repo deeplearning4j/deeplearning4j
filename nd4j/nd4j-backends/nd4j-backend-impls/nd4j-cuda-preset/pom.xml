@@ -179,6 +179,43 @@
                             <classesDirectory>${basedir}/src</classesDirectory>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>
+                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                </exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>
+                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                </include>
+                                <include>lib/**</include>
+                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
