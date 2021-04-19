@@ -98,7 +98,6 @@ jobs:
           protoc --version
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          sudo ulimit -u unlimited
           command="mvn  -X -Possrh  -pl \":libnd4j\" -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make clean --batch-mode deploy -DskipTests"
           command2="mvn  -X -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
