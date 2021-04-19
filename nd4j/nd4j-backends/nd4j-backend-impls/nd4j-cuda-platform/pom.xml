@@ -65,7 +65,7 @@
             <version>${project.version}</version>
             <classifier>${javacpp.platform.windows-x86_64}</classifier>
         </dependency>
-    
+
     </dependencies>
 
     <profiles>
