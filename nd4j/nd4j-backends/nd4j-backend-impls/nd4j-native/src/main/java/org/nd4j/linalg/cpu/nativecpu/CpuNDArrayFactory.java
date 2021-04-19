@@ -94,7 +94,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             log.warn("************************************************************************************************");
             System.exit(1);
         }
-        
+
         val binaryLevel = nativeOps.binaryLevel();
         val optimalLevel = nativeOps.optimalLevel();
 
