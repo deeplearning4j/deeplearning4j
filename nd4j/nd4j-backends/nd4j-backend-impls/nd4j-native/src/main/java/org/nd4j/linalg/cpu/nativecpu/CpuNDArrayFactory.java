@@ -105,7 +105,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
             log.warn("*********************************** CPU Feature Check Warning ***********************************");
             log.warn("Warning: Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
-            log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.org/cpu for more details");
+            log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.konduit.ai/cpu for more details. Note: after beta7, we will not provide avx optimized binaries. " +
+                    "If you need these features, please compile from source. Contact the team on: https://github.com/eclipse/deeplearning4j/issues for more details.");
             log.warn("Or set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
             log.warn("*************************************************************************************************");
         }
