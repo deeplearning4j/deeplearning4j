@@ -48,4 +48,4 @@ All code in this repository is released under the Apache Software Foundation Lic
 
 ## Eclipse Contributor Agreement and Commit Signing
 
-Please see the following page for details: [https://deeplearning4j.org/eclipse-contributors](https://deeplearning4j.org/eclipse-contributors)
+Please see the following page for details: [https://deeplearning4j.konduit.ai/getting-started/contribute/eclipse-contributors](https://deeplearning4j.konduit.ai/getting-started/contribute/eclipse-contributors)

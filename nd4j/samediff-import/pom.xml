@@ -57,6 +57,7 @@
     <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
     <test.heap.size>2g</test.heap.size>
     <test.offheap.size>2g</test.offheap.size>
+    <dokka.version>1.4.30</dokka.version>
   </properties>
 
 
@@ -183,6 +184,30 @@
   </build>
 
   <profiles>
+
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jetbrains.dokka</groupId>
+            <artifactId>dokka-maven-plugin</artifactId>
+            <version>${dokka.version}</version>
+            <executions>
+              <execution>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>dokka</goal>
+                  <goal>javadoc</goal>
+                  <goal>javadocJar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>testresources</id>
     </profile>
