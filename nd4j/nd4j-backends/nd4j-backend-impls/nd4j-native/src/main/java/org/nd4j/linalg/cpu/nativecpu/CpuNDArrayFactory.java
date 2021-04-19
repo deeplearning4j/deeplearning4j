@@ -94,23 +94,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             log.warn("************************************************************************************************");
             System.exit(1);
         }
+        
+        val binaryLevel = nativeOps.binaryLevel();
+        val optimalLevel = nativeOps.optimalLevel();
 
-        if (!nativeOps.isOptimalRequirementsMet() && !Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_IGNORE_AVX)) &&
-                !Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.ND4J_IGNORE_AVX))) {
-            val binaryLevel = nativeOps.binaryLevel();
-            val optimalLevel = nativeOps.optimalLevel();
-
-            String binLevel = cpuBinaryLevelToName(binaryLevel);
-            String optLevel = cpuBinaryLevelToName(optimalLevel);
-
-            log.warn("*********************************** CPU Feature Check Warning ***********************************");
-            log.warn("Warning: Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
-            log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.konduit.ai/cpu for more details. Note: after beta7, we will not provide avx optimized binaries. " +
-                    "If you need these features, please compile from source. Contact the team on: https://github.com/eclipse/deeplearning4j/issues for more details.");
-            log.warn("Or set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
-            log.warn("*************************************************************************************************");
-        }
-
+        String binLevel = cpuBinaryLevelToName(binaryLevel);
+        String optLevel = cpuBinaryLevelToName(optimalLevel);
+        log.info("Binary level " + binLevel + " optimization level " + optLevel);
         blas = new CpuBlas();
 
         // TODO: add batched gemm here

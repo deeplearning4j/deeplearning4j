@@ -98,10 +98,13 @@ jobs:
           protoc --version
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          command="mvn  -X -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make clean --batch-mode deploy -DskipTests"
+          command="mvn  -X -Possrh  -pl \":libnd4j\" -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make clean --batch-mode deploy -DskipTests"
+          command2="mvn  -X -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           if [ "$PERFORM_RELEASE" == 1 ]; then
-                    echo "Performing release"
+                    echo "Performing release for libnd4j"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    echo "Performing release for everything else"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command2}"
                    else
                        "Running build and deploying to snapshots"
                        eval "$command"
