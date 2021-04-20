@@ -61,8 +61,25 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/update-deps-linux
+      - name: Cache cmake install
+        uses: actions/cache@v2
+        with:
+          id: cache-cmake
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake
+          restore-keys: ${{ runner.os }}-cmake
+      - name: Cache protobuf install
+        uses: actions/cache@v2
+        with:
+          id: cache-protobuf
+          path: /opt/protobuf
+          key: ${{ runner.os }}-protobuf
+          restore-keys: ${{ runner.os }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
+
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:

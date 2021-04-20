@@ -60,8 +60,7 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/update-deps-linux
-      - uses: ./.github/actions/install-protobuf-linux
-      - uses: ./.github/actions/install-cmake-linux
+
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
