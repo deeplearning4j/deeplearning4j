@@ -123,7 +123,7 @@ jobs:
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND2}"
 
           else
-                  "Running build and deploying to snapshots"
+                  echo "Running build and deploying to snapshots"
                    eval "${COMMAND}"
           fi
 
