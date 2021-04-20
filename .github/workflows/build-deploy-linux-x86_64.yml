@@ -115,6 +115,7 @@ jobs:
           cmake --version
           protoc --version
           sudo sysctl vm.overcommit_memory=2
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           sudo apt-get -y autoremove
           sudo apt-get -y clean
           command="mvn  -X -Possrh  -pl \":libnd4j\" -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make clean --batch-mode deploy -DskipTests"

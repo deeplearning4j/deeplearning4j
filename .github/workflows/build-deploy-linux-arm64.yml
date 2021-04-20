@@ -123,6 +123,7 @@ jobs:
           MAVEN_OPTS: -Xmx256m -XX:MaxPermSize=512m
 
         run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version

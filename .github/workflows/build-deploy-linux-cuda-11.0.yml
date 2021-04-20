@@ -119,6 +119,7 @@ jobs:
           MAVEN_OPTS: -Xmx256m -XX:MaxPermSize=512m
         run: |
           sudo apt list --installed
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
           mvn --version
           cmake --version

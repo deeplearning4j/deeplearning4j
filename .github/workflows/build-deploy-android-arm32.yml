@@ -63,7 +63,6 @@ jobs:
         uses: actions/cache@v2
         id: cache-cmake
         with:
-
           path: /opt/cmake
           key: ${{ runner.os }}-cmake
           restore-keys: ${{ runner.os }}-cmake
@@ -71,7 +70,6 @@ jobs:
         uses: actions/cache@v2
         id: cache-protobuf
         with:
-
           path: /opt/protobuf
           key: ${{ runner.os }}-protobuf
           restore-keys: ${{ runner.os }}-protobuf
@@ -126,6 +124,7 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MAVEN_OPTS: -Xmx256m -XX:MaxPermSize=512m
         run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
@@ -135,7 +134,6 @@ jobs:
           wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-arm.jar
           unzip openblas-0.3.13-1.5.5-android-arm.jar
           cd ..
-          export PATH=/opt/protobuf/bin:$PATH
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a/
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 

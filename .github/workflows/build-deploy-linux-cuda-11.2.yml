@@ -115,6 +115,7 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MAVEN_OPTS: -Xmx256m -XX:MaxPermSize=512m
         run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.2/bin:$PATH"
           nvcc --version
           mvn --version
