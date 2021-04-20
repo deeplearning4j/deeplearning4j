@@ -78,7 +78,6 @@ jobs:
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:

@@ -64,15 +64,13 @@ jobs:
         uses: actions/cache@v2
         id: cache-cmake
         with:
-
           path: /opt/cmake
           key: ${{ runner.os }}-cmake
           restore-keys: ${{ runner.os }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v2
-          id: cache-protobuf
+        id: cache-protobuf
         with:
-
           path: /opt/protobuf
           key: ${{ runner.os }}-protobuf
           restore-keys: ${{ runner.os }}-protobuf
