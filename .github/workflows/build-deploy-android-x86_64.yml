@@ -123,7 +123,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MAVEN_OPTS: -Xmx2g
+          
 
         run: |
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
