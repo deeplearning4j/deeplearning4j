@@ -104,7 +104,6 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MAVEN_OPTS: -Xmx256m -XX:MaxPermSize=512m
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
