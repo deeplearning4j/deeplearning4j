@@ -103,6 +103,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          MAVEN_OPTS: -Xmx256m -XX:MaxPermSize=512m
 
         run: |
           mvn --version
