@@ -118,7 +118,7 @@ jobs:
                     echo "Performing release with command ${COMMAND}"
                     mvn -Djavacpp.platform=macosx-x86_64  -pl \":libnd4j\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  install -DskipTests
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
-                    mvn -Djavacpp.platform=macosx-x86_64  -pl \":nd4j-native\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean  install -DskipTests
+                    mvn -Djavacpp.platform=macosx-x86_64  -pl \":nd4j-native\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu   install -DskipTests
                     # Ensure command propagates properly
                     export COMMAND="${COMMAND2}"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND2}"
