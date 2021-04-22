@@ -126,6 +126,7 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          LIBND4J_HOME_SUFFIX: cuda
 
         run: |
           sudo sysctl vm.overcommit_memory=2
