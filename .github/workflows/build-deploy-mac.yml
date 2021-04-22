@@ -108,7 +108,7 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/blasbuild/cpu" >> "$GITHUB_ENV"
+            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/" >> "$GITHUB_ENV"
             mkdir "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-macosx-x86_64.jar
