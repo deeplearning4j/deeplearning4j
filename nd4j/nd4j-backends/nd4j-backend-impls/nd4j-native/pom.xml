@@ -228,6 +228,7 @@
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
                         <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                         <buildResource>/lib/</buildResource>
+                        <buildResource>/</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/
