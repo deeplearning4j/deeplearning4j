@@ -36,6 +36,7 @@ if [ -z "${NDK_VERSION}" ]; then export NDK_VERSION="r21d"; fi
 if [ -z "${PERFORM_RELEASE}" ]; then export PERFORM_RELEASE=0; fi
 if [ -z "${RELEASE_VERSION}" ]; then export RELEASE_VERSION="1.0.0-M1"; fi
 if [ -z "${SNAPSHOT_VERSION}" ]; then export SNAPSHOT_VERSION="1.0.0-SNAPSHOT"; fi
+if [ -z "${MODULES}" ]; then export MODULES="-pl \"nd4j-native\" --also-make"; fi
 if [ -z "${RELEASE_REPO_ID}" ]; then export RELEASE_REPO_ID="deeplearning4j-release-${RELEASE_VERSION}"; fi
 
 
@@ -417,7 +418,7 @@ cd "$BASE_DIR/.."
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  command="mvn   -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\"  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
+  command="mvn  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\"  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
   message "$command"
   echo "Perform release or not ${PERFORM_RELEASE}"
   if [ "${PERFORM_RELEASE}" == "1" ] || [ "${PERFORM_RELEASE}" == 1 ]; then

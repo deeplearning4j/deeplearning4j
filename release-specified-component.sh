@@ -79,7 +79,10 @@ if [[ "${machine}" == "Mac" ]]; then
    #DEPLOY_COMMAND="${DEPLOY_COMMAND}  -X  "
 fi
 
-DEPLOY_COMMAND="${DEPLOY_COMMAND}  -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
+if [ -z "${MODULES}" ]; then export MODULES= ; fi
+
+
+DEPLOY_COMMAND="${DEPLOY_COMMAND}  ${MODULES} -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
 
  #-DstagingRepositoryId=$STAGING_REPOSITORY
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then

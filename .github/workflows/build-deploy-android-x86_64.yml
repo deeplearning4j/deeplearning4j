@@ -32,6 +32,17 @@ on:
         default: ossrh
 
 
+      modules:
+        description: 'Modules to build'
+        required: false
+        default:
+
+      libnd4jUrl:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
+
+
       runsOn:
         description: 'Server id to publish to'
         required: false
@@ -123,7 +134,8 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-
+          MODULES: ${{ github.event.inputs.modules  }}
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
@@ -138,6 +150,8 @@ jobs:
           cd ..
           export PATH=/opt/protobuf/bin:$PATH
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64/
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          bash ./bootstrap-libnd4j-from-url.sh
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
       - name: Setup tmate session

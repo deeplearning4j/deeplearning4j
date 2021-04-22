@@ -37,6 +37,17 @@ on:
         required: false
         default: macos-10.15
 
+      modules:
+        description: 'Modules to build'
+        required: false
+        default: -pl \":libnd4j,:nd4j-native\"
+
+      libnd4jUrl:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
+
+
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
@@ -106,13 +117,17 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          COMMAND: "mvn -Possrh   -Dlibnd4j.helper=mkldnn -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64   -pl \":libnd4j,:nd4j-native\" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests"
+          MODULES: ${{ github.event.inputs.modules  }}
+          COMMAND: "mvn -Possrh   -Dlibnd4j.helper=mkldnn -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64    --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests"
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
           gpg --version
           gpg1 --version
           brew list
           brew list --cask
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+         bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"

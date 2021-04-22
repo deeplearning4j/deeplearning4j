@@ -31,6 +31,15 @@ on:
         required: false
         default: ossrh
 
+      modules:
+        description: 'Modules to build'
+        required: false
+        default:
+
+      libnd4jUrl:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
 
       runsOn:
         description: 'OS to run on'
@@ -110,6 +119,9 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           COMMAND: "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
+          MODULES: ${{ github.event.inputs.modules  }}
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           echo "Invoked vcvars64.bat"
@@ -119,14 +131,17 @@ jobs:
           bash ./change-cuda-versions.sh 11.0
           if "%PERFORM_RELEASE%"=="1" (
                echo "Running release"
+                   bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
                bash "./release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
           ) else (
              if "%PERFORM_RELEASE%"==1 (
                   echo "Running release"
+                  bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
                   bash "./release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
             ) else (
                       echo "Running snapshots"
-                       mvn -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
+                      bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                       mvn -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64  "%MODULES%" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
             )
           )
 

@@ -31,6 +31,17 @@ on:
         required: false
         default: ossrh
 
+      modules:
+        description: 'Modules to build'
+        required: false
+        default:
+
+      libnd4jUrl:
+          description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+          required: false
+          default:
+
+
       runsOn:
         description: 'System to run on'
         required: false
@@ -110,6 +121,9 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MAVEN_OPTS: -Xmx2g
+          MODULES: ${{ github.event.inputs.modules  }}
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+
         run: |
           mvn --version
           cmake --version
@@ -120,6 +134,8 @@ jobs:
           sudo apt-get -y clean
           command="mvn  -X -Possrh  -pl \":libnd4j\" -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make clean --batch-mode deploy -DskipTests"
           command2="mvn  -X -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release for libnd4j"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
