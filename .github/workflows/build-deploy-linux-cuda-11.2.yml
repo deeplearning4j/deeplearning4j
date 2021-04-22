@@ -110,6 +110,12 @@ jobs:
         env:
           cuda: 11.2.0_460
           GCC: 9
+
+      - name: Setup libnd4j home if a download url is specified
+        shell: bash
+        run: |
+            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/blasbuild/cpu" >> "$GITHUB_ENV"
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Run cuda compilation on linux-x86_64
         shell: bash
         env:

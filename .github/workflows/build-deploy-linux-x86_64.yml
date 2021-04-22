@@ -106,6 +106,12 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      - name: Setup libnd4j home if a download url is specified
+        shell: bash
+        run: |
+              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/blasbuild/cpu" >> "$GITHUB_ENV"
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+
       - name: Build on  linux-x86_64
         shell: bash
         env:
