@@ -125,6 +125,7 @@ jobs:
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
