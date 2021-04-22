@@ -109,7 +109,7 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/blasbuild/cpu" >> "$GITHUB_ENV"
+              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
       - name: Build on  linux-x86_64
