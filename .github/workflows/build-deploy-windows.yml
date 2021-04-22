@@ -46,6 +46,11 @@ on:
         description: 'OS to run on'
         required: false
         default: windows-2019
+
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 jobs:
   windows-x86_64:
     runs-on: ${{ github.event.inputs.runsOn }}
