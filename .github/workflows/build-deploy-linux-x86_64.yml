@@ -141,6 +141,7 @@ jobs:
           command="mvn  -X  -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
