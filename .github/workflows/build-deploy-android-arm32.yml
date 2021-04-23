@@ -116,7 +116,15 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
+             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
+             mkdir "${GITHUB_WORKSPACE}/openblas_home"
+             cd "${GITHUB_WORKSPACE}/openblas_home"
+             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-arm.jar
+             unzip openblas-0.3.13-1.5.5-android-arm.jar
+             cd ..
+             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a" >> "$GITHUB_ENV"
+             cp ${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a/libopenblas.so
+             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Build on  android-arm32
         shell: bash
