@@ -973,6 +973,8 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>${maven-javadoc-plugin.version}</version>
                         <configuration>
+                            <minmemory>256m</minmemory>
+                            <maxmemory>2048m</maxmemory>
                             <doclint>all,-missing</doclint>
                             <quiet>true</quiet>
                         </configuration>
