@@ -115,6 +115,7 @@ jobs:
             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-macosx-x86_64.jar
             unzip openblas-0.3.13-1.5.5-macosx-x86_64.jar
             cd ..
+            cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/libopenblas.dylib
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/" >> "$GITHUB_ENV"
 
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
