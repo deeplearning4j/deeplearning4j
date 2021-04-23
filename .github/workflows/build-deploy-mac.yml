@@ -47,10 +47,6 @@ on:
         required: false
         default:
 
-      mavenOpts:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-        required: false
-        default:
 
 
       debug_enabled:
@@ -138,7 +134,7 @@ jobs:
           MODULES: ${{ github.event.inputs.modules  }}
           COMMAND: "mvn -Possrh   -Dlibnd4j.helper=mkldnn -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64    --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests"
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
-          MAVEN_OPTS: ${{ github.even.inputs.mavenOpts }}
+          MAVEN_OPTS: "-Xmx2g"
 
         run: |
           gpg --version
