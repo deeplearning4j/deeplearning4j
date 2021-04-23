@@ -22,7 +22,7 @@ on:
         default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
-        description: 'Snapshot repository id'
+        description: 'Release repository id'
         required: false
         default:
 
@@ -73,7 +73,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v2
         id: cache-cmake
