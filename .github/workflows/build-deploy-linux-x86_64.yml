@@ -126,7 +126,6 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MAVEN_OPTS: -Xmx2g
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
 
