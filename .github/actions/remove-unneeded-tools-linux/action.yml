@@ -5,7 +5,7 @@ runs:
     - name: Initial install
       shell: bash
       run: |
-           sudo apt remove -y mongodb-org *google-chrome* firefox apache2  bazel kubectl esl-erlang hhvm nginx php* libpq-dev postgresql postgresql-client ruby-full powershell r-base mono-complete nuget
+           sudo apt remove -y mongodb-org *google-chrome* firefox apache2  bazel kubectl esl-erlang hhvm nginx  libpq-dev postgresql postgresql-client ruby-full powershell r-base mono-complete nuget
            sudo rm -rf /usr/share/java/selnium*
            sudo rm -rf /usr/local/share/phantomjs*
            sudo rm -rf /usr/local/share/gecko_driver*
