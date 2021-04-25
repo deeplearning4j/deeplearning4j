@@ -141,7 +141,6 @@ jobs:
           MAVEN_OPTS: -Xmx2g
 
         run: |
-          sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.2/bin:$PATH"
           nvcc --version

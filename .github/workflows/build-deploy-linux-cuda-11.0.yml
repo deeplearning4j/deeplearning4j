@@ -142,7 +142,6 @@ jobs:
 
 
         run: |
-          sudo sysctl vm.overcommit_memory=2
           sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
