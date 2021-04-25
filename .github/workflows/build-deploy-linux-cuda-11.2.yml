@@ -138,6 +138,7 @@ jobs:
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           LIBND4J_HOME_SUFFIX: cuda
+          MAVEN_OPTS: -Xmx2g
 
         run: |
           sudo sysctl vm.overcommit_memory=2
