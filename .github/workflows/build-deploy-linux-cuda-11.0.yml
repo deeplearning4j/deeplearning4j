@@ -115,7 +115,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 11.0.167
-          GCC: 9
+          GCC:  7.5.0
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
