@@ -40,7 +40,13 @@ namespace sd {
 
             auto segmentedOutput = OUTPUT_NULLIFIED(0);
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
-            REQUIRE_TRUE(reshapedSegments.isVector(), 0, "unsorted_segment_sum: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
+            REQUIRE_TRUE(reshapedSegments.isVector(), 0, "unsorted_segment_prod: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
+            REQUIRE_TRUE(reshapedSegments.lengthOf() == input->sizeAt(0), 0, "unsorted_segment_pod: segment indexes array length should be equal to the input first dimension, but %ld != %ld.", reshapedSegments.lengthOf(), input->sizeAt(0));
+
+            Nd4jLong wrong;
+
+            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), &reshapedSegments, numOfClasses, wrong), 0, "unsorted_segment_pod: segment indices should be in range [0, %ld), but %ld != %ld",
+                    numOfClasses, wrong, numOfClasses);
             helpers::unsortedSegmentProdFunctor(block.launchContext(), &reshapedInput, &reshapedSegments, numOfClasses, segmentedOutput);
 
             return ND4J_STATUS_OK;
