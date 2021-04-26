@@ -17,12 +17,12 @@ on:
         default: 1.0.0-M1
 
       snapshotVersion:
-        description: 'Snapshot version target'
+        description: 'Release version target'
         required: false
         default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
-        description: 'Release repository id'
+        description: 'Snapshot repository id'
         required: false
         default:
 
@@ -31,32 +31,14 @@ on:
         required: false
         default: ossrh
 
-
-      modules:
-        description: 'Modules to build'
-        required: false
-        default:
-
-      libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-        required: false
-        default:
-
       runsOn:
         description: 'Server id to publish to'
         required: false
         default: ubuntu-16.04
-
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-        required: false
-        default: false
-
-
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
       - name: 'Block Concurrent Executions'
@@ -66,11 +48,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
-  android-arm64:
+  linux-x86_64:
     needs: pre-ci
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
-      - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
@@ -95,90 +76,58 @@ jobs:
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Set up Java for publishing to GitHub Packages
+      - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v2
         with:
           java-version: 8
           distribution: 'zulu'
-          server-id:  ${{ github.event.inputs.serverId }}
+          server-id: {{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
 
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r21d
-
-      - name: Setup libnd4j home if a download url is specified
-        shell: bash
-        run: |
-          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-                 mkdir "${GITHUB_WORKSPACE}/openblas_home"
-                 cd "${GITHUB_WORKSPACE}/openblas_home"
-                 wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-arm64.jar
-                 unzip openblas-0.3.13-1.5.5-android-arm64.jar
-                 cd ..
-                 echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/android-arm" >> "$GITHUB_ENV"
-                 cp ${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/libopenblas.so
-                 echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
-      - name: Build on android-arm64
+      - name: Build on  linux-x86_64
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY: 1
-          BUILD_USING_MAVEN: 1
-          NDK_VERSION: r21d
-          CURRENT_TARGET: android-arm64
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          DEPLOY_TO: ossrh
-          OPENBLAS_PATH: ${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
-          # note: we don't pass this in directly, this is for the pi_build.sh script
-          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
-          PROTO_EXEC: /opt/protobuf/bin/protoc
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.modules  }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
-
 
         run: |
+          sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
-          sudo apt install -y unzip wget
-          mkdir "${GITHUB_WORKSPACE}/openblas_home"
-          cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-arm64.jar
-          unzip openblas-0.3.13-1.5.5-android-arm64.jar
-          cd ..
-          export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
-          bash ./bootstrap-libnd4j-from-url.sh
-          ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
+          sudo apt-get autoremove
+          sudo apt-get clean
+          command="mvn  -X -Possrh -pl \"!:nd4j-native,!\"libnd4j\"  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests"
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+                    echo "Performing release"
+                   ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                   else
+                       "Running build and deploying to snapshots"
+                       eval "$command"
+          fi
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
-
-
 

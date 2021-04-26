@@ -95,21 +95,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             System.exit(1);
         }
 
-        if (!nativeOps.isOptimalRequirementsMet() && !Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_IGNORE_AVX)) &&
-                !Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.ND4J_IGNORE_AVX))) {
-            val binaryLevel = nativeOps.binaryLevel();
-            val optimalLevel = nativeOps.optimalLevel();
+        val binaryLevel = nativeOps.binaryLevel();
+        val optimalLevel = nativeOps.optimalLevel();
 
-            String binLevel = cpuBinaryLevelToName(binaryLevel);
-            String optLevel = cpuBinaryLevelToName(optimalLevel);
-
-            log.warn("*********************************** CPU Feature Check Warning ***********************************");
-            log.warn("Warning: Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
-            log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.org/cpu for more details");
-            log.warn("Or set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
-            log.warn("*************************************************************************************************");
-        }
-
+        String binLevel = cpuBinaryLevelToName(binaryLevel);
+        String optLevel = cpuBinaryLevelToName(optimalLevel);
+        log.info("Binary level " + binLevel + " optimization level " + optLevel);
         blas = new CpuBlas();
 
         // TODO: add batched gemm here

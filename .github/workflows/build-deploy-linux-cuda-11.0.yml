@@ -1,16 +1,60 @@
 on:
-  schedule:
-    - cron: "0 */12 * * *"
   workflow_dispatch:
     inputs:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
         default: 1
+
+      deployToReleaseStaging:
+        description: 'Whether to deploy to release staging or not.'
+        required: false
+        default: 0
+
+      releaseVersion:
+        description: 'Release version target'
+        required: false
+        default: 1.0.0-M1
+
+      snapshotVersion:
+        description: 'Snapshot version target'
+        required: false
+        default: 1.0.0-SNAPSHOT
+
+      releaseRepoId:
+        description: 'Release repository id'
+        required: false
+        default:
+
+      serverId:
+        description: 'Server id to publish to'
+        required: false
+        default: ossrh
+
+      modules:
+        description: 'Modules to build'
+        required: false
+        default: '-pl \":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j\"'
+
+      libnd4jUrl:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
+
+
+      runsOn:
+        description: 'Server id to publish to'
+        required: false
+        default: ubuntu-16.04
+
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
-    runs-on: ubuntu-16.04
+    runs-on: ${{ github.event.inputs.runsOn }}
     timeout-minutes: 1
     steps:
       - name: 'Block Concurrent Executions'
@@ -29,14 +73,38 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/update-deps-linux
-      - uses: ./.github/actions/remove-unneeded-tools-linux
-      - uses: ./.github/actions/install-protobuf-linux
-      - uses: ./.github/actions/install-cmake-linux
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
+      - name: Cache cmake install
+        uses: actions/cache@v2
+        id: cache-cmake
         with:
-          java-version: 1.8
-          server-id: sonatype-nexus-snapshots
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake
+          restore-keys: ${{ runner.os }}-cmake
+      - name: Cache protobuf install
+        uses: actions/cache@v2
+        id: cache-protobuf
+        with:
+          path: /opt/protobuf
+          key: ${{ runner.os }}-protobuf
+          restore-keys: ${{ runner.os }}-protobuf
+      - uses: ./.github/actions/install-protobuf-linux
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
+      - uses: ./.github/actions/install-cmake-linux
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+            path: ~/.m2
+            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+            restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id:  ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -48,17 +116,34 @@ jobs:
         env:
           cuda: 11.0.167
           GCC: 9
+
+      - name: Setup libnd4j home if a download url is specified
+        shell: bash
+        run: |
+            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Build cuda
         shell: bash
         env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          MODULES: ${{ github.event.inputs.modules  }}
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          LIBND4J_HOME_SUFFIX: cuda
+
+
         run: |
           sudo apt list --installed
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
           mvn --version
           cmake --version
@@ -66,6 +151,20 @@ jobs:
           nvcc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          mvn -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode deploy  -DskipTests
+          command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Dlibnd4j.chip=cuda   --also-make  -Pcuda  clean --batch-mode package deploy  -DskipTests"
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          bash ./bootstrap-libnd4j-from-url.sh
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+               echo "Performing release"
+               bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+              else
+                  "Running build and deploying to snapshots"
+                  eval "$command"
+          fi
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+
 
 

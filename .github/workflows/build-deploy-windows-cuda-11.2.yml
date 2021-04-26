@@ -1,12 +1,55 @@
 on:
-  schedule:
-    - cron: "0 */12 * * *"
   workflow_dispatch:
     inputs:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
         default: 1
+
+      deployToReleaseStaging:
+        description: 'Whether to deploy to release staging or not.'
+        required: false
+        default: 0
+
+      releaseVersion:
+        description: 'Release version target'
+        required: false
+        default: 1.0.0-M1
+
+      snapshotVersion:
+        description: 'Snapshot version target'
+        required: false
+        default: 1.0.0-SNAPSHOT
+
+      releaseRepoId:
+        description: 'Release repository id'
+        required: false
+        default:
+
+      serverId:
+        description: 'Server id to publish to'
+        required: false
+        default: ossrh
+
+      modules:
+        description: 'Modules to build'
+        required: false
+        default:
+
+      libnd4jUrl:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
+
+      runsOn:
+        description: 'OS to run on'
+        required: false
+        default: windows-2019
+
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
@@ -21,7 +64,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows-x86_64-cuda-11-2:
     needs: pre-ci
-    runs-on: windows-2019
+    runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -36,35 +79,85 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.2.1
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
         with:
-          java-version: 1.8
-          server-id: sonatype-nexus-snapshots
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Java for publishing to OSSRH
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id: ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Setup windows path
+        shell: powershell
+        run: echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64;" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Import GPG Key
+        uses: crazy-max/ghaction-import-gpg@v1
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+      - name: Setup libnd4j home if a download url is specified
+        shell: powershell
+        run: |
+             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+
       - name:  Run cuda build
         shell: cmd
         env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
+          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          COMMAND: "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests"
+          MODULES: ${{ github.event.inputs.modules  }}
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          LIBND4J_HOME_SUFFIX: cuda
+
+
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
-          set "CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
-          dir "%CUDA_PATH%"
-          dir "%CUDA_PATH%\lib"
-          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
-          which cmake
-          set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64;%PATH%"
           echo "Running cuda build"
+          echo "Command is %COMMAND%"
           bash ./change-cuda-versions.sh 11.2
-          sudo apt-get autoremove
-          sudo apt-get clean
-          mvn -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Possrh -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64   -pl ":nd4j-cuda-11.2,:libnd4j,:deeplearning4j-cuda-11.2" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean --batch-mode deploy -DskipTests
+          if "%PERFORM_RELEASE%"=="1" (
+              echo "Running release"
+              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+              bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
+          ) else (
+              if "%PERFORM_RELEASE%"==1 (
+                        echo "Running release"
+                        bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                        bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
+                    ) else (
+                        echo "Running snapshots"
+                        bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                        mvn -T ${{ github.event.inputs.buildThreads }} -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
+              )
+          )
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
 

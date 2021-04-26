@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -78,7 +78,7 @@
             <classifier>${dependency.platform}</classifier>
         </dependency>
 
-            <dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
         </dependency>
@@ -150,9 +150,73 @@
                     <target>8</target>
                 </configuration>
             </plugin>
-
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>empty-javadoc-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>javadoc</classifier>
+                            <classesDirectory>${basedir}/javadoc</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>empty-sources-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <classesDirectory>${basedir}/src</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>
+                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                </exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>
+                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                </include>
+                                <include>lib/**</include>
+                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -211,6 +275,7 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
                         <configuration>
                             <properties>${javacpp.platform}</properties>
                             <compilerOptions>

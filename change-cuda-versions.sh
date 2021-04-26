@@ -59,7 +59,7 @@ case $VERSION in
     ;;
   11.1)
     VERSION2="8.0"
-    VERSION3="1.5.5-SNAPSHOT"
+    VERSION3="1.5.5"
     ;;
   11.0)
     VERSION2="8.0"
@@ -84,7 +84,7 @@ case $VERSION in
 esac
 
 sed_i() {
-  sed -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
+  sed -i "" -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
 }
 
 export -f sed_i

@@ -30,8 +30,6 @@ import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
-import org.nd4j.parameterserver.status.play.InMemoryStatusStorage;
-import org.nd4j.parameterserver.status.play.StatusServer;
 
 import java.util.ArrayList;
 import java.util.Arrays;

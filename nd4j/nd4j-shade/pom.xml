@@ -58,6 +58,7 @@
                                 <goal>shade</goal>
                             </goals>
                             <configuration>
+
                                 <transformers>
                                     <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">

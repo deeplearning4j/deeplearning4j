@@ -57,6 +57,7 @@
     <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
     <test.heap.size>2g</test.heap.size>
     <test.offheap.size>2g</test.offheap.size>
+    <dokka.version>1.4.30</dokka.version>
   </properties>
 
 
@@ -183,6 +184,59 @@
   </build>
 
   <profiles>
+
+    <profile>
+      <id>release</id>
+      <repositories>
+        <repository>
+          <id>jetbrains-kotlinx</id>
+          <url>https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven</url>
+          <name>Kotlinx repo</name>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
+      </repositories>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <configuration>
+              <forceCreation>true</forceCreation>
+            </configuration>
+            <executions>
+              <execution>
+                <id>empty-javadoc-jar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <classifier>javadoc</classifier>
+                  <classesDirectory>${basedir}/javadoc</classesDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>empty-sources-jar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <classifier>sources</classifier>
+                  <classesDirectory>${basedir}/src</classesDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>testresources</id>
     </profile>

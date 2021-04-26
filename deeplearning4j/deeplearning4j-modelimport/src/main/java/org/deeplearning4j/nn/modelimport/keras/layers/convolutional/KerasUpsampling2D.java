@@ -61,14 +61,10 @@ public class KerasUpsampling2D extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
 
         int[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfig(layerConfig, 2, conf);
-        if (size[0] != size[1])
-            throw new UnsupportedKerasConfigurationException("First and second size arguments have to be the same" +
-                    "got: " + size[0] + " and " + size[1]);
-
         Upsampling2D.Builder builder = new Upsampling2D.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
-                .size(size[0]);
+                .size(size);
 
         this.layer = builder.build();
         this.vertex = null;
