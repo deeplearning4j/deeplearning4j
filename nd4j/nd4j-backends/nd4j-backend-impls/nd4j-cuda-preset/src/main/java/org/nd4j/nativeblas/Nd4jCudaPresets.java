@@ -146,9 +146,9 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
                          "cudnn_adv_train", "cudnn_cnn_infer", "cudnn_cnn_train"};
         for (String lib : libs) {
             if (platform.startsWith("linux")) {
-                lib += lib.startsWith("cudnn") ? "@.8" : lib.equals("curand") || lib.equals("cusolver") ? "@.10" : lib.equals("cudart") ? "@.11.0" : "@.11";
+                lib += lib.startsWith("cudnn") ? "@.8" : lib.equals("curand") ? "@.10" : lib.equals("cudart") ? "@.11.0" : "@.11";
             } else if (platform.startsWith("windows")) {
-                lib += lib.startsWith("cudnn") ? "64_8" : lib.equals("curand") || lib.equals("cusolver") ? "64_10" : lib.equals("cudart") ? "64_110" : "64_11";
+                lib += lib.startsWith("cudnn") ? "64_8" : lib.equals("curand") ? "64_10" : lib.equals("cudart") ? "64_110" : "64_11";
             } else {
                 continue; // no CUDA
             }
