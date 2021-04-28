@@ -132,7 +132,7 @@ public class LayerValidation {
 			List<Regularization> regularization, List<Regularization> regularizationBias) {
 		if (regularization != null && !regularization.isEmpty()) {
 
-			final List<Regularization> bLayerRegs = bLayer.getRegularization();
+			final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularization());
 			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
 				bLayer.setRegularization(regularization);
 			} else {
@@ -161,18 +161,20 @@ public class LayerValidation {
 				//prevent concurrent modification exception
 				bLayerRegs.addAll(allToAdd);
 			}
-		}
+
+            bLayer.setRegularization(bLayerRegs);
+
+        }
+
 
 
 		if (regularizationBias != null && !regularizationBias.isEmpty()) {
-
-			final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
+			final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularizationBias());
 			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
-
 				bLayer.setRegularizationBias(regularizationBias);
 			} else {
-
-				boolean hasL1 = false;
+                List<Regularization> allToAdd = new ArrayList<>();
+                boolean hasL1 = false;
 				boolean hasL2 = false;
 				final List<Regularization> regContext = regularizationBias;
 				for (final Regularization reg : bLayerRegs) {
@@ -190,15 +192,20 @@ public class LayerValidation {
 					if (reg instanceof L1Regularization) {
 
 						if (!hasL1)
-							bLayerRegs.add(reg);
+                            allToAdd.add(reg);
 					} else if (reg instanceof L2Regularization) {
 
 						if (!hasL2)
-							bLayerRegs.add(reg);
+                            allToAdd.add(reg);
 					} else
-						bLayerRegs.add(reg);
+                        allToAdd.add(reg);
 				}
-			}
+
+                bLayerRegs.addAll(allToAdd);
+				bLayer.setRegularization(bLayerRegs);
+
+            }
+
 		}
 
 		if (bLayer.getIDropout() == null) {
