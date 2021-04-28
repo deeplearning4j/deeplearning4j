@@ -68,6 +68,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
                         SubsamplingHelper.class,
                         dataType);
+                log.debug("CudnnSubsamplingHelper successfully initialized");
+
             }
             else {
                 log.warn("Cudnn class not found using current class loader. Trying current classloader.");
@@ -79,6 +81,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                                 CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
                                 SubsamplingHelper.class,
                                 dataType);
+
                     } catch (Exception e) {
                         log.warn("Unable to use cudnn subsampling  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
                     }
@@ -88,10 +91,14 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 }
             }
 
-            log.debug("CudnnSubsamplingHelper successfully initialized");
             if (helper != null && !helper.checkSupported()) {
                 helper = null;
             }
+
+            if(helper != null) {
+                log.debug("CudnnSubsamplingHelper successfully initialized");
+            }
+
         } else if("CPU".equalsIgnoreCase(backend) ){
             helper = new MKLDNNSubsamplingHelper(dataType);
             log.trace("Created MKL-DNN helper: MKLDNNSubsamplingHelper, layer {}", layerConf().getLayerName());
