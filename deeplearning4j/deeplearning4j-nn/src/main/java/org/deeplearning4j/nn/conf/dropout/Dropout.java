@@ -63,6 +63,8 @@ public class Dropout implements IDropout {
 
     private int helperCountFail = 0;
 
+    public final static String CUDNN_DROPOUT_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.dropout.CudnnDropoutHelper";
+
     /**
      * @param activationRetainProbability Probability of retaining an activation - see {@link Dropout} javadoc
      */
@@ -108,13 +110,37 @@ public class Dropout implements IDropout {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
 
         if("CUDA".equalsIgnoreCase(backend)) {
-            helper = DL4JClassLoading.createNewInstance(
-                    "org.deeplearning4j.cuda.dropout.CudnnDropoutHelper",
-                    DropoutHelper.class,
-                    dataType);
-            log.debug("CudnnDropoutHelper successfully initialized");
-            if (!helper.checkSupported()) {
+            if(DL4JClassLoading.loadClassByName(CUDNN_DROPOUT_HELPER_CLASS_NAME) != null) {
+                helper = DL4JClassLoading.createNewInstance(
+                        "org.deeplearning4j.cuda.dropout.CudnnDropoutHelper",
+                        DropoutHelper.class,
+                        dataType);
+            } else {
+                log.warn("Cudnn class not found using current class loader. Trying current classloader.");
+                synchronized (this) {
+                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
+                    DL4JClassLoading.setDl4jClassloaderFromClass(DropoutHelper.class);
+                    try {
+                        helper = DL4JClassLoading.createNewInstance(
+                                CUDNN_DROPOUT_HELPER_CLASS_NAME,
+                                DropoutHelper.class,
+                                dataType);
+
+                    } catch (Exception e) {
+                        log.warn("Unable to use cudnn dropout  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
+                    }
+
+                    log.warn("Returning class loader to original one.");
+                    DL4JClassLoading.setDl4jClassloader(classLoader);
+                }
+            }
+
+            if (helper != null && !helper.checkSupported()) {
                 helper = null;
+            }
+
+            if(helper != null) {
+                log.debug("CudnnDropoutHelper successfully initialized");
             }
         }
 

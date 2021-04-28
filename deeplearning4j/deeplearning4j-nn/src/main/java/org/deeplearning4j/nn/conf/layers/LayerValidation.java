@@ -141,31 +141,32 @@ public class LayerValidation {
 				boolean hasL1 = false;
 				boolean hasL2 = false;
 				final List<Regularization> regContext = regularization;
+				List<Regularization> allToAdd = new ArrayList<>();
 				for (final Regularization reg : bLayerRegs) {
-
 					if (reg instanceof L1Regularization) {
-
 						hasL1 = true;
 					} else if (reg instanceof L2Regularization) {
-
 						hasL2 = true;
 					}
 				}
 				for (final Regularization reg : regContext) {
-
 					if (reg instanceof L1Regularization) {
 
 						if (!hasL1)
-							bLayerRegs.add(reg);
+                            allToAdd.add(reg);
 					} else if (reg instanceof L2Regularization) {
 
 						if (!hasL2)
-							bLayerRegs.add(reg);
+                            allToAdd.add(reg);
 					} else
 						bLayerRegs.add(reg);
 				}
+				//prevent concurrent modification exception
+				bLayerRegs.addAll(allToAdd);
 			}
 		}
+
+
 		if (regularizationBias != null && !regularizationBias.isEmpty()) {
 
 			final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
