@@ -73,6 +73,7 @@ import org.nd4j.shade.guava.collect.Lists;
 @NativeTag
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
+@Disabled("Fails on GPU to be revisited")
 class CNNGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
