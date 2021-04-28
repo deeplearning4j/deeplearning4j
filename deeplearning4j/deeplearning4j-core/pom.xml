@@ -193,12 +193,7 @@
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-cuda-11.0</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
+         
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>cuda-platform-redist</artifactId>
