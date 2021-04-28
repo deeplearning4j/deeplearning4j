@@ -169,7 +169,7 @@ public class ArrowConverter {
     public static INDArray convertArrowVector(FieldVector fieldVector,ColumnType type) {
         DataBuffer buffer = null;
         int cols = fieldVector.getValueCount();
-        ByteBuffer direct = ByteBuffer.allocateDirect(fieldVector.getDataBuffer().capacity());
+        ByteBuffer direct = ByteBuffer.allocateDirect((int) fieldVector.getDataBuffer().capacity());
         direct.order(ByteOrder.nativeOrder());
         fieldVector.getDataBuffer().getBytes(0,direct);
         Buffer buffer1 = (Buffer) direct;
