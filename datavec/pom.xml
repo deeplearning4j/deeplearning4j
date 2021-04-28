@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -247,6 +247,8 @@
                 <cuda.version>11.0</cuda.version>
                 <cudnn.version>8.0</cudnn.version>
                 <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+                <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
+                <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
             </properties>
             <dependencies>
                 <dependency>

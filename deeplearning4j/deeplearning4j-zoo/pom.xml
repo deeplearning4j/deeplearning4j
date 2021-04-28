@@ -92,6 +92,10 @@
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
             <id>nd4j-tests-cuda</id>
+            <properties>
+                <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
+                <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
+            </properties>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
