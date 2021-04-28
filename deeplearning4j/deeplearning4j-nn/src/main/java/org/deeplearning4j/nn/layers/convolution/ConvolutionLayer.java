@@ -91,7 +91,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                   } catch(Exception e) {
                       log.warn("Unable to use cudnn convolution helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
                   }
-                    
+
                     log.warn("Returning class loader to original one.");
                     DL4JClassLoading.setDl4jClassloader(classLoader);
 
@@ -99,7 +99,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
 
             log.debug("CudnnConvolutionHelper successfully initialized");
-            if (!helper.checkSupported()) {
+            if (helper != null && !helper.checkSupported()) {
                 helper = null;
             }
         } else if("CPU".equalsIgnoreCase(backend)){
