@@ -29,7 +29,12 @@ import org.nd4j.common.util.ArchiveUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.URL;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.FileLockInterruptionException;
+import java.nio.channels.OverlappingFileLockException;
 
 @Slf4j
 public class Downloader {
@@ -69,20 +74,23 @@ public class Downloader {
     }
 
     private static void download(String name, URL url, File f, String targetMD5, int maxTries, int attempt, int connectionTimeout, int readTimeout) throws IOException {
-        boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
-        if (attempt < maxTries) {
-            if(!isCorrectFile) {
-                FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
-                if (!checkMD5OfFile(targetMD5, f)) {
-                    f.delete();
-                    download(name, url, f, targetMD5, maxTries, attempt + 1, connectionTimeout, readTimeout);
+        doOrWait(f.getParentFile(), () -> {
+            boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
+            if (attempt < maxTries) {
+                if(!isCorrectFile) {
+                    FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
+                    if (!checkMD5OfFile(targetMD5, f)) {
+                        f.delete();
+                        download(name, url, f, targetMD5, maxTries, attempt + 1, connectionTimeout, readTimeout);
+                    }
                 }
+            } else if (!isCorrectFile) {
+                //Too many attempts
+                throw new IOException("Could not download " + name + " from " + url + "\n properly despite trying " + maxTries
+                        + " times, check your connection.");
             }
-        } else if (!isCorrectFile) {
-            //Too many attempts
-            throw new IOException("Could not download " + name + " from " + url + "\n properly despite trying " + maxTries
-                    + " times, check your connection.");
-        }
+        });
+
     }
 
     /**
@@ -114,29 +122,31 @@ public class Downloader {
 
     private static void downloadAndExtract(int attempt, int maxTries, String name, URL url, File f, File extractToDir,
                                            String targetMD5, int connectionTimeout, int readTimeout) throws IOException {
-        boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
-        if (attempt < maxTries) {
-            if(!isCorrectFile) {
-                FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
-                if (!checkMD5OfFile(targetMD5, f)) {
+        doOrWait(f.getParentFile(), () -> {
+            boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
+            if (attempt < maxTries) {
+                if(!isCorrectFile) {
+                    FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
+                    if (!checkMD5OfFile(targetMD5, f)) {
+                        f.delete();
+                        downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
+                    }
+                }
+                // try extracting
+                try{
+                    ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath(), false);
+                } catch (Throwable t){
+                    log.warn("Error extracting {} files from file {} - retrying...", name, f.getAbsolutePath(), t);
                     f.delete();
                     downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
                 }
+            } else if (!isCorrectFile) {
+                //Too many attempts
+                throw new IOException("Could not download and extract " + name + " from " + url.getPath() + "\n properly despite trying " + maxTries
+                        + " times, check your connection. File info:" + "\nTarget MD5: " + targetMD5
+                        + "\nHash matches: " + checkMD5OfFile(targetMD5, f) + "\nIs valid file: " + f.isFile());
             }
-            // try extracting
-            try{
-                ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath(), false);
-            } catch (Throwable t){
-                log.warn("Error extracting {} files from file {} - retrying...", name, f.getAbsolutePath(), t);
-                f.delete();
-                downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
-            }
-        } else if (!isCorrectFile) {
-            //Too many attempts
-            throw new IOException("Could not download and extract " + name + " from " + url.getPath() + "\n properly despite trying " + maxTries
-                    + " times, check your connection. File info:" + "\nTarget MD5: " + targetMD5
-                    + "\nHash matches: " + checkMD5OfFile(targetMD5, f) + "\nIs valid file: " + f.isFile());
-        }
+        });
     }
 
     /**
@@ -150,6 +160,41 @@ public class Downloader {
         String trueMd5 = DigestUtils.md5Hex(in);
         IOUtils.closeQuietly(in);
         return (targetMD5.equals(trueMd5));
+    }
+
+    private static void doOrWait(File flagDir, IOCallable block) throws IOException {
+        boolean waitForFinish = false;
+        if(flagDir.exists()){
+            final File lockFile = flagDir.toPath().resolve("inProgress.lock").toFile();
+            RandomAccessFile flag = new RandomAccessFile(lockFile, "rw");
+            while(true) try {
+                final FileChannel channel = flag.getChannel();
+                try (FileLock lock = channel.lock()) {
+                    if(!waitForFinish) block.call();
+                } finally {
+                    lockFile.delete();
+                }
+                return;
+            }catch(OverlappingFileLockException | FileLockInterruptionException e){
+                // file is locked, someone else is already doing the work we want to do.
+                // just wait until it is finished, there should be no need to actually do anything
+                // once we can acquire that lock
+                try {
+                    log.debug("Waiting to acquire download lock in dir {}", flagDir.getPath());
+                    waitForFinish = true;
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {
+                    // noop, we retry to acquire that lock
+                }
+            }
+        }else{
+            throw new IOException("Target directory "+flagDir.getPath()+" must exist!");
+        }
+    }
+
+    @FunctionalInterface
+    private interface IOCallable {
+        void call() throws IOException;
     }
 
 }
