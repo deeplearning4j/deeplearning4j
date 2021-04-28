@@ -150,7 +150,7 @@ public class Downloader {
             log.warn("The passed in file did not exist, returning false on MD5 verification.");
             return false;
         }
-        
+
         InputStream in = FileUtils.openInputStream(file);
         String trueMd5 = DigestUtils.md5Hex(in);
         IOUtils.closeQuietly(in);

@@ -67,7 +67,6 @@
             <id>nd4j-tests-cpu</id>
         </profile>
         <profile>
-        <profile>
             <id>nd4j-tests-cuda</id>
             <build>
                 <plugins>
