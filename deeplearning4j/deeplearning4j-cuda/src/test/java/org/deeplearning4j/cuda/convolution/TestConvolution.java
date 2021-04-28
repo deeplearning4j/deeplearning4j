@@ -206,7 +206,7 @@ public class TestConvolution extends BaseDL4JTest {
 
     @Test
     public void validateXceptionImport(@TempDir Path testDir) throws Exception {
-        File dir = testDir.toFile();
+        File dir = testDir.resolve("test-dir").toFile();
         File fSource = Resources.asFile("modelimport/keras/examples/xception/xception_tf_keras_2.h5");
         File fExtracted = new File(dir, "xception_tf_keras_2.h5" );
         FileUtils.copyFile(fSource, fExtracted);
