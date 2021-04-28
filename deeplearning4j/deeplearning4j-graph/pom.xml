@@ -120,6 +120,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <environmentVariables>
+                                <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
+                            </environmentVariables>
                             <parallelMavenExecution>false</parallelMavenExecution>
                             <parallel>false</parallel>
                             <forkCount>0</forkCount>
