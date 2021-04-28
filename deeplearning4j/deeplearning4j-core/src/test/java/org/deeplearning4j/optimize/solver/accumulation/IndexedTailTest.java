@@ -24,7 +24,6 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Indexed Tail Test")
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-@Ignore("IndexedTail is only used in a few places in the v1 of spark, multi threaded usage fails on gpu. ")
+@Disabled("IndexedTail is only used in a few places in the v1 of spark, multi threaded usage fails on gpu. ")
 class IndexedTailTest extends BaseDL4JTest {
 
     @Test
