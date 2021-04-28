@@ -153,7 +153,7 @@ jobs:
                     ) else (
                         echo "Running snapshots"
                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                        mvn -T ${{ github.event.inputs.buildThreads }} -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=cudnn fffffffffff-Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
+                        mvn -T ${{ github.event.inputs.buildThreads }} -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=cudnn -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
               )
           )
 

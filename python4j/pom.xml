@@ -176,6 +176,14 @@
         </profile>
         <profile>
             <id>nd4j-tests-cuda</id>
+
+            <properties>
+                <!-- Note we put these properties here because the cuda modules themselves  have the cuda version tied to the artifact name. This allows us to use variables for the testing.  -->
+                <cuda.version>11.0</cuda.version>
+                <cudnn.version>8.0</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+            </properties>
+
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
