@@ -193,7 +193,7 @@
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
-         
+
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>cuda-platform-redist</artifactId>
