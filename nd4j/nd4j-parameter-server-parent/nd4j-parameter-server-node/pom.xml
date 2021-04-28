@@ -155,13 +155,14 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-                            <forkCount>${cpu.core.count}</forkCount>
-                            <reuseForks>false</reuseForks>
-                            <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
-                            <trimStackTrace>false</trimStackTrace>
+                            <environmentVariables>
+                                <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
+                            </environmentVariables>
                             <parallelMavenExecution>false</parallelMavenExecution>
                             <parallel>false</parallel>
+                            <forkCount>0</forkCount>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
                             <forkCount>0</forkCount>
                             <threadCount>1</threadCount>
                             <perCoreThreadCount>false</perCoreThreadCount>
