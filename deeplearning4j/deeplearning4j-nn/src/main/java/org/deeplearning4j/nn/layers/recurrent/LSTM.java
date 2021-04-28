@@ -70,7 +70,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                                 LSTMHelper.class,
                                 dataType);
                     } catch(Exception e) {
-                        log.warn("Unable to use cudnn convolution helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
+                        log.warn("Unable to use cudnn lstm helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
                     }
 
                     log.warn("Returning class loader to original one.");
