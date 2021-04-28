@@ -134,7 +134,6 @@ public class LayerValidation {
 
 			final List<Regularization> bLayerRegs = bLayer.getRegularization();
 			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
-
 				bLayer.setRegularization(regularization);
 			} else {
 
@@ -151,15 +150,13 @@ public class LayerValidation {
 				}
 				for (final Regularization reg : regContext) {
 					if (reg instanceof L1Regularization) {
-
 						if (!hasL1)
                             allToAdd.add(reg);
 					} else if (reg instanceof L2Regularization) {
-
 						if (!hasL2)
                             allToAdd.add(reg);
 					} else
-						bLayerRegs.add(reg);
+                        allToAdd.add(reg);
 				}
 				//prevent concurrent modification exception
 				bLayerRegs.addAll(allToAdd);
