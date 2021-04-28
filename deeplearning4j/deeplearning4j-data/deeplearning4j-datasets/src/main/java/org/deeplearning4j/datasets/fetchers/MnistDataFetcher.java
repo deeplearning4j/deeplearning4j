@@ -68,6 +68,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected String images,labels;
     //note: we default to zero here on purpose, otherwise when first initializes an error is thrown.
     private long lastCursor = 0;
+    protected transient MnistManager man;
 
 
     /**
@@ -100,7 +101,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         String[] files = new String[]{images, labels};
 
         try {
-            MnistManager man = new MnistManager(images, labels, train);
+           man = new MnistManager(images, labels, train);
             validateFiles(files, checksums);
             man.close();
         } catch (Exception e) {
@@ -108,13 +109,13 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 FileUtils.deleteDirectory(new File(MNIST_ROOT));
             } catch (Exception e2){ }
             new MnistFetcher().downloadAndUntar();
-            MnistManager man = new MnistManager(images, labels, train);
+           man = new MnistManager(images, labels, train);
             lastCursor = man.getCurrent();
             validateFiles(files, checksums);
             man.close();
         }
 
-        MnistManager man = new MnistManager(images, labels, train);
+         man = new MnistManager(images, labels, train);
 
         numOutcomes = 10;
         this.binarize = binarize;
@@ -179,12 +180,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     @SneakyThrows
     @Override
-    public void fetch(int numExamples) {
+    public synchronized void fetch(int numExamples) {
         if (!hasMore()) {
             throw new IllegalStateException("Unable to get more; there are no more images");
         }
 
-        MnistManager man = new MnistManager(images, labels, totalExamples);
         man.setCurrent((int) lastCursor);
         INDArray labels = Nd4j.zeros(DataType.FLOAT, numExamples, numOutcomes);
 
