@@ -146,6 +146,11 @@ public class Downloader {
      * @return          True if MD5 matches, false otherwise
      */
     public static boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
+        if(!file.exists()) {
+            log.warn("The passed in file did not exist, returning false on MD5 verification.");
+            return false;
+        }
+        
         InputStream in = FileUtils.openInputStream(file);
         String trueMd5 = DigestUtils.md5Hex(in);
         IOUtils.closeQuietly(in);
