@@ -101,21 +101,19 @@ public class MnistDataFetcher extends BaseDataFetcher {
         String[] files = new String[]{images, labels};
 
         try {
-           man = new MnistManager(images, labels, train);
+            man = new MnistManager(images, labels, train);
             validateFiles(files, checksums);
-            man.close();
         } catch (Exception e) {
             try {
                 FileUtils.deleteDirectory(new File(MNIST_ROOT));
             } catch (Exception e2){ }
             new MnistFetcher().downloadAndUntar();
-           man = new MnistManager(images, labels, train);
+            man = new MnistManager(images, labels, train);
             lastCursor = man.getCurrent();
             validateFiles(files, checksums);
-            man.close();
         }
 
-         man = new MnistManager(images, labels, train);
+        man = new MnistManager(images, labels, train);
 
         numOutcomes = 10;
         this.binarize = binarize;
@@ -134,7 +132,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
         rng = new Random(rngSeed);
         this.numExamples = numExamples;
         reset(); //Shuffle order
-        man.close();
     }
 
     private boolean mnistExists() {
@@ -248,7 +245,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
         }
 
         curr = new DataSet(features, labels);
-        man.close();
     }
 
     @Override

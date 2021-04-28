@@ -91,7 +91,6 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
             oneIndexed = false;
         }
         this.fOrder = true; //MNIST is C order, EMNIST is F order
-        man.close();
     }
 
     private boolean emnistExists(EmnistFetcher e) {
