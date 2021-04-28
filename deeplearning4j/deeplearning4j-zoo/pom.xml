@@ -117,7 +117,7 @@
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>cuda-platform-redist</artifactId>
-                    <version>11.0-${cudnn.version}-${javacpp-presets.version}</version>
+                    <version>11.0-${cudnn.version}-${javacpp-presets.cuda.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
