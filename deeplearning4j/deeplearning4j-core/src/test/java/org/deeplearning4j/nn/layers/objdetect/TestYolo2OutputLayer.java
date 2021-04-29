@@ -172,7 +172,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
 
     @Test
-    public void testYoloActivateSanityCheck(){
+    public void testYoloActivateSanityCheck() {
 
         int mb = 3;
         int b = 4;

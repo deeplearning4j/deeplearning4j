@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -101,6 +102,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
     @ParameterizedTest
     @MethodSource("org.deeplearning4j.gradientcheck.YoloGradientCheckTests#params")
+    @Disabled("Test taking too long, to be revisited")
     public void testYoloOutputLayer(CNN2DFormat format,Nd4jBackend backend) {
         int depthIn = 2;
         int c = 3;
