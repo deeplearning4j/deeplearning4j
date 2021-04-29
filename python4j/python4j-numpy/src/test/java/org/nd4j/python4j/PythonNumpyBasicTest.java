@@ -23,6 +23,7 @@
 
 package org.nd4j.python4j;
 
+import org.bytedeco.numpy.global.numpy;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -102,6 +103,7 @@ public class PythonNumpyBasicTest {
     @ParameterizedTest
     @MethodSource("org.nd4j.python4j.PythonNumpyBasicTest#params")
     public void testExecution(DataType dataType,long[] shape) {
+        numpy._import_array();
         try(PythonGIL pythonGIL = PythonGIL.lock()) {
             List<PythonVariable> inputs = new ArrayList<>();
             INDArray x = Nd4j.ones(dataType, shape);
