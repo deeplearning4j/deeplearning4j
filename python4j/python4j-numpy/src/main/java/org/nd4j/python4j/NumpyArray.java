@@ -55,6 +55,7 @@ public class NumpyArray extends PythonType<INDArray> {
         initArrayNamespace();
     }
 
+
     public synchronized  static void initArrayNamespace() {
         if(INSTANCE == null) {
             new PythonExecutioner();
@@ -76,9 +77,6 @@ public class NumpyArray extends PythonType<INDArray> {
     public synchronized void init() {
         if (init.get()) return;
         init.set(true);
-        if (PythonGIL.locked()) {
-            throw new PythonException("Can not initialize numpy - GIL already acquired.");
-        }
         int err = numpy._import_array();
         if (err < 0){
             System.out.println("Numpy import failed!");
