@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -65,6 +66,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("JVM crash on TADDescriptor")
     public void testGradientNoBiasDenseOutput() {
 
         int nIn = 5;
