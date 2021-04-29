@@ -25,6 +25,7 @@ import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback
 import org.deeplearning4j.datasets.iterator.tools.VariableTimeseriesGenerator;
 import org.deeplearning4j.nn.util.TestDataSetConsumer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.dataset.DataSet;
@@ -123,6 +124,7 @@ class AsyncDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test With Exception")
+    @Disabled("")
     void testWithException() {
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
             ExistingDataSetIterator crashingIterator = new ExistingDataSetIterator(new IterableWithException(100));
