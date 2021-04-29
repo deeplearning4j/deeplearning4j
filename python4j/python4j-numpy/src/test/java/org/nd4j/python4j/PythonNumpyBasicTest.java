@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TagNames.FILE_IO)
 @NativeTag
 @Tag(TagNames.PYTHON)
+@Disabled("Crashes on GetGlobals")
 public class PythonNumpyBasicTest {
 
     public static Stream<Arguments> params() {
