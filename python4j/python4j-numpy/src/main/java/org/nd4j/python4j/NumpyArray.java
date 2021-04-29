@@ -47,13 +47,20 @@ import static org.bytedeco.numpy.global.numpy.*;
 @Slf4j
 public class NumpyArray extends PythonType<INDArray> {
 
-    public static final NumpyArray INSTANCE;
+    public static   NumpyArray INSTANCE;
     private static final AtomicBoolean init = new AtomicBoolean(false);
     private static final Map<String, DataBuffer> cache = new HashMap<>();
 
     static {
-        new PythonExecutioner();
-        INSTANCE = new NumpyArray();
+        initArrayNamespace();
+    }
+
+    public synchronized  static void initArrayNamespace() {
+        if(INSTANCE == null) {
+            new PythonExecutioner();
+            INSTANCE = new NumpyArray();
+        }
+
     }
 
     @Override
