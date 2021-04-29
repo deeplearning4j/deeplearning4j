@@ -43,6 +43,7 @@ package org.nd4j.python4j;/*
 
 
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -60,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TagNames.FILE_IO)
 @NativeTag
 @Tag(TagNames.PYTHON)
+@Disabled
 public class PythonNumpyServiceLoaderTest {
 
     @Test
