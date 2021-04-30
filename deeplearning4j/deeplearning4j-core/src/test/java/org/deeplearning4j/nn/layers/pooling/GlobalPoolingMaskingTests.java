@@ -426,7 +426,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("Nan panic on one of the data types")
+    @Disabled("Nan panic on one of  org.deeplearning4j.nn.graph.TestComputationGraphNetworkthe data types")
     public void testMaskLayerDataTypes() {
         for(DataType dt : new DataType[]{DataType.FLOAT16, DataType.BFLOAT16, DataType.FLOAT, DataType.DOUBLE,
                 DataType.INT8, DataType.INT16, DataType.INT32, DataType.INT64,

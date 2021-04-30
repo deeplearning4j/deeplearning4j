@@ -188,13 +188,13 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         int[] expOrder = new int[]{0, 1, 2};
         assertArrayEquals(expOrder, order); //Only one valid order: 0 (input) -> 1 (firstlayer) -> 2 (outputlayer)
 
-        INDArray params = graph.params();
+        INDArray params = graph.params().castTo(DataType.DOUBLE);
         assertNotNull(params);
 
         int nParams = getNumParams();
         assertEquals(nParams, params.length());
 
-        INDArray arr = Nd4j.linspace(0, nParams, nParams).reshape(1,nParams);
+        INDArray arr = Nd4j.linspace(0, nParams, nParams).reshape(1,nParams).castTo(DataType.DOUBLE);
         assertEquals(nParams, arr.length());
 
         graph.setParams(arr);
