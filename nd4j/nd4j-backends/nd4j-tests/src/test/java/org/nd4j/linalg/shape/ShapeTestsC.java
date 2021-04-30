@@ -426,10 +426,10 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
         for (int[] shape : shapes) {
             int rank = shape.length;
             NdIndexIterator iter = new NdIndexIterator(shape);
-            INDArray firstC = Nd4j.create(shape, 'c');
-            INDArray firstF = Nd4j.create(shape, 'f');
-            INDArray secondC = Nd4j.create(shape, 'c');
-            INDArray secondF = Nd4j.create(shape, 'f');
+            INDArray firstC = Nd4j.create(shape, 'c').castTo(DataType.DOUBLE);
+            INDArray firstF = Nd4j.create(shape, 'f').castTo(DataType.DOUBLE);
+            INDArray secondC = Nd4j.create(shape, 'c').castTo(DataType.DOUBLE);
+            INDArray secondF = Nd4j.create(shape, 'f').castTo(DataType.DOUBLE);
 
             int i = 0;
             while (iter.hasNext()) {
@@ -479,8 +479,8 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeToTrueScalar_2(Nd4jBackend backend) {
-        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1});
-        val exp = Nd4j.scalar(1.0f);
+        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1}).castTo(DataType.DOUBLE);
+        val exp = Nd4j.scalar(1.0f).castTo(DataType.DOUBLE);
 
         assertArrayEquals(new long[]{1}, orig.shape());
 
