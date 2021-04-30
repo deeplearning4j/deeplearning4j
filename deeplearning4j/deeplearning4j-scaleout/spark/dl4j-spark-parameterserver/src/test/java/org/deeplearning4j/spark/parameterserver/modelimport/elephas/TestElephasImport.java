@@ -30,6 +30,7 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.DIST_SYSTEMS)
 @NativeTag
 @Slf4j
+@Disabled("Flaky, fails on file i/o sometimes")
 public class TestElephasImport extends BaseSparkTest {
 
 

@@ -118,7 +118,7 @@ jobs:
                  ) else (
                     echo "Running snapshots"
                     bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                    mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  "%MODULES%" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  clean --batch-mode deploy -DskipTests
+                    mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  clean --batch-mode deploy -DskipTests
                  )
             )
         env:
