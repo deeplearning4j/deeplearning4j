@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -292,8 +293,8 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).dist(new NormalDistribution(0, 1)).convolutionMode(cm).seed(12345).list().layer(new Convolution1DLayer.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(stride).nIn(convNIn).nOut(convNOut1).build()).layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(2).stride(stride).pnorm(pnorm).build()).layer(new Convolution1DLayer.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(stride).nIn(convNOut1).nOut(convNOut2).build()).layer(new GlobalPoolingLayer(PoolingType.AVG)).layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length)).build();
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
-                    INDArray f = Nd4j.rand(new int[] { 2, convNIn, length });
-                    INDArray fm = Nd4j.create(2, length);
+                    INDArray f = Nd4j.rand(DataType.DOUBLE,new int[] { 2, convNIn, length });
+                    INDArray fm = Nd4j.create(DataType.DOUBLE,2, length);
                     fm.get(NDArrayIndex.point(0), NDArrayIndex.all()).assign(1);
                     fm.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 6)).assign(1);
                     INDArray label = TestUtils.randomOneHot(2, finalNOut);
