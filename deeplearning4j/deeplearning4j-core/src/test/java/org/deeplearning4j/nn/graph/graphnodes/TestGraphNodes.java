@@ -408,7 +408,7 @@ public class TestGraphNodes extends BaseDL4JTest {
         GraphVertex unstack1 = new UnstackVertex(null, "", -1, 1, 3, DataType.DOUBLE);
         GraphVertex unstack2 = new UnstackVertex(null, "", -1, 2, 3, DataType.DOUBLE);
 
-        INDArray in = Nd4j.rand(15, 2);
+        INDArray in = Nd4j.rand(DataType.DOUBLE,15, 2);
         unstack0.setInputs(in);
         unstack1.setInputs(in);
         unstack2.setInputs(in);
@@ -440,7 +440,7 @@ public class TestGraphNodes extends BaseDL4JTest {
 
 
         //Test same for CNNs:
-        in = Nd4j.rand(new int[] {15, 10, 3, 3});
+        in = Nd4j.rand(DataType.DOUBLE,new int[] {15, 10, 3, 3});
         unstack0.setInputs(in);
         unstack1.setInputs(in);
         unstack2.setInputs(in);
@@ -463,20 +463,20 @@ public class TestGraphNodes extends BaseDL4JTest {
         backward2 = unstack2.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(out0, backward0.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all()));
-        assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 10, 3, 3), backward0.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all()));
-        assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(),
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 10, 3, 3), backward0.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all()));
 
-        assertEquals(Nd4j.zeros(5, 10, 3, 3), backward1.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 10, 3, 3), backward1.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out1, backward1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all()));
-        assertEquals(Nd4j.zeros(5, 10, 3, 3), backward1.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 10, 3, 3), backward1.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
 
-        assertEquals(Nd4j.zeros(5, 10, 3, 3), backward2.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 10, 3, 3), backward2.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all()));
-        assertEquals(Nd4j.zeros(5, 10, 3, 3), backward2.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 10, 3, 3), backward2.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out2, backward2.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all()));
@@ -487,13 +487,13 @@ public class TestGraphNodes extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex l2 = new L2Vertex(null, "", -1, 1e-8, DataType.DOUBLE);
 
-        INDArray in1 = Nd4j.rand(5, 2);
-        INDArray in2 = Nd4j.rand(5, 2);
+        INDArray in1 = Nd4j.rand(DataType.DOUBLE,5, 2);
+        INDArray in2 = Nd4j.rand(DataType.DOUBLE,5, 2);
 
         l2.setInputs(in1, in2);
         INDArray out = l2.doForward(false, LayerWorkspaceMgr.noWorkspaces());
 
-        INDArray expOut = Nd4j.create(5, 1);
+        INDArray expOut = Nd4j.create(DataType.DOUBLE,5, 1);
         for (int i = 0; i < 5; i++) {
             double d2 = 0.0;
             for (int j = 0; j < in1.size(1); j++) {
@@ -508,7 +508,7 @@ public class TestGraphNodes extends BaseDL4JTest {
 
 
 
-        INDArray epsilon = Nd4j.rand(5, 1); //dL/dlambda
+        INDArray epsilon = Nd4j.rand(DataType.DOUBLE,5, 1); //dL/dlambda
         INDArray diff = in1.sub(in2);
         //Out == sqrt(s) = s^1/2. Therefore: s^(-1/2) = 1/out
         INDArray sNegHalf = out.rdiv(1.0);
@@ -530,7 +530,7 @@ public class TestGraphNodes extends BaseDL4JTest {
         GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null, DataType.DOUBLE);
 
         val inputShape = new long[] {1, 1, 1, 736};
-        INDArray input = Nd4j.create(inputShape);
+        INDArray input = Nd4j.create(DataType.DOUBLE,inputShape);
 
         reshapeVertex.setInputs(input);
         INDArray out = reshapeVertex.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -598,7 +598,7 @@ public class TestGraphNodes extends BaseDL4JTest {
                 .build();
 
 
-        INDArray input = Nd4j.rand(new int[]{10, numInputs, 16});
+        INDArray input = Nd4j.rand(DataType.DOUBLE,new int[]{10, numInputs, 16});
 
         INDArray[] out = updatedModel.output(input);
 
