@@ -142,6 +142,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Tiny Image Net Iterator")
+    @Disabled("Tiny image net seems to be failing to download?")
     void testTinyImageNetIterator() throws Exception {
         int numClasses = 200;
         int row = 64;
@@ -156,6 +157,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Tiny Image Net Iterator 2")
+    @Disabled("Tiny image net seems to be failing to download?")
     void testTinyImageNetIterator2() throws Exception {
         int numClasses = 200;
         int row = 224;

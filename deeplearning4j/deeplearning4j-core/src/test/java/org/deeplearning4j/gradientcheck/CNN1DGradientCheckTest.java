@@ -96,8 +96,8 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
         for (Activation afn : activations) {
             for (int minibatchSize : minibatchSizes) {
                 for (int kernel : kernels) {
-                    INDArray input = Nd4j.rand(new int[] { minibatchSize, convNIn, length });
-                    INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, length);
+                    INDArray input = Nd4j.rand(DataType.DOUBLE,new int[] { minibatchSize, convNIn, length });
+                    INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, finalNOut, length);
                     for (int i = 0; i < minibatchSize; i++) {
                         for (int j = 0; j < length; j++) {
                             labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
@@ -144,8 +144,8 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
-                        INDArray input = Nd4j.rand(new int[] { minibatchSize, convNIn, length });
-                        INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, croppedLength);
+                        INDArray input = Nd4j.rand(DataType.DOUBLE,new int[] { minibatchSize, convNIn, length });
+                        INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, finalNOut, croppedLength);
                         for (int i = 0; i < minibatchSize; i++) {
                             for (int j = 0; j < croppedLength; j++) {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
@@ -195,8 +195,8 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
-                        INDArray input = Nd4j.rand(new int[] { minibatchSize, convNIn, length });
-                        INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, paddedLength);
+                        INDArray input = Nd4j.rand(DataType.DOUBLE,new int[] { minibatchSize, convNIn, length });
+                        INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, finalNOut, paddedLength);
                         for (int i = 0; i < minibatchSize; i++) {
                             for (int j = 0; j < paddedLength; j++) {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
@@ -244,8 +244,8 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
-                        INDArray input = Nd4j.rand(new int[] { minibatchSize, convNIn, length });
-                        INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, length);
+                        INDArray input = Nd4j.rand(DataType.DOUBLE,new int[] { minibatchSize, convNIn, length });
+                        INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, finalNOut, length);
                         for (int i = 0; i < minibatchSize; i++) {
                             for (int j = 0; j < length; j++) {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);

@@ -67,9 +67,6 @@ public class TestBertIterator extends BaseDL4JTest {
 
     @Test()
     public void testBertSequenceClassification() throws Exception {
-        if(Platform.isWindows()) {
-            return;
-        }
         int minibatchSize = 2;
         TestSentenceHelper testHelper = new TestSentenceHelper();
         BertIterator b = BertIterator.builder()

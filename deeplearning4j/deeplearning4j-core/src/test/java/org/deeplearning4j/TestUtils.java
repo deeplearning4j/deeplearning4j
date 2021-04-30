@@ -139,12 +139,12 @@ public class TestUtils {
     }
 
     public static INDArray randomOneHot(long examples, long nOut, Random rng) {
-        return randomOneHot(Nd4j.defaultFloatingPointType(), examples,nOut, rng);
+        return randomOneHot(DataType.DOUBLE, examples,nOut, rng);
     }
 
     public static INDArray randomOneHot(DataType dataType, long examples, long nOut, Random rng){
         INDArray arr = Nd4j.create(dataType, examples, nOut);
-        for( int i=0; i<examples; i++ ){
+        for( int i = 0; i < examples; i++ ) {
             arr.putScalar(i, rng.nextInt((int) nOut), 1.0);
         }
         return arr;

@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
 public class ParallelInferenceTest extends BaseDL4JTest {
+
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;
 
@@ -84,7 +85,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
     @AfterEach
     public void tearDown() throws Exception {
-        iterator.reset();
+        if(iterator != null)
+            iterator.reset();
     }
 
     @Test()
@@ -188,7 +190,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         //We can't guarantee that on any particular run each thread will get data - it might randomly be assigned to
         // only one. Consequently: we'll run the test multiple times and ensure that in at least *some* of the test
         // runs both workers get some data.
-        for( int i=0; i<20 && (count0 == 0 || count1 == 0); i++ ) {
+        for( int i = 0; i < 20 && (count0 == 0 || count1 == 0); i++ ) {
             ParallelInference inf = new ParallelInference.Builder(model).inferenceMode(InferenceMode.BATCHED).batchLimit(8)
                     .workers(2).build();
             try {
@@ -231,7 +233,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         BasicInferenceObserver observer = new BasicInferenceObserver();
 
         ParallelInference.ObservablesProvider provider =
-                        new ParallelInference.ObservablesProvider(10000000L, 100, queue);
+                new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1, 100));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1, 100));
@@ -246,7 +248,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         LinkedBlockingQueue queue = new LinkedBlockingQueue();
         BasicInferenceObserver observer = new BasicInferenceObserver();
         ParallelInference.ObservablesProvider provider =
-                        new ParallelInference.ObservablesProvider(10000000L, 100, queue);
+                new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
@@ -307,11 +309,11 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 4, queue);
 
         BatchedInferenceObservable observable1 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
+                (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
         BatchedInferenceObservable observable2 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
+                (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
         BatchedInferenceObservable observable3 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
+                (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
 
         INDArray bigOutput = Nd4j.create(3, 10);
         for (int i = 0; i < bigOutput.rows(); i++)
@@ -365,7 +367,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
     }
 
     protected void evalClassifcationMultipleThreads(@NonNull ParallelInference inf, @NonNull DataSetIterator iterator,
-                    int numThreads) throws Exception {
+                                                    int numThreads) throws Exception {
         DataSet ds = iterator.next();
         log.info("NumColumns: {}", ds.getLabels().columns());
         iterator.reset();
@@ -778,11 +780,11 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         net.init();
 
         val inf = new ParallelInference.Builder(net)
-                        .inferenceMode(InferenceMode.SEQUENTIAL)
-                        .batchLimit(5)
-                        .queueLimit(64)
-                        .workers(4)
-                        .build();
+                .inferenceMode(InferenceMode.SEQUENTIAL)
+                .batchLimit(5)
+                .queueLimit(64)
+                .workers(4)
+                .build();
 
         // imitating use of the original model
         for (int e = 0; e < 10; e++) {

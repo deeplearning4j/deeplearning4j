@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -46,7 +47,7 @@ public class TestSetGetParameters extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
 
         //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).seed(12345).graphBuilder()
                         .addInputs("in").addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("2", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "in")

@@ -131,7 +131,6 @@ public class LayerValidation {
 	private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout,
 			List<Regularization> regularization, List<Regularization> regularizationBias) {
 		if (regularization != null && !regularization.isEmpty()) {
-
 			final List<Regularization> bLayerRegs = bLayer.getRegularization();
 			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
 
@@ -142,64 +141,60 @@ public class LayerValidation {
 				boolean hasL2 = false;
 				final List<Regularization> regContext = regularization;
 				for (final Regularization reg : bLayerRegs) {
-
 					if (reg instanceof L1Regularization) {
-
 						hasL1 = true;
 					} else if (reg instanceof L2Regularization) {
-
 						hasL2 = true;
 					}
 				}
+
+				List<Regularization> layerRegsToAdd = new ArrayList<>(bLayerRegs);
 				for (final Regularization reg : regContext) {
-
 					if (reg instanceof L1Regularization) {
-
 						if (!hasL1)
-							bLayerRegs.add(reg);
+                            layerRegsToAdd.add(reg);
 					} else if (reg instanceof L2Regularization) {
 
 						if (!hasL2)
-							bLayerRegs.add(reg);
+                            layerRegsToAdd.add(reg);
 					} else
-						bLayerRegs.add(reg);
+                        layerRegsToAdd.add(reg);
 				}
+
+				bLayer.setRegularization(layerRegsToAdd);
 			}
 		}
-		if (regularizationBias != null && !regularizationBias.isEmpty()) {
 
+		if (regularizationBias != null && !regularizationBias.isEmpty()) {
 			final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
 			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
-
 				bLayer.setRegularizationBias(regularizationBias);
 			} else {
 
 				boolean hasL1 = false;
 				boolean hasL2 = false;
 				final List<Regularization> regContext = regularizationBias;
-				for (final Regularization reg : bLayerRegs) {
+                List<Regularization> layerRegsToAdd = new ArrayList<>(bLayerRegs);
 
+                for (final Regularization reg : bLayerRegs) {
 					if (reg instanceof L1Regularization) {
-
 						hasL1 = true;
 					} else if (reg instanceof L2Regularization) {
-
 						hasL2 = true;
 					}
 				}
 				for (final Regularization reg : regContext) {
-
 					if (reg instanceof L1Regularization) {
-
 						if (!hasL1)
-							bLayerRegs.add(reg);
+                            layerRegsToAdd.add(reg);
 					} else if (reg instanceof L2Regularization) {
-
 						if (!hasL2)
-							bLayerRegs.add(reg);
+                            layerRegsToAdd.add(reg);
 					} else
-						bLayerRegs.add(reg);
+                        layerRegsToAdd.add(reg);
 				}
+
+				bLayer.setRegularizationBias(layerRegsToAdd);
 			}
 		}
 

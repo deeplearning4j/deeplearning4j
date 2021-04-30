@@ -63,6 +63,7 @@ public class TestCompGraphCNN extends BaseDL4JTest {
     protected static ComputationGraphConfiguration getMultiInputGraphConfig() {
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutional(32, 32, 3))
@@ -89,8 +90,8 @@ public class TestCompGraphCNN extends BaseDL4JTest {
 
         List<DataSet> list = new ArrayList<>(5);
         for (int i = 0; i < 5; i++) {
-            INDArray f = Nd4j.create(1, 32 * 32 * 3);
-            INDArray l = Nd4j.create(1, 10);
+            INDArray f = Nd4j.create(DataType.DOUBLE,1, 32 * 32 * 3);
+            INDArray l = Nd4j.create(DataType.DOUBLE,1, 10);
             l.putScalar(i, 1.0);
             list.add(new DataSet(f, l));
         }
@@ -129,7 +130,7 @@ public class TestCompGraphCNN extends BaseDL4JTest {
         int nParams = getNumParams();
         assertEquals(nParams, params.length());
 
-        INDArray arr = Nd4j.linspace(0, nParams, nParams, DataType.FLOAT).reshape(1, nParams);
+        INDArray arr = Nd4j.linspace(0, nParams, nParams, DataType.DOUBLE).reshape(1, nParams);
         assertEquals(nParams, arr.length());
 
         // params are set
@@ -160,6 +161,7 @@ public class TestCompGraphCNN extends BaseDL4JTest {
 
            ComputationGraphConfiguration conf =
                    new NeuralNetConfiguration.Builder()
+                           .dataType(DataType.DOUBLE)
                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                            .seed(123).graphBuilder().addInputs("input")
                            .setInputTypes(InputType.convolutional(nChannels, imageWidth,

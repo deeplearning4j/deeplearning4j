@@ -58,10 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @Tag(TagNames.LARGE_RESOURCES)
 public class TestCompGraphUnsupervised extends BaseDL4JTest {
 
-    @Override
-    public DataType getDataType() {
-        return DataType.FLOAT;
-    }
+
 
     @Test
     public void testVAE() throws Exception {
@@ -70,6 +67,7 @@ public class TestCompGraphUnsupervised extends BaseDL4JTest {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .updater(new Adam(1e-3))
                     .weightInit(WeightInit.XAVIER)
                     .inferenceWorkspaceMode(wsm)
@@ -146,6 +144,7 @@ public class TestCompGraphUnsupervised extends BaseDL4JTest {
 
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                     .seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .updater(new Adam(1e-3))
                     .weightInit(WeightInit.XAVIER)
                     .inferenceWorkspaceMode(wsm)

@@ -48,6 +48,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @DisplayName("Tuple Stream Data Set Iterator Test")
 @Tag(TagNames.SOLR)
 @Tag(TagNames.DIST_SYSTEMS)
+@Disabled("Need to upgrade this to work with junit 5.")
 class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
     static {

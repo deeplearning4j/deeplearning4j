@@ -67,9 +67,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.DL4J_OLD_API)
 class BNGradientCheckTest extends BaseDL4JTest {
 
-    static {
-        Nd4j.setDataType(DataType.DOUBLE);
-    }
+
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -84,8 +82,8 @@ class BNGradientCheckTest extends BaseDL4JTest {
         scaler.fit(iter);
         iter.setPreProcessor(scaler);
         DataSet ds = iter.next();
-        INDArray input = ds.getFeatures();
-        INDArray labels = ds.getLabels();
+        INDArray input = ds.getFeatures().castTo(DataType.DOUBLE);
+        INDArray labels = ds.getLabels().castTo(DataType.DOUBLE);
         for (boolean useLogStd : new boolean[] { true, false }) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 1)).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).nOut(3).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build());
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
@@ -110,8 +108,8 @@ class BNGradientCheckTest extends BaseDL4JTest {
         int depth = 1;
         int hw = 4;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[] { minibatch, depth, hw, hw });
-        INDArray labels = Nd4j.zeros(minibatch, nOut);
+        INDArray input = Nd4j.rand(DataType.DOUBLE,new int[] { minibatch, depth, hw, hw });
+        INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
@@ -154,7 +152,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
         int depth = 2;
         int hw = 5;
         int nOut = 2;
-        INDArray input = Nd4j.rand(new int[] { minibatch, depth, hw, hw }).muli(5).subi(2.5);
+        INDArray input = Nd4j.rand(DataType.DOUBLE,new int[] { minibatch, depth, hw, hw }).muli(5).subi(2.5);
         INDArray labels = TestUtils.randomOneHot(minibatch, nOut);
         DataSet ds = new DataSet(input, labels);
         Random rng = new Random(12345);

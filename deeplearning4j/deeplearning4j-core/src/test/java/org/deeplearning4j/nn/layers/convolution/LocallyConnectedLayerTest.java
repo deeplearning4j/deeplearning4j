@@ -64,22 +64,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.DL4J_OLD_API)
 class LocallyConnectedLayerTest extends BaseDL4JTest {
 
-    @BeforeEach
-    void before() {
-        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
-        Nd4j.factory().setDType(DataType.DOUBLE);
-        Nd4j.EPS_THRESHOLD = 1e-4;
-    }
 
     @Test
     @DisplayName("Test 2 d Forward")
     void test2dForward() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3).stride(4, 4).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28, 28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
-        new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 3));
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
+                .seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5)
+                .list().layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3).stride(4, 4).nOut(16).dropOut(0.5)
+                        .convolutionMode(ConvolutionMode.Strict).setInputSize(28, 28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build())
+                .layer(// output layer
+        new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10)
+                .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        INDArray input = Nd4j.ones(10, 3, 28, 28);
+        INDArray input = Nd4j.ones(DataType.DOUBLE,10, 3, 28, 28);
         INDArray output = network.output(input, false);
         assertArrayEquals(new long[] { 10, 10 }, output.shape());
     }
@@ -87,12 +87,12 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test 1 d Forward")
     void test1dForward() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected1D.Builder().kernelSize(4).nIn(3).stride(1).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected1D.Builder().kernelSize(4).nIn(3).stride(1).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
         new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.recurrent(3, 8));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        INDArray input = Nd4j.ones(10, 3, 8);
+        INDArray input = Nd4j.ones(DataType.DOUBLE,10, 3, 8);
         INDArray output = network.output(input, false);
         ;
         for (int i = 0; i < 100; i++) {
@@ -107,10 +107,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @DisplayName("Test Locally Connected")
     void testLocallyConnected() {
         for (DataType globalDtype : new DataType[] { DataType.DOUBLE, DataType.FLOAT, DataType.HALF }) {
-            Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[] { DataType.DOUBLE, DataType.FLOAT, DataType.HALF }) {
-                assertEquals(globalDtype, Nd4j.dataType());
-                assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
                 for (int test = 0; test < 2; test++) {
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", test=" + test;
                     ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder().dataType(networkDtype).seed(123).updater(new NoOp()).weightInit(WeightInit.XAVIER).convolutionMode(ConvolutionMode.Same).graphBuilder();

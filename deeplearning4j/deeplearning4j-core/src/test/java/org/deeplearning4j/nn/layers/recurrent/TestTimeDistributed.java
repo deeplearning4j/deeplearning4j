@@ -82,6 +82,7 @@ public class TestTimeDistributed extends BaseDL4JTest {
 
             MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                     .trainingWorkspaceMode(wsm)
+                    .dataType(DataType.DOUBLE)
                     .inferenceWorkspaceMode(wsm)
                     .seed(12345)
                     .updater(new Adam(0.1))
@@ -95,6 +96,7 @@ public class TestTimeDistributed extends BaseDL4JTest {
 
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                     .trainingWorkspaceMode(wsm)
+                    .dataType(DataType.DOUBLE)
                     .inferenceWorkspaceMode(wsm)
                     .seed(12345)
                     .updater(new Adam(0.1))
@@ -113,7 +115,7 @@ public class TestTimeDistributed extends BaseDL4JTest {
 
             for( int mb : new int[]{1, 5}) {
                 for(char inLabelOrder : new char[]{'c', 'f'}) {
-                    INDArray in = Nd4j.rand(DataType.FLOAT, mb, 3, 5).dup(inLabelOrder);
+                    INDArray in = Nd4j.rand(DataType.DOUBLE, mb, 3, 5).dup(inLabelOrder);
                     if (rnnDataFormat == RNNFormat.NWC){
                         in = in.permute(0, 2, 1);
                     }

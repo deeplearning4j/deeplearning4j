@@ -85,9 +85,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
-    static {
-        Nd4j.setDataType(DataType.DOUBLE);
-    }
 
 
 
@@ -177,8 +174,8 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         // (c) Loss function (with specified output activations)
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
-        INDArray input = ds.getFeatures();
-        INDArray labels = ds.getLabels();
+        INDArray input = ds.getFeatures().castTo(DataType.DOUBLE);
+        INDArray labels = ds.getLabels().castTo(DataType.DOUBLE);
         // use l2vals[i] with l1vals[i]
         double[] l2vals = { 0.4, 0.0, 0.4, 0.4 };
         double[] l1vals = { 0.0, 0.0, 0.5, 0.0 };
@@ -244,8 +241,8 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[] { SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM };
         for (String afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
-                INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
-                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                INDArray input = Nd4j.rand(DataType.DOUBLE,minibatchSize, width * height * inputDepth);
+                INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
                 for (int i = 0; i < minibatchSize; i++) {
                     labels.putScalar(new int[] { i, i % nOut }, 1.0);
                 }
@@ -285,7 +282,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 for (int minibatchSize : minibatchSizes) {
                     long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
                     INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-                    INDArray labels = Nd4j.zeros(4 * minibatchSize, nOut);
+                    INDArray labels = Nd4j.zeros(DataType.DOUBLE,4 * minibatchSize, nOut);
                     for (int i = 0; i < 4 * minibatchSize; i++) {
                         labels.putScalar(new int[] { i, i % nOut }, 1.0);
                     }
@@ -367,7 +364,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 for (int minibatchSize : minibatchSizes) {
                     long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
                     INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                    INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
                     for (int i = 0; i < minibatchSize; i++) {
                         labels.putScalar(new int[] { i, i % nOut }, 1.0);
                     }
@@ -410,7 +407,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 for (int minibatchSize : minibatchSizes) {
                     long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
                     INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                    INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
                     for (int i = 0; i < minibatchSize; i++) {
                         labels.putScalar(new int[] { i, i % nOut }, 1.0);
                     }
@@ -477,7 +474,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     for (int minibatchSize : minibatchSizes) {
                         long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
                         INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-                        INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                        INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
                         for (int i = 0; i < minibatchSize; i++) {
                             labels.putScalar(new int[] { i, i % nOut }, 1.0);
                         }
@@ -554,7 +551,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                         for (boolean convFirst : new boolean[] { true, false }) {
                             long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
                             INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-                            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                            INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
                             for (int i = 0; i < minibatchSize; i++) {
                                 labels.putScalar(new int[] { i, i % nOut }, 1.0);
                             }
@@ -652,7 +649,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             int h = d * height;
             long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, h, w } : new long[] { minibatchSize, h, w, inputDepth };
             INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+            INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
             for (int j = 0; j < minibatchSize; j++) {
                 labels.putScalar(new int[] { j, j % nOut }, 1.0);
             }
@@ -697,7 +694,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             int h = d * height;
             long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, h, w } : new long[] { minibatchSize, h, w, inputDepth };
             INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
-            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+            INDArray labels = Nd4j.zeros(DataType.DOUBLE,minibatchSize, nOut);
             for (int i = 0; i < minibatchSize; i++) {
                 labels.putScalar(new int[] { i, i % nOut }, 1.0);
             }

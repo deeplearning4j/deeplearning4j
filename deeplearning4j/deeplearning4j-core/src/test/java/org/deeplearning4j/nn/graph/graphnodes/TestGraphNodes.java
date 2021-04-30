@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -67,10 +68,10 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testMergeNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType(), 1);
+        GraphVertex mergeNode = new MergeVertex(null, "", -1, DataType.DOUBLE, 1);
 
-        INDArray first = Nd4j.linspace(0, 11, 12, Nd4j.dataType()).reshape(3, 4);
-        INDArray second = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(3, 6).addi(100);
+        INDArray first = Nd4j.linspace(0, 11, 12, DataType.DOUBLE).reshape(3, 4);
+        INDArray second = Nd4j.linspace(0, 17, 18, DataType.DOUBLE).reshape(3, 6).addi(100);
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -89,10 +90,10 @@ public class TestGraphNodes extends BaseDL4JTest {
     public void testMergeNodeRNN() {
 
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType(), 1);
+        GraphVertex mergeNode = new MergeVertex(null, "", -1, DataType.DOUBLE, 1);
 
-        INDArray first = Nd4j.linspace(0, 59, 60, Nd4j.dataType()).reshape(3, 4, 5);
-        INDArray second = Nd4j.linspace(0, 89, 90, Nd4j.dataType()).reshape(3, 6, 5).addi(100);
+        INDArray first = Nd4j.linspace(0, 59, 60, DataType.DOUBLE).reshape(3, 4, 5);
+        INDArray second = Nd4j.linspace(0, 89, 90, DataType.DOUBLE).reshape(3, 6, 5).addi(100);
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -110,10 +111,10 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testCnnDepthMerge() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType(), 1);
+        GraphVertex mergeNode = new MergeVertex(null, "", -1, DataType.DOUBLE, 1);
 
-        INDArray first = Nd4j.linspace(0, 3, 4, Nd4j.dataType()).reshape(1, 1, 2, 2);
-        INDArray second = Nd4j.linspace(0, 3, 4, Nd4j.dataType()).reshape(1, 1, 2, 2).addi(10);
+        INDArray first = Nd4j.linspace(0, 3, 4, DataType.DOUBLE).reshape(1, 1, 2, 2);
+        INDArray second = Nd4j.linspace(0, 3, 4, DataType.DOUBLE).reshape(1, 1, 2, 2).addi(10);
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -133,8 +134,8 @@ public class TestGraphNodes extends BaseDL4JTest {
 
 
         //Slightly more complicated test:
-        first = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(1, 2, 3, 3);
-        second = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(1, 2, 3, 3).addi(100);
+        first = Nd4j.linspace(0, 17, 18, DataType.DOUBLE).reshape(1, 2, 3, 3);
+        second = Nd4j.linspace(0, 17, 18, DataType.DOUBLE).reshape(1, 2, 3, 3).addi(100);
 
         mergeNode.setInputs(first, second);
         out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -159,21 +160,21 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testSubsetNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex subset = new SubsetVertex(null, "", -1, 4, 7, Nd4j.dataType());
+        GraphVertex subset = new SubsetVertex(null, "", -1, 4, 7, DataType.DOUBLE);
 
-        INDArray in = Nd4j.rand(5, 10);
+        INDArray in = Nd4j.rand(DataType.DOUBLE,5, 10);
         subset.setInputs(in);
         INDArray out = subset.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true)), out);
 
         subset.setEpsilon(out);
         INDArray backward = subset.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
-        assertEquals(Nd4j.zeros(5, 4), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)));
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 4), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true)));
-        assertEquals(Nd4j.zeros(5, 2), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8, 9, true)));
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 2), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8, 9, true)));
 
         //Test same for CNNs:
-        in = Nd4j.rand(new int[] {5, 10, 3, 3});
+        in = Nd4j.rand(DataType.DOUBLE,new int[] {5, 10, 3, 3});
         subset.setInputs(in);
         out = subset.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
@@ -181,7 +182,7 @@ public class TestGraphNodes extends BaseDL4JTest {
 
         subset.setEpsilon(out);
         backward = subset.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
-        assertEquals(Nd4j.zeros(5, 4, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true),
+        assertEquals(Nd4j.zeros(DataType.DOUBLE,5, 4, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true),
                         NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
                         NDArrayIndex.all()));
@@ -203,7 +204,7 @@ public class TestGraphNodes extends BaseDL4JTest {
 
         //First: test without input mask array
         Nd4j.getRandom().setSeed(12345);
-        INDArray in = Nd4j.rand(new int[] {3, 5, 6});
+        INDArray in = Nd4j.rand(DataType.DOUBLE,new int[] {3, 5, 6});
         INDArray expOut = in.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5));
 
         GraphVertex gv = graph.getVertex("lastTS");
@@ -282,7 +283,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testStackNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex unstack = new StackVertex(null, "", -1, Nd4j.dataType());
+        GraphVertex unstack = new StackVertex(null, "", -1, DataType.DOUBLE);
 
         INDArray in1 = Nd4j.rand(5, 2);
         INDArray in2 = Nd4j.rand(5, 2);
@@ -304,7 +305,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testStackVertexEmbedding() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex unstack = new StackVertex(null, "", -1, Nd4j.dataType());
+        GraphVertex unstack = new StackVertex(null, "", -1, DataType.DOUBLE);
 
         INDArray in1 = Nd4j.zeros(5, 1);
         INDArray in2 = Nd4j.zeros(5, 1);
@@ -341,7 +342,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testStackUnstackNodeVariableLength() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex stack = new StackVertex(null, "", -1, Nd4j.dataType());
+        GraphVertex stack = new StackVertex(null, "", -1, DataType.DOUBLE);
 
         //Test stack with variable length + mask arrays
         INDArray in0 = Nd4j.rand(new int[] {5, 2, 5});
@@ -373,9 +374,9 @@ public class TestGraphNodes extends BaseDL4JTest {
         //Test unstack with variable length + mask arrays
         //Note that we don't actually need changes here - unstack has a single input, and the unstacked mask
         //might be a bit longer than we really need, but it'll still be correct
-        GraphVertex unstack0 = new UnstackVertex(null, "u0", 0, 0, 3, Nd4j.dataType());
-        GraphVertex unstack1 = new UnstackVertex(null, "u1", 0, 1, 3, Nd4j.dataType());
-        GraphVertex unstack2 = new UnstackVertex(null, "u2", 0, 2, 3, Nd4j.dataType());
+        GraphVertex unstack0 = new UnstackVertex(null, "u0", 0, 0, 3, DataType.DOUBLE);
+        GraphVertex unstack1 = new UnstackVertex(null, "u1", 0, 1, 3, DataType.DOUBLE);
+        GraphVertex unstack2 = new UnstackVertex(null, "u2", 0, 2, 3, DataType.DOUBLE);
 
         unstack0.setInputs(out);
         unstack1.setInputs(out);
@@ -403,9 +404,9 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testUnstackNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex unstack0 = new UnstackVertex(null, "", -1, 0, 3, Nd4j.dataType());
-        GraphVertex unstack1 = new UnstackVertex(null, "", -1, 1, 3, Nd4j.dataType());
-        GraphVertex unstack2 = new UnstackVertex(null, "", -1, 2, 3, Nd4j.dataType());
+        GraphVertex unstack0 = new UnstackVertex(null, "", -1, 0, 3, DataType.DOUBLE);
+        GraphVertex unstack1 = new UnstackVertex(null, "", -1, 1, 3, DataType.DOUBLE);
+        GraphVertex unstack2 = new UnstackVertex(null, "", -1, 2, 3, DataType.DOUBLE);
 
         INDArray in = Nd4j.rand(15, 2);
         unstack0.setInputs(in);
@@ -484,7 +485,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testL2Node() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex l2 = new L2Vertex(null, "", -1, 1e-8, Nd4j.dataType());
+        GraphVertex l2 = new L2Vertex(null, "", -1, 1e-8, DataType.DOUBLE);
 
         INDArray in1 = Nd4j.rand(5, 2);
         INDArray in2 = Nd4j.rand(5, 2);
@@ -526,7 +527,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testReshapeNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null, Nd4j.dataType());
+        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null, DataType.DOUBLE);
 
         val inputShape = new long[] {1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);
@@ -545,7 +546,8 @@ public class TestGraphNodes extends BaseDL4JTest {
     public void testJSON() {
         //The config here is non-sense, but that doesn't matter for config -> json -> config test
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).graphBuilder().addInputs("in")
+
                                         .addVertex("v1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "in")
                                         .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in", "in")
                                         .addVertex("v3", new PreprocessorVertex(

@@ -80,7 +80,9 @@ public class RoutedTransport extends BaseTransport {
         this.messages = new LinkedBlockingQueue<>();
         //shutdown hook
         super.init(voidConfiguration, clipboard, role, localIp, localPort, shardIndex);
+        //Note here the publication unblock timeout is 45 seconds and CAN NOT be less than the client liveliness timeout
         setProperty("aeron.client.liveness.timeout", "30000000000");
+        setProperty("aeron.publication.unblock.timeout","45000000000");
 
         // setting this property to try to increase maxmessage length, not sure if it still works though
         //Term buffer length: must be power of 2 and in range 64kB to 1GB: https://github.com/real-logic/aeron/wiki/Configuration-Options
