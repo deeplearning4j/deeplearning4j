@@ -529,7 +529,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         Map<String, INDArray> paramTable = aePre.paramTable();
         // check vb exists for pretrain layer
         assertTrue(paramTable.containsKey("0_vb"));
-        aePre.setParam("0_vb", Nd4j.ones(10));
+        aePre.setParam("0_vb", Nd4j.ones(DataType.DOUBLE,10));
         params = aePre.getParam("0_vb");
         // check set params for vb
         assertEquals(Nd4j.ones(1, 10), params);

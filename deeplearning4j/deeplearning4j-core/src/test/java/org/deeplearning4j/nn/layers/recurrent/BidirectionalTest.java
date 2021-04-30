@@ -336,7 +336,7 @@ class BidirectionalTest extends BaseDL4JTest {
                         outExp = out2.add(out3).muli(0.5);
                         break;
                     case CONCAT:
-                        outExp = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, out2, out3);
+                        outExp = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, out2, out3).castTo(DataType.DOUBLE);
                         break;
                     default:
                         throw new RuntimeException();
@@ -344,10 +344,10 @@ class BidirectionalTest extends BaseDL4JTest {
                 assertEquals(outExp, out1,m.toString());
                 // Check gradients:
                 if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
-                    INDArray eps = Nd4j.rand(inshape);
+                    INDArray eps = Nd4j.rand(DataType.DOUBLE,inshape);
                     INDArray eps1;
                     if (m == Bidirectional.Mode.CONCAT) {
-                        eps1 = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, eps, eps);
+                        eps1 = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, eps, eps).castTo(DataType.DOUBLE);
                     } else {
                         eps1 = eps;
                     }
@@ -441,7 +441,7 @@ class BidirectionalTest extends BaseDL4JTest {
                 assertEquals(outExp, out1,m.toString());
                 // Check gradients:
                 if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
-                    INDArray eps = Nd4j.rand(inshape);
+                    INDArray eps = Nd4j.rand(DataType.DOUBLE,inshape);
                     INDArray eps1;
                     if (m == Bidirectional.Mode.CONCAT) {
                         eps1 = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, eps, eps);

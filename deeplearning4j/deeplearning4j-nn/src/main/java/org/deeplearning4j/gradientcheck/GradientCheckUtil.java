@@ -413,12 +413,7 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException(
                             "Invalid labels arrays: expect " + c.net.getNumOutputArrays() + " outputs");
 
-        DataType dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataType.DOUBLE) {
-            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
-        }
+
 
         DataType netDataType = c.net.getConfiguration().getDataType();
         if (netDataType != DataType.DOUBLE) {
@@ -614,12 +609,6 @@ public class GradientCheckUtil {
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        DataType dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataType.DOUBLE) {
-            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
-        }
 
         //Check network configuration:
         layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());

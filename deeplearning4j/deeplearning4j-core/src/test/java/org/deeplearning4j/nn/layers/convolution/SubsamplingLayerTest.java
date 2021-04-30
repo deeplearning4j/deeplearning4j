@@ -90,7 +90,7 @@ class SubsamplingLayerTest extends BaseDL4JTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
         INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
-        assertEquals(containedExpectedOut, containedOutput);
+        assertEquals(containedExpectedOut.castTo(DataType.DOUBLE), containedOutput.castTo(DataType.DOUBLE));
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(new long[] { nExamples, nChannelsIn, featureMapWidth, featureMapHeight }, output.shape()));
         // channels retained
