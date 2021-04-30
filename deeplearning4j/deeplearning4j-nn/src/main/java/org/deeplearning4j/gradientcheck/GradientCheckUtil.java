@@ -197,7 +197,7 @@ public class GradientCheckUtil {
         if (!(c.net.getOutputLayer() instanceof IOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
-    
+
         DataType netDataType = c.net.getLayerWiseConfigurations().getDataType();
         if (netDataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Network datatype is not set to double precision ("

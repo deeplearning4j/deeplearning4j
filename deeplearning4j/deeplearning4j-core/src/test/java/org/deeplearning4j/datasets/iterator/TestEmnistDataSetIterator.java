@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +53,7 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
     @Test
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
+    @Disabled("File not found")
     public void testEmnistDataSetIterator() throws Exception {
         int batchSize = 128;
 

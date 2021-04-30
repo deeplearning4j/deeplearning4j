@@ -92,6 +92,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Batch Size Of One Mnist")
+    @Disabled("FileNotFound")
     void testBatchSizeOfOneMnist() throws Exception {
         // MNIST:
         DataSetIterator mnist = new MnistDataSetIterator(1, 5);
@@ -196,6 +197,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cifar 10 Iterator")
+    @Disabled("Unable to download CIFAR 10 dataset")
     void testCifar10Iterator() throws Exception {
         int numExamples = 1;
         int row = 32;

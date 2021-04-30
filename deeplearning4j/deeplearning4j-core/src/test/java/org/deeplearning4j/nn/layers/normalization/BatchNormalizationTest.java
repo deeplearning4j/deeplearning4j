@@ -534,7 +534,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Batch Norm")
     void testBatchNorm() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(1e-3)).activation(Activation.TANH).list().layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2, 2).build()).layer(new BatchNormalization()).layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2, 2).build()).layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nOut(10).build()).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).seed(12345).updater(new Adam(1e-3)).activation(Activation.TANH).list().layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2, 2).build()).layer(new BatchNormalization()).layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2, 2).build()).layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nOut(10).build()).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         DataSetIterator iter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 10);
@@ -548,7 +548,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
     void testBatchNormRecurrentCnn1d() {
         // Simple sanity check on CNN1D and RNN layers
         for (boolean rnn : new boolean[] { true, false }) {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).weightInit(WeightInit.XAVIER).convolutionMode(ConvolutionMode.Same).list().layer(rnn ? new LSTM.Builder().nOut(3).build() : new Convolution1DLayer.Builder().kernelSize(3).stride(1).nOut(3).build()).layer(new BatchNormalization()).layer(new RnnOutputLayer.Builder().nOut(3).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build()).setInputType(InputType.recurrent(3)).build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).weightInit(WeightInit.XAVIER).convolutionMode(ConvolutionMode.Same).list().layer(rnn ? new LSTM.Builder().nOut(3).build() : new Convolution1DLayer.Builder().kernelSize(3).stride(1).nOut(3).build()).layer(new BatchNormalization()).layer(new RnnOutputLayer.Builder().nOut(3).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build()).setInputType(InputType.recurrent(3)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
             INDArray in = Nd4j.rand(DataType.DOUBLE,new int[] { 1, 3, 5 });

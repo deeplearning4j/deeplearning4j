@@ -94,9 +94,9 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
             System.out.println(" --- " + msg + " ---");
 
-            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
+            INDArray inNCW = Nd4j.rand(DataType.DOUBLE, 2, 3, 12);
 
-            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
+            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10).castTo(DataType.DOUBLE);
 
             TestCase tc = TestCase.builder()
                     .msg(msg)
@@ -130,9 +130,9 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
             System.out.println(" --- " + msg + " ---");
 
-            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
+            INDArray inNCW = Nd4j.rand(DataType.DOUBLE, 2, 3, 12);
 
-            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
+            INDArray labelsNWC = (lastTimeStep) ? TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10).castTo(DataType.DOUBLE);
 
             TestCase tc = TestCase.builder()
                     .msg(msg)
@@ -169,7 +169,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
             System.out.println(" --- " + msg + " ---");
 
-            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
+            INDArray inNCW = Nd4j.rand(DataType.DOUBLE, 2, 3, 12);
 
             INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
 
@@ -206,7 +206,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
             System.out.println(" --- " + msg + " ---");
 
-            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
+            INDArray inNCW = Nd4j.rand(DataType.DOUBLE, 2, 3, 12);
 
             INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
 
@@ -274,6 +274,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
         }
         NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .seed(12345)
+                .dataType(DataType.DOUBLE)
                 .list()
                 .layer(new LSTM.Builder()
                         .nIn(3)
