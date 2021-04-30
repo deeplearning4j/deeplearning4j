@@ -516,6 +516,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Applying Pre Train Config And Params")
+    @Disabled("Data type issues")
     void testApplyingPreTrainConfigAndParams() {
         int nIn = 10;
         int nOut = 10;

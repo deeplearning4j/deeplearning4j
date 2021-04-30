@@ -310,7 +310,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("Runtime op tanh_bp failing.")
+    @Disabled("Runtime op tanh_bp failing. Issue:  Op [tanh_bp] execution failed (due to pairwise)_")
     public void testVaePretrainMultipleSamples() {
         int minibatch = 2;
         Nd4j.getRandom().setSeed(12345);
