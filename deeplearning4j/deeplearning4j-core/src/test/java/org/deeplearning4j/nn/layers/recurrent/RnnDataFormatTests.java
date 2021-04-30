@@ -85,7 +85,6 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     @ParameterizedTest
     @Disabled("Data type issues, need to look in to later")
-
     public void testSimpleRnn(boolean helpers,
                               boolean lastTimeStep,
                               boolean maskZeros,
