@@ -544,7 +544,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     }
 
     public MultiLayerNetwork getAeModel(boolean preTrain, int nIn, int nOut) {
-        MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder().seed(42).updater(new NoOp()).weightInit(WeightInit.UNIFORM).list(new AutoEncoder.Builder().activation(Activation.IDENTITY).nOut(nIn).build(), new OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY).activation(Activation.IDENTITY).nOut(nOut).build()).setInputType(InputType.feedForward(nOut)).build();
+        MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).seed(42).updater(new NoOp()).weightInit(WeightInit.UNIFORM).list(new AutoEncoder.Builder().activation(Activation.IDENTITY).nOut(nIn).build(), new OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY).activation(Activation.IDENTITY).nOut(nOut).build()).setInputType(InputType.feedForward(nOut)).build();
         MultiLayerNetwork network = new MultiLayerNetwork(vae);
         network.init();
         return network;

@@ -85,8 +85,8 @@ class SubsamplingLayerTest extends BaseDL4JTest {
     @DisplayName("Test Sub Sample Max Activate")
     void testSubSampleMaxActivate() throws Exception {
         INDArray containedExpectedOut = Nd4j.create(new double[] { 5., 7., 6., 8., 4., 7., 5., 9. }, new long[] { 1, 2, 2, 2 }).castTo(DataType.DOUBLE);
-        INDArray containedInput = getContainedData();
-        INDArray input = getData();
+        INDArray containedInput = getContainedData().castTo(DataType.DOUBLE);
+        INDArray input = getData().castTo(DataType.DOUBLE);
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
         INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));

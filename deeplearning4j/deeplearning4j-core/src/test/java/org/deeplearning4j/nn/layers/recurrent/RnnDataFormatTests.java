@@ -171,7 +171,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
 
             INDArray inNCW = Nd4j.rand(DataType.DOUBLE, 2, 3, 12);
 
-            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
+            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10).castTo(DataType.DOUBLE);
 
             TestCase tc = TestCase.builder()
                     .msg(msg)

@@ -310,7 +310,6 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testVaePretrainMultipleSamples() {
-
         int minibatch = 2;
         Nd4j.getRandom().setSeed(12345);
         for (int numSamples : new int[]{1, 2}) {

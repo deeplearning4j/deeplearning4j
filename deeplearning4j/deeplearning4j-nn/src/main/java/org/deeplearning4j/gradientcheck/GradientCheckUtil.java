@@ -175,12 +175,7 @@ public class GradientCheckUtil {
                                          boolean subset, int maxPerParam, Set<String> excludeParams, final Integer rngSeedResetEachIter) {
         Consumer<MultiLayerNetwork> c = null;
         if(rngSeedResetEachIter != null){
-            c = new Consumer<MultiLayerNetwork>() {
-                @Override
-                public void accept(MultiLayerNetwork multiLayerNetwork) {
-                    Nd4j.getRandom().setSeed(rngSeedResetEachIter);
-                }
-            };
+            c = multiLayerNetwork -> Nd4j.getRandom().setSeed(rngSeedResetEachIter);
         }
 
         return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
