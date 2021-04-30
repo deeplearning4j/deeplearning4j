@@ -340,14 +340,14 @@ public class RnnDataFormatTests extends BaseDL4JTest {
             INDArray out3 = tc.net3.output(inNWC);
             INDArray out4 = tc.net4.output(inNWC);
 
-            assertEquals(out1, out2, tc.msg);
+            assertEquals(out1.castTo(DataType.DOUBLE), out2.castTo(DataType.DOUBLE), tc.msg);
             if (rank3Out){
-                assertEquals(out1, out3.permute(0, 2, 1), tc.msg);      //NWC to NCW
-                assertEquals(out1, out4.permute(0, 2, 1), tc.msg);
+                assertEquals(out1.castTo(DataType.DOUBLE), out3.permute(0, 2, 1).castTo(DataType.DOUBLE), tc.msg);      //NWC to NCW
+                assertEquals(out1.castTo(DataType.DOUBLE), out4.permute(0, 2, 1).castTo(DataType.DOUBLE), tc.msg);
             }
             else{
-                assertEquals(out1, out3, tc.msg);      //NWC to NCW
-                assertEquals(out1, out4, tc.msg);
+                assertEquals(out1.castTo(DataType.DOUBLE), out3.castTo(DataType.DOUBLE), tc.msg);      //NWC to NCW
+                assertEquals(out1.castTo(DataType.DOUBLE), out4.castTo(DataType.DOUBLE), tc.msg);
             }
 
 
