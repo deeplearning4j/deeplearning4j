@@ -83,7 +83,7 @@ public class ArrowSerde {
         addTypeTypeRelativeToNDArray(bufferBuilder,arr);
         Tensor.addShape(bufferBuilder,shapeOffset);
         Tensor.addStrides(bufferBuilder,stridesOffset);
-
+        Tensor.addType(bufferBuilder,bufferBuilder.offset());
         Tensor.addData(bufferBuilder,addDataForArr(bufferBuilder,arr));
         int endTensor = Tensor.endTensor(bufferBuilder);
         Tensor.finishTensorBuffer(bufferBuilder,endTensor);

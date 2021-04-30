@@ -124,7 +124,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static OpExecutioner.ProfilingMode origMode;
 
- @BeforeAll    public static void beforeClass(){
+    @BeforeAll    public static void beforeClass(){
         origMode = Nd4j.getExecutioner().getProfilingMode();
     }
 
@@ -604,6 +604,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     public void testPreTraining() {
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-6))
                         .l2(2e-4).graphBuilder().addInputs("in")

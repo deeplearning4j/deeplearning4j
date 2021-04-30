@@ -106,8 +106,8 @@ class BidirectionalTest extends BaseDL4JTest {
             log.info("*** Starting workspace mode: " + wsm);
             // Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
             // Note that GravesBidirectionalLSTM implements ADD mode only
-            MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).weightInit(WeightInit.XAVIER).trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm).updater(new Adam()).list().layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat).nIn(10).nOut(10).build()).build();
-            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).weightInit(WeightInit.XAVIER).trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm).updater(new Adam()).list().layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat).nIn(10).nOut(10).build()).build();
+            MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.TANH).weightInit(WeightInit.XAVIER).trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm).updater(new Adam()).list().layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat).nIn(10).nOut(10).build()).build();
+            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.TANH).weightInit(WeightInit.XAVIER).trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm).updater(new Adam()).list().layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat).nIn(10).nOut(10).build()).build();
             MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
             net1.init();
             MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
@@ -122,18 +122,18 @@ class BidirectionalTest extends BaseDL4JTest {
             net2.setParams(net1.params());
             INDArray in;
             if (rnnDataFormat == NCW) {
-                in = Nd4j.rand(new int[] { 3, 10, 5 });
+                in = Nd4j.rand(DataType.DOUBLE,new int[] { 3, 10, 5 });
             } else {
-                in = Nd4j.rand(new int[] { 3, 5, 10 });
+                in = Nd4j.rand(DataType.DOUBLE,new int[] { 3, 5, 10 });
             }
             INDArray out1 = net1.output(in);
             INDArray out2 = net2.output(in);
             assertEquals(out1, out2);
             INDArray labels;
             if (rnnDataFormat == NCW) {
-                labels = Nd4j.rand(new int[] { 3, 10, 5 });
+                labels = Nd4j.rand(DataType.DOUBLE,new int[] { 3, 10, 5 });
             } else {
-                labels = Nd4j.rand(new int[] { 3, 5, 10 });
+                labels = Nd4j.rand(DataType.DOUBLE,new int[] { 3, 5, 10 });
             }
             net1.setInput(in);
             net1.setLabels(labels);

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -69,13 +70,13 @@ class Upsampling1DTest extends BaseDL4JTest {
     @DisplayName("Test Upsampling 1 D")
     void testUpsampling1D() throws Exception {
         double[] outArray = new double[] { 1., 1., 2., 2., 3., 3., 4., 4. };
-        INDArray containedExpectedOut = Nd4j.create(outArray, new int[] { 1, 1, 8 });
-        INDArray containedInput = getContainedData();
+        INDArray containedExpectedOut = Nd4j.create(outArray, new int[] { 1, 1, 8 }).castTo(DataType.DOUBLE);
+        INDArray containedInput = getContainedData().castTo(DataType.DOUBLE);
         INDArray input = getData();
         Layer layer = getUpsampling1DLayer();
         INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
-        assertEquals(containedExpectedOut, containedOutput);
+        assertEquals(containedExpectedOut.castTo(DataType.DOUBLE), containedOutput.castTo(DataType.DOUBLE));
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(new long[] { nExamples, nChannelsIn, outputLength }, output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4);
