@@ -255,6 +255,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                    .dataType(DataType.DOUBLE)
                     .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
                     .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(height, 2)
                             .stride(height, 1).activation(Activation.TANH).build())
@@ -267,7 +268,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            INDArray inToBeMasked = Nd4j.rand(new int[] {minibatch, depthIn, height, width});
+            INDArray inToBeMasked = Nd4j.rand(DataType.DOUBLE,new int[] {minibatch, depthIn, height, width});
 
             //Shape for mask: [minibatch, width]
             INDArray maskArray = Nd4j.create(new double[][] {{1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 0}, {1, 1, 1, 1, 0, 0}})
@@ -314,6 +315,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                    .dataType(DataType.DOUBLE)
                     .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
                     .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, width)
                             .stride(1, width).activation(Activation.TANH).build())
@@ -326,7 +328,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            INDArray inToBeMasked = Nd4j.rand(new int[] {minibatch, depthIn, height, width});
+            INDArray inToBeMasked = Nd4j.rand(DataType.DOUBLE,new int[] {minibatch, depthIn, height, width});
 
             //Shape for mask: [minibatch, 1, height, 1] -> broadcast
             INDArray maskArray = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}})
@@ -373,6 +375,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                    .dataType(DataType.DOUBLE)
                     .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
                     .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, 2)
                             .stride(1, 1).activation(Activation.TANH).build())
@@ -385,7 +388,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            INDArray inToBeMasked = Nd4j.rand(new int[] {minibatch, depthIn, height, width});
+            INDArray inToBeMasked = Nd4j.rand(DataType.DOUBLE,new int[] {minibatch, depthIn, height, width});
 
             //Second example in minibatch: size [3,2]
             inToBeMasked.get(point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,height), NDArrayIndex.all()).assign(0);
