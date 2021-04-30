@@ -103,6 +103,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
+                .dataType(DataType.DOUBLE)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                 .addInputs("input")
                 .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
@@ -112,6 +113,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static MultiLayerConfiguration getIrisMLNConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
+                .dataType(DataType.DOUBLE)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(5).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).activation(Activation.SOFTMAX).build()).build();
@@ -176,7 +178,6 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @Test
     public void testConfigurationBasic() {
-
         ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
 
         ComputationGraph graph = new ComputationGraph(configuration);

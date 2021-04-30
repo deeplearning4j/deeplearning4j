@@ -307,19 +307,19 @@ public class TestGraphNodes extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex unstack = new StackVertex(null, "", -1, DataType.DOUBLE);
 
-        INDArray in1 = Nd4j.zeros(5, 1);
-        INDArray in2 = Nd4j.zeros(5, 1);
+        INDArray in1 = Nd4j.zeros(DataType.DOUBLE,5, 1);
+        INDArray in2 = Nd4j.zeros(DataType.DOUBLE,5, 1);
         for (int i = 0; i < 5; i++) {
             in1.putScalar(i, 0, i);
             in2.putScalar(i, 0, i);
         }
 
-        INDArray l = Nd4j.rand(5, 5);
+        INDArray l = Nd4j.rand(DataType.DOUBLE,5, 5);
         MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[] {in1, in2}, new INDArray[] {l, l},
                         null, null);
 
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in1", "in2")
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).graphBuilder().addInputs("in1", "in2")
                         .addVertex("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
                         .addLayer("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
                         .addVertex("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")

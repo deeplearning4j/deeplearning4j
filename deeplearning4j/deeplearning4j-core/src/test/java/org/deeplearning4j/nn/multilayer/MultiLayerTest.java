@@ -532,7 +532,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         aePre.setParam("0_vb", Nd4j.ones(DataType.DOUBLE,10));
         params = aePre.getParam("0_vb");
         // check set params for vb
-        assertEquals(Nd4j.ones(1, 10), params);
+        assertEquals(Nd4j.ones(DataType.DOUBLE,1, 10), params);
         // Test pretrain false, expect same for true because its not changed when applying update
         MultiLayerNetwork aeNoPre = getAeModel(false, nIn, nOut);
         actualNP = (int) aeNoPre.numParams();
