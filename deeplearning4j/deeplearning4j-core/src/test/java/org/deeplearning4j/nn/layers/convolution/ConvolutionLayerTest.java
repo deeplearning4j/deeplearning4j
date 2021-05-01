@@ -232,6 +232,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Activate Results Contained")
+    @Disabled("Data type inconsistencies")
     void testActivateResultsContained() {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
