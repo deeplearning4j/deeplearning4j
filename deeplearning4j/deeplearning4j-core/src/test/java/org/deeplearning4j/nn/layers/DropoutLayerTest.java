@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -170,6 +171,7 @@ class DropoutLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Dropout Layer With Conv Mnist")
+    @Disabled("Data type inconsistencies")
     void testDropoutLayerWithConvMnist() throws Exception {
         // Set to double datatype - MKL-DNN not used for CPU (otherwise different strides due to Dl4J impl permutes)
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
