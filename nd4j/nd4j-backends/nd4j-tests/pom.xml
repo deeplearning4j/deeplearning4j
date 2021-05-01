@@ -244,6 +244,7 @@
                                 </PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
+                            <reportsDirectory>target/surefire-reports-${surefire.forkNumber}</reportsDirectory>
                             <includes>
                                 <include>*.java</include>
                                 <include>**/*.java</include>
