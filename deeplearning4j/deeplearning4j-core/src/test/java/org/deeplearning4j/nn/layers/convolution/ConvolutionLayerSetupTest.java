@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -105,6 +106,7 @@ class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Mnist Lenet")
+    @Disabled("Triggers TadDescriptor JVM crash")
     void testMnistLenet() throws Exception {
         MultiLayerConfiguration.Builder incomplete = incompleteMnistLenet();
         incomplete.setInputType(InputType.convolutionalFlat(28, 28, 1));
