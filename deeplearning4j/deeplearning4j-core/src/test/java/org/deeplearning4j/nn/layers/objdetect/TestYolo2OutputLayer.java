@@ -230,6 +230,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Data type inconsistencies")
     public void testIOUCalc(@TempDir Path tempDir) throws Exception {
 
         InputStream is1 = new ClassPathResource("yolo/VOC_SingleImage/JPEGImages/2007_009346.jpg").getInputStream();
