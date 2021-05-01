@@ -245,11 +245,11 @@ class OutputLayerTest extends BaseDL4JTest {
                 MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
                 mln2.init();
                 mln2.setParams(mln.params());
-                INDArray in = Nd4j.rand(new int[] { 3, 3, 5, 5 });
+                INDArray in = Nd4j.rand(DataType.DOUBLE,new int[] { 3, 3, 5, 5 });
                 INDArray out1 = mln.output(in);
                 INDArray out2 = mln2.output(in);
                 assertEquals(out1, out2);
-                INDArray labels = Nd4j.rand(out1.shape());
+                INDArray labels = Nd4j.rand(DataType.DOUBLE,out1.shape());
                 mln.setInput(in);
                 mln.setLabels(labels);
                 mln2.setInput(in);
@@ -259,8 +259,8 @@ class OutputLayerTest extends BaseDL4JTest {
                 assertEquals(mln.score(), mln2.score(), 1e-6);
                 assertEquals(mln.gradient().gradient(), mln2.gradient().gradient());
                 // Also check computeScoreForExamples
-                INDArray in2a = Nd4j.rand(new int[] { 1, 3, 5, 5 });
-                INDArray labels2a = Nd4j.rand(new int[] { 1, 4, 5, 5 });
+                INDArray in2a = Nd4j.rand(DataType.DOUBLE,new int[] { 1, 3, 5, 5 });
+                INDArray labels2a = Nd4j.rand(DataType.DOUBLE,new int[] { 1, 4, 5, 5 });
                 INDArray in2 = Nd4j.concat(0, in2a, in2a);
                 INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
                 INDArray s = mln.scoreExamples(new DataSet(in2, labels2), false);
@@ -286,11 +286,11 @@ class OutputLayerTest extends BaseDL4JTest {
                 ComputationGraph graph2 = new ComputationGraph(conf2);
                 graph2.init();
                 graph2.setParams(graph.params());
-                INDArray in = Nd4j.rand(new int[] { 3, 3, 5, 5 });
+                INDArray in = Nd4j.rand(DataType.DOUBLE,new int[] { 3, 3, 5, 5 });
                 INDArray out1 = graph.outputSingle(in);
                 INDArray out2 = graph2.outputSingle(in);
                 assertEquals(out1, out2);
-                INDArray labels = Nd4j.rand(out1.shape());
+                INDArray labels = Nd4j.rand(DataType.DOUBLE,out1.shape());
                 graph.setInput(0, in);
                 graph.setLabels(labels);
                 graph2.setInput(0, in);
@@ -300,8 +300,8 @@ class OutputLayerTest extends BaseDL4JTest {
                 assertEquals(graph.score(), graph2.score(), 1e-6);
                 assertEquals(graph.gradient().gradient(), graph2.gradient().gradient());
                 // Also check computeScoreForExamples
-                INDArray in2a = Nd4j.rand(new int[] { 1, 3, 5, 5 });
-                INDArray labels2a = Nd4j.rand(new int[] { 1, 4, 5, 5 });
+                INDArray in2a = Nd4j.rand(DataType.DOUBLE,new int[] { 1, 3, 5, 5 });
+                INDArray labels2a = Nd4j.rand(DataType.DOUBLE,new int[] { 1, 4, 5, 5 });
                 INDArray in2 = Nd4j.concat(0, in2a, in2a);
                 INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
                 INDArray s = graph.scoreExamples(new DataSet(in2, labels2), false);

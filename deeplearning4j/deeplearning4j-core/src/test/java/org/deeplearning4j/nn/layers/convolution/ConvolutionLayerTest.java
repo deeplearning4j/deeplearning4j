@@ -133,7 +133,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         long timeSteps = 72;
         long vectorLength = 64;
         long batchSize = 1;
-        INDArray arr = Nd4j.randn(batchSize, vectorLength, timeSteps);
+        INDArray arr = Nd4j.randn(DataType.DOUBLE,batchSize, vectorLength, timeSteps);
         MultiLayerConfiguration build = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(// better init
         new WeightInitNormal()).updater(new Adam(learningRate)).list().layer(new Convolution1D.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(1).nOut(14).convolutionMode(ConvolutionMode.Causal).dilation(4).build()).layer(new RnnLossLayer.Builder().dataFormat(RNNFormat.NCW).activation(new ActivationSoftmax()).lossFunction(new LossMCXENT()).build()).setInputType(InputType.recurrent(vectorLength, timeSteps, RNNFormat.NCW)).build();
         MultiLayerNetwork network = new MultiLayerNetwork(build);

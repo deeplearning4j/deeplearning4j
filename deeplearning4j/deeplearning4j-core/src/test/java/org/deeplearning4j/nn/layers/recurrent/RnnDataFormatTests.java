@@ -200,6 +200,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
 
     @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
     @ParameterizedTest
+    @Disabled("Data type inconsistency")
     public void testGraveBiLSTM(boolean helpers,
                                 boolean lastTimeStep,
                                 boolean maskZeros,Nd4jBackend backend) {
