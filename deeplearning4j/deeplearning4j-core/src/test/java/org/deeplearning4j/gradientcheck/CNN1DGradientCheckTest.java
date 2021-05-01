@@ -276,6 +276,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn 1 d With Masking")
+    @Disabled("Data type cinconsistencies")
     void testCnn1dWithMasking() {
         int length = 12;
         int convNIn = 2;
