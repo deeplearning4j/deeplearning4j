@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.*;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -402,6 +403,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Data type inconsistencyu")
     public void testUnstackNode() {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex unstack0 = new UnstackVertex(null, "", -1, 0, 3, DataType.DOUBLE);
