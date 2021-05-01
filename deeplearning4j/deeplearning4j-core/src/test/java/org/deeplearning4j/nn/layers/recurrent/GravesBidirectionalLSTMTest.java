@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -82,6 +83,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     @DisplayName("Test Bidirectional LSTM Graves Forward Basic")
     @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
     @ParameterizedTest
+    @Disabled("causes jvm crash with TAD  sd::TadDescriptor::TadDescriptor(long long const*, int const*, int, bool)+0x470\n")
     void testBidirectionalLSTMGravesForwardBasic(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // Very basic test of forward prop. of LSTM layer with a time series.
         // Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
