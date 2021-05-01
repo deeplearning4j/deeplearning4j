@@ -233,6 +233,7 @@ class OutputLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Loss Layer")
+    @Disabled("Data type inconsistencies")
     void testCnnLossLayer() {
         for (WorkspaceMode ws : WorkspaceMode.values()) {
             log.info("*** Testing workspace: " + ws);
