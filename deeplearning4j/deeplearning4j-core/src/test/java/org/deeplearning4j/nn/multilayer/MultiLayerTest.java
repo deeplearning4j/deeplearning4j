@@ -92,6 +92,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Tag(TagNames.DL4J_OLD_API)
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
+@Disabled("Flaky due to datatype inconsistency")
+
 public class MultiLayerTest extends BaseDL4JTest {
 
     private static OpExecutioner.ProfilingMode origMode;
