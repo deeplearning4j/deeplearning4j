@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -581,21 +582,21 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
 
     @Test
-    public void testReverse(){
+    public void testReverse() {
 
         for(char c : new char[]{'f','c'}) {
 
-            INDArray in = Nd4j.linspace(1, 3 * 5 * 10, 3 * 5 * 10, Nd4j.dataType()).reshape('f', 3, 5, 10).dup(c);
-            INDArray inMask = Nd4j.linspace(1, 30, 30, Nd4j.dataType()).reshape('f', 3, 10).dup(c); //Minibatch, TS length
+            INDArray in = Nd4j.linspace(1, 3 * 5 * 10, 3 * 5 * 10, DataType.DOUBLE).reshape('f', 3, 5, 10).castTo(DataType.DOUBLE).dup(c);
+            INDArray inMask = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape('f', 3, 10).dup(c); //Minibatch, TS length
 
-            INDArray inReverseExp = reverseTimeSeries(in);
-            INDArray inMaskReverseExp = Nd4j.create(inMask.shape());
+            INDArray inReverseExp = reverseTimeSeries(in).castTo(DataType.DOUBLE);
+            INDArray inMaskReverseExp = Nd4j.create(inMask.shape()).castTo(DataType.DOUBLE);
             for (int i = 0; i < inMask.size(1); i++) {
                 inMaskReverseExp.putColumn(i, inMask.getColumn(inMask.size(1) - i - 1));
             }
 
-            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
-            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT).castTo(DataType.DOUBLE);
+            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT).castTo(DataType.DOUBLE);
 
             assertEquals(inReverseExp, inReverse);
             assertEquals(inMaskReverseExp, inMaskReverse);

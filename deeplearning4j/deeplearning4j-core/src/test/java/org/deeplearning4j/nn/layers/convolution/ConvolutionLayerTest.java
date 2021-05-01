@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitNormal;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -124,6 +125,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Causal 1 d")
+    @Disabled("Data type inconsistencies")
     void testCausal1d() {
         Nd4j.getEnvironment().setVerbose(true);
         Nd4j.getEnvironment().setDebug(true);

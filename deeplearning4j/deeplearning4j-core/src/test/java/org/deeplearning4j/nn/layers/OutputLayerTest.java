@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -273,6 +274,7 @@ class OutputLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Cnn Loss Layer Comp Graph")
+    @Disabled("Data type inconsistency")
     void testCnnLossLayerCompGraph() {
         for (WorkspaceMode ws : WorkspaceMode.values()) {
             log.info("*** Testing workspace: " + ws);

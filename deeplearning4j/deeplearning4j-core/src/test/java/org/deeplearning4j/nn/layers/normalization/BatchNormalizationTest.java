@@ -401,6 +401,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Check Mean Variance Estimate")
+    @Disabled("Data type inconsistencies")
     void checkMeanVarianceEstimate() throws Exception {
         Nd4j.getRandom().setSeed(12345);
         // Check that the internal global mean/variance estimate is approximately correct
