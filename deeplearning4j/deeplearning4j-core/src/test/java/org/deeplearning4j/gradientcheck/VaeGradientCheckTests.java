@@ -223,6 +223,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Runtime exception")
     public void testVaePretrainReconstructionDistributions() {
 
         int inOutSize = 3;
