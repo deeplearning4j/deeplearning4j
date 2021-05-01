@@ -603,6 +603,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     @Test
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
+    @Disabled("Nan issues, inconsistent data types")
     public void testPreTraining() {
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder()

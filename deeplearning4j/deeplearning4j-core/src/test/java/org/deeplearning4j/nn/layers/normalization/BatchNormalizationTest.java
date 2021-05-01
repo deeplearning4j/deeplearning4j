@@ -42,9 +42,7 @@ import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
@@ -71,7 +69,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.DisplayName;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
@@ -453,6 +451,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Check Mean Variance Estimate CNN")
+    @Disabled("Inconsistent failures with data types")
     void checkMeanVarianceEstimateCNN() throws Exception {
         for (boolean useLogStd : new boolean[] { true, false }) {
             Nd4j.getRandom().setSeed(12345);

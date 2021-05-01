@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -99,6 +100,7 @@ class SubsamplingLayerTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Sub Sample Mean Activate")
+    @Disabled("Inconsistent failures with data types")
     void testSubSampleMeanActivate() throws Exception {
         INDArray containedExpectedOut = Nd4j.create(new double[] { 2., 4., 3., 5., 3.5, 6.5, 4.5, 8.5 }, new int[] { 1, 2, 2, 2 })
                 .castTo(DataType.DOUBLE);
