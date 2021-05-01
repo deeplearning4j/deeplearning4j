@@ -43,6 +43,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 @Slf4j
 @Tag(TagNames.WORKSPACES)
 @NativeTag
+@Disabled("Times surefire jvm out")
 public class CyclicWorkspaceTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
