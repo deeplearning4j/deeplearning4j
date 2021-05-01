@@ -151,6 +151,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
 
 
     @Test
+    @Disabled("Data type inconsistencies")
     public void testVaePretrain() {
         Nd4j.getRandom().setSeed(12345);
         Activation[] activFns = {Activation.IDENTITY, Activation.TANH, Activation.SOFTSIGN};
