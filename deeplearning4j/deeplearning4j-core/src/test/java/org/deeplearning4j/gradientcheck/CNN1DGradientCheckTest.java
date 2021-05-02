@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -58,6 +59,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
+@Disabled("To be looked in to")
 class CNN1DGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
