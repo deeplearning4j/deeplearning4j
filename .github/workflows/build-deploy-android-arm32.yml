@@ -167,7 +167,6 @@ jobs:
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/armeabi-v7a/
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
-
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
       - name: Setup tmate session
