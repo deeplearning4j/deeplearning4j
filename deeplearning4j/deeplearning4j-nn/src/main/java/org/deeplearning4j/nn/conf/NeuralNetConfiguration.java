@@ -190,7 +190,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * A convenience method for setting input types: note that for example .inputType().convolutional(h,w,d)
          * is equivalent to .setInputType(InputType.convolutional(h,w,d))
          */
-        public ListBuilder.InputTypeBuilder inputType(){
+        public InputTypeBuilder inputType(){
             return new InputTypeBuilder();
         }
 

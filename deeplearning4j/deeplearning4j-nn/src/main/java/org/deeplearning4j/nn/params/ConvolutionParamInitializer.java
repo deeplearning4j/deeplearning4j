@@ -51,8 +51,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) l;
+        ConvolutionLayer layerConf =
+                        (ConvolutionLayer) l;
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
@@ -62,8 +62,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+        ConvolutionLayer layerConf =
+                (ConvolutionLayer) layer;
         if(layerConf.hasBias()){
             return Arrays.asList(WEIGHT_KEY, BIAS_KEY);
         } else {
@@ -78,8 +78,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> biasKeys(Layer layer) {
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+        ConvolutionLayer layerConf =
+                (ConvolutionLayer) layer;
         if(layerConf.hasBias()){
             return Collections.singletonList(BIAS_KEY);
         } else {
@@ -99,13 +99,13 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        ConvolutionLayer layer = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        ConvolutionLayer layer = (ConvolutionLayer) conf.getLayer();
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        ConvolutionLayer layerConf =
+                        (ConvolutionLayer) conf.getLayer();
 
         val nOut = layerConf.getNOut();
 
@@ -130,8 +130,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        ConvolutionLayer layerConf =
+                        (ConvolutionLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
@@ -156,8 +156,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView, boolean initializeParams) {
         //the bias is a 1D tensor -- one bias per output feature map
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        ConvolutionLayer layerConf =
+                        (ConvolutionLayer) conf.getLayer();
         if (initializeParams)
             biasView.assign(layerConf.getBiasInit());
         return biasView;
@@ -172,8 +172,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          Inputs to the convolution layer are:
          (batch size, num input feature maps, image height, image width)
          */
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        ConvolutionLayer layerConf =
+                        (ConvolutionLayer) conf.getLayer();
         if (initializeParams) {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();

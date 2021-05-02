@@ -64,7 +64,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
     @NoArgsConstructor
     @Getter
     @Setter
-    protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>> extends Layer.Builder<T> {
+    protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>> extends Builder<T> {
 
         /**
          * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial

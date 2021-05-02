@@ -449,9 +449,9 @@ public class CrashReportingUtil {
         return sb;
     }
 
-    private static void appendLayerInformation(StringBuilder sb, org.deeplearning4j.nn.api.Layer[] layers, int bytesPerElement){
+    private static void appendLayerInformation(StringBuilder sb, Layer[] layers, int bytesPerElement){
         Map<String,Integer> layerClasses = new HashMap<>();
-        for(org.deeplearning4j.nn.api.Layer l : layers){
+        for(Layer l : layers){
             if(!layerClasses.containsKey(l.getClass().getSimpleName())){
                 layerClasses.put(l.getClass().getSimpleName(), 0);
             }
@@ -476,7 +476,7 @@ public class CrashReportingUtil {
 
     }
 
-    private static void appendHelperInformation(StringBuilder sb, org.deeplearning4j.nn.api.Layer[] layers){
+    private static void appendHelperInformation(StringBuilder sb, Layer[] layers){
         sb.append("\n----- Layer Helpers - Memory Use -----\n");
 
         int helperCount = 0;
@@ -553,7 +553,7 @@ public class CrashReportingUtil {
         String format = "%-3s %-20s %-20s %-42s %-20s %-12s %-12s";
         sb.append(String.format(format, "Idx", "Name", "Layer Type", "Activations Type", "Activations Shape",
                 "# Elements", "Memory")).append("\n");
-        org.deeplearning4j.nn.api.Layer[] layers = net.getLayers();
+        Layer[] layers = net.getLayers();
         long totalActivationBytes = 0;
         long last = 0;
         for( int i=0; i<inputTypes.size(); i++ ){
@@ -604,7 +604,7 @@ public class CrashReportingUtil {
         String format = "%-3s %-20s %-20s %-42s %-20s %-12s %-12s";
         sb.append(String.format(format, "Idx", "Name", "Layer Type", "Activations Type", "Activations Shape",
                 "# Elements", "Memory")).append("\n");
-        org.deeplearning4j.nn.api.Layer[] layers = net.getLayers();
+        Layer[] layers = net.getLayers();
         long totalActivationBytes = 0;
         long totalExOutput = 0; //Implicitly includes input already due to input vertices
         int[] topo = indices.getTopologicalSortOrder();

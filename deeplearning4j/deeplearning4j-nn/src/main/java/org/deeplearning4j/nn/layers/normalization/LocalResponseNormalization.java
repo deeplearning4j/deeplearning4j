@@ -51,7 +51,7 @@ public class LocalResponseNormalization
 
     protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
-
+    public final static String LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper";
     @Override
     public Layer clone() {
         return new LocalResponseNormalization(conf.clone(), dataType);
@@ -65,11 +65,35 @@ public class LocalResponseNormalization
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            helper = DL4JClassLoading.createNewInstance(
-                    "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper",
-                    LocalResponseNormalizationHelper.class,
-                    dataType);
-            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
+            if(DL4JClassLoading.loadClassByName(LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME) != null) {
+                helper = DL4JClassLoading.createNewInstance(
+                        LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME,
+                        LocalResponseNormalizationHelper.class,
+                        dataType);
+            } else {
+                log.warn("Cudnn class not found using current class loader. Trying current classloader.");
+                synchronized (this) {
+                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
+                    DL4JClassLoading.setDl4jClassloaderFromClass(LocalResponseNormalizationHelper.class);
+                    try {
+                        helper = DL4JClassLoading.createNewInstance(
+                                LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME,
+                                LocalResponseNormalizationHelper.class,
+                                dataType);
+
+                    } catch (Exception e) {
+                        log.warn("Unable to use cudnn local response normalization  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
+                    }
+
+                    log.warn("Returning class loader to original one.");
+                    DL4JClassLoading.setDl4jClassloader(classLoader);
+                }
+            }
+
+            if(helper != null) {
+                log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
+
+            }
         }
         //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/eclipse/deeplearning4j/issues/7272
 //        else if("CPU".equalsIgnoreCase(backend)){

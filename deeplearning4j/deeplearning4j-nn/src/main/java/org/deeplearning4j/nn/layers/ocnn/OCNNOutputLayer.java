@@ -221,7 +221,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
 
     @Override
-    public Layer.Type type() {
+    public Type type() {
         return Type.FEED_FORWARD;
     }
 

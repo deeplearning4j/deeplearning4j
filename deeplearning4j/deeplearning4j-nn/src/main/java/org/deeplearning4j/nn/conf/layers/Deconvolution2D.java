@@ -83,8 +83,8 @@ public class Deconvolution2D extends ConvolutionLayer {
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("Deconvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer(conf, networkDataType);
+        Deconvolution2DLayer ret =
+                        new Deconvolution2DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

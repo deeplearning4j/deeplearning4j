@@ -130,7 +130,7 @@ public class TransferLearning {
          * @param nOut     Value of nOut to change to
          * @param dist     Distribution to use in conjunction with weight init DISTRIBUTION for params in layernum and layernum+1
          * @return Builder
-         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         * @see WeightInit DISTRIBUTION
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist) {
             return nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(dist));
@@ -165,7 +165,7 @@ public class TransferLearning {
          * @param dist     Distribution to use for params in the layerNum
          * @param distNext Distribution to use for parmas in layerNum+1
          * @return Builder
-         * @see org.deeplearning4j.nn.weights.WeightInitDistribution
+         * @see WeightInitDistribution
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist, Distribution distNext) {
             return nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(distNext));
@@ -181,7 +181,7 @@ public class TransferLearning {
          * @param scheme   Weight init scheme to use for params in layerNum
          * @param distNext Distribution to use for parmas in layerNum+1
          * @return Builder
-         * @see org.deeplearning4j.nn.weights.WeightInitDistribution
+         * @see WeightInitDistribution
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, Distribution distNext) {
             if(scheme == WeightInit.DISTRIBUTION) {
@@ -201,7 +201,7 @@ public class TransferLearning {
          * @param dist       Distribution to use for parmas in layerNum
          * @param schemeNext Weight init scheme to use for params in layerNum+1
          * @return Builder
-         * @see org.deeplearning4j.nn.weights.WeightInitDistribution
+         * @see WeightInitDistribution
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist, WeightInit schemeNext) {
             return nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), schemeNext.getWeightInitFunction());
@@ -625,7 +625,7 @@ public class TransferLearning {
          * @param nOut      Value of nOut to change to
          * @param scheme    Weight init scheme to use for params in layerName and the layers following it
          * @return GraphBuilder
-         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         * @see WeightInit DISTRIBUTION
          */
         public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme) {
             return nOutReplace(layerName, nOut, scheme, scheme);
@@ -642,7 +642,7 @@ public class TransferLearning {
          * @param nOut      Value of nOut to change to
          * @param dist      Weight distribution scheme to use
          * @return GraphBuilder
-         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         * @see WeightInit DISTRIBUTION
          */
         public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist) {
             return nOutReplace(layerName, nOut, dist, dist);
@@ -655,7 +655,7 @@ public class TransferLearning {
          * @param dist      Weight distribution scheme to use for layerName
          * @param distNext  Weight distribution scheme for layers following layerName
          * @return GraphBuilder
-         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         * @see WeightInit DISTRIBUTION
          */
         public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist, Distribution distNext) {
             return nOutReplace(layerName, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(distNext));

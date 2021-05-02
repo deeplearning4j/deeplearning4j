@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
+import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -50,26 +51,54 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     protected SubsamplingHelper helper = null;
     protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
-
+    public final static String  CUDNN_SUBSAMPLING_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper";
     public SubsamplingLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
         initializeHelper();
         this.convolutionMode =
-                        ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
+                ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
     }
 
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
 
         if("CUDA".equalsIgnoreCase(backend)) {
-            helper = DL4JClassLoading.createNewInstance(
-                    "org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper",
-                    SubsamplingHelper.class,
-                    dataType);
-            log.debug("CudnnSubsamplingHelper successfully initialized");
-            if (!helper.checkSupported()) {
+            if(DL4JClassLoading.loadClassByName(CUDNN_SUBSAMPLING_HELPER_CLASS_NAME) != null) {
+                helper = DL4JClassLoading.createNewInstance(
+                        CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
+                        SubsamplingHelper.class,
+                        dataType);
+                log.debug("CudnnSubsamplingHelper successfully initialized");
+
+            }
+            else {
+                log.warn("Cudnn class not found using current class loader. Trying current classloader.");
+                synchronized (this) {
+                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
+                    DL4JClassLoading.setDl4jClassloaderFromClass(SubsamplingHelper.class);
+                    try {
+                        helper = DL4JClassLoading.createNewInstance(
+                                CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
+                                SubsamplingHelper.class,
+                                dataType);
+
+                    } catch (Exception e) {
+                        log.warn("Unable to use cudnn subsampling  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
+                    }
+
+                    log.warn("Returning class loader to original one.");
+                    DL4JClassLoading.setDl4jClassloader(classLoader);
+                }
+            }
+
+            if (helper != null && !helper.checkSupported()) {
                 helper = null;
             }
+
+            if(helper != null) {
+                log.debug("CudnnSubsamplingHelper successfully initialized");
+            }
+
         } else if("CPU".equalsIgnoreCase(backend) ){
             helper = new MKLDNNSubsamplingHelper(dataType);
             log.trace("Created MKL-DNN helper: MKLDNNSubsamplingHelper, layer {}", layerConf().getLayerName());
@@ -205,9 +234,9 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                            + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                            + ". Expected rank 4 array with shape " + layerConf().getCnn2dDataFormat().dimensionNames() + ". "
-                            + layerId());
+                    + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
+                    + ". Expected rank 4 array with shape " + layerConf().getCnn2dDataFormat().dimensionNames() + ". "
+                    + layerId());
         }
 
         INDArray input = this.input.castTo(dataType);

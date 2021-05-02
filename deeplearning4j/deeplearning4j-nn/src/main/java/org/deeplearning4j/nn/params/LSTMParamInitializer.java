@@ -100,7 +100,7 @@ public class LSTMParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        org.deeplearning4j.nn.conf.layers.LSTM layerConf = (org.deeplearning4j.nn.conf.layers.LSTM) conf.getLayer();
+        LSTM layerConf = (LSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
@@ -163,7 +163,7 @@ public class LSTMParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        org.deeplearning4j.nn.conf.layers.LSTM layerConf = (org.deeplearning4j.nn.conf.layers.LSTM) conf.getLayer();
+        LSTM layerConf = (LSTM) conf.getLayer();
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer

@@ -94,7 +94,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
+        if (!(conf.getLayer() instanceof FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
@@ -104,8 +104,8 @@ public class DefaultParamInitializer implements ParamInitializer {
             throw new IllegalStateException(
                             "Expected params view of length " + length + ", got length " + paramsView.length());
 
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                        (FeedForwardLayer) conf.getLayer();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
 
@@ -136,8 +136,8 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                        (FeedForwardLayer) conf.getLayer();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
@@ -167,8 +167,8 @@ public class DefaultParamInitializer implements ParamInitializer {
 
 
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView, boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                        (FeedForwardLayer) conf.getLayer();
         return createBias(layerConf.getNOut(), layerConf.getBiasInit(), biasParamView, initializeParameters);
     }
 
@@ -180,8 +180,8 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
     protected INDArray createGain(NeuralNetConfiguration conf, INDArray gainParamView, boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                (FeedForwardLayer) conf.getLayer();
         return createGain(layerConf.getNOut(), layerConf.getGainInit(), gainParamView, initializeParameters);
     }
 
@@ -195,8 +195,8 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView,
                     boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                        (FeedForwardLayer) conf.getLayer();
 
         if (initializeParameters) {
             return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInitFn(),

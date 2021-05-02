@@ -149,7 +149,7 @@ public class Convolution3D extends ConvolutionLayer {
     @AllArgsConstructor
     @Getter
     @Setter
-    public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
+    public static class Builder extends BaseConvBuilder<Builder> {
 
         /**
          * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
