@@ -134,7 +134,7 @@
         <rxjava.version>2.2.21</rxjava.version>
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
-        <arrow.version>4.0.0</arrow.version>
+        <arrow.version>0.11.0</arrow.version>
         <avro.version>1.7.7</avro.version>
         <curator.version>2.8.0</curator.version>
         <guice.version>4.0</guice.version>
@@ -849,6 +849,14 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>parallel-tests</id>
+            <properties>
+                <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
+                <junit.jupiter.execution.parallel.mode.default>concurrent</junit.jupiter.execution.parallel.mode.default>
+
+            </properties>
+        </profile>
         <profile>
             <id>github</id>
             <distributionManagement>
