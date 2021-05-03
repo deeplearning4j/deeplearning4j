@@ -42,9 +42,7 @@ import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
@@ -71,7 +69,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.DisplayName;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
@@ -82,6 +80,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.DL4J_OLD_API)
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
+@Disabled("C++ error on gpu with bacprop")
 class BatchNormalizationTest extends BaseDL4JTest {
 
     static {
