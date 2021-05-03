@@ -136,6 +136,10 @@ jobs:
           protoc --version
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
+          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
+          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
+          sudo cp  /usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
           command="mvn  -X  -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
