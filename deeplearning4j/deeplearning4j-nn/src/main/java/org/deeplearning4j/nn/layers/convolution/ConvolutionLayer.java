@@ -79,7 +79,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                         ConvolutionHelper.class,
                         dataType);
             } else {
-                log.warn("Cudnn class not found using current class loader. Trying current classloader.");
+                log.warn("Unable to find class " + CUDA_CNN_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
                 synchronized (this) {
                     ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
                     DL4JClassLoading.setDl4jClassloaderFromClass(ConvolutionLayer.class);

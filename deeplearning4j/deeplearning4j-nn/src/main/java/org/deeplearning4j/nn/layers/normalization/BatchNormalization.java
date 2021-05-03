@@ -81,7 +81,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 log.debug("CudnnBatchNormalizationHelper successfully initialized");
 
             } else {
-                log.warn("Cudnn class not found using current class loader. Trying current classloader.");
+                log.warn("Unable to find class " + BATCH_NORM_CUDNN_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
                 synchronized (this) {
                     ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
                     DL4JClassLoading.setDl4jClassloaderFromClass(BatchNormalizationHelper.class);

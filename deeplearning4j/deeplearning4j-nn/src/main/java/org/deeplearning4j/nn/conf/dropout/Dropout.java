@@ -112,11 +112,11 @@ public class Dropout implements IDropout {
         if("CUDA".equalsIgnoreCase(backend)) {
             if(DL4JClassLoading.loadClassByName(CUDNN_DROPOUT_HELPER_CLASS_NAME) != null) {
                 helper = DL4JClassLoading.createNewInstance(
-                        "org.deeplearning4j.cuda.dropout.CudnnDropoutHelper",
+                        CUDNN_DROPOUT_HELPER_CLASS_NAME,
                         DropoutHelper.class,
                         dataType);
             } else {
-                log.warn("Cudnn class not found using current class loader. Trying current classloader.");
+                log.warn("Unable to find class " + CUDNN_DROPOUT_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
                 synchronized (this) {
                     ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
                     DL4JClassLoading.setDl4jClassloaderFromClass(DropoutHelper.class);
