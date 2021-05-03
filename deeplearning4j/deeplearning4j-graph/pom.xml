@@ -131,9 +131,6 @@
                             <forkCount>0</forkCount>
                             <threadCount>1</threadCount>
                             <perCoreThreadCount>false</perCoreThreadCount>
-                            <forkCount>0</forkCount>
-                            <threadCount>1</threadCount>
-                            <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
                     </plugin>
                 </plugins>
