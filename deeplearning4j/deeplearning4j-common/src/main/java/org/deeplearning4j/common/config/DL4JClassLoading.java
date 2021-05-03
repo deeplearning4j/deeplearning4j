@@ -21,6 +21,7 @@
 package org.deeplearning4j.common.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JClassLoading;
 
 import java.lang.reflect.InvocationTargetException;
@@ -94,8 +95,10 @@ public class DL4JClassLoading {
             Class<?>[] parameterTypes,
             Object... args) {
         try {
-            return (T) DL4JClassLoading
-                    .loadClassByName(className)
+            Class<Object> loadedClass =  DL4JClassLoading
+                    .loadClassByName(className);
+            Preconditions.checkNotNull(loadedClass,"Attempted to load class " + className + " but failed. No class found with this name.");
+            return (T) loadedClass
                     .asSubclass(superclass)
                     .getDeclaredConstructor(parameterTypes)
                     .newInstance(args);
