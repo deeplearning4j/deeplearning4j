@@ -18,7 +18,7 @@ in terms of performance and dependencies. This presents complexity in exposing t
 ## Decision
 
 In order to allow users to pick which configuration they would like to use, while avoiding adding a lot of different artifact
-ids to the project, the following versioning is proposed:
+ids to the project, the following versioning is used:
 compiled type (avx etc or blank if normal) - software linked against (cudnn, onednn, armcompute) - version 
 
 
