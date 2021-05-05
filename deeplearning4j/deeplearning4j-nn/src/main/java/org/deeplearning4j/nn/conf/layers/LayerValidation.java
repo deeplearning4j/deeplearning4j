@@ -196,7 +196,6 @@ public class LayerValidation {
         }
 
         if (bLayer.getIDropout() == null) {
-
             bLayer.setIDropout(iDropout);
         }
     }
