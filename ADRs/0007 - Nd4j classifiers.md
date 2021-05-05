@@ -5,7 +5,7 @@ Proposed
 
 Proposed by: Adam Gibson (5-5-2021)
 
-Discussed with: N/A
+Discussed with: saudet  (Samuel Audet)
 
 ## Context
 Nd4j relies upon the c++ library [libnd4j](../libnd4j) for native math execution.
@@ -18,23 +18,34 @@ in terms of performance and dependencies. This presents complexity in exposing t
 ## Decision
 
 In order to allow users to pick which configuration they would like to use, while avoiding adding a lot of different artifact
-ids to the project, the following versioning is used:
+ids to the project, the following javacpp platform extensions are used:
 compiled type (avx etc or blank if normal) - software linked against (cudnn, onednn, armcompute) - version 
 
 
 An example for onednn could be:
-dnnl-2.2-1.0.0-M1
-avx256-dnnl-2.2-1.0.0-M1
+dnnl-2.2
+avx256-dnnl-2.2
 
 This presents 2 examples where a special compilation is enabled and one where it's not
 both linking against dnnl/onednn 2.2.
 
 
+## Discussion
+
+Saudet: Javacpp's extensions can acctually support optional
+inclusion. It plays well with other platform declarations.
+This means you can use platform like:
+```bash
+mvn -Djavacpp.platform.extension=-avx512  -Djavacpp.platform=windows-x86_64 clean ...
+```
+
+to enable certain extensions.
 
 ## Consequences
 ### Advantages
-* Moves avx classification to being a version rather than an extension. This allows nd4j-native/cuda to play nice
+* Adds more extensions than the previous release. This allows nd4j-native/cuda to play nice
 with the standard javacpp.platform scheme when [reducing the number of dependencies](https://github.com/bytedeco/javacpp-presets/wiki/Reducing-the-Number-of-Dependencies)
+  while also enabling the new accelerated extensions, but in an optional manner.
   
 * Allows users to pick how they want libnd4j to be included in their build
 
@@ -47,6 +58,6 @@ with the standard javacpp.platform scheme when [reducing the number of dependenc
 
 * Could be deprecated in the future depending on how libnd4j evolves
 
-* Breaks compatibility with the old avx approach. 
+* Complexity for the user with the number of new extensions to be used.
 
 
