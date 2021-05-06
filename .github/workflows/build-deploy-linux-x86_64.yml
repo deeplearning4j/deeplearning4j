@@ -133,6 +133,8 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
 
         run: |
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
@@ -141,9 +143,13 @@ jobs:
           protoc --version
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          if [ -z "${EXTENSION}" ]; then
+              echo "Extensions specified. This needs a newer version of gcc."
+              sudo apt-get install gcc-7 
+          fi
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          command="mvn  -X  -Possrh  -Dlibnd4j.helper=${HELPER} -Dlibnd4j.extension=${EXTENSION} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
