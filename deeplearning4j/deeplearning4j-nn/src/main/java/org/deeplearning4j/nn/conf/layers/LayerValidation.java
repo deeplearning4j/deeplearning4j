@@ -131,7 +131,7 @@ public class LayerValidation {
     private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout,
                                            List<Regularization> regularization, List<Regularization> regularizationBias) {
         if (regularization != null && !regularization.isEmpty()) {
-            final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularization());
+            final List<Regularization> bLayerRegs = bLayer.getRegularization();
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularization(regularization);
             } else {
@@ -165,7 +165,7 @@ public class LayerValidation {
 
 
         if (regularizationBias != null && !regularizationBias.isEmpty()) {
-            final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularizationBias());
+            final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularizationBias(regularizationBias);
             } else {
