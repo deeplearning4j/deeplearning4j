@@ -1,7 +1,7 @@
 # Nd4j Versioning
 
 ## Status
-Proposed
+Accepted
 
 Proposed by: Adam Gibson (5-5-2021)
 
