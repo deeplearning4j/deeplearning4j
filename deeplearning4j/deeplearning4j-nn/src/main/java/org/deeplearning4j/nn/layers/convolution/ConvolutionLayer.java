@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -71,50 +72,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            if(DL4JClassLoading.loadClassByName(CUDA_CNN_HELPER_CLASS_NAME) != null) {
-                helper = DL4JClassLoading.createNewInstance(
-                        CUDA_CNN_HELPER_CLASS_NAME,
-                        ConvolutionHelper.class,
-                        dataType);
-            } else {
-                log.warn("Unable to find class " + CUDA_CNN_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
-                synchronized (this) {
-                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
-                    DL4JClassLoading.setDl4jClassloaderFromClass(ConvolutionLayer.class);
-                  try {
-                      helper = DL4JClassLoading.createNewInstance(
-                              CUDA_CNN_HELPER_CLASS_NAME,
-                              ConvolutionHelper.class,
-                              dataType);
-                  } catch(Exception e) {
-                      log.warn("Unable to use cudnn convolution helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
-                  }
-
-                    log.warn("Returning class loader to original one.");
-                    DL4JClassLoading.setDl4jClassloader(classLoader);
-
-                }
-            }
-
-            if (helper != null && !helper.checkSupported()) {
-                helper = null;
-            }
-
-            if(helper != null) {
-                log.debug("CudnnConvolutionHelper successfully initialized");
-            }
-
-        } else if("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNConvHelper(dataType);
-            log.trace("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
-        }
-
-        if (helper != null && !helper.checkSupported()) {
-            log.debug("Removed helper {} as not supported", helper.getClass());
-            helper = null;
-        }
+        helper = HelperUtils.createHelper(CUDA_CNN_HELPER_CLASS_NAME,
+                MKLDNNConvHelper.class.getName(),
+                dataType,
+                ConvolutionHelper.class,layerConf().getLayerName());
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.BaseMKLDNNHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLSTMHelper;
@@ -52,47 +53,11 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     }
 
     void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            if(DL4JClassLoading.loadClassByName(CUDNN_LSTM_CLASS_NAME) != null) {
-                helper = DL4JClassLoading.createNewInstance(
-                        CUDNN_LSTM_CLASS_NAME,
-                        LSTMHelper.class,
-                        dataType);
-            } else {
-                log.warn("Unable to find class " + CUDNN_LSTM_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
-                synchronized (this) {
-                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
-                    DL4JClassLoading.setDl4jClassloaderFromClass(LSTMHelper.class);
-                    try {
-                        helper = DL4JClassLoading.createNewInstance(
-                                CUDNN_LSTM_CLASS_NAME,
-                                LSTMHelper.class,
-                                dataType);
-                    } catch(Exception e) {
-                        log.warn("Unable to use cudnn lstm helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
-                    }
-
-                    log.warn("Returning class loader to original one.");
-                    DL4JClassLoading.setDl4jClassloader(classLoader);
-
-                }
-            }
-
-            if (helper != null && !helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
-                helper = null;
-            }
-            if(helper != null) {
-                log.debug("CudnnLSTMHelper successfully initialized");
-            }
-
-        }  else if ("CPU".equalsIgnoreCase(backend) && BaseMKLDNNHelper.mklDnnEnabled()) {
-            helper = new MKLDNNLSTMHelper();
-            log.debug("MKLDNNLSTMHelper successfully initialized");
-            if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
-                helper = null;
-            }
-        }
+        helper = HelperUtils.createHelper(CUDNN_LSTM_CLASS_NAME,
+                MKLDNNLSTMHelper.class.getName(),
+                dataType,
+                LSTMHelper.class,
+                layerConf().getLayerName());
     }
 
     @Override

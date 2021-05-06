@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
 import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
@@ -60,54 +61,12 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-
-        if("CUDA".equalsIgnoreCase(backend)) {
-            if(DL4JClassLoading.loadClassByName(CUDNN_SUBSAMPLING_HELPER_CLASS_NAME) != null) {
-                helper = DL4JClassLoading.createNewInstance(
-                        CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
-                        SubsamplingHelper.class,
-                        dataType);
-                log.debug("CudnnSubsamplingHelper successfully initialized");
-
-            }
-            else {
-                log.warn("Unable to find class " + CUDNN_SUBSAMPLING_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
-                synchronized (this) {
-                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
-                    DL4JClassLoading.setDl4jClassloaderFromClass(SubsamplingHelper.class);
-                    try {
-                        helper = DL4JClassLoading.createNewInstance(
-                                CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
-                                SubsamplingHelper.class,
-                                dataType);
-
-                    } catch (Exception e) {
-                        log.warn("Unable to use cudnn subsampling  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
-                    }
-
-                    log.warn("Returning class loader to original one.");
-                    DL4JClassLoading.setDl4jClassloader(classLoader);
-                }
-            }
-
-            if (helper != null && !helper.checkSupported()) {
-                helper = null;
-            }
-
-            if(helper != null) {
-                log.debug("CudnnSubsamplingHelper successfully initialized");
-            }
-
-        } else if("CPU".equalsIgnoreCase(backend) ){
-            helper = new MKLDNNSubsamplingHelper(dataType);
-            log.trace("Created MKL-DNN helper: MKLDNNSubsamplingHelper, layer {}", layerConf().getLayerName());
-        }
-
-        if (helper != null && !helper.checkSupported()) {
-            log.debug("Removed helper {} as not supported", helper.getClass());
-            helper = null;
-        }
+        helper = HelperUtils.createHelper(
+                CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
+                MKLDNNSubsamplingHelper.class.getName(),
+                dataType,
+                SubsamplingHelper.class,
+                layerConf().getLayerName());
     }
 
     @Override

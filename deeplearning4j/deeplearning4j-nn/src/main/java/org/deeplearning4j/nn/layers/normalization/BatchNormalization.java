@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNBatchNormHelper;
 import org.deeplearning4j.nn.layers.recurrent.LSTMHelper;
@@ -70,41 +71,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-
-        if ("CUDA".equalsIgnoreCase(backend)) {
-            if(DL4JClassLoading.loadClassByName(BATCH_NORM_CUDNN_HELPER_CLASS_NAME) != null) {
-                helper = DL4JClassLoading.createNewInstance(
-                        BATCH_NORM_CUDNN_HELPER_CLASS_NAME,
-                        BatchNormalizationHelper.class,
-                        dataType);
-                log.debug("CudnnBatchNormalizationHelper successfully initialized");
-
-            } else {
-                log.warn("Unable to find class " + BATCH_NORM_CUDNN_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
-                synchronized (this) {
-                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
-                    DL4JClassLoading.setDl4jClassloaderFromClass(BatchNormalizationHelper.class);
-                    try {
-                        helper = DL4JClassLoading.createNewInstance(
-                                BATCH_NORM_CUDNN_HELPER_CLASS_NAME,
-                                BatchNormalizationHelper.class,
-                                dataType);
-                    } catch(Exception e) {
-                        log.warn("Unable to use cudnn batch normalization  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
-                    }
-
-                    log.warn("Returning class loader to original one.");
-                    DL4JClassLoading.setDl4jClassloader(classLoader);
-
-                }
-            }
-
-        } else if ("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNBatchNormHelper(dataType);
-            log.trace("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
-        }
-
+        helper = HelperUtils.createHelper(BATCH_NORM_CUDNN_HELPER_CLASS_NAME,MKLDNNBatchNormHelper.class.getName(),dataType,BatchNormalizationHelper.class,layerConf().getLayerName());
+        //specific helper with alpha/beta, keep this last check around
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
             log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());
             helper = null;

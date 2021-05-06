@@ -59,7 +59,7 @@ public class HelperUtils {
                         cudnnHelperClassName,
                         layerHelperSuperClazz,
                         dataType);
-                log.debug("CudnnSubsamplingHelper successfully initialized");
+                log.debug("Cudnn heper {} successfully initialized",cudnnHelperClassName);
 
             }
             else {
@@ -73,7 +73,7 @@ public class HelperUtils {
                             dataType);
 
                 } catch (Exception e) {
-                    log.warn("Unable to use cudnn subsampling  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
+                    log.warn("Unable to use  helper {}, please check your classpath. Falling back to built in  normal  methods for now.",cudnnHelperClassName);
                 }
 
                 log.warn("Returning class loader to original one.");
@@ -86,7 +86,7 @@ public class HelperUtils {
             }
 
             if(helperRet != null) {
-                log.debug("{}} successfully initialized",cudnnHelperClassName);
+                log.debug("{} successfully initialized",cudnnHelperClassName);
             }
 
         } else if("CPU".equalsIgnoreCase(backend)) {
@@ -101,6 +101,8 @@ public class HelperUtils {
             log.debug("Removed helper {} as not supported", helperRet.getClass());
             return null;
         }
+
+        return helperRet;
     }
 
 }
