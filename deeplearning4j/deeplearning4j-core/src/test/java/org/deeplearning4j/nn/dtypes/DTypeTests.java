@@ -200,7 +200,7 @@ public class DTypeTests extends BaseDL4JTest {
         ImmutableSet<ClassPath.ClassInfo> info;
         try {
             //Dependency note: this ClassPath class was added in Guava 14
-            info = org.nd4j.shade.guava.reflect.ClassPath.from(DTypeTests.class.getClassLoader())
+            info = ClassPath.from(DTypeTests.class.getClassLoader())
                     .getTopLevelClassesRecursive("org.deeplearning4j");
         } catch (IOException e) {
             //Should never happen

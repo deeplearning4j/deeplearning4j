@@ -61,10 +61,10 @@ class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
         int[] workers;
         if (isIntegrationTests()) {
             numParams = 100000;
-            workers = new int[] { 2, 4, 8 };
+            workers = new int[] { 1,Nd4j.getAffinityManager().getNumberOfDevices() };
         } else {
             numParams = 10000;
-            workers = new int[] { 2, 3 };
+            workers = new int[] { 1,Nd4j.getAffinityManager().getNumberOfDevices() };
         }
         for (int numWorkers : workers) {
             EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);

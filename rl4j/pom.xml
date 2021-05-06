@@ -167,6 +167,16 @@
         </profile>
         <profile>
             <id>nd4j-tests-cuda</id>
+            <properties>
+                <!-- Note we put these properties here because the cuda modules themselves  have the cuda version tied to the artifact name. This allows us to use variables for the testing.  -->
+                <cuda.version>11.0</cuda.version>
+                <cudnn.version>8.0</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+                <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
+                <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
+
+            </properties>
+
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
@@ -174,6 +184,20 @@
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
+
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>deeplearning4j-cuda-11.0</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>cuda-platform-redist</artifactId>
+                    <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
             </dependencies>
             <build>
                 <plugins>
@@ -181,6 +205,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <environmentVariables>
+                                <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
+                            </environmentVariables>
                             <parallelMavenExecution>false</parallelMavenExecution>
                             <parallel>false</parallel>
                             <forkCount>0</forkCount>
