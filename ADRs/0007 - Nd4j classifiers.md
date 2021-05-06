@@ -22,7 +22,7 @@ ids to the project, the following javacpp platform extensions are used:
 compiled type (avx etc or blank if normal) - software linked against (cudnn, onednn, armcompute) - version 
 
 
-An example for onednn could be:
+An example for the one dnn platform extension could be:
 dnnl-2.2
 avx256-dnnl-2.2
 
