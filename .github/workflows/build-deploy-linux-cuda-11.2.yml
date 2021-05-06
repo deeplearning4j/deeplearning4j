@@ -150,14 +150,14 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           bash ./change-cuda-versions.sh 11.2
-          command="mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\"   -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
+          command="mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64   -Dlibnd4j.helper=cudnn -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
-                       "Running build and deploying to snapshots"
+                       echo "Running build and deploying to snapshots"
                        eval "$command"
           fi
 

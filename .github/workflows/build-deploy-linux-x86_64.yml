@@ -145,8 +145,12 @@ jobs:
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           if [ -z "${EXTENSION}" ]; then
               echo "Extensions specified. This needs a newer version of gcc."
-              sudo apt-get install gcc-7 
+              sudo apt-get install gcc-7
           fi
+          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
+          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
+          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
+          sudo cp /usr/lib/gcc/x86_64-linux-gnu/`gcc --version | head -n 1 | grep -o '[^ ]*$'` /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
           command="mvn  -X  -Possrh  -Dlibnd4j.helper=${HELPER} -Dlibnd4j.extension=${EXTENSION} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
@@ -162,5 +166,5 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled  }}
 

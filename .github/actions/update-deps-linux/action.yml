@@ -60,4 +60,4 @@ runs:
         sudo apt-get install pinentry-curses
         #echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
         #gpg-connect-agent reloadagent /bye
-        sudo apt-get install ca-certificates
+        sudo apt-get install ca-certificates libgomp1

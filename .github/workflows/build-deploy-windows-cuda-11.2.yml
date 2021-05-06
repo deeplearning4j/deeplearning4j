@@ -129,7 +129,7 @@ jobs:
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          COMMAND: "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests"
+          COMMAND: "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda  -Dlibnd4j.helper=cudnn clean  --batch-mode deploy -DskipTests"
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           LIBND4J_HOME_SUFFIX: cuda
@@ -153,7 +153,7 @@ jobs:
                     ) else (
                         echo "Running snapshots"
                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                        mvn -T ${{ github.event.inputs.buildThreads }} -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
+                        mvn -T ${{ github.event.inputs.buildThreads }} -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=cudnn -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.2,:deeplearning4j-cuda-11.2,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
               )
           )
 

@@ -73,8 +73,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
             layer.setInputMiniBatchSize(miniBatchSize);
 
-            INDArray activations3dc = Nd4j.create(new int[] {miniBatchSize, layerSize, timeSeriesLength}, 'c');
-            INDArray activations3df = Nd4j.create(new int[] {miniBatchSize, layerSize, timeSeriesLength}, 'f');
+            INDArray activations3dc = Nd4j.create(new int[] {miniBatchSize, layerSize, timeSeriesLength}, 'c').castTo(params.dataType());
+            INDArray activations3df = Nd4j.create(new int[] {miniBatchSize, layerSize, timeSeriesLength}, 'f').castTo(params.dataType());
             for (int i = 0; i < miniBatchSize; i++) {
                 for (int j = 0; j < layerSize; j++) {
                     for (int k = 0; k < timeSeriesLength; k++) {
@@ -497,7 +497,7 @@ public class TestPreProcessors extends BaseDL4JTest {
 
 
     @Test
-    public void testPreprocessorVertex(){
+    public void testPreprocessorVertex() {
         for(boolean withMinibatchDim : new boolean[]{true, false}){
             long[] inShape = withMinibatchDim ? new long[]{-1, 32} : new long[]{32};
             long[] targetShape = withMinibatchDim ? new long[]{-1, 2, 4, 4} : new long[]{2, 4, 4};
@@ -511,7 +511,35 @@ public class TestPreProcessors extends BaseDL4JTest {
 
                 ReshapePreprocessor pp = new ReshapePreprocessor(inShape, targetShape, withMinibatchDim);
 
-                for( int i=0; i<3; i++ ) {
+                for( int i = 0; i < 3; i++) {
+                    INDArray out = pp.preProcess(in, (int) minibatch, LayerWorkspaceMgr.noWorkspaces());
+                    INDArray expOut = in.reshape(targetArrayShape);
+                    assertEquals(expOut, out);
+
+                    INDArray backprop = pp.backprop(expOut, (int)minibatch, LayerWorkspaceMgr.noWorkspaces());
+                    assertEquals(in, backprop);
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testPreprocessorVertex3d() {
+        for(boolean withMinibatchDim : new boolean[]{true, false}) {
+            long[] inShape = withMinibatchDim ? new long[]{-1, 64} : new long[]{64};
+            long[] targetShape = withMinibatchDim ? new long[]{-1, 2, 4, 4,2} : new long[]{2, 4, 4,2};
+
+            for( long minibatch : new long[]{1, 3}) {
+                long[] inArrayShape = new long[]{minibatch, 64};
+                long[] targetArrayShape = new long[]{minibatch, 2, 4, 4,2};
+                long length = minibatch * 64;
+
+                INDArray in = Nd4j.linspace(1, length, length).reshape('c', inArrayShape);
+
+                ReshapePreprocessor pp = new ReshapePreprocessor(inShape, targetShape, withMinibatchDim);
+
+                for( int i = 0; i < 3; i++) {
                     INDArray out = pp.preProcess(in, (int) minibatch, LayerWorkspaceMgr.noWorkspaces());
                     INDArray expOut = in.reshape(targetArrayShape);
                     assertEquals(expOut, out);
