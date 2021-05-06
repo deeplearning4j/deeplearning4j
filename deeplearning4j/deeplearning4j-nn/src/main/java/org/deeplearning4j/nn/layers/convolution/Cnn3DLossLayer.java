@@ -74,7 +74,7 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         long n = input.size(0);
         long d, h, w, c;
-        if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
+        if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC) {
             d = input.size(1);
             h = input.size(2);
             w = input.size(3);
