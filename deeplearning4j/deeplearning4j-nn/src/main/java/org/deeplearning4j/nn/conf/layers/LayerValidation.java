@@ -53,7 +53,7 @@ public class LayerValidation {
             if (layerName == null)
                 layerName = "(name not set)";
             throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName + ") nIn="
-                            + nIn + ", nOut=" + nOut + "; nIn and nOut must be > 0");
+                    + nIn + ", nOut=" + nOut + "; nIn and nOut must be > 0");
         }
     }
 
@@ -70,13 +70,13 @@ public class LayerValidation {
             if (layerName == null)
                 layerName = "(name not set)";
             throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName + ") nOut="
-                            + nOut + "; nOut must be > 0");
+                    + nOut + "; nOut must be > 0");
         }
     }
 
     public static void generalValidation(String layerName, Layer layer, IDropout iDropout, List<Regularization> regularization,
                                          List<Regularization> regularizationBias, List<LayerConstraint> allParamConstraints,
-                    List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
+                                         List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
 
         if (layer != null) {
             if (layer instanceof BaseLayer) {
@@ -88,9 +88,9 @@ public class LayerValidation {
             } else if (layer instanceof Bidirectional) {
                 Bidirectional l = (Bidirectional) layer;
                 generalValidation(layerName, l.getFwd(), iDropout, regularization, regularizationBias, allParamConstraints,
-                                weightConstraints, biasConstraints);
+                        weightConstraints, biasConstraints);
                 generalValidation(layerName, l.getBwd(), iDropout, regularization, regularizationBias, allParamConstraints,
-                                weightConstraints, biasConstraints);
+                        weightConstraints, biasConstraints);
             }
 
             if (layer.getConstraints() == null || layer.constraints.isEmpty()) {
@@ -128,84 +128,72 @@ public class LayerValidation {
         }
     }
 
-	private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout,
-			List<Regularization> regularization, List<Regularization> regularizationBias) {
-		if (regularization != null && !regularization.isEmpty()) {
+    private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout,
+                                           List<Regularization> regularization, List<Regularization> regularizationBias) {
+        if (regularization != null && !regularization.isEmpty()) {
+            final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularization());
+            if (bLayerRegs == null || bLayerRegs.isEmpty()) {
+                bLayer.setRegularization(regularization);
+            } else {
+                boolean hasL1 = false;
+                boolean hasL2 = false;
+                final List<Regularization> regContext = regularization;
+                for (final Regularization reg : bLayerRegs) {
+                    if (reg instanceof L1Regularization) {
+                        hasL1 = true;
+                    } else if (reg instanceof L2Regularization) {
+                        hasL2 = true;
+                    }
+                }
+                for (final Regularization reg : regContext) {
+                    if (reg instanceof L1Regularization) {
+                        if (!hasL1)
+                            bLayerRegs.add(reg);
+                    } else if (reg instanceof L2Regularization) {
+                        if (!hasL2)
+                            bLayerRegs.add(reg);
+                    } else
+                        bLayerRegs.add(reg);
+                }
+            }
 
-			final List<Regularization> bLayerRegs = bLayer.getRegularization();
-			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
+            bLayer.setRegularization(bLayerRegs);
+        }
 
-				bLayer.setRegularization(regularization);
-			} else {
 
-				boolean hasL1 = false;
-				boolean hasL2 = false;
-				final List<Regularization> regContext = regularization;
-				for (final Regularization reg : bLayerRegs) {
+        if (regularizationBias != null && !regularizationBias.isEmpty()) {
+            final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
+            if (bLayerRegs == null || bLayerRegs.isEmpty()) {
+                bLayer.setRegularizationBias(regularizationBias);
+            } else {
+                boolean hasL1 = false;
+                boolean hasL2 = false;
+                final List<Regularization> regContext = regularizationBias;
+                for (final Regularization reg : bLayerRegs) {
+                    if (reg instanceof L1Regularization) {
+                        hasL1 = true;
+                    } else if (reg instanceof L2Regularization) {
+                        hasL2 = true;
+                    }
+                }
+                for (final Regularization reg : regContext) {
+                    if (reg instanceof L1Regularization) {
+                        if (!hasL1)
+                            bLayerRegs.add(reg);
+                    } else if (reg instanceof L2Regularization) {
 
-					if (reg instanceof L1Regularization) {
+                        if (!hasL2)
+                            bLayerRegs.add(reg);
+                    } else
+                        bLayerRegs.add(reg);
+                }
+            }
 
-						hasL1 = true;
-					} else if (reg instanceof L2Regularization) {
+            bLayer.setRegularizationBias(bLayerRegs);
+        }
 
-						hasL2 = true;
-					}
-				}
-				for (final Regularization reg : regContext) {
-
-					if (reg instanceof L1Regularization) {
-
-						if (!hasL1)
-							bLayerRegs.add(reg);
-					} else if (reg instanceof L2Regularization) {
-
-						if (!hasL2)
-							bLayerRegs.add(reg);
-					} else
-						bLayerRegs.add(reg);
-				}
-			}
-		}
-		if (regularizationBias != null && !regularizationBias.isEmpty()) {
-
-			final List<Regularization> bLayerRegs = bLayer.getRegularizationBias();
-			if (bLayerRegs == null || bLayerRegs.isEmpty()) {
-
-				bLayer.setRegularizationBias(regularizationBias);
-			} else {
-
-				boolean hasL1 = false;
-				boolean hasL2 = false;
-				final List<Regularization> regContext = regularizationBias;
-				for (final Regularization reg : bLayerRegs) {
-
-					if (reg instanceof L1Regularization) {
-
-						hasL1 = true;
-					} else if (reg instanceof L2Regularization) {
-
-						hasL2 = true;
-					}
-				}
-				for (final Regularization reg : regContext) {
-
-					if (reg instanceof L1Regularization) {
-
-						if (!hasL1)
-							bLayerRegs.add(reg);
-					} else if (reg instanceof L2Regularization) {
-
-						if (!hasL2)
-							bLayerRegs.add(reg);
-					} else
-						bLayerRegs.add(reg);
-				}
-			}
-		}
-
-		if (bLayer.getIDropout() == null) {
-
-			bLayer.setIDropout(iDropout);
-		}
-	}
+        if (bLayer.getIDropout() == null) {
+            bLayer.setIDropout(iDropout);
+        }
+    }
 }
