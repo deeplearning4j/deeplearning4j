@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
@@ -107,44 +108,12 @@ public class Dropout implements IDropout {
      * Initialize the CuDNN dropout helper, if possible
      */
     protected void initializeHelper(DataType dataType){
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        helper = HelperUtils.createHelper(CUDNN_DROPOUT_HELPER_CLASS_NAME,
+                "",dataType,
+                DropoutHelper.class,
+                "dropout-helper");
 
-        if("CUDA".equalsIgnoreCase(backend)) {
-            if(DL4JClassLoading.loadClassByName(CUDNN_DROPOUT_HELPER_CLASS_NAME) != null) {
-                helper = DL4JClassLoading.createNewInstance(
-                        CUDNN_DROPOUT_HELPER_CLASS_NAME,
-                        DropoutHelper.class,
-                        dataType);
-            } else {
-                log.warn("Unable to find class " + CUDNN_DROPOUT_HELPER_CLASS_NAME + " using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.");
-                synchronized (this) {
-                    ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
-                    DL4JClassLoading.setDl4jClassloaderFromClass(DropoutHelper.class);
-                    try {
-                        helper = DL4JClassLoading.createNewInstance(
-                                CUDNN_DROPOUT_HELPER_CLASS_NAME,
-                                DropoutHelper.class,
-                                dataType);
-
-                    } catch (Exception e) {
-                        log.warn("Unable to use cudnn dropout  helper, please check your classpath. Falling back to built in  normal convolution methods for now.");
-                    }
-
-                    log.warn("Returning class loader to original one.");
-                    DL4JClassLoading.setDl4jClassloader(classLoader);
-                }
-            }
-
-            if (helper != null && !helper.checkSupported()) {
-                helper = null;
-            }
-
-            if(helper != null) {
-                log.debug("CudnnDropoutHelper successfully initialized");
-            }
-        }
-
-        initializedHelper = true;
+        initializedHelper = helper != null;
     }
 
     @Override

@@ -41,7 +41,7 @@ public class HelperUtils {
      * @param cudnnHelperClassName the cudnn class name
      * @param oneDnnClassName the one dnn class name
      * @param dataType the datatype to be used in the layer
-     * @param layerHelperSuperClazz the layer helper super class
+     * @param layerHelperSuperClass the layer helper super class
      * @param layerName the name of the layer to be created
      * @param <T> the actual class type to be returned
      * @return
@@ -49,7 +49,7 @@ public class HelperUtils {
     public static <T extends LayerHelper> T createHelper(String cudnnHelperClassName,
                                                          String oneDnnClassName,
                                                          DataType dataType,
-                                                         Class<? extends LayerHelper> layerHelperSuperClazz,
+                                                         Class<? extends LayerHelper> layerHelperSuperClass,
                                                          String layerName) {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         T helperRet = null;
@@ -57,19 +57,19 @@ public class HelperUtils {
             if(DL4JClassLoading.loadClassByName(cudnnHelperClassName) != null) {
                 helperRet =  DL4JClassLoading.createNewInstance(
                         cudnnHelperClassName,
-                        layerHelperSuperClazz,
+                        layerHelperSuperClass,
                         dataType);
-                log.debug("Cudnn heper {} successfully initialized",cudnnHelperClassName);
+                log.debug("Cudnn helper {} successfully initialized",cudnnHelperClassName);
 
             }
             else {
                 log.warn("Unable to find class {}  using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded this class instead.",cudnnHelperClassName);
                 ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
-                DL4JClassLoading.setDl4jClassloaderFromClass(layerHelperSuperClazz);
+                DL4JClassLoading.setDl4jClassloaderFromClass(layerHelperSuperClass);
                 try {
                     return DL4JClassLoading.createNewInstance(
                             cudnnHelperClassName,
-                            layerHelperSuperClazz,
+                            layerHelperSuperClass,
                             dataType);
 
                 } catch (Exception e) {
@@ -92,7 +92,7 @@ public class HelperUtils {
         } else if("CPU".equalsIgnoreCase(backend)) {
             helperRet =  DL4JClassLoading.createNewInstance(
                     oneDnnClassName,
-                    layerHelperSuperClazz,
+                    layerHelperSuperClass,
                     dataType);
             log.trace("Created oneDNN helper: {}, layer {}", oneDnnClassName,layerName);
         }
