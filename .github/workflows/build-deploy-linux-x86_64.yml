@@ -146,6 +146,7 @@ jobs:
           if [ -z "${EXTENSION}" ]; then
               echo "Extensions specified. This needs a newer version of gcc."
               sudo apt-get install gcc-7
+              gcc --version
           fi
           # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
           # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
