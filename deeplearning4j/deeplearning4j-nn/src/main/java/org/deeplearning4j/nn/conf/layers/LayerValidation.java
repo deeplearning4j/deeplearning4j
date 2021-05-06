@@ -131,7 +131,7 @@ public class LayerValidation {
     private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout,
                                            List<Regularization> regularization, List<Regularization> regularizationBias) {
         if (regularization != null && !regularization.isEmpty()) {
-            final List<Regularization> bLayerRegs = bLayer.getRegularization();
+            final List<Regularization> bLayerRegs = new ArrayList<>(bLayer.getRegularization());
             if (bLayerRegs == null || bLayerRegs.isEmpty()) {
                 bLayer.setRegularization(regularization);
             } else {
@@ -139,9 +139,7 @@ public class LayerValidation {
                 boolean hasL2 = false;
                 final List<Regularization> regContext = regularization;
                 for (final Regularization reg : bLayerRegs) {
-
                     if (reg instanceof L1Regularization) {
-
                         hasL1 = true;
                     } else if (reg instanceof L2Regularization) {
                         hasL2 = true;
@@ -149,7 +147,6 @@ public class LayerValidation {
                 }
                 for (final Regularization reg : regContext) {
                     if (reg instanceof L1Regularization) {
-
                         if (!hasL1)
                             bLayerRegs.add(reg);
                     } else if (reg instanceof L2Regularization) {
