@@ -893,7 +893,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .build())
                 .build();
 
-        File f = testDir.toFile();
+        File f = testDir.resolve("test-dir").toFile();
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new LocalFileModelSaver(f.getAbsolutePath());
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
                 new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()

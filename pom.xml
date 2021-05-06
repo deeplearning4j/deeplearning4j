@@ -850,6 +850,14 @@
 
     <profiles>
         <profile>
+            <id>parallel-tests</id>
+            <properties>
+                <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
+                <junit.jupiter.execution.parallel.mode.default>concurrent</junit.jupiter.execution.parallel.mode.default>
+            </properties>
+        </profile>
+
+        <profile>
             <id>github</id>
             <distributionManagement>
                 <repository>
