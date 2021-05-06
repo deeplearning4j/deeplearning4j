@@ -73,7 +73,7 @@ public class HelperUtils {
                             dataType);
 
                 } catch (Exception e) {
-                    log.warn("Unable to use  helper {}, please check your classpath. Falling back to built in  normal  methods for now.",cudnnHelperClassName);
+                    log.warn("Unable to use  helper implementation {} for helper type {}, please check your classpath. Falling back to built in  normal  methods for now.",cudnnHelperClassName,layerHelperSuperClass.getName());
                 }
 
                 log.warn("Returning class loader to original one.");
