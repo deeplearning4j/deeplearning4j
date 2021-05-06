@@ -37,4 +37,5 @@ public interface LayerHelper {
      */
     Map<String,Long> helperMemoryUse();
 
+    boolean checkSupported();
 }
