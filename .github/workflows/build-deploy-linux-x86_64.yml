@@ -143,15 +143,18 @@ jobs:
           protoc --version
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
           if [ -z "${EXTENSION}" ]; then
+              export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
               echo "Extensions specified. This needs a newer version of gcc."
               sudo apt-get install gcc-7
+              echo "Using newer version of libgomp."
               gcc --version
           fi
           # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
           # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
           # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
-          sudo cp /usr/lib/gcc/x86_64-linux-gnu/`gcc --version | head -n 1 | grep -o '[^ ]*$'` /usr/lib
+          sudo cp "${LIBGOMP_PATH"} /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
           command="mvn  -X  -Possrh  -Dlibnd4j.helper=${HELPER} -Dlibnd4j.extension=${EXTENSION} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
@@ -167,4 +170,4 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-       
+
