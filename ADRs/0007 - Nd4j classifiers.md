@@ -32,7 +32,7 @@ both linking against dnnl/onednn 2.2.
 
 ## Discussion
 
-Saudet: Javacpp's extensions can acctually support optional
+Saudet: Javacpp's extensions can actually support optional
 inclusion. It plays well with other platform declarations.
 This means you can use platform like:
 ```bash
