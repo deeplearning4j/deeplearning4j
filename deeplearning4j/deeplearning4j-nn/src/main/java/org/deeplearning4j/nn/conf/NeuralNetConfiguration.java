@@ -1155,6 +1155,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
+
             LayerValidation.generalValidation(layerName, layer, idropOut, regularization, regularizationBias,
                     allParamConstraints, weightConstraints, biasConstraints);
         }
@@ -1169,9 +1170,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
                 if (bLayer.getRegularization() == null || bLayer.getRegularization().isEmpty())
-                    bLayer.setRegularization(regularization);
+                    bLayer.setRegularization(new ArrayList<>(regularization));
                 if (bLayer.getRegularizationBias() == null || bLayer.getRegularizationBias().isEmpty())
-                    bLayer.setRegularizationBias(regularizationBias);
+                    bLayer.setRegularizationBias(new ArrayList<>(regularizationBias));
                 if (bLayer.getActivationFn() == null)
                     bLayer.setActivationFn(activationFn);
                 if (bLayer.getWeightInitFn() == null)
