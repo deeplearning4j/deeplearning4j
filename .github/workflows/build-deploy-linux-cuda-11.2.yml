@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn ]
+        helper: [ cudnn,none ]
         extension: [ none  ]
     runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci
@@ -146,6 +146,7 @@ jobs:
           MAVEN_OPTS: -Xmx2g
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          COMMAND: mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64    -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests
 
 
         run: |
@@ -158,15 +159,14 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           bash ./change-cuda-versions.sh 11.2
-          command="mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64    -Dlibnd4j.helper=${HELPER} -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                    else
                        echo "Running build and deploying to snapshots"
-                       eval "$command"
+                       eval "${COMMAND}"
           fi
 
       - name: Setup tmate session

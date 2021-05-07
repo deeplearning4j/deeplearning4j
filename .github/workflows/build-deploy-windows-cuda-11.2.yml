@@ -67,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn ]
+        helper: [ cudnn,none ]
         extension: [ none ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
