@@ -159,7 +159,7 @@ jobs:
           if [ "${HELPER}" -eq "cudnn"]; then
               export CUDNN_ROOT_DIR="${CUDA_PATH}/"
               echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
-              sudo mv "${CUDA_PATH}/cuda/* ${CUDA_PATH}"
+              sudo mv "${CUDA_PATH}/cuda/*" "${CUDA_PATH}"
           fi
 
           echo "CUDA PATH"
