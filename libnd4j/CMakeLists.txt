@@ -291,7 +291,7 @@ if (${HELPERS_cudnn})
         message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
     endif()
 
-    set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
+    #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
     SET(CUDNN_LIBNAME "cudnn")
     find_path(CUDNN_INCLUDE_DIR cudnn.h
