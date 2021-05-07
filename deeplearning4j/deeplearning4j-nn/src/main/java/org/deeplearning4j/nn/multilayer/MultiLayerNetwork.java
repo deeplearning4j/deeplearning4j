@@ -2250,7 +2250,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public int[] predict(INDArray d) {
-        INDArray output = output(d, Layer.TrainingMode.TEST);
+        INDArray output = output(d, TrainingMode.TEST);
 
         if (d.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
@@ -3197,8 +3197,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (layer < 0 || layer >= layers.length)
             throw new IllegalArgumentException("Invalid layer number");
         Layer l = layers[layer];
-        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
-            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        if(l instanceof BaseWrapperLayer){
+            l = ((BaseWrapperLayer)l).getUnderlying();
         }
         if (!(l instanceof RecurrentLayer))
             throw new IllegalArgumentException("Layer is not an RNN layer");
@@ -3213,8 +3213,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (layer < 0 || layer >= layers.length)
             throw new IllegalArgumentException("Invalid layer number");
         Layer l = layers[layer];
-        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
-            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        if(l instanceof BaseWrapperLayer){
+            l = ((BaseWrapperLayer)l).getUnderlying();
         }
         if (!(l instanceof RecurrentLayer))
             throw new IllegalArgumentException("Layer is not an RNN layer");
@@ -3375,7 +3375,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Can only be used with MultiDataSetIterator instances with a single input/output array
      * @param iterator Data to evaluate on
      */
-    public org.nd4j.evaluation.regression.RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator) {
+    public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator) {
         return evaluateRegression(new MultiDataSetWrapperIterator(iterator));
     }
 
@@ -3678,7 +3678,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         int frozenParams = 0;
-        for (org.deeplearning4j.nn.api.Layer currentLayer : getLayers()) {
+        for (Layer currentLayer : getLayers()) {
             String name = currentLayer.conf().getLayer().getLayerName();
             if (name == null) {
                 name = String.valueOf(currentLayer.getIndex());

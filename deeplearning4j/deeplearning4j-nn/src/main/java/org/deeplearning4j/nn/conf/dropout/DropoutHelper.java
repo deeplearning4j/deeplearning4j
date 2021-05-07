@@ -20,9 +20,10 @@
 
 package org.deeplearning4j.nn.conf.dropout;
 
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-public interface DropoutHelper {
+public interface DropoutHelper extends LayerHelper {
 
     /**
      * @return Check if this dropout helper is supported in the current environment

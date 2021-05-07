@@ -350,8 +350,8 @@ public class NetworkUtils {
      * @param model Model to use
      * @param input Inputs to the model
      * @return output Outputs of the model
-     * @see org.deeplearning4j.nn.graph.ComputationGraph#outputSingle(INDArray...)
-     * @see org.deeplearning4j.nn.multilayer.MultiLayerNetwork#output(INDArray)
+     * @see ComputationGraph#outputSingle(INDArray...)
+     * @see MultiLayerNetwork#output(INDArray)
      */
     public static INDArray output(Model model, INDArray input) {
 

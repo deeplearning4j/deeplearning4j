@@ -40,7 +40,7 @@ import java.util.Map;
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.layers.FeedForwardLayer {
+public class ElementWiseMultiplicationLayer extends FeedForwardLayer {
 
     //  We have to add an empty constructor for custom layers otherwise we will have errors when loading the model
     protected ElementWiseMultiplicationLayer() {}
@@ -119,7 +119,7 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
 
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<ElementWiseMultiplicationLayer.Builder> {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         @Override
         @SuppressWarnings("unchecked")

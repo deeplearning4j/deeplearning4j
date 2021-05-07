@@ -36,7 +36,7 @@ public interface ParamInitializer {
 
     long numParams(NeuralNetConfiguration conf);
 
-    long numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
+    long numParams(Layer layer);
 
     /**
      * Get a list of all parameter keys given the layer configuration
@@ -44,7 +44,7 @@ public interface ParamInitializer {
      * @param layer Layer
      * @return All parameter keys
      */
-    List<String> paramKeys(org.deeplearning4j.nn.conf.layers.Layer layer);
+    List<String> paramKeys(Layer layer);
 
     /**
      * Weight parameter keys given the layer configuration
@@ -52,7 +52,7 @@ public interface ParamInitializer {
      * @param layer Layer
      * @return Weight parameter keys
      */
-    List<String> weightKeys(org.deeplearning4j.nn.conf.layers.Layer layer);
+    List<String> weightKeys(Layer layer);
 
     /**
      * Bias parameter keys given the layer configuration
@@ -60,7 +60,7 @@ public interface ParamInitializer {
      * @param layer Layer
      * @return Bias parameter keys
      */
-    List<String> biasKeys(org.deeplearning4j.nn.conf.layers.Layer layer);
+    List<String> biasKeys(Layer layer);
 
     /**
      * Is the specified parameter a weight?

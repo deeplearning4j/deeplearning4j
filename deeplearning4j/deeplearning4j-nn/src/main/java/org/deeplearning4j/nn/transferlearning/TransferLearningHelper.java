@@ -172,7 +172,7 @@ public class TransferLearningHelper {
             Collections.addAll(allFrozen, frozenOutputAt);
         }
         for (int i = 0; i < backPropOrder.length; i++) {
-            org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
+            GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
             if (applyFrozen && allFrozen.contains(gv.getVertexName())) {
                 if (gv.hasLayer()) {
                     //Need to freeze this layer
@@ -217,7 +217,7 @@ public class TransferLearningHelper {
             }
         }
         for (int i = 0; i < backPropOrder.length; i++) {
-            org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
+            GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
             String gvName = gv.getVertexName();
             //is it an unfrozen vertex that has an input vertex that is frozen?
             if (!allFrozen.contains(gvName) && !gv.isInputVertex()) {

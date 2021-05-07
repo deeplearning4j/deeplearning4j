@@ -126,7 +126,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, rnnDataFormat,getLayerName());
     }
 
-    public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
+    public static class Builder extends BaseConvBuilder<Builder> {
 
         private RNNFormat rnnDataFormat = RNNFormat.NCW;
 

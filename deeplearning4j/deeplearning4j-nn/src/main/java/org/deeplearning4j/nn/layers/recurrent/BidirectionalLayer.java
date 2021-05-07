@@ -592,6 +592,11 @@ public class BidirectionalLayer implements RecurrentLayer {
             }
             return ret;
         }
+
+        @Override
+        public boolean checkSupported() {
+            return true;
+        }
     }
 
     @Override

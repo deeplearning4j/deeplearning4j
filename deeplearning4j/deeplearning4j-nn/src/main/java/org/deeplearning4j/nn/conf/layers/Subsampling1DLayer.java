@@ -136,7 +136,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         return clone;
     }
 
-    public static class Builder extends SubsamplingLayer.BaseSubsamplingBuilder<Builder> {
+    public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
         private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
                         org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
@@ -216,7 +216,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          *
          * @param kernelSize kernel size
          */
-        public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
+        public Builder kernelSize(int kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
@@ -226,7 +226,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          *
          * @param stride stride value
          */
-        public Subsampling1DLayer.Builder stride(int stride) {
+        public Builder stride(int stride) {
             this.setStride(stride);
             return this;
         }
@@ -236,7 +236,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          *
          * @param padding padding value
          */
-        public Subsampling1DLayer.Builder padding(int padding) {
+        public Builder padding(int padding) {
             this.setPadding(padding);
             return this;
         }

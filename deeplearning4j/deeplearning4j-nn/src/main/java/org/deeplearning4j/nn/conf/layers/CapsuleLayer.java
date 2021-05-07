@@ -86,7 +86,7 @@ public class CapsuleLayer extends SameDiffLayer {
         }
 
         if(inputCapsules <= 0 || inputCapsuleDimensions <= 0){
-            InputType.InputTypeRecurrent ir = (InputTypeRecurrent) inputType;
+            InputTypeRecurrent ir = (InputTypeRecurrent) inputType;
             inputCapsules = ir.getSize();
             inputCapsuleDimensions = ir.getTimeSeriesLength();
         }

@@ -61,7 +61,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
     }
 
     public GlobalPoolingLayer(PoolingType poolingType) {
-        this(new GlobalPoolingLayer.Builder().poolingType(poolingType));
+        this(new Builder().poolingType(poolingType));
     }
 
 

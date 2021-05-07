@@ -126,7 +126,7 @@ public class DropoutLayer extends FeedForwardLayer {
 
 
     @NoArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         /**
          * Create a dropout layer with standard {@link Dropout}, with the specified probability of retaining the input

@@ -99,7 +99,7 @@ public class SimpleRnn extends BaseRecurrentLayer {
          *
          */
         private boolean hasLayerNorm = false;
-        public SimpleRnn.Builder hasLayerNorm(boolean hasLayerNorm){
+        public Builder hasLayerNorm(boolean hasLayerNorm){
             this.hasLayerNorm = hasLayerNorm;
             return this;
         }

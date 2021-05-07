@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -63,7 +64,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected ConvolutionMode convolutionMode;
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
-
+    public final static String CUDA_CNN_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper";
     public ConvolutionLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
         initializeHelper();
@@ -71,25 +72,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            helper = DL4JClassLoading.createNewInstance(
-                    "org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper",
-                    ConvolutionHelper.class,
-                    dataType);
-            log.debug("CudnnConvolutionHelper successfully initialized");
-            if (!helper.checkSupported()) {
-                helper = null;
-            }
-        } else if("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNConvHelper(dataType);
-            log.trace("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
-        }
-
-        if (helper != null && !helper.checkSupported()) {
-            log.debug("Removed helper {} as not supported", helper.getClass());
-            helper = null;
-        }
+        helper = HelperUtils.createHelper(CUDA_CNN_HELPER_CLASS_NAME,
+                MKLDNNConvHelper.class.getName(),
+                dataType,
+                ConvolutionHelper.class,layerConf().getLayerName());
     }
 
     @Override

@@ -1087,7 +1087,7 @@ public class VariationalAutoencoder implements Layer {
     /**
      * Return the reconstruction error for this variational autoencoder.<br>
      * <b>NOTE (important):</b> This method is used ONLY for VAEs that have a standard neural network loss function (i.e.,
-     * an {@link org.nd4j.linalg.lossfunctions.ILossFunction} instance such as mean squared error) instead of using a
+     * an {@link ILossFunction} instance such as mean squared error) instead of using a
      * probabilistic reconstruction distribution P(x|z) for the reconstructions (as presented in the VAE architecture by
      * Kingma and Welling).<br>
      * You can check if the VAE has a loss function using {@link #hasLossFunction()}<br>
