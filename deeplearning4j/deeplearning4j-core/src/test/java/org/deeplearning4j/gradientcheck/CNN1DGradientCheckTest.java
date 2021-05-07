@@ -59,7 +59,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
-@Disabled("To be looked in to")
 class CNN1DGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -79,6 +78,12 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
     @Override
     public long getTimeoutMilliseconds() {
         return 180000;
+    }
+
+    static NeuralNetConfiguration.Builder getConfigurationBuilder(){
+        //manually set seed to be able to reproduce the same numbers in the case of failures.
+        //use double type for gradient checks
+        return new NeuralNetConfiguration.Builder().seed(2021).dataType(DataType.DOUBLE).updater(new NoOp());
     }
 
     @Test
@@ -105,7 +110,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                             labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
                         }
                     }
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1).rnnDataFormat(RNNFormat.NCW).build()).layer(new LocallyConnected1D.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2).hasBias(false).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length)).build();
+                    MultiLayerConfiguration conf = getConfigurationBuilder().dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1).rnnDataFormat(RNNFormat.NCW).build()).layer(new LocallyConnected1D.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2).hasBias(false).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length)).build();
                     String json = conf.toJson();
                     MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                     assertEquals(conf, c2);
@@ -153,7 +158,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
                             }
                         }
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(new Cropping1D.Builder(cropping).build()).layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
+                        MultiLayerConfiguration conf = getConfigurationBuilder().dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(new Cropping1D.Builder(cropping).build()).layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                         assertEquals(conf, c2);
@@ -204,7 +209,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
                             }
                         }
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(new ZeroPadding1DLayer.Builder(zeroPadding).build()).layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(new ZeroPadding1DLayer.Builder(0).build()).layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
+                        MultiLayerConfiguration conf = getConfigurationBuilder().dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(new ZeroPadding1DLayer.Builder(zeroPadding).build()).layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(new ZeroPadding1DLayer.Builder(0).build()).layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                         assertEquals(conf, c2);
@@ -253,7 +258,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
                             }
                         }
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(1, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(2, new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build()).layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
+                        MultiLayerConfiguration conf = getConfigurationBuilder().dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(1, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(2, new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build()).layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                         assertEquals(conf, c2);
@@ -291,7 +296,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                     String s = cm + ", stride=" + stride + ", pooling=" + poolingType;
                     log.info("Starting test: " + s);
                     Nd4j.getRandom().setSeed(12345);
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).dist(new NormalDistribution(0, 1)).convolutionMode(cm).seed(12345).list().layer(new Convolution1DLayer.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(stride).nIn(convNIn).nOut(convNOut1).build()).layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(2).stride(stride).pnorm(pnorm).build()).layer(new Convolution1DLayer.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(stride).nIn(convNOut1).nOut(convNOut2).build()).layer(new GlobalPoolingLayer(PoolingType.AVG)).layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length)).build();
+                    MultiLayerConfiguration conf = getConfigurationBuilder().activation(Activation.TANH).dist(new NormalDistribution(0, 1)).convolutionMode(cm).list().layer(new Convolution1DLayer.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(stride).nIn(convNIn).nOut(convNOut1).build()).layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(2).stride(stride).pnorm(pnorm).build()).layer(new Convolution1DLayer.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(stride).nIn(convNOut1).nOut(convNOut2).build()).layer(new GlobalPoolingLayer(PoolingType.AVG)).layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length)).build();
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
                     INDArray f = Nd4j.rand(new int[] { 2, convNIn, length });
@@ -349,7 +354,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
             String s = "k=" + k + ", s=" + st + " d=" + d + ", seqLen=" + length;
             log.info("Starting test: " + s);
             Nd4j.getRandom().setSeed(12345);
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).weightInit(new NormalDistribution(0, 1)).seed(12345).list().layer(new Convolution1DLayer.Builder().kernelSize(k).dilation(d).hasBias(hasBias).convolutionMode(ConvolutionMode.Causal).stride(st).nOut(convNOut1).build()).layer(new Convolution1DLayer.Builder().kernelSize(k).dilation(d).convolutionMode(ConvolutionMode.Causal).stride(st).nOut(convNOut2).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
+            MultiLayerConfiguration conf = getConfigurationBuilder().activation(Activation.TANH).weightInit(new NormalDistribution(0, 1)).seed(12345).list().layer(new Convolution1DLayer.Builder().kernelSize(k).dilation(d).hasBias(hasBias).convolutionMode(ConvolutionMode.Causal).stride(st).nOut(convNOut1).build()).layer(new Convolution1DLayer.Builder().kernelSize(k).dilation(d).convolutionMode(ConvolutionMode.Causal).stride(st).nOut(convNOut2).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
             INDArray f = Nd4j.rand(DataType.DOUBLE, 2, convNIn, length);
