@@ -67,8 +67,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn,none ]
-        extension: [ none ]
+        helper: [ cudnn,"" ]
+        extension: [ "" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs

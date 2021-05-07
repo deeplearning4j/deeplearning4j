@@ -56,8 +56,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ mkldnn,none ]
-        extension: [ avx2,avx512,none ]
+        helper: [ mkldnn,"" ]
+        extension: [ avx2,avx512,"" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -114,7 +114,7 @@ jobs:
                  echo "Running release"
                  # download libnd4j from a url and set it up if LIBND4J_URL is defined
                  bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                 bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                 bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
             ) else (
                 if "%PERFORM_RELEASE%"==1 (
                       echo "Running release"
@@ -123,7 +123,7 @@ jobs:
                  ) else (
                     echo "Running snapshots"
                     bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                    mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension= -Djavacpp.platform=windows-x86_64  %MODULES% --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  clean --batch-mode deploy -DskipTests
+                    mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension= -Djavacpp.platform=windows-x86_64  %MODULES% --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  clean --batch-mode deploy -DskipTests
                  )
             )
         env:

@@ -71,8 +71,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ mkldnn,none ]
-        extension: [ avx2,avx512,none ]
+        helper: [ mkldnn,"" ]
+        extension: [ avx2,avx512,"" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -138,7 +138,7 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.modules  }}
-          COMMAND: mvn -Possrh   -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64    --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests
+          COMMAND: mvn -Possrh   -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=${{ matrix.extension }}  -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64    --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}

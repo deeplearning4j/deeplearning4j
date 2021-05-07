@@ -57,8 +57,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [mkldnn,none]
-        extension: [avx2,avx512,none]
+        helper: [mkldnn,""]
+        extension: [avx2,avx512,""]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -117,6 +117,18 @@ jobs:
               cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+             if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+                command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+                elif [ ${{ matrix.helper }} != '' ]; then
+                    command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }}  -Djavacpp.platform.extension=${{ matrix.helper }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+                else
+                    command="mvn  -X  -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+             fi
+             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+             echo "COMMAND=$command" >> $GITHUB_ENV
       - name: Build on  linux-x86_64
         shell: bash
         env:
@@ -161,7 +173,6 @@ jobs:
           sudo cp "${LIBGOMP_PATH}" /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          command="mvn  -X  -Possrh  -Dlibnd4j.helper=${HELPER} -Dlibnd4j.extension=${EXTENSION} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"

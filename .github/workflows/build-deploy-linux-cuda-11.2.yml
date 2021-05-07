@@ -68,8 +68,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn,none ]
-        extension: [ none  ]
+        helper: [ cudnn,"" ]
+        extension: [ ""  ]
     runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci
     steps:
@@ -148,7 +148,7 @@ jobs:
           CUDNN_ROOT_DIR: /usr/local/cuda-11.2/cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-          COMMAND: mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64    -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests
+          COMMAND: mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64  -Djavacpp.platform.extension=${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests
 
 
         run: |
