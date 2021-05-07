@@ -144,7 +144,7 @@ jobs:
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           CUDA_PATH: /usr/local/cuda-11.0
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.0/cuda
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.0/
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
@@ -159,7 +159,6 @@ jobs:
           echo "Helper is ${HELPER}"
           if [ "${HELPER}" == "cudnn" ]; then
               echo "Linking against cudnn"
-              export CUDNN_ROOT_DIR="${CUDA_PATH}/"
               echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
               ls -R "${CUDA_PATH}"
             else
