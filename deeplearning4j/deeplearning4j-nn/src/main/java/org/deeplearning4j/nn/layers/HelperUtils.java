@@ -63,7 +63,7 @@ public class HelperUtils {
 
             }
             else {
-                log.warn("Unable to find class {}  using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded the  class {} instead.",cudnnHelperClassName,cudnnHelperClassName);
+                log.warn("Unable to find class {}  using the classloader set for Dl4jClassLoading. Trying to use class loader that loaded the  class {} instead.",cudnnHelperClassName,layerHelperSuperClass.getName());
                 ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
                 DL4JClassLoading.setDl4jClassloaderFromClass(layerHelperSuperClass);
                 try {
