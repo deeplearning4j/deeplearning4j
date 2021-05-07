@@ -161,10 +161,7 @@ jobs:
               echo "Linking against cudnn"
               export CUDNN_ROOT_DIR="${CUDA_PATH}/"
               echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
-              echo "CUDA INCLUDE"
-              ls "${CUDA_PATH}/include"
-              echo "CUDA LIB64"
-              ls "${CUDA_PATH}/lib64"
+              ls -R "${CUDA_PATH}"
             else
                echo "Cudnn will not be linked against"
           fi
