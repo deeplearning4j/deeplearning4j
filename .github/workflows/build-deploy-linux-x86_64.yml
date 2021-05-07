@@ -128,7 +128,7 @@ jobs:
                     command="mvn  -X  -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
              fi
              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-             echo "COMMAND=$command" >> $GITHUB_ENV
+             echo "COMMAND=${command}" >> $GITHUB_ENV
       - name: Build on  linux-x86_64
         shell: bash
         env:
@@ -180,7 +180,7 @@ jobs:
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
                        echo "Running build and deploying to snapshots"
-                       eval "$command"
+                       eval "${COMMAND}"
           fi
 
       - name: Setup tmate session
