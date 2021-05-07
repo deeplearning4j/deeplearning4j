@@ -151,6 +151,9 @@ jobs:
           sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
+          # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
+          # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
+          export CUDNN_ROOT_DIR="${CUDA_PATH}"
           mvn --version
           cmake --version
           protoc --version
