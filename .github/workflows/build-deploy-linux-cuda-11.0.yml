@@ -160,6 +160,10 @@ jobs:
               export CUDNN_ROOT_DIR="${CUDA_PATH}/"
               echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
               sudo mv "${CUDA_PATH}/cuda/*" "${CUDA_PATH}"
+              echo "CUDA INLCUDE"
+              ls "${CUDA_PATH}/include"
+              echo "CUDA LIB64"
+              ls "${CUDA_PATH}/lib64"
           fi
 
           echo "CUDA PATH"

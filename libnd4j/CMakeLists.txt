@@ -311,7 +311,7 @@ if (${HELPERS_cudnn})
         set(HAVE_CUDNN true)
         set(CUDNN ${CUDNN_LIBRARY})
     else()
-        message(FATAL_ERROR "Unable to find cuDNN")
+        message(FATAL_ERROR "Unable to find cuDNN, no library found. Please ensure cudnn is installed under the cuda toolkit directory.")
     endif()
 endif()
 
