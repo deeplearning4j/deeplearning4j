@@ -160,6 +160,7 @@ jobs:
           echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
           echo "CUDNN ROOT DIR"
           ls "${CUDNN_ROOT_DIR}"
+          sudo cp -rf "${CUDNN_ROOT_DIR/*" "${CUDA_PATH}"
           echo "CUDA PATH"
           ls "${CUDA_PATH}"
           mvn --version
