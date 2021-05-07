@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         helper: [ cudnn ]
-        extension: [  ]
+        extension: [ none  ]
     runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci
     steps:
