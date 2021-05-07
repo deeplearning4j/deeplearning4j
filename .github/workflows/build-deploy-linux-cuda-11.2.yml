@@ -144,13 +144,15 @@ jobs:
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
+          CUDA_PATH: /usr/local/cuda-11.2
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.2/cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           COMMAND: mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64    -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests
 
 
         run: |
-          export CUDA_PATH=/usr/local/cuda-11.0
+          export CUDA_PATH=/usr/local/cuda-11.2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.2/bin:$PATH"
           nvcc --version

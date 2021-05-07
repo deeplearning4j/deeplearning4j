@@ -143,6 +143,8 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          CUDA_PATH: /usr/local/cuda-11.0
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.0/cuda
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
