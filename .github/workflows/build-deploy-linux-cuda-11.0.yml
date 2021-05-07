@@ -158,6 +158,7 @@ jobs:
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           export CUDNN_ROOT_DIR="${CUDA_PATH}/"
           echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
+          sudo mv "${CUDA_PATH}/cuda/* ${CUDA_PATH}"
           echo "CUDA PATH"
           ls "${CUDA_PATH}"
           mvn --version
