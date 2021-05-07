@@ -294,6 +294,14 @@ if (${HELPERS_cudnn})
     #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
     SET(CUDNN_LIBNAME "cudnn")
+    if(DEFINED ENV{CUDNN_ROOT_DIR})
+       message("Using cudnn root directory from environment")
+       set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
+    endif()
+      if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
+           message("Using cuda root directory from environment")
+           set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
+        endif()
     message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
     find_path(CUDNN_INCLUDE_DIR cudnn.h
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
