@@ -148,7 +148,9 @@ jobs:
               export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
               echo "Extensions specified. This needs a newer version of gcc."
               sudo apt-get install gcc-7
+              export PATH=/usr/lib/
               echo "Using newer version of libgomp."
+              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90 --slave /usr/bin/g++ g++ /usr/bin/g++-7 --slave
               gcc --version
           fi
           # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
