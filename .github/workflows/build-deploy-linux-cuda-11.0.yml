@@ -156,7 +156,7 @@ jobs:
           export PATH="/usr/local/cuda-11.0/bin:$PATH"
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          if [ "${HELPER}" -eq "cudnn"]; then
+          if [ "${HELPER}" -eq "cudnn" ]; then
               export CUDNN_ROOT_DIR="${CUDA_PATH}/"
               echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
               sudo mv "${CUDA_PATH}/cuda/*" "${CUDA_PATH}"
