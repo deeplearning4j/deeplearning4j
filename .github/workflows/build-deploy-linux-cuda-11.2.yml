@@ -65,8 +65,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux-x86_64-cuda-11-2:
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ cudnn ]
+        extension: [  ]
+    runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci
-    runs-on: ubuntu-16.04
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -139,6 +144,9 @@ jobs:
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
 
         run: |
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
@@ -150,7 +158,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           bash ./change-cuda-versions.sh 11.2
-          command="mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64   -Dlibnd4j.helper=cudnn -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
+          command="mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64  -Dlibnd4j.extension=${{ matrix.extension }}  -Dlibnd4j.helper=${HELPER} -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then

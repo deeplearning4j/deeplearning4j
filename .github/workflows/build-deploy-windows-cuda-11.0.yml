@@ -64,6 +64,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows-x86_64-cuda-11-0:
     needs: pre-ci
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ cudnn ]
+        extension: [ ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -129,10 +134,13 @@ jobs:
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          COMMAND: "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
+          COMMAND: mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean -Dlibnd4j.extension=${{ matrix.extension }} --batch-mode deploy -DskipTests
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           LIBND4J_HOME_SUFFIX: cuda
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
 
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
@@ -153,7 +161,7 @@ jobs:
             ) else (
                       echo "Running snapshots"
                       bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                      mvn -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Djavacpp.platform=windows-x86_64  %MODULES% --also-make -Dlibnd4j.helper=cudnn -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
+                      mvn -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform=windows-x86_64  -Djavacpp.platform=windows-x86_64  %MODULES% --also-make -Dlibnd4j.helper=cudnn -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda clean  --batch-mode deploy -DskipTests
             )
           )
 
