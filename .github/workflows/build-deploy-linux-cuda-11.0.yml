@@ -146,7 +146,7 @@ jobs:
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-          COMMAND: mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper= ${{ matrix.helper }} -Pcuda  clean --batch-mode package deploy  -DskipTests
+          COMMAND: mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda  clean --batch-mode package deploy  -DskipTests
         run: |
           sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
