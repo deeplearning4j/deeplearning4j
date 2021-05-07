@@ -150,6 +150,7 @@ jobs:
 
 
         run: |
+          export CUDA_PATH=/usr/local/cuda-11.0
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.2/bin:$PATH"
           nvcc --version
