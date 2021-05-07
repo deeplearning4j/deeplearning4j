@@ -122,10 +122,13 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_CUDA) {
     auto gradI = OUTPUT_VARIABLE(0);                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
     const auto goodType = input->dataType() == DataType::DOUBLE || input->dataType() == DataType::FLOAT32 || input->dataType() == DataType::HALF || input->dataType() == DataType::INT32;
-
-    return goodType && (input->dataType() == gradO->dataType())
-                    && (input->dataType() == gradI->dataType())
-                    && shape::haveSameShapeAndStrides(input->shapeInfo(), gradI->shapeInfo());
+    //defaulting non-ews cases to our Cuda implementation as the Cudnn API call gives an incorrect result (zeros) for non-ews cases.
+    return  goodType && (input->dataType() == gradO->dataType())
+                     && (input->dataType() == gradI->dataType())
+                     && shape::haveSameShapeAndStrides(input->shapeInfo(), gradI->shapeInfo())
+                     && (input->ews()==1 && input->ordering()=='c')
+                     && (gradO->ews() ==1 && gradO->ordering()=='c')
+                     && (gradI->ews() ==1 && gradI->ordering()=='c'); //actually its already tested with haveSameShape
 }
 
 
