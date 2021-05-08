@@ -127,19 +127,18 @@ jobs:
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
-     - name: Set mvn build command based on matrix
-       shell: bash
-       run: |
-            if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
-            command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
-            elif [ ${{ matrix.helper }} != '' ]; then
-                command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
-            else
-                command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
-            fi
-            echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-            echo "COMMAND=${command}" >> $GITHUB_ENV
-
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+              if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+              command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+              elif [ ${{ matrix.helper }} != '' ]; then
+                  command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+              else
+                  command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+              fi
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+              echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - name: Run cuda compilation on linux-x86_64
         shell: bash
@@ -163,8 +162,6 @@ jobs:
           CUDNN_ROOT_DIR: /usr/local/cuda-11.2/cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-
-
         run: |
           export CUDA_PATH=/usr/local/cuda-11.2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
@@ -188,7 +185,3 @@ jobs:
                        echo "Running build and deploying to snapshots"
                        eval "${COMMAND}"
           fi
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
