@@ -111,7 +111,7 @@ jobs:
         shell: powershell
         run: |
                 if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-                      $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                      $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
                  } elseif ( "${{ matrix.helper }}" -ne "" ) {
                       $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
                  } else {
