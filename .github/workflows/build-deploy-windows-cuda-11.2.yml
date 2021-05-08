@@ -119,7 +119,7 @@ jobs:
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
       - name: Set mvn build command based on matrix
-        shell: cmd
+        shell: powershell
         run: |
             if NOT "${{ matrix.helper }}"=="" (
                 if NOT "${{ matrix.extension }}"=="" (

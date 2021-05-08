@@ -108,7 +108,7 @@ jobs:
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Set mvn build command based on matrix
-        shell: cmd
+        shell: powershell
         run: |
                 if NOT "${{ matrix.helper }}"=="" (
                     if NOT "${{ matrix.extension }}"=="" (
