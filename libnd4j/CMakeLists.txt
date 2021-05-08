@@ -307,16 +307,21 @@ if (${HELPERS_cudnn})
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
             PATH_SUFFIXES cuda/include include)
 
+
+
     find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
+
 
     #find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
     #        HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
     #        PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 
 
-    if (CUDNN_LIBRARY)
+    if (CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
+        message("CUDNN include dir is ${CUDNN_INCLUDE_DIR}")
+
         set(HAVE_CUDNN true)
         set(CUDNN ${CUDNN_LIBRARY})
     else()

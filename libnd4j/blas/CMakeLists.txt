@@ -244,6 +244,7 @@ if(SD_CUDA)
 
         if (HAVE_CUDNN)
             message("cuDNN included")
+            include_directories(${CUDNN_INCLUDE_DIR})
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
