@@ -121,20 +121,20 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-            if NOT "${{ matrix.helper }}"=="" (
-                if NOT "${{ matrix.extension }}"=="" (
-                   set command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-             )
-             ) else (
-                     if NOT "${{ matrix.extension }}"=="" (
-                        set command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-             ) else (
-                      set command="mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-            )
-            )
+          if ( "${{ matrix.helper }}" -ne "" ) {
+              if ( "${{ matrix.extension }}" -ne "" ) {
+                 set command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+           }
+           } else {
+                   if ( "${{ matrix.extension }}" -ne "") {
+                      set command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+           } else {
+                  set command="mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+          }
+          }
 
-            echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-            echo "COMMAND=%command%" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+          echo "COMMAND="$(Get-Variable -Name $command -ValueOnly) | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
 
       - name:  Run cuda build
