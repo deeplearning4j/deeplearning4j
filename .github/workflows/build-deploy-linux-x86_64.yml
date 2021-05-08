@@ -121,9 +121,9 @@ jobs:
         shell: bash
         run: |
              if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
-                command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+                command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
                 elif [ ${{ matrix.helper }} != '' ]; then
-                    command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }}  -Djavacpp.platform.extension=${{ matrix.helper }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+                    command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }}  -Djavacpp.platform.extension=-${{ matrix.helper }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
                 else
                     command="mvn  -X  -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
              fi
@@ -183,6 +183,4 @@ jobs:
                        eval "${COMMAND}"
           fi
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
