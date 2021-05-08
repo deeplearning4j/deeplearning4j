@@ -122,11 +122,11 @@ jobs:
         shell: cmd
         run: |
               if "${{ matrix.helper }}"!="" (
-                  if "${{ matrix.extension }}"!="" (
+                  if NOT "${{ matrix.extension }}"=="" (
                      set command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                )
                ) else (
-                       if "${{ matrix.extension }}"!="" (
+                       if NOT "${{ matrix.extension }}"=="" (
                           set command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                ) else (
                         set command="mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
