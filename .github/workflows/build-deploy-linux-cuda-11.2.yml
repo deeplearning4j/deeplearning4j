@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn,"" ]
+        helper: [ cudnn, "" ]
         extension: [ ""  ]
     runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci

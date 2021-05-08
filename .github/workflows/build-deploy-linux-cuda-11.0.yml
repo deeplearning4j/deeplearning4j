@@ -67,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn,"" ]
+        helper: [ cudnn, "" ]
         extension: [ "" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci
@@ -130,9 +130,11 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+              HELPER=${{ matrix.helper }}
+              EXTENSION=${{ matrix.extension }}
+              if [ "${HELPER}" != '' ] && [ "${EXTENSION}" != '' ]; then
               command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
-              elif [ ${{ matrix.helper }} != '' ]; then
+              elif [ "${HELPER}" != '' ]; then
                   command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
               else
                   command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
