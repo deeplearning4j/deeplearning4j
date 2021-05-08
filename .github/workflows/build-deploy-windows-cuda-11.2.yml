@@ -126,7 +126,7 @@ jobs:
                  $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
            }
            } else {
-                   if ( "${{ matrix.extension }}" -ne "") {
+                   if ( "${{ matrix.helper }}" -ne "") {
                     $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
            } else {
                   $command="mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
@@ -185,7 +185,7 @@ jobs:
                     ) else (
                         echo "Running snapshots"
                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                         call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                        call "%GITHUB_WORKSPACE%\mvn-command.bat"
               )
           )
 
