@@ -127,6 +127,19 @@ jobs:
         run: |
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+            if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+               command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+               elif [ ${{ matrix.helper }} != '' ]; then
+                   command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+               else
+                   command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+            fi
+            echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+            echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - name: Build cuda
         shell: bash
         env:
@@ -148,7 +161,7 @@ jobs:
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-          COMMAND: mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests
+          COMMAND:
         run: |
           sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
