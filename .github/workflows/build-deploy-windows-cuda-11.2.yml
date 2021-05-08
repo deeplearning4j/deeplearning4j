@@ -121,16 +121,12 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-          if ( "${{ matrix.helper }}" -ne "" ) {
-              if ( "${{ matrix.extension }}" -ne "" ) {
+          if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
                  $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
-           }
-           } else {
-                   if ( "${{ matrix.helper }}" -ne "" ) {
-                    $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
+           } elseif ( "${{ matrix.helper }}" -ne "" ) {
+                $command="mvn  -Possrh -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
            } else {
                   $command="mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-          }
           }
 
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command)"
