@@ -68,6 +68,11 @@ jobs:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   mac-x86_64:
     #needs: pre-ci
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ mkldnn,"" ]
+        extension: [ avx2,avx512,"" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -119,6 +124,19 @@ jobs:
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/" >> "$GITHUB_ENV"
 
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+          if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+             command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+             elif [ ${{ matrix.helper }} != '' ]; then
+                 command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }}  -Djavacpp.platform.extension=-${{ matrix.helper }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+             else
+                 command="mvn  -X  -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          fi
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+          echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - name: Build and install
         shell: bash
         env:
@@ -133,9 +151,11 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.modules  }}
-          COMMAND: "mvn -Possrh   -Dlibnd4j.helper=mkldnn -Djavacpp.platform=macosx-x86_64 -Djavacpp.platform=macosx-x86_64    --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu  deploy -DskipTests"
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           MAVEN_OPTS: "-Xmx2g"
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
 
         run: |
           gpg --version
@@ -152,8 +172,3 @@ jobs:
                   echo "Running build and deploying to snapshots"
                   eval "${COMMAND}"
           fi
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
-

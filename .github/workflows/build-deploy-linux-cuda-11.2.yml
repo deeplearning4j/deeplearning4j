@@ -65,8 +65,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux-x86_64-cuda-11-2:
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ cudnn, "" ]
+        extension: [ ""  ]
+    runs-on: ${{ github.event.inputs.runsOn }}
     needs: pre-ci
-    runs-on: ubuntu-16.04
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -121,6 +126,20 @@ jobs:
         run: |
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
+
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+              if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+              command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+              elif [ ${{ matrix.helper }} != '' ]; then
+                  command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+              else
+                  command="mvn  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform.extension=${{ matrix.extension }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda   --also-make  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Pcuda  clean --batch-mode package deploy  -DskipTests"
+              fi
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+              echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - name: Run cuda compilation on linux-x86_64
         shell: bash
         env:
@@ -139,8 +158,12 @@ jobs:
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
-
+          CUDA_PATH: /usr/local/cuda-11.2
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.2/cuda
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
         run: |
+          export CUDA_PATH=/usr/local/cuda-11.2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export PATH="/usr/local/cuda-11.2/bin:$PATH"
           nvcc --version
@@ -150,17 +173,24 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           bash ./change-cuda-versions.sh 11.2
+<<<<<<< Updated upstream
           command="mvn  -Possrh  -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\"   -Dlibnd4j.chip=cuda clean --batch-mode deploy -DskipTests"
+=======
+>>>>>>> Stashed changes
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
+          # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
+          # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
+          export CUDNN_ROOT_DIR="${CUDA_PATH}/cuda"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                    else
+<<<<<<< Updated upstream
                        "Running build and deploying to snapshots"
                        eval "$command"
+=======
+                       echo "Running build and deploying to snapshots"
+                       eval "${COMMAND}"
+>>>>>>> Stashed changes
           fi
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}

@@ -57,6 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+<<<<<<< Updated upstream
         helper: [mkldnn,]
         extension: [avx2,avx512]
       runs-on: ${{ github.event.inputs.runsOn }}
@@ -157,4 +158,132 @@ jobs:
         - name: Setup tmate session
           uses: mxschmitt/action-tmate@v3
           if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+=======
+        helper: [mkldnn,""]
+        extension: [avx2,avx512,""]
+    runs-on: ${{ github.event.inputs.runsOn }}
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/update-deps-linux
+      - name: Cache cmake install
+        uses: actions/cache@v2
+        id: cache-cmake
+        with:
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake
+          restore-keys: ${{ runner.os }}-cmake
+      - name: Cache protobuf install
+        uses: actions/cache@v2
+        id: cache-protobuf
+        with:
+          path: /opt/protobuf
+          key: ${{ runner.os }}-protobuf
+          restore-keys: ${{ runner.os }}-protobuf
+      - uses: ./.github/actions/install-protobuf-linux
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
+      - uses: ./.github/actions/install-cmake-linux
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id:  ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Setup libnd4j home if a download url is specified
+        shell: bash
+        run: |
+              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
+              mkdir "${GITHUB_WORKSPACE}/openblas_home"
+              cd "${GITHUB_WORKSPACE}/openblas_home"
+              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-x86_64.jar
+              unzip openblas-0.3.13-1.5.5-linux-x86_64.jar
+              cd ..
+              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
+              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+             if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+                command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+                elif [ ${{ matrix.helper }} != '' ]; then
+                    command="mvn  -X  -Possrh  -Dlibnd4j.helper=${{ matrix.helper }}  -Djavacpp.platform.extension=-${{ matrix.helper }} -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+                else
+                    command="mvn  -X  -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+             fi
+             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+             echo "COMMAND=${command}" >> $GITHUB_ENV
+      - name: Build on  linux-x86_64
+        shell: bash
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          MODULES: ${{ github.event.inputs.modules  }}
+          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
+        run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          mvn --version
+          cmake --version
+          protoc --version
+          sudo sysctl vm.overcommit_memory=2
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
+          if [ -z "${EXTENSION}" ] || [ -n "${EXTENSION}" ]; then
+              export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
+              echo "Extensions specified. This needs a newer version of gcc."
+              sudo apt-get install gcc-7 g++-7
+              echo "Using newer version of libgomp."
+              ls /usr/bin | grep gcc
+              ls /usr/bin | grep g++
+              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
+              sudo update-alternatives --install  /usr/bin/g++ g++ /usr/bin/g++-7  90
+              gcc --version
+          fi
+          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
+          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
+          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
+          sudo cp "${LIBGOMP_PATH}" /usr/lib
+          sudo apt-get -y autoremove
+          sudo apt-get -y clean
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          bash ./bootstrap-libnd4j-from-url.sh
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                   else
+                       echo "Running build and deploying to snapshots"
+                       eval "${COMMAND}"
+          fi
+
+>>>>>>> Stashed changes
 
