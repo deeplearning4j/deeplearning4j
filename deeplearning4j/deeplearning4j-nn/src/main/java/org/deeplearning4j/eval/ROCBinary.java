@@ -24,7 +24,7 @@ import lombok.EqualsAndHashCode;
 
 @Deprecated
 @EqualsAndHashCode(callSuper = true)
-public class ROCBinary extends org.nd4j.evaluation.classification.ROCBinary implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.classification.ROCBinary> {
+public class ROCBinary extends org.nd4j.evaluation.classification.ROCBinary implements IEvaluation<org.nd4j.evaluation.classification.ROCBinary> {
     /**
      * @deprecated Use {@link org.nd4j.evaluation.classification.ROCBinary}
      */

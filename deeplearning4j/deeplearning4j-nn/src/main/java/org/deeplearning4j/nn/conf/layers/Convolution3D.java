@@ -24,6 +24,7 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -51,7 +52,7 @@ public class Convolution3D extends ConvolutionLayer {
      * inputChannels, inputDepth, inputHeight, inputWidth].<br> For "NDHWC" ('channels last' format), the data is stored
      * in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
      */
-    public enum DataFormat {
+    public enum DataFormat implements org.deeplearning4j.nn.conf.DataFormat {
         NCDHW, NDHWC
     }
 
@@ -149,7 +150,7 @@ public class Convolution3D extends ConvolutionLayer {
     @AllArgsConstructor
     @Getter
     @Setter
-    public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
+    public static class Builder extends BaseConvBuilder<Builder> {
 
         /**
          * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape

@@ -43,7 +43,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     public Cropping1DLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
-        this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D) conf.getLayer()).getCropping();
+        this.cropping = ((Cropping1D) conf.getLayer()).getCropping();
     }
 
     @Override

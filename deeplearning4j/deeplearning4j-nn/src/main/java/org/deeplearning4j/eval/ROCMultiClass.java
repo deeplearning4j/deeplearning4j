@@ -26,7 +26,7 @@ import lombok.EqualsAndHashCode;
 @Deprecated
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ROCMultiClass extends org.nd4j.evaluation.classification.ROCMultiClass implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.classification.ROCMultiClass> {
+public class ROCMultiClass extends org.nd4j.evaluation.classification.ROCMultiClass implements IEvaluation<org.nd4j.evaluation.classification.ROCMultiClass> {
     /**
      * @deprecated Use {@link org.nd4j.evaluation.classification.ROCMultiClass}
      */

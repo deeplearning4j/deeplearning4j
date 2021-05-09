@@ -69,7 +69,7 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
     /**
      * @see Layer#feedForwardMaskArray(INDArray, MaskState, int)
      */
-    public Pair<INDArray, MaskState> feedForwardMaskArray(org.nd4j.linalg.api.ndarray.INDArray maskArray, org.deeplearning4j.nn.api.MaskState currentMaskState, int minibatchSize){
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize){
         return new Pair<>(maskArray, currentMaskState);
     }
 
@@ -82,7 +82,7 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
     //==================================================================================================================
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+    public Layer instantiate(NeuralNetConfiguration conf,
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.samediff.SameDiffLayer ret =

@@ -208,7 +208,7 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
 
     @Getter
     @Setter
-    public static class Builder extends SameDiffLayer.Builder<RecurrentAttentionLayer.Builder> {
+    public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         /**
          * Number of inputs to the layer (input size)

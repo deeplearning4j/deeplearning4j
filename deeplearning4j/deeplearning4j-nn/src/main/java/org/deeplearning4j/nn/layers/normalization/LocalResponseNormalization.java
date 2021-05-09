@@ -29,7 +29,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLocalResponseNormalizationHelper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
@@ -51,7 +53,7 @@ public class LocalResponseNormalization
 
     protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
-
+    public final static String LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper";
     @Override
     public Layer clone() {
         return new LocalResponseNormalization(conf.clone(), dataType);
@@ -65,11 +67,7 @@ public class LocalResponseNormalization
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            helper = DL4JClassLoading.createNewInstance(
-                    "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper",
-                    LocalResponseNormalizationHelper.class,
-                    dataType);
-            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
+            helper = HelperUtils.createHelper(LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME, MKLDNNLocalResponseNormalizationHelper.class.getName(),dataType,LocalResponseNormalizationHelper.class,layerConf().getLayerName());
         }
         //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/eclipse/deeplearning4j/issues/7272
 //        else if("CPU".equalsIgnoreCase(backend)){

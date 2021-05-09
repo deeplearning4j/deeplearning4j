@@ -525,7 +525,7 @@ public class ConvolutionUtils {
      */
     public static int[] getHeightAndWidth(NeuralNetConfiguration conf) {
         return getHeightAndWidth(
-                ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize());
+                ((ConvolutionLayer) conf.getLayer()).getKernelSize());
     }
 
 
@@ -535,7 +535,7 @@ public class ConvolutionUtils {
      * @return the number of kernels/filters to apply
      */
     public static long numFeatureMap(NeuralNetConfiguration conf) {
-        return ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getNOut();
+        return ((ConvolutionLayer) conf.getLayer()).getNOut();
     }
 
     /**

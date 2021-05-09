@@ -112,7 +112,7 @@ public class PReLULayer extends BaseLayer {
 
     @Getter
     @Setter
-    public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         public Builder(){
             //Default to 0s, and don't inherit global default

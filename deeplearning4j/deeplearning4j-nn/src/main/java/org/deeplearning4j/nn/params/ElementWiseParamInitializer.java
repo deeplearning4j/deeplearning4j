@@ -58,7 +58,7 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
      */
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
+        if (!(conf.getLayer() instanceof FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
@@ -68,8 +68,8 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
             throw new IllegalStateException(
                     "Expected params view of length " + length + ", got length " + paramsView.length());
 
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                (FeedForwardLayer) conf.getLayer();
         val nIn = layerConf.getNIn();
 
         val nWeightParams = nIn ;
@@ -97,8 +97,8 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
      */
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        FeedForwardLayer layerConf =
+                (FeedForwardLayer) conf.getLayer();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn ;

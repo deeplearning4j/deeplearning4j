@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  * @author saudet
  */
 public interface SubsamplingHelper extends LayerHelper {
-    boolean checkSupported();
 
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad,
                                               PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation,

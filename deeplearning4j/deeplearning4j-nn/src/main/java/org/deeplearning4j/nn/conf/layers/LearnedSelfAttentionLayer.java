@@ -158,7 +158,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
 
     @Getter
     @Setter
-    public static class Builder extends SameDiffLayer.Builder<LearnedSelfAttentionLayer.Builder> {
+    public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         /**
          * Number of inputs to the layer (input size)

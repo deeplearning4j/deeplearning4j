@@ -99,8 +99,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Layer.Type type() {
-        return Layer.Type.RECURRENT;
+    public Type type() {
+        return Type.RECURRENT;
     }
 
     @Override

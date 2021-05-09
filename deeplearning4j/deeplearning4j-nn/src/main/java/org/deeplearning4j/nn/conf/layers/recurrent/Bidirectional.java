@@ -73,7 +73,7 @@ public class Bidirectional extends Layer {
     private Mode mode;
     private transient BidirectionalParamInitializer initializer;
 
-    private Bidirectional(Bidirectional.Builder builder) {
+    private Bidirectional(Builder builder) {
         super(builder);
     }
 
@@ -238,7 +238,7 @@ public class Bidirectional extends Layer {
     @AllArgsConstructor
     @Getter
     @Setter
-    public static class Builder extends Layer.Builder<Bidirectional.Builder> {
+    public static class Builder extends Layer.Builder<Builder> {
 
         private Mode mode;
         private Layer layer;

@@ -28,8 +28,10 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNBatchNormHelper;
+import org.deeplearning4j.nn.layers.recurrent.LSTMHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -62,26 +64,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected INDArray std;
     protected INDArray xMu;
     protected INDArray xHat;
-
+    public final static String BATCH_NORM_CUDNN_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper";
     public BatchNormalization(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
         initializeHelper();
     }
 
     void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-
-        if ("CUDA".equalsIgnoreCase(backend)) {
-            helper = DL4JClassLoading.createNewInstance(
-                    "org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper",
-                    BatchNormalizationHelper.class,
-                    dataType);
-            log.debug("CudnnBatchNormalizationHelper successfully initialized");
-        } else if ("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNBatchNormHelper(dataType);
-            log.trace("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
-        }
-
+        helper = HelperUtils.createHelper(BATCH_NORM_CUDNN_HELPER_CLASS_NAME,MKLDNNBatchNormHelper.class.getName(),dataType,BatchNormalizationHelper.class,layerConf().getLayerName());
+        //specific helper with alpha/beta, keep this last check around
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
             log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());
             helper = null;
@@ -262,7 +253,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             //Note the array reuse here: dxhat, xMu, dLdVar, dLdmu - all are invalid after this line (but aren't used later anyway)
             INDArray dLdx = dxhat.diviRowVector(std).addi(xMu.muliRowVector(dLdVar.muli(2.0 / batchSize)))
-                            .addiRowVector(dLdmu.muli(1.0 / batchSize));
+                    .addiRowVector(dLdmu.muli(1.0 / batchSize));
 
             //TODO rework this to avoid the assign here
             dGammaView.assign(dGamma);
@@ -297,7 +288,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 //Standard case
                 dxhat = Nd4j.getExecutioner().exec(new BroadcastMulOp(epsilon, gamma,
-                                Nd4j.createUninitialized(epsilon.dataType(), epsilon.shape(), epsilon.ordering()), chIdx));
+                        Nd4j.createUninitialized(epsilon.dataType(), epsilon.shape(), epsilon.ordering()), chIdx));
             }
 
             //dL/dVariance
@@ -310,9 +301,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray dLdmu = dxmu1.addi(dxmu2);
 
             INDArray dLdx = Nd4j.getExecutioner().exec(new BroadcastDivOp(dxhat, std, dxhat, chIdx))
-                            .addi(Nd4j.getExecutioner().exec(new BroadcastMulOp(xMu, dLdVar.muli(2.0 / effectiveBatchSize), xMu, chIdx)));
+                    .addi(Nd4j.getExecutioner().exec(new BroadcastMulOp(xMu, dLdVar.muli(2.0 / effectiveBatchSize), xMu, chIdx)));
             Nd4j.getExecutioner()
-                            .execAndReturn(new BroadcastAddOp(dLdx, dLdmu.muli(1.0 / effectiveBatchSize), dLdx, chIdx));
+                    .execAndReturn(new BroadcastAddOp(dLdx, dLdmu.muli(1.0 / effectiveBatchSize), dLdx, chIdx));
 
             //TODO rework this to avoid the assign here
             dGammaView.assign(dGamma);
@@ -570,8 +561,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN https://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported. "
-                                            + layerId());
+                    "The layer prior to BatchNorm in the configuration is not currently supported. "
+                            + layerId());
         }
 
         /*

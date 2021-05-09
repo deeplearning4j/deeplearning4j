@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -151,6 +152,32 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
                     //note here the default is tensorflow initialization for keras.
                     //being channels first has side effects when working with other models
                     ret = InputType.convolutional(shape[1], shape[2], shape[3],CNN2DFormat.NHWC);
+                } else {
+
+                    CNN2DFormat cnnFormat = CNN2DFormat.NCHW;
+                    if (this.format != null && this.format instanceof CNN2DFormat)
+                        cnnFormat = (CNN2DFormat) this.format;
+
+                    if (cnnFormat == CNN2DFormat.NCHW) {
+                        ret = InputType.convolutional(shape[2], shape[3], shape[1], cnnFormat);
+                    } else {
+                        ret = InputType.convolutional(shape[1], shape[2], shape[3], cnnFormat);
+                    }
+                }
+                break;
+            case 5:
+                if (inputShape.length == 1 || inputType.getType() == InputType.Type.RNN) {
+                    //note here the default is tensorflow initialization for keras.
+                    //being channels first has side effects when working with other models
+                    Convolution3D.DataFormat dataFormat = (Convolution3D.DataFormat) this.format;
+                    if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                        ret =  InputType.convolutional3D(dataFormat,shape[2],shape[3],shape[4],shape[0]);
+
+                    } else if(dataFormat == Convolution3D.DataFormat.NDHWC) {
+                        ret =  InputType.convolutional3D(dataFormat,shape[1],shape[2],shape[3],shape[0]);
+                    } else {
+                        throw new IllegalArgumentException("Illegal format found " + dataFormat);
+                    }
                 } else {
 
                     CNN2DFormat cnnFormat = CNN2DFormat.NCHW;
