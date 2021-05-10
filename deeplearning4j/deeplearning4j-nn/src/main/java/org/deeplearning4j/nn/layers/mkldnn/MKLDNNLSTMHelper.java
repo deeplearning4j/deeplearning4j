@@ -159,6 +159,11 @@ public class MKLDNNLSTMHelper implements LSTMHelper {
         return Collections.emptyMap();
     }
 
+    @Override
+    public boolean checkSupported() {
+        return BaseMKLDNNHelper.mklDnnEnabled();
+    }
+
     private int activationToArg(IActivation a){
         //0=tanh, 1=relu, 2=sigmoid, 3=affine, 4=leaky relu, 5= thresholded relu, 6=scaled tanh, 7=hard sigmoid, 8=ELU, 9=softsign, 10=softplus
         if(a instanceof ActivationTanH)

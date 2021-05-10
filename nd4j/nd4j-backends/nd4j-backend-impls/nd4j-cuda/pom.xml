@@ -40,6 +40,9 @@
         <cuda.version>11.0</cuda.version>
         <cudnn.version>8.0</cudnn.version>
         <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+        <!-- Try to avoid setting this. This is mainly for being able to override for where we put binaries in javacpp jars for android. -->
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+
     </properties>
 
     <dependencies>
@@ -246,7 +249,7 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCuda</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
-                            <outputDirectory>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
