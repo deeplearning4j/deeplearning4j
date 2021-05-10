@@ -134,12 +134,12 @@ jobs:
                mvn_ext="-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
             elif [ "${HELPER}" != '' ]; then
                mvn_ext="-Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
-           else
+            else
                mvn_ext="-Djavacpp.platform.extension=${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
-           fi
-           command="mvn -Possrh ${mvn_ext} -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
-           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-           echo "COMMAND=${command}" >> $GITHUB_ENV
+            fi
+            command="mvn -Possrh ${mvn_ext} -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
+            echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+            echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - name: Run cuda compilation on linux-x86_64
         shell: bash
