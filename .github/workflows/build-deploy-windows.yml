@@ -126,22 +126,22 @@ jobs:
       - name: Run windows cpu build
         shell: cmd
         run: |
-            if "%PERFORM_RELEASE%"=="1" (
-                 echo "Running release"
-                 # download libnd4j from a url and set it up if LIBND4J_URL is defined
-                 bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                 bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
-            ) else (
-                if "%PERFORM_RELEASE%"==1 (
-                      echo "Running release"
-                       bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                       bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
-                 ) else (
-                    echo "Running snapshots"
-                    bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                    call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                 )
-            )
+              if "%PERFORM_RELEASE%"=="1" (
+                   echo "Running release"
+                   # download libnd4j from a url and set it up if LIBND4J_URL is defined
+                   bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                   bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
+              ) else (
+                  if "%PERFORM_RELEASE%"==1 (
+                        echo "Running release"
+                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                         bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
+                   ) else (
+                      echo "Running snapshots"
+                      bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                      call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                   )
+              )
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
