@@ -19,29 +19,39 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution3D;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Max Pumperla
@@ -148,4 +158,18 @@ class KerasConvolution3DTest extends BaseDL4JTest {
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
     }
+
+    @Test
+    public void testDefaultLayout(@TempDir Path testDir) throws Exception {
+        String config = "{\"class_name\": \"Sequential\", \"config\": {\"name\": \"sequential_1\", \"layers\": [{\"class_name\": \"InputLayer\", \"config\": {\"batch_input_shape\": [null, 32], \"dtype\": \"float32\", \"sparse\": false, \"ragged\": false, \"name\": \"input_2\"}}, {\"class_name\": \"Dense\", \"config\": {\"name\": \"dense_4\", \"trainable\": true, \"dtype\": \"float32\", \"units\": 720, \"activation\": \"linear\", \"use_bias\": true, \"kernel_initializer\": {\"class_name\": \"GlorotUniform\", \"config\": {\"seed\": null}}, \"bias_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"kernel_regularizer\": null, \"bias_regularizer\": null, \"activity_regularizer\": null, \"kernel_constraint\": null, \"bias_constraint\": null}}, {\"class_name\": \"LeakyReLU\", \"config\": {\"name\": \"leaky_re_lu\", \"trainable\": true, \"dtype\": \"float32\", \"alpha\": 0.10000000149011612}}, {\"class_name\": \"BatchNormalization\", \"config\": {\"name\": \"batch_normalization_3\", \"trainable\": true, \"dtype\": \"float32\", \"axis\": [1], \"momentum\": 0.99, \"epsilon\": 0.001, \"center\": true, \"scale\": true, \"beta_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"gamma_initializer\": {\"class_name\": \"Ones\", \"config\": {}}, \"moving_mean_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"moving_variance_initializer\": {\"class_name\": \"Ones\", \"config\": {}}, \"beta_regularizer\": null, \"gamma_regularizer\": null, \"beta_constraint\": null, \"gamma_constraint\": null}}, {\"class_name\": \"Dropout\", \"config\": {\"name\": \"dropout_1\", \"trainable\": true, \"dtype\": \"float32\", \"rate\": 0.2, \"noise_shape\": null, \"seed\": null}}, {\"class_name\": \"Reshape\", \"config\": {\"name\": \"reshape\", \"trainable\": true, \"dtype\": \"float32\", \"target_shape\": [60, 1, 3, 4]}}, {\"class_name\": \"Conv3D\", \"config\": {\"name\": \"conv3d_4\", \"trainable\": true, \"dtype\": \"float32\", \"filters\": 256, \"kernel_size\": [3, 3, 3], \"strides\": [1, 1, 1], \"padding\": \"same\", \"data_format\": \"channels_last\", \"dilation_rate\": [1, 1, 1], \"groups\": 1, \"activation\": \"linear\", \"use_bias\": true, \"kernel_initializer\": {\"class_name\": \"GlorotUniform\", \"config\": {\"seed\": null}}, \"bias_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"kernel_regularizer\": null, \"bias_regularizer\": null, \"activity_regularizer\": null, \"kernel_constraint\": null, \"bias_constraint\": null}}, {\"class_name\": \"LeakyReLU\", \"config\": {\"name\": \"leaky_re_lu_1\", \"trainable\": true, \"dtype\": \"float32\", \"alpha\": 0.10000000149011612}}, {\"class_name\": \"UpSampling3D\", \"config\": {\"name\": \"up_sampling3d\", \"trainable\": true, \"dtype\": \"float32\", \"size\": [2, 2, 2], \"data_format\": \"channels_last\"}}, {\"class_name\": \"Conv3D\", \"config\": {\"name\": \"conv3d_5\", \"trainable\": true, \"dtype\": \"float32\", \"filters\": 128, \"kernel_size\": [3, 3, 3], \"strides\": [1, 1, 1], \"padding\": \"same\", \"data_format\": \"channels_last\", \"dilation_rate\": [1, 1, 1], \"groups\": 1, \"activation\": \"linear\", \"use_bias\": true, \"kernel_initializer\": {\"class_name\": \"GlorotUniform\", \"config\": {\"seed\": null}}, \"bias_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"kernel_regularizer\": null, \"bias_regularizer\": null, \"activity_regularizer\": null, \"kernel_constraint\": null, \"bias_constraint\": null}}, {\"class_name\": \"LeakyReLU\", \"config\": {\"name\": \"leaky_re_lu_2\", \"trainable\": true, \"dtype\": \"float32\", \"alpha\": 0.10000000149011612}}, {\"class_name\": \"UpSampling3D\", \"config\": {\"name\": \"up_sampling3d_1\", \"trainable\": true, \"dtype\": \"float32\", \"size\": [2, 2, 2], \"data_format\": \"channels_last\"}}, {\"class_name\": \"Conv3D\", \"config\": {\"name\": \"conv3d_6\", \"trainable\": true, \"dtype\": \"float32\", \"filters\": 16, \"kernel_size\": [3, 3, 3], \"strides\": [1, 1, 1], \"padding\": \"same\", \"data_format\": \"channels_last\", \"dilation_rate\": [1, 1, 1], \"groups\": 1, \"activation\": \"linear\", \"use_bias\": true, \"kernel_initializer\": {\"class_name\": \"GlorotUniform\", \"config\": {\"seed\": null}}, \"bias_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"kernel_regularizer\": null, \"bias_regularizer\": null, \"activity_regularizer\": null, \"kernel_constraint\": null, \"bias_constraint\": null}}, {\"class_name\": \"LeakyReLU\", \"config\": {\"name\": \"leaky_re_lu_3\", \"trainable\": true, \"dtype\": \"float32\", \"alpha\": 0.10000000149011612}}, {\"class_name\": \"UpSampling3D\", \"config\": {\"name\": \"up_sampling3d_2\", \"trainable\": true, \"dtype\": \"float32\", \"size\": [2, 2, 2], \"data_format\": \"channels_last\"}}, {\"class_name\": \"Conv3D\", \"config\": {\"name\": \"conv3d_7\", \"trainable\": true, \"dtype\": \"float32\", \"filters\": 8, \"kernel_size\": [3, 3, 3], \"strides\": [1, 1, 1], \"padding\": \"same\", \"data_format\": \"channels_last\", \"dilation_rate\": [1, 1, 1], \"groups\": 1, \"activation\": \"linear\", \"use_bias\": true, \"kernel_initializer\": {\"class_name\": \"GlorotUniform\", \"config\": {\"seed\": null}}, \"bias_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"kernel_regularizer\": null, \"bias_regularizer\": null, \"activity_regularizer\": null, \"kernel_constraint\": null, \"bias_constraint\": null}}, {\"class_name\": \"LeakyReLU\", \"config\": {\"name\": \"leaky_re_lu_4\", \"trainable\": true, \"dtype\": \"float32\", \"alpha\": 0.10000000149011612}}, {\"class_name\": \"Conv3D\", \"config\": {\"name\": \"conv3d_8\", \"trainable\": true, \"dtype\": \"float32\", \"filters\": 1, \"kernel_size\": [3, 3, 3], \"strides\": [1, 1, 1], \"padding\": \"same\", \"data_format\": \"channels_last\", \"dilation_rate\": [1, 1, 1], \"groups\": 1, \"activation\": \"linear\", \"use_bias\": true, \"kernel_initializer\": {\"class_name\": \"GlorotUniform\", \"config\": {\"seed\": null}}, \"bias_initializer\": {\"class_name\": \"Zeros\", \"config\": {}}, \"kernel_regularizer\": null, \"bias_regularizer\": null, \"activity_regularizer\": null, \"kernel_constraint\": null, \"bias_constraint\": null}}]}, \"keras_version\": \"2.4.0\", \"backend\": \"tensorflow\"}\n";
+        File tempFile = testDir.resolve("temp.json").toFile();
+        FileUtils.writeStringToFile(tempFile,config, Charset.defaultCharset());
+        MultiLayerConfiguration multiLayerConfiguration = KerasModelImport.importKerasSequentialConfiguration(tempFile.getAbsolutePath());
+        assertNotNull(multiLayerConfiguration);
+        //null pre processor should still work and default to channels last
+        ReshapePreprocessor reshapePreprocessor = (ReshapePreprocessor) multiLayerConfiguration.getInputPreProcess(4);
+        assertNull(reshapePreprocessor.getFormat());
+        System.out.println(multiLayerConfiguration);
+    }
+
 }

@@ -94,4 +94,9 @@ public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper imp
     public Map<String, Long> helperMemoryUse() {
         return Collections.emptyMap();
     }
+
+    @Override
+    public boolean checkSupported() {
+        return BaseMKLDNNHelper.mklDnnEnabled();
+    }
 }

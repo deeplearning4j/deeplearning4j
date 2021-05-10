@@ -197,4 +197,9 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     public Map<String, Long> helperMemoryUse() {
         return Collections.emptyMap();
     }
+
+    @Override
+    public boolean checkSupported() {
+        return BaseMKLDNNHelper.mklDnnEnabled();
+    }
 }
