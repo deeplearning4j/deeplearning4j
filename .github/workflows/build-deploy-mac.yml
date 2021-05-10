@@ -71,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ mkldnn,"" ]
+        helper: [ onednn,"" ]
         extension: [ avx2,avx512,"" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
