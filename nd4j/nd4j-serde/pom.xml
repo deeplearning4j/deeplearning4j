@@ -20,21 +20,21 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-serde</artifactId>
+        <artifactId>nd4j</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-arrow</artifactId>
+    <artifactId>nd4j-serde</artifactId>
 
-    <name>nd4j-arrow</name>
-
+    <name>nd4j-serde</name>
+    <packaging>pom</packaging>
     <dependencies>
         <dependency>
             <groupId>org.apache.arrow</groupId>
@@ -43,7 +43,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
-            <artifactId>arrow-memory</artifactId>
+            <artifactId>arrow-memory-unsafe</artifactId>
             <version>${arrow.version}</version>
         </dependency>
         <dependency>
