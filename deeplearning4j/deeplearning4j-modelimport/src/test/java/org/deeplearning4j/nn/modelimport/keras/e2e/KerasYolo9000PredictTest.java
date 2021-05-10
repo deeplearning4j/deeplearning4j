@@ -45,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
 @NativeTag
+
 class KerasYolo9000PredictTest extends BaseDL4JTest {
 
     private static final String DL4J_MODEL_FILE_NAME = ".";
