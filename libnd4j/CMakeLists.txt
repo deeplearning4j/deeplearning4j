@@ -321,7 +321,7 @@ if (${HELPERS_cudnn})
 
     if (CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
         message("CUDNN include dir is ${CUDNN_INCLUDE_DIR}")
-
+        include_directories(${CUDNN_INCLUDE_DIR})
         set(HAVE_CUDNN true)
         set(CUDNN ${CUDNN_LIBRARY})
     else()
