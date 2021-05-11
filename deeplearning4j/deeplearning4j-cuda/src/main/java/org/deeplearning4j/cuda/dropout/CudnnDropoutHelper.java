@@ -38,6 +38,9 @@ import org.nd4j.common.util.ArrayUtil;
 import org.bytedeco.cuda.cudart.*;
 import org.bytedeco.cuda.cudnn.*;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
@@ -117,6 +120,16 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
     public CudnnDropoutHelper(DataType dataType){
         super(dataType);
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public boolean checkSupported() {
+        return true;
     }
 
     @Override
