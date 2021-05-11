@@ -132,6 +132,8 @@ jobs:
                  mvn_ext="-Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
              elif [ ${{ matrix.helper }} != '' ]; then
                  mvn_ext="-Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
+             elif [ ${{ matrix.extension }} != '' ]; then
+                mvn_ext="-Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
              else
                  mvn_ext=""
           fi

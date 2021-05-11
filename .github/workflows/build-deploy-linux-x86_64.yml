@@ -121,12 +121,14 @@ jobs:
         shell: bash
         run: |
              command="mvn  -X  -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-             if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
+             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                     mvn_ext="-Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
-                elif [ ${{ matrix.helper }} != '' ]; then
+             elif [ "${{ matrix.helper }}" != '' ]; then
                     mvn_ext="-Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
-                else
-                    mvn_ext=""
+             elif [ "${{ matrix.extension }}" != '' ]; then
+                    mvn_ext="-Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+              else
+                  mvn_ext=""
              fi
              command="${command} ${mvn_ext}"
              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
