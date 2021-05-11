@@ -130,7 +130,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
+              command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext="-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then

@@ -121,7 +121,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-              $command="mvn  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+              $command="mvn   -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
               if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
                     $mvn_ext="-Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                } elseif ( "${{ matrix.helper }}" -ne "" ) {
