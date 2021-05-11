@@ -130,8 +130,8 @@ jobs:
                   $mvn_ext=""
           }
 
-          $command2=-join($($command),$($mvn_ext));
-          $to_write = -join("COMMAND=",$($command));
+          $command2= -join("$($command)","$($mvn_ext)");
+          $to_write = -join("COMMAND=","$($command)");
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
           echo $command2  | Out-File -FilePath  "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
           echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
