@@ -133,7 +133,7 @@ jobs:
               command="mvn -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext="-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
-              elif [ "${HELPER}" != '' ]; then
+              elif [ "${{ matrix.helper }}" != '' ]; then
                   mvn_ext="-Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }}"
               else
                   mvn_ext=""
