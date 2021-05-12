@@ -54,6 +54,11 @@ on:
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [onednn,""]
+        extension: [avx2,avx512,""]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -112,6 +117,22 @@ jobs:
               cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+             command="mvn   -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                    mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
+             elif [ "${{ matrix.helper }}" != '' ]; then
+                    mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
+             elif [ "${{ matrix.extension }}" != '' ]; then
+                    mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+              else
+                  mvn_ext=""
+             fi
+             command="${command} ${mvn_ext}"
+             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+             echo "COMMAND=${command}" >> $GITHUB_ENV
       - name: Build on  linux-x86_64
         shell: bash
         env:
@@ -128,6 +149,8 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
 
         run: |
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
@@ -136,13 +159,24 @@ jobs:
           protoc --version
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
+          if [ -z "${EXTENSION}" ] || [ -n "${EXTENSION}" ]; then
+              export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
+              echo "Extensions specified. This needs a newer version of gcc."
+              sudo apt-get install gcc-7 g++-7
+              echo "Using newer version of libgomp."
+              ls /usr/bin | grep gcc
+              ls /usr/bin | grep g++
+              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
+              sudo update-alternatives --install  /usr/bin/g++ g++ /usr/bin/g++-7  90
+              gcc --version
+          fi
           # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
           # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
           # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
-          sudo cp /usr/lib/gcc/x86_64-linux-gnu/`gcc --version | head -n 1 | grep -o '[^ ]*$'` /usr/lib
+          sudo cp "${LIBGOMP_PATH}" /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          command="mvn  -X  -Possrh  -Dlibnd4j.helper=mkldnn -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
@@ -150,10 +184,7 @@ jobs:
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
                        echo "Running build and deploying to snapshots"
-                       eval "$command"
+                       eval "${COMMAND}"
           fi
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled  }}
 

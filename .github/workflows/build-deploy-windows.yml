@@ -53,6 +53,11 @@ on:
         default: false
 jobs:
   windows-x86_64:
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ onednn,"" ]
+        extension: [ avx2,avx512,"" ]
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -102,25 +107,45 @@ jobs:
             cd ..
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
+      - name: Set mvn build command based on matrix
+        shell: powershell
+        run: |
+                $command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
+                      $mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                 } elseif ( "${{ matrix.helper }}" -ne "" ) {
+                       $mvn_ext=" -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                 }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+                        $mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                } else {
+                      $mvn_ext=""
+                }
+
+                $command2 = -join("$($command)","$($mvn_ext)");
+                $to_write = -join("COMMAND=","$($command2)");
+                echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
+                echo $command2  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
+                echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+
       - name: Run windows cpu build
         shell: cmd
         run: |
-            if "%PERFORM_RELEASE%"=="1" (
-                 echo "Running release"
-                 # download libnd4j from a url and set it up if LIBND4J_URL is defined
-                 bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                 bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=mkldnn -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
-            ) else (
-                if "%PERFORM_RELEASE%"==1 (
-                      echo "Running release"
-                       bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                      bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=mkldnn -pl \":nd4j-native,:libnd4j\" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
-                 ) else (
-                    echo "Running snapshots"
-                    bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                    mvn  -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  %MODULES% --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  clean --batch-mode deploy -DskipTests
-                 )
-            )
+              if "%PERFORM_RELEASE%"=="1" (
+                   echo "Running release"
+                   # download libnd4j from a url and set it up if LIBND4J_URL is defined
+                   bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                   bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
+              ) else (
+                  if "%PERFORM_RELEASE%"==1 (
+                        echo "Running release"
+                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                         bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
+                   ) else (
+                      echo "Running snapshots"
+                      bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                      call "%GITHUB_WORKSPACE%\mvn-command.bat"
+                   )
+              )
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -136,6 +161,9 @@ jobs:
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MODULES: ${{ github.event.inputs.modules  }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
 
 
       - name: Setup tmate session
