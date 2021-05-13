@@ -24,11 +24,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
-import org.bytedeco.cuda.cudart.*;
 import org.bytedeco.cuda.cudnn.*;
 import static org.bytedeco.cuda.global.cudart.*;
 import static org.bytedeco.cuda.global.cudnn.*;

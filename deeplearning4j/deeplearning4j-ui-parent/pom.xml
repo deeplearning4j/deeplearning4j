@@ -59,6 +59,11 @@
             </activation>
 
 
+            <properties>
+                <cuda.version>11.0</cuda.version>
+                <cudnn.version>8.0</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+            </properties>
 
             <dependencies>
                 <dependency>

@@ -127,6 +127,19 @@
                 <cudnn.version>8.0</cudnn.version>
                 <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Ddtype=float -Dfile.encoding=UTF-8
+                                -Dtest.solr.allowed.securerandom=NativePRNG -Xmx2g -Dorg.bytedeco.javacpp.maxphysicalbytes=4g -Dorg.bytedeco.javacpp.maxbytes=4g
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
             <dependencies>
                 <dependency>
                     <groupId>org.bytedeco</groupId>

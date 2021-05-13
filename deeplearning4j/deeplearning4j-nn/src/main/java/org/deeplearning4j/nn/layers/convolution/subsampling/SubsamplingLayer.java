@@ -21,7 +21,6 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -33,7 +32,6 @@ import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
-import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -64,9 +62,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         helper = HelperUtils.createHelper(
                 CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
                 MKLDNNSubsamplingHelper.class.getName(),
-                dataType,
-                SubsamplingHelper.class,
-                layerConf().getLayerName());
+                SubsamplingHelper.class, layerConf().getLayerName(), dataType
+        );
     }
 
     @Override

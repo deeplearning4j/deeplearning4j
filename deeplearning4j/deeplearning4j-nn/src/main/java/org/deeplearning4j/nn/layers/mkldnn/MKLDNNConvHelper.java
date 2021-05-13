@@ -48,7 +48,7 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
     protected OpContext context;
     protected OpContext contextBwd;
 
-    public MKLDNNConvHelper(DataType dataType){
+    public MKLDNNConvHelper(DataType dataType) {
 
     }
 

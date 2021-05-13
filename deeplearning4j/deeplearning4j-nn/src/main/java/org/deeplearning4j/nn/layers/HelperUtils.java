@@ -21,8 +21,6 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.common.config.DL4JClassLoading;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingHelper;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -38,27 +36,27 @@ public class HelperUtils {
     /**
      * Creates a {@link LayerHelper}
      * for use with platform specific code.
+     * @param <T> the actual class type to be returned
      * @param cudnnHelperClassName the cudnn class name
      * @param oneDnnClassName the one dnn class name
-     * @param dataType the datatype to be used in the layer
      * @param layerHelperSuperClass the layer helper super class
      * @param layerName the name of the layer to be created
-     * @param <T> the actual class type to be returned
+     * @param arguments the arguments to be used in creation of the layer
      * @return
      */
     public static <T extends LayerHelper> T createHelper(String cudnnHelperClassName,
                                                          String oneDnnClassName,
-                                                         DataType dataType,
                                                          Class<? extends LayerHelper> layerHelperSuperClass,
-                                                         String layerName) {
+                                                         String layerName,
+                                                         Object... arguments) {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        T helperRet = null;
+        LayerHelper helperRet = null;
         if("CUDA".equalsIgnoreCase(backend)) {
             if(DL4JClassLoading.loadClassByName(cudnnHelperClassName) != null) {
                 helperRet =  DL4JClassLoading.createNewInstance(
                         cudnnHelperClassName,
                         layerHelperSuperClass,
-                        dataType);
+                        arguments);
                 log.debug("Cudnn helper {} successfully initialized",cudnnHelperClassName);
 
             }
@@ -67,10 +65,10 @@ public class HelperUtils {
                 ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
                 DL4JClassLoading.setDl4jClassloaderFromClass(layerHelperSuperClass);
                 try {
-                    return DL4JClassLoading.createNewInstance(
+                    helperRet = DL4JClassLoading.createNewInstance(
                             cudnnHelperClassName,
                             layerHelperSuperClass,
-                            dataType);
+                            arguments);
 
                 } catch (Exception e) {
                     log.warn("Unable to use  helper implementation {} for helper type {}, please check your classpath. Falling back to built in  normal  methods for now.",cudnnHelperClassName,layerHelperSuperClass.getName());
@@ -92,8 +90,7 @@ public class HelperUtils {
         } else if("CPU".equalsIgnoreCase(backend)) {
             helperRet =  DL4JClassLoading.createNewInstance(
                     oneDnnClassName,
-                    layerHelperSuperClass,
-                    dataType);
+                    arguments);
             log.trace("Created oneDNN helper: {}, layer {}", oneDnnClassName,layerName);
         }
 
@@ -102,7 +99,7 @@ public class HelperUtils {
             return null;
         }
 
-        return helperRet;
+        return (T) helperRet;
     }
 
 }
