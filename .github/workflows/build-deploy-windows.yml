@@ -31,8 +31,8 @@ on:
         required: false
         default: ossrh
 
-      modules:
-        description: 'Modules to build'
+      mvnFlags:
+        description: "Extra maven flags (must escape input yourself if used"
         required: false
         default:
 
@@ -110,7 +110,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-                $command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                $command="mvn  ${{ github.event.inputs.mvnFlags }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
                 if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
                       $mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
                  } elseif ( "${{ matrix.helper }}" -ne "" ) {
@@ -159,14 +159,8 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MODULES: ${{ github.event.inputs.modules  }}
+          MODULES: ${{ github.event.inputs.mvnFlags }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-
-
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
 

@@ -31,8 +31,8 @@ on:
         required: false
         default: ossrh
 
-      modules:
-        description: 'Modules to build'
+      mvnFlags:
+        description: "Extra maven flags (must escape input yourself if used"
         required: false
         default:
 
@@ -46,10 +46,6 @@ on:
         required: false
         default: ubuntu-16.04
 
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-        required: false
-        default: false
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
@@ -152,7 +148,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.modules  }}
+          MODULES: ${{ github.event.inputs.mvnFlags }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
 
 
@@ -173,10 +169,5 @@ jobs:
           # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
-
 
 

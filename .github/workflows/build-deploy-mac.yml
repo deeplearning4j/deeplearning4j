@@ -37,8 +37,8 @@ on:
         required: false
         default: macos-10.15
 
-      modules:
-        description: 'Modules to build'
+      mvnFlags:
+        description: "Extra maven flags (must escape input yourself if used"
         required: false
         default: -pl \":libnd4j,:nd4j-native\"
 
@@ -127,7 +127,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-          command="mvn   -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          command="mvn ${{ github.event.inputs.mvnFlags }}  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
                  mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
              elif [ ${{ matrix.helper }} != '' ]; then
@@ -154,7 +154,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.modules  }}
+          MODULES: ${{ github.event.inputs.mvnFlags }}
           LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}
