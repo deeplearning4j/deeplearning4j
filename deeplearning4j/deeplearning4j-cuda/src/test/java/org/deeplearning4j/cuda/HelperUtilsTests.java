@@ -9,6 +9,7 @@ import org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelp
 import org.deeplearning4j.cuda.recurrent.CudnnLSTMHelper;
 import org.deeplearning4j.nn.conf.dropout.DropoutHelper;
 import org.deeplearning4j.nn.layers.HelperUtils;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionHelper;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingHelper;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationHelper;
 import org.deeplearning4j.nn.layers.recurrent.LSTMHelper;
@@ -26,7 +27,7 @@ public class HelperUtilsTests extends BaseDL4JTest  {
     public void testHelperCreation() {
         assertNotNull(HelperUtils.createHelper(CudnnLSTMHelper.class.getName(),"", LSTMHelper.class,"layer-name",getDataType()));
         assertNotNull(HelperUtils.createHelper(CudnnDropoutHelper.class.getName(),"", DropoutHelper.class,"layer-name",getDataType()));
-        assertNotNull(HelperUtils.createHelper(CudnnConvolutionHelper.class.getName(),"", DropoutHelper.class,"layer-name",getDataType()));
+        assertNotNull(HelperUtils.createHelper(CudnnConvolutionHelper.class.getName(),"", ConvolutionHelper.class,"layer-name",getDataType()));
         assertNotNull(HelperUtils.createHelper(CudnnLocalResponseNormalizationHelper.class.getName(),"", LocalResponseNormalizationHelper.class,"layer-name",getDataType()));
         assertNotNull(HelperUtils.createHelper(CudnnSubsamplingHelper.class.getName(),"", SubsamplingHelper.class,"layer-name",getDataType()));
 

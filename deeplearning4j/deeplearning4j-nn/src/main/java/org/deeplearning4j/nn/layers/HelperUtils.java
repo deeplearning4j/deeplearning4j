@@ -53,6 +53,7 @@ public class HelperUtils {
         LayerHelper helperRet = null;
         if("CUDA".equalsIgnoreCase(backend)) {
             if(DL4JClassLoading.loadClassByName(cudnnHelperClassName) != null) {
+                log.debug("Attempting to initialize cudnn helper {}",cudnnHelperClassName);
                 helperRet =  DL4JClassLoading.createNewInstance(
                         cudnnHelperClassName,
                         layerHelperSuperClass,
