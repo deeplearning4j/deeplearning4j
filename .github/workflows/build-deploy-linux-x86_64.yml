@@ -66,6 +66,23 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+              command="mvn  ${{ github.event.inputs.mvnFlags }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
+              elif [ "${{ matrix.helper }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
+              elif [ "${{ matrix.extension }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+               else
+                   mvn_ext=""
+              fi
+              command="${command} ${mvn_ext}"
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+              echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v2
@@ -117,22 +134,6 @@ jobs:
               cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-             command="mvn  ${{ github.event.inputs.mvnFlags }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                    mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
-             elif [ "${{ matrix.helper }}" != '' ]; then
-                    mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
-             elif [ "${{ matrix.extension }}" != '' ]; then
-                    mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
-              else
-                  mvn_ext=""
-             fi
-             command="${command} ${mvn_ext}"
-             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-             echo "COMMAND=${command}" >> $GITHUB_ENV
       - name: Build on  linux-x86_64
         shell: bash
         env:

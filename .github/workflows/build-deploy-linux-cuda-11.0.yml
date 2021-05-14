@@ -72,6 +72,22 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+              command="mvn  ${{ github.event.inputs.mvnFlags }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
+              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                  mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
+              elif [ "${{ matrix.helper }}" != '' ]; then
+                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }}"
+              else
+                  mvn_ext=""
+              fi
+
+              command="${command} ${mvn_ext}"
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+              echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v2
@@ -122,21 +138,6 @@ jobs:
         run: |
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-              command="mvn  ${{ github.event.inputs.mvnFlags }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
-              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
-              elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }}"
-              else
-                  mvn_ext=""
-              fi
-
-              command="${command} ${mvn_ext}"
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-              echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - name: Build cuda
         shell: bash
