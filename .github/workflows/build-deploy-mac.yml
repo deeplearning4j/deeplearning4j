@@ -114,6 +114,12 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
+      - name: Import GPG Key
+        uses: crazy-max/ghaction-import-gpg@v1
+        env:
+            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v2
         with:
