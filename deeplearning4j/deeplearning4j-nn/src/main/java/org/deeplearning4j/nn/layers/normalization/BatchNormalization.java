@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -31,7 +30,6 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNBatchNormHelper;
-import org.deeplearning4j.nn.layers.recurrent.LSTMHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -49,7 +47,6 @@ import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.*;
 
@@ -71,7 +68,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     void initializeHelper() {
-        helper = HelperUtils.createHelper(BATCH_NORM_CUDNN_HELPER_CLASS_NAME,MKLDNNBatchNormHelper.class.getName(),dataType,BatchNormalizationHelper.class,layerConf().getLayerName());
+        helper = HelperUtils.createHelper(BATCH_NORM_CUDNN_HELPER_CLASS_NAME,MKLDNNBatchNormHelper.class.getName(), BatchNormalizationHelper.class, layerConf().getLayerName(), dataType);
         //specific helper with alpha/beta, keep this last check around
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
             log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());

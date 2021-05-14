@@ -858,6 +858,15 @@
         </profile>
 
         <profile>
+            <id>test-larger-heap-size</id>
+            <properties>
+                <test.heap.size>2g</test.heap.size>
+                <test.offheap.size>4g</test.offheap.size>
+            </properties>
+        </profile>
+
+
+        <profile>
             <id>github</id>
             <distributionManagement>
                 <repository>

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -43,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MKLDNNLSTMHelper implements LSTMHelper {
+    public MKLDNNLSTMHelper(DataType dataType) {}
+
     @Override
     public boolean checkSupported(IActivation gateActivationFn, IActivation activationFn, boolean hasPeepholeConnections) {
         //TODO check other activation functions for MKLDNN

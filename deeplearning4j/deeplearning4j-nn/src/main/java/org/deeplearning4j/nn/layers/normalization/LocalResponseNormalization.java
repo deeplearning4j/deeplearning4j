@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -67,7 +66,7 @@ public class LocalResponseNormalization
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            helper = HelperUtils.createHelper(LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME, MKLDNNLocalResponseNormalizationHelper.class.getName(),dataType,LocalResponseNormalizationHelper.class,layerConf().getLayerName());
+            helper = HelperUtils.createHelper(LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME, MKLDNNLocalResponseNormalizationHelper.class.getName(), LocalResponseNormalizationHelper.class, layerConf().getLayerName(), dataType);
         }
         //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/eclipse/deeplearning4j/issues/7272
 //        else if("CPU".equalsIgnoreCase(backend)){
