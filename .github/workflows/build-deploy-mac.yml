@@ -38,7 +38,7 @@ on:
         default: macos-10.15
 
       mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used"
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default: -pl \":libnd4j,:nd4j-native\"
 
@@ -131,7 +131,7 @@ jobs:
         run: |
              brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
-          
+
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |

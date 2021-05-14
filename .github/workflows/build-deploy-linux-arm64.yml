@@ -33,7 +33,7 @@ on:
         default:
 
       mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used"
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default:
 
