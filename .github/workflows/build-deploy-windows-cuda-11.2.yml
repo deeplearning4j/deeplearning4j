@@ -32,7 +32,7 @@ on:
         default: ossrh
 
       mvnFlags:
-        description: 'Extra maven flags to use'
+        description: 'Extra maven flags (must escape input yourself if used)'
         required: false
         default:
 

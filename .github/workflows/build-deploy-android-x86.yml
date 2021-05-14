@@ -32,7 +32,7 @@ on:
         default: ossrh
 
       mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used"
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default:
 
@@ -158,7 +158,6 @@ jobs:
 
 
         run: |
-          #sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version

@@ -32,12 +32,12 @@ on:
         default: ossrh
 
       mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used"
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default: '-pl \":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j\"'
 
       libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.)'
         required: false
         default:
 
