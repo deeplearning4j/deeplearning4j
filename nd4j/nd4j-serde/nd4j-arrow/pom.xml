@@ -39,17 +39,14 @@
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
-            <version>${arrow.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-memory-unsafe</artifactId>
-            <version>${arrow.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-format</artifactId>
-            <version>${arrow.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -58,12 +55,10 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>guava</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
