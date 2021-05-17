@@ -36,8 +36,8 @@ on:
         required: false
         default: '-pl \":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j\"'
 
-      libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+      libnd4jDownload:
+        description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
         default:
 
@@ -91,16 +91,23 @@ jobs:
         shell: bash
         run: |
               command="mvn ${{ matrix.mvn_ext }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ github.event.inputs.buildThreads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
+              libnd4j_download_file_url=""
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }}"
+                  libnd4j_download_file_url="linux-cuda-11-${{ matrix.extension }}-${{ matrix.helper }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
                   mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }}"
+                  libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
+
               else
+                  echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
+                  libnd4j_download_file_url="linux-cuda-11"
                   mvn_ext=""
               fi
 
               command="${command} ${mvn_ext}"
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+              echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - uses: ./.github/actions/update-deps-linux
@@ -152,7 +159,7 @@ jobs:
         shell: bash
         run: |
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+        if: ${{ github.event.inputs.libnd4jDownload != '' }}
 
       - name: Build cuda
         shell: bash

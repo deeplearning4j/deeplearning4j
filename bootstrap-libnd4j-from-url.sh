@@ -1,5 +1,9 @@
 #!/bin/bash
-if ! [[ -z "$LIBND4J_URL" ]]; then
+
+if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
+              wget "https://raw.githubusercontent.com/KonduitAI/gh-actions-libnd4j-urls/${LIBND4J_FILE_NAME}"
+              export LIBND4J_URL=$(cat "${LIBND4J_FILE_NAME}")
+              echo "Set libnd4j url to ${LIBND4J_URL}"
               mkdir libnd4j_home
               cd libnd4j_home
               # Set a suffix for the downloaded libnd4j directory
