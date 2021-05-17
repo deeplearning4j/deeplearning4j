@@ -128,7 +128,7 @@ jobs:
                     echo "Performing release"
                    ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
                    else
-                       "Running build and deploying to snapshots"
+                       echo "Running build and deploying to snapshots"
                        eval "$command"
           fi
 
