@@ -79,6 +79,10 @@ jobs:
           - runs_on: ${{ github.event.inputs.runsOn }}
             experimental: true
             name: OS to run on
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+            experimental: true
+            name: OS to run on
+
     runs-on: ${{ matrix.runs_on }}
     needs: pre-ci
     steps:
@@ -106,7 +110,10 @@ jobs:
               fi
 
               command="${command} ${mvn_ext}"
-              echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+                  echo "Adding libnd4j download"
+                  echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+              fi
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
