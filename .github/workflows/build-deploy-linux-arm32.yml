@@ -134,6 +134,7 @@ jobs:
           BUILD_USING_MAVEN: 1
           TARGET_OS: linux
           CURRENT_TARGET: arm32
+          LIBND4J_CLASSSIFIER: linux-armhf
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}

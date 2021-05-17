@@ -138,6 +138,7 @@ jobs:
           BUILD_USING_MAVEN: 1
           NDK_VERSION: r21d
           CURRENT_TARGET: android-arm
+          LIBND4J_CLASSSIFIER: android-arm
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
