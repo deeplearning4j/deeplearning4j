@@ -207,7 +207,7 @@ jobs:
           echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
-          
+
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
           echo "Running cuda build"
