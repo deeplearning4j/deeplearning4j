@@ -114,13 +114,13 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-            $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+            $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests"
             if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-               $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+               $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
             } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
             }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-                 $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests"
+                 $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
             } else {
                $mvn_ext="-Dlibnd4j.classifier=windows-x86_64"
             }
