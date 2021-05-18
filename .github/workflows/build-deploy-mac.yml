@@ -63,7 +63,7 @@ jobs:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          - debug_enabled:  ${{ github.event.inputs.debug_enabled }}
             experimental: true
             name: Debug enabled
 
@@ -75,6 +75,36 @@ jobs:
             experimental: true
             name: OS to run on
 
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
+
     runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Cancel Previous Runs
@@ -85,7 +115,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn ${{ matrix.mvn_ext }}  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              command="mvn ${{ matrix.mvn_ext }}  -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ ${{ matrix.helper }} != '' ] && [ ${{ matrix.extension }} != '' ]; then
                   mvn_ext=" -Dlibnd4j.classifier=${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ ${{ matrix.helper }} != '' ]; then
@@ -146,7 +176,7 @@ jobs:
             cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/libopenblas.dylib
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/" >> "$GITHUB_ENV"
 
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+        if: ${{ matrix.libnd4j_file_download != '' }}
 
       - name: Build and install
         shell: bash
@@ -157,23 +187,33 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
+          MODULES: ${{ matrix.mvn_flags }}
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
 
 
         run: |
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+
           gpg --version
           gpg1 --version
           brew list
           brew list --cask
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"

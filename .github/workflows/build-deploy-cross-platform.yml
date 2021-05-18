@@ -42,7 +42,6 @@ on:
         default: false
 jobs:
    linux-x86_64:
-    needs: pre-ci
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
@@ -104,6 +103,17 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
 
         run: |
+          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
+          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
+          echo "release version ${{ github.event.inputs.releaseVersion }}"
+          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
+          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
+          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
+          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
+          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
+          echo "server id ${{ github.event.inputs.serverId }}"
+          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
+
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version

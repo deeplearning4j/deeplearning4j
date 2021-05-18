@@ -130,7 +130,7 @@ jobs:
           BUILD_USING_MAVEN: 1
           NDK_VERSION: r21d
           CURRENT_TARGET: android-x86_64
-          LIBND4J_CLASSSIFIER: android-x86_64
+          LIBND4J_CLASSIFIER: android-x86_64
 
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
@@ -145,9 +145,19 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.mvnFlags }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
+          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
+          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
+          echo "release version ${{ github.event.inputs.releaseVersion }}"
+          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
+          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
+          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
+          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
+          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
+          echo "server id ${{ github.event.inputs.serverId }}"
+          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
+
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
@@ -160,7 +170,7 @@ jobs:
           cd ..
           export PATH=/opt/protobuf/bin:$PATH
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64/
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 

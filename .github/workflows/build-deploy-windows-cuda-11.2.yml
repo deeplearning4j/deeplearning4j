@@ -74,6 +74,31 @@ jobs:
             experimental: true
             name: OS to run on
 
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+
     runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Cancel Previous Runs
@@ -160,19 +185,29 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release-repo_id }}
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          MODULES: ${{ matrix.mvn_flags }}
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
         run: |
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+          
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
           echo "Running cuda build"
