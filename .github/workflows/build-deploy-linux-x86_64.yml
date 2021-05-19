@@ -31,8 +31,8 @@ on:
         required: false
         default: ossrh
 
-      modules:
-        description: 'Modules to build'
+      mvnFlags:
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default:
 
@@ -59,13 +59,79 @@ jobs:
       matrix:
         helper: [onednn,""]
         extension: [avx2,avx512,""]
-    runs-on: ${{ github.event.inputs.runsOn }}
+        include:
+          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags
+          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+            experimental: true
+            name: Debug enabled
+
+          - runs_on: ${{ github.event.inputs.runsOn }}
+            experimental: true
+            name: OS to run on
+
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+            experimental: true
+            name: OS to run on
+
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
+    runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+              command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+              elif [ "${{ matrix.helper }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
+              elif [ "${{ matrix.extension }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
+               else
+                   mvn_ext=""
+              fi
+              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+                 echo "Adding libnd4j download"
+                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+              fi
+              command="${command} ${mvn_ext}"
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+              echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v2
@@ -117,22 +183,6 @@ jobs:
               cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-             command="mvn   -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                    mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
-             elif [ "${{ matrix.helper }}" != '' ]; then
-                    mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
-             elif [ "${{ matrix.extension }}" != '' ]; then
-                    mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
-              else
-                  mvn_ext=""
-             fi
-             command="${command} ${mvn_ext}"
-             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-             echo "COMMAND=${command}" >> $GITHUB_ENV
       - name: Build on  linux-x86_64
         shell: bash
         env:
@@ -143,21 +193,30 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.modules  }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
+          MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
 
         run: |
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
-          sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
           if [ -z "${EXTENSION}" ] || [ -n "${EXTENSION}" ]; then
@@ -177,7 +236,7 @@ jobs:
           sudo cp "${LIBGOMP_PATH}" /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
           if [ "$PERFORM_RELEASE" == 1 ]; then
@@ -186,5 +245,10 @@ jobs:
                        echo "Running build and deploying to snapshots"
                        eval "${COMMAND}"
           fi
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled}}
+
 
 
