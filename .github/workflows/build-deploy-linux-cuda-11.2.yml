@@ -99,6 +99,11 @@ jobs:
             experimental: true
             name: Extra maven flags to use as part of the build
 
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
 
 
     runs-on: ${{ matrix.runs_on }}
