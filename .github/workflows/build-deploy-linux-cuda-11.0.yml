@@ -62,6 +62,7 @@ jobs:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags
+
           - debug_enabled: ${{ github.event.inputs.debug_enabled }}
             experimental: true
             name: Debug enabled
