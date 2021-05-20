@@ -290,7 +290,7 @@ if (${HELPERS_cudnn})
     if (NOT SD_CUDA)
         message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
     endif()
-
+    message("Attempting to build with cudnn")
     #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
     SET(CUDNN_LIBNAME "cudnn")
@@ -301,7 +301,7 @@ if (${HELPERS_cudnn})
       if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
            message("Using cuda root directory from environment")
            set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
-        endif()
+     endif()
     message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
     find_path(CUDNN_INCLUDE_DIR cudnn.h
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
@@ -327,6 +327,9 @@ if (${HELPERS_cudnn})
     else()
         message(FATAL_ERROR "Unable to find cuDNN, no library found. Please ensure cudnn is installed under the cuda toolkit directory.")
     endif()
+
+    else()
+      message("Not using cudnn, no helper defined")
 endif()
 
 # Download and unpack flatbuffers at configure time

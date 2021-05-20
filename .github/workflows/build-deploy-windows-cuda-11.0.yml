@@ -128,7 +128,7 @@ jobs:
             }
 
             $command2= -join("$($command)","$($mvn_ext)");
-            $to_write = -join("COMMAND=","$($command)");
+            $to_write = -join("COMMAND=","$($command2)");
             if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
                 echo "Adding libnd4j download"
                 $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$($libnd4j_download_file_url)");
