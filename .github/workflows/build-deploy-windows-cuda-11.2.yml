@@ -197,7 +197,7 @@ jobs:
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release-repo_id }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
           CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
