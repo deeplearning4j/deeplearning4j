@@ -180,7 +180,7 @@ jobs:
         shell: powershell
         run: |
              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+        if: ${{ matrix.libnd4j_file_download != '' }}
 
       - name: Run windows build
         shell: cmd
@@ -196,6 +196,7 @@ jobs:
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0
+          CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MODULES: ${{ matrix.mvn_flags }}
