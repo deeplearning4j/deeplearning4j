@@ -137,7 +137,7 @@ jobs:
             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
             echo $command2  | Out-File -FilePath  "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
             echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-
+            echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0"  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -224,7 +224,6 @@ jobs:
           bash ./change-cuda-versions.sh 11.0
           Rem  Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           Rem  See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          set CUDNN_ROOT_DIR=%CUDA_PATH%
           if "%PERFORM_RELEASE%"=="1" (
                echo "Running release"
                bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
