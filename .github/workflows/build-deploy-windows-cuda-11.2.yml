@@ -206,6 +206,8 @@ jobs:
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          MAVEN_OPTS: "-Xmx2g"
+
 
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
