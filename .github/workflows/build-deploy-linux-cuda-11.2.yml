@@ -125,7 +125,7 @@ jobs:
                mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.2-${{ matrix.helper }}"
                libnd4j_download_file_url="linux-cuda-11.2-${{ matrix.extension }}-${{ matrix.helper }}"
             else
-               mvn_ext="-Dlibnd4j.classifier=linux-x86_64-cuda-11.2"
+               mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.2"
                libnd4j_download_file_url="linux-cuda-11.2-${{ matrix.extension }}-${{ matrix.helper }}"
 
             fi

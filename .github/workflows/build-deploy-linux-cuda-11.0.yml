@@ -125,7 +125,7 @@ jobs:
               else
                   echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
                   libnd4j_download_file_url="linux-cuda-11"
-                  mvn_ext="-Dlibnd4j.classifier=linux-x86_64-cuda-11.0"
+                  mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.0"
               fi
 
               command="${command} ${mvn_ext}"

@@ -123,7 +123,7 @@ jobs:
               elif [ "${{ matrix.extension }}" != '' ]; then
                  mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
               else
-                  mvn_ext="-Dlibnd4j.classifier=macosx-x86_64"
+                  mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                 echo "Adding libnd4j download"

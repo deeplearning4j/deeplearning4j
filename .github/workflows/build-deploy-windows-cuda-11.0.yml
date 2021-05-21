@@ -124,7 +124,7 @@ jobs:
                   $libnd4j_download_file_url="windows-cuda-11-${{ matrix.helper }}"
              } else {
                     $libnd4j_download_file_url="windows-cuda-11"
-                    $mvn_ext="-Dlibnd4j.classifier=windows-x86_64-cuda-11.0"
+                    $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.0"
             }
 
             $command2= -join("$($command)","$($mvn_ext)");
