@@ -22,7 +22,7 @@ on:
         default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
-        description: 'Snapshot repository id'
+        description: 'Release repository id'
         required: false
         default:
 

@@ -122,7 +122,7 @@ jobs:
             }  elseif ( "${{ matrix.extension }}" -ne "" ) {
                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
             } else {
-               $mvn_ext="-Dlibnd4j.classifier=windows-x86_64"
+               $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
             }
 
             if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
