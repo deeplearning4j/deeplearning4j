@@ -4383,3 +4383,105 @@ TEST_F(DeclarableOpsTests2, ctc_loss_grad_test1) {
 }
 
 #endif
+
+TEST_F(DeclarableOpsTests2, ctc_beam_test1) {
+    constexpr int CLASS_LEN = 5 ;
+    constexpr int BATCH_LEN = 1 ;
+    constexpr int MAX_FRAME_LEN = 3;
+    constexpr int NBEST_LEN = 2;
+    constexpr int BEAM_WIDTH = 3;
+    constexpr int BLANK_INDEX=CLASS_LEN-1;
+    auto logits = NDArrayFactory::create<float>('c', { BATCH_LEN, MAX_FRAME_LEN, CLASS_LEN },
+                                    {
+                                     -2.578319f, -1.091237f, -1.519336f, -2.115322f, -1.390921f,
+                                     -1.901657f, -2.46196f,  -1.718925f, -0.837558f, -1.874794f,
+                                     -1.761921f, -1.125581f, -2.378538f, -1.907196f, -1.336974f
+                                    });
+    auto logits_length = NDArrayFactory::create<int>('c', { BATCH_LEN }, { 3 });
+
+    auto output_sequence = NDArrayFactory::create<int>('c', { BATCH_LEN, NBEST_LEN, MAX_FRAME_LEN});
+    auto output_seq_prob = NDArrayFactory::create<float>('c', { BATCH_LEN, NBEST_LEN});
+    auto output_seq_length = NDArrayFactory::create<int>('c', { BATCH_LEN, NBEST_LEN});
+
+    auto expected_seq = NDArrayFactory::create<int>('c', {BATCH_LEN, NBEST_LEN, MAX_FRAME_LEN},
+                                                            {1, 3, 0,
+                                                             1, 3, 1});
+
+    auto expected_length = NDArrayFactory::create<int>('c', {BATCH_LEN, NBEST_LEN }, {2, 3});
+
+    auto expected_probs  = NDArrayFactory::create<float>('c', {BATCH_LEN, NBEST_LEN }, {-2.817627f, -3.054376f});
+
+    sd::ops::ctc_beam op;
+
+    auto result = op.execute({ &logits, &logits_length}, {&output_sequence, &output_seq_prob, &output_seq_length }, {BLANK_INDEX, BEAM_WIDTH, NBEST_LEN});
+
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(expected_seq.equalsTo(output_sequence));
+    ASSERT_TRUE(expected_probs.equalsTo(output_seq_prob));
+    ASSERT_TRUE(expected_length.equalsTo(output_seq_length));
+
+}
+
+TEST_F(DeclarableOpsTests2, ctc_beam_test2) {
+    constexpr int CLASS_LEN = 5 ;
+    constexpr int BATCH_LEN = 4  ;
+    constexpr int MIN_FRAME_LEN = 4;
+    constexpr int MAX_FRAME_LEN = 6;
+    constexpr int NBEST_LEN = 1;
+    constexpr int BEAM_WIDTH = 3;
+    constexpr int BLANK_INDEX=CLASS_LEN-1;
+
+    auto logits =  NDArrayFactory::create<float>('c', {BATCH_LEN, MAX_FRAME_LEN, CLASS_LEN },
+      {-1.52900087f, -1.7423916f, -1.79369985f, -1.68980741f, -1.35771429f,
+       -2.08261997f, -1.65483307f, -1.31878488f, -1.38940393f, -1.78624192f,
+       -1.83125744f, -1.28989651f, -1.86882736f, -1.51760877f, -1.65575026f,
+       -1.59030191f, -2.09045484f, -2.01113821f, -1.31159853f, -1.3120046f,
+       -1.45263472f, -1.52268525f, -1.6567962f,  -2.06986454f, -1.46546941f,
+       -1.25549694f, -1.86336982f, -1.64691575f, -1.69584239f, -1.69374889f,
+       -1.62384788f, -1.53256338f, -1.47943003f, -1.9953089f,  -1.49995189f,
+       -1.58914748f, -2.14294273f, -1.89989005f, -1.26397295f, -1.40048678f,
+       -1.52242117f, -1.79940303f, -1.86987214f, -1.41871056f, -1.51299132f,
+       -1.41772259f, -1.27648263f, -1.87029582f, -1.71325761f, -1.93542947f,
+       -1.4372372f,  -1.72814911f, -1.18767571f, -1.85569031f, -2.09127332f,
+       -1.99591619f, -1.17070749f, -1.91569048f, -1.66127429f, -1.52865783f,
+       -1.39319926f, -2.19674832f, -1.69619098f, -1.37916537f, -1.58285964f,
+       -1.85456282f, -1.91027747f, -1.35265643f, -1.76707679f, -1.32405154f,
+       -1.70063352f, -1.82894304f, -1.81275811f, -1.76677183f, -1.13084056f,
+       -2.01507311f, -1.50622804f, -1.55902412f, -1.4076143f,  -1.66137954f,
+       -1.72469437f, -1.74285619f, -1.72109242f, -1.54947478f, -1.36444454f,
+       -1.78795939f, -1.62871901f, -1.43244094f, -1.83058005f, -1.43770547f,
+       -1.3577647f,  -1.81454222f, -1.58227661f, -1.89836191f, -1.49373763f,
+       -1.52027507f, -1.41807732f, -1.54481537f, -1.86538837f, -1.76619851f,
+       -1.64547283f, -1.58328753f, -1.58442673f, -1.65941447f, -1.57762943f,
+       -1.54091641f, -1.76747862f, -1.56063854f, -1.76235545f, -1.45495771f,
+       -1.37294933f, -1.75871646f, -1.38392315f, -1.62238305f, -2.06866473f,
+       -1.98087487f, -1.49880371f, -2.14268396f, -1.22969736f, -1.47432277f
+       });
+
+    auto logits_length = NDArrayFactory::create<int>('c', {BATCH_LEN}, {MAX_FRAME_LEN, MAX_FRAME_LEN, MAX_FRAME_LEN, MAX_FRAME_LEN});
+
+    auto expected_seq = NDArrayFactory::create<int>('c', {BATCH_LEN, NBEST_LEN, MAX_FRAME_LEN},
+                                                            {3, 1, 3, 0, 0, 0,
+                                                             2, 3, 1, 0, 0, 0,
+                                                             3, 2, 3, 0, 0, 0,
+                                                             0, 1, 0, 0, 0, 0});
+
+    auto expected_length = NDArrayFactory::create<int>('c', {BATCH_LEN, NBEST_LEN }, {3, 3, 3, 3});
+
+    auto expected_probs  = NDArrayFactory::create<float>('c', {BATCH_LEN, NBEST_LEN }, {-5.497302f, -5.469760f, -5.338807f,-5.520249f});
+
+    sd::ops::ctc_beam op;
+
+    auto results = op.evaluate({ &logits, &logits_length}, {}, {BATCH_LEN, BEAM_WIDTH, NBEST_LEN});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto *result_sequence = results.at(0);
+    auto *result_probs = results.at(1);
+    auto *result_sequence_length = results.at(2);
+
+    ASSERT_TRUE(expected_seq.equalsTo(result_sequence));
+    ASSERT_TRUE(expected_probs.equalsTo(result_probs));
+    ASSERT_TRUE(expected_length.equalsTo(result_sequence_length));
+
+}

@@ -49,6 +49,7 @@
 #include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/headers/images.h>
 #include <ops/declarable/headers/updaters.h>
+#include <ops/declarable/headers/decoder.h>
 #include <system/dll.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
