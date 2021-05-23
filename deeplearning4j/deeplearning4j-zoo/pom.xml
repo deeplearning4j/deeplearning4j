@@ -95,6 +95,10 @@
             <properties>
                 <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
                 <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
+                <cuda.version>11.0</cuda.version>
+                <cudnn.version>8.0</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+
             </properties>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -121,7 +125,7 @@
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>cuda-platform-redist</artifactId>
-                    <version>11.0-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                    <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>

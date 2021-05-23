@@ -23,8 +23,6 @@ package org.deeplearning4j.optimize.listeners;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -32,27 +30,41 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class TimeIterationListener extends BaseTrainingListener implements Serializable {
-    private long start;
-    private int iterationCount;
-    private AtomicLong iterationCounter = new AtomicLong(0);
+
+    private final int frequency;
+    private final long start;
+    private final int iterationCount;
+    private final AtomicLong iterationCounter = new AtomicLong(0);
 
     /**
      * Constructor
      * @param iterationCount The global number of iteration for training (all epochs)
      */
     public TimeIterationListener(int iterationCount) {
+        this(1, iterationCount);
+    }
+
+    /**
+     * Constructor
+     * @param frequency frequency with which to print the remaining time
+     * @param iterationCount The global number of iteration for training (all epochs)
+     */
+    public TimeIterationListener(int frequency, int iterationCount) {
+        this.frequency = frequency;
         this.iterationCount = iterationCount;
-        start = System.currentTimeMillis();
+        this.start = System.currentTimeMillis();
     }
 
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {
         long currentIteration = iterationCounter.incrementAndGet();
-        long elapsed = System.currentTimeMillis() - start;
-        long remaining = (iterationCount - currentIteration) * elapsed / currentIteration;
-        long minutes = remaining / (1000 * 60);
-        Date date = new Date(start + elapsed + remaining);
-        log.info("Remaining time : " + minutes + "mn - End expected : " + date.toString());
+        if (iteration % frequency == 0) {
+            long elapsed = System.currentTimeMillis() - start;
+            long remaining = (iterationCount - currentIteration) * elapsed / currentIteration;
+            long minutes = remaining / (1000 * 60);
+            Date date = new Date(start + elapsed + remaining);
+            log.info("Remaining time : " + minutes + "mn - End expected : " + date.toString());
+        }
     }
 
 }

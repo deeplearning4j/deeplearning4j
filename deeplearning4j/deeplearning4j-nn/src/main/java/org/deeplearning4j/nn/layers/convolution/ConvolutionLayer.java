@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.layers.convolution;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -37,7 +36,6 @@ import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -50,7 +48,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
-import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.Arrays;
 
@@ -74,8 +71,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     void initializeHelper() {
         helper = HelperUtils.createHelper(CUDA_CNN_HELPER_CLASS_NAME,
                 MKLDNNConvHelper.class.getName(),
-                dataType,
-                ConvolutionHelper.class,layerConf().getLayerName());
+                ConvolutionHelper.class, layerConf().getLayerName(), dataType
+        );
     }
 
     @Override

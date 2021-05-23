@@ -55,7 +55,7 @@ public class StringHistogramCounter implements HistogramCounter {
         //Not super efficient, but linear search on 20-50 items should be good enough
         int idx = -1;
         for (int i = 0; i < nBins; i++) {
-            if (d >= bins[i] && d < bins[i]) {
+            if (d >= bins[i] && d < bins[i + 1]) {
                 idx = i;
                 break;
             }

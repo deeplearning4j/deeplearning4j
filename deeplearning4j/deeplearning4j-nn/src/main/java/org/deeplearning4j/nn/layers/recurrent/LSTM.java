@@ -21,7 +21,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,7 +28,6 @@ import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.layers.mkldnn.BaseMKLDNNHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLSTMHelper;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -38,7 +36,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 @Slf4j
 public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
@@ -55,9 +52,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     void initializeHelper() {
         helper = HelperUtils.createHelper(CUDNN_LSTM_CLASS_NAME,
                 MKLDNNLSTMHelper.class.getName(),
-                dataType,
-                LSTMHelper.class,
-                layerConf().getLayerName());
+                LSTMHelper.class, layerConf().getLayerName(), dataType
+        );
     }
 
     @Override

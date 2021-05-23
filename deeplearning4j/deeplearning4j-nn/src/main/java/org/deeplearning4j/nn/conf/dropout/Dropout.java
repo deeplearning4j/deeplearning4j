@@ -25,7 +25,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -109,9 +108,8 @@ public class Dropout implements IDropout {
      */
     protected void initializeHelper(DataType dataType){
         helper = HelperUtils.createHelper(CUDNN_DROPOUT_HELPER_CLASS_NAME,
-                "",dataType,
-                DropoutHelper.class,
-                "dropout-helper");
+                "", DropoutHelper.class, "dropout-helper", dataType
+        );
 
         initializedHelper = helper != null;
     }
