@@ -31,13 +31,13 @@ on:
         required: false
         default: ossrh
 
-      modules:
-        description: 'Modules to build'
+      mvnFlags:
+        description: 'Extra maven flags (must escape input yourself if used)'
         required: false
         default:
 
-      libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+      libnd4jDownload:
+        description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
         default:
 
@@ -50,32 +50,98 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+
 jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows-x86_64-cuda-11-2:
-    needs: pre-ci
     strategy:
       fail-fast: false
       matrix:
         helper: [ cudnn,"" ]
         extension: [ "" ]
-    runs-on: ${{ github.event.inputs.runsOn }}
+        include:
+          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags
+
+          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+            experimental: true
+            name: Debug enabled
+
+          - runs_on: ${{ github.event.inputs.runsOn }}
+            experimental: true
+            name: OS to run on
+
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+            experimental: true
+            name: OS to run on
+
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
+
+
+    runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - name: Set mvn build command based on matrix
+        shell: powershell
+        run: |
+              $command="mvn  ${{ matrix.mvn_ext }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+              if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
+                 $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.2-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+                 $libnd4j_download_file_url="windows-cuda-11.2-${{ matrix.extension }}-${{ matrix.helper }}"
+              } elseif ( "${{ matrix.helper }}" -ne "" ) {
+                 $mvn_ext="-Dlibnd4j.classifier=windows-x86_64-cuda-11.2-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+                 $libnd4j_download_file_url="windows-cuda-11.2-${{ matrix.helper }}"
+              } else {
+                   $libnd4j_download_file_url="windows-cuda-11.2"
+                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.2"
+              }
+
+              $command2= -join("$($command)","$($mvn_ext)");
+              $to_write = -join("COMMAND=","$($command2)");
+              if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
+                 echo "Adding libnd4j download"
+                 $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$($libnd4j_download_file_url)");
+                 echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+              }
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
+              echo $command2  | Out-File -FilePath  "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
+              echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+              echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2"  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+
+
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -116,25 +182,7 @@ jobs:
         shell: powershell
         run: |
              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
-
-      - name: Set mvn build command based on matrix
-        shell: powershell
-        run: |
-              $command="mvn   -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-              if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
-                    $mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-               } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                    $mvn_ext=" -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-               } else {
-                      $mvn_ext=""
-              }
-
-              $command2= -join("$($command)","$($mvn_ext)");
-              $to_write = -join("COMMAND=","$($command2)");
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
-              echo $command2  | Out-File -FilePath  "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
-              echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+        if: ${{ matrix.libnd4j_file_download != '' }}
 
 
       - name:  Run cuda build
@@ -146,23 +194,33 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
+          CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          COMMAND: mvn  -Possrh   -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.compute=\"5.0 5.2 5.3 6.0 6.2 8.0\" -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda  -Dlibnd4j.helper=cudnn clean  --batch-mode deploy -DskipTests
-          MODULES: ${{ github.event.inputs.modules  }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          MODULES: ${{ matrix.mvn_flags }}
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-
+          MAVEN_OPTS: "-Xmx2g"
 
 
         run: |
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
           echo "Running cuda build"
@@ -189,5 +247,5 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
 
