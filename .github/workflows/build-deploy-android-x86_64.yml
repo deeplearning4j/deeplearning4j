@@ -44,7 +44,7 @@ on:
 
 
       runsOn:
-        description: 'Server id to publish to'
+        description: 'OS to run on'
         required: false
         default: ubuntu-16.04
 
