@@ -365,7 +365,8 @@ namespace ops {
        *
        * Input arrays:
        *    0: labels - labels NDArray {BATCH_LEN, MAX_TARGET_LEN}, type integer
-       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. log softmax of  rnn output. It should include a blank label as well, type float
+       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. It should include a blank label as well, type float
+       *    NOTE: we expect normalized logits (softmax normalized logarithm values for logits).
        *    2: targetLabelLengths - Length of label sequence in labels NDArray {BATCH_LEN}, type integer
        *    3: logitsLengths - Length of input sequence in logits NDArray {BATCH_LEN}, type integer
        *

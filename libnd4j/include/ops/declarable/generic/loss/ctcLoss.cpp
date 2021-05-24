@@ -21,7 +21,7 @@
 
 #include <system/op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/ctcLoss.h>
+#include <ops/declarable/helpers/ctc.h>
 
 namespace sd {
 namespace ops  {
@@ -43,16 +43,16 @@ CUSTOM_OP_IMPL(ctc_loss, 4, 1, false, 0, 1) {
     REQUIRE_TRUE(targetLabelLengths->rankOf()==1, 0, "CtcLoss: target label length fails to meet rank requirement (batch_size): %i == 1 ", targetLabelLengths->rankOf());
     REQUIRE_TRUE(logitInputLengths->rankOf()==1, 0, "CtcLoss: logit Input lengths fails to meet rank requirement (batch_size): %i == 1 ", logitInputLengths->rankOf());
 
-    int batchSize0 = targetLabels->sizeAt(0);
-    int batchSize1 = logitInput->sizeAt(0);
-    int batchSize2 = targetLabelLengths->sizeAt(0);
-    int batchSize3 = logitInputLengths->sizeAt(0);
-    int batchSize4 = outputLosses->sizeAt(0);
+    auto batchSize0 = targetLabels->sizeAt(0);
+    auto batchSize1 = logitInput->sizeAt(0);
+    auto batchSize2 = targetLabelLengths->sizeAt(0);
+    auto batchSize3 = logitInputLengths->sizeAt(0);
+    auto batchSize4 = outputLosses->sizeAt(0);
 
     bool check_batches = (batchSize0 == batchSize1) && (batchSize2 == batchSize3);
     check_batches = check_batches && (batchSize0 == batchSize4) && (batchSize0 == batchSize2);
 
-    REQUIRE_TRUE(check_batches, 0, "CtcLoss: All batch sizes should be equal %i", batchSize0);
+    REQUIRE_TRUE(check_batches, 0, "CtcLoss: All batch sizes should be %i", batchSize0);
     REQUIRE_TRUE(outputLosses->isSameShape(targetLabelLengths), 0, "CtcLoss: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(targetLabelLengths).c_str(), ShapeUtils::shapeAsString(outputLosses).c_str());
 
     auto emptyGradients = NDArrayFactory::empty<float>();
@@ -95,16 +95,16 @@ CUSTOM_OP_IMPL(ctc_loss_grad, 4, 1, false, 0, 1) {
     REQUIRE_TRUE(targetLabelLengths->rankOf()==1, 0, "CtcLoss: target label length fails to meet rank requirement (batch_size): %i == 1 ", targetLabelLengths->rankOf());
     REQUIRE_TRUE(logitInputLengths->rankOf()==1, 0, "CtcLoss: logit Input lengths fails to meet rank requirement (batch_size): %i == 1 ", logitInputLengths->rankOf());
 
-    int batchSize0 = targetLabels->sizeAt(0);
-    int batchSize1 = logitInput->sizeAt(0);
-    int batchSize2 = targetLabelLengths->sizeAt(0);
-    int batchSize3 = logitInputLengths->sizeAt(0);
-    int batchSize4 = outputGradients->sizeAt(0);
+    auto batchSize0 = targetLabels->sizeAt(0);
+    auto batchSize1 = logitInput->sizeAt(0);
+    auto batchSize2 = targetLabelLengths->sizeAt(0);
+    auto batchSize3 = logitInputLengths->sizeAt(0);
+    auto batchSize4 = outputGradients->sizeAt(0);
 
     bool check_batches = (batchSize0 == batchSize1) && (batchSize2 == batchSize3);
     check_batches = check_batches && (batchSize0 == batchSize4) && (batchSize0 == batchSize2);
 
-    REQUIRE_TRUE(check_batches, 0, "CtcLoss Gradient: All batch sizes should be equal %i", batchSize0);
+    REQUIRE_TRUE(check_batches, 0, "CtcLoss Gradient: All batch sizes should be %i", batchSize0);
     REQUIRE_TRUE(outputGradients->isSameShape(logitInput), 0, "CtcLoss Gradient: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
 
     auto emptyLoss = NDArrayFactory::empty<float>();
