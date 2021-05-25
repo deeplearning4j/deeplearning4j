@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include <execution/ThreadPool.h>
 #include <helpers/LoopsCoordsHelper.h>
-#include <ops/declarable/helpers/ctcLoss.h>
+#include <ops/declarable/helpers/ctc.h>
 
 namespace sd
 {

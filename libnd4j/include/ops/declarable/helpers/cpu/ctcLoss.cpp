@@ -25,7 +25,7 @@
 #include <execution/Threads.h>
 #include <execution/ThreadPool.h>
 #include <helpers/LoopsCoordsHelper.h>
-#include <ops/declarable/helpers/ctcLoss.h>
+#include <ops/declarable/helpers/ctc.h>
 
 namespace sd
 {
@@ -34,26 +34,11 @@ namespace sd
         namespace helpers
         {
 
-            //choose ptr[index*element_stride]
-            template <bool Strided, typename Type>
-            typename std::enable_if<Strided == true, Type &>::type
-            element(Type *ptr, int index, int element_stride)
-            {
-                return ptr[index * element_stride];
-            }
-
-            //choose ptr[index] assuming element_stride is 1
-            template <bool Strided, typename Type>
-            typename std::enable_if<Strided == false, Type &>::type
-            element(Type *ptr, int index, int element_stride)
-            {
-                return ptr[index];
-            }
 
             template <bool IsLogPStrided = false, bool IsLblStrided = false, typename Type, typename IndexType>
             Type forward(Type *alphaPtr, const Nd4jLong &incA, const Type *logP, const Nd4jLong &incP, const IndexType *lbl, const Nd4jLong &lenSB, const Nd4jLong &lenT, const int &blankIndex, int elwiseP = 1, int elwiseS = 1)
             {
-                Type negInf = -DataTypeUtils::infOrMax<Type>();
+                Type negInf = negative_infinity<Type>();
                 //initialize alphas at t=0
                 alphaPtr[0] = element<IsLogPStrided>(logP, blankIndex, elwiseP);
                 //alphaPtr[1] =logP[lbl[0]];
@@ -82,23 +67,17 @@ namespace sd
                         // {t-1,s}
                         Type alphaS = alphaPrevPtr[s];
                         Type alphaS_1 = s > 0 ? alphaPrevPtr[s - 1] : negInf;
-                        Type cMax = std::max(alphaS, alphaS_1);
                         //logP[currentInd] or logP[currentInd*elwiseP]
                         auto currentProb = element<IsLogPStrided>(logP, currentInd, elwiseP);
                         // if blank or the same as previous
                         if (s > 1 && currentInd != blankIndex && currentInd != element<IsLblStrided>(lbl, ind - 1, elwiseS))
                         {
                             Type alphaS_2 = alphaPrevPtr[s - 2];
-                            cMax = std::max(cMax, alphaS_2);
-                            if (cMax == negInf)
-                                cMax = 0;
-                            alphaPtr[s] = std::log(std::exp(alphaS - cMax) + std::exp(alphaS_1 - cMax) + std::exp(alphaS_2 - cMax)) + cMax + currentProb;
+                            alphaPtr[s] = log_sum_exp(alphaS, alphaS_1, alphaS_2) + currentProb;
                         }
                         else
                         {
-                            if (cMax == negInf)
-                                cMax = 0;
-                            alphaPtr[s] = std::log(std::exp(alphaS - cMax) + std::exp(alphaS_1 - cMax)) + cMax + currentProb;
+                            alphaPtr[s] = log_sum_exp(alphaS, alphaS_1) + currentProb;
                         }
                     }
 
@@ -109,8 +88,7 @@ namespace sd
                 }
                 auto logP0 = alphaPrevPtr[lenSB - 1];
                 auto logP1 = alphaPrevPtr[lenSB - 2];
-                auto cMax = std::max(logP0, logP1);
-                return -(std::log(std::exp(logP0 - cMax) + std::exp(logP1 - cMax)) + cMax);
+                return -log_sum_exp(logP0, logP1 );
             }
 
 //#undef CALCULATE_ALL_IN_ONE_FRAME_LOOP
@@ -121,7 +99,7 @@ namespace sd
                                  int elwiseP = 1, int elwiseS = 1, int elwiseG = 1)
             {
 
-                Type negInf = -DataTypeUtils::infOrMax<Type>();
+                Type negInf = negative_infinity<Type>();
                 Nd4jLong lenSB = 2 * lenS + 1;
                 auto origBetta = bettaPtr;
                 auto origLogP = logP;
@@ -197,23 +175,17 @@ namespace sd
                         // {t-1,s}
                         Type bettaS = bettaPrevPtr[s];
                         Type bettaS_1 = s < lenSB - 1 ? bettaPrevPtr[s + 1] : negInf;
-                        Type cMax = std::max(bettaS, bettaS_1);
                         //logP[currentInd]
                         auto currentProb = element<IsLogPStrided>(logP, currentInd, elwiseP);
                         // if blank or the same as previous
                         if (s < lenSB - 2 && currentInd != blankIndex && currentInd != element<IsLblStrided>(lbl, ind + 1, elwiseS))
                         {
                             Type bettaS_2 = bettaPrevPtr[s + 2];
-                            cMax = std::max(cMax, bettaS_2);
-                            if (cMax == negInf)
-                                cMax = 0;
-                            bettaPtr[s] = std::log(std::exp(bettaS - cMax) + std::exp(bettaS_1 - cMax) + std::exp(bettaS_2 - cMax)) + cMax + currentProb;
+                            bettaPtr[s] = log_sum_exp(bettaS, bettaS_1, bettaS_2) + currentProb;
                         }
                         else
                         {
-                            if (cMax == negInf)
-                                cMax = 0;
-                            bettaPtr[s] = std::log(std::exp(bettaS - cMax) + std::exp(bettaS_1 - cMax)) + cMax + currentProb;
+                            bettaPtr[s] = log_sum_exp(bettaS, bettaS_1) + currentProb;
                         }
 
 #if defined(CALCULATE_ALL_IN_ONE_FRAME_LOOP)
@@ -262,8 +234,7 @@ namespace sd
 
                 auto logBP0 = bettaPrevPtr[0];
                 auto logBP1 = bettaPrevPtr[1];
-                auto bcMax = std::max(logBP0, logBP1);
-                auto blogLoss = -(std::log(std::exp(logBP0 - bcMax) + std::exp(logBP1 - bcMax)) + bcMax);
+                auto blogLoss = -log_sum_exp(logBP0, logBP1);
 
 #if !defined(CALCULATE_ALL_IN_ONE_FRAME_LOOP)
                 //alpha*betta
@@ -289,8 +260,7 @@ namespace sd
                         }
                         else
                         {
-                            Type cMax = std::max(currentGrad, alphaBettaS);
-                            currentGrad = std::log(std::exp(currentGrad - cMax) + std::exp(alphaBettaS - cMax)) + cMax;
+                            currentGrad = log_sum_exp(currentGrad, alphaBettaS);
                         }
                         //alphaPtr[s] = alphaBettaS;
                     }
@@ -345,7 +315,7 @@ namespace sd
                 auto bufferPtr = bufferArr.bufferAsT<Type>();
                 auto incA = bufferArr.stridesOf()[1];
                 auto bettaBufferPtr = bufferPtr + bufferArr.stridesOf()[0];
-                Type negInf = -DataTypeUtils::infOrMax<Type>();
+                Type negInf = negative_infinity<Type>();
 
 #if 1
                 if (gradPtr)
@@ -421,7 +391,8 @@ namespace sd
                     elwiseLL = logLosses.stridesOf()[0];
                     logLossPtr = logLosses.bufferAsT<Type>();
                 }
-
+                //defaulting blankIndex to the last class if its incorrect or -1
+                if (blankIndex > maxLenS || blankIndex < 0) blankIndex = maxLenS - 1;
                 auto func = [logP, batchP, incP, elwiseP, lenK, lenTPtr, lenSPtr, logLossPtr, lblPtr, maxLenT, maxLenS,
                              batchLbl, blankIndex, elwiseT, elwiseLL, elwiseSLen, elwiseS, &gradients](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
                     Type *gradPtr = nullptr;
@@ -450,7 +421,7 @@ namespace sd
                             lenS = lenS > maxLenS ? maxLenS : lenS;
                             if (lenS <= 0 || lenT <= 0)
                             {
-                                resultLoss = -DataTypeUtils::infOrMax<Type>();
+                                resultLoss = negative_infinity<Type>();
                             }
                             else
                             {
@@ -475,7 +446,7 @@ namespace sd
                             lenS = lenS > maxLenS ? maxLenS : lenS;
                             if (lenS <= 0 || lenT <= 0)
                             {
-                                resultLoss = -DataTypeUtils::infOrMax<Type>();
+                                resultLoss = negative_infinity<Type>();
                             }
                             else
                             {
@@ -495,11 +466,11 @@ namespace sd
 
            void ctcLoss(graph::Context& block, const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex){
 
-			    BUILD_DOUBLE_SELECTOR(logits.dataType(), targetLabels.dataType(), ctc_loss_, (logits, targetLabels, logitsLengths, targetLabelLengths, logLosses, gradients, blankIndex), FLOAT_TYPES, INDEXING_TYPES);
-			}
+                BUILD_DOUBLE_SELECTOR(logits.dataType(), targetLabels.dataType(), ctc_loss_, (logits, targetLabels, logitsLengths, targetLabelLengths, logLosses, gradients, blankIndex), FLOAT_TYPES, INDEXING_TYPES);
+            }
 
 
-			BUILD_DOUBLE_TEMPLATE(template void ctc_loss_, (const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex), FLOAT_TYPES, INDEXING_TYPES);
+            BUILD_DOUBLE_TEMPLATE(template void ctc_loss_, (const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex), FLOAT_TYPES, INDEXING_TYPES);
 
 
         } // namespace helpers

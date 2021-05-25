@@ -7,7 +7,7 @@
 [![javadoc](https://javadoc.io/badge2/org.deeplearning4j/deeplearning4j-nn/DL4J%20API%20Doc.svg)](https://javadoc.io/doc/org.deeplearning4j/deeplearning4j-nn)
 [![javadoc](https://javadoc.io/badge2/org.nd4j/nd4j-api/ND4J%20API%20Doc.svg)](https://javadoc.io/doc/org.nd4j/nd4j-api)
 [![License](https://img.shields.io/github/license/eclipse/deeplearning4j)](LICENSE)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/konduitai/deeplearning4j)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/eclipse/deeplearning4j)
 
 
 The **[Eclipse Deeplearning4J](https://deeplearning4j.konduit.ai/)** (DL4J) ecosystem is a set of projects intended to support all the needs of a JVM based deep learning application. This means starting with the raw data, loading and preprocessing it from wherever and whatever format it is in to building and tuning a wide variety of simple and complex deep learning networks. 
@@ -19,10 +19,12 @@ The DL4J stack comprises of:
 - **ND4J**: General purpose linear algebra library with over 500 mathematical, linear algebra and deep learning operations. ND4J is based on the highly-optimized C++ codebase LibND4J that provides CPU (AVX2/512) and GPU (CUDA) support and acceleration by libraries such as OpenBLAS, OneDNN (MKL-DNN), cuDNN, cuBLAS, etc
 - **SameDiff** : Part of the ND4J library, SameDiff is our automatic differentiation / deep learning framework. SameDiff uses a graph-based (define then run) approach, similar to TensorFlow graph mode. Eager graph (TensorFlow 2.x eager/PyTorch) graph execution is planned. SameDiff supports importing TensorFlow frozen model format .pb (protobuf) models. Import for ONNX, TensorFlow SavedModel and Keras models are planned. Deeplearning4j also has full SameDiff support for easily writing custom layers and loss functions.
 - **DataVec**: ETL for machine learning data in a wide variety of formats and files (HDFS, Spark, Images, Video, Audio, CSV, Excel etc)
-- **Arbiter**: Library for hyperparameter search
 - **LibND4J** : C++ library that underpins everything. For more information on how the JVM acceses native arrays and operations refer to [JavaCPP](https://github.com/bytedeco/javacpp)
 
 All projects in the DL4J ecosystem support Windows, Linux and macOS. Hardware support includes CUDA GPUs (10.0, 10.1, 10.2 except OSX), x86 CPU (x86_64, avx2, avx512), ARM CPU (arm, arm64, armhf) and PowerPC (ppc64le).
+
+## Community Support
+For support for the project, please go over to https://community.konduit.ai/
 
 ## Using Eclipse Deeplearning4J in your project
 
@@ -103,7 +105,7 @@ mvn clean install -Dmaven.test.skip -Dlibnd4j.cuda=x.x -Dlibnd4j.compute=xx
 ```
 or
 ```
-mvn -B -V -U clean install -pl '!jumpy,!pydatavec,!pydl4j' -Dlibnd4j.platform=linux-x86_64 -Dlibnd4j.chip=cuda -Dlibnd4j.cuda=9.2 -Dlibnd4j.compute=<your GPU CC> -Djavacpp.platform=linux-x86_64 -Dmaven.test.skip=true
+mvn -B -V -U clean install -pl  -Dlibnd4j.platform=linux-x86_64 -Dlibnd4j.chip=cuda -Dlibnd4j.cuda=11.0 -Dlibnd4j.compute=<your GPU CC> -Djavacpp.platform=linux-x86_64 -Dmaven.test.skip=true
 ```
 
 An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
