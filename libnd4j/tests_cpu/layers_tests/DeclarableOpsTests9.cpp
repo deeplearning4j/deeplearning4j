@@ -1758,6 +1758,42 @@ TEST_F(DeclarableOpsTests9, prelu_test14) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, eig1) {
+
+    NDArray x('c', {2,2}, {1.5,-2,17,5}, sd::DataType::DOUBLE);
+    NDArray outVals('c', {2,2}, sd::DataType::DOUBLE);
+    NDArray outVecs('c', {2,2,2}, sd::DataType::DOUBLE);
+
+    NDArray expVals('c', {2,2}, {3.25,5.562149, 3.25,-5.562149}, sd::DataType::DOUBLE);
+    NDArray expVecs('c', {2,2,2}, {-0.3094862,-0.0973726, -0.3094862,0.0973726,0,0.9459053, 0,-0.9459053}, sd::DataType::DOUBLE);
+
+    sd::ops::eig op;
+    auto result = op.execute({&x}, {&outVals, &outVecs});
+
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(expVals.equalsTo(&outVals));
+    ASSERT_TRUE(expVecs.equalsTo(&outVecs));
+}
+
+TEST_F(DeclarableOpsTests9, eig2) {
+
+    NDArray x('c', {3,3}, {33,24,-48,57,12.5,-3,1.1,10,-5.2}, sd::DataType::DOUBLE);
+    NDArray expVals('c', {3,2}, {53.73337,0, -27.51557,0, 14.0822,0}, sd::DataType::DOUBLE);
+    NDArray expVecs('c', {3,3,2}, {-0.5848506,0,0.5560778,0,-0.04889745,0,-0.7978391,0,-0.7683444,0,-0.8855156,0,-0.1462962,0,0.3168979,0,-0.4620293,0}, sd::DataType::DOUBLE);
+
+    sd::ops::eig op;
+    auto result = op.evaluate({&x});
+    auto outVals = result.at(0);
+    auto outVecs = result.at(1);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(expVals.isSameShape(outVals));
+    ASSERT_TRUE(expVecs.isSameShape(outVecs));
+    ASSERT_TRUE(expVals.equalsTo(outVals));
+    ASSERT_TRUE(expVecs.equalsTo(outVecs));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, compare_and_bitpack_test1) {
 
     auto x = NDArrayFactory::create<float>('c', {2, 3, 16}, {

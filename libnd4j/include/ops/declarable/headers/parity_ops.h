@@ -1921,6 +1921,22 @@ namespace sd {
         #if NOT_EXCLUDED(OP_compare_and_bitpack)
         DECLARE_CUSTOM_OP(compare_and_bitpack, 2, 1, false, 0, 0);
         #endif
+
+        /**
+         * eig - Compute the eigenvalues and eigenvectors of a square matrix
+         *
+         * input params:
+         *    0 - NDArray (input). input should be a square matrix 
+         *
+         *
+         * output:
+         *    0 - NDArray for eigenvalues with the shape as {input.dim0, 2} , type: the same as input
+         *    1 - NDArray for eigenvectors with the shape as {input.dim0, input.dim0, 2} , type: the same as input
+         */
+        #if NOT_EXCLUDED(OP_eig)
+        DECLARE_CUSTOM_OP(eig, 1, 2, false, 0, 0);
+        #endif
+
     }
 }
 
