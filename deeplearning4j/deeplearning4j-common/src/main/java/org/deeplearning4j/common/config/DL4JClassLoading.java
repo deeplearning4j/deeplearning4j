@@ -70,8 +70,13 @@ public class DL4JClassLoading {
         }
     }
 
-    public static <T> T createNewInstance(String className, Object... args) {
-        return createNewInstance(className, Object.class, args);
+    public static <T> T createNewInstance(String className) {
+        return createNewInstance(className, Object.class, null);//or new Object[0];
+    }
+    
+    public static <T> T createNewInstance(String className, Object[] args) {
+       
+    	return createNewInstance(className, Object.class, args);
     }
 
     public static <T> T createNewInstance(String className, Class<? super T> superclass) {
