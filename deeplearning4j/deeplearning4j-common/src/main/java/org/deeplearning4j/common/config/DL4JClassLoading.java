@@ -71,7 +71,7 @@ public class DL4JClassLoading {
     }
 
     public static <T> T createNewInstance(String className) {
-        return createNewInstance(className, Object.class, null);//or new Object[0];
+        return createNewInstance(className, Object.class, new Object[0]);//or null;
     }
     
     public static <T> T createNewInstance(String className, Object[] args) {
