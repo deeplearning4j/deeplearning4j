@@ -79,6 +79,14 @@ class EigenValsAndVecs {
 
 };
 
+/**
+ * @brief Compute the eigenvalues and eigenvectors of a square matrix
+ * 
+ * @param input square matrix {n,n}
+ * @param vals eigenvalues {n,2}
+ * @param vecs eigenvectors {n,n,2}
+ */
+void eig(const NDArray& input, NDArray& vals, NDArray& vecs);
 
 }
 }

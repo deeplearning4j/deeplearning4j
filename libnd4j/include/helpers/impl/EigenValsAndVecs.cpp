@@ -52,9 +52,11 @@ EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
     calcEigenVecs(schurMatrixU);
 }
 
+
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void EigenValsAndVecs<T>::calcEigenVals(const NDArray& schurMatrixT) {
+void calcEigenVals_(const NDArray& schurMatrixT, NDArray& _Vals) {
 
     const int numOfCols = schurMatrixT.sizeAt(1);
 
@@ -102,9 +104,13 @@ void EigenValsAndVecs<T>::calcEigenVals(const NDArray& schurMatrixT) {
     }
 }
 
+template <typename T>
+void EigenValsAndVecs<T>::calcEigenVals(const NDArray& schurMatrixT) {
+    calcEigenVals_<T>(schurMatrixT, _Vals);
+}
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& schurMatrixU) {
+void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray& _Vals) {
 
     const int numOfCols = schurMatrixU.sizeAt(1);
 
@@ -178,7 +184,7 @@ void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& sc
                 schurMatrixT.r<T>(n-1, n)   = -(schurMatrixT.t<T>(n, n) - p) / schurMatrixT.t<T>(n, n-1);
             }
             else {
-                divideComplexNums(T(0),-schurMatrixT.t<T>(n-1,n),  schurMatrixT.t<T>(n-1,n-1)-p,q,  schurMatrixT.r<T>(n-1,n-1),schurMatrixT.r<T>(n-1,n));
+                EigenValsAndVecs<T>::divideComplexNums(T(0),-schurMatrixT.t<T>(n-1,n),  schurMatrixT.t<T>(n-1,n-1)-p,q,  schurMatrixT.r<T>(n-1,n-1),schurMatrixT.r<T>(n-1,n));
             }
 
             schurMatrixT.r<T>(n,n-1) = T(0);
@@ -201,7 +207,7 @@ void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& sc
                     l = i;
 
                     if (_Vals.t<T>(i, 1) == T(0)) {
-                        divideComplexNums(-ra,-sa, w,q, schurMatrixT.r<T>(i,n-1),schurMatrixT.r<T>(i,n));
+                        EigenValsAndVecs<T>::divideComplexNums(-ra,-sa, w,q, schurMatrixT.r<T>(i,n-1),schurMatrixT.r<T>(i,n));
                     }
                     else {
 
@@ -213,7 +219,7 @@ void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& sc
                         if ((vr == T(0)) && (vi == T(0)))
                             vr = DataTypeUtils::eps<T>() * norm * (math::nd4j_abs<T>(w) + math::nd4j_abs<T>(q) + math::nd4j_abs<T>(x) + math::nd4j_abs<T>(y) + math::nd4j_abs<T>(lastw));
 
-                        divideComplexNums(x*lastra-lastw*ra+q*sa,x*lastsa-lastw*sa-q*ra, vr,vi, schurMatrixT.r<T>(i,n-1),schurMatrixT.r<T>(i,n));
+                        EigenValsAndVecs<T>::divideComplexNums(x*lastra-lastw*ra+q*sa,x*lastsa-lastw*sa-q*ra, vr,vi, schurMatrixT.r<T>(i,n-1),schurMatrixT.r<T>(i,n));
 
                         if(math::nd4j_abs<T>(x) > (math::nd4j_abs<T>(lastw) + math::nd4j_abs<T>(q))) {
 
@@ -221,7 +227,7 @@ void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& sc
                             schurMatrixT.r<T>(i+1,n)   = (-sa - w * schurMatrixT.t<T>(i,n)   - q * schurMatrixT.t<T>(i,n-1)) / x;
                         }
                         else
-                            divideComplexNums(-lastra-y*schurMatrixT.t<T>(i,n-1),-lastsa-y*schurMatrixT.t<T>(i,n), lastw,q, schurMatrixT.r<T>(i+1,n-1),schurMatrixT.r<T>(i+1,n));
+                            EigenValsAndVecs<T>::divideComplexNums(-lastra-y*schurMatrixT.t<T>(i,n-1),-lastsa-y*schurMatrixT.t<T>(i,n), lastw,q, schurMatrixT.r<T>(i+1,n-1),schurMatrixT.r<T>(i+1,n));
                     }
 
                     T t = math::nd4j_max<T>(math::nd4j_abs<T>(schurMatrixT.t<T>(i, n-1)), math::nd4j_abs<T>(schurMatrixT.t<T>(i,n)));
@@ -239,10 +245,14 @@ void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& sc
         schurMatrixU({0,0, j,j+1}, true).assign( mmul(schurMatrixU({0,0, 0,j+1}, true), schurMatrixT({0,j+1, j,j+1}, true)) );
 }
 
+template <typename T>
+void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& schurMatrixU) {
+   calcPseudoEigenVecs_<T>(schurMatrixT, schurMatrixU, _Vals);
+}
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void EigenValsAndVecs<T>::calcEigenVecs(const NDArray& schurMatrixU) {
+void calcEigenVecs_(const NDArray& schurMatrixU, const NDArray& _Vals, NDArray& _Vecs) {
 
     const T precision = T(2) * DataTypeUtils::eps<T>();
 
@@ -284,6 +294,33 @@ void EigenValsAndVecs<T>::calcEigenVecs(const NDArray& schurMatrixU) {
     }
 }
 
+template <typename T>
+void EigenValsAndVecs<T>::calcEigenVecs(const NDArray& schurMatrixU) {
+    calcEigenVecs_<T>(schurMatrixU, _Vals, _Vecs);
+}
+
+template <typename T>
+void eig_(const NDArray& input, NDArray& vals,  NDArray& vecs ){ 
+
+    assert(input.rankOf() == 2 && "input is not a matrix" );
+    assert(input.sizeAt(0) == input.sizeAt(1) && "input is not a square matrix");
+    assert(vals.rankOf()==2 && vals.sizeAt(0)==input.sizeAt(0) && vals.sizeAt(1)==2 && "incorrect shape for the eigenvalue results vals");
+    assert(vecs.rankOf()==3 && vecs.sizeAt(0)==input.sizeAt(0) && vecs.sizeAt(1)==input.sizeAt(0) && vecs.sizeAt(2)==2 && "incorrect shape for the eigenvector results vecs");
+
+    Schur<T> schur(input);
+    NDArray& schurMatrixU = schur._U;
+    NDArray& schurMatrixT = schur._T;
+    calcEigenVals_<T>(schurMatrixT, vals);
+    calcPseudoEigenVecs_<T>(schurMatrixT, schurMatrixU, vals);  
+    calcEigenVecs_<T>(schurMatrixU, vals, vecs);
+}
+
+
+void eig(const NDArray& input, NDArray& vals, NDArray& vecs){
+    BUILD_SINGLE_SELECTOR(input.dataType(), eig_, (input, vals, vecs), FLOAT_TYPES );
+}
+
+BUILD_SINGLE_TEMPLATE(template void eig_, (const NDArray& input, NDArray& vals, NDArray& vecs), FLOAT_TYPES);
 
 template class ND4J_EXPORT EigenValsAndVecs<float>;
 template class ND4J_EXPORT EigenValsAndVecs<float16>;
