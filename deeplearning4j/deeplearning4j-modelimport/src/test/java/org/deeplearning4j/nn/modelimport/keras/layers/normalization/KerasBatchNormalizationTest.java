@@ -36,6 +36,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,7 +111,7 @@ class KerasBatchNormalizationTest extends BaseDL4JTest {
         ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(absolutePath);
         INDArray sampleInput = Nd4j.ones(25,25,25);
         INDArray[] output = computationGraph.output(sampleInput);
-        System.out.println(output[0]);
+        assertArrayEquals(new long[]{25,24,10},output[0].shape());
 
     }
 
