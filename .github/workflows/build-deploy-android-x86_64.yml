@@ -32,8 +32,8 @@ on:
         default: ossrh
 
 
-      modules:
-        description: 'Modules to build'
+      mvnFlags:
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default:
 
@@ -44,7 +44,7 @@ on:
 
 
       runsOn:
-        description: 'Server id to publish to'
+        description: 'OS to run on'
         required: false
         default: ubuntu-16.04
 
@@ -52,21 +52,9 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+
 jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   android-x86_64:
-    needs: pre-ci
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - uses: AutoModality/action-clean@v1
@@ -142,6 +130,8 @@ jobs:
           BUILD_USING_MAVEN: 1
           NDK_VERSION: r21d
           CURRENT_TARGET: android-x86_64
+          LIBND4J_CLASSIFIER: android-x86_64
+
           PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
@@ -154,10 +144,20 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.modules  }}
-          LIBND4J_URL: ${{ github.event.inputs.libnd4jUrl }}
+          MODULES: ${{ github.event.inputs.mvnFlags }}
 
         run: |
+          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
+          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
+          echo "release version ${{ github.event.inputs.releaseVersion }}"
+          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
+          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
+          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
+          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
+          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
+          echo "server id ${{ github.event.inputs.serverId }}"
+          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
+
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
@@ -170,13 +170,13 @@ jobs:
           cd ..
           export PATH=/opt/protobuf/bin:$PATH
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64/
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled  }}
 
 
 
