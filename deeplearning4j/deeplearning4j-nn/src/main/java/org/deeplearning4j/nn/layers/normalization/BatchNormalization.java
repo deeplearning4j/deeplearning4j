@@ -47,6 +47,7 @@ import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.*;
 
@@ -388,12 +389,17 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     public INDArray preOutput(INDArray x, TrainingMode training, LayerWorkspaceMgr workspaceMgr) {
         int dim = 1;
+        INDArray originalInput = x;
+        //RNN input
+        if(x.rank() == 3) {
+            x = x.reshape(Longs.concat(new long[]{1},x.shape()));
+        }
         if(x.rank() == 4 && layerConf().getCnn2DFormat() == CNN2DFormat.NHWC)
             dim = 3;
-  /*      if(x.size(dim) != layerConf().getNOut()) {
+        if(x.size(dim) != layerConf().getNOut()) {
             throw new IllegalArgumentException("input.size(" + dim + ") does not match expected input size of " + layerConf().getNIn()
                     + " - got input array with shape " + Arrays.toString(x.shape()));
-        }*/
+        }
         x = x.castTo(dataType); //No-op if correct type
 
         INDArray activations;
@@ -454,9 +460,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 }
             }
             if (ret != null) {
-                if(input.rank() == 2){
+                if(input.rank() == 2) {
                     return ret.reshape(ret.ordering(), ret.size(0), ret.size(1));
-                } else {
+                } else if(originalInput.rank() == 3 && ret.rank() == 4) {
+                     return ret.reshape(ret.ordering(),ret.size(1),ret.size(2),ret.size(3));
+                }  else {
                     return ret;
                 }
             }

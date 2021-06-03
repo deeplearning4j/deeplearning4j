@@ -24,6 +24,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -36,10 +37,7 @@ import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Data
@@ -103,7 +101,37 @@ public class KerasBatchNormalization extends KerasLayer {
      */
     public KerasBatchNormalization(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig,enforceTrainingConfig, Collections.emptyMap());
+    }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasBatchNormalization(Map<String, Object> layerConfig, boolean enforceTrainingConfig,Map<String,? extends  KerasLayer> previousLayers)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
+        Object config2 = layerConfig.get("config");
+        Map<String,Object> config1 = (Map<String,Object>) config2;
+        System.out.println(config1);
+        //default ordering
+        List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
+        CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
+
+        if(!inboundNodes.isEmpty()) {
+            List<Object> list = (List<Object>) inboundNodes.get(0);
+            List<Object> list1 = (List<Object>) list.get(0);
+            String inputName = list1.get(0).toString();
+            KerasLayer kerasLayer = previousLayers.get(inputName);
+            DimOrder dimOrderFromConfig = KerasLayerUtils.getDimOrderFromConfig(kerasLayer.getOriginalLayerConfig(), kerasLayer.getConf());
+            if(dimOrderFromConfig == DimOrder.NONE || dimOrderFromConfig == DimOrder.TENSORFLOW)
+                cnn2DFormat = CNN2DFormat.NHWC;
+
+        }
 
         this.scale = getScaleParameter(layerConfig);
         this.center = getCenterParameter(layerConfig);
@@ -139,6 +167,7 @@ public class KerasBatchNormalization extends KerasLayer {
             builder.constrainBeta(betaConstraint);
         if (gammaConstraint != null)
             builder.constrainGamma(gammaConstraint);
+        builder.setCnn2DFormat(cnn2DFormat);
         this.layer = builder.build();
     }
 

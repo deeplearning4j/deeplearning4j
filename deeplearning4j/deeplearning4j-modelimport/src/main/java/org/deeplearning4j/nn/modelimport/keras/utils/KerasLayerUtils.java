@@ -254,7 +254,7 @@ public class KerasLayerUtils {
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D())) {
             layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION())) {
-            layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig);
+            layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig,previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING())) {
             layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {

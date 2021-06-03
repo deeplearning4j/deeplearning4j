@@ -148,6 +148,11 @@ public class BatchNormalization extends FeedForwardLayer {
                     break;
                 case CNNFlat:
                     nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
+                    break;
+                case RNN:
+                    InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent)  inputType;
+                    nIn = inputTypeRecurrent.getSize();
+                    break;
                 default:
                     throw new IllegalStateException(
                                     "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
