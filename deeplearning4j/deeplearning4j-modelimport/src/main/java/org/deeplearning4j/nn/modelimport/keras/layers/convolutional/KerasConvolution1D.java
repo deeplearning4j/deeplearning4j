@@ -176,7 +176,13 @@ public class KerasConvolution1D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Conv1D layer accepts only one input (received " + inputType.length + ")");
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], RNNFormat.NCW,layerName);
+        if(inputType[0] != null && inputType[0].getType() != InputType.Type.RNN || inputType[0] == null)
+            return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], RNNFormat.NCW,layerName);
+        else {
+            InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent) inputType[0];
+            return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0],inputTypeRecurrent.getFormat(),layerName);
+
+        }
     }
 
 
@@ -211,7 +217,7 @@ public class KerasConvolution1D extends KerasConvolution {
             }
 
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
-            
+
         } else
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");

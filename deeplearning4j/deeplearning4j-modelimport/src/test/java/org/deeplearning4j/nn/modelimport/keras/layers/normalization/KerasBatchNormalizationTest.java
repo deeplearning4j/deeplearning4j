@@ -21,11 +21,15 @@ package org.deeplearning4j.nn.modelimport.keras.layers.normalization;
 
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.resources.Resources;
+import org.nd4j.common.resources.strumpf.StrumpfResolver;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -96,6 +100,19 @@ class KerasBatchNormalizationTest extends BaseDL4JTest {
         int size = batchNormalization.getWeights().size();
         assertEquals(4, size);
     }
+
+
+    @Test
+    @DisplayName("Test CNN1d with batch norm")
+    public void testWithCnn1d() throws Exception {
+        String absolutePath = Resources.asFile("modelimport/keras/tfkeras/batchNormError.h5").getAbsolutePath();
+        ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(absolutePath);
+        INDArray sampleInput = Nd4j.ones(25,25,25);
+        INDArray[] output = computationGraph.output(sampleInput);
+        System.out.println(output[0]);
+
+    }
+
 
     private Map<String, INDArray> weightsWithoutGamma() {
         Map<String, INDArray> weights = new HashMap<>();

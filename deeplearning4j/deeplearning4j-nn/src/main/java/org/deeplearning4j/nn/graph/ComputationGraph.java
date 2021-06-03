@@ -2346,7 +2346,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 //Open the relevant workspace for the activations.
                 //Note that this will be closed only once the current vertex's activations have been consumed
-                MemoryWorkspace wsActivations = null;
+                 MemoryWorkspace wsActivations = null;
                 if (outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || !isRequiredOutput) {    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
                     wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
                     openActivationsWorkspaces.put(wsActivations, workspaceMgr);

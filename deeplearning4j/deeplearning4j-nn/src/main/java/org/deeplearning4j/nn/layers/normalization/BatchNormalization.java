@@ -390,10 +390,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         int dim = 1;
         if(x.rank() == 4 && layerConf().getCnn2DFormat() == CNN2DFormat.NHWC)
             dim = 3;
-        if(x.size(dim) != layerConf().getNOut()){
+  /*      if(x.size(dim) != layerConf().getNOut()) {
             throw new IllegalArgumentException("input.size(" + dim + ") does not match expected input size of " + layerConf().getNIn()
                     + " - got input array with shape " + Arrays.toString(x.shape()));
-        }
+        }*/
         x = x.castTo(dataType); //No-op if correct type
 
         INDArray activations;
