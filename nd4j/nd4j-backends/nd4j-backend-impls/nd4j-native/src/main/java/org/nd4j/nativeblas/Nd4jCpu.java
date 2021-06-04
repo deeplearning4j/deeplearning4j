@@ -12994,6 +12994,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/BarnesHutTsne.h>
 // #include <ops/declarable/headers/images.h>
 // #include <ops/declarable/headers/updaters.h>
+// #include <ops/declarable/headers/decoder.h>
 // #include <system/dll.h>
 // #include <helpers/shape.h>
 // #include <helpers/TAD.h>
@@ -23159,6 +23160,39 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
+
+        /**
+         * eig - Compute the eigenvalues and eigenvectors of a square matrix
+         *
+         * input params:
+         *    0 - NDArray (input). input should be a square matrix 
+         *
+         *
+         * output:
+         *    0 - NDArray for eigenvalues with the shape as {input.dim0, 2} , type: the same as input
+         *    1 - NDArray for eigenvectors with the shape as {input.dim0, input.dim0, 2} , type: the same as input
+         */
+//         #if NOT_EXCLUDED(OP_eig)
+        @Namespace("sd::ops") public static class eig extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public eig(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public eig(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public eig position(long position) {
+                return (eig)super.position(position);
+            }
+            @Override public eig getPointer(long i) {
+                return new eig((Pointer)this).position(position + i);
+            }
+        
+                                                                                    public eig() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
     
 
 
@@ -25875,7 +25909,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
        *
        * Input arrays:
        *    0: labels - labels NDArray {BATCH_LEN, MAX_TARGET_LEN}, type integer
-       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. log softmax of  rnn output. It should include a blank label as well, type float
+       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. It should include a blank label as well, type float
+       *    NOTE: we expect normalized logits (softmax normalized logarithm values for logits).
        *    2: targetLabelLengths - Length of label sequence in labels NDArray {BATCH_LEN}, type integer
        *    3: logitsLengths - Length of input sequence in logits NDArray {BATCH_LEN}, type integer
        *
