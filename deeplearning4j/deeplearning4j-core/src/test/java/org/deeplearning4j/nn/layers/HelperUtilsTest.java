@@ -83,9 +83,15 @@ public class HelperUtilsTest extends BaseDL4JTest {
                 LocalResponseNormalizationHelper.class,"layername",getDataType()));
         assertNotNull(HelperUtils.createHelper("", MKLDNNSubsamplingHelper.class.getName(),
                 SubsamplingHelper.class,"layername",getDataType()));
-        assertNotNull(HelperUtils.createHelper("", "",
-                DropoutHelper.class,"layername",getDataType()));
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(backend.toUpperCase().contains("CUDA"))
+            assertNotNull(HelperUtils.createHelper("", "",
+                    DropoutHelper.class,"layername",getDataType()));
+        else if("CPU".equalsIgnoreCase(backend)) {
+            assertNull(HelperUtils.createHelper("", "",
+                    DropoutHelper.class,"layername",getDataType()));
 
+        }
     }
 
 
