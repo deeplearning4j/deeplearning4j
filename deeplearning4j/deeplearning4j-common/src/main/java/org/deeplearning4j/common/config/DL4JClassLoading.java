@@ -70,15 +70,20 @@ public class DL4JClassLoading {
         }
     }
 
-    public static <T> T createNewInstance(String className, Object... args) {
-        return createNewInstance(className, Object.class, args);
+    public static <T> T createNewInstance(String className) {
+        return createNewInstance(className, Object.class, new Object[0]);//or null;
+    }
+    
+    public static <T> T createNewInstance(String className, Object[] args) {
+       
+    	return createNewInstance(className, Object.class, args);
     }
 
     public static <T> T createNewInstance(String className, Class<? super T> superclass) {
         return createNewInstance(className, superclass, new Class<?>[]{}, new Object[]{});
     }
 
-    public static <T> T createNewInstance(String className, Class<? super T> superclass, Object [] args) {
+    public static <T> T createNewInstance(String className, Class<? super T> superclass, Object... args) {
         Class<?>[] parameterTypes = new Class<?>[args.length];
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
