@@ -33,6 +33,9 @@ import org.nd4j.linalg.factory.Nd4j;
 @Slf4j
 public class HelperUtils {
 
+    public static final String DISABLE_HELPER_PROPERTY = "org.eclipse.deeplearning4j.helpers.disable";
+    public final static String HELPER_DISABLE_DEFAULT_VALUE = "true";
+
     /**
      * Creates a {@link LayerHelper}
      * for use with platform specific code.
@@ -49,6 +52,12 @@ public class HelperUtils {
                                                          Class<? extends LayerHelper> layerHelperSuperClass,
                                                          String layerName,
                                                          Object... arguments) {
+
+        Boolean disabled = Boolean.parseBoolean(System.getProperty(DISABLE_HELPER_PROPERTY,HELPER_DISABLE_DEFAULT_VALUE));
+        if(disabled) {
+            log.trace("Disabled helper creation, returning null");
+            return null;
+        }
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         LayerHelper helperRet = null;
         if("CUDA".equalsIgnoreCase(backend) && cudnnHelperClassName != null && !cudnnHelperClassName.isEmpty()) {

@@ -75,6 +75,7 @@ public class HelperUtilsTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test instance creation of various helpers")
     public void testOneDnnHelperCreation() {
+        System.setProperty(HelperUtils.DISABLE_HELPER_PROPERTY,"false");
         assertNotNull(HelperUtils.createHelper("",
                 MKLDNNLSTMHelper.class.getName(), LSTMHelper.class,"layername",getDataType()));
         assertNotNull(HelperUtils.createHelper("", MKLDNNBatchNormHelper.class.getName(),
