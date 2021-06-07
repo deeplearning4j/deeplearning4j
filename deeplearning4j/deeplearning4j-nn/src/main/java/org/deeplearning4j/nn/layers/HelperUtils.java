@@ -54,10 +54,10 @@ public class HelperUtils {
         if("CUDA".equalsIgnoreCase(backend) && cudnnHelperClassName != null && !cudnnHelperClassName.isEmpty()) {
             if(DL4JClassLoading.loadClassByName(cudnnHelperClassName) != null) {
                 log.debug("Attempting to initialize cudnn helper {}",cudnnHelperClassName);
-                helperRet =  DL4JClassLoading.createNewInstance(
+                helperRet =  (LayerHelper) DL4JClassLoading.<LayerHelper>createNewInstance(
                         cudnnHelperClassName,
-                        layerHelperSuperClass,
-                        arguments);
+                        (Class<? super LayerHelper>) layerHelperSuperClass,
+                        new Object[]{arguments});
                 log.debug("Cudnn helper {} successfully initialized",cudnnHelperClassName);
 
             }
@@ -66,9 +66,9 @@ public class HelperUtils {
                 ClassLoader classLoader = DL4JClassLoading.getDl4jClassloader();
                 DL4JClassLoading.setDl4jClassloaderFromClass(layerHelperSuperClass);
                 try {
-                    helperRet = DL4JClassLoading.createNewInstance(
+                    helperRet =  (LayerHelper) DL4JClassLoading.<LayerHelper>createNewInstance(
                             cudnnHelperClassName,
-                            layerHelperSuperClass,
+                            (Class<? super LayerHelper>) layerHelperSuperClass,
                             arguments);
 
                 } catch (Exception e) {
@@ -89,7 +89,7 @@ public class HelperUtils {
             }
 
         } else if("CPU".equalsIgnoreCase(backend) && oneDnnClassName != null && !oneDnnClassName.isEmpty()) {
-            helperRet =  DL4JClassLoading.createNewInstance(
+            helperRet = DL4JClassLoading.<LayerHelper>createNewInstance(
                     oneDnnClassName,
                     arguments);
             log.trace("Created oneDNN helper: {}, layer {}", oneDnnClassName,layerName);

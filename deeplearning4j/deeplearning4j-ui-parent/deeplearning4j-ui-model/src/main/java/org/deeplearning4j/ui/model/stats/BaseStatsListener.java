@@ -698,7 +698,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                     "org.nd4j.jita.allocator.pointers.CudaPointer",
                     Pointer.class,
                     new Class[] { long.class },
-                    (long) device);
+                    new Object[]{(long) device});
 
             devPointers.put(device, pointer);
             return pointer;
