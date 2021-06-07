@@ -50,10 +50,15 @@ public class NumpyArray extends PythonType<INDArray> {
     public static final NumpyArray INSTANCE;
     private static final AtomicBoolean init = new AtomicBoolean(false);
     private static final Map<String, DataBuffer> cache = new HashMap<>();
+    public final static String IMPORT_NUMPY_ARRAY = "org.eclipse.python4j.numpyimport";
+    public final static String DEFAULT_IMPORT_NUMPY_ARRAY = "true";
+
 
     static {
         new PythonExecutioner();
         INSTANCE = new NumpyArray();
+        INSTANCE.init();
+
     }
 
     @Override
@@ -69,19 +74,28 @@ public class NumpyArray extends PythonType<INDArray> {
     public synchronized void init() {
         if (init.get()) return;
         init.set(true);
+
+        if(Boolean.parseBoolean(System.getProperty(IMPORT_NUMPY_ARRAY,DEFAULT_IMPORT_NUMPY_ARRAY))) {
+            //See: https://numpy.org/doc/1.17/reference/c-api.array.html#importing-the-api
+            //DO NOT REMOVE
+            System.out.println("Called import numpy");
+            int err = numpy._import_array();
+            if (err < 0){
+                System.out.println("Numpy import failed!");
+                throw new PythonException("Numpy import failed!");
+            }
+        }
+
         if (PythonGIL.locked()) {
             throw new PythonException("Can not initialize numpy - GIL already acquired.");
         }
-        int err = numpy._import_array();
-        if (err < 0){
-            System.out.println("Numpy import failed!");
-            throw new PythonException("Numpy import failed!");
-        }
+
+
+
     }
 
     public NumpyArray() {
         super("numpy.ndarray", INDArray.class);
-
     }
 
     @Override

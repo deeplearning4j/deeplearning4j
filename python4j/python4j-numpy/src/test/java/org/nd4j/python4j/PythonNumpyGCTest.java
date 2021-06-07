@@ -41,6 +41,7 @@ package org.nd4j.python4j;/*
  *  *****************************************************************************
  */
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -57,6 +58,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 @Tag(TagNames.PYTHON)
 public class PythonNumpyGCTest {
+
+    @BeforeAll
+    public static void init() {
+        new NumpyArray().init();
+    }
 
     @Test
     public void testGC() {

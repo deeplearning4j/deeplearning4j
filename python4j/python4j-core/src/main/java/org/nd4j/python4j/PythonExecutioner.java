@@ -33,13 +33,37 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
+import org.bytedeco.cpython.PyThreadState;
 import org.bytedeco.cpython.global.python;
 import org.nd4j.common.io.ClassPathResource;
 
 import static org.bytedeco.cpython.global.python.*;
 import static org.bytedeco.cpython.helper.python.Py_SetPath;
 
-
+/**
+ * PythonExecutioner handles executing python code either from passed in python code
+ * or via a python script.
+ *
+ * PythonExecutioner has a few java system properties to be aware of when executing python:
+ * @link {{@link #DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.
+ * This can be passed with -Dorg.eclipse.python4j.path=your/python/path
+ *
+ * Python4j has a default python path that imports the javacpp python path depending on what is present.
+ * The javacpp python presets such as {@link org.bytedeco.cpython.global.python} have a cachePackages() method
+ * that leverages loading python artifacts from the python path.
+ *
+ * This python path can be merged with a custom one or just used as is.
+ * A user specifies this behavior with the system property {@link #JAVACPP_PYTHON_APPEND_TYPE}
+ * This property can have 3 possible values:
+ * 1. before
+ * 2. after
+ * 3. none
+ *
+ * Order can matter when resolving versions of libraries very similar to the system path. Ensure when adding a custom python path
+ * that these properties are well tested and well understood before use.
+ *
+ * @author Adam Gibson, Fariz Rahman
+ */
 public class PythonExecutioner {
     private final static String PYTHON_EXCEPTION_KEY = "__python_exception__";
     private static AtomicBoolean init = new AtomicBoolean(false);
@@ -58,8 +82,8 @@ public class PythonExecutioner {
 
         init.set(true);
         initPythonPath();
-        PyEval_InitThreads();
         Py_InitializeEx(0);
+        //initialize separately to ensure that numpy import array is not imported twice
         for (PythonType type: PythonTypes.get()) {
             type.init();
         }

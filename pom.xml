@@ -529,7 +529,7 @@
                     <configuration>
                         <trimStackTrace>false</trimStackTrace>
                         <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-                        <forkCount>${cpu.core.count}</forkCount>
+                        <forkCount>1</forkCount>
                         <reuseForks>false</reuseForks>
                         <environmentVariables>
                             <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
@@ -546,7 +546,7 @@
                         <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                         <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
                         <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-                        <forkCount>0</forkCount>
+                        <forkCount>1</forkCount>
                         <threadCount>1</threadCount>
                         <perCoreThreadCount>false</perCoreThreadCount>
                     </configuration>
@@ -1292,7 +1292,7 @@
                         <inherited>true</inherited>
                         <configuration>
                             <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-                            <forkCount>${cpu.core.count}</forkCount>
+                            <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
                             <trimStackTrace>false</trimStackTrace>
                             <environmentVariables>
@@ -1300,13 +1300,13 @@
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
                             </environmentVariables>
                             <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
-                            <forkCount>${cpu.core.count}</forkCount>
+                            <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
                             <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                             <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                             <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
                             <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-                            <forkCount>0</forkCount>
+                            <forkCount>1</forkCount>
                             <threadCount>1</threadCount>
                             <perCoreThreadCount>false</perCoreThreadCount>
                         </configuration>
