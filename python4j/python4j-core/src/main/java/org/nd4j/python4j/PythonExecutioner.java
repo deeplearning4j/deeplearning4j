@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
+import org.bytedeco.cpython.PyThreadState;
 import org.bytedeco.cpython.global.python;
 import org.nd4j.common.io.ClassPathResource;
 
@@ -81,12 +82,10 @@ public class PythonExecutioner {
 
         init.set(true);
         initPythonPath();
-        PyEval_InitThreads();
         Py_InitializeEx(0);
         //initialize separately to ensure that numpy import array is not imported twice
         for (PythonType type: PythonTypes.get()) {
-            if(!type.getClass().getName().equals("org.nd4j.python4j.NumpyArray"))
-                type.init();
+            type.init();
         }
 
         //set the main thread state for the gil

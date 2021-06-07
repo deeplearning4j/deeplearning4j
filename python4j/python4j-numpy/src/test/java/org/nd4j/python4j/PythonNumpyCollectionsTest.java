@@ -42,6 +42,7 @@ package org.nd4j.python4j;/*
  */
 
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -70,6 +71,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @NativeTag
 @Tag(TagNames.PYTHON)
 public class PythonNumpyCollectionsTest {
+
+    @BeforeAll
+    public static void init() {
+        new NumpyArray().init();
+    }
 
 
     public static Stream<Arguments> params() {
