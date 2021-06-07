@@ -54,6 +54,7 @@ public class NumpyArray extends PythonType<INDArray> {
     static {
         new PythonExecutioner();
         INSTANCE = new NumpyArray();
+        INSTANCE.init();
     }
 
     @Override
@@ -81,7 +82,6 @@ public class NumpyArray extends PythonType<INDArray> {
 
     public NumpyArray() {
         super("numpy.ndarray", INDArray.class);
-
     }
 
     @Override
