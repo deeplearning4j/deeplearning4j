@@ -1,35 +1,32 @@
 on:
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
+
+      runsOn:
+        description: 'The operating system to run on, defaults to self-hosted'
+        required: false
+        default: self-hosted
+
 jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: self-hosted
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux-x86_64:
-    needs: pre-ci
-    runs-on: [self-hosted]
+    runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: ./.github/actions/download-dl4j-test-resources-linux
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Run cpu tests
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          export PATH="/opt/protobuf/bin:/usr/local/cuda-11.2/bin:$PATH"
-          nvcc --version
           mvn --version
           cmake --version
           protoc --version
