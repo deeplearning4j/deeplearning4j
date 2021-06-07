@@ -23,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.nd4j.linalg.factory.Nd4j;
 
+import static org.deeplearning4j.common.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
+import static org.deeplearning4j.common.config.DL4JSystemProperties.HELPER_DISABLE_DEFAULT_VALUE;
+
 /**
  * Simple meta helper util class for instantiating
  * platform specific layer helpers that handle interaction with
@@ -33,8 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
 @Slf4j
 public class HelperUtils {
 
-    public static final String DISABLE_HELPER_PROPERTY = "org.eclipse.deeplearning4j.helpers.disable";
-    public final static String HELPER_DISABLE_DEFAULT_VALUE = "true";
 
     /**
      * Creates a {@link LayerHelper}

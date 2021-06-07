@@ -105,4 +105,12 @@ public class DL4JSystemProperties {
      * Description: This sets the time source to use for spark stats. Default: {@code org.deeplearning4j.spark.time.NTPTimeSource}
      */
     public static final String TIMESOURCE_CLASSNAME_PROPERTY = "org.deeplearning4j.spark.time.TimeSource";
+
+
+    /**
+     * Applicability: {@code org.deeplearning4j.nn.layers.HelperUtils}
+     * Used in whether to disable the helpers or not.
+     */
+    public static final String DISABLE_HELPER_PROPERTY = "org.eclipse.deeplearning4j.helpers.disable";
+    public final static String HELPER_DISABLE_DEFAULT_VALUE = "true";
 }
