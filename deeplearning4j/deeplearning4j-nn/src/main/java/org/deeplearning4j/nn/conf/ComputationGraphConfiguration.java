@@ -454,6 +454,23 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      *                             when setting up pre processing
      * @param inputTypes  the input types to set
      */
+    public void addPreProcessors(boolean addPreprocIfNecessary,boolean forceOverrideInputs,InputType... inputTypes) {
+        getLayerActivationTypes(addPreprocIfNecessary,forceOverrideInputs, inputTypes);
+    }
+
+    /**
+     * Add preprocessors automatically, given the specified types of inputs for the network. Inputs are specified using the
+     * {@link InputType} class, in the same order in which the inputs were defined in the original configuration.<br>
+     * For example, in a network with two inputs: a convolutional input (28x28x1 images) and feed forward inputs, use
+     * {@code .addPreProcessors(InputType.convolutional(28,28,1),InputType.feedForward())}.<br>
+     * For the CNN->Dense and CNN->RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
+     * <b>NOTE</b>: This method will be called automatically when using the
+     * {@link GraphBuilder#setInputTypes(InputType...)} functionality.
+     * See that method for details.
+     * @param forceOverrideInputs  whether to forcibly over ride inputs or not
+     *                             when setting up pre processing
+     * @param inputTypes  the input types to set
+     */
     public void addPreProcessors(boolean forceOverrideInputs,InputType... inputTypes) {
         getLayerActivationTypes(true,forceOverrideInputs, inputTypes);
     }
