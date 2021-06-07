@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -43,6 +44,9 @@ abstract public class KerasConvolution extends KerasLayer {
 
     protected int numTrainableParams;
     protected boolean hasBias;
+
+    public KerasConvolution() throws UnsupportedKerasConfigurationException {
+    }
 
     /**
      * Pass-through constructor from KerasLayer

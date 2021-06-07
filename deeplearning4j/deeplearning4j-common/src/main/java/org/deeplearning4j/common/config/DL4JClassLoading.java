@@ -83,7 +83,7 @@ public class DL4JClassLoading {
         return createNewInstance(className, superclass, new Class<?>[]{}, new Object[]{});
     }
 
-    public static <T> T createNewInstance(String className, Class<? super T> superclass, Object... args) {
+    public static <T> T createNewInstance(String className, Class<? super T> superclass, Object[] args) {
         Class<?>[] parameterTypes = new Class<?>[args.length];
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
