@@ -23,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.nd4j.linalg.factory.Nd4j;
 
+import static org.deeplearning4j.common.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
+import static org.deeplearning4j.common.config.DL4JSystemProperties.HELPER_DISABLE_DEFAULT_VALUE;
+
 /**
  * Simple meta helper util class for instantiating
  * platform specific layer helpers that handle interaction with
@@ -32,6 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @Slf4j
 public class HelperUtils {
+
 
     /**
      * Creates a {@link LayerHelper}
@@ -49,6 +53,12 @@ public class HelperUtils {
                                                          Class<? extends LayerHelper> layerHelperSuperClass,
                                                          String layerName,
                                                          Object... arguments) {
+
+        Boolean disabled = Boolean.parseBoolean(System.getProperty(DISABLE_HELPER_PROPERTY,HELPER_DISABLE_DEFAULT_VALUE));
+        if(disabled) {
+            log.trace("Disabled helper creation, returning null");
+            return null;
+        }
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         LayerHelper helperRet = null;
         if("CUDA".equalsIgnoreCase(backend) && cudnnHelperClassName != null && !cudnnHelperClassName.isEmpty()) {
