@@ -62,8 +62,8 @@ class DL4JClassLoadingTest {
         String colorClassName = PACKAGE_PREFIX + "TestColor";
         String rectangleClassName = PACKAGE_PREFIX + "TestRectangle";
         /* When */
-        TestAbstract color = DL4JClassLoading.createNewInstance(colorClassName, Object.class, new Class<?>[] { int.class, int.class, int.class }, 45, 175, 200);
-        TestAbstract rectangle = DL4JClassLoading.createNewInstance(rectangleClassName, Object.class, new Class<?>[] { int.class, int.class, TestAbstract.class }, 10, 15, color);
+        TestAbstract color = DL4JClassLoading.createNewInstance(colorClassName, Object.class, new Class<?>[] { int.class, int.class, int.class }, new Object[]{45, 175, 200});
+        TestAbstract rectangle = DL4JClassLoading.createNewInstance(rectangleClassName, Object.class, new Class<?>[] { int.class, int.class, TestAbstract.class }, new Object[]{10, 15, color});
         /* Then */
         assertNotNull(color);
         assertEquals(colorClassName, color.getClass().getName());
