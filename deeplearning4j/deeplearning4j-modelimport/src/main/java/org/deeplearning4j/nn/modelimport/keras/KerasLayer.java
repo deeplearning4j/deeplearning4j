@@ -64,6 +64,7 @@ public class KerasLayer {
     protected double weightL2Regularization = 0.0; // L2 regularization
     protected double dropout = 1.0; // Dropout
     protected Integer kerasMajorVersion = 2; // Set 2 as default for now
+   @Getter
     protected KerasLayerConfiguration conf;
     @Getter
     protected  Map<String, Object> originalLayerConfig;

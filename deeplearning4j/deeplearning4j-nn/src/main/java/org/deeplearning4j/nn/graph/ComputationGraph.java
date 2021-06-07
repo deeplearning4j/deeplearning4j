@@ -97,6 +97,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.common.util.OneTimeLogger;
+import org.nd4j.linalg.workspace.WorkspacesCloseable;
 
 import java.io.*;
 import java.util.*;
@@ -2346,7 +2347,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 //Open the relevant workspace for the activations.
                 //Note that this will be closed only once the current vertex's activations have been consumed
-                MemoryWorkspace wsActivations = null;
+                 MemoryWorkspace wsActivations = null;
                 if (outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || !isRequiredOutput) {    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
                     wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
                     openActivationsWorkspaces.put(wsActivations, workspaceMgr);
@@ -3106,12 +3107,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         double score = 0.0;
         setInputs(dataSet.getFeatures());
+        //TODO Can possibly optimize this, in terms of memory use/workspaces
+        ffToLayerActivationsDetached(training, FwdPassType.STANDARD, false, vertices.length-1,
+                getOutputLayerIndices(), dataSet.getFeatures(), dataSet.getFeaturesMaskArrays(),dataSet.getLabelsMaskArrays(), false);
 
         //Need to feed forward, but not the output layers
-        try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)){
-            //TODO Can possibly optimize this, in terms of memory use/workspaces
-            ffToLayerActivationsDetached(training, FwdPassType.STANDARD, false, vertices.length-1,
-                    getOutputLayerIndices(), dataSet.getFeatures(), dataSet.getFeaturesMaskArrays(),dataSet.getLabelsMaskArrays(), false);
+        try(WorkspacesCloseable ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS,ArrayType.FF_WORKING_MEM,ArrayType.RNN_FF_LOOP_WORKING_MEM)){
 
             INDArray[] labels = dataSet.getLabels();
             setLabels(labels);

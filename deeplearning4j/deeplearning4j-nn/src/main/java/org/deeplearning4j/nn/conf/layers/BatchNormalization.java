@@ -122,6 +122,7 @@ public class BatchNormalization extends FeedForwardLayer {
             case CNN:
             case CNNFlat:
             case CNN3D:
+            case RNN:
                 return inputType; //OK
             default:
                 throw new IllegalStateException(
@@ -147,6 +148,11 @@ public class BatchNormalization extends FeedForwardLayer {
                     break;
                 case CNNFlat:
                     nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
+                    break;
+                case RNN:
+                    InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent)  inputType;
+                    nIn = inputTypeRecurrent.getSize();
+                    break;
                 default:
                     throw new IllegalStateException(
                                     "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
@@ -162,7 +168,8 @@ public class BatchNormalization extends FeedForwardLayer {
             InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType;
             return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
         } else if (inputType.getType() == InputType.Type.RNN) {
-            return new RnnToFeedForwardPreProcessor();
+            InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent) inputType;
+            return new RnnToFeedForwardPreProcessor(inputTypeRecurrent.getFormat());
         }
 
         return null;

@@ -1,8 +1,19 @@
 on:
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
+
+      runsOn:
+        description: 'The operating system to run on, defaults to self hosted'
+        required: false
+        default: self-hosted
+
 jobs:
   linux-x86_64:
-    runs-on: [self-hosted]
+    runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -16,8 +27,6 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          export PATH="/opt/protobuf/bin:/usr/local/cuda-11.2/bin:$PATH"
-          nvcc --version
           mvn --version
           cmake --version
           protoc --version
