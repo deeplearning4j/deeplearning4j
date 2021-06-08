@@ -87,7 +87,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         CNN2DFormat dataFormat = layerConf().getCnn2dDataFormat();
         int hIdx = 2;
         int wIdx = 3;
-        if(dataFormat == CNN2DFormat.NHWC){
+        if(dataFormat == CNN2DFormat.NHWC) {
             hIdx = 1;
             wIdx = 2;
         }

@@ -100,10 +100,12 @@ public class SubsamplingLayer extends NoParamLayer {
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
+        this.cnn2dDataFormat = builder.cnn2DFormat;
+
         if (builder instanceof Builder) {
             this.dilation = ((Builder) builder).dilation;
-            this.cnn2dDataFormat = ((Builder) builder).dataFormat;
         }
+        
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
@@ -239,7 +241,6 @@ public class SubsamplingLayer extends NoParamLayer {
          * Dilation for kernel
          */
         private int[] dilation = new int[] {1, 1};
-        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             super(poolingType, kernelSize, stride);
@@ -318,16 +319,7 @@ public class SubsamplingLayer extends NoParamLayer {
             return this;
         }
 
-        /**
-         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
-         * See {@link CNN2DFormat} for more details.<br>
-         * Default: NCHW
-         * @param format Format for activations (in and out)
-         */
-        public Builder dataFormat(CNN2DFormat format){
-            this.dataFormat = format;
-            return this;
-        }
+
 
         /**
          * Kernel dilation. Default: {1, 1}, which is standard convolutions. Used for implementing dilated convolutions,
@@ -382,7 +374,7 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         public void setDataFormat(CNN2DFormat format){
-            this.dataFormat = format;
+            this.cnn2DFormat = format;
         }
     }
 
@@ -417,6 +409,11 @@ public class SubsamplingLayer extends NoParamLayer {
          */
         protected boolean cudnnAllowFallback = true;
         protected boolean avgPoolIncludePadInDivisor = false;
+
+        /**
+         * Configure the 2d data format
+         */
+        protected CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.setPoolingType(poolingType.toPoolingType());
@@ -477,7 +474,7 @@ public class SubsamplingLayer extends NoParamLayer {
             this.pnorm = pnorm;
         }
 
-        public void setEps(double eps){
+        public void setEps(double eps) {
             ValidationUtils.validateNonNegative(eps, "eps");
             this.eps = eps;
         }
@@ -488,6 +485,17 @@ public class SubsamplingLayer extends NoParamLayer {
             Preconditions.checkState(allowCausal() || convolutionMode != ConvolutionMode.Causal, "Causal convolution mode can only be used with 1D" +
                     " convolutional neural network layers");
             this.convolutionMode = convolutionMode;
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param cnn2DFormat Format for activations (in and out)
+         */
+        public T dataFormat(CNN2DFormat cnn2DFormat) {
+            this.cnn2DFormat = cnn2DFormat;
+            return (T) this;
         }
 
         /**

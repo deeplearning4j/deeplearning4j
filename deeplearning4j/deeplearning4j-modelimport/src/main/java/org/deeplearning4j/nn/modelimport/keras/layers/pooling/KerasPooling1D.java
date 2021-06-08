@@ -66,6 +66,7 @@ public class KerasPooling1D extends KerasLayer {
         Subsampling1DLayer.Builder builder = new Subsampling1DLayer.Builder(
                 KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
                 .dropOut(this.dropout)
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);

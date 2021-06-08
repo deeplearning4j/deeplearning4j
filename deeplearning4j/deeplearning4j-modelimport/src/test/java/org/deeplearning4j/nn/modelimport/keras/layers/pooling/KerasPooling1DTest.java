@@ -19,21 +19,31 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.Subsampling1DLayer;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 
@@ -111,4 +121,18 @@ class KerasPooling1DTest extends BaseDL4JTest {
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
     }
+
+
+    @Test
+    public void testPooling1dNWHC() throws  Exception {
+        File file = Resources.asFile("modelimport/keras/tfkeras/issue_9349.hdf5");
+        ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(file.getAbsolutePath());
+        GraphVertex maxpooling1d = computationGraph.getVertex("max_pooling1d");
+        assertNotNull(maxpooling1d);
+        Layer layer = maxpooling1d.getLayer();
+        org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer subsampling1DLayer = (org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer) layer;
+        assertEquals(CNN2DFormat.NHWC,subsampling1DLayer.layerConf().getCnn2dDataFormat());
+    }
+
+
 }

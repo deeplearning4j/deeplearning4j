@@ -57,6 +57,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
 
+import static org.deeplearning4j.common.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -75,7 +76,7 @@ public class HelperUtilsTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test instance creation of various helpers")
     public void testOneDnnHelperCreation() {
-        System.setProperty(HelperUtils.DISABLE_HELPER_PROPERTY,"false");
+        System.setProperty(DISABLE_HELPER_PROPERTY,"false");
         assertNotNull(HelperUtils.createHelper("",
                 MKLDNNLSTMHelper.class.getName(), LSTMHelper.class,"layername",getDataType()));
         assertNotNull(HelperUtils.createHelper("", MKLDNNBatchNormHelper.class.getName(),
