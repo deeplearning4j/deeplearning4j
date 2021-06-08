@@ -100,12 +100,12 @@ public class SubsamplingLayer extends NoParamLayer {
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
+        this.cnn2dDataFormat = builder.cnn2DFormat;
+
         if (builder instanceof Builder) {
             this.dilation = ((Builder) builder).dilation;
-            this.cnn2dDataFormat = builder.cnn2DFormat;
-        } else {
-            this.cnn2dDataFormat = builder.cnn2DFormat;
         }
+        
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
