@@ -289,6 +289,17 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
 
     }
 
+    @Test
+    public void testChoiceDataType() {
+        INDArray dataTypeIsDouble = Nd4j.empty(DataType.DOUBLE);
+
+        INDArray source = Nd4j.createFromArray(new double[] { 1.0, 0.0 });
+        INDArray probs = Nd4j.valueArrayOf(new long[] { 2 }, 0.5, DataType.DOUBLE);
+        INDArray actual = Nd4j.choice(s, p, 10);
+    
+
+        assertEquals(dataTypeIsDouble.dataType(), actual.dataType());
+    }
 
 
 }

@@ -2758,7 +2758,7 @@ public class Nd4j {
         if (numSamples < 1)
             throw new ND4JIllegalStateException("Nd4j.choice() numSamples must be positive value");
 
-        return choice(source, probs, createUninitialized(numSamples), rng);
+        return choice(source, probs, createUninitialized(source.dataType(), numSamples), rng);
     }
 
     // @see tag works well here.
