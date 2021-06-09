@@ -744,7 +744,8 @@ public class SameDiff extends SDBaseOps {
                 //Only stored in inference session...
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
                 if (s == null)
-                    return null;
+                    throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
+
                 return s.get(varName, InferenceSession.OUTER_FRAME, 0, null, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
