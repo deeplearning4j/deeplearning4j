@@ -61,7 +61,7 @@ public final class ND4JClassLoading {
         try {
             return (Class<T>) Class.forName(className, initialize, classLoader);
         } catch (ClassNotFoundException classNotFoundException) {
-            log.error(String.format("Cannot find class [%s] of provided class-loader.", className));
+            log.trace(String.format("Cannot find class [%s] of provided class-loader.", className));
             return null;
         }
     }
