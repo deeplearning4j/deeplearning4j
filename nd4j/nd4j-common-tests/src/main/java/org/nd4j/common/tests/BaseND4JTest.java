@@ -20,7 +20,7 @@
 
 package org.nd4j.common.tests;
 
-import ch.qos.logback.classic.LoggerContext;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.AfterEach;
@@ -37,6 +37,7 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -133,6 +134,7 @@ public abstract class BaseND4JTest {
         threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
+    @SneakyThrows
     @AfterEach
     public void afterTest(TestInfo testInfo) {
         //Attempt to keep workspaces isolated between tests
@@ -148,8 +150,11 @@ public abstract class BaseND4JTest {
             //Try to flush logs also:
             try{ Thread.sleep(1000); } catch (InterruptedException e){ }
             ILoggerFactory lf = LoggerFactory.getILoggerFactory();
-            if( lf instanceof LoggerContext){
-                ((LoggerContext)lf).stop();
+            //work around to remove explicit dependency on logback
+            if( lf.getClass().getName().equals("ch.qos.logback.classic.LoggerContext")) {
+                Method method = lf.getClass().getMethod("stop");
+                method.setAccessible(true);
+                method.invoke(lf);
             }
             try{ Thread.sleep(1000); } catch (InterruptedException e){ }
             System.exit(1);

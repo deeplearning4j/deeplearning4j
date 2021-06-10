@@ -89,6 +89,8 @@
             <artifactId>spring-core</artifactId>
             <version>5.0.2.RELEASE</version>
         </dependency>
+
+
     </dependencies>
 
     <profiles>
