@@ -19,7 +19,7 @@
  */
 package org.deeplearning4j;
 
-import ch.qos.logback.classic.LoggerContext;
+import lombok.SneakyThrows;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.*;
 
@@ -34,6 +34,7 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -129,6 +130,7 @@ public abstract class BaseDL4JTest {
         threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
+    @SneakyThrows
     @AfterEach
     void afterTest(TestInfo testInfo) {
         // Attempt to keep workspaces isolated between tests
@@ -147,8 +149,11 @@ public abstract class BaseDL4JTest {
             } catch (InterruptedException e) {
             }
             ILoggerFactory lf = LoggerFactory.getILoggerFactory();
-            if (lf instanceof LoggerContext) {
-                ((LoggerContext) lf).stop();
+            //work around to remove explicit dependency on logback
+            if( lf.getClass().getName().equals("ch.qos.logback.classic.LoggerContext")) {
+                Method method = lf.getClass().getMethod("stop");
+                method.setAccessible(true);
+                method.invoke(lf);
             }
             try {
                 Thread.sleep(1000);
