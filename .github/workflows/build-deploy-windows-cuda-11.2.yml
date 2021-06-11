@@ -210,6 +210,7 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: "-Xmx2g"
+          CMAKE_GENERATOR_TOOLSET: version=14.25
 
 
         run: |
