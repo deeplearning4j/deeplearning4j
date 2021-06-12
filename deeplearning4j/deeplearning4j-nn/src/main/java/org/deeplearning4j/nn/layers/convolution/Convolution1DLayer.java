@@ -134,7 +134,12 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         INDArray input = this.input.castTo(dataType);
         if(layerConf().getRnnDataFormat() == RNNFormat.NWC) {
-            input = input.permute(0,2,1); //NHWC to NCHW
+            if(input.rank() == 3)
+                input = input.permute(0,2,1); //NHWC to NCHW
+            else if(input.rank() == 4) {
+                input = input.permute(0,2,3,1); //NHWC to NCHW
+
+            }
         }
 
         org.deeplearning4j.nn.conf.layers.Convolution1DLayer c = layerConf();
