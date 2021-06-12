@@ -537,7 +537,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 Layer l = lv.getLayerConf().getLayer();
 
                 //Preprocessors - add if necessary
-                if (lv.getPreProcessor() == null && addPreprocIfNecessary) {
+                if (lv.getPreProcessor() == null) {
                     //But don't override preprocessors that are manually defined; if none has been defined,
                     //add the appropriate preprocessor for this input type/layer combination
                     InputPreProcessor preproc = l.getPreProcessorForInputType(layerInput);
@@ -546,7 +546,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
                 //Set nIn value for layer (if not already set)
                 InputType afterPreproc = layerInput;
-                if (lv.getPreProcessor() != null) {
+                if (lv.getPreProcessor() != null  && addPreprocIfNecessary) {
                     InputPreProcessor ip = lv.getPreProcessor();
                     afterPreproc = ip.getOutputType(layerInput);
                 }

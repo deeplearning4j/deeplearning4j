@@ -117,7 +117,6 @@ public class KerasBatchNormalization extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         Object config2 = layerConfig.get("config");
         Map<String,Object> config1 = (Map<String,Object>) config2;
-        System.out.println(config1);
         //default ordering
         List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
         CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;

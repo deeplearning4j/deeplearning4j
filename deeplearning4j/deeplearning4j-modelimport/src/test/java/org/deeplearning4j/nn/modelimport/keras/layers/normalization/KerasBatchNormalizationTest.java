@@ -116,6 +116,17 @@ class KerasBatchNormalizationTest extends BaseDL4JTest {
     }
 
 
+    @Test
+    @DisplayName("Test CNN1d with batch norm")
+    public void testWithCnn1d2() throws Exception {
+        String absolutePath = Resources.asFile("modelimport/keras/tfkeras/batchNormError2.h5").getAbsolutePath();
+        ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(absolutePath);
+        System.out.println(computationGraph.summary());
+        INDArray sampleInput = Nd4j.ones(25,25,25);
+        INDArray[] output = computationGraph.output(sampleInput);
+        assertArrayEquals(new long[]{25,24,512},output[0].shape());
+
+    }
     private Map<String, INDArray> weightsWithoutGamma() {
         Map<String, INDArray> weights = new HashMap<>();
         weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE(), Nd4j.ones(1L));
