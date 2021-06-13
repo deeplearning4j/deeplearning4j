@@ -38,6 +38,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class COCOLabelProvider implements ImageObjectLabelProvider {
 
@@ -88,6 +89,16 @@ public class COCOLabelProvider implements ImageObjectLabelProvider {
     @Override
     public List<ImageObject> getImageObjectsForPath(URI uri) {
         return getImageObjectsForPath(uri.toString());
+    }
+
+    @Override
+    public int numLabels() {
+        return cocoDataSet.getCategories().size();
+    }
+
+    @Override
+    public List<String> labels() {
+        return cocoDataSet.getCategories().stream().map(input -> input.getName()).collect(Collectors.toList());
     }
 
 }

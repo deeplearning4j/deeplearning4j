@@ -29,4 +29,8 @@ public interface ImageObjectLabelProvider {
 
     List<ImageObject> getImageObjectsForPath(URI uri);
 
+    int numLabels();
+
+    List<String> labels();
+
 }

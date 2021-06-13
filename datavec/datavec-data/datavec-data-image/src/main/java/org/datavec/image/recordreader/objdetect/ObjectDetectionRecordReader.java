@@ -157,6 +157,11 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
 
         //To ensure consistent order for label assignment (irrespective of file iteration order), we want to sort the list of labels
         labels = new ArrayList<>(labelSet);
+        //for times where the label may  not be properly detected
+        if(labelProvider != null && !labelProvider.labels().isEmpty() && labels.size() != labelProvider.numLabels()) {
+            labels = new ArrayList<>(labelProvider.labels());
+        }
+
         Collections.sort(labels);
     }
 
