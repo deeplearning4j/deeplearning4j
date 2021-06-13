@@ -1,0 +1,83 @@
+{
+  "info": {
+    "description": "COCO 2014 Dataset",
+    "url": "http://cocodataset.org",
+    "version": "1.0",
+    "year": 2014,
+    "contributor": "COCO Consortium",
+    "date_created": "2017/09/01"
+  },
+  "images": [
+    {
+      "license": 5,
+      "file_name": "COCO_train2014_000000057870.jpg",
+      "coco_url": "http://images.cocodataset.org/train2014/COCO_train2014_000000057870.jpg",
+      "height": 480,
+      "width": 640,
+      "date_captured": "2013-11-14 16:28:13",
+      "flickr_url": "http://farm4.staticflickr.com/3153/2970773875_164f0c0b83_z.jpg",
+      "id": 57870
+    }
+  ],
+  "annotations": [{
+    "area": 54652.9556,
+    "bbox": [
+      116.95,
+      305.86,
+      285.3,
+      266.03
+    ],
+    "category_id": 58,
+    "id": 1,
+    "image_id": 1,
+    "iscrowd": 0,
+    "segmentation": [
+      [
+        312.29,
+        562.89,
+        402.25,
+        511.49,
+        400.96,
+        425.38,
+        398.39,
+        372.69,
+        388.11,
+        332.85,
+        318.71,
+        325.14,
+        295.58,
+        305.86,
+        269.88,
+        314.86,
+        258.31,
+        337.99,
+        217.19,
+        321.29,
+        182.49,
+        343.13,
+        141.37,
+        348.27,
+        132.37,
+        358.55,
+        159.36,
+        377.83,
+        116.95,
+        421.53,
+        167.07,
+        499.92,
+        232.61,
+        560.32,
+        300.72,
+        571.89
+      ]
+    ]
+  }
+  ],
+  "licenses": [
+    {
+      "id": 1,
+      "name": "Attribution-NonCommercial-ShareAlike License",
+      "url": "http://creativecommons.org/licenses/by-nc-sa/2.0/"
+    }
+  ]
+}
