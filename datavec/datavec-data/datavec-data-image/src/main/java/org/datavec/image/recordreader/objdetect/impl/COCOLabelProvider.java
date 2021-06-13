@@ -42,14 +42,21 @@ public class COCOLabelProvider implements ImageObjectLabelProvider {
 
 
     private String annotationsFile;
+    private String rootDir;
     @Getter
     private COCODataSet cocoDataSet;
+
     @SneakyThrows
     public COCOLabelProvider(@NonNull String annotationsFile) {
-        //TODO: figure out conventions for image location.
+        this(annotationsFile, null);
+    }
+
+    @SneakyThrows
+    public COCOLabelProvider(@NonNull String annotationsFile,String rootDir) {
         //ideally, file names are stored in the coco with all the images being in a directory
         //specified by the user
         this.annotationsFile = annotationsFile;
+        this.rootDir = rootDir;
 
         if (!new File(annotationsFile).exists()) {
             throw new IllegalStateException("COCO Annotations file does not currently exist.");
@@ -62,6 +69,16 @@ public class COCOLabelProvider implements ImageObjectLabelProvider {
     @Override
     public List<ImageObject> getImageObjectsForPath(String path) {
         //probably not correct, need to understand original voc implementation
+        if(rootDir != null) {
+            if (cocoDataSet.hasImage(new File(rootDir, path).getAbsolutePath()))
+                return Arrays.asList(cocoDataSet.getImageForName(new File(rootDir, path).getAbsolutePath()));
+            //sometimes absolute path is passed in but omitted in the json file, allow file names stripped from absolute paths to also match
+        }     else if(!cocoDataSet.hasImage(path)) {
+            File absPath = new File(path);
+            if(cocoDataSet.hasImage(absPath.getName())) {
+                return Arrays.asList(cocoDataSet.getImageForName(absPath.getName()));
+            }
+        }
         return Arrays.asList(cocoDataSet.getImageForName(path));
     }
 

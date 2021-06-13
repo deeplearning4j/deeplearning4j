@@ -19,22 +19,15 @@
  */
 package org.datavec.image.recordreader.objdetect;
 
-import org.apache.commons.io.FileUtils;
 import org.datavec.image.recordreader.objdetect.coco.*;
 import org.datavec.image.recordreader.objdetect.impl.COCOLabelProvider;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
-import org.nd4j.common.resources.Downloader;
 import org.nd4j.common.tests.tags.TagNames;
 
 import java.io.File;
-import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.Assert.*;
 

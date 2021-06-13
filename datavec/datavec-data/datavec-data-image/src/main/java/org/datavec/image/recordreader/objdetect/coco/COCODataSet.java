@@ -44,7 +44,7 @@ public class COCODataSet implements Serializable {
     private COCOAnnotations annotations;
 
     @JsonIgnore
-    private Map<String,ImageObject> imageObjectToName;
+    private Map<String,ImageObject> fileNameToImageObject;
     @JsonIgnore
     private boolean initialized;
     @JsonIgnore
@@ -56,12 +56,16 @@ public class COCODataSet implements Serializable {
     @JsonIgnore
     private Map<Integer,COCOAnnotation> annotationsById;
 
+    public boolean hasImage(String fileName) {
+        return fileNameToImageObject.containsKey(fileName);
+    }
+
     public void init() {
         //create a list of file name to dynamically created image object
         idToImage = new HashMap<>();
         idToSegmentations = new HashMap<>();
         categoryIdToName = new HashMap<>();
-        imageObjectToName = new HashMap<>();
+        fileNameToImageObject = new HashMap<>();
         annotationsById = new HashMap<>();
         if(categories != null)
             for(COCOCategory cocoCategory : categories) {
@@ -93,12 +97,12 @@ public class COCODataSet implements Serializable {
                 double yMin = segmentation.getSegmentation().get(1);
                 double yMax = segmentation.getSegmentation().get(3);
                 ImageObject imageObject = new ImageObject((int)xMin,(int)yMin,(int)xMax,(int)yMax,categoryIdToName.get(segmentation.getCategoryId()));
-                imageObjectToName.put(cocoImage.getFileName(),imageObject);
+                fileNameToImageObject.put(cocoImage.getFileName(),imageObject);
 
             } else {
                 //test dataset or doesn't contain annotation
                 ImageObject imageObject = new ImageObject(0,0,0,0,"");
-                imageObjectToName.put(cocoImage.getFileName(),imageObject);
+                fileNameToImageObject.put(cocoImage.getFileName(),imageObject);
 
             }
         }
@@ -113,11 +117,11 @@ public class COCODataSet implements Serializable {
             throw new IllegalStateException("Please call init first to retrieve image objects");
         }
 
-        if(!imageObjectToName.containsKey(fileName)) {
+        if(!fileNameToImageObject.containsKey(fileName)) {
             throw new IllegalArgumentException("No image found for file name " + fileName);
         }
 
-        return imageObjectToName.get(fileName);
+        return fileNameToImageObject.get(fileName);
     }
 
 }
