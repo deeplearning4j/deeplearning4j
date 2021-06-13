@@ -27,6 +27,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.image.recordreader.objdetect.ImageObject;
 import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
+import org.datavec.image.recordreader.objdetect.coco.COCOAnnotation;
 import org.datavec.image.recordreader.objdetect.coco.COCODataSet;
 import org.nd4j.serde.json.JsonMappers;
 
@@ -71,15 +72,16 @@ public class COCOLabelProvider implements ImageObjectLabelProvider {
         //probably not correct, need to understand original voc implementation
         if(rootDir != null) {
             if (cocoDataSet.hasImage(new File(rootDir, path).getAbsolutePath()))
-                return Arrays.asList(cocoDataSet.getImageForName(new File(rootDir, path).getAbsolutePath()));
+                return cocoDataSet.getImageForName(new File(rootDir, path).getAbsolutePath());
             //sometimes absolute path is passed in but omitted in the json file, allow file names stripped from absolute paths to also match
         }     else if(!cocoDataSet.hasImage(path)) {
             File absPath = new File(path);
             if(cocoDataSet.hasImage(absPath.getName())) {
-                return Arrays.asList(cocoDataSet.getImageForName(absPath.getName()));
+
+                return cocoDataSet.getImageForName(absPath.getName());
             }
         }
-        return Arrays.asList(cocoDataSet.getImageForName(path));
+        return cocoDataSet.getImageForName(path);
     }
 
 
