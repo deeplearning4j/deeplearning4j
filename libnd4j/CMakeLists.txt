@@ -26,13 +26,14 @@ if (SD_CUDA)
             set(CMAKE_CUDA_STANDARD 17)
              else()
                    set(CMAKE_CXX_STANDARD 11)
+            message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
+
     endif()
     else()
            set(CMAKE_CXX_STANDARD 11)
 
 endif()
 
-message("Set C++ Standard to ${CMAKE_CXX_STANDARD}")
 
 #///////////////////////////////////////////////////////////////////////////////
 # genCompilation: Generates cpp, cu files
