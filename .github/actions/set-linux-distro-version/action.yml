@@ -7,8 +7,7 @@ runs:
       shell: bash
       run: |
           if [ -f /etc/os-release ]; then
-              # freedesktop.org and systemd
-              . /etc/os-release
+              source /etc/os-release
               OS="$NAME"
               VER="$VERSION_ID"
           elif [ type lsb_release >/dev/null 2>&1 ]; then
@@ -16,12 +15,10 @@ runs:
               OS="$(lsb_release -si)"
               VER="$(lsb_release -sr)"
           elif [ -f /etc/lsb-release ]; then
-              # For some versions of Debian/Ubuntu without lsb_release command
               /etc/lsb-release
               OS="$DISTRIB_ID"
               VER="$DISTRIB_RELEASE"
           elif [ -f /etc/debian_version ]; then
-              # Older Debian/Ubuntu/etc.
               OS="Debian"
               VER="$(cat /etc/debian_version)"
           elif [ -f /etc/SuSe-release ]; then
@@ -36,5 +33,6 @@ runs:
               OS="$(uname -s)"
               VER="$(uname -r)"
           fi
+
           echo "$OS" >> "$GITHUB_ENV"
           echo  "$VER" >> "$GITHUB_ENV"
