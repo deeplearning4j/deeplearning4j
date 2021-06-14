@@ -34,15 +34,16 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default: '-pl \":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j\"'
-
-      libnd4jDownload:
-        description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-        required: false
         default:
 
+      libnd4jUrl:
+          description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+          required: false
+          default:
+
+
       runsOn:
-        description: 'Server id to publish to'
+        description: 'System to run on'
         required: false
         default: ubuntu-16.04
 
@@ -50,14 +51,14 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
-
 jobs:
-  linux-x86_64-cuda_11-0:
+  #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
+  linux-x86_64:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn, "" ]
-        extension: [ "" ]
+        helper: []
+        extension: [compat]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -104,6 +105,7 @@ jobs:
 
 
     runs-on: ${{ matrix.runs_on }}
+    container: centos:6
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -114,31 +116,25 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn ${{ matrix.mvn_ext }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
-              libnd4j_download_file_url=""
+              command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.0-${{ matrix.helper }}-${{matrix.extension}}"
-                  libnd4j_download_file_url="linux-cuda-11-${{ matrix.extension }}-${{ matrix.helper }}"
+                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
               elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.0-${{ matrix.helper }}"
-                  libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
-
-              else
-                  echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
-                  libnd4j_download_file_url="linux-cuda-11"
-                  mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.0"
+                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
+              elif [ "${{ matrix.extension }}" != '' ]; then
+                     mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
+               else
+                   mvn_ext=""
               fi
-
-              command="${command} ${mvn_ext}"
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                  echo "Adding libnd4j download"
-                  echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+                 echo "Adding libnd4j download"
+                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
+              command="${command} ${mvn_ext}"
+              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - uses: ./.github/actions/update-deps-linux
-      - uses: ./.github/actions/remove-unneeded-tools-linux
       - name: Cache cmake install
         uses: actions/cache@v2
         id: cache-cmake
@@ -161,9 +157,9 @@ jobs:
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
-            path: ~/.m2
-            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-            restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
@@ -176,20 +172,20 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - run: |
-              sudo apt list --installed
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 11.0.167
-          GCC:  7
-
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-        if: ${{ matrix.libnd4j_file_download != '' }}
+              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
+              mkdir "${GITHUB_WORKSPACE}/openblas_home"
+              cd "${GITHUB_WORKSPACE}/openblas_home"
+              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-x86_64.jar
+              unzip openblas-0.3.13-1.5.5-linux-x86_64.jar
+              cd ..
+              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
+              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
-      - name: Build cuda
+      - name: Build on  linux-x86_64
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -204,11 +200,11 @@ jobs:
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           MODULES: ${{ matrix.mvn_flags }}
-          CUDA_PATH: /usr/local/cuda-11.0
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.0/
-          LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          MAVEN_OPTS: -Xmx2g
+
+
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
@@ -221,40 +217,31 @@ jobs:
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
 
-          sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export CUDA_PATH=/usr/local/cuda-11.0
-          export PATH="/usr/local/cuda-11.0/bin:$PATH"
-          # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
-          # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          echo "Helper is ${HELPER}"
-          if [ "${HELPER}" == "cudnn" ]; then
-              echo "Linking against cudnn"
-              echo "CUDA PATH is ${CUDA_PATH} CUDA_ROOT_DIR ${CUDNN_ROOT_DIR}"
-              ls -R "${CUDA_PATH}"
-            else
-               echo "Cudnn will not be linked against"
-          fi
-
-
           mvn --version
           cmake --version
           protoc --version
-          nvcc --version
-          sudo apt-get autoremove
-          sudo apt-get clean
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
+          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
+          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
+          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
+          sudo cp "${LIBGOMP_PATH}" /usr/lib
+          sudo apt-get -y autoremove
+          sudo apt-get -y clean
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
           if [ "$PERFORM_RELEASE" == 1 ]; then
-               echo "Performing release"
-               bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
-              else
-                  echo "Running build and deploying to snapshots with command ${COMMAND}"
-                  eval "${COMMAND}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                   else
+                       echo "Running build and deploying to snapshots"
+                       eval "${COMMAND}"
           fi
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled}}
+
 
 

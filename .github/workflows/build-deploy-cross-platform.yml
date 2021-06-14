@@ -49,6 +49,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v2

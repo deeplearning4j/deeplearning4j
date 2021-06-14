@@ -1,0 +1,38 @@
+name: Set OS install version
+description:
+runs:
+  using: composite
+  steps:
+    - name: Initial install
+      shell: bash
+      run: |
+          if [ -f /etc/os-release ]; then
+              . /etc/os-release
+              OS="$NAME"
+              VER="$VERSION_ID"
+          elif [ type lsb_release >/dev/null 2>&1 ]; then
+              # linuxbase.org
+              OS="$(lsb_release -si)"
+              VER="$(lsb_release -sr)"
+          elif [ -f /etc/lsb-release ]; then
+              /etc/lsb-release
+              OS="$DISTRIB_ID"
+              VER="$DISTRIB_RELEASE"
+          elif [ -f /etc/debian_version ]; then
+              OS="Debian"
+              VER="$(cat /etc/debian_version)"
+          elif [ -f /etc/SuSe-release ]; then
+              OS="SUSE"
+              VER="13.1"
+          elif [ -f /etc/redhat-release ]; then
+              # Older Red Hat, CentOS, etc.
+               OS="Centos"
+               VER="6"
+          else
+              # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+              OS="$(uname -s)"
+              VER="$(uname -r)"
+          fi
+
+          echo "OS=$OS" >> "$GITHUB_ENV"
+          echo  "VER=$VER" >> "$GITHUB_ENV"

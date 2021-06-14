@@ -136,7 +136,7 @@ jobs:
             fi
             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
             echo "COMMAND=${command}" >> $GITHUB_ENV
-
+      - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/remove-unneeded-tools-linux
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install

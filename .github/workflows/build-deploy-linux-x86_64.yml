@@ -111,6 +111,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/set-linux-distro-version
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
