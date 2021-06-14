@@ -74,9 +74,7 @@ bool experimentalSupport = false;
 #include <graph/ResultWrapper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/ConstantTadHelper.h>
-#include <performance/benchmarking/BenchmarkSuit.h>
-#include <performance/benchmarking/FullBenchmarkSuit.h>
-#include <performance/benchmarking/LightBenchmarkSuit.h>
+
 #include <execution/Threads.h>
 
 #ifdef CPU_FEATURES
@@ -2976,49 +2974,11 @@ void sortTadByValue(Nd4jPointer *extraPointers,
     }
 }
 
-const char* runLightBenchmarkSuit(bool printOut) {
-    try {
-        sd::LightBenchmarkSuit suit;
-        auto result = suit.runSuit();
-
-        if (printOut)
-            nd4j_printf("%s\n", result.data());
-
-        auto chars = new char[result.length() + 1];
-        std::memcpy(chars, result.data(), result.length());
-        chars[result.length()] = (char) 0x0;
-
-        return chars;
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-        return nullptr;
-    }
-}
 
 Nd4jLong getCachedMemory(int deviceId) {
     return sd::ConstantHelper::getInstance().getCachedAmount(deviceId);
 }
 
-const char* runFullBenchmarkSuit(bool printOut) {
-    try {
-        sd::FullBenchmarkSuit suit;
-        auto result = suit.runSuit();
-
-        if (printOut)
-            nd4j_printf("%s\n", result.data());
-
-        auto chars = new char[result.length() + 1];
-        std::memcpy(chars, result.data(), result.length());
-        chars[result.length()] = (char) 0x0;
-
-        return chars;
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-        return nullptr;
-    }
-}
 
 sd::LaunchContext* defaultLaunchContext() {
     return LaunchContext::defaultContext();

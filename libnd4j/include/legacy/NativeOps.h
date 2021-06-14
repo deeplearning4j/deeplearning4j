@@ -1643,8 +1643,7 @@ ND4J_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, Nd4jLo
 ND4J_EXPORT Nd4jLong getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, Nd4jLong index);
 ND4J_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr);
 
-ND4J_EXPORT const char* runLightBenchmarkSuit(bool printOut);
-ND4J_EXPORT const char* runFullBenchmarkSuit(bool printOut);
+
 
 typedef sd::LaunchContext OpaqueLaunchContext;
 
