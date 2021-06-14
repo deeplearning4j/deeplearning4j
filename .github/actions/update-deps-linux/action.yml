@@ -11,7 +11,7 @@ runs:
                sudo apt-get install pinentry-curses
                sudo apt-get install ca-certificates libgomp1
           fi
-          if [ "$OS" == *"Centos"* ] || [ "$OS" == *"Fedora"* ];
+          if [ "$OS" == *"Centos"* ] || [ "$OS" == *"Fedora"* ] || [ "$OS" == *"CentOS"* ];
                  then
                      SCL_ENABLE="devtoolset-7"
                      CENTOS_VERSION=$(rpm --eval '%{centos_ver}')
