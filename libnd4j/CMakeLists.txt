@@ -18,8 +18,21 @@ option(SD_SANITIZE "Enable Address Sanitizer" ON)
 
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+if (SD_CUDA)
+    enable_language(CUDA)
+    if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
+            message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
+            set(CMAKE_CXX_STANDARD 17)
+            set(CMAKE_CUDA_STANDARD 17)
+             else()
+                   set(CMAKE_CXX_STANDARD 11)
+    endif()
+    else()
+           set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_CXX_STANDARD 11)
+endif()
+
+message("Set C++ Standard to ${CMAKE_CXX_STANDARD}")
 
 #///////////////////////////////////////////////////////////////////////////////
 # genCompilation: Generates cpp, cu files
@@ -117,7 +130,6 @@ endfunction()
 
 if (SD_CUDA)
     enable_language(CUDA)
-    set(CMAKE_CUDA_STANDARD 11)
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
             message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
             set(CMAKE_CXX_STANDARD 17)
