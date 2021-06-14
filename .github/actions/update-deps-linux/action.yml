@@ -5,7 +5,32 @@ runs:
     - name: Install protobuf linux
       shell: bash
       run: |
-        sudo apt-get install build-essential make zlib1g-dev wget
+        if [[ "$OS" == *"Ubuntu"* ] || [ "$OS" == *"Debian"* ]]
+        then
+             sudo apt-get install build-essential make zlib1g-dev wget
+             sudo apt-get install pinentry-curses
+             sudo apt-get install ca-certificates libgomp1
+        fi
+        if [[ "$OS" == *"Centos"* ] || [ "$OS" == *"Fedora"* ]]
+               then
+                   SCL_ENABLE="devtoolset-7"
+                   CENTOS_VERSION=$(rpm --eval '%{centos_ver}')
+                   if [[ "$CENTOS_VERSION" == "6" ]]; then
+                     find /etc/yum.repos.d/ -name *.repo | xargs -i sed -i 's/mirror\.centos\.org\/centos/vault.centos.org/g;s/$releasever/6.10/g;s/mirrorlist/#mirrorlist/g;s/#baseurl/baseurl/g' {}
+                     SCL_ENABLE="devtoolset-7 rh-python36 python27"
+                   fi
+                   yum -y update
+                   yum -y install centos-release-scl-rh epel-release
+                   if [[ "$CENTOS_VERSION" == "6" ]]; then
+                     sed -i 's/mirror\.centos\.org\/centos/vault.centos.org/g;s/6\/sclo/6.10\/sclo/g;s/mirrorlist/#mirrorlist/g;s/#baseurl/baseurl/g' /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
+                   fi
+                   yum -y install $SCL_ENABLE rh-java-common-ant boost-devel ccache clang gcc-c++ gcc-gfortran java-1.8.0-openjdk-devel ant python python36-devel python36-pip swig file which wget unzip tar bzip2 gzip xz patch autoconf-archive automake make libtool bison flex perl nasm alsa-lib-devel freeglut-devel gtk2-devel libusb-devel libusb1-devel curl-devel expat-devel gettext-devel openssl-devel bzip2-devel zlib-devel SDL-devel libva-devel libxkbcommon-devel libxkbcommon-x11-devel xcb-util* fontconfig-devel libffi-devel ragel ocl-icd-devel GeoIP-devel pcre-devel ssdeep-devel yajl-devel libgomp pinentry zlib-devel ca-certificates
+                   # https://gcc.gnu.org/legacy-ml/gcc-patches/2018-01/msg01962.html
+                   sed -i 's/_mm512_abs_pd (__m512 __A)/_mm512_abs_pd (__m512d __A)/g' /opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7/include/avx512fintrin.h
+                   source scl_source enable $SCL_ENABLE || true
+                   echo "SCL_ENABLE=$SCL_ENABLE" >> $GITHUB_ENV
+        fi
+
         wget https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.36.tar.bz2
         tar jxf libgpg-error-1.36.tar.bz2
         cd libgpg-error-1.36
@@ -57,7 +82,5 @@ runs:
         make
         sudo make install
         cd ..
-        sudo apt-get install pinentry-curses
         #echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
         #gpg-connect-agent reloadagent /bye
-        sudo apt-get install ca-certificates libgomp1
