@@ -94,11 +94,17 @@ public class COCODataSet implements Serializable {
             COCOImage cocoImage = idToImage.get(id);
             if(!idToSegmentations.isEmpty() && idToSegmentations.containsKey(id)) {
                 COCOSegmentation segmentation = idToSegmentations.get(id);
-                double xMin = segmentation.getBbox().get(0);
-                double xMax = segmentation.getBbox().get(2);
-                double yMin = segmentation.getBbox().get(1);
-                double yMax = segmentation.getBbox().get(3);
-                ImageObject imageObject = new ImageObject((int)xMin,(int)yMin,(int)xMax,(int)yMax,categoryIdToName.get(segmentation.getCategoryId()));
+                double xTopLeft = segmentation.getBbox().get(0);
+                double yTopLeft = segmentation.getBbox().get(1);
+                double height = segmentation.getBbox().get(2);
+                double width = segmentation.getBbox().get(3);
+                //converts the height and width found in COCO to the equivalent in PASCAL VOC
+                /**
+                 * LOOK AT THIS AND ADAPT: https://stackoverflow.com/questions/64581692/how-to-convert-pascal-voc-to-yolo
+                 */
+                double xMax = xTopLeft + height;
+                double yMax = yTopLeft + width;
+                ImageObject imageObject = new ImageObject((int)xTopLeft,(int)yTopLeft,(int)xMax,(int)yMax,categoryIdToName.get(segmentation.getCategoryId()));
                 if(!fileNameToImageObject.containsKey(cocoImage.getFileName())) {
                     fileNameToImageObject.put(cocoImage.getFileName(),new ArrayList<>());
                 }
