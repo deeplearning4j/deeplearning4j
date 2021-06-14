@@ -107,10 +107,6 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     container: centos:6
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/set-linux-distro-version
       - name: Set mvn build command based on matrix
