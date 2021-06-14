@@ -1,4 +1,4 @@
-name: Remove un needed packages for linux
+name: Set OS install version
 description:
 runs:
   using: composite
