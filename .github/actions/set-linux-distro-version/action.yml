@@ -25,15 +25,16 @@ runs:
               OS=Debian
               VER=$(cat /etc/debian_version)
           elif [ -f /etc/SuSe-release ]; then
-              # Older SuSE/etc.
-              ...
+              OS=SUSE
+              VER=13.1
           elif [ -f /etc/redhat-release ]; then
               # Older Red Hat, CentOS, etc.
-              ...
+               OS=Centos
+               VER=6
           else
               # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
-              OS=$(uname -s)
-              VER=$(uname -r)
+              OS="$(uname -s)"
+              VER="$(uname -r)"
           fi
           echo "$OS" >> "$GITHUB_ENV"
-          ech  "$VER" >> $GITHUB_ENV"
+          echo  "$VER" >> $GITHUB_ENV"
