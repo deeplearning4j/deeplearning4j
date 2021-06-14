@@ -5,13 +5,13 @@ runs:
     - name: Install protobuf linux
       shell: bash
       run: |
-          if [[ "$OS" == *"Ubuntu"* ] || [ "$OS" == *"Debian"* ]];
+          if [ "$OS" == *"Ubuntu"* ] || [ "$OS" == *"Debian"* ];
           then
                sudo apt-get install build-essential make zlib1g-dev wget
                sudo apt-get install pinentry-curses
                sudo apt-get install ca-certificates libgomp1
           fi
-          if [[ "$OS" == *"Centos"* ] || [ "$OS" == *"Fedora"* ]];
+          if [ "$OS" == *"Centos"* ] || [ "$OS" == *"Fedora"* ];
                  then
                      SCL_ENABLE="devtoolset-7"
                      CENTOS_VERSION=$(rpm --eval '%{centos_ver}')
