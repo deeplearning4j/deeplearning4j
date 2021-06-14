@@ -105,7 +105,7 @@ jobs:
 
 
     runs-on: ${{ matrix.runs_on }}
-    container: centos:6
+    container: centos:7
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/set-linux-distro-version
