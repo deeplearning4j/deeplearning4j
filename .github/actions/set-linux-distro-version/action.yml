@@ -7,7 +7,7 @@ runs:
       shell: bash
       run: |
           if [ -f /etc/os-release ]; then
-              source /etc/os-release
+              . /etc/os-release
               OS="$NAME"
               VER="$VERSION_ID"
           elif [ type lsb_release >/dev/null 2>&1 ]; then
@@ -34,5 +34,5 @@ runs:
               VER="$(uname -r)"
           fi
 
-          echo "$OS" >> "$GITHUB_ENV"
-          echo  "$VER" >> "$GITHUB_ENV"
+          echo "OS=$OS" >> "$GITHUB_ENV"
+          echo  "VER=$VER" >> "$GITHUB_ENV"
