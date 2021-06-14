@@ -88,7 +88,6 @@ HELPER=
 CHECK_VECTORIZATION="OFF"
 NAME=
 
-if [ -z "${CMAKE_GENERATOR_TOOLSET}" ]; then export CMAKE_GENERATOR_TOOLSET=; fi
 
 
 while [[ $# -gt 0 ]]
