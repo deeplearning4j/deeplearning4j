@@ -26,7 +26,8 @@ runs:
               killall gpg-agent || true
               GNUPGHOME=/root/.gnupg
               echo "GNUPGHOME=/root/.gnupg" >> "$GITHUB_ENV"
-              gpg-agent --homedir /root/.gnupg --daemon --use-standard-socket --yes
+              gpg-agent --homedir /root/.gnupg --daemon --use-standard-socket
+              echo "--yes" >> /root/.gnupg/options
               echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a /root/.gnupg/gpg-agent.conf
               #gpg-connect-agent reloadagent /bye
               env
