@@ -23,11 +23,10 @@ runs:
               echo "SCL_ENABLE=$SCL_ENABLE" >> $GITHUB_ENV
               # Without the line below, gpg2 might fail to create / import secret keys !!!
               gpg --version
-              if [ -d ~/.gnupg ]; then rm -ri ~/.gnupg; fi
               killall gpg-agent || true
               GNUPGHOME=/root/.gnupg
               echo "GNUPGHOME=/root/.gnupg" >> "$GITHUB_ENV"
-              gpg-agent --homedir /root/.gnupg --daemon --use-standard-socket
+              gpg-agent --homedir /root/.gnupg --daemon --use-standard-socket --yes
               echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a /root/.gnupg/gpg-agent.conf
               #gpg-connect-agent reloadagent /bye
               env
