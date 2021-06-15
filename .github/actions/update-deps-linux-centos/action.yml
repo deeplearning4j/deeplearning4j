@@ -28,6 +28,6 @@ runs:
               echo "GNUPGHOME=/root/.gnupg" >> "$GITHUB_ENV"
               gpg-agent --homedir /root/.gnupg --daemon --use-standard-socket
               echo "--yes --no-tty --batch -v --default-key ${GPG_KEY}" >> /root/.gnupg/options
-              echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a /root/.gnupg/gpg-agent.conf
+              echo 'pinentry-program /usr/bin/pinentry-curses --allow-loopback-pinentry --debug-all' | tee -a /root/.gnupg/gpg-agent.conf
               #gpg-connect-agent reloadagent /bye
               env
