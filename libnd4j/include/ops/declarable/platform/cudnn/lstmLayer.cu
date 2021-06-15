@@ -192,7 +192,7 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
     // dimension 4*nOut implies order it, ft, c't, ot
     // input gate, forget gate, new gate, output gate, input gate, forget gate, new gate, output gate
     // Note: our weights should be transposed and duplicated with C order to match cudnn ones
-    // As returned memory addresses using cudnnGetRNNLinLayerMatrixParams linLayerID was contingiuous we will map directly
+
     NDArray inputWeightsT, recurrentWeightsT;
     uint8_t *inputWeightsData = nullptr;
     uint8_t *recurrentWeightsData = nullptr;
@@ -388,7 +388,7 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
     // dimension 4*nOut implies order it, ft, c't, ot
     // input gate, forget gate, new gate, output gate, input gate, forget gate, new gate, output gate
     // Note: our weights should be transposed and duplicated with C order to match cudnn ones
-    // As returned memory addresses using cudnnGetRNNLinLayerMatrixParams linLayerID was contingiuous we will map directly
+
     NDArray inputWeightsT, recurrentWeightsT;
     uint8_t *inputWeightsData = nullptr;
     uint8_t *recurrentWeightsData = nullptr;
@@ -526,7 +526,7 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
 //  - Clipping is allowed for cudnn version >= 7.2.1
 //  - SeqLen array is allowed for cudnn version >= 8.0.1
 //  - gateActivation: sigmoid, cellActivation and outputActivation: tanh
-//  - NDArrays (exluding weight ones, as we have to transpose or permute it) should follow 'c' order and ews()==1
+//  - NDArrays (excluding the weight arrays, as we have to transpose or permute it) should follow 'c' order and ews()==1
  PLATFORM_CHECK(lstmLayer, ENGINE_CUDA) {
  
     const auto dataFormat    = INT_ARG(0);    // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL], for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
