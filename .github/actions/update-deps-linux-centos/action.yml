@@ -24,6 +24,7 @@ runs:
               # Without the line below, gpg2 might fail to create / import secret keys !!!
               gpg --version
               if [ -d ~/.gnupg ]; then rm -ri ~/.gnupg; fi
-              gpgconf --kill gpg-agent
+              killall gpg-agent || true
+              gpg-agent --daemon --use-standard-socket
               echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
               #gpg-connect-agent reloadagent /bye
