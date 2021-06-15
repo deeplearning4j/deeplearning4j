@@ -170,7 +170,7 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           settings-path: /root/.m2/
         env:
-          GNUPGHOME: /usr/local/share/gnupg
+          GNUPGHOME: /root/.gnupg
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash

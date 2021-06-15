@@ -25,8 +25,8 @@ runs:
               gpg --version
               if [ -d ~/.gnupg ]; then rm -ri ~/.gnupg; fi
               killall gpg-agent || true
-              GNUPGHOME=/usr/local/share/gnupg
-              echo "GNUPGHOME=/usr/local/share/gnupg" >> "$GITHUB_ENV"
+              GNUPGHOME=/root/.gnupg
+              echo "GNUPGHOME=/root/.gnupg" >> "$GITHUB_ENV"
               gpg-agent --daemon --use-standard-socket
               echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
               #gpg-connect-agent reloadagent /bye
