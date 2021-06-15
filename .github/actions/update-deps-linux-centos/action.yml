@@ -32,6 +32,7 @@ runs:
               make
               ls
               make install
+              ln -s /usr/local/lib/libgcrypt.so.20 /usr/lib/libgcrypt.so.20
               cd ..
               wget https://www.gnupg.org/ftp/gcrypt/libksba/libksba-1.3.5.tar.bz2
               tar jxf libksba-1.3.5.tar.bz2
@@ -61,7 +62,7 @@ runs:
               make
               make install
               cd ..
-              echo 'include /usr/local/lib/' | tee -a /etc/ld.so.conf
+              echo 'include /usr/local/lib/' >> /etc/ld.so.conf
               ldconfig -v
               wget https://www.gnupg.org/ftp/gcrypt/gnupg/gnupg-2.2.17.tar.bz2
               tar jxf gnupg-2.2.17.tar.bz2
