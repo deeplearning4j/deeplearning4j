@@ -168,6 +168,8 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+        env:
+          GNUPGHOME: /usr/local/share/gnupg
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
