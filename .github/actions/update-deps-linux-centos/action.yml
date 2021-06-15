@@ -28,3 +28,4 @@ runs:
               gpg-agent --daemon --use-standard-socket
               echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
               #gpg-connect-agent reloadagent /bye
+              env

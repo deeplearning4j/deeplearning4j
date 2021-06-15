@@ -130,6 +130,7 @@ jobs:
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
+
       - uses: ./.github/actions/update-deps-linux-centos
       - name: Cache cmake install
         uses: actions/cache@v2
