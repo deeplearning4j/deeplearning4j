@@ -30,6 +30,7 @@ runs:
               cd libgcrypt-1.8.4
               ./configure --prefix=/usr/local
               make
+              ls
               make install
               cd ..
               wget https://www.gnupg.org/ftp/gcrypt/libksba/libksba-1.3.5.tar.bz2
