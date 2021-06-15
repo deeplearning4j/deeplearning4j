@@ -29,8 +29,11 @@
 #include <exceptions/cuda_exception.h>
 #include <exceptions/datatype_exception.h>
 #include <system/dll.h>
-
+#include <vector>
 #include <cudnn.h>
+
+#define CUDNN_NEW_RNN_API_VER 8001
+#define CUDNN_CLIPPING_API_VER 7201
 
 namespace sd      {
 namespace ops       {
@@ -60,9 +63,325 @@ namespace platforms {
     DECLARE_PLATFORM(maxpool3dnew, ENGINE_CUDA);
     DECLARE_PLATFORM(maxpool3dnew_bp, ENGINE_CUDA);
 
+    DECLARE_PLATFORM(lstmLayer, ENGINE_CUDA);
+
     DECLARE_PLATFORM(ctc_loss, ENGINE_CUDA);
     DECLARE_PLATFORM(ctc_loss_grad, ENGINE_CUDA);
 
+
+//////////////////////////////////////////////////////////////////////////
+template<typename Op, typename ...Args>
+FORCEINLINE void callCudnnIfNoErr(cudnnStatus_t &err, Op op, Args&&... args){
+        if(err==CUDNN_STATUS_SUCCESS){
+            err = op(std::forward<Args>(args)...);
+            if(err){
+                nd4j_printf("Cudnn error code %s\n", cudnnGetErrorString(err));
+            }
+        }
+}
+
+template <typename T>
+FORCEINLINE const T* bufferInHost( const NDArray &array)  {
+    array.syncToHost();
+    return reinterpret_cast<const T*>(array.buffer());
+}
+
+ 
+
+struct CudnnTensor{
+
+    CudnnTensor(const CudnnTensor& s) = delete; 
+
+    CudnnTensor& operator=(const CudnnTensor& other) = delete;
+
+    CudnnTensor(){ 
+       create();
+    }
+
+    CudnnTensor(bool createDesc){ 
+       if(createDesc)  create();
+       else { desc= nullptr; }
+    }
+
+    void create(){
+      desc_status = cudnnCreateTensorDescriptor(&desc); 
+    }
+
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = cudnnSetTensorNdDescriptor(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    operator cudnnTensorDescriptor_t() const { return desc; }
+
+    ~CudnnTensor(){
+      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyTensorDescriptor(desc);
+    }
+
+    cudnnStatus_t desc_status;
+    cudnnTensorDescriptor_t desc;
+};
+
+struct CudnnTensorList{
+
+    CudnnTensorList(const CudnnTensorList& s) = delete; 
+
+    CudnnTensorList& operator=(const CudnnTensorList& other) = delete;
+
+    CudnnTensorList(int size){ 
+       descList.resize(size);
+       desc_status = CUDNN_STATUS_SUCCESS;
+       for(int i=0;i<size;i++){ 
+           desc_status = cudnnCreateTensorDescriptor(&descList[i]);
+           if(desc_status != CUDNN_STATUS_SUCCESS) break;
+       } 
+    }
+
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, int index, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS && index<descList.size()){
+            last_err = cudnnSetTensorNdDescriptor(descList[index], std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    cudnnTensorDescriptor_t get(int i) const { 
+        if(i<descList.size()) return descList[i];
+        return nullptr;
+     }
+
+    const cudnnTensorDescriptor_t* getDescriptors() const { return descList.data(); }
+
+    ~CudnnTensorList(){
+      for(auto x: descList){
+          cudnnDestroyTensorDescriptor(x);
+      }
+    }
+
+    cudnnStatus_t desc_status;
+    std::vector<cudnnTensorDescriptor_t> descList;
+};
+
+struct FilterDesc{
+
+    FilterDesc(const FilterDesc& s) = delete; 
+
+    FilterDesc& operator=(const FilterDesc& other) = delete;
+
+    FilterDesc(){ 
+       desc_status = cudnnCreateFilterDescriptor(&desc);
+    }
+
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = cudnnSetFilterNdDescriptor(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    operator cudnnFilterDescriptor_t() const { return desc; }
+
+    ~FilterDesc(){
+      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyFilterDescriptor(desc); ;
+    }
+
+    cudnnStatus_t desc_status;
+    cudnnFilterDescriptor_t desc;
+};
+
+struct DropoutDesc{
+
+    DropoutDesc(const DropoutDesc& s) = delete; 
+
+    DropoutDesc& operator=(const DropoutDesc& other) = delete;
+
+    DropoutDesc(){ 
+       create();
+    }
+
+    DropoutDesc(bool createDesc){ 
+       if(createDesc)  create();
+       else { desc= nullptr; }
+    }
+
+    void create(){
+      desc_status = cudnnCreateDropoutDescriptor(&desc); 
+    }
+
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = cudnnSetDropoutDescriptor(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    operator cudnnDropoutDescriptor_t() const { return desc; }
+
+    ~DropoutDesc(){
+      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyDropoutDescriptor(desc); ;
+    }
+
+    cudnnStatus_t desc_status;
+    cudnnDropoutDescriptor_t desc;
+};
+
+#if CUDNN_VERSION > CUDNN_NEW_RNN_API_VER
+struct RnnDataDesc{
+
+    RnnDataDesc(const RnnDataDesc& s) = delete; 
+
+    RnnDataDesc& operator=(const RnnDataDesc& other) = delete;
+
+    RnnDataDesc(){ 
+       desc_status = cudnnCreateRNNDataDescriptor(&desc);
+    }
+
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = cudnnSetRNNDataDescriptor(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    operator cudnnRNNDataDescriptor_t() const { return desc; }
+
+    ~RnnDataDesc(){
+      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyRNNDataDescriptor(desc); ;
+    }
+
+    cudnnStatus_t desc_status;
+    cudnnRNNDataDescriptor_t desc;
+};
+#endif
+
+FORCEINLINE cudnnStatus_t setRnnDescriptorOldApi(cudnnRNNDescriptor_t rnnDesc, 
+                            cudnnHandle_t handle,
+                            cudnnRNNInputMode_t inputMode,
+                            cudnnDirectionMode_t dirMode,
+                            cudnnRNNMode_t cellMode,
+                            cudnnRNNAlgo_t algo,
+                            cudnnDataType_t mathPrec,
+                            int32_t hiddenSize,
+                            int32_t numLayers,
+                            cudnnDropoutDescriptor_t dropoutDesc,  bool use_tensor_op=false){
+
+    cudnnStatus_t err = CUDNN_STATUS_SUCCESS;
+    callCudnnIfNoErr( err, cudnnSetRNNDescriptor_v6, handle, rnnDesc, hiddenSize, numLayers,
+        dropoutDesc, inputMode, dirMode, cellMode, algo, mathPrec);
+#if CUDNN_VERSION >= 7001
+    if(cudnnGetVersion()>=7001){
+        cudnnMathType_t mathType =  use_tensor_op ? CUDNN_TENSOR_OP_MATH : CUDNN_DEFAULT_MATH;
+        callCudnnIfNoErr( err, cudnnSetRNNMatrixMathType, rnnDesc,  mathType); 
+    }
+#endif
+    return err;
+}
+
+
+struct RnnDesc{
+
+    RnnDesc(const RnnDesc& s) = delete; 
+
+    RnnDesc& operator=(const RnnDesc& other) = delete;
+
+    RnnDesc(){ 
+       desc_status = cudnnCreateRNNDescriptor(&desc);
+    }
+
+    template<typename ...Args>
+    void setUsingOldAPI(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = setRnnDescriptorOldApi(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+#if CUDNN_VERSION>=CUDNN_NEW_RNN_API_VER
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = cudnnSetRNNDescriptor_v8(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+#endif
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    operator cudnnRNNDescriptor_t() const { return desc; }
+
+    ~RnnDesc(){
+      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyRNNDescriptor(desc); ;
+    }
+
+    cudnnStatus_t desc_status;
+    cudnnRNNDescriptor_t desc;
+};
+
+
+
+struct CTCLossDesc{
+
+    CTCLossDesc(const CTCLossDesc& s) = delete; 
+
+    CTCLossDesc& operator=(const CTCLossDesc& other) = delete;
+
+    CTCLossDesc(){ 
+       desc_status = cudnnCreateCTCLossDescriptor(&desc);
+    }
+
+    template<typename ...Args>
+    void set(cudnnStatus_t &last_err, Args&&... args){ 
+        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
+            last_err = cudnnSetCTCLossDescriptorEx(desc, std::forward<Args>(args)...);
+            if(last_err){
+                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
+            }
+        }
+    }
+
+    cudnnStatus_t descStatus(){ return desc_status;}
+
+    operator cudnnCTCLossDescriptor_t() const { return desc; }
+
+    ~CTCLossDesc(){
+      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyCTCLossDescriptor(desc); ;
+    }
+
+    cudnnStatus_t desc_status;
+    cudnnCTCLossDescriptor_t desc;
+};
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {
     switch (dataType) {
