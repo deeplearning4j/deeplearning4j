@@ -26,4 +26,4 @@ runs:
               if [ -d ~/.gnugp ]; then rm -ri ~/.gnugp; fi
               #gpgconf --kill gpg-agent
               #echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
-              gpg-connect-agent reloadagent /bye
+              #gpg-connect-agent reloadagent /bye
