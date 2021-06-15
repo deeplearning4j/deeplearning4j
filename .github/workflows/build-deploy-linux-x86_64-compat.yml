@@ -135,6 +135,20 @@ jobs:
         env:
           GNUPGHOME: /root/gnupg
           GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          settings-path: /root/.m2/
+        env:
+          GNUPGHOME: /root/.gnupg
+
       - name: Cache cmake install
         uses: actions/cache@v2
         id: cache-cmake
@@ -161,19 +175,6 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v2
-        with:
-          java-version: 8
-          distribution: 'zulu'
-          server-id:  ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          settings-path: /root/.m2/
-        env:
-          GNUPGHOME: /root/.gnupg
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
