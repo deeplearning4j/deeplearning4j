@@ -12,8 +12,7 @@ runs:
                 SCL_ENABLE="devtoolset-7 rh-python36 python27"
               fi
               yum -y update
-              yum -y remove gnupg2
-              yum -y install centos-release-scl-rh epel-release gnupg2
+              yum -y install centos-release-scl-rh epel-release
               if [[ "$CENTOS_VERSION" == "6" ]]; then
                 sed -i 's/mirror\.centos\.org\/centos/vault.centos.org/g;s/6\/sclo/6.10\/sclo/g;s/mirrorlist/#mirrorlist/g;s/#baseurl/baseurl/g' /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
               fi
