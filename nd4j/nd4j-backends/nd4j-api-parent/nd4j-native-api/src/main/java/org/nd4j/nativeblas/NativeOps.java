@@ -1192,9 +1192,7 @@ public interface NativeOps {
     long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 
-    String runLightBenchmarkSuit(boolean printOut);
-
-    String runFullBenchmarkSuit(boolean printOut);
+  
 
     long getCachedMemory(int deviceId);
 

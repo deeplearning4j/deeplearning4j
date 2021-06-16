@@ -184,7 +184,6 @@ jobs:
              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
 
-
       - name:  Run cuda build
         shell: cmd
         env:

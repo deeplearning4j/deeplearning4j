@@ -41,8 +41,7 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <array>
-#include <performance/benchmarking/FullBenchmarkSuit.h>
-#include <performance/benchmarking/LightBenchmarkSuit.h>
+
 
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <execution/ThreadPool.h>
