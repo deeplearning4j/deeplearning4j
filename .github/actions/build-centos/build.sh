@@ -1,7 +1,7 @@
 #!/bin/bash
 env
 pwd
-ls -R /
+ls -R /github
 #SCL_ENABLE="devtoolset-7"
 #yum -y update && yum -y install centos-release-scl-rh epel-release
 #yum -y install $SCL_ENABLE rh-java-common-ant boost-devel ccache clang gcc-c++ gcc-gfortran java-1.8.0-openjdk-devel ant python python36-devel python36-pip swig file which wget unzip tar bzip2 gzip xz patch autoconf-archive automake make libtool bison flex perl nasm alsa-lib-devel freeglut-devel gtk2-devel libusb-devel libusb1-devel curl-devel expat-devel gettext-devel openssl-devel bzip2-devel zlib-devel SDL-devel libva-devel libxkbcommon-devel libxkbcommon-x11-devel xcb-util* fontconfig-devel libffi-devel ragel ocl-icd-devel GeoIP-devel pcre-devel ssdeep-devel yajl-devel
