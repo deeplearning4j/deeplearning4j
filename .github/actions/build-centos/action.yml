@@ -2,8 +2,4 @@ name: Update dependencies linux
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  steps:
-    - name: Update dependencies linux
-      shell: bash
-      run: |
-           /github/workspace/build.sh
+
