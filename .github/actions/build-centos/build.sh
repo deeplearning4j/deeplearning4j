@@ -14,7 +14,15 @@ pushd git-2.18.3; make -j2 prefix=/usr/local/; make -j2 prefix=/usr/local/ insta
 ln -sf /usr/bin/python3.6 /usr/bin/python3
 ln -sf /opt/cmake-3.16.6-Linux-x86_64/bin/* /usr/bin/
 ln -sf /opt/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-
+curl -fsSL https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz \
+                       | tar xz && \
+                       cd protobuf-3.8.0 && \
+                       ./configure --prefix=/opt/protobuf && \
+                       make -j2 && \
+                       sudo make install && \
+                       cd .. && \
+                       rm -rf protobuf-3.8.0
+echo "/opt/protobuf/bin" >> $GITHUB_PATH
 
 export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
 mvn --version
