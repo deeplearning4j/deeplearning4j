@@ -32,12 +32,12 @@ protoc --version
 export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
 # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
 pwd
-cd "$GITHUB_WORKSPACE/deeplearning4j"
+cd "/github/workspace/deeplearning4j"
 bash ./bootstrap-libnd4j-from-url.sh
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
 if [ "$PERFORM_RELEASE" == 1 ]; then
-          bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+          bash /github/workspace/deeplearning4j/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
          else
              echo "Running build and deploying to snapshots"
              eval "${COMMAND}"
