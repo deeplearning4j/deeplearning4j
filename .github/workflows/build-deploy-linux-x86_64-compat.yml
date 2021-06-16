@@ -105,7 +105,6 @@ jobs:
 
 
     runs-on: ${{ matrix.runs_on }}
-    container: centos:7
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/set-linux-distro-version
@@ -132,9 +131,6 @@ jobs:
 
 
       - uses: ./.github/actions/update-deps-linux-centos
-        env:
-          GNUPGHOME: /root/gnupg
-          GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
@@ -145,7 +141,6 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          settings-path: /root/.m2/
         env:
           GNUPGHOME: /root/.gnupg
 
@@ -208,40 +203,10 @@ jobs:
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
 
+        uses: ./.github/actions/build-centos
 
-        run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
 
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
-          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
-          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
-          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
-          sudo cp "${LIBGOMP_PATH}" /usr/lib
-          sudo apt-get -y autoremove
-          sudo apt-get -y clean
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-                   else
-                       echo "Running build and deploying to snapshots"
-                       eval "${COMMAND}"
-          fi
+
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
