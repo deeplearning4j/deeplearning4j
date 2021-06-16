@@ -30,15 +30,11 @@ mvn --version
 cmake --version
 protoc --version
 export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-#export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
-# NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
-# For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
-# Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
-#sudo cp "${LIBGOMP_PATH}" /usr/lib
-sudo apt-get -y autoremove
-sudo apt-get -y clean
 # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
+pwd
+cd "$GITHUB_WORKSPACE/deeplearning4j"
 bash ./bootstrap-libnd4j-from-url.sh
+
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
 if [ "$PERFORM_RELEASE" == 1 ]; then
           bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
