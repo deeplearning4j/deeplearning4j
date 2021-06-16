@@ -128,7 +128,7 @@ jobs:
               command="${command} ${mvn_ext}"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
-          
+
       - uses: ./.github/actions/update-deps-linux
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
