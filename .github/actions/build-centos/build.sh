@@ -38,9 +38,5 @@ cd "/github/workspace/"
 bash ./bootstrap-libnd4j-from-url.sh
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
-if [ "$PERFORM_RELEASE" == 1 ]; then
-          bash ./release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-         else
-             echo "Running build and deploying to snapshots"
-             eval "${COMMAND}"
-fi
+eval "${INSTALL_COMMAND}"
+
