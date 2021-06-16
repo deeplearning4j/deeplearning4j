@@ -129,58 +129,6 @@ jobs:
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
-      - uses: ./.github/actions/update-deps-linux
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v2
-        with:
-          java-version: 8
-          distribution: 'zulu'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-
-      - name: Cache cmake install
-        uses: actions/cache@v2
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
-      - name: Cache protobuf install
-        uses: actions/cache@v2
-        id: cache-protobuf
-        with:
-          path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
-      - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
-      - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-
-      - name: Setup libnd4j home if a download url is specified
-        shell: bash
-        run: |
-              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-              mkdir "${GITHUB_WORKSPACE}/openblas_home"
-              cd "${GITHUB_WORKSPACE}/openblas_home"
-              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-x86_64.jar
-              unzip openblas-0.3.13-1.5.5-linux-x86_64.jar
-              cd ..
-              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
-              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
       - name: Build on  linux-x86_64
         uses: ./.github/actions/build-centos
