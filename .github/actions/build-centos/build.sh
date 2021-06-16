@@ -8,6 +8,7 @@ curl -LO https://github.com/Kitware/CMake/releases/download/v3.16.6/cmake-3.16.6
 curl -LO https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
 curl -LO https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.18.3.tar.gz
 tar -xzf cmake-3.16.6-Linux-x86_64.tar.gz -C /opt/
+mv /opt/cmake-3.16.6-Linux-x86_64 /opt/cmake
 tar -xzf apache-maven-3.6.3-bin.tar.gz -C /opt/
 tar -xzf git-2.18.3.tar.gz
 pushd git-2.18.3; make -j2 prefix=/usr/local/; make -j2 prefix=/usr/local/ install; popd
@@ -19,7 +20,7 @@ curl -fsSL https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-
                        cd protobuf-3.8.0 && \
                        ./configure --prefix=/opt/protobuf && \
                        make -j2 && \
-                       sudo make install && \
+                       make install && \
                        cd .. && \
                        rm -rf protobuf-3.8.0
 echo "/opt/protobuf/bin" >> $GITHUB_PATH
