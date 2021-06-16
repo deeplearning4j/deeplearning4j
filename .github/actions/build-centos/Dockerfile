@@ -1,4 +1,3 @@
 FROM centos:7
-VOLUME /home/runner/
-ADD ./build.sh /github/workspace/build.sh
-RUN chmod +x /github/workspace/build.sh   && /github/workspace/build.sh
+ADD ./build.sh /build.sh
+RUN mv /build.sh /github/workspace/build.sh && chmod +x /github/workspace/build.sh   && /github/workspace/build.sh
