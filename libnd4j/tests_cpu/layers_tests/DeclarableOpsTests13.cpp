@@ -1367,8 +1367,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
     hI({1,2, 0,0, 0,0}) = -1;
     cI({0,1, 0,0, 0,0}) = 2;
     cI({1,2, 0,0, 0,0}) = -2;
-    hI.printIndexedBuffer("hI");
-    cI.printIndexedBuffer("cI");
+
     std::vector<double>   tArgs = {cellClip};
     std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
