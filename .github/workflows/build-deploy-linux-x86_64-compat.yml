@@ -185,7 +185,7 @@ jobs:
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
       - name: Build on  linux-x86_64
-        shell: bash
+        uses: ./.github/actions/build-centos
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
@@ -202,11 +202,6 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
-
-        uses: ./.github/actions/build-centos
-
-
-
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
