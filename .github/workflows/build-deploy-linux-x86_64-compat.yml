@@ -153,6 +153,8 @@ jobs:
       - name: Deploy
         shell: bash
         run: |
+              # Docker builds are root owned
+              sudo chown -R $USER $GITHUB_WORKSPACE/*
               if [ "$PERFORM_RELEASE" == 1 ]; then
                         bash "$GITHUB_WORKSPACE/release-specified-component.sh" "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${DEPLOY_COMMAND}"
                        else
