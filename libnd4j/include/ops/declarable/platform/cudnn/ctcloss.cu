@@ -72,8 +72,9 @@ namespace platforms {
         CTCLossDesc  ctcLossDesc;
         CudnnTensor probsDesc, gradsDesc(false);
         bool calcGrads = !grads.isEmpty();
-        ctcLossDesc.set( err, CUDNN_DATA_FLOAT, CUDNN_LOSS_NORMALIZATION_SOFTMAX, CUDNN_PROPAGATE_NAN);
-        probsDesc.set( err, cudnnDataType(probs.dataType()), probs.rankOf() , dims, strides);
+        auto cudnnType = cudnnDataType(probs.dataType());
+        ctcLossDesc.set( err, cudnnType, CUDNN_LOSS_NORMALIZATION_SOFTMAX, CUDNN_PROPAGATE_NAN);
+        probsDesc.set( err, cudnnType, probs.rankOf() , dims, strides);
 
         if(calcGrads){
             gradsDesc.create();
@@ -180,7 +181,7 @@ namespace platforms {
         if(err!=CUDNN_STATUS_SUCCESS) throw sd::cuda_exception::build("ctc_loss CUDNN call failure ", err);
         //restore grads shape from {T, BATCH, C} -> {BATCHS, T, C}
         outputGradients->permutei({1,0,2});
-        //tempLosses.printIndexedBuffer("tempLosses");
+
         return Status::OK();
     }
 
