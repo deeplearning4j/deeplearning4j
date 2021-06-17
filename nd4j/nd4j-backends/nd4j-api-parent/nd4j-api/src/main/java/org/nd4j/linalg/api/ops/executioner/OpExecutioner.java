@@ -471,6 +471,4 @@ public interface OpExecutioner {
     DataBuffer createConstantBuffer(double[] values, DataType desiredType);
 
 
-    String runLightBenchmarkSuit(boolean printOut);
-    String runFullBenchmarkSuit(boolean printOut);
 }

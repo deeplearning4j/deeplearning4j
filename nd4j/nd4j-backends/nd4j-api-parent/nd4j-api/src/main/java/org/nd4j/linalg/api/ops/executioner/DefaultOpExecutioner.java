@@ -970,15 +970,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public String runLightBenchmarkSuit(boolean printOut) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String runFullBenchmarkSuit(boolean printOut) {
-        throw new UnsupportedOperationException();
-    }
 
 
     public void setX(INDArray x, Op op, OpContext oc){
