@@ -36,3 +36,4 @@ runs:
 
           echo "OS=$OS" >> "$GITHUB_ENV"
           echo  "VER=$VER" >> "$GITHUB_ENV"
+          echo "OS is $OS and VERSION is $VER"
