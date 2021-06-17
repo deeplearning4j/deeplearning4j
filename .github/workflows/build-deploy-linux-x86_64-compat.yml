@@ -131,7 +131,7 @@ jobs:
               echo "INSTALL_COMMAND=${command} install" >> $GITHUB_ENV
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
-
+      - uses: ./.github/actions/update-deps-linux
       - name: Build on  linux-x86_64
         uses: ./.github/actions/build-centos
         env:
