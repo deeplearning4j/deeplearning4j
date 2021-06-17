@@ -2064,21 +2064,5 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
 
-    @Override
-    public String runLightBenchmarkSuit(boolean printOut) {
-        val s = loop.runLightBenchmarkSuit(printOut);
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
 
-        return s;
-    }
-
-    @Override
-    public String runFullBenchmarkSuit(boolean printOut) {
-        val s = loop.runFullBenchmarkSuit(printOut);
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
-        return s;
-    }
 }
