@@ -1,4 +1,4 @@
-name: Update dependencies linux
+name: Build deeplearning4j on centos 7
 runs:
   using: 'docker'
   image: 'Dockerfile'
