@@ -24,10 +24,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.deeplearning4j.nn.conf.CNN2DFormat;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
@@ -100,20 +97,44 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN && inputType.getType() != InputType.Type.FF) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
-                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                    + "\"): expect RNN input type with size > 0 or feed forward. Got: " + inputType);
         }
 
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
-        if (nIn <= 0 || override) {
-            this.nIn = r.getSize();
-        }
-        if(this.rnnDataFormat == null || override)
-            this.rnnDataFormat = r.getFormat();
+        if(inputType.getType() == InputType.Type.RNN) {
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            if (nIn <= 0 || override) {
+                this.nIn = r.getSize();
+            }
+            if(this.rnnDataFormat == null || override)
+                this.rnnDataFormat = r.getFormat();
 
-        if(this.cnn2dDataFormat == null || override)
-            this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
+             if(this.cnn2dDataFormat == null || override)
+                this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
+        } else if(inputType.getType() == InputType.Type.FF) {
+            InputType.InputTypeFeedForward r = (InputType.InputTypeFeedForward) inputType;
+            if (nIn <= 0 || override) {
+                this.nIn = r.getSize();
+            }
+            if(this.rnnDataFormat == null || override) {
+                DataFormat dataFormat = r.getTimeDistributedFormat();
+                if(dataFormat instanceof CNN2DFormat) {
+                    CNN2DFormat cnn2DFormat = (CNN2DFormat)  dataFormat;
+                    this.rnnDataFormat = cnn2DFormat == CNN2DFormat.NCHW ? RNNFormat.NCW : RNNFormat.NWC;
+                    this.cnn2dDataFormat = cnn2DFormat;
+
+                } else if(dataFormat instanceof RNNFormat) {
+                    RNNFormat rnnFormat = (RNNFormat) dataFormat;
+                    this.rnnDataFormat = rnnFormat;
+                }
+
+            }
+
+            if(this.cnn2dDataFormat == null || override)
+                this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
+
+        }
     }
 
     @Override
