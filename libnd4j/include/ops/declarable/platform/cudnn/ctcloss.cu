@@ -29,22 +29,6 @@ namespace platforms {
 
 
 
-    template<typename Op, typename ...Args>
-    void callCudnnIfNoErr(cudnnStatus_t &err, Op op, Args&&... args){
-        if(err==CUDNN_STATUS_SUCCESS){
-            err = op(std::forward<Args>(args)...);
-            if(err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(err));
-            }
-        }
-    }
-
-    template <typename T>
-    const T* bufferInHost( const NDArray &array)  {
-        array.syncToHost();
-        return reinterpret_cast<const T*>(array.buffer());
-    }
-
     std::vector<int> getConcatTargets(const NDArray &targetLabels, const NDArray &targetLabelLengths){
                 //concatenate target labels
                 const int32_t *tlabels = bufferInHost<int32_t>(targetLabels);
@@ -85,17 +69,17 @@ namespace platforms {
         cudnnStatus_t err = CUDNN_STATUS_SUCCESS;
         callCudnnIfNoErr(err, cudnnSetStream, *handle, *context.getCudaStream());
 
-        cudnnCTCLossDescriptor_t  ctcLossDesc;
-        cudnnTensorDescriptor_t probsDesc = nullptr;
-        cudnnTensorDescriptor_t gradsDesc = nullptr;
-        callCudnnIfNoErr(err, cudnnCreateCTCLossDescriptor, &ctcLossDesc);
-        callCudnnIfNoErr(err, cudnnSetCTCLossDescriptorEx, ctcLossDesc, CUDNN_DATA_FLOAT, CUDNN_LOSS_NORMALIZATION_SOFTMAX, CUDNN_PROPAGATE_NAN);
-        callCudnnIfNoErr(err, cudnnCreateTensorDescriptor, &probsDesc);
-        callCudnnIfNoErr(err, cudnnSetTensorNdDescriptor, probsDesc, cudnnDataType(probs.dataType()), probs.rankOf() , dims, strides);
-        if(!grads.isEmpty()){
+        CTCLossDesc  ctcLossDesc;
+        CudnnTensor probsDesc, gradsDesc(false);
+        bool calcGrads = !grads.isEmpty();
+        auto cudnnType = cudnnDataType(probs.dataType());
+        ctcLossDesc.set( err, cudnnType, CUDNN_LOSS_NORMALIZATION_SOFTMAX, CUDNN_PROPAGATE_NAN);
+        probsDesc.set( err, cudnnType, probs.rankOf() , dims, strides);
+
+        if(calcGrads){
+            gradsDesc.create();
             const int gradStrides[] = {(int)grads.strideAt(0), (int)grads.strideAt(1), (int)grads.strideAt(2)};
-            callCudnnIfNoErr(err, cudnnCreateTensorDescriptor, &gradsDesc);
-            callCudnnIfNoErr(err, cudnnSetTensorNdDescriptor, gradsDesc, cudnnDataType(grads.dataType()), grads.rankOf() , dims, gradStrides);
+            gradsDesc.set( err, cudnnDataType(grads.dataType()), grads.rankOf() , dims, gradStrides);
         }
 
         size_t tempWorkSpaceSize=0;
@@ -119,7 +103,7 @@ namespace platforms {
             bufferInHost<int32_t>(probInputLengthes),
             ctcLosses.specialBuffer(),
             gradsDesc,
-            grads.specialBuffer(),
+            calcGrads ? grads.specialBuffer() :nullptr,
             CUDNN_CTC_LOSS_ALGO_DETERMINISTIC,
             ctcLossDesc,
             tempWorkSpace,
@@ -128,9 +112,6 @@ namespace platforms {
         NDArray::registerSpecialUse({&ctcLosses, &grads}, {&probs});
 
         cudaFree(tempWorkSpace);
-        callCudnnIfNoErr(err, cudnnDestroyTensorDescriptor,probsDesc);
-        if(gradsDesc) callCudnnIfNoErr(err, cudnnDestroyTensorDescriptor,gradsDesc);
-        callCudnnIfNoErr(err, cudnnDestroyCTCLossDescriptor,ctcLossDesc);
         return err;
      }
 
@@ -188,6 +169,7 @@ namespace platforms {
         auto logitInputLengths = INPUT_VARIABLE(3);
         auto outputGradients = OUTPUT_VARIABLE(0);
         auto context = block.launchContext();
+        REQUIRE_TRUE(outputGradients->isSameShape(logitInput), 0, "CtcLoss Gradient: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
         //in Cudnn Batch is in the middle dimension
         logitInput->permutei({1,0,2});
         outputGradients->permutei({1,0,2});
@@ -199,7 +181,7 @@ namespace platforms {
         if(err!=CUDNN_STATUS_SUCCESS) throw sd::cuda_exception::build("ctc_loss CUDNN call failure ", err);
         //restore grads shape from {T, BATCH, C} -> {BATCHS, T, C}
         outputGradients->permutei({1,0,2});
-        //tempLosses.printIndexedBuffer("tempLosses");
+
         return Status::OK();
     }
 

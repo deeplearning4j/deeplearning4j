@@ -2070,6 +2070,94 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_13) {
+
+    sd::Environment::getInstance().setDebug(true);
+    sd::Environment::getInstance().setVerbose(true);
+
+    const int sL   = 5;
+    const int bS   = 3;
+    const int nIn  = 4;
+    const int nOut = 5;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  //  return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut},  sd::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, sd::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+    auto expH = NDArrayFactory::create<float>('c', {sL, bS, nOut}, {
+                0.585381f, 0.618957f, 0.650373f, 0.679638f, 0.706795f,
+                0.821222f, 0.839291f, 0.855572f, 0.870221f, 0.883389f,
+                0.913720f, 0.922729f, 0.930756f, 0.937913f, 0.944299f,
+
+                0.938296f, 0.945774f, 0.952322f, 0.958059f, 0.963085f,
+                0.976104f, 0.978968f, 0.981458f, 0.983628f, 0.985523f,
+                0.988348f, 0.989659f, 0.990806f, 0.991811f, 0.992695f,
+
+                0.991718f, 0.992766f, 0.993673f, 0.994459f, 0.995141f,
+                0.996805f, 0.997194f, 0.997531f, 0.997823f, 0.998077f,
+                0.998440f, 0.998616f, 0.998770f, 0.998905f, 0.999023f,
+
+                0.998884f, 0.999026f, 0.999148f, 0.999254f, 0.999346f,
+                0.999571f, 0.999623f, 0.999668f, 0.999707f, 0.999741f,
+                0.999790f, 0.999814f, 0.999835f, 0.999853f, 0.999869f,
+
+                0.999849f, 0.999869f, 0.999885f, 0.999899f, 0.999912f,
+                0.999942f, 0.999949f, 0.999955f, 0.999960f, 0.999965f,
+                0.999972f, 0.999975f, 0.999978f, 0.999980f, 0.999982f });
+
+    auto expClast = NDArrayFactory::create<float>('c', {bS, nOut}, {
+                4.749328f, 4.816851f, 4.883604f, 4.949651f, 5.015049f,
+                5.227203f, 5.291582f, 5.354893f, 5.417225f, 5.478654f,
+                5.584539f, 5.643831f, 5.702098f, 5.759458f, 5.816012f });
+
+    x.linspace(0.15f, 0.25f);
+    Wx.linspace(0.003f, 0.005f);
+    Wr.linspace(0.006f, 0.007f);
+    b.linspace(0.11f, 0.05f);
+    hI.linspace(0.13f, 0.05f);
+    cI.linspace(0.17f, 0.05f);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    sd::ops::lstmLayer op;
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    sd::Environment::getInstance().setDebug(false);
+    sd::Environment::getInstance().setVerbose(false);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status()); 
+    auto h  = results.at(0);
+    auto cL = results.at(2); 
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expClast.isSameShape(cL));
+    ASSERT_TRUE(expClast.equalsTo(cL));
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test1) {
 
     NDArray input   ('c', {2,4}, sd::DataType::FLOAT32);

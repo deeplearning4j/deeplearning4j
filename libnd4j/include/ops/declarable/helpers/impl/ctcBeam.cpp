@@ -624,7 +624,6 @@ beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& resul
     const auto strides = logit.stridesOf();
     const auto rank = logit.rankOf();
 
-    const IndexType* len_t_ptr = nullptr;
     uint64_t element_stride_t = 1;
 
     //checks before
@@ -636,18 +635,11 @@ beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& resul
     if (len_c < 1 || max_len_t < 1) return;
     //defaulting blankIndex to the last class if its incorrect or -1
     if (blank_index > len_c || blank_index < 0) blank_index = static_cast<int>(len_c) - 1;
-    if (sequence_length.rankOf() == 1 && sequence_length.shapeOf()[0] == batch_len)
-    {
-        len_t_ptr = sequence_length.bufferAsT<IndexType>();
-        element_stride_t = sequence_length.stridesOf()[0];
-    }
 
     //strides
     auto batch_stride = rank > 2 ? strides[0] : 0;
     auto inc_p = strides[rank - 2];
     auto element_stride = logit.stridesOf()[rank - 1];
-
-    auto logits_ptr = logit.bufferAsT<Type>();
 
 #if defined(ASSERT_INNER)
     //result_probs should be [batch_len, nbest_len]
@@ -656,10 +648,19 @@ beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& resul
     assert(result_sequences.ews() == 1 && result_sequences.rankOf() == 3 && result_sequences.shapeOf()[0] == batch_len && result_sequences.shapeOf()[1] == nbest_len
             && result_sequences.shapeOf()[2] == max_len_t);
 #endif
+    //as ctcBeam search runs on Cpu we should make NdArray buffers available on the host side as well
+    NDArray::preparePrimaryUse({&result_sequences, &result_probs, &result_sequences_length}, {&sequence_length, &logit});
+
+    auto logits_ptr = logit.bufferAsT<Type>();
     auto result_seq_ptr = result_sequences.bufferAsT<IndexType>();
     auto result_probs_ptr = result_probs.bufferAsT<Type>();
     auto result_seq_length_ptr = result_sequences_length.bufferAsT<IndexType>();
-
+    const IndexType* len_t_ptr = nullptr;
+    if (sequence_length.rankOf() == 1 && sequence_length.shapeOf()[0] == batch_len)
+    {
+        len_t_ptr = sequence_length.bufferAsT<IndexType>();
+        element_stride_t = sequence_length.stridesOf()[0];
+    }
     const auto  batch_stride_res = result_sequences.stridesOf()[0];
     const auto  inc_res = result_sequences.stridesOf()[1];
     const auto  batch_stride_res_prob = result_probs.stridesOf()[0];
@@ -704,6 +705,8 @@ beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& resul
         }
     };
     samediff::Threads::parallel_for(func, 0, batch_len, 1);
+
+    NDArray::registerPrimaryUse({&result_sequences, &result_probs, &result_sequences_length}, {&sequence_length, &logit});
     return;
 }
 
