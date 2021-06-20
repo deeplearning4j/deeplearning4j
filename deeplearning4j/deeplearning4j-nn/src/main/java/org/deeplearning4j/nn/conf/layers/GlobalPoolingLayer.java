@@ -25,10 +25,12 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ValidationUtils;
@@ -70,7 +72,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret =
-                        new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf, networkDataType);
+                new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -91,8 +93,8 @@ public class GlobalPoolingLayer extends NoParamLayer {
         switch (inputType.getType()) {
             case FF:
                 throw new UnsupportedOperationException(
-                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                                + inputType);
+                        "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                + inputType);
             case RNN:
                 InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
                 if (collapseDimensions) {
@@ -142,12 +144,29 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-
         switch (inputType.getType()) {
+            /**
+             * Global pooling won't appear in the context of feed forward, but global pooling itself
+             * typically feeds forward a feed forward type. This converts that back to rnn.
+             */
             case FF:
-                throw new UnsupportedOperationException(
-                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                                + inputType);
+                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward)  inputType;
+                if(feedForward.getTimeDistributedFormat() != null && feedForward.getTimeDistributedFormat() instanceof RNNFormat) {
+                    RNNFormat rnnFormat = (RNNFormat) feedForward.getTimeDistributedFormat();
+                    return new FeedForwardToRnnPreProcessor(rnnFormat);
+                } else if(feedForward.getTimeDistributedFormat() != null && feedForward.getTimeDistributedFormat() instanceof CNN2DFormat) {
+                    CNN2DFormat cnn2DFormat = (CNN2DFormat) feedForward.getTimeDistributedFormat();
+                    switch(cnn2DFormat) {
+                        case NCHW:
+                            return new FeedForwardToRnnPreProcessor(RNNFormat.NCW);
+                        case NHWC:
+                            return new FeedForwardToRnnPreProcessor(RNNFormat.NWC);
+                    }
+
+                } else {
+                    return new FeedForwardToRnnPreProcessor();
+                }
+
             case RNN:
             case CNN:
             case CNN3D:
@@ -180,11 +199,11 @@ public class GlobalPoolingLayer extends NoParamLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, GlobalPoolingLayer.class, inputType, outputType)
-                        .standardMemory(0, 0) //No params
-                        //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
-                        .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(0, 0) //No params
+                //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
+                .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @Getter
