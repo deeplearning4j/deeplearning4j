@@ -66,8 +66,8 @@ __device__ void ReduceFloatFunction<X,Z>::aggregatePartials(void *vsPartials, Nd
     // start the shared memory loop on the next power of 2 less
     // than the block size.  If block size is not a power of 2,
     // accumulate the intermediate sums in the remainder range.
-
-    auto sPartials = reinterpret_cast<Z*>(vsPartials);
+    using Y = typename OpType::InterType;
+    auto sPartials = reinterpret_cast<Y*>(vsPartials);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
     Nd4jLong floorPow2 = numItems;
@@ -154,9 +154,9 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(const void *vx, const N
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
-
+    using Y = typename OpType::InterType;
     //shared memory space for storing intermediate results
-    __shared__ Z sPartials[CUDA_BLOCK_SIZE];
+    __shared__ Y sPartials[CUDA_BLOCK_SIZE];
     __shared__ Nd4jLong xEws;
     __shared__ Nd4jLong len;
 

@@ -2728,6 +2728,21 @@ namespace simdOps {
         }
     };
 
+   /**
+    * @brief AggregateType - helper template to use desired type for the aggregation expressions.
+	*  This way we can reduce overflow and precision issues for certain types
+    * 
+    * @tparam Z 
+    */
+    template<typename Z>
+    struct AggregateType{
+        using type = Z;
+    };
+
+    template<>
+    struct AggregateType<float16>{
+        using type = float;
+    };
 
     template <typename X, typename Z>
     class ShannonEntropy {
@@ -2736,25 +2751,25 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, Z *extraParams) {
+        op_def static InterType op(X d1, Z *extraParams) {
             auto p = d1 * d1;
             return static_cast<Z>(p) * sd::math::nd4j_log<X, Z>(p);
         }
 
-        op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
             return -reduction;
         }
     };
@@ -2765,28 +2780,28 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
-
+        using InterType = typename AggregateType<Z>::type;
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, Z *extraParams) {
-			return static_cast<Z>(d1) * sd::math::nd4j_log<X, Z>(d1);
+        op_def static InterType op(X d1, Z *extraParams) {
+			return static_cast<InterType>(d1) * sd::math::nd4j_log<X, InterType>(d1);
         }
 
-        op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
 			//entropy is -sum(p(x) * log(p(x))); log entropy is log of this
-			return sd::math::nd4j_log<Z, Z>(-reduction);
+			return sd::math::nd4j_log<InterType, Z>(-reduction);
         }
     };
 
@@ -2797,24 +2812,24 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, Z *extraParams) {
-            return static_cast<Z>(d1) * sd::math::nd4j_log<X, Z>(d1);
+        op_def static InterType op(X d1, Z *extraParams) {
+            return static_cast<InterType>(d1) * sd::math::nd4j_log<X, InterType>(d1);
         }
 
-        op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
             return static_cast<Z>(-reduction);		//entropy is -sum(p(x) * log(p(x)))
         }
     };
@@ -2857,25 +2872,25 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
-
+        using InterType = typename AggregateType<Z>::type;
         op_def static Z startingValue(const X *input) {
             return static_cast<Z>(0);
         }
 
-        op_def static Z merge(Z old, Z opOutput, X *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z update(Z old, Z opOutput, X *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, X *extraParams) {
-            return d1 == static_cast<X>(0.0f) ? static_cast<Z>(0.0f) : static_cast<Z>(1.0f);
+        op_def static InterType op(X d1, X *extraParams) {
+            return d1 == static_cast<X>(0.0f) ? static_cast<InterType>(0.0f) : static_cast<InterType>(1.0f);
         }
 
-        op_def static Z postProcess(Z reduction, Nd4jLong n, X *extraParams) {
-            return reduction;
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, X *extraParams) {
+            return static_cast<Z>(reduction);
         }
     };
 
@@ -2885,26 +2900,26 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
-
+        using InterType = typename AggregateType<Z>::type;
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static Z startingValue(const X *input) {
             return static_cast<Z>(0.0f);
         }
 
-        op_def static Z merge(Z old, Z opOutput, X *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z update(Z old, Z opOutput, X *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, X *extraParams) {
-            return d1 == static_cast<X>(0) ? static_cast<X>(1) : static_cast<X>(0);
+        op_def static InterType op(X d1, X *extraParams) {
+            return d1 == static_cast<X>(0) ? static_cast<InterType>(1) : static_cast<InterType>(0);
         }
 
-        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, X *extraParams) {
             return static_cast<Z>(reduction);
         }
     };
@@ -2944,7 +2959,7 @@ namespace simdOps {
 	public:
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
-
+        using InterType = Z;
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
@@ -2974,7 +2989,7 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
-
+        using InterType = Z;
         const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
 
         op_def static X startingValue(const X *input) {
@@ -3004,26 +3019,28 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        using InterType = typename AggregateType<Z>::type;
+
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z op(X d1, Z *extraParams) {
+		op_def static InterType op(X d1, Z *extraParams) {
 			return d1;
 		}
 
-		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
-			return reduction / (Z) n;
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+			return static_cast<Z>(reduction / (InterType) n);
 		}
 	};
 
@@ -3034,30 +3051,30 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, Z *extraParams) {
+        op_def static InterType op(X d1, Z *extraParams) {
             auto f1 = static_cast<float>(d1);
-            return static_cast<Z>(sd::math::nd4j_pow<float,float,float>(f1, 3)
+            return static_cast<InterType>(sd::math::nd4j_pow<float,float,float>(f1, 3)
                     + sd::math::nd4j_log<float,float>(f1) * sd::math::nd4j_sin<float,float>(f1)
                     / sd::math::nd4j_tanh<float,float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1)
                     * sd::math::nd4j_sqrt<float,float>(static_cast<float>(M_PI) / f1)
                     - sd::math::nd4j_atan<float,float>(static_cast<float>(M_E) / f1));
         }
 
-        op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
-            return (Z) reduction / (Z) n;
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+            return (InterType) reduction / (InterType) n;
         }
     };
 
@@ -3069,25 +3086,25 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
             return sd::math::nd4j_abs<X>(opOutput) + sd::math::nd4j_abs<X>(old);
         }
 
-        op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+        op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static Z op(X d1, Z *extraParams) {
-            return sd::math::nd4j_abs<X>(d1);
+        op_def static InterType op(X d1, Z *extraParams) {
+            return sd::math::nd4j_abs<InterType>(d1);
         }
 
-        op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
-            return sd::math::nd4j_abs<Z>(reduction) / static_cast<Z>(n);
+        op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+            return sd::math::nd4j_abs<Z>(reduction / static_cast<InterType>(n) );
         }
     };
 
@@ -3315,26 +3332,26 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 
 		}
 
-		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 
 		}
 
-		op_def static Z op(X d1, Z *extraParams) {
-			return static_cast<Z>(sd::math::nd4j_abs<X>(d1));
+		op_def static InterType op(X d1, Z *extraParams) {
+			return static_cast<InterType>(sd::math::nd4j_abs<X>(d1));
 		}
 
-		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
 			return reduction;
 		}
 	};
@@ -3345,29 +3362,29 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
-
+        using InterType = typename AggregateType<Z>::type;
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
-			return sd::math::nd4j_sqrt<Z, Z>(reduction);
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+			return sd::math::nd4j_sqrt<InterType, Z>(reduction);
 		}
 
-        op_def static Z op(X d1, Z *extraParams) {
-            return static_cast<Z>(d1 * d1);
+        op_def static InterType op(X d1, Z *extraParams) {
+            return static_cast<InterType>(d1) * static_cast<InterType>(d1);
         }
     };
 
@@ -3378,22 +3395,22 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z op(X d1, Z *extraParams) {
-			return static_cast<Z>(d1 * d1);
+		op_def static InterType op(X d1, Z *extraParams) {
+			return static_cast<InterType>(d1) * static_cast<InterType>(d1);
 		}
 
 		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
@@ -3408,27 +3425,27 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z op(X d1, Z *extraParams) {
-			X v = sd::math::nd4j_abs<X>(d1);
-			return static_cast<Z>(v * v);
+		op_def static InterType op(X d1, Z *extraParams) {
+			auto v = sd::math::nd4j_abs<InterType>(d1);
+			return static_cast<InterType>(v * v);
 		}
 
-		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
-			return sd::math::nd4j_sqrt<Z, Z>(reduction);
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+			return sd::math::nd4j_sqrt<InterType, Z>(reduction);
 		}
 	};
 
@@ -3439,25 +3456,25 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z op(X d1, Z *extraParams) {
-			return sd::math::nd4j_pow<X, Z, Z>(sd::math::nd4j_abs<X>(d1), extraParams[0]);
+		op_def static InterType op(X d1, Z *extraParams) {
+			return sd::math::nd4j_pow<X, Z, InterType>(sd::math::nd4j_abs<X>(d1), extraParams[0]);
 		}
 
-		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
-			return sd::math::nd4j_pow<Z, Z, Z>(reduction, static_cast<Z>(1.0f) / extraParams[0]);
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+			return sd::math::nd4j_pow<InterType, Z, Z>(reduction, static_cast<Z>(1.0f) / extraParams[0]);
 		}
 	};
 
@@ -3468,7 +3485,7 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = Z;
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
@@ -3499,30 +3516,30 @@ namespace simdOps {
         no_op_exec_special_accumulation_cuda
 
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
-
+        using InterType = typename AggregateType<Z>::type;
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0.0f);
 		}
 
-		op_def static Z merge(X old, X opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return old + opOutput;
 		}
 
-		op_def static Z update(X old, X opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return old + opOutput;
 
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
-			X mean = static_cast<X>(extraParams[0]);
+		op_def static InterType op(X d1, Z *extraParams) {
+			X mean = static_cast<InterType>(extraParams[0]);
 			X ret = d1 - mean;
 			return ret * ret;
 		}
 
-		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
 			// T bias = extraParams[1];
 			// return (reduction - (sd::math::nd4j_pow<T>(bias, static_cast<T>(2.0f)) / static_cast<T>(n))) / (n - 1)
-			return static_cast<Z>(reduction) / static_cast<Z>(n - 1);
+			return static_cast<Z>(reduction/ static_cast<InterType>(n - 1));
 		}
 	};
 
@@ -3534,31 +3551,31 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
-
+        using InterType = typename AggregateType<Z>::type;
         const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0.0f);
 		}
 
-		op_def static Z merge(X old, X opOutput, Z *extraParams) {
+		op_def static InterType merge(InterType old, InterType opOutput, Z *extraParams) {
 			return old + opOutput;
 		}
 
-		op_def static Z update(X old, X opOutput, Z *extraParams) {
+		op_def static InterType update(InterType old, InterType opOutput, Z *extraParams) {
 			return old + opOutput;
 
 		}
 
-		op_def static Z op(X d1, Z *extraParams) {
-			X mean = extraParams[0];
-			X ret = d1 - mean;
+		op_def static InterType op(X d1, Z *extraParams) {
+			InterType mean = static_cast<InterType>(extraParams[0]);
+			InterType ret = d1 - mean;
 			return ret * ret;
 		}
 
-		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
-			Z ret = Variance<X,Z>::postProcess(reduction, n, extraParams);
-			Z sqrtRet = sd::math::nd4j_sqrt<X, Z>(ret);
+		op_def static Z postProcess(InterType reduction, Nd4jLong n, Z *extraParams) {
+			auto ret = Variance<X,InterType>::postProcess(reduction, n, extraParams);
+			Z sqrtRet = sd::math::nd4j_sqrt<InterType, Z>(ret);
 			return sqrtRet;
 		}
 	};
