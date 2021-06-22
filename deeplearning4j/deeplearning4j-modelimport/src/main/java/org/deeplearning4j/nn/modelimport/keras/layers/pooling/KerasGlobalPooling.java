@@ -71,7 +71,7 @@ public class KerasGlobalPooling extends KerasLayer {
     public KerasGlobalPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.dimensions = mapGlobalPoolingDimensions(this.className, conf);
+        this.dimensions = mapGlobalPoolingDimensions(this.className, conf, dimOrder);
         GlobalPoolingLayer.Builder builder =
                 new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
                         .poolingDimensions(dimensions)
