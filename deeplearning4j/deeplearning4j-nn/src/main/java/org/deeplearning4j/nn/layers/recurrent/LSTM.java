@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLSTMHelper;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.TimeSeriesUtils;
@@ -51,7 +50,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     void initializeHelper() {
         helper = HelperUtils.createHelper(CUDNN_LSTM_CLASS_NAME,
-                MKLDNNLSTMHelper.class.getName(),
+                "",
                 LSTMHelper.class, layerConf().getLayerName(), dataType
         );
     }
