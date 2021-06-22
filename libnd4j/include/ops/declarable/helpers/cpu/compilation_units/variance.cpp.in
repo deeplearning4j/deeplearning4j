@@ -18,6 +18,8 @@
 //
 // @author AbdelRauf
 //
+
+//inform Cmake that each of LIBND4J_TYPE will be generated and used in separate cpp files.
 #cmakedefine LIBND4J_TYPE_GEN 
 
 #include <ops/declarable/helpers/cpu/summaryReductions.hpp>

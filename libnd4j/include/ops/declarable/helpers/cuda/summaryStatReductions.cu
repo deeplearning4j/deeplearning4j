@@ -30,6 +30,8 @@ namespace sd {
 
             //////////////////////////////////////////////////////////////////////////
             void  variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+
+                // informs and prepares (syncs) specialBuffer of which NDArrays will be used as read, write. 
                 NDArray::prepareSpecialUse({ &output }, { &input });
                 if (output.isScalar()) {
                     NativeOpExecutioner::execSummaryStatsScalar(LaunchContext::defaultContext(), variance::SummaryStatsVariance, input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(), output.specialBuffer(), output.specialShapeInfo(), biasCorrected);
@@ -43,12 +45,13 @@ namespace sd {
                         (int*) nullptr, dimensions.size(),
                         tadPack.specialShapeInfo(), tadPack.specialOffsets(), biasCorrected);
                 }
-
+                //inform that we are done with those specialBuffers. it matches arrays used in the prepareSpecialUse
                 NDArray::registerSpecialUse({ &output }, { &input });
             }
 
             //////////////////////////////////////////////////////////////////////////
             void  standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+                // informs and prepares (syncs) of which NDArrays will be used as read, write
                 NDArray::prepareSpecialUse({ &output }, { &input });
                 if (output.isScalar()) {
                     NativeOpExecutioner::execSummaryStatsScalar(LaunchContext::defaultContext(), variance::SummaryStatsStandardDeviation, input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(), output.specialBuffer(), output.specialShapeInfo(), biasCorrected);
@@ -62,7 +65,7 @@ namespace sd {
                         (int*) nullptr, dimensions.size(),
                         tadPack.specialShapeInfo(), tadPack.specialOffsets(), biasCorrected);
                 }
-
+                //inform that we are done with those specialBuffers. it matches arrays used in the prepareSpecialUse
                 NDArray::registerSpecialUse({ &output }, { &input });
             }
 
