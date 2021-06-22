@@ -185,3 +185,46 @@ We have number of utility macros, suitable for custom ops. Here they are:
 - **COPY_SHAPE**(SRC, TGT): this macro allocates memory for TGT pointer and copies shape from SRC pointer 
 - **ILAMBDA_T**(X) and **ILAMBDA_TT**(X, Y): lambda declaration for indexed lambdas, index argument is passed in as Nd4jLong (aka **long long**)
 - **FORCEINLINE**: platform-specific definition for functions inlining
+
+
+#### Explicit template instantiations in helper methods.
+We should explicitly instantiate template methods for different data types in libraries. Furethemore, to speed up parallel compilation we need to add those template instantiations in separate source files. Besides, another reason is that: some compilers are choked when these template instantiations are many in one translation unit.
+To ease this cumbersome operation we have Cmake helper and macros helpers.  
+Example:
+Suppose we have such function:
+
+        template<typename X, typename Z>
+        void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+
+We should write this to explicitly instantiate it.
+
+    BUILD_DOUBLE_TEMPLATE(template void argMin_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions),
+                   LIBND4J_TYPES, INDEXING_TYPES);
+ 
+ Here:
+- ***LIBND4J_TYPES*** means we want to use all types in the place of X
+- ***INDEXING_TYPES*** means we will use index types ( int, int64_t) as Z type
+     
+But to speed up compilation process and also helping compilers we can further separate it into different source files. Firstly we rename the original template source with ***hpp*** extension:
+Secondly we add file  with the suffix ***cpp.in*** (or ***cu.in*** for cuda) that will include that hpp header and place it  in the apropriate compilation units folder. in our case it will be in **./libnd4j/include/ops/declarable/helpers/cpu/compilation_units** folder with the name ***argmax.cpp.in*** .    
+Later we decide which type we want to separate into different sources. In our case we want to split ***LIBND4J_TYPES*** (other ones: ***INT_TYPE , FLOAT_TYPE, PAIRWISE_TYPE*** ). We hint cmake that case with this (adding ***_GEN*** suffix):
+
+    #cmakedefine LIBND4J_TYPE_GEN 
+
+Then we just add ***_@FL_TYPE_INDEX@***  as suffix in type name and it will split those types for us and generate cpp files inside ${CMAKE_BINARY_DIR}/compilation_units folder.
+
+    LIBND4J_TYPE_@FL_TYPE_INDEX@ 
+
+Here how the complete cpp.in file will look like:
+
+    #cmakedefine LIBND4J_TYPE_GEN 
+    //this header is where our template functions resides
+    #include <ops/declarable/helpers/cpu/indexReductions.hpp>
+    namespace sd {
+        namespace ops {
+            namespace helpers {
+                BUILD_DOUBLE_TEMPLATE(template void argMax_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions), 
+                   LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
+            }
+        }
+    }

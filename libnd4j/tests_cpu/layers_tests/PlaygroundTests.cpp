@@ -44,8 +44,7 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <array>
-#include <performance/benchmarking/FullBenchmarkSuit.h>
-#include <performance/benchmarking/LightBenchmarkSuit.h>
+
 #include <random>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/addBias.h>
@@ -297,10 +296,10 @@ void fill_random(sd::NDArray& arr) {
     //for floats
     std::uniform_real_distribution<T> dis((T)-10.0, (T)22.9);
     T* x = arr.bufferAsT<T>();
-    Nd4jLong* shapeInfo = arr.getShapeInfo();
-    Nd4jLong* strides = arr.stridesOf();
+    auto shapeInfo = arr.shapeInfo();
+    auto strides = arr.stridesOf();
     Nd4jLong rank = shapeInfo[0];
-    Nd4jLong* bases = &(shapeInfo[1]);
+    auto bases = &(shapeInfo[1]);
     size_t t = 1;
     for (size_t i = 0; i < rank ; i++) {
         t *= bases[i];
@@ -352,9 +351,7 @@ for (int k = N; k >= 1; k--) {
 
     do {
 
-
         std::vector<int> dimension;
-
         std::vector<Nd4jLong> output_bases;
 
         for (int i = 0; i < N; ++i) // [0..N-1] integers
