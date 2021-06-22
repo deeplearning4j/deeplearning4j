@@ -43,6 +43,7 @@ namespace reduce    {
             auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
+            using Y = typename OpType::InterType;
 
             const Nd4jLong length = shape::length(xShapeInfo);
             auto xEws = shape::elementWiseStride(xShapeInfo);
@@ -75,7 +76,7 @@ namespace reduce    {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                 int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
-                Z intermediate[64];
+                Y intermediate[64];
 
                 PRAGMA_OMP_SIMD
                 for (auto e = 0; e < maxThreads; e++)
@@ -154,7 +155,8 @@ namespace reduce    {
             auto x = reinterpret_cast<const X *>(vx);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
             int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
-            Z intermediate[64];
+            using Y = typename OpType::InterType;
+            Y intermediate[64];
 
             PRAGMA_OMP_SIMD
             for (auto e = 0; e < maxThreads; e++)
@@ -171,7 +173,6 @@ namespace reduce    {
             };
 
             maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
             // merge results
             for (int e = 1; e < maxThreads; e++)
                 intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
