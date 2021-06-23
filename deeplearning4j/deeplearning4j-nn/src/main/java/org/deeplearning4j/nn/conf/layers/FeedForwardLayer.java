@@ -49,9 +49,9 @@ public abstract class FeedForwardLayer extends BaseLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+                && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type (layer index = " + layerIndex + ", layer name=\""
-                            + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
+                    + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
         return InputType.feedForward(nOut, timeDistributedFormat);
@@ -60,9 +60,9 @@ public abstract class FeedForwardLayer extends BaseLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat && inputType.getType() != InputType.Type.RNN)) {
+                && inputType.getType() != InputType.Type.CNNFlat && inputType.getType() != InputType.Type.RNN)) {
             throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName()
-                            + "\"): expected FeedForward input type. Got: " + inputType);
+                    + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -71,7 +71,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 this.nIn = f.getSize();
             } else if(inputType.getType() == InputType.Type.RNN) {
                 InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-                this.nIn = recurrent.getSize() * recurrent.getTimeSeriesLength();
+                //default value when initializing input type recurrent
+                if(recurrent.getTimeSeriesLength() < 0) {
+                    this.nIn = recurrent.getSize();
+                }else
+                    this.nIn = recurrent.getSize() * recurrent.getTimeSeriesLength();
             } else {
                 InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
                 this.nIn = f.getFlattenedSize();
@@ -88,7 +92,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException(
-                            "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+                    "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
         }
 
         switch (inputType.getType()) {
@@ -107,7 +111,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 //CNN3D -> FF
                 InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D) inputType;
                 return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(),
-                                c3d.getChannels(), c3d.getDataFormat() == Convolution3D.DataFormat.NCDHW);
+                        c3d.getChannels(), c3d.getDataFormat() == Convolution3D.DataFormat.NCDHW);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }

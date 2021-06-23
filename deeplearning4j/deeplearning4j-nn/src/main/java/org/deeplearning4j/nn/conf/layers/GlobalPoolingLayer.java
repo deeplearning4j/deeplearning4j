@@ -97,13 +97,8 @@ public class GlobalPoolingLayer extends NoParamLayer {
                                 + inputType);
             case RNN:
                 InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-                if (collapseDimensions) {
-                    //Return 2d (feed-forward) activations
-                    return InputType.feedForward(recurrent.getSize());
-                } else {
-                    //Return 3d activations, with shape [minibatch, timeStepSize, 1]
-                    return recurrent;
-                }
+                //Return 3d activations, with shape [minibatch, timeStepSize, 1]
+                return recurrent;
             case CNN:
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
                 if (collapseDimensions) {
