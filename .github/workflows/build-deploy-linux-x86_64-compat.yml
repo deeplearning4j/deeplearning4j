@@ -127,8 +127,8 @@ jobs:
               fi
               command="${command} ${mvn_ext}"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-              echo "DEPLOY_COMMAND=${command} deploy" >> $GITHUB_ENV
-              echo "INSTALL_COMMAND=${command} install  -Dlibnd4j.cpu.compile.skip=true -Djavacpp.compiler.skip=true -Djavacpp.parser.skip=true" >> "$GITHUB_ENV"
+              echo "DEPLOY_COMMAND=${command} deploy -Dlibnd4j.cpu.compile.skip=true -Djavacpp.compiler.skip=true -Djavacpp.parser.skip=true" >> $GITHUB_ENV
+              echo "INSTALL_COMMAND=${command} install" >> "$GITHUB_ENV"
               echo "COMMAND=${command}" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/update-deps-linux
