@@ -38,5 +38,6 @@ cd "/github/workspace/"
 bash ./bootstrap-libnd4j-from-url.sh
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+echo "Running INSTALL COMMAND ${INSTALL_COMMAND}"
 eval "${INSTALL_COMMAND}"
 
