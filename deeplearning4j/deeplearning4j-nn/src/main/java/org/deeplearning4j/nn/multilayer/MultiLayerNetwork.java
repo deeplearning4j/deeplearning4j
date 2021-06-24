@@ -960,9 +960,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, int layerIdx,
-                                           boolean isPreprocessor, String op){
+                                           boolean isPreprocessor, String op) {
         try{
-            mgr.validateArrayLocation(arrayType, array, false, layerIdx > 0);
+            //if the layer is a pre processor be a bit more flexible with migration, for strict layers
+            //throw exception (mainly for performance reasons)
+            mgr.validateArrayLocation(arrayType, array, isPreprocessor, layerIdx > 0);
         } catch (ND4JWorkspaceException e){
             String layerName = layers[layerIdx].conf().getLayer().getLayerName();
             String clazz;

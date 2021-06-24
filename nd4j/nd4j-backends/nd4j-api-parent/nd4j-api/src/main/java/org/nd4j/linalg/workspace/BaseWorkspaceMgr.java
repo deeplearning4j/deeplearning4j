@@ -204,7 +204,8 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
             //Array is supposed to be detached (no workspace)
             boolean ok = !array.isAttached();
             if(!ok){
-                if(migrateIfInvalid){
+                if(migrateIfInvalid) {
+                    log.trace("Migrating array of type " + arrayType + " to workspace " + getWorkspaceName(arrayType));
                     return leverageTo(arrayType, array);
                 } else {
                     throw new ND4JWorkspaceException("Array workspace validation failed: Array of type " + arrayType

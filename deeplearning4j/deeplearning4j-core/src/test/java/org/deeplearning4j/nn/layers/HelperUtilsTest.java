@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.DropoutHelper;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -76,7 +77,7 @@ public class HelperUtilsTest extends BaseDL4JTest {
     @DisplayName("Test instance creation of various helpers")
     public void testOneDnnHelperCreation() {
         System.setProperty(DISABLE_HELPER_PROPERTY,"false");
-          assertNotNull(HelperUtils.createHelper("", MKLDNNBatchNormHelper.class.getName(),
+        assertNotNull(HelperUtils.createHelper("", MKLDNNBatchNormHelper.class.getName(),
                 BatchNormalizationHelper.class,"layername",getDataType()));
         assertNotNull(HelperUtils.createHelper("", MKLDNNLocalResponseNormalizationHelper.class.getName(),
                 LocalResponseNormalizationHelper.class,"layername",getDataType()));

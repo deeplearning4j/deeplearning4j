@@ -75,7 +75,7 @@ public class KerasGlobalPooling extends KerasLayer {
         GlobalPoolingLayer.Builder builder =
                 new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
                         .poolingDimensions(dimensions)
-                        .collapseDimensions(true) // keras 2 collapses dimensions
+                        .collapseDimensions(false) // keras 2 collapses dimensions
                         .name(this.layerName)
                         .dropOut(this.dropout);
         this.layer = builder.build();

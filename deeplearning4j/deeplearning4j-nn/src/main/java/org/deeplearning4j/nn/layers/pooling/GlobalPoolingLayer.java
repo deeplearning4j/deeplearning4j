@@ -311,6 +311,10 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 }
 
                 INDArray denom = Transforms.pow(pNorm, pnorm - 1, false);
+                //2 and 3d case
+                if(denom.rank() != epsilon.rank() && denom.length() == epsilon.length()) {
+                    denom = denom.reshape(epsilon.shape());
+                }
                 denom.rdivi(epsilon);
                 Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(numerator, denom, numerator, broadcastDims));
 
