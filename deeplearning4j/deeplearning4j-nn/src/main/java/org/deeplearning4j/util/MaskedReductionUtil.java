@@ -44,7 +44,7 @@ public class MaskedReductionUtil {
     private MaskedReductionUtil(){ }
 
     public static INDArray maskedPoolingTimeSeries(PoolingType poolingType, INDArray toReduce, INDArray mask,
-                    int pnorm, DataType dataType) {
+                                                   int pnorm, DataType dataType) {
         if (toReduce.rank() != 3) {
             throw new IllegalArgumentException("Expect rank 3 array: got " + toReduce.rank());
         }
@@ -97,7 +97,7 @@ public class MaskedReductionUtil {
     }
 
     public static INDArray maskedPoolingEpsilonTimeSeries(PoolingType poolingType, INDArray input, INDArray mask,
-                    INDArray epsilon2d, int pnorm) {
+                                                          INDArray epsilon2d, int pnorm) {
 
         if (input.rank() != 3) {
             throw new IllegalArgumentException("Expect rank 3 input activation array: got " + input.rank());
@@ -105,9 +105,7 @@ public class MaskedReductionUtil {
         if (mask.rank() != 2) {
             throw new IllegalArgumentException("Expect rank 2 array for mask: got " + mask.rank());
         }
-        if (epsilon2d.rank() != 2) {
-            throw new IllegalArgumentException("Expected rank 2 array for errors: got " + epsilon2d.rank());
-        }
+
 
         //Mask: [minibatch, tsLength]
         //Epsilon: [minibatch, vectorSize]
@@ -165,6 +163,10 @@ public class MaskedReductionUtil {
                 }
 
                 INDArray denom = Transforms.pow(pNorm, pnorm - 1, false);
+                //3d shape with trailing dimension of 1
+                if(epsilon2d.rank() != denom.rank() && denom.length() == epsilon2d.length()) {
+                    epsilon2d = epsilon2d.reshape(denom.shape());
+                }
                 denom.rdivi(epsilon2d);
                 Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(numerator, denom, numerator, 0, 1));
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, 0, 2)); //Apply mask
@@ -246,7 +248,7 @@ public class MaskedReductionUtil {
 
 
     public static INDArray maskedPoolingEpsilonCnn(PoolingType poolingType, INDArray input, INDArray mask,
-                    INDArray epsilon2d, int pnorm, DataType dataType) {
+                                                   INDArray epsilon2d, int pnorm, DataType dataType) {
 
         // [minibatch, channels, h=1, w=X] or [minibatch, channels, h=X, w=1] data
         // with a mask array of shape [minibatch, X]

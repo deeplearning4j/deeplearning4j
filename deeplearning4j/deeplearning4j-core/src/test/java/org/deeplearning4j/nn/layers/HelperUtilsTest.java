@@ -83,8 +83,6 @@ public class HelperUtilsTest extends BaseDL4JTest {
                 LocalResponseNormalizationHelper.class,"layername",getDataType()));
         assertNotNull(HelperUtils.createHelper("", MKLDNNSubsamplingHelper.class.getName(),
                 SubsamplingHelper.class,"layername",getDataType()));
-        assertNotNull(HelperUtils.createHelper("", "",
-                DropoutHelper.class,"layername",getDataType()));
 
     }
 

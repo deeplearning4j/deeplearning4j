@@ -867,7 +867,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = builder.build();
         List<InputType> outBuilder = builder.getLayerActivationTypes();
         List<InputType> outConf = conf.getLayerActivationTypes(InputType.recurrent(10));
-        List<InputType> exp = Arrays.asList(InputType.recurrent(6), InputType.recurrent(7), InputType.feedForward(7), InputType.feedForward(8));
+        List<InputType> exp = Arrays.asList(InputType.recurrent(6), InputType.recurrent(7), InputType.recurrent(7), InputType.feedForward(8,RNNFormat.NCW));
         assertEquals(exp, outBuilder);
         assertEquals(exp, outConf);
     }
