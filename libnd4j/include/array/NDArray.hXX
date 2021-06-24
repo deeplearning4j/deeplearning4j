@@ -4079,7 +4079,7 @@ namespace sd {
     template <typename T>
     void NDArray::applyScalar(sd::scalar::BoolOps op, const T scalar, NDArray &target, ExtraArguments *extraParams) const {
 
-        NDArray scalarArr = NDArrayFactory::create<T>(scalar, getContext());
+        NDArray scalarArr = NDArrayFactory::create<T>(dataType(), scalar, getContext());
         applyScalarArr(op, scalarArr, target, extraParams);
     }
 
