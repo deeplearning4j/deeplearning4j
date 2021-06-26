@@ -54,7 +54,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
         if (input.rank() != 3) {
             if(input.rank() == 2) {
-                log.trace("Input rank was already 2. RNNToFeedForwardPreProcessor maybe un needed ");
+                log.trace("Input rank was already 2. This can happen when an RNN like layer (such as GlobalPooling) is hooked up to an OutputLayer.");
                 return input;
             }
             else

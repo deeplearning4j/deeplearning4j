@@ -23,6 +23,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -74,8 +75,10 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 //default value when initializing input type recurrent
                 if(recurrent.getTimeSeriesLength() < 0) {
                     this.nIn = recurrent.getSize();
-                }else
-                    this.nIn = recurrent.getSize() * recurrent.getTimeSeriesLength();
+                } else {
+                    this.nIn = recurrent.getSize();
+
+                }
             } else {
                 InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
                 this.nIn = f.getFlattenedSize();

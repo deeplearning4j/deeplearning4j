@@ -69,6 +69,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     void initializeHelper() {
+
         helper = HelperUtils.createHelper(BATCH_NORM_CUDNN_HELPER_CLASS_NAME,MKLDNNBatchNormHelper.class.getName(), BatchNormalizationHelper.class, layerConf().getLayerName(), dataType);
         //specific helper with alpha/beta, keep this last check around
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
@@ -128,7 +129,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             INDArray in;
             INDArray eps;
-            if(input.rank() == 2){
+            if(input.rank() == 2) {
                 long[] shapeTemp = nchw ? new long[]{input.size(0), input.size(1), 1, 1} : new long[]{input.size(0), 1, 1, input.size(1)};
                 in = input.reshape(input.ordering(), shapeTemp);
                 eps = epsilon.reshape(epsilon.ordering(), shapeTemp);
@@ -164,7 +165,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
                 }
 
-                if(input.rank() == 2){
+                if(input.rank() == 2) {
                     INDArray e = ret.getSecond();
                     ret.setSecond(e.reshape(e.ordering(), e.size(0), e.size(1)));
                 }
@@ -390,9 +391,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     public INDArray preOutput(INDArray x, TrainingMode training, LayerWorkspaceMgr workspaceMgr) {
         int dim = 1;
         INDArray originalInput = x;
+        boolean rnnInput = false;
         //RNN input
         if(x.rank() == 3) {
             x = x.reshape(Longs.concat(new long[]{1},x.shape()));
+            rnnInput = true;
         }
         if(x.rank() == 4 && layerConf().getCnn2DFormat() == CNN2DFormat.NHWC)
             dim = 3;
@@ -463,7 +466,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 if(input.rank() == 2) {
                     return ret.reshape(ret.ordering(), ret.size(0), ret.size(1));
                 } else if(originalInput.rank() == 3 && ret.rank() == 4) {
-                     return ret.reshape(ret.ordering(),ret.size(1),ret.size(2),ret.size(3));
+                    return ret.reshape(ret.ordering(),ret.size(1),ret.size(2),ret.size(3));
                 }  else {
                     return ret;
                 }
@@ -581,6 +584,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
          */
 
         activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
+        if(rnnInput) {
+           //change back the output to rank 3 after running batch norm for rnn inputs
+            activations = activations.reshape(activations.size(1),activations.size(2),activations.size(3));
+        }
         return activations;
     }
 
