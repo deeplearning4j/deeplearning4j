@@ -37,6 +37,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -82,6 +83,11 @@ public class COCOLabelProvider implements ImageObjectLabelProvider {
                 return cocoDataSet.getImageForName(absPath.getName());
             }
         }
+
+        if(!cocoDataSet.hasImage(path)) {
+            return Collections.emptyList();
+        }
+
         return cocoDataSet.getImageForName(path);
     }
 
