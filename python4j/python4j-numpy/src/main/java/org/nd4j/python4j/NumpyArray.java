@@ -21,6 +21,7 @@
 
 package org.nd4j.python4j;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.cpython.PyObject;
 import org.bytedeco.cpython.PyTypeObject;
@@ -51,8 +52,9 @@ public class NumpyArray extends PythonType<INDArray> {
     private static final AtomicBoolean init = new AtomicBoolean(false);
     private static final Map<String, DataBuffer> cache = new HashMap<>();
     public final static String IMPORT_NUMPY_ARRAY = "org.eclipse.python4j.numpyimport";
+    public final static String ADD_JAVACPP_NUMPY_TO_PATH = "org.eclipse.python4j.numpyimport";
     public final static String DEFAULT_IMPORT_NUMPY_ARRAY = "true";
-
+    public final static String DEFAULT_ADD_JAVACPP_NUMPY_TO_PATH = "true";
 
     static {
         new PythonExecutioner();
@@ -71,6 +73,7 @@ public class NumpyArray extends PythonType<INDArray> {
 
     }
 
+    @SneakyThrows
     public synchronized void init() {
         if (init.get()) return;
         init.set(true);
@@ -78,7 +81,14 @@ public class NumpyArray extends PythonType<INDArray> {
         if(Boolean.parseBoolean(System.getProperty(IMPORT_NUMPY_ARRAY,DEFAULT_IMPORT_NUMPY_ARRAY))) {
             //See: https://numpy.org/doc/1.17/reference/c-api.array.html#importing-the-api
             //DO NOT REMOVE
-            System.out.println("Called import numpy");
+            if(Boolean.parseBoolean(System.getProperty(ADD_JAVACPP_NUMPY_TO_PATH,DEFAULT_ADD_JAVACPP_NUMPY_TO_PATH))) {
+                Py_AddPath(numpy.cachePackages());
+            }
+
+            //ensure python doesn't get initialized twice, this call is needed before numpy import array
+            System.setProperty(PythonExecutioner.INITIALIZE_PYTHON,"false");
+            Py_Initialize();
+
             int err = numpy._import_array();
             if (err < 0){
                 System.out.println("Numpy import failed!");
