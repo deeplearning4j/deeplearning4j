@@ -70,7 +70,8 @@ public class PythonExecutioner {
     public final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";
     public final static String JAVACPP_PYTHON_APPEND_TYPE = "org.eclipse.python4j.path.append";
     public final static String DEFAULT_APPEND_TYPE = "before";
-
+    public final static String INITIALIZE_PYTHON = "org.eclipse.python4j.python.initialize";
+    public final static String DEFAULT_INITIALIZE_PYTHON = "true";
     static {
         init();
     }
@@ -82,7 +83,8 @@ public class PythonExecutioner {
 
         init.set(true);
         initPythonPath();
-        Py_InitializeEx(0);
+        if(Boolean.parseBoolean(System.getProperty(INITIALIZE_PYTHON,DEFAULT_INITIALIZE_PYTHON)))
+            Py_InitializeEx(0);
         //initialize separately to ensure that numpy import array is not imported twice
         for (PythonType type: PythonTypes.get()) {
             type.init();
@@ -330,7 +332,7 @@ public class PythonExecutioner {
             File[] packages = packagesList.toArray(new File[0]);
 
             if (path == null) {
-                Py_SetPath(packages);
+                Py_AddPath(packages);
             } else {
                 StringBuffer sb = new StringBuffer();
 
@@ -357,7 +359,7 @@ public class PythonExecutioner {
                         break;
                 }
 
-                Py_SetPath(sb.toString());
+                Py_AddPath(sb.toString());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
