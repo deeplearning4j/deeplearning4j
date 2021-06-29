@@ -167,9 +167,6 @@ public class BatchNormalization extends FeedForwardLayer {
         if (inputType.getType() == InputType.Type.CNNFlat) {
             InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType;
             return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
-        } else if (inputType.getType() == InputType.Type.RNN) {
-            InputType.InputTypeRecurrent inputTypeRecurrent = (InputType.InputTypeRecurrent) inputType;
-            return new RnnToFeedForwardPreProcessor(inputTypeRecurrent.getFormat());
         }
 
         return null;

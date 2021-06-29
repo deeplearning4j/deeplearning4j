@@ -48,9 +48,16 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape FF activations (2d) activations to 3d (for input into RNN layer)
-        if (input.rank() != 2)
-            throw new IllegalArgumentException(
-                            "Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
+        if (input.rank() != 2) {
+            if(input.rank() < 2) {
+                input = input.reshape(1,input.length());
+            } else if(input.rank() == 2) {
+                //just continue
+            }  else
+                throw new IllegalArgumentException(
+                        "Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
+        }
+
         if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
@@ -67,7 +74,7 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
         //Need to reshape RNN epsilons (3d) to 2d (for use in FF layer backprop calculations)
         if (output.rank() != 3)
             throw new IllegalArgumentException(
-                            "Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
+                    "Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
         if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
             output = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, output, 'f');
         if (rnnDataFormat == RNNFormat.NWC){
@@ -95,7 +102,7 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
     @Override
     public InputType getOutputType(InputType inputType) {
         if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+                && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input: expected input of type FeedForward, got " + inputType);
         }
 
@@ -110,17 +117,17 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                          int minibatchSize) {
         //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
         if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
         } else if (maskArray.isVector()) {
             //Need to reshape mask array from [minibatch*timeSeriesLength, 1] to [minibatch,timeSeriesLength]
             return new Pair<>(TimeSeriesUtils.reshapeVectorToTimeSeriesMask(maskArray, minibatchSize),
-                            currentMaskState);
+                    currentMaskState);
         } else {
             throw new IllegalArgumentException("Received mask array with shape " + Arrays.toString(maskArray.shape())
-                            + "; expected vector.");
+                    + "; expected vector.");
         }
     }
 }

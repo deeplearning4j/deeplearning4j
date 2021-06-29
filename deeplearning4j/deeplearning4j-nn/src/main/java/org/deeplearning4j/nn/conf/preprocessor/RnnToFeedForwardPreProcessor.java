@@ -52,14 +52,19 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
-        if (input.rank() != 3)
-            throw new IllegalArgumentException(
-                            "Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
-
+        if (input.rank() != 3) {
+            if(input.rank() == 2) {
+                log.trace("Input rank was already 2. This can happen when an RNN like layer (such as GlobalPooling) is hooked up to an OutputLayer.");
+                return input;
+            }
+            else
+                throw new IllegalArgumentException(
+                        "Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
+        }
         if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
-        if (rnnDataFormat == RNNFormat.NWC){
+        if (rnnDataFormat == RNNFormat.NWC) {
             input = input.permute(0, 2, 1);
         }
         val shape = input.shape();
@@ -82,7 +87,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         //Need to reshape FeedForward layer epsilons (2d) to 3d (for use in RNN layer backprop calculations)
         if (output.rank() != 2)
             throw new IllegalArgumentException(
-                            "Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
+                    "Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
         if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
             output = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, output, 'f');
 
@@ -111,7 +116,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                          int minibatchSize) {
         //Assume mask array is 2d for time series (1 value per time step)
         if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
@@ -121,7 +126,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
                     currentMaskState);
         } else {
             throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank()
-                            + "; expected rank 2 mask array. Mask array shape: " + Arrays.toString(maskArray.shape()));
+                    + "; expected rank 2 mask array. Mask array shape: " + Arrays.toString(maskArray.shape()));
         }
     }
 }
