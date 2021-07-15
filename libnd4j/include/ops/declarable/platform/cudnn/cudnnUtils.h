@@ -74,18 +74,20 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 
-inline void throwIfCudnnFailed(cudnnStatus_t result_status, const char* message, const char * file, const char *line){
+
+inline void throwIfCudnnFailed(cudnnStatus_t result_status, const char* message = "Cudnn error: ", const char* prefix = nullptr){
     if (result_status != CUDNN_STATUS_SUCCESS){ 
-        std::string err_message = message ? std::string(message) : std::string("Cudnn Error");
-        err_message  = err_message + " " + file + ":" + line + " ";
+        std::string err_message;
+        if(prefix) err_message = std::string(prefix)+": ";
+        err_message+=std::string(message);
         throw ::sd::cuda_exception::build(err_message, result_status); 
     }
 }
 
 #define STRINGIZE(x) STRINGIZE2(x)
 #define STRINGIZE2(x) #x
-#define CHECK_CUDNN_FAILURE(result_status) throwIfCudnnFailed(result_status, "", __FILE__, STRINGIZE(__LINE__))
-#define CHECK_CUDNN_FAILURE_MSG(custom_message, result_status)  throwIfCudnnFailed(result_status, custom_message , __FILE__, STRINGIZE(__LINE__))
+#define CHECK_CUDNN_FAILURE(result_status) throwIfCudnnFailed(result_status, "")
+#define CHECK_CUDNN_FAILURE_MSG(custom_message, result_status)  throwIfCudnnFailed(result_status, custom_message , __func__)
 
 template <typename T>
 FORCEINLINE const T* bufferInHost( const NDArray &array)  {
