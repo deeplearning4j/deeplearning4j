@@ -34,24 +34,30 @@ PointersManager::PointersManager(const sd::LaunchContext* context, const std::st
         _context  = const_cast<sd::LaunchContext*>(context);
         _funcName = funcName;
 }
+//////////////////////////////////////////////////////////////////////////
+void* PointersManager::allocateDevMem( const size_t sizeInBytes){
+
+    void* dst = nullptr;
+    if (_context->getWorkspace() == nullptr) {
+        cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dst), sizeInBytes);
+        if (cudaResult != 0)
+            throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
+    } else {
+        dst = _context->getWorkspace()->allocateBytes(sd::memory::MemoryType::DEVICE, sizeInBytes);
+    }
+    return dst;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
 
-	void* dst = nullptr;
-	if (_context->getWorkspace() == nullptr) {
-        cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dst), numberOfBytes);
-        if (cudaResult != 0)
-            throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
-    } else {
-	    dst = _context->getWorkspace()->allocateBytes(sd::memory::MemoryType::DEVICE, numberOfBytes);
-	}
-
-    if (_context != nullptr)
-        cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, *_context->getCudaStream());
-    else
-        cudaMemcpy(dst, src, numberOfBytes, cudaMemcpyHostToDevice);
-
+    void* dst = allocateDevMem(numberOfBytes);
+    if(src){
+        if (_context != nullptr)
+            cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, *_context->getCudaStream());
+        else
+            cudaMemcpy(dst, src, numberOfBytes, cudaMemcpyHostToDevice);
+    }
     _pOnGlobMem.emplace_back(dst);
 
     return dst;

@@ -26,10 +26,13 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <system/platform_boilerplate.h>
+#include <helpers/PointersManager.h>
 #include <exceptions/cuda_exception.h>
 #include <exceptions/datatype_exception.h>
 #include <system/dll.h>
 #include <vector>
+#include <memory>
+#include <tuple>
 #include <cudnn.h>
 
 #define CUDNN_NEW_RNN_API_VER 8001
@@ -70,15 +73,19 @@ namespace platforms {
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename Op, typename ...Args>
-FORCEINLINE void callCudnnIfNoErr(cudnnStatus_t &err, Op op, Args&&... args){
-        if(err==CUDNN_STATUS_SUCCESS){
-            err = op(std::forward<Args>(args)...);
-            if(err){
-                nd4j_printf("Cudnn error code %s\n", cudnnGetErrorString(err));
-            }
-        }
+
+inline void throwIfCudnnFailed(cudnnStatus_t result_status, const char* message, const char * file, const char *line){
+    if (result_status != CUDNN_STATUS_SUCCESS){ 
+        std::string err_message = message ? std::string(message) : std::string("Cudnn Error");
+        err_message  = err_message + " " + file + ":" + line + " ";
+        throw ::sd::cuda_exception::build(err_message, result_status); 
+    }
 }
+
+#define STRINGIZE(x) STRINGIZE2(x)
+#define STRINGIZE2(x) #x
+#define CHECK_CUDNN_FAILURE(result_status) throwIfCudnnFailed(result_status, "", __FILE__, STRINGIZE(__LINE__))
+#define CHECK_CUDNN_FAILURE_MSG(custom_message, result_status)  throwIfCudnnFailed(result_status, custom_message , __FILE__, STRINGIZE(__LINE__))
 
 template <typename T>
 FORCEINLINE const T* bufferInHost( const NDArray &array)  {
@@ -86,202 +93,142 @@ FORCEINLINE const T* bufferInHost( const NDArray &array)  {
     return reinterpret_cast<const T*>(array.buffer());
 }
 
- 
+#define MOVEONLY_DESC_IMPL(DESC)                           \
+    DESC(const DESC& s) = delete;                          \
+    DESC& operator=(const DESC& other) = delete;           \
+    DESC(DESC&& other) noexcept                            \
+        : desc(std::move(other.desc))                                 \
+    { other.desc = {};  }                                  \
+    DESC& operator=(DESC&& other) noexcept                 \
+    {                                                      \
+        if (&other == this) return *this;                  \
+        destroy();                                         \
+        desc = std::move(other.desc);                      \
+        other.desc = {};                                   \
+        return *this;                                      \
+    }
+
+#define MOVEONLY_DESC_FULL_IMPL(DESC_CLASS, DESC_NAME)                            \
+    DESC_CLASS(){  create();  }                                                   \
+    DESC_CLASS(cudnn##DESC_NAME##_t created){  desc = created; }                  \
+    void create(){ CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnCreate##DESC_NAME), cudnnCreate##DESC_NAME(&desc));} \
+    void destroy(){                                                               \
+        if(desc)  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnCreate##DESC_NAME), cudnnDestroy##DESC_NAME(desc));   \
+        desc = {}; }                                                              \
+    MOVEONLY_DESC_IMPL(DESC_CLASS)                                                \
+    operator cudnn##DESC_NAME##_t() const { return desc; }                        \
+    ~DESC_CLASS(){  destroy(); }                                                  \
+    cudnn##DESC_NAME##_t desc;
+
+
 
 struct CudnnTensor{
 
-    CudnnTensor(const CudnnTensor& s) = delete; 
+    MOVEONLY_DESC_FULL_IMPL(CudnnTensor, TensorDescriptor)
 
-    CudnnTensor& operator=(const CudnnTensor& other) = delete;
-
-    CudnnTensor(){ 
-       create();
-    }
-
-    CudnnTensor(bool createDesc){ 
-       if(createDesc)  create();
-       else { desc= nullptr; }
-    }
-
-    void create(){
-      desc_status = cudnnCreateTensorDescriptor(&desc); 
+    template<typename ...Args>
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetTensorNdDescriptor), cudnnSetTensorNdDescriptor(desc, std::forward<Args>(args)...));
     }
 
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = cudnnSetTensorNdDescriptor(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void setEx(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetTensorNdDescriptorEx), cudnnSetTensorNdDescriptorEx(desc, std::forward<Args>(args)...));
     }
 
-    cudnnStatus_t descStatus(){ return desc_status;}
-
-    operator cudnnTensorDescriptor_t() const { return desc; }
-
-    ~CudnnTensor(){
-      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyTensorDescriptor(desc);
+    template<typename ...Args>
+    void set4D(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetTensor4dDescriptor), cudnnSetTensor4dDescriptor(desc, std::forward<Args>(args)...));
     }
 
-    cudnnStatus_t desc_status;
-    cudnnTensorDescriptor_t desc;
+    template<typename ...Args>
+    void set4DEx(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetTensor4dDescriptorEx), cudnnSetTensor4dDescriptorEx(desc, std::forward<Args>(args)...));
+    }
+
+
 };
 
 struct CudnnTensorList{
 
-    CudnnTensorList(const CudnnTensorList& s) = delete; 
-
-    CudnnTensorList& operator=(const CudnnTensorList& other) = delete;
+    MOVEONLY_DESC_IMPL(CudnnTensorList)
 
     CudnnTensorList(int size){ 
-       descList.resize(size);
-       desc_status = CUDNN_STATUS_SUCCESS;
+       desc.resize(size); 
        for(int i=0;i<size;i++){ 
-           desc_status = cudnnCreateTensorDescriptor(&descList[i]);
-           if(desc_status != CUDNN_STATUS_SUCCESS) break;
+           CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnCreateTensorDescriptor), cudnnCreateTensorDescriptor(&desc[i])); 
        } 
     }
 
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, int index, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS && index<descList.size()){
-            last_err = cudnnSetTensorNdDescriptor(descList[index], std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
+    void set(int index, Args&&... args){ 
+        if(index < desc.size()){
+            CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetTensorNdDescriptor), cudnnSetTensorNdDescriptor(desc[index], std::forward<Args>(args)...));
         }
     }
 
-
-    cudnnStatus_t descStatus(){ return desc_status;}
-
     cudnnTensorDescriptor_t get(int i) const { 
-        if(i<descList.size()) return descList[i];
+        if(i<desc.size()) return desc[i];
         return nullptr;
      }
 
-    const cudnnTensorDescriptor_t* getDescriptors() const { return descList.data(); }
+    const cudnnTensorDescriptor_t* getDescriptors() const { return desc.data(); }
 
-    ~CudnnTensorList(){
-      for(auto x: descList){
-          cudnnDestroyTensorDescriptor(x);
-      }
+    void destroy(){
+       for(auto x: desc){
+          CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnDestroyTensorDescriptor), cudnnDestroyTensorDescriptor(x));
+       }
+       desc = {};
     }
 
-    cudnnStatus_t desc_status;
-    std::vector<cudnnTensorDescriptor_t> descList;
+    ~CudnnTensorList(){
+        destroy();
+    }
+
+    std::vector<cudnnTensorDescriptor_t> desc;
 };
 
 struct FilterDesc{
 
-    FilterDesc(const FilterDesc& s) = delete; 
+    MOVEONLY_DESC_FULL_IMPL(FilterDesc, FilterDescriptor)
 
-    FilterDesc& operator=(const FilterDesc& other) = delete;
-
-    FilterDesc(){ 
-       desc_status = cudnnCreateFilterDescriptor(&desc);
+    template<typename ...Args>
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetFilterNdDescriptor), cudnnSetFilterNdDescriptor(desc, std::forward<Args>(args)...));
     }
 
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = cudnnSetFilterNdDescriptor(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void set4D(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetFilter4dDescriptor), cudnnSetFilter4dDescriptor(desc, std::forward<Args>(args)...));
     }
 
-    cudnnStatus_t descStatus(){ return desc_status;}
-
-    operator cudnnFilterDescriptor_t() const { return desc; }
-
-    ~FilterDesc(){
-      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyFilterDescriptor(desc); ;
-    }
-
-    cudnnStatus_t desc_status;
-    cudnnFilterDescriptor_t desc;
 };
 
 struct DropoutDesc{
 
-    DropoutDesc(const DropoutDesc& s) = delete; 
-
-    DropoutDesc& operator=(const DropoutDesc& other) = delete;
-
-    DropoutDesc(){ 
-       create();
-    }
-
-    DropoutDesc(bool createDesc){ 
-       if(createDesc)  create();
-       else { desc= nullptr; }
-    }
-
-    void create(){
-      desc_status = cudnnCreateDropoutDescriptor(&desc); 
-    }
+    MOVEONLY_DESC_FULL_IMPL(DropoutDesc, DropoutDescriptor)
 
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = cudnnSetDropoutDescriptor(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetDropoutDescriptor), cudnnSetDropoutDescriptor(desc, std::forward<Args>(args)...));
     }
 
-    cudnnStatus_t descStatus(){ return desc_status;}
-
-    operator cudnnDropoutDescriptor_t() const { return desc; }
-
-    ~DropoutDesc(){
-      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyDropoutDescriptor(desc); ;
-    }
-
-    cudnnStatus_t desc_status;
-    cudnnDropoutDescriptor_t desc;
 };
 
 #if CUDNN_VERSION > CUDNN_NEW_RNN_API_VER
 struct RnnDataDesc{
 
-    RnnDataDesc(const RnnDataDesc& s) = delete; 
-
-    RnnDataDesc& operator=(const RnnDataDesc& other) = delete;
-
-    RnnDataDesc(){ 
-       desc_status = cudnnCreateRNNDataDescriptor(&desc);
-    }
+    MOVEONLY_DESC_FULL_IMPL(RnnDataDesc, RNNDataDescriptor)
 
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = cudnnSetRNNDataDescriptor(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetRNNDataDescriptor), cudnnSetRNNDataDescriptor(desc, std::forward<Args>(args)...));
     }
 
-    cudnnStatus_t descStatus(){ return desc_status;}
-
-    operator cudnnRNNDataDescriptor_t() const { return desc; }
-
-    ~RnnDataDesc(){
-      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyRNNDataDescriptor(desc); ;
-    }
-
-    cudnnStatus_t desc_status;
-    cudnnRNNDataDescriptor_t desc;
 };
 #endif
 
-FORCEINLINE cudnnStatus_t setRnnDescriptorOldApi(cudnnRNNDescriptor_t rnnDesc, 
+FORCEINLINE void setRnnDescriptorOldApi(cudnnRNNDescriptor_t rnnDesc, 
                             cudnnHandle_t handle,
                             cudnnRNNInputMode_t inputMode,
                             cudnnDirectionMode_t dirMode,
@@ -291,97 +238,83 @@ FORCEINLINE cudnnStatus_t setRnnDescriptorOldApi(cudnnRNNDescriptor_t rnnDesc,
                             int32_t hiddenSize,
                             int32_t numLayers,
                             cudnnDropoutDescriptor_t dropoutDesc,  bool use_tensor_op=false){
-
-    cudnnStatus_t err = CUDNN_STATUS_SUCCESS;
-    callCudnnIfNoErr( err, cudnnSetRNNDescriptor_v6, handle, rnnDesc, hiddenSize, numLayers,
-        dropoutDesc, inputMode, dirMode, cellMode, algo, mathPrec);
+    auto err =  cudnnSetRNNDescriptor_v6( handle, rnnDesc, hiddenSize, numLayers,dropoutDesc, inputMode, dirMode, cellMode, algo, mathPrec);
+    CHECK_CUDNN_FAILURE_MSG( STRINGIZE(cudnnSetRNNDescriptor_v6), err);
 #if CUDNN_VERSION >= 7001
     if(cudnnGetVersion()>=7001){
         cudnnMathType_t mathType =  use_tensor_op ? CUDNN_TENSOR_OP_MATH : CUDNN_DEFAULT_MATH;
-        callCudnnIfNoErr( err, cudnnSetRNNMatrixMathType, rnnDesc,  mathType); 
+        CHECK_CUDNN_FAILURE_MSG( STRINGIZE(cudnnSetRNNMatrixMathType), cudnnSetRNNMatrixMathType( rnnDesc,  mathType)); 
     }
 #endif
-    return err;
+    return;
 }
 
 
 struct RnnDesc{
 
-    RnnDesc(const RnnDesc& s) = delete; 
-
-    RnnDesc& operator=(const RnnDesc& other) = delete;
-
-    RnnDesc(){ 
-       desc_status = cudnnCreateRNNDescriptor(&desc);
-    }
+    MOVEONLY_DESC_FULL_IMPL(RnnDesc, RNNDescriptor)
 
     template<typename ...Args>
-    void setUsingOldAPI(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = setRnnDescriptorOldApi(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void setUsingOldAPI(Args&&... args){ 
+        setRnnDescriptorOldApi(desc, std::forward<Args>(args)...);
     }
 
 #if CUDNN_VERSION>=CUDNN_NEW_RNN_API_VER
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = cudnnSetRNNDescriptor_v8(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetRNNDescriptor_v8), cudnnSetRNNDescriptor_v8(desc, std::forward<Args>(args)...));
     }
 #endif
 
-    cudnnStatus_t descStatus(){ return desc_status;}
-
-    operator cudnnRNNDescriptor_t() const { return desc; }
-
-    ~RnnDesc(){
-      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyRNNDescriptor(desc); ;
-    }
-
-    cudnnStatus_t desc_status;
-    cudnnRNNDescriptor_t desc;
 };
-
 
 
 struct CTCLossDesc{
 
-    CTCLossDesc(const CTCLossDesc& s) = delete; 
+    MOVEONLY_DESC_FULL_IMPL(CTCLossDesc, CTCLossDescriptor) 
 
-    CTCLossDesc& operator=(const CTCLossDesc& other) = delete;
+    template<typename ...Args>
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetCTCLossDescriptorEx), cudnnSetCTCLossDescriptorEx(desc, std::forward<Args>(args)...));
+    }
 
-    CTCLossDesc(){ 
-       desc_status = cudnnCreateCTCLossDescriptor(&desc);
+};
+//////////////////////////////////////////////////////////////////////////
+
+struct PoolingDesc{
+
+    MOVEONLY_DESC_FULL_IMPL(PoolingDesc, PoolingDescriptor) 
+
+    template<typename ...Args>
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetPoolingNdDescriptor), cudnnSetPoolingNdDescriptor(desc, std::forward<Args>(args)...));
     }
 
     template<typename ...Args>
-    void set(cudnnStatus_t &last_err, Args&&... args){ 
-        if(desc_status==CUDNN_STATUS_SUCCESS && last_err==CUDNN_STATUS_SUCCESS){
-            last_err = cudnnSetCTCLossDescriptorEx(desc, std::forward<Args>(args)...);
-            if(last_err){
-                nd4j_printf("Cudnn error code %s\n",cudnnGetErrorString(last_err));
-            }
-        }
+    void set2D(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetPooling2dDescriptor), cudnnSetPooling2dDescriptor(desc, std::forward<Args>(args)...));
     }
 
-    cudnnStatus_t descStatus(){ return desc_status;}
-
-    operator cudnnCTCLossDescriptor_t() const { return desc; }
-
-    ~CTCLossDesc(){
-      if(desc_status==CUDNN_STATUS_SUCCESS)  cudnnDestroyCTCLossDescriptor(desc); ;
-    }
-
-    cudnnStatus_t desc_status;
-    cudnnCTCLossDescriptor_t desc;
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+struct ConvolutionDesc{
+
+    MOVEONLY_DESC_FULL_IMPL(ConvolutionDesc, ConvolutionDescriptor)
+
+    template<typename ...Args>
+    void set(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetConvolutionNdDescriptor), cudnnSetConvolutionNdDescriptor(desc, std::forward<Args>(args)...));
+    }
+
+    template<typename ...Args>
+    void set2D(Args&&... args){ 
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetConvolution2dDescriptor), cudnnSetConvolution2dDescriptor(desc, std::forward<Args>(args)...));
+    }
+
+};
+
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {
     switch (dataType) {
@@ -401,7 +334,8 @@ FORCEINLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
+std::tuple<std::unique_ptr<NDArray>,std::unique_ptr<NDArray>>  
+checkConv2dCUDNNPadAsymmetric(const NDArray* input, const NDArray* gradI,
                                     const int iH, const int iW,
                                     const int oH, const int oW,
                                     const int kH, const int kW,
@@ -411,7 +345,8 @@ void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
                                     const bool isNCHW);
 
 //////////////////////////////////////////////////////////////////////////
-void checkConv3dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
+std::tuple<std::unique_ptr<NDArray>,std::unique_ptr<NDArray>>  
+checkConv3dCUDNNPadAsymmetric(const NDArray* input, const NDArray* gradI,
                                     const int iD, const int iH, const int iW,
                                     const int oD, const int oH, const int oW,
                                     const int kD, const int kH, const int kW,

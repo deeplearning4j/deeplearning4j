@@ -45,8 +45,7 @@ static void batchnormCUDNN(const LaunchContext* context,
     const int xRank = input->rankOf();
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
 
     const std::vector<int> xShape = input->getShapeAsVectorInt();               // input and output have same shapes
 
@@ -73,31 +72,25 @@ static void batchnormCUDNN(const LaunchContext* context,
     cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
 
      // input descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    CudnnTensor x;
     if(input->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(x, format, dataType, xRank, xShape.data());
+        x.setEx(format, dataType, xRank, xShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(x, dataType, xRank, xShape.data(), xStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
+        x.set(dataType, xRank, xShape.data(), xStrides.data());
 
     // output descriptor
-    cudnnTensorDescriptor_t z;
-    cudnnCreateTensorDescriptor(&z);
+    CudnnTensor z;
     if(output->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(z, format, dataType, xRank, xShape.data());
+        z.setEx(format, dataType, xRank, xShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(z, dataType, xRank, xShape.data(), zStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for output failed", err);
+        z.set(dataType, xRank, xShape.data(), zStrides.data());
 
     // mean, variance, gamma and beta descriptor, the same descriptor for all of them
-    cudnnTensorDescriptor_t params;
-    cudnnCreateTensorDescriptor(&params);
+    CudnnTensor params;
     if(mean->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(params, format, dataType, xRank, paramsShape.data());
+        params.setEx(format, dataType, xRank, paramsShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(params, dataType, xRank, paramsShape.data(), paramsStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for mean/variance/gamma/beta failed", err);
+        params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -108,15 +101,14 @@ static void batchnormCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
 
     // calculations
-    err = cudnnBatchNormalizationForwardInference(*handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnBatchNormalizationForwardInference), cudnnBatchNormalizationForwardInference( *handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,
                                                  ptrAlpha, ptrBeta,
                                                  x, input->specialBuffer(),
                                                  z, output->specialBuffer(),
                                                  params,
                                                  gamma->specialBuffer(), beta->specialBuffer(),
-                                                 mean->specialBuffer(), variance->specialBuffer(), epsilon);
+                                                 mean->specialBuffer(), variance->specialBuffer(), epsilon));
 
-    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnBatchNormalizationForwardInference failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)
@@ -141,7 +133,6 @@ static void batchnormBpCUDNN(const LaunchContext* context,
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: can't set stream for cuDNN", err);
 
     const std::vector<int> xShape = input->getShapeAsVectorInt();               // input and output have same shapes
 
@@ -170,40 +161,32 @@ static void batchnormBpCUDNN(const LaunchContext* context,
     cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
 
      // input descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    CudnnTensor x;
     if(input->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(x, format, dataType, xRank, xShape.data());
+        x.setEx(format, dataType, xRank, xShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(x, dataType, xRank, xShape.data(), xStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
+        x.set(dataType, xRank, xShape.data(), xStrides.data());
 
     // gradO descriptor
-    cudnnTensorDescriptor_t dz;
-    cudnnCreateTensorDescriptor(&dz);
+    CudnnTensor dz;
     if(gradO->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(dz, format, dataType, xRank, xShape.data());
+        dz.setEx(format, dataType, xRank, xShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(dz, dataType, xRank, xShape.data(), dzStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradO failed", err);
+        dz.set(dataType, xRank, xShape.data(), dzStrides.data());
 
     // gradI descriptor
-    cudnnTensorDescriptor_t dx;
-    cudnnCreateTensorDescriptor(&dx);
+    CudnnTensor dx;
     if(input->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(dx, format, dataType, xRank, xShape.data());
+        dx.setEx(format, dataType, xRank, xShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(dx, dataType, xRank, xShape.data(), dxStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradI failed", err);
+        dx.set(dataType, xRank, xShape.data(), dxStrides.data());
 
     // mean, variance, gamma, gradG and gradB descriptor, the same descriptor for all of them
-    cudnnTensorDescriptor_t params;
-    cudnnCreateTensorDescriptor(&params);
+    CudnnTensor params;
     if(mean->ews() == 1)
-        err = cudnnSetTensorNdDescriptorEx(params, format, dataType, xRank, paramsShape.data());
+        params.setEx(format, dataType, xRank, paramsShape.data());
     else
-        err = cudnnSetTensorNdDescriptor(params, dataType, xRank, paramsShape.data(), paramsStrides.data());
-    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for mean/variance/gamma/gradG/gradB failed", err);
+        params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -215,7 +198,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
 
     // calculations
     // TODO: we can use cache here
-    err = cudnnBatchNormalizationBackward(*handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnBatchNormalizationBackward), cudnnBatchNormalizationBackward( *handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,
                                             ptrAlpha, ptrBeta, ptrAlpha, ptrBeta,
                                             x, input->specialBuffer(),
                                             dz, gradO->specialBuffer(),
@@ -223,9 +206,8 @@ static void batchnormBpCUDNN(const LaunchContext* context,
                                             params,
                                             gamma->specialBuffer(), gradG->specialBuffer(), gradB->specialBuffer(),
                                             epsilon,
-                                            nullptr/*mean->specialBuffer()*/, nullptr/*variance->specialBuffer()*/);
+                                            nullptr/*mean->specialBuffer()*/, nullptr/*variance->specialBuffer()*/));
 
-    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnBatchNormalizationBackward failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)
@@ -241,6 +223,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
     auto input    = INPUT_VARIABLE(0);
     auto mean     = INPUT_VARIABLE(1);
     auto variance = INPUT_VARIABLE(2);
+
     NDArray* gamma    = nullptr;
     NDArray* beta     = nullptr;
 
@@ -294,35 +277,29 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
     // cudnn supports NCHW format only
     const bool needPermut = axes.size() == 1 && mean->lengthOf() == input->sizeAt(-1);
 
+    std::unique_ptr<NDArray> tmpGamma = {}, tmpBeta = {}, tmpInput={}, tmpOutput={};
     if(needPermut) {    // if NHWC
         std::vector<int> perm = inRank == 4 ? std::vector<int>({0, 3, 1, 2}) : std::vector<int>({0, 4, 1, 2, 3});           // NHWC -> NCHW
-        input  = new NDArray(input->permute(perm));
-        output = new NDArray(output->permute(perm));
+        tmpInput.reset(new NDArray(input->permute(perm)));
+        tmpOutput.reset(new NDArray(output->permute(perm)));
+        input  = tmpInput.get();
+        output = tmpOutput.get();
     }
 
     // cudnn requires gamma and beta to be non-nullptr
     if(!applyScale) {
-        gamma = new NDArray(mean);
+        tmpGamma.reset(new NDArray(mean));
+        gamma = tmpGamma.get();
         *gamma = 1;
     }
     if(!applyOffset) {
-        beta = new NDArray(mean);
+        tmpBeta.reset(new NDArray(mean));
+        beta = tmpBeta.get();
         *beta = 0;
     }
 
     // calculations
     batchnormCUDNN(block.launchContext(), input, mean, variance, gamma, beta, output, epsilon, axes.size() == 1);
-
-    if(needPermut) {
-        delete input;
-        delete output;
-    }
-
-    if(!applyScale)
-        delete gamma;
-
-    if(!applyOffset)
-        delete beta;
 
     return Status::OK();
 }
@@ -457,42 +434,35 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
 
     // cudnn supports NCHW format only
     const bool needPermut = axes.size() == 1 && mean->lengthOf() != input->sizeAt(1);
-
+    std::unique_ptr<NDArray> tmpGamma = {}, tmpGradG = {}, tmpGradB = {}, tmpInput={}, tmpGradI = {}, tmpGradO={};
     if(needPermut) {    // if NHWC
         std::vector<int> perm = inRank == 4 ? std::vector<int>({0, 3, 1, 2}) : std::vector<int>({0, 4, 1, 2, 3});           // NHWC -> NCHW
-        input = new NDArray(input->permute(perm));
-        gradO = new NDArray(gradO->permute(perm));
-        gradI = new NDArray(gradI->permute(perm));
+        tmpInput.reset(new NDArray(input->permute(perm)));
+        tmpGradO.reset(new NDArray(gradO->permute(perm)));
+        tmpGradI.reset(new NDArray(gradI->permute(perm)));
+        input = tmpInput.get();
+        gradO = tmpGradO.get();
+        gradI = tmpGradI.get();
     }
 
     // cudnn requires gamma, gradG, gradB to be non-nullptr
     if(!applyScale) {
-        gamma = new NDArray(mean);
-        gradG = new NDArray(mean);
+        tmpGamma.reset(new NDArray(mean));
+        tmpGradG.reset(new NDArray(mean));
+        gamma = tmpGamma.get();
+        gradG = tmpGradG.get();
         *gamma = 1;
     }
-    if(!applyOffset)
-        gradB = new NDArray(mean);
+    if(!applyOffset){
+        tmpGradB.reset(new NDArray(mean));
+        gradB = tmpGradB.get();
+    }
 
     // calculations
     batchnormBpCUDNN(block.launchContext(), input, mean, variance, gamma, gradO,   gradI, gradG, gradB, epsilon, axes.size() == 1);
 
     *gradM = 0;      // put zeros so far
     *gradV = 0;      // put zeros so far
-
-    if(needPermut) {
-        delete input;
-        delete gradO;
-        delete gradI;
-    }
-
-    if(!applyScale) {
-        delete gamma;
-        delete gradG;
-    }
-
-    if(!applyOffset)
-        delete gradB;
 
     return Status::OK();
 

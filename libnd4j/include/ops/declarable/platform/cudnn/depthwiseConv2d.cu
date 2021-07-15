@@ -52,59 +52,46 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
     mC = weights->sizeAt(1);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
     cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
-
+    PointersManager manager(context, __func__ );
     // input descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    CudnnTensor x;
     if(input->ews() == 1 && input->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
+        x.set4D( format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
-        err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
+        x.set4DEx( cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
     // weights descriptor
-    cudnnFilterDescriptor_t w;
-    cudnnCreateFilterDescriptor(&w);
-    err = cudnnSetFilter4dDescriptor(w, cudnnDataType(weights->dataType()), CUDNN_TENSOR_NCHW, iC, mC, kH, kW);
-    if(err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetFilter4dDescriptor failed", err);
+    FilterDesc w;
+    w.set4D( cudnnDataType(weights->dataType()), CUDNN_TENSOR_NCHW, iC, mC, kH, kW);
 
     // output descriptor
-    cudnnTensorDescriptor_t z;
-    cudnnCreateTensorDescriptor(&z);
+    CudnnTensor z;
     if(output->ews() == 1 && output->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(z, format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
+        z.set4D( format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
     else
-        err = cudnnSetTensor4dDescriptorEx(z, cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for output failed", err);
+        z.set4DEx( cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
 
     // description of convolution
-    cudnnConvolutionDescriptor_t conv;
-    cudnnCreateConvolutionDescriptor(&conv);
-    err = cudnnSetConvolution2dDescriptor(conv, pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(output->dataType()));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetConvolution2dDescriptor failed", err);
-    err = cudnnSetConvolutionGroupCount(conv, iC);  // set number of groups (depthwise mode) in description of convolution, groupCount == iC
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetConvolutionGroupCount failed", err);
+    ConvolutionDesc conv;
+    conv.set2D( pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(output->dataType()));
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetConvolutionGroupCount), cudnnSetConvolutionGroupCount( conv, iC));  // set number of groups (depthwise mode) in description of convolution, groupCount == iC
 
     // algorithm description
     cudnnConvolutionFwdAlgo_t algo;
     cudnnConvolutionFwdAlgoPerf_t algoPerf;
     int count = 0;
-    //err = cudnnGetConvolutionForwardAlgorithm(*handle, x, w, conv, z, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &algo);
-    err = cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf);
-    if (err != 0 || count == 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", err);
+    //CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardAlgorithm), cudnnGetConvolutionForwardAlgorithm( *handle, x, w, conv, z, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &algo));
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm), cudnnFindConvolutionForwardAlgorithm( *handle, x, w, conv, z, 1, &count, &algoPerf));
+    if (count == 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", 0);
     algo = algoPerf.algo;
 
     // allocate auxiliary device memory, abbreviation ws means workspace
     size_t wsSize;
-    err = cudnnGetConvolutionForwardWorkspaceSize(*handle, x, w, conv, z, algo, &wsSize);
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnGetConvolutionForwardWorkspaceSize failed", err);
-    void* wsData;
-    auto cudaErr = cudaMalloc(&wsData, wsSize);
-    if (cudaErr != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudaMalloc for auxiliary workspace memory failed", cudaErr);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionForwardWorkspaceSize), cudnnGetConvolutionForwardWorkspaceSize( *handle, x, w, conv, z, algo, &wsSize));
+    void* wsData = manager.allocateDevMem(wsSize);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -115,29 +102,23 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({output}, {input, weights, bias});
 
     // run calculation
-    err = cudnnConvolutionForward(*handle, alpha, x, input->specialBuffer(), w, weights->specialBuffer(), conv, algo, wsData, wsSize, beta, z, output->specialBuffer());
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnConvolutionForward failed", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnConvolutionForward), cudnnConvolutionForward( *handle, alpha, x, input->specialBuffer(), w, weights->specialBuffer(), conv, algo, wsData, wsSize, beta, z, output->specialBuffer()));
 
     // add bias if it is present
     if (bias != nullptr) {
 
-        cudnnTensorDescriptor_t b;
-        cudnnCreateTensorDescriptor(&b);
-        // err = cudnnSetTensor4dDescriptor(b, format, cudnnDataType(bias->dataType()), 1, isNCHW ? bias->lengthOf() : 1, 1, isNCHW ? 1: bias->lengthOf());
-        err = cudnnSetTensor4dDescriptor(b, CUDNN_TENSOR_NCHW, cudnnDataType(bias->dataType()), 1, oC, 1, 1);
-        if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetTensor4dDescriptor for bias failed", err);
-        err = cudnnAddTensor(*handle, alpha, b, bias->specialBuffer(), alpha, z, output->specialBuffer());
-        if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnAddTensor bias failed", err);
+        CudnnTensor b;
+        // b.set( format, cudnnDataType(bias->dataType()), 1, isNCHW ? bias->lengthOf() : 1, 1, isNCHW ? 1: bias->lengthOf());
+        b.set4D( CUDNN_TENSOR_NCHW, cudnnDataType(bias->dataType()), 1, oC, 1, 1);
+
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnAddTensor), cudnnAddTensor( *handle, alpha, b, bias->specialBuffer(), alpha, z, output->specialBuffer()));
+
     }
 
     // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     // if (cudaErr != 0)
     //     throw cuda_exception::build("depthwiseConv2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
-    cudaErr = cudaFree(wsData);
-    if (cudaErr != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudaFree for auxiliary workspace memory failed", cudaErr);
-
-    NDArray::registerSpecialUse({output}, {input, weights, bias});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -164,84 +145,66 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
     mC = weights->sizeAt(1);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
     cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
-
+    PointersManager manager(context, __func__ );
     // input descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    CudnnTensor x;
     if(input->ews() == 1 && input->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
+        x.set4D( format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
-        err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
+        x.set4DEx( cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
     // gradO descriptor
-    cudnnTensorDescriptor_t dz;
-    cudnnCreateTensorDescriptor(&dz);
+    CudnnTensor dz;
     if(gradO->ews() == 1 && gradO->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(dz, format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
+        dz.set4D( format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
     else
-        err = cudnnSetTensor4dDescriptorEx(dz, cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradO failed", err);
+        dz.set4DEx( cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
 
     // gradI descriptor
-    cudnnTensorDescriptor_t dx;
-    cudnnCreateTensorDescriptor(&dx);
+    CudnnTensor dx;
     if(gradI->ews() == 1 && gradI->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(dx, format, cudnnDataType(gradI->dataType()), bS, iC, iH, iW);
+        dx.set4D( format, cudnnDataType(gradI->dataType()), bS, iC, iH, iW);
     else
-        err = cudnnSetTensor4dDescriptorEx(dx, cudnnDataType(gradI->dataType()), bS, iC, iH, iW, gradI->strideAt(0), gradI->strideAt(indIOioC), gradI->strideAt(indIiH), gradI->strideAt(indIiH + 1));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradI failed", err);
+        dx.set4DEx( cudnnDataType(gradI->dataType()), bS, iC, iH, iW, gradI->strideAt(0), gradI->strideAt(indIOioC), gradI->strideAt(indIiH), gradI->strideAt(indIiH + 1));
 
     // gradW descriptor
-    cudnnFilterDescriptor_t dw;
-    cudnnCreateFilterDescriptor(&dw);
-    err = cudnnSetFilter4dDescriptor(dw, cudnnDataType(gradW->dataType()), CUDNN_TENSOR_NCHW, iC, mC, kH, kW);
-    if(err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetFilter4dDescriptor gradW failed", err);
+    FilterDesc dw;
+    dw.set4D( cudnnDataType(gradW->dataType()), CUDNN_TENSOR_NCHW, iC, mC, kH, kW);
 
     // description of convolution
-    cudnnConvolutionDescriptor_t conv;
-    cudnnCreateConvolutionDescriptor(&conv);
-    err = cudnnSetConvolution2dDescriptor(conv, pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(gradO->dataType()));
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetConvolution2dDescriptor failed", err);
-    err = cudnnSetConvolutionGroupCount(conv, iC);  // set number of groups (depthwise mode) in description of convolution, groupCount == iC
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetConvolutionGroupCount failed", err);
+    ConvolutionDesc conv;
+    conv.set2D( pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(gradO->dataType()));
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetConvolutionGroupCount), cudnnSetConvolutionGroupCount( conv, iC));  // set number of groups (depthwise mode) in description of convolution, groupCount == iC
 
     // gradW algorithm description
     cudnnConvolutionBwdFilterAlgo_t algoGradW;
     cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
     int count = 0;
-    //err = cudnnGetConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &algoGradW);
-    err = cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf);
-    if (err != 0 || count == 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed", err);
+    //CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardFilterAlgorithm), cudnnGetConvolutionBackwardFilterAlgorithm( *handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &algoGradW));
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm), cudnnFindConvolutionBackwardFilterAlgorithm( *handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
+    if (count == 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0 ", 0);
     algoGradW = algoGradWPerf.algo;
 
     // gradI algorithm description
     cudnnConvolutionBwdDataAlgo_t algoGradI;
     cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
-    //err = cudnnGetConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &algoGradI);
-    err = cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf);
-    if (err != 0 || count == 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed", err);
+    //CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm), cudnnGetConvolutionBackwardDataAlgorithm( *handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &algoGradI));
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm), cudnnFindConvolutionBackwardDataAlgorithm( *handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
+    if ( count == 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed as the count is 0 ", 0);
     algoGradI = algoGradIPerf.algo;
 
     // allocate auxiliary device memory for gradW calculation, abbreviation ws means workspace
     size_t wsGradWSize;
-    err = cudnnGetConvolutionBackwardFilterWorkspaceSize(*handle, x, dz, conv, dw, algoGradW, &wsGradWSize);
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardFilterWorkspaceSize failed", err);
-    void* wsGradWData;
-    auto cudaErr = cudaMalloc(&wsGradWData, wsGradWSize);
-    if (cudaErr != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudaMalloc for auxiliary workspace memory wsGradWData failed", cudaErr);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardFilterWorkspaceSize), cudnnGetConvolutionBackwardFilterWorkspaceSize( *handle, x, dz, conv, dw, algoGradW, &wsGradWSize));
+    void* wsGradWData = manager.allocateDevMem(wsGradWSize);
 
     // allocate auxiliary device memory for gradI calculation, abbreviation ws means workspace
     size_t wsGradISize;
-    err = cudnnGetConvolutionBackwardDataWorkspaceSize(*handle, dw, dz, conv, dx, algoGradI, &wsGradISize);
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardDataWorkspaceSize failed", err);
-    void* wsGradIData;
-    cudaErr = cudaMalloc(&wsGradIData, wsGradISize);
-    if (cudaErr != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudaMalloc for auxiliary workspace memory wsGradIData failed", cudaErr);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardDataWorkspaceSize), cudnnGetConvolutionBackwardDataWorkspaceSize( *handle, dw, dz, conv, dx, algoGradI, &wsGradISize));
+    void* wsGradIData = manager.allocateDevMem(wsGradISize);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -253,32 +216,23 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
 
     // run calculation for gradB (if not nullptr)
     if(gradB != nullptr) {
-        cudnnTensorDescriptor_t db;
-        cudnnCreateTensorDescriptor(&db);
-        // err = cudnnSetTensor4dDescriptor(db, format, cudnnDataType(gradB->dataType()), 1, isNCHW ? gradB->lengthOf() : 1, 1, isNCHW ? 1: gradB->lengthOf());
-        err = cudnnSetTensor4dDescriptor(db, CUDNN_TENSOR_NCHW, cudnnDataType(gradB->dataType()), 1, oC, 1, 1);
-        if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetTensor4dDescriptor for gradB failed", err);
+        CudnnTensor db;
+        // db.set( format, cudnnDataType(gradB->dataType()), 1, isNCHW ? gradB->lengthOf() : 1, 1, isNCHW ? 1: gradB->lengthOf());
+        db.set4D( CUDNN_TENSOR_NCHW, cudnnDataType(gradB->dataType()), 1, oC, 1, 1);
 
-        err = cudnnConvolutionBackwardBias(*handle, alpha, dz, gradO->specialBuffer(), beta, db, gradB->specialBuffer());
-        if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnConvolutionBackwardBias failed", err);
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnConvolutionBackwardBias), cudnnConvolutionBackwardBias( *handle, alpha, dz, gradO->specialBuffer(), beta, db, gradB->specialBuffer()));
+
     }
 
     // run calculation for gradW
-    err = cudnnConvolutionBackwardFilter(*handle, alpha, x, input->specialBuffer(), dz, gradO->specialBuffer(), conv, algoGradW, wsGradWData, wsGradWSize, beta, dw, gradW->specialBuffer());
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnConvolutionBackwardFilter failed", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnConvolutionBackwardFilter), cudnnConvolutionBackwardFilter( *handle, alpha, x, input->specialBuffer(), dz, gradO->specialBuffer(), conv, algoGradW, wsGradWData, wsGradWSize, beta, dw, gradW->specialBuffer()));
 
     // run calculation for gradI
-    err = cudnnConvolutionBackwardData(*handle, alpha, dw, weights->specialBuffer(), dz, gradO->specialBuffer(), conv, algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->specialBuffer());
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnConvolutionBackwardData failed", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnConvolutionBackwardData), cudnnConvolutionBackwardData( *handle, alpha, dw, weights->specialBuffer(), dz, gradO->specialBuffer(), conv, algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->specialBuffer()));
 
     // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     // if (cudaErr != 0)
     //     throw cuda_exception::build("depthwiseConv2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
-
-    cudaErr = cudaFree(wsGradWData);
-    if (cudaErr != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudaFree for auxiliary workspace memory wsGradWData failed", cudaErr);
-    cudaErr = cudaFree(wsGradIData);
-    if (cudaErr != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudaFree for auxiliary workspace memory wsGradIData failed", cudaErr);
 
     NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
 }
@@ -328,20 +282,16 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
     else
         wPermut = {3,0,1,2};         // mC, kH, kW, iC -> iC, mC, kH, kW
 
-    NDArray* newWeights = new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext());
-    newWeights->assign(weights->permute(wPermut));
+    std::unique_ptr<NDArray> uNewWeights(new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext()));
+    uNewWeights->assign(weights->permute(wPermut));
+    std::unique_ptr<NDArray> tmpInput = {};
 
-    NDArray* newInput = input;
-    NDArray* newGradI = nullptr;
-    if(paddingMode == 1) // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
-        checkConv2dCUDNNPadAsymmetric(newInput, newGradI, iH, iW, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW);
-
-    depthwiseConv2dCUDNN(block.launchContext(), newInput, newWeights, bias, output, kH,kW,sH,sW,pH,pW,dH,dW, paddingMode, isNCHW);
-
-    if(newInput != input)
-        delete newInput;
-
-    delete newWeights;
+    if(paddingMode == 1){ // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
+        auto ret = checkConv2dCUDNNPadAsymmetric(input, nullptr, iH, iW, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW);
+        tmpInput = std::move(std::get<0>(ret));
+        if(tmpInput) input = tmpInput.get();
+    }
+    depthwiseConv2dCUDNN(block.launchContext(), input, uNewWeights.get(), bias, output, kH,kW,sH,sW,pH,pW,dH,dW, paddingMode, isNCHW);
 
     return Status::OK();
 }
@@ -424,20 +374,25 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
         gradWPermut = {1,2,3,0};     // iC, mC, kH, kW -> mC, kH, kW, iC
     }
 
-    NDArray* newGradW   = new NDArray(gradW->ordering(),   {iC, mC, kH, kW}, gradW->dataType(),   gradW->getContext());
-    NDArray* newWeights = new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext());
+    std::unique_ptr<NDArray> tmpGradI = {}, tmpInput = {};
+    std::unique_ptr<NDArray> uNewGradW   (new NDArray(gradW->ordering(),   {iC, mC, kH, kW}, gradW->dataType(),   gradW->getContext()));
+    std::unique_ptr<NDArray> uNewWeights (new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext()));
 
-    newWeights->assign(weights->permute(wPermut));
+    uNewWeights->assign(weights->permute(wPermut));
 
     NDArray* newInput = input;
     NDArray* newGradI = gradI;
-    if(paddingMode == 1) // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
-        checkConv2dCUDNNPadAsymmetric(newInput, newGradI, iH, iW, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW);
+    if(paddingMode == 1){ // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
+        auto ret = checkConv2dCUDNNPadAsymmetric(input, gradI, iH, iW, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW);
+        tmpInput = std::move(std::get<0>(ret));
+        tmpGradI = std::move(std::get<1>(ret));
+        if(tmpInput) newInput = tmpInput.get();
+        if(tmpGradI) newGradI = tmpGradI.get();
+    }
+    depthwiseConv2dBpCUDNN(block.launchContext(), newInput, uNewWeights.get(), gradO,   newGradI, uNewGradW.get(), gradB, kH,kW,sH,sW,pH,pW,dH,dW,paddingMode,isNCHW);
 
-    depthwiseConv2dBpCUDNN(block.launchContext(), newInput, newWeights, gradO,   newGradI, newGradW, gradB, kH,kW,sH,sW,pH,pW,dH,dW,paddingMode,isNCHW);
-
-    newGradW->permutei(gradWPermut);
-    gradW->assign(newGradW);
+    uNewGradW->permutei(gradWPermut);
+    gradW->assign(uNewGradW.get());
 
     if(newInput != input) {
 
@@ -445,13 +400,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
             gradI->assign((*newGradI)({0,0,  0,0,  0,gradI->sizeAt(2),  0,gradI->sizeAt(3)}));
         else
             gradI->assign((*newGradI)({0,0,  0,gradI->sizeAt(1),  0,gradI->sizeAt(2),  0,0}));
-
-        delete newInput;
-        delete newGradI;
     }
-
-    delete newWeights;
-    delete newGradW;
 
     return Status::OK();
 }
