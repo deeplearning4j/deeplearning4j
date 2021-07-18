@@ -69,6 +69,9 @@ public class PythonExecutioner {
     private static AtomicBoolean init = new AtomicBoolean(false);
     public final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";
     public final static String JAVACPP_PYTHON_APPEND_TYPE = "org.eclipse.python4j.path.append";
+    //for embedded execution, this is to ensure we allow customization of the gil state releasing when running in another embedded python situation
+    public final static String RELEASE_GIL_AUTOMATICALLY = "org.eclipse.python4j.release_gil_automatically";
+    public final static String DEFAULT_RELEASE_GIL_AUTOMATICALLY = "true";
     public final static String DEFAULT_APPEND_TYPE = "before";
     public final static String INITIALIZE_PYTHON = "org.eclipse.python4j.python.initialize";
     public final static String DEFAULT_INITIALIZE_PYTHON = "true";
@@ -92,7 +95,8 @@ public class PythonExecutioner {
 
         //set the main thread state for the gil
         PythonGIL.setMainThreadState();
-        PyEval_SaveThread();
+        if(_Py_IsFinalizing() != 1 && Boolean.parseBoolean(System.getProperty(PythonExecutioner.RELEASE_GIL_AUTOMATICALLY,PythonExecutioner.DEFAULT_RELEASE_GIL_AUTOMATICALLY)))
+            PyEval_SaveThread();
 
     }
 
