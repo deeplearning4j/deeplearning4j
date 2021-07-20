@@ -86,7 +86,7 @@ public class NumpyArray extends PythonType<INDArray> {
             }
 
             //ensure python doesn't get initialized twice, this call is needed before numpy import array
-            System.setProperty(PythonExecutioner.INITIALIZE_PYTHON,"false");
+            PythonConstants.setInitializePython(false);
             Py_Initialize();
 
             int err = numpy._import_array();

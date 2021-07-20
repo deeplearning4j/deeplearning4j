@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
-import org.bytedeco.cpython.PyThreadState;
 import org.bytedeco.cpython.global.python;
 import org.nd4j.common.io.ClassPathResource;
 
@@ -45,7 +44,7 @@ import static org.bytedeco.cpython.helper.python.Py_SetPath;
  * or via a python script.
  *
  * PythonExecutioner has a few java system properties to be aware of when executing python:
- * @link {{@link #DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.
+ * @link {{@link PythonConstants#DEFAULT_PYTHON_PATH_PROPERTY}} : The default python path to be used by the executioner.
  * This can be passed with -Dorg.eclipse.python4j.path=your/python/path
  *
  * Python4j has a default python path that imports the javacpp python path depending on what is present.
@@ -53,7 +52,7 @@ import static org.bytedeco.cpython.helper.python.Py_SetPath;
  * that leverages loading python artifacts from the python path.
  *
  * This python path can be merged with a custom one or just used as is.
- * A user specifies this behavior with the system property {@link #JAVACPP_PYTHON_APPEND_TYPE}
+ * A user specifies this behavior with the system property {@link PythonConstants#JAVACPP_PYTHON_APPEND_TYPE}
  * This property can have 3 possible values:
  * 1. before
  * 2. after
@@ -65,13 +64,8 @@ import static org.bytedeco.cpython.helper.python.Py_SetPath;
  * @author Adam Gibson, Fariz Rahman
  */
 public class PythonExecutioner {
-    private final static String PYTHON_EXCEPTION_KEY = "__python_exception__";
     private static AtomicBoolean init = new AtomicBoolean(false);
-    public final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";
-    public final static String JAVACPP_PYTHON_APPEND_TYPE = "org.eclipse.python4j.path.append";
-    public final static String DEFAULT_APPEND_TYPE = "before";
-    public final static String INITIALIZE_PYTHON = "org.eclipse.python4j.python.initialize";
-    public final static String DEFAULT_INITIALIZE_PYTHON = "true";
+
     static {
         init();
     }
@@ -83,7 +77,7 @@ public class PythonExecutioner {
 
         init.set(true);
         initPythonPath();
-        if(Boolean.parseBoolean(System.getProperty(INITIALIZE_PYTHON,DEFAULT_INITIALIZE_PYTHON)))
+        if(PythonConstants.initializePython())
             Py_InitializeEx(0);
         //initialize separately to ensure that numpy import array is not imported twice
         for (PythonType type: PythonTypes.get()) {
@@ -92,7 +86,8 @@ public class PythonExecutioner {
 
         //set the main thread state for the gil
         PythonGIL.setMainThreadState();
-        PyEval_SaveThread();
+        if(_Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
+            PyEval_SaveThread();
 
     }
 
@@ -200,16 +195,19 @@ public class PythonExecutioner {
     }
 
     private static void throwIfExecutionFailed() {
-        PythonObject ex = getVariable(PYTHON_EXCEPTION_KEY);
+        PythonObject ex = getVariable(PythonConstants.PYTHON_EXCEPTION_KEY);
         if (ex != null && !ex.isNone() && !ex.toString().isEmpty()) {
-            setVariable(PYTHON_EXCEPTION_KEY, PythonTypes.STR.toPython(""));
+            setVariable(PythonConstants.PYTHON_EXCEPTION_KEY, PythonTypes.STR.toPython(""));
             throw new PythonException(ex);
         }
     }
 
 
     private static String getWrappedCode(String code) {
-        ClassPathResource resource = new ClassPathResource("org/nd4j/python4j/pythonexec/pythonexec.py");
+        ClassPathResource resource = new ClassPathResource(PythonConstants.PYTHON_EXEC_RESOURCE);
+        if(!resource.exists()) {
+            throw new IllegalStateException("Unable to find class path resource for python script execution: " + PythonConstants.PYTHON_EXEC_RESOURCE + " if using via graalvm, please ensure this resource is included in your resources-config.json");
+        }
         try (InputStream is = resource.getInputStream()) {
             String base = IOUtils.toString(is, StandardCharsets.UTF_8);
             String indentedCode = "    " + code.replace("\n", "\n    ");
@@ -319,7 +317,7 @@ public class PythonExecutioner {
 
     private static synchronized void initPythonPath() {
         try {
-            String path = System.getProperty(DEFAULT_PYTHON_PATH_PROPERTY);
+            String path = PythonConstants.defaultPythonPath();
 
             List<File> packagesList = new ArrayList<>();
             packagesList.addAll(Arrays.asList(cachePackages()));
@@ -336,7 +334,7 @@ public class PythonExecutioner {
             } else {
                 StringBuffer sb = new StringBuffer();
 
-                JavaCppPathType pathAppendValue = JavaCppPathType.valueOf(System.getProperty(JAVACPP_PYTHON_APPEND_TYPE, DEFAULT_APPEND_TYPE).toUpperCase());
+                JavaCppPathType pathAppendValue = PythonConstants.javaCppPythonAppendType();
                 switch (pathAppendValue) {
                     case BEFORE:
                         for (File cacheDir : packages) {
@@ -366,7 +364,7 @@ public class PythonExecutioner {
         }
     }
 
-    private enum JavaCppPathType {
+    public enum JavaCppPathType {
         BEFORE, AFTER, NONE
     }
 
