@@ -110,7 +110,7 @@ public class NumpyArray extends PythonType<INDArray> {
 
     @Override
     public INDArray toJava(PythonObject pythonObject) {
-        log.info("Converting PythonObject to INDArray...");
+        log.debug("Converting PythonObject to INDArray...");
         PyObject np = PyImport_ImportModule("numpy");
         PyObject ndarray = PyObject_GetAttrString(np, "ndarray");
         if (PyObject_IsInstance(pythonObject.getNativePythonObject(), ndarray) != 1) {
@@ -199,7 +199,7 @@ public class NumpyArray extends PythonType<INDArray> {
         }
         ret = Nd4j.create(buff, shape, nd4jStrides, 0, Shape.getOrder(shape, nd4jStrides, 1), dtype);
         Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
-        log.info("Done.");
+        log.debug("Done creating numpy arrray.");
         return ret;
 
 
@@ -207,7 +207,7 @@ public class NumpyArray extends PythonType<INDArray> {
 
     @Override
     public PythonObject toPython(INDArray indArray) {
-        log.info("Converting INDArray to PythonObject...");
+        log.debug("Converting INDArray to PythonObject...");
         DataType dataType = indArray.dataType();
         DataBuffer buff = indArray.data();
         String key = buff.pointer().address() + "_" + buff.length() + "_" + dataType;
@@ -282,31 +282,37 @@ public class NumpyArray extends PythonType<INDArray> {
         // PyArray_Type() call causes jvm crash in linux cpu if GIL is acquired by non main thread.
         // Using Interpreter for now:
 
-//        try(PythonContextManager.Context context = new PythonContextManager.Context("__np_array_converter")){
-//            log.info("Stringing exec...");
-//            String code = "import ctypes\nimport numpy as np\n" +
-//                    "cArr = (ctypes." + ctype + "*" + indArray.length() + ")"+
-//                    ".from_address(" + indArray.data().pointer().address() + ")\n"+
-//                    "npArr = np.frombuffer(cArr, dtype=" + ((numpyType == NPY_HALF) ? "'half'" : "ctypes." + ctype)+
-//                    ").reshape(" + Arrays.toString(indArray.shape()) + ")";
-//            PythonExecutioner.exec(code);
-//            log.info("exec done.");
-//            PythonObject ret = PythonExecutioner.getVariable("npArr");
-//            Py_IncRef(ret.getNativePythonObject());
-//            return ret;
-//
-//        }
-        log.info("NUMPY: PyArray_Type()");
-        PyTypeObject pyTypeObject = PyArray_Type();
+        //likely embedded in python, always use this method instead
+        if(!PythonConstants.releaseGilAutomatically() || PythonConstants.createNpyViaPython()) {
+            try(PythonContextManager.Context context = new PythonContextManager.Context("__np_array_converter")){
+                log.debug("Stringing exec...");
+                String code = "import ctypes\nimport numpy as np\n" +
+                        "cArr = (ctypes." + ctype + "*" + indArray.length() + ")"+
+                        ".from_address(" + indArray.data().pointer().address() + ")\n"+
+                        "npArr = np.frombuffer(cArr, dtype=" + ((numpyType == NPY_HALF) ? "'half'" : "ctypes." + ctype)+
+                        ").reshape(" + Arrays.toString(indArray.shape()) + ")";
+                PythonExecutioner.exec(code);
+                log.debug("exec done.");
+                PythonObject ret = PythonExecutioner.getVariable("npArr");
+                Py_IncRef(ret.getNativePythonObject());
+                return ret;
+
+            }
+        } else {
+            log.debug("NUMPY: PyArray_Type()");
+            PyTypeObject pyTypeObject = PyArray_Type();
 
 
-        log.info("NUMPY: PyArray_New()");
-        PyObject npArr = PyArray_New(pyTypeObject, shape.length, new SizeTPointer(shape),
-                numpyType, null,
-                inputArray.data().addressPointer(),
-                0, NPY_ARRAY_CARRAY, null);
-        log.info("Done.");
-        return new PythonObject(npArr);
+            log.debug("NUMPY: PyArray_New()");
+            PyObject npArr = PyArray_New(pyTypeObject, shape.length, new SizeTPointer(shape),
+                    numpyType, null,
+                    inputArray.data().addressPointer(),
+                    0, NPY_ARRAY_CARRAY, null);
+            log.debug("Created numpy array.");
+            return new PythonObject(npArr);
+        }
+
+
     }
 
     @Override
