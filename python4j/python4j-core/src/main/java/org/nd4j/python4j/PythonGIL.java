@@ -132,7 +132,7 @@ public class PythonGIL implements AutoCloseable {
             //From this thread: // PyEval_RestoreThread() should not be called if runtime is finalizing
             // See https://docs.python.org/3/c-api/init.html#c.PyEval_RestoreThread
 
-            if(_Py_IsFinalizing() != 1 && Boolean.parseBoolean(System.getProperty(PythonExecutioner.RELEASE_GIL_AUTOMATICALLY,PythonExecutioner.DEFAULT_RELEASE_GIL_AUTOMATICALLY)))
+            if(_Py_IsFinalizing() != 1 && PythonConstants.gilIsReleaseAutomatically())
                 PyEval_RestoreThread(mainThreadState);
         }
     }
@@ -140,7 +140,7 @@ public class PythonGIL implements AutoCloseable {
     private  void release() { // do not synchronize!
         if(Thread.currentThread().getId() != mainThreadId) {
             log.debug("Pre gil state release for thread " + Thread.currentThread().getId());
-            if(Boolean.parseBoolean(System.getProperty(PythonExecutioner.RELEASE_GIL_AUTOMATICALLY,PythonExecutioner.DEFAULT_RELEASE_GIL_AUTOMATICALLY)))
+            if(PythonConstants.gilIsReleaseAutomatically())
                 PyGILState_Release(gilState);
         }
         else {
@@ -148,7 +148,7 @@ public class PythonGIL implements AutoCloseable {
             //From this thread: // PyEval_RestoreThread() should not be called if runtime is finalizing
             // See https://docs.python.org/3/c-api/init.html#c.PyEval_RestoreThread
 
-            if(_Py_IsFinalizing() != 1 && Boolean.parseBoolean(System.getProperty(PythonExecutioner.RELEASE_GIL_AUTOMATICALLY,PythonExecutioner.DEFAULT_RELEASE_GIL_AUTOMATICALLY)))
+            if(_Py_IsFinalizing() != 1 && PythonConstants.gilIsReleaseAutomatically())
                 PyEval_RestoreThread(mainThreadState);
         }
     }
