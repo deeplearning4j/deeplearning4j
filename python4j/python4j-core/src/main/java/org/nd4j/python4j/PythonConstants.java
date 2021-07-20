@@ -41,6 +41,35 @@ public class PythonConstants {
     public final static String DEFAULT_INITIALIZE_PYTHON = "true";
     public final static String PYTHON_EXEC_RESOURCE = "org/nd4j/python4j/pythonexec/pythonexec.py";
     final static String PYTHON_EXCEPTION_KEY = "__python_exception__";
+    public final static String CREATE_NPY_VIA_PYTHON = "org.eclipse.python4j.create_npy_python";
+    public final static String DEFAULT_CREATE_NPY_VIA_PYTHON = "false";
+
+    /**
+     * Controls how to create the numpy array objects associated
+     * with the NumpyArray.java module.
+     *
+     * Depending on how threading is handled, Py_Type() causes a JVM crash
+     * when used. Py_Type() is used to obtain the type of a numpy array.
+     * Defaults to false, as most of the time this is less performant and not needed.
+     *
+     * The python based method uses raw pointer address + ctypes inline to create the proper numpy array
+     * on the python side.
+     * Otherwise, a more direct c based approach is used.
+     * @return
+     */
+   public static boolean createNpyViaPython() {
+       return Boolean.parseBoolean(System.getProperty(CREATE_NPY_VIA_PYTHON,DEFAULT_CREATE_NPY_VIA_PYTHON));
+   }
+
+    /**
+     * Setter for the associated property
+     * from {@link #createNpyViaPython()}
+     * please see this function for more information.
+     * @param createNpyViaPython
+     */
+   public static void setCreateNpyViaPython(boolean createNpyViaPython) {
+       System.setProperty(CREATE_NPY_VIA_PYTHON,String.valueOf(createNpyViaPython));
+   }
 
 
     /**
