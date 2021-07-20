@@ -34,7 +34,10 @@ PointersManager::PointersManager(const sd::LaunchContext *context, const std::st
     _context  = const_cast<sd::LaunchContext*>(context);
     _funcName = funcName;
 }
-
+//////////////////////////////////////////////////////////////////////////
+void* PointersManager::allocateDevMem( const size_t sizeInBytes){
+    // no-op
+}
 //////////////////////////////////////////////////////////////////////////
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
     // no-op

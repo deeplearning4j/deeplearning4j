@@ -71,11 +71,11 @@ void copyWeights(const cudaStream_t &stream , bool isBidirectional, uint8_t *wei
             wptr += bias_size; 
         } 
    }
-       //metset the rest
+       //memset the rest
     if( wEnd-wptr ) cudaMemsetAsync(wptr, 0 , wEnd-wptr, stream);
 }
 
-cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDArray *inputWeights,  NDArray *recurrentWeights,
+void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDArray *inputWeights,  NDArray *recurrentWeights,
     NDArray *biases, NDArray *prevAct, NDArray *prevMemCell, NDArray *outputActivations, NDArray *finalTimeStepActivations, NDArray *finalMemCellState,
     int maxSeqLength, int batchSize, int inputSize, int hiddenSize, double cellClip, bool isBidirectional){
 
@@ -83,9 +83,9 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
 
     bool training = false;
     cudnnHandle_t handle = *(reinterpret_cast<cudnnHandle_t *>(contextPtr->getCuDnnHandle()));
-    cudnnStatus_t err = CUDNN_STATUS_SUCCESS;
+
     auto stream = *(contextPtr->getCudaStream());
-    callCudnnIfNoErr(err, cudnnSetStream, handle, stream); 
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream( handle, stream)); 
 
     CudnnTensorList xDescList (maxSeqLength);
     CudnnTensorList yDescList (maxSeqLength);
@@ -108,33 +108,33 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
     const int strideC[rankOf]  = {batchSize * hiddenSize, hiddenSize, 1}; 
 
     for(int i=0; i<maxSeqLength; i++){
-        xDescList.set(err, i, cudnnType, rankOf, dimsX, stridesX);
-        // dxDescList.set(err, i, cudnnType, rankOf, dimsX, stridesX);
-        yDescList.set(err, i, cudnnType, rankOf, dimsY, stridesY);
-        // dyDescList.set(err, i, cudnnType, rankOf, dimsY, stridesY);
-        if(err!=CUDNN_STATUS_SUCCESS)  break;
+        xDescList.set(i, cudnnType, rankOf, dimsX, stridesX);
+        // dxDescList.set(i, cudnnType, rankOf, dimsX, stridesX);
+        yDescList.set(i, cudnnType, rankOf, dimsY, stridesY);
+        // dyDescList.set(i, cudnnType, rankOf, dimsY, stridesY);
     }
 
     auto xDesc0 = xDescList.get(0);
 
-    hxDesc.set(err, cudnnType, rankOf, dimC, strideC);
-    cxDesc.set(err, cudnnType, rankOf, dimC, strideC);
-    hyDesc.set(err, cudnnType, rankOf, dimC, strideC);
-    cyDesc.set(err, cudnnType, rankOf, dimC, strideC);
+    hxDesc.set(cudnnType, rankOf, dimC, strideC);
+    cxDesc.set(cudnnType, rankOf, dimC, strideC);
+    hyDesc.set(cudnnType, rankOf, dimC, strideC);
+    cyDesc.set(cudnnType, rankOf, dimC, strideC);
 
+    PointersManager manager(contextPtr, __func__ );
     //dropout section
-    DropoutDesc dropoutDesc; 
+    DropoutDesc dropoutDesc(nullptr); 
     //dropout
     float dropout = 0;
     size_t sizeInBytes=0;
     void *droupoutMem = nullptr;
     uint64_t seed =1; //seed
     if(dropout!=0){
-       // dropoutDesc.create();
-        callCudnnIfNoErr(err, cudnnDropoutGetStatesSize, handle, &sizeInBytes);
+        dropoutDesc.create();
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnDropoutGetStatesSize), cudnnDropoutGetStatesSize( handle, &sizeInBytes));
         //allocate and set
-        cudaMalloc(&droupoutMem, sizeInBytes);
-        dropoutDesc.set(err, handle, dropout, droupoutMem, sizeInBytes, seed );
+        droupoutMem = manager.allocateDevMem(sizeInBytes);
+        dropoutDesc.set(handle, dropout, droupoutMem, sizeInBytes, seed );
     }
 
     //RNN
@@ -147,38 +147,34 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
 
     //Note: We will set some parameters manually
     constexpr auto inputMode = CUDNN_LINEAR_INPUT;
-    rnnDesc.setUsingOldAPI(err, handle, inputMode, direction, rnnCellMode, algo, mathPrec, hiddenSize, numLayers, dropoutDesc);
+    rnnDesc.setUsingOldAPI(handle, inputMode, direction, rnnCellMode, algo, mathPrec, hiddenSize, numLayers, dropoutDesc);
 #if CUDNN_VERSION >= CUDNN_CLIPPING_API_VER
     if(cellClip>0 && cudnnGetVersion()>=CUDNN_CLIPPING_API_VER){
-        callCudnnIfNoErr(err, cudnnRNNSetClip, handle, rnnDesc, CUDNN_RNN_CLIP_MINMAX, CUDNN_PROPAGATE_NAN, -cellClip, cellClip);
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnRNNSetClip), cudnnRNNSetClip( handle, rnnDesc, CUDNN_RNN_CLIP_MINMAX, CUDNN_PROPAGATE_NAN, -cellClip, cellClip));
     }
 #endif
     //set up parameters
     size_t weightsSize=0;
-    callCudnnIfNoErr(err, cudnnGetRNNParamsSize, handle, rnnDesc, xDesc0, &weightsSize, cudnnType);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetRNNParamsSize), cudnnGetRNNParamsSize( handle, rnnDesc, xDesc0, &weightsSize, cudnnType));
 
     FilterDesc wDesc; 
     int dimW[] = {(int) weightsSize / dataTypeSize, 1, 1};
 
-    wDesc.set(err, cudnnType, CUDNN_TENSOR_NCHW, 3, dimW); 
+    wDesc.set(cudnnType, CUDNN_TENSOR_NCHW, 3, dimW); 
     //allocation
-    uint8_t *weightsSpace =nullptr;
-    cudaMalloc(&weightsSpace,  weightsSize); 
-
-    // Set up work space and reserved memory
-    void *workSpace = nullptr;
-    void *reserveSpace = nullptr;
+    void *weightsSpace = manager.allocateDevMem(weightsSize);
 
     size_t workSpaceSizeInBytes = 0 ;
     size_t reserveSpaceSizeInBytes = 0;
 
-    callCudnnIfNoErr(err, cudnnGetRNNWorkspaceSize, handle, rnnDesc, maxSeqLength, xDescList.getDescriptors(), &workSpaceSizeInBytes);
-    cudaMalloc(&workSpace, workSpaceSizeInBytes);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetRNNWorkspaceSize), cudnnGetRNNWorkspaceSize( handle, rnnDesc, maxSeqLength, xDescList.getDescriptors(), &workSpaceSizeInBytes));
 
+    void *workSpace = manager.allocateDevMem( workSpaceSizeInBytes);
+    void *reserveSpace = nullptr;
     // training
     if(training) {
-        callCudnnIfNoErr(err, cudnnGetRNNTrainingReserveSize, handle, rnnDesc, maxSeqLength, xDescList.getDescriptors(), &reserveSpaceSizeInBytes);
-        cudaMalloc(&reserveSpace, reserveSpaceSizeInBytes);
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetRNNTrainingReserveSize), cudnnGetRNNTrainingReserveSize( handle, rnnDesc, maxSeqLength, xDescList.getDescriptors(), &reserveSpaceSizeInBytes));
+        reserveSpace = manager.allocateDevMem( reserveSpaceSizeInBytes);
     }
 
     NDArray::prepareSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState}, {input, inputWeights, recurrentWeights, biases, prevAct, prevMemCell});
@@ -206,7 +202,7 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
     }
 
     //copy without cudnnGetRNNLinLayerMatrixParams
-    copyWeights(stream,isBidirectional, weightsSpace, weightsSize, inputWeightsData, recurrentWeightsData, biasesData, inputSize, hiddenSize, dataTypeSize);
+    copyWeights(stream, isBidirectional, (uint8_t*)weightsSpace, weightsSize, inputWeightsData, recurrentWeightsData, biasesData, inputSize, hiddenSize, dataTypeSize);
 
     //permute based on dataformat
     NDArray *argX = input;
@@ -227,17 +223,17 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
     auto yData = argOutput ? argOutput->specialBuffer() : nullptr;
 
     if (training) {
-          callCudnnIfNoErr(err, cudnnRNNForwardTraining, handle,  rnnDesc, (int) maxSeqLength, xDescList.getDescriptors(), xData,
+          CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnRNNForwardTraining), cudnnRNNForwardTraining( handle,  rnnDesc, (int) maxSeqLength, xDescList.getDescriptors(), xData,
                         hxDesc, prevActData, cxDesc, prevMemCellData, wDesc,
                        weightsSpace, yDescList.getDescriptors(), yData, hyDesc,
                        finalTimeStepActivationsData,  cyDesc, finalMemCellStateData, workSpace,
-                       workSpaceSizeInBytes, reserveSpace, reserveSpaceSizeInBytes);
+                       workSpaceSizeInBytes, reserveSpace, reserveSpaceSizeInBytes));
     } else {
-          callCudnnIfNoErr(err, cudnnRNNForwardInference, handle,  rnnDesc, (int) maxSeqLength, xDescList.getDescriptors(), xData,
+          CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnRNNForwardInference), cudnnRNNForwardInference( handle,  rnnDesc, (int) maxSeqLength, xDescList.getDescriptors(), xData,
                         hxDesc, prevActData, cxDesc, prevMemCellData,  wDesc,
                        weightsSpace, yDescList.getDescriptors(), yData,  hyDesc,
                        finalTimeStepActivationsData, cyDesc, finalMemCellStateData, workSpace,
-                       workSpaceSizeInBytes);
+                       workSpaceSizeInBytes));
     }
 
     //remap output
@@ -249,18 +245,13 @@ cudnnStatus_t cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *
     }
     NDArray::registerSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState}, {input, inputWeights, recurrentWeights, biases, prevAct, prevMemCell});
 
-    cudaFree(droupoutMem);
-    cudaFree(weightsSpace);
-    cudaFree(workSpace);
-    cudaFree(reserveSpace);
-
-    return err;
+    return;
 
 }
 
 #if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VER
 
-cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray *input, NDArray *seqLengthArray, NDArray *inputWeights,  NDArray *recurrentWeights,
+void cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray *input, NDArray *seqLengthArray, NDArray *inputWeights,  NDArray *recurrentWeights,
     NDArray *biases, NDArray *prevAct, NDArray *prevMemCell, NDArray *outputActivations, NDArray *finalTimeStepActivations, NDArray *finalMemCellState,
     int maxSeqLength, int batchSize, int inputSize, int hiddenSize, double cellClip, bool isBidirectional){
     nd4j_debug("cudnn rnn api %s \n", "v8");
@@ -284,12 +275,11 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
         seqArrIntData.assign(maxSeqLength);
         argSeqNdArray = &seqArrIntData;
     }
-
+    PointersManager manager(contextPtr, __func__ );
     bool training = false;
     cudnnHandle_t handle = *(reinterpret_cast<cudnnHandle_t *>(contextPtr->getCuDnnHandle()));
-    cudnnStatus_t err = CUDNN_STATUS_SUCCESS;
     auto stream = *(contextPtr->getCudaStream());
-    callCudnnIfNoErr(err, cudnnSetStream, handle, stream); 
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream( handle, stream)); 
 
     auto cudnnType = cudnnDataType(input->dataType());
     auto dataTypeSize = input->sizeOfT(); 
@@ -302,22 +292,22 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
     const int dimC[rankOf]    = {numLayers * numDirections,  batchSize,  hiddenSize};
     const int strideC[rankOf]  = {batchSize * hiddenSize, hiddenSize, 1}; 
 
-    hDesc.set(err, cudnnType, rankOf, dimC, strideC);
-    cDesc.set(err, cudnnType, rankOf, dimC, strideC);
+    hDesc.set(cudnnType, rankOf, dimC, strideC);
+    cDesc.set(cudnnType, rankOf, dimC, strideC);
 
     //dropout section
-    DropoutDesc dropoutDesc; 
+    DropoutDesc dropoutDesc(nullptr); 
     //dropout
     float dropout = 0;
     size_t sizeInBytes=0;
     void *droupoutMem = nullptr;
     uint64_t seed = 1; //seed
     if(dropout!=0){
-       // dropoutDesc.create();
-        callCudnnIfNoErr(err, cudnnDropoutGetStatesSize, handle, &sizeInBytes);
+        dropoutDesc.create();
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnDropoutGetStatesSize), cudnnDropoutGetStatesSize( handle, &sizeInBytes));
         //allocate and set
-        cudaMalloc(&droupoutMem, sizeInBytes);
-        dropoutDesc.set(err, handle, dropout, droupoutMem, sizeInBytes, seed );
+        droupoutMem = manager.allocateDevMem( sizeInBytes);
+        dropoutDesc.set(handle, dropout, droupoutMem, sizeInBytes, seed );
     }
 
     //RNN
@@ -340,9 +330,9 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
     cudnnRNNBiasMode_t bias_mode = CUDNN_RNN_DOUBLE_BIAS;
     uint32_t aux_flags = CUDNN_RNN_PADDED_IO_ENABLED;
 
-    rnnDesc.set(err, algo, rnnCellMode, bias_mode, direction, inputMode, cudnnType, mathPrec, mathType, inputSize, hiddenSize, projSize, numLayers, dropoutDesc, aux_flags);
+    rnnDesc.set(algo, rnnCellMode, bias_mode, direction, inputMode, cudnnType, mathPrec, mathType, inputSize, hiddenSize, projSize, numLayers, dropoutDesc, aux_flags);
     if(cellClip>0){
-        callCudnnIfNoErr(err, cudnnRNNSetClip, handle, rnnDesc, CUDNN_RNN_CLIP_MINMAX, CUDNN_PROPAGATE_NAN, -cellClip, cellClip);
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnRNNSetClip), cudnnRNNSetClip( handle, rnnDesc, CUDNN_RNN_CLIP_MINMAX, CUDNN_PROPAGATE_NAN, -cellClip, cellClip));
     }
     //set Data desc
     RnnDataDesc xDataDesc, yDataDesc;
@@ -350,15 +340,14 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
     float padding_fill = 0.0f;
     auto hostSeqArr = bufferInHost<int>(*argSeqNdArray);
     cudnnRNNDataLayout_t layout = dataFormat==0 ? CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_UNPACKED : CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED;
-    xDataDesc.set(err, cudnnType, layout, maxSeqLength, batchSize, inputSize, hostSeqArr, (void*)&padding_fill);
-    yDataDesc.set(err, cudnnType, layout, maxSeqLength, batchSize, hiddenSize * numDirections, hostSeqArr, (void*)&padding_fill);
+    xDataDesc.set(cudnnType, layout, maxSeqLength, batchSize, inputSize, hostSeqArr, (void*)&padding_fill);
+    yDataDesc.set(cudnnType, layout, maxSeqLength, batchSize, hiddenSize * numDirections, hostSeqArr, (void*)&padding_fill);
     //set up parameters
     size_t weightsSize=0;
-    callCudnnIfNoErr(err, cudnnGetRNNWeightSpaceSize, handle, rnnDesc, &weightsSize);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetRNNWeightSpaceSize), cudnnGetRNNWeightSpaceSize( handle, rnnDesc, &weightsSize));
 
     //allocation
-    uint8_t *weightsSpace =nullptr;
-    cudaMalloc(&weightsSpace,  weightsSize); 
+    void *weightsSpace = manager.allocateDevMem(weightsSize);
 
     // Set up work space and reserved memory
     void *workSpace = nullptr;
@@ -368,11 +357,11 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
     size_t reserveSpaceSizeInBytes = 0;
 
     cudnnForwardMode_t fwdMode = training ? CUDNN_FWD_MODE_TRAINING : CUDNN_FWD_MODE_INFERENCE; 
-    callCudnnIfNoErr(err, cudnnGetRNNTempSpaceSizes, handle, rnnDesc, fwdMode, xDataDesc, &workSpaceSizeInBytes, &reserveSpaceSizeInBytes);
-    cudaMalloc(&workSpace, workSpaceSizeInBytes);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetRNNTempSpaceSizes), cudnnGetRNNTempSpaceSizes( handle, rnnDesc, fwdMode, xDataDesc, &workSpaceSizeInBytes, &reserveSpaceSizeInBytes));
+    workSpace = manager.allocateDevMem( workSpaceSizeInBytes);
     // training
     if(training) {
-        cudaMalloc(&reserveSpace, reserveSpaceSizeInBytes);
+        reserveSpace = manager.allocateDevMem( reserveSpaceSizeInBytes);
     }
 
     NDArray::prepareSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState}, {input, inputWeights, recurrentWeights, biases, prevAct, prevMemCell, argSeqNdArray});
@@ -402,20 +391,15 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
     }
 
     //copy without cudnnGetRNNLinLayerMatrixParams
-    copyWeights(stream, isBidirectional, weightsSpace, weightsSize, inputWeightsData, recurrentWeightsData, biasesData, inputSize, hiddenSize, dataTypeSize);
+    copyWeights(stream, isBidirectional, (uint8_t*)weightsSpace, weightsSize, inputWeightsData, recurrentWeightsData, biasesData, inputSize, hiddenSize, dataTypeSize);
 
-    callCudnnIfNoErr(err, cudnnRNNForward, handle, rnnDesc, fwdMode, (const int32_t *)argSeqNdArray->specialBuffer(),  xDataDesc, xData,
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnRNNForward), cudnnRNNForward( handle, rnnDesc, fwdMode, (const int32_t *)argSeqNdArray->specialBuffer(),  xDataDesc, xData,
         yDataDesc, yData, hDesc, prevActData,finalTimeStepActivationsData,  cDesc, prevMemCellData, finalMemCellStateData,
-        weightsSize, weightsSpace, workSpaceSizeInBytes, workSpace, reserveSpaceSizeInBytes, reserveSpace);
+        weightsSize, weightsSpace, workSpaceSizeInBytes, workSpace, reserveSpaceSizeInBytes, reserveSpace));
 
     NDArray::registerSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState}, {input, inputWeights, recurrentWeights, biases, prevAct, prevMemCell});
 
-    cudaFree(droupoutMem);
-    cudaFree(weightsSpace);
-    cudaFree(workSpace);
-    cudaFree(reserveSpace);
-
-    return err;
+    return;
 
 }
 
@@ -501,17 +485,16 @@ cudnnStatus_t cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray 
             REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of initial cell state, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
     }
 
-    cudnnStatus_t err;
 #if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
-    err = cudnn_rnn_old( contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL,  seqLength, bS, nIn, hiddenSize, (double)cellClip, isBidirectional);
+    cudnn_rnn_old( contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL,  seqLength, bS, nIn, hiddenSize, (double)cellClip, isBidirectional);
 #else
     if(cudnnGetVersion() >= CUDNN_NEW_RNN_API_VER){
-        err = cudnn_rnn_v8( contextPtr, dataFormat, x, seqLengthArray, Wx, Wr, b, hI, cI, h, hL, cL,  seqLength, bS, nIn, hiddenSize, (double)cellClip, isBidirectional);
+        cudnn_rnn_v8( contextPtr, dataFormat, x, seqLengthArray, Wx, Wr, b, hI, cI, h, hL, cL,  seqLength, bS, nIn, hiddenSize, (double)cellClip, isBidirectional);
     }else{
-        err = cudnn_rnn_old( contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL,  seqLength, bS, nIn, hiddenSize, (double)cellClip, isBidirectional);
+        cudnn_rnn_old( contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL,  seqLength, bS, nIn, hiddenSize, (double)cellClip, isBidirectional);
     }
 #endif
-    if(err!=CUDNN_STATUS_SUCCESS) throw sd::cuda_exception::build("lstmLayer CUDNN call failure ", err);
+
     return Status::OK();
  }
 

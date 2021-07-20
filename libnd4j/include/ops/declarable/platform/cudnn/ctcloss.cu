@@ -61,41 +61,40 @@ namespace platforms {
                 return labels;
     }
 
-    cudnnStatus_t cudnnCtcLoss(const LaunchContext  &context, const  NDArray &probs, const int32_t* targetLabelsPtr, const NDArray&  probInputLengthes,
+    void cudnnCtcLoss(const LaunchContext  &context, const  NDArray &probs, const int32_t* targetLabelsPtr, const NDArray&  probInputLengthes,
                                const NDArray &targetLabelLengths, NDArray &ctcLosses,  NDArray &grads){
         const int dims[] = {(int)probs.sizeAt(0), (int)probs.sizeAt(1), (int)probs.sizeAt(2)};
         const int strides[] = {(int)probs.strideAt(0), (int)probs.strideAt(1), (int)probs.strideAt(2)};
         auto handle = reinterpret_cast<cudnnHandle_t *>(context.getCuDnnHandle());
-        cudnnStatus_t err = CUDNN_STATUS_SUCCESS;
-        callCudnnIfNoErr(err, cudnnSetStream, *handle, *context.getCudaStream());
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream( *handle, *context.getCudaStream()));
 
         CTCLossDesc  ctcLossDesc;
-        CudnnTensor probsDesc, gradsDesc(false);
+        CudnnTensor probsDesc, gradsDesc(nullptr);
         bool calcGrads = !grads.isEmpty();
         auto cudnnType = cudnnDataType(probs.dataType());
-        ctcLossDesc.set( err, cudnnType, CUDNN_LOSS_NORMALIZATION_SOFTMAX, CUDNN_PROPAGATE_NAN);
-        probsDesc.set( err, cudnnType, probs.rankOf() , dims, strides);
+        ctcLossDesc.set(cudnnType, CUDNN_LOSS_NORMALIZATION_SOFTMAX, CUDNN_PROPAGATE_NAN);
+        probsDesc.set(cudnnType, probs.rankOf() , dims, strides);
 
         if(calcGrads){
             gradsDesc.create();
             const int gradStrides[] = {(int)grads.strideAt(0), (int)grads.strideAt(1), (int)grads.strideAt(2)};
-            gradsDesc.set( err, cudnnDataType(grads.dataType()), grads.rankOf() , dims, gradStrides);
+            gradsDesc.set(cudnnDataType(grads.dataType()), grads.rankOf() , dims, gradStrides);
         }
 
         size_t tempWorkSpaceSize=0;
-        callCudnnIfNoErr(err,cudnnGetCTCLossWorkspaceSize, *handle,  probsDesc, gradsDesc,
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetCTCLossWorkspaceSize), cudnnGetCTCLossWorkspaceSize(*handle,  probsDesc, gradsDesc,
             targetLabelsPtr,
             bufferInHost<int32_t>(targetLabelLengths),
             bufferInHost<int32_t>(probInputLengthes),
             CUDNN_CTC_LOSS_ALGO_DETERMINISTIC,
-            ctcLossDesc, &tempWorkSpaceSize);
+            ctcLossDesc, &tempWorkSpaceSize));
 
+        PointersManager manager(&context, __func__);
         // Allocate temp tempWorkspace buffer
-        void *tempWorkSpace = nullptr;
-        cudaMalloc(&tempWorkSpace, tempWorkSpaceSize);
+        void *tempWorkSpace = manager.allocateDevMem(tempWorkSpaceSize);
 
         NDArray::prepareSpecialUse({&ctcLosses, &grads}, {&probs});
-        callCudnnIfNoErr(err, cudnnCTCLoss,*handle,
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnCTCLoss), cudnnCTCLoss(*handle,
             probsDesc,
             probs.specialBuffer(),
             targetLabelsPtr,
@@ -107,12 +106,11 @@ namespace platforms {
             CUDNN_CTC_LOSS_ALGO_DETERMINISTIC,
             ctcLossDesc,
             tempWorkSpace,
-            tempWorkSpaceSize);
+            tempWorkSpaceSize));
 
         NDArray::registerSpecialUse({&ctcLosses, &grads}, {&probs});
 
-        cudaFree(tempWorkSpace);
-        return err;
+        return;
      }
 
     PLATFORM_IMPL(ctc_loss, ENGINE_CUDA) {
@@ -128,8 +126,7 @@ namespace platforms {
         auto labels = getConcatTargets(*targetLabels, *targetLabelLengths);
         const int32_t *ldata= labels.data();
         auto emptyGrads= NDArrayFactory::empty<float>();
-        auto err = cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, *outputLosses, emptyGrads);
-        if(err!=CUDNN_STATUS_SUCCESS) throw sd::cuda_exception::build("ctc_loss CUDNN call failure ", err);
+        cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, *outputLosses, emptyGrads);
         return Status::OK();
     }
 
@@ -177,8 +174,7 @@ namespace platforms {
         auto labels = getConcatTargets(*targetLabels, *targetLabelLengths);
         const int32_t * ldata= labels.data();
         auto tempLosses = NDArrayFactory::create<float>('c', {logitInputLengths->sizeAt(0)});
-        auto err = cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, tempLosses, *outputGradients);
-        if(err!=CUDNN_STATUS_SUCCESS) throw sd::cuda_exception::build("ctc_loss CUDNN call failure ", err);
+        cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, tempLosses, *outputGradients);
         //restore grads shape from {T, BATCH, C} -> {BATCHS, T, C}
         outputGradients->permutei({1,0,2});
 

@@ -46,6 +46,8 @@ class ND4J_EXPORT PointersManager {
 
         ~PointersManager();
 
+        void* allocateDevMem( const size_t sizeInBytes);
+
         void* replicatePointer(const void* src, const size_t size);
 
         void synchronize() const;

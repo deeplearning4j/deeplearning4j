@@ -29,7 +29,8 @@ namespace ops       {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
+std::tuple<std::unique_ptr<NDArray>,std::unique_ptr<NDArray>> 
+checkConv2dCUDNNPadAsymmetric(const NDArray* input, const NDArray* gradI,
                                             const int iH, const int iW,
                                             const int oH, const int oW,
                                             const int kH, const int kW,
@@ -43,9 +44,10 @@ void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
 
     const bool isPHasymm = pH != (pHsum - pH);
     const bool isPWasymm = pW != (pWsum - pW);
+    std::unique_ptr<NDArray> uNewInput ={}, uNewGradI={};
 
     if(!isPHasymm && !isPWasymm)
-        return;
+        return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 
     std::vector<Nd4jLong> newShape = input->getShapeAsVector();
 
@@ -55,23 +57,25 @@ void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
         newShape[iHposition] += 1;
     if(isPWasymm)
         newShape[iHposition + 1] += 1;
+    
 
-    NDArray* newInput = new NDArray(input->ordering(), newShape, input->dataType(), input->getContext());
+    uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
 
     if(isNCHW)
-        (*newInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3)}).assign(input);
+        (*uNewInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3)}).assign(input);
     else
-        (*newInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,0}).assign(input);
+        (*uNewInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,0}).assign(input);
 
-    input = newInput;
 
     if(gradI != nullptr)
-        gradI = new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext());
+        uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
+    return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-void checkConv3dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
+std::tuple<std::unique_ptr<NDArray>,std::unique_ptr<NDArray>> 
+checkConv3dCUDNNPadAsymmetric(const NDArray* input,const NDArray* gradI,
                                             const int iD, const int iH, const int iW,
                                             const int oD, const int oH, const int oW,
                                             const int kD, const int kH, const int kW,
@@ -87,9 +91,9 @@ void checkConv3dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
     const bool isPDasymm = pD != (pDsum - pD);
     const bool isPHasymm = pH != (pHsum - pH);
     const bool isPWasymm = pW != (pWsum - pW);
-
+    std::unique_ptr<NDArray> uNewInput ={}, uNewGradI={};
     if(!isPDasymm && !isPHasymm && !isPWasymm)
-        return;
+        return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 
     std::vector<Nd4jLong> newShape = input->getShapeAsVector();
 
@@ -102,17 +106,16 @@ void checkConv3dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
     if(isPWasymm)
         newShape[iDposition + 2] += 1;
 
-    NDArray* newInput = new NDArray(input->ordering(), newShape, input->dataType(), input->getContext());
+    uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
 
     if(isNCDHW)
-        (*newInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3),  0,input->sizeAt(4)}).assign(input);
+        (*uNewInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3),  0,input->sizeAt(4)}).assign(input);
     else
-        (*newInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,input->sizeAt(3),  0,0}).assign(input);
-
-    input = newInput;
+        (*uNewInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,input->sizeAt(3),  0,0}).assign(input);
 
     if(gradI != nullptr)
-        gradI = new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext());
+        uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
+    return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -129,34 +132,25 @@ void pooling2dCUDNN(const LaunchContext* context,
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("pooling2dCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
     cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
-    // input descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    // input descriptor, output descriptor
+    CudnnTensor x, z;
     if(input->ews() == 1 && input->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
+        x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
-        err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
-    if (err != 0) throw sd::cuda_exception::build("pooling2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
+        x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
-    // output descriptor
-    cudnnTensorDescriptor_t z;
-    cudnnCreateTensorDescriptor(&z);
     if(output->ews() == 1 && output->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(z, format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
+        z.set4D(format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
     else
-        err = cudnnSetTensor4dDescriptorEx(z, cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
-    if (err != 0) throw sd::cuda_exception::build("pooling2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for output failed", err);
+        z.set4DEx(cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
 
     // description of pooling
-    cudnnPoolingDescriptor_t pooling;
-    cudnnCreatePoolingDescriptor(&pooling);
-    err = cudnnSetPooling2dDescriptor(pooling, mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
-    if (err != 0) throw sd::cuda_exception::build("pooling2dCUDNN: cudnnSetPooling2dDescriptor failed", err);
+    PoolingDesc pooling;
+    pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -167,8 +161,7 @@ void pooling2dCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({output}, {input});
 
     // run calculation
-    err = cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer());
-    if (err != 0) throw sd::cuda_exception::build("pooling2dCUDNN: cudnnPoolingForward failed", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingForward), cudnnPoolingForward( *handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)
@@ -192,34 +185,28 @@ void pooling2dBpCUDNN(const LaunchContext* context,
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
     cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
     // input and gradI descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    CudnnTensor x;
     if(input->ews() == 1 && input->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
+        x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
-        err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
-    if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input/gradI failed", err);
+        x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
     // gradO descriptor
-    cudnnTensorDescriptor_t dz;
-    cudnnCreateTensorDescriptor(&dz);
+    CudnnTensor dz;
     if(gradO->ews() == 1 && gradO->ordering() == 'c')
-        err = cudnnSetTensor4dDescriptor(dz, format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
+        dz.set4D(format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
     else
-        err = cudnnSetTensor4dDescriptorEx(dz, cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
-    if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradO failed", err);
+        dz.set4DEx(cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
 
     // description of pooling
-    cudnnPoolingDescriptor_t pooling;
-    cudnnCreatePoolingDescriptor(&pooling);
-    err = cudnnSetPooling2dDescriptor(pooling, mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
-    if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnSetPooling2dDescriptor failed", err);
+    PoolingDesc pooling;
+
+    pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -230,8 +217,7 @@ void pooling2dBpCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({gradI}, {input, gradO});
 
     // run calculation for gradI
-    err = cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer());
-    if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnPoolingBackward failed", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingBackward), cudnnPoolingBackward( *handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer()));
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)
@@ -250,8 +236,7 @@ void pooling3dCUDNN(const LaunchContext* context,
                     const bool isNCDHW, const cudnnPoolingMode_t mode) {
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
     const int numDims = 5;
 
@@ -271,29 +256,21 @@ void pooling3dCUDNN(const LaunchContext* context,
 
     cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
-    // input descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    // input descriptor, output descriptor
+    CudnnTensor x, z;
     if(input->ews() == 1 && input->ordering() == 'c')
-        err = cudnnSetTensorNdDescriptorEx(x, format, cudnnDataType(input->dataType()), numDims, xShape);
+        x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
     else
-        err = cudnnSetTensorNdDescriptor(x, cudnnDataType(input->dataType()), numDims, xShape, xStrides);
-    if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
+        x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
 
-    // output descriptor
-    cudnnTensorDescriptor_t z;
-    cudnnCreateTensorDescriptor(&z);
     if(output->ews() == 1 && output->ordering() == 'c')
-        err = cudnnSetTensorNdDescriptorEx(z, format, cudnnDataType(output->dataType()), numDims, zShape);
+        z.setEx(format, cudnnDataType(output->dataType()), numDims, zShape);
     else
-        err = cudnnSetTensorNdDescriptor(z, cudnnDataType(output->dataType()), numDims, zShape, zStrides);
-    if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for output failed", err);
+       z.set(cudnnDataType(output->dataType()), numDims, zShape, zStrides);
 
     // description of pooling
-    cudnnPoolingDescriptor_t pooling;
-    cudnnCreatePoolingDescriptor(&pooling);
-    err = cudnnSetPoolingNdDescriptor(pooling, mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
-    if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnSetPoolingNdDescriptor failed", err);
+    PoolingDesc pooling;
+    pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -304,8 +281,7 @@ void pooling3dCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({output}, {input});
 
     // run calculation
-    err = cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer());
-    if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnPoolingForward failed", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingForward), cudnnPoolingForward( *handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)
@@ -325,8 +301,7 @@ void pooling3dBpCUDNN(const LaunchContext* context,
                     const bool isNCDHW, const cudnnPoolingMode_t mode) {
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw sd::cuda_exception::build("pooling3dBpCUDNN: can't set stream for cuDNN", err);
+    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
     const int numDims = 5;
 
@@ -347,28 +322,22 @@ void pooling3dBpCUDNN(const LaunchContext* context,
     cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
     // input and gradI descriptor
-    cudnnTensorDescriptor_t x;
-    cudnnCreateTensorDescriptor(&x);
+    CudnnTensor x;
     if(input->ews() == 1 && input->ordering() == 'c')
-        err = cudnnSetTensorNdDescriptorEx(x, format, cudnnDataType(input->dataType()), numDims, xShape);
+        x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
     else
-        err = cudnnSetTensorNdDescriptor(x, cudnnDataType(input->dataType()), numDims, xShape, xStrides);
-    if (err != 0) throw sd::cuda_exception::build("pooling3dBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input/gradI failed", err);
+        x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
 
     // gradO descriptor
-    cudnnTensorDescriptor_t dz;
-    cudnnCreateTensorDescriptor(&dz);
+    CudnnTensor dz;
     if(gradO->ews() == 1 && gradO->ordering() == 'c')
-        err = cudnnSetTensorNdDescriptorEx(dz, format, cudnnDataType(gradO->dataType()), numDims, dzShape);
+        dz.setEx( format, cudnnDataType(gradO->dataType()), numDims, dzShape);
     else
-        err = cudnnSetTensorNdDescriptor(dz, cudnnDataType(gradO->dataType()), numDims, dzShape, dzStrides);
-    if (err != 0) throw sd::cuda_exception::build("pooling3dBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradO failed", err);
+        dz.set( cudnnDataType(gradO->dataType()), numDims, dzShape, dzStrides);
 
     // description of pooling
-    cudnnPoolingDescriptor_t pooling;
-    cudnnCreatePoolingDescriptor(&pooling);
-    err = cudnnSetPoolingNdDescriptor(pooling, mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
-    if (err != 0) throw sd::cuda_exception::build("pooling3dBpCUDNN: cudnnSetPoolingNdDescriptor failed", err);
+    PoolingDesc pooling;
+    pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -380,27 +349,21 @@ void pooling3dBpCUDNN(const LaunchContext* context,
     if(mode == CUDNN_POOLING_MAX) {
 
         NDArray temp(gradO);
-
         NDArray::prepareSpecialUse({gradI}, {input, gradO, &temp});
 
         // run ff calculation
-        err = cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, dz, temp.specialBuffer());
-        if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnPoolingForward failed", err);
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingForward), cudnnPoolingForward( *handle, pooling, alpha, x, input->specialBuffer(), beta, dz, temp.specialBuffer()));
 
         // run bp calculation for gradI
-        err = cudnnPoolingBackward(*handle, pooling, alpha, dz, temp.specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer());
-        if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnPoolingBackward failed", err);
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingBackward), cudnnPoolingBackward( *handle, pooling, alpha, dz, temp.specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer()));
 
         NDArray::registerSpecialUse({gradI}, {input, gradO, &temp});
     }
     else {
 
         NDArray::prepareSpecialUse({gradI}, {input, gradO});
-
         // run bp calculation for gradI
-        err = cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer());
-        if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnPoolingBackward failed", err);
-
+        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingBackward), cudnnPoolingBackward( *handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer()));
         NDArray::registerSpecialUse({gradI}, {input, gradO});
     }
 
