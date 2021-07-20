@@ -77,7 +77,7 @@ public class PythonExecutioner {
 
         init.set(true);
         initPythonPath();
-        if(PythonConstants.initializePythonOrNot())
+        if(PythonConstants.initializePython())
             Py_InitializeEx(0);
         //initialize separately to ensure that numpy import array is not imported twice
         for (PythonType type: PythonTypes.get()) {
@@ -86,7 +86,7 @@ public class PythonExecutioner {
 
         //set the main thread state for the gil
         PythonGIL.setMainThreadState();
-        if(_Py_IsFinalizing() != 1 && PythonConstants.gilIsReleaseAutomatically())
+        if(_Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
             PyEval_SaveThread();
 
     }

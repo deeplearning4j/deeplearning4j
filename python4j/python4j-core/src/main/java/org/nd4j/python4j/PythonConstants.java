@@ -71,12 +71,12 @@ public class PythonConstants {
      *
      * @return
      */
-    public static boolean initializePythonOrNot() {
+    public static boolean initializePython() {
         return Boolean.parseBoolean(System.getProperty(INITIALIZE_PYTHON,DEFAULT_INITIALIZE_PYTHON));
     }
 
     /**
-     * See {@link #initializePythonOrNot()}
+     * See {@link #initializePython()}
      *  for more information on this property.
      *  This is the setter method for the associated value.
      * @param initializePython whether to initialize python or not
@@ -114,7 +114,7 @@ public class PythonConstants {
 
 
     /**
-     * See {@link #gilIsReleaseAutomatically()}
+     * See {@link #releaseGilAutomatically()}
      * for more information on this setter.
      * @param releaseGilAutomatically whether to release the gil automatically or not.
      */
@@ -130,7 +130,7 @@ public class PythonConstants {
      * and its default value {@link #DEFAULT_RELEASE_GIL_AUTOMATICALLY}
      * @return
      */
-    public final static boolean gilIsReleaseAutomatically() {
+    public final static boolean releaseGilAutomatically() {
         return Boolean.parseBoolean(System.getProperty(RELEASE_GIL_AUTOMATICALLY,DEFAULT_RELEASE_GIL_AUTOMATICALLY));
     }
 
