@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationHelp
 import org.deeplearning4j.nn.layers.recurrent.LSTMHelper;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -25,9 +26,8 @@ public class HelperUtilsTests extends BaseDL4JTest  {
 
     @Test
     public void testHelperCreation() {
-        System.setProperty(HelperUtils.DISABLE_HELPER_PROPERTY,"false");
+        System.setProperty(DL4JSystemProperties.DISABLE_HELPER_PROPERTY,"false");
 
-        assertNotNull(HelperUtils.createHelper(CudnnLSTMHelper.class.getName(),"", LSTMHelper.class,"layer-name",getDataType()));
         assertNotNull(HelperUtils.createHelper(CudnnDropoutHelper.class.getName(),"", DropoutHelper.class,"layer-name",getDataType()));
         assertNotNull(HelperUtils.createHelper(CudnnConvolutionHelper.class.getName(),"", ConvolutionHelper.class,"layer-name",getDataType()));
         assertNotNull(HelperUtils.createHelper(CudnnLocalResponseNormalizationHelper.class.getName(),"", LocalResponseNormalizationHelper.class,"layer-name",getDataType()));
