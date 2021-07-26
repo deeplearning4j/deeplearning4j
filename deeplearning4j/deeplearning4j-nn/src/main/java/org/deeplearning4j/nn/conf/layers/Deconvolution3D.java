@@ -196,7 +196,7 @@ public class Deconvolution3D extends ConvolutionLayer {
             this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
         }
 
-        public Builder dataFormat(Convolution3D.DataFormat dataFormat){
+        public Builder dataFormat(Convolution3D.DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return this;
         }

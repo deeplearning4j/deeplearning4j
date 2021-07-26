@@ -23,6 +23,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -132,6 +133,27 @@ public class KerasConvolutionUtils {
 
     }
 
+
+    /**
+     * Return the {@link Convolution3D.DataFormat}
+     * from the configuration .
+     * If the value is {@link KerasLayerConfiguration#getDIM_ORDERING_TENSORFLOW()}
+     * then the value is {@link Convolution3D.DataFormat#NDHWC }
+     * else it's {@link KerasLayerConfiguration#getDIM_ORDERING_THEANO()}
+     * which is {@link Convolution3D.DataFormat#NDHWC}
+     * @param layerConfig the layer configuration to get the values from
+     * @param layerConfiguration the keras configuration used for retrieving
+     *                           values from the configuration
+     * @return the {@link CNN2DFormat} given the configuration
+     * @throws InvalidKerasConfigurationException
+     */
+    public static Convolution3D.DataFormat getCNN3DDataFormatFromConfig(Map<String,Object> layerConfig, KerasLayerConfiguration layerConfiguration) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig,layerConfiguration);
+        String dataFormat = innerConfig.containsKey(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()) ?
+                innerConfig.get(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()).toString() : "channels_last";
+        return dataFormat.equals("channels_last") ? Convolution3D.DataFormat.NDHWC : Convolution3D.DataFormat.NDHWC;
+
+    }
 
     /**
      * Return the {@link CNN2DFormat}
