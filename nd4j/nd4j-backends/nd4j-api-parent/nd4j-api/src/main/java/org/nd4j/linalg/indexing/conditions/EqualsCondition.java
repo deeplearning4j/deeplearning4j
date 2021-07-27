@@ -38,6 +38,8 @@ public class EqualsCondition extends BaseCondition {
 
     /**
      * Returns condition ID for native side
+     * Condition number is affected by:
+     * https://github.com/eclipse/deeplearning4j/blob/0ba0f933a95d2dceeff3651bc540d03b5f3b1631/libnd4j/include/ops/ops.h#L2253
      *
      * @return
      */

@@ -21,7 +21,34 @@
 package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.common.function.Function;
-
+/**
+ *
+ * Sets a condition in correspondence with the MatchConditionalBool op
+ * (op num 5 in the legacy operations)
+ *
+ * Condition number is affected by the ops internals, see here for the comprehensive overview:
+ * https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/ops/ops.h#L2253
+ *
+ * As of this writing (July 27,2021), the following operations are relevant:
+ * 0: equals
+ * 1: not equals
+ * 2: less than
+ * 3: greater than
+ * 4: less than or equal
+ * 5: greater than or equal
+ * 6: absolute difference less than
+ * 7: absolute difference greater than
+ * 8: is infinite
+ * 9: is nan
+ * 10: absolute equals
+ * 11: not equals
+ * 12: absolute difference greater or equal to
+ * 13: absolute difference less than or equal to
+ * 14: is finite
+ * 15: is infinite
+ *
+ * @return
+ */
 public interface Condition extends Function<Number, Boolean> {
 
     /**
