@@ -80,7 +80,7 @@ public class ROCScoreCalculator extends BaseIEvaluationScoreCalculator<Model, IE
                 return metric == Metric.AUC ? r.calculateAUC() : r.calculateAUCPR();
             case BINARY:
                 ROCBinary r2 = (ROCBinary) eval;
-                return metric == Metric.AUC ? r2.calculateAverageAuc() : r2.calculateAverageAuc();
+                return metric == Metric.AUC ? r2.calculateAverageAuc() : r2.calculateAverageAUCPR();
             case MULTICLASS:
                 ROCMultiClass r3 = (ROCMultiClass)eval;
                 return metric == Metric.AUC ? r3.calculateAverageAUC() : r3.calculateAverageAUCPR();
