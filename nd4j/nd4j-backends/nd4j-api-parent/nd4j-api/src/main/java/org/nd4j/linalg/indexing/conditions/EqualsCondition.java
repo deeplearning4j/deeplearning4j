@@ -43,7 +43,7 @@ public class EqualsCondition extends BaseCondition {
      */
     @Override
     public int condtionNum() {
-        return 10;
+        return 0;
     }
 
     @Override

@@ -3392,9 +3392,6 @@ public native int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast
 public native @Cast("Nd4jLong") long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 
-public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
-public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
-
 public native OpaqueLaunchContext defaultLaunchContext();
 public native @Cast("Nd4jPointer") Pointer lcScalarPointer(OpaqueLaunchContext lc);
 public native @Cast("Nd4jPointer") Pointer lcReductionPointer(OpaqueLaunchContext lc);

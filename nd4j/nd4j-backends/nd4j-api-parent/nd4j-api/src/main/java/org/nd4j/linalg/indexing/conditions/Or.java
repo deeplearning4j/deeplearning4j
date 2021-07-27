@@ -28,6 +28,11 @@ public class Or implements Condition {
         this.conditions = conditions;
     }
 
+    @Override
+    public void setValue(Number value) {
+
+    }
+
     /**
      * Returns condition ID for native side
      *

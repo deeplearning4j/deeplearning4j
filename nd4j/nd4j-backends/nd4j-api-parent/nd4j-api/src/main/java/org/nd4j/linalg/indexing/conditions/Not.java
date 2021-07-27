@@ -24,6 +24,11 @@ public class Not implements Condition {
 
     private Condition opposite;
 
+    @Override
+    public void setValue(Number value) {
+
+    }
+
     /**
      * Returns condition ID for native side
      *

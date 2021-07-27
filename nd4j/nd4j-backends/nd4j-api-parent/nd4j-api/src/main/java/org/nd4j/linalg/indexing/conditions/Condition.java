@@ -25,6 +25,12 @@ import org.nd4j.common.function.Function;
 public interface Condition extends Function<Number, Boolean> {
 
     /**
+     * Allows overriding of the value.
+     * @param value
+     */
+    void setValue(Number value);
+
+    /**
      * Returns condition ID for native side
      *
      * @return

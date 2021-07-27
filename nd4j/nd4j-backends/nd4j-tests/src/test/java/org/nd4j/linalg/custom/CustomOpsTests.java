@@ -1497,6 +1497,30 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, z);
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMatch_2(Nd4jBackend backend) {
+        int[] assignments = {0,0,0,1,0,2,2};
+        int[] indexes     = {0,1,2,3,4,5,7};
+
+        INDArray asarray = Nd4j.createFromArray(assignments);
+        INDArray idxarray = Nd4j.createFromArray(indexes);
+
+        int[] testIndicesForMask = new int[] {1,2};
+        INDArray[] assertions = {
+                Nd4j.createFromArray(false,false,false,true,false,false,false),
+                Nd4j.createFromArray(false,false,false,false,false,true,true)
+        };
+
+        for(int j = 0; j < testIndicesForMask.length; j++) {
+            INDArray mask = asarray.match(testIndicesForMask[j], Conditions.equals());
+            assertEquals(assertions[j],mask);
+
+        }
+
+    }
+
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
