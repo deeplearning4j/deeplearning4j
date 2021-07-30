@@ -24,12 +24,6 @@ public class Not implements Condition {
 
     private Condition opposite;
 
-    @Override
-    public void setValue(Number value) {
-        //no-op for aggregate conditions. Mainly used for providing an api to end users such as:
-        //INDArray.match(input,Conditions.equals())
-        //See: https://github.com/eclipse/deeplearning4j/issues/9393
-    }
 
     /**
      * Returns condition ID for native side

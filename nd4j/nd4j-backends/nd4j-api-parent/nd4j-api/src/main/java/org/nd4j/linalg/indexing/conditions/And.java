@@ -28,13 +28,6 @@ public class And implements Condition {
         this.conditions = conditions;
     }
 
-    @Override
-    public void setValue(Number value) {
-         //no-op for aggregate conditions. Mainly used for providing an api to end users such as:
-        //INDArray.match(input,Conditions.equals())
-        //See: https://github.com/eclipse/deeplearning4j/issues/9393
-    }
-
     /**
      * Returns condition ID for native side
      *

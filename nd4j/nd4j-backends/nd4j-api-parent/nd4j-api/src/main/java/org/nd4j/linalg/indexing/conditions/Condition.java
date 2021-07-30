@@ -53,9 +53,14 @@ public interface Condition extends Function<Number, Boolean> {
 
     /**
      * Allows overriding of the value.
+     *
      * @param value
      */
-    void setValue(Number value);
+    default void setValue(Number value) {
+        //no-op for aggregate conditions. Mainly used for providing an api to end users such as:
+        //INDArray.match(input,Conditions.equals())
+        //See: https://github.com/eclipse/deeplearning4j/issues/9393
+    }
 
     /**
      * Returns condition ID for native side
