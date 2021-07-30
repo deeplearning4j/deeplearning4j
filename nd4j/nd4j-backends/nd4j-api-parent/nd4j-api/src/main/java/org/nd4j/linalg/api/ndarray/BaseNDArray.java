@@ -1889,7 +1889,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray match(Number comp, Condition condition) {
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp.doubleValue(), condition));
+        //override the value so the value gets parsed properly
+        condition.setValue(comp);
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, EPS_THRESHOLD, condition));
     }
 
     @Override

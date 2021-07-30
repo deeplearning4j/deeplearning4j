@@ -45,7 +45,7 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = Nd4j.EPS_THRESHOLD;
-        this.extraArgs = new Object[] {compare, eps, (double) mode};
+        this.extraArgs = new Object[] {compare,1.0, eps,  mode};
     }
 
     public MatchConditionTransform() {}
@@ -70,7 +70,7 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
         this.mode = condition.condtionNum();
         this.eps = eps;
 
-        this.extraArgs = new Object[] {compare, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, eps, mode};
     }
 
     public MatchConditionTransform(INDArray x, double eps, @NonNull Condition condition) {

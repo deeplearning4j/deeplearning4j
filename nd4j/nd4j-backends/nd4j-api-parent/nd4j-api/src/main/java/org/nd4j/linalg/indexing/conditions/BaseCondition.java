@@ -30,6 +30,11 @@ public abstract class BaseCondition implements Condition {
     }
 
     @Override
+    public void setValue(Number value) {
+        this.value = value;
+    }
+
+    @Override
     public double epsThreshold() {
         return Nd4j.EPS_THRESHOLD;
     }

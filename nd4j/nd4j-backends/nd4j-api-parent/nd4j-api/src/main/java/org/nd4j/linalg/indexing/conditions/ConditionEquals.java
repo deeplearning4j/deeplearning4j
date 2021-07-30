@@ -28,6 +28,7 @@ public class ConditionEquals implements Condition {
         this.conditions = conditions;
     }
 
+
     /**
      * Returns condition ID for native side
      *

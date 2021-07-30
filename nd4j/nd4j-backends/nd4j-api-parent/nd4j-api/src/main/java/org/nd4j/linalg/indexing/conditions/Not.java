@@ -24,6 +24,7 @@ public class Not implements Condition {
 
     private Condition opposite;
 
+
     /**
      * Returns condition ID for native side
      *

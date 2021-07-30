@@ -819,6 +819,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 case TRANSFORM_FLOAT: {
                     val xtraz = getPointerForExtraArgs(op, z.dataType());
 
+
+
                     loop.execTransformFloat(dummy, op.opNum(),
                             xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(),
