@@ -83,7 +83,7 @@ public class Deconvolution3D extends ConvolutionLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
-        LayerValidation.assertNInNOutSet("Deconvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
+        LayerValidation.assertNInNOutSet("Deconvolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Deconvolution3DLayer ret =
                         new Deconvolution3DLayer(conf, networkDataType);
