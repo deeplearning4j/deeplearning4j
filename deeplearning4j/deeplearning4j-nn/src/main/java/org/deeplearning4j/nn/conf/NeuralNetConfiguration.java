@@ -182,6 +182,83 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         @Override
+        public ListBuilder overrideNinUponBuild(boolean overrideNinUponBuild) {
+            super.overrideNinUponBuild(overrideNinUponBuild);
+            return this;
+        }
+
+        @Override
+        public ListBuilder inputPreProcessor(Integer layer, InputPreProcessor processor) {
+            super.inputPreProcessor(layer, processor);
+            return this;
+        }
+
+        @Override
+        public ListBuilder inputPreProcessors(Map<Integer, InputPreProcessor> processors) {
+            super.inputPreProcessors(processors);
+            return this;
+        }
+
+        @Override
+        public ListBuilder cacheMode(@NonNull CacheMode cacheMode) {
+            super.cacheMode(cacheMode);
+            return this;
+        }
+
+        @Override
+        public MultiLayerConfiguration.Builder backpropType(@NonNull BackpropType type) {
+            super.backpropType(type);
+            return this;
+        }
+
+        @Override
+        public ListBuilder tBPTTLength(int bpttLength) {
+            super.tBPTTLength(bpttLength);
+            return this;
+        }
+
+        @Override
+        public ListBuilder tBPTTForwardLength(int forwardLength) {
+            super.tBPTTForwardLength(forwardLength);
+            return this;
+        }
+
+        @Override
+        public ListBuilder tBPTTBackwardLength(int backwardLength) {
+             super.tBPTTBackwardLength(backwardLength);
+             return this;
+        }
+
+        @Override
+        public ListBuilder confs(List<NeuralNetConfiguration> confs) {
+             super.confs(confs);
+             return this;
+        }
+
+        @Override
+        public ListBuilder validateOutputLayerConfig(boolean validate) {
+             super.validateOutputLayerConfig(validate);
+             return this;
+        }
+
+        @Override
+        public ListBuilder validateTbpttConfig(boolean validate) {
+            super.validateTbpttConfig(validate);
+            return this;
+        }
+
+        @Override
+        public ListBuilder dataType(@NonNull DataType dataType) {
+             super.dataType(dataType);
+             return this;
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+        }
+
+        @Override
         public ListBuilder setInputType(InputType inputType){
             return (ListBuilder)super.setInputType(inputType);
         }
@@ -228,12 +305,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             for (int i = 0; i < layerwise.size(); i++) {
                 if (layerwise.get(i) == null) {
                     throw new IllegalStateException("Invalid configuration: layer number " + i
-                                    + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
-                                    + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                            + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
+                            + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
                 if (layerwise.get(i).getLayer() == null)
                     throw new IllegalStateException("Cannot construct network: Layer config for" + "layer with index "
-                                    + i + " is not defined)");
+                            + i + " is not defined)");
 
                 //Layer names: set to default, if not set
                 if (layerwise.get(i).getLayer().getLayerName() == null) {
@@ -248,12 +325,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
 
             return new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
-                            .backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-                            .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
-                            .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
-                            .dataType(globalConfig.dataType)
-                            .build();
+                    .backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+                    .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
+                    .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
+                    .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
+                    .dataType(globalConfig.dataType)
+                    .build();
         }
 
         /** Helper class for setting input types */
@@ -651,7 +728,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder weightInit(WeightInit weightInit) {
             if(weightInit == WeightInit.DISTRIBUTION) {
-             //   throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+                //   throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
             this.weightInitFn = weightInit.getWeightInitFunction();
