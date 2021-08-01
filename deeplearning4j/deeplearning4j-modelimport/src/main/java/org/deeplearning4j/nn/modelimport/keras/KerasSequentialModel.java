@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -200,6 +201,7 @@ public class KerasSequentialModel extends KerasModel {
                     if (prevLayer.isInputPreProcessor()) {
                         inputTypes[0] = this.outputTypes.get(prevLayer.getInboundLayerNames().get(0));
                         preprocessor = prevLayer.getInputPreprocessor(inputTypes);
+                        KerasModelUtils.setDataFormatIfNeeded(preprocessor,layer);
                         InputType outputType = preprocessor.getOutputType(inputTypes[0]);
                         layer.getLayer().setNIn(outputType,listBuilder.isOverrideNinUponBuild());
                     } else {
@@ -211,6 +213,8 @@ public class KerasSequentialModel extends KerasModel {
                         }
                         else
                             layer.getLayer().setNIn(inputTypes[0],listBuilder.isOverrideNinUponBuild());
+
+                        KerasModelUtils.setDataFormatIfNeeded(preprocessor,layer);
 
                     }
                     if (preprocessor != null)

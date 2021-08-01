@@ -151,7 +151,7 @@ public class KerasConvolutionUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig,layerConfiguration);
         String dataFormat = innerConfig.containsKey(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()) ?
                 innerConfig.get(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()).toString() : "channels_last";
-        return dataFormat.equals("channels_last") ? Convolution3D.DataFormat.NDHWC : Convolution3D.DataFormat.NDHWC;
+        return dataFormat.equals("channels_last") ? Convolution3D.DataFormat.NDHWC : Convolution3D.DataFormat.NCDHW;
 
     }
 

@@ -57,6 +57,7 @@ public class Convolution3D extends ConvolutionLayer {
     }
 
     private ConvolutionMode mode = ConvolutionMode.Same; // in libnd4j: 0 - same mode, 1 - valid mode
+    @Getter
     private DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**

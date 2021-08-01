@@ -34,8 +34,8 @@
     <artifactId>deeplearning4j-modelimport</artifactId>
     <packaging>jar</packaging>
     <properties>
-        <test.offheap.size>1g</test.offheap.size>
-        <test.heap.size>1g</test.heap.size>
+        <test.offheap.size>4g</test.offheap.size>
+        <test.heap.size>4g</test.heap.size>
     </properties>
 
     <dependencies>
@@ -119,6 +119,10 @@
             <artifactId>python4j-numpy</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
         </dependency>
     </dependencies>
     <profiles>

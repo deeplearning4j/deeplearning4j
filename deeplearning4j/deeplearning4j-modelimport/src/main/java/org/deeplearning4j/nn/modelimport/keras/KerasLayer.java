@@ -50,12 +50,17 @@ public class KerasLayer {
 
 
     public enum DimOrder {NONE, THEANO, TENSORFLOW}
-
+    @Getter
     protected String className; // Keras layer class name
+    @Getter
     protected String layerName; // Keras layer name
+    @Getter
     protected int[] inputShape; // Keras layer input shape
+    @Getter
     protected DimOrder dimOrder; // Keras layer backend dimension order
+    @Getter
     protected List<String> inboundLayerNames; // List of inbound layers
+    @Getter
     protected List<String> outboundLayerNames; //List of outbound layers
     protected Layer layer; // Resulting DL4J layer
     protected GraphVertex vertex; // Resulting DL4J vertex
@@ -64,7 +69,7 @@ public class KerasLayer {
     protected double weightL2Regularization = 0.0; // L2 regularization
     protected double dropout = 1.0; // Dropout
     protected Integer kerasMajorVersion = 2; // Set 2 as default for now
-   @Getter
+    @Getter
     protected KerasLayerConfiguration conf;
     @Getter
     protected  Map<String, Object> originalLayerConfig;
@@ -233,7 +238,7 @@ public class KerasLayer {
      *
      * @return Keras layer (backend) dimension order
      */
-    protected DimOrder getDimOrder() {
+    public DimOrder getDimOrder() {
         return this.dimOrder;
     }
 

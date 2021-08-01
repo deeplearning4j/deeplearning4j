@@ -23,8 +23,9 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -32,6 +33,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
@@ -46,6 +48,43 @@ import java.util.regex.Pattern;
 @Slf4j
 public class KerasModelUtils {
 
+
+    /**
+     * Set the {@link org.deeplearning4j.nn.conf.DataFormat}
+     * for certain input preprocessors to ensure that
+     * model import propagates properly for cases like reshapes.
+     *
+     * @param inputPreProcessor
+     * @param currLayer
+     */
+    public static void setDataFormatIfNeeded(InputPreProcessor inputPreProcessor,KerasLayer currLayer) {
+        if(inputPreProcessor instanceof ReshapePreprocessor) {
+            ReshapePreprocessor reshapePreprocessor = (ReshapePreprocessor) inputPreProcessor;
+            if(currLayer.isLayer()) {
+                if(currLayer.getDimOrder() != null) {
+                    Layer layer = currLayer.getLayer();
+                    if(layer instanceof ConvolutionLayer) {
+                        ConvolutionLayer convolutionLayer = (ConvolutionLayer) layer;
+                        if(convolutionLayer instanceof Convolution3D) {
+                            Convolution3D convolution3D = (Convolution3D)  convolutionLayer;
+                            reshapePreprocessor.setFormat(convolution3D.getDataFormat());
+                        } else if(convolutionLayer instanceof Deconvolution3D) {
+                           Deconvolution3D deconvolution3D = (Deconvolution3D) convolutionLayer;
+                           reshapePreprocessor.setFormat(deconvolution3D.getDataFormat());
+                        } else {
+                            reshapePreprocessor.setFormat(convolutionLayer.getCnn2dDataFormat());
+                        }
+                    } else if(layer instanceof BaseRecurrentLayer) {
+                        BaseRecurrentLayer baseRecurrentLayer = (BaseRecurrentLayer) layer;
+                        reshapePreprocessor.setFormat(baseRecurrentLayer.getRnnDataFormat());
+                    }
+                }
+            }
+        }
+
+    }
+
+
     /**
      * Helper function to import weights from nested Map into existing model. Depends critically
      * on matched layer and parameter names. In general this seems to be straightforward for most
@@ -58,7 +97,7 @@ public class KerasModelUtils {
     public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> kerasLayers)
             throws InvalidKerasConfigurationException {
         /* Get list if layers from model. */
-        Layer[] layersFromModel;
+        org.deeplearning4j.nn.api.Layer[] layersFromModel;
         if (model instanceof MultiLayerNetwork)
             layersFromModel = ((MultiLayerNetwork) model).getLayers();
         else
