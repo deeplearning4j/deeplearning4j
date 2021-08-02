@@ -83,7 +83,7 @@ public class Deconvolution3D extends ConvolutionLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
-        LayerValidation.assertNInNOutSet("Deconvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
+        LayerValidation.assertNInNOutSet("Deconvolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Deconvolution3DLayer ret =
                         new Deconvolution3DLayer(conf, networkDataType);
@@ -196,7 +196,7 @@ public class Deconvolution3D extends ConvolutionLayer {
             this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
         }
 
-        public Builder dataFormat(Convolution3D.DataFormat dataFormat){
+        public Builder dataFormat(Convolution3D.DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return this;
         }

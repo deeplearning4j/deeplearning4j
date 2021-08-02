@@ -227,6 +227,8 @@ public class KerasLayerUtils {
             layer = new KerasConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DECONVOLUTION_2D())) {
             layer = new KerasDeconvolution2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DECONVOLUTION_3D())) {
+            layer = new KerasDeconvolution3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_1D())) {
             layer = new KerasConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ATROUS_CONVOLUTION_2D())) {
@@ -254,7 +256,7 @@ public class KerasLayerUtils {
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D())) {
             layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION())) {
-            layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig,previousLayers);
+            layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING())) {
             layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {
@@ -297,9 +299,9 @@ public class KerasLayerUtils {
             layer = new KerasUpsampling1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
             layer = new KerasUpsampling2D(layerConfig, enforceTrainingConfig);
-        }else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_3D())) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_3D())) {
             layer = new KerasUpsampling3D(layerConfig, enforceTrainingConfig);
-        }  else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
             layer = new KerasCropping3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_2D())) {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
@@ -307,27 +309,27 @@ public class KerasLayerUtils {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
-            if (!lambdaLayers.containsKey(lambdaLayerName) && !customLayers.containsKey(layerClassName)){
+            if (!lambdaLayers.containsKey(lambdaLayerName) && !customLayers.containsKey(layerClassName)) {
                 throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda " +
                         "layer " + lambdaLayerName + ". You can register a SameDiff Lambda layer using KerasLayer." +
                         "registerLambdaLayer(lambdaLayerName, sameDiffLambdaLayer);");
             }
 
             SameDiffLambdaLayer lambdaLayer = lambdaLayers.get(lambdaLayerName);
-            if (lambdaLayer != null){
+            if (lambdaLayer != null) {
                 layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
             }
-        } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_RELU())){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_RELU())) {
             layer = new KerasReLU(layerConfig, enforceTrainingConfig);
-        } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_ELU())){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ELU())) {
             layer = new KerasELU(layerConfig, enforceTrainingConfig);
-        } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_SOFTMAX())){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SOFTMAX())) {
             layer = new KerasSoftmax(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_1D())){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_1D())) {
             layer = new KerasLocallyConnected1D(layerConfig, enforceTrainingConfig);
-        } else if (conf instanceof Keras2LayerConfiguration){
-            Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
-            if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())){
+        } else if (conf instanceof Keras2LayerConfiguration) {
+            Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration) conf;
+            if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())) {
                 layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
             }
         }
@@ -340,7 +342,7 @@ public class KerasLayerUtils {
                 layer = (KerasLayer) constructor.newInstance(layerConfig);
             } catch (Exception e) {
                 throw new RuntimeException("The keras custom class " + layerClassName + " needs to have a constructor with only Map<String,Object> as the argument. Please ensure this is defined."
-                        ,e);
+                        , e);
             }
         }
         return layer;
@@ -416,9 +418,9 @@ public class KerasLayerUtils {
     public static String getLayerNameFromConfig(Map<String, Object> layerConfig,
                                                 KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
-        if(conf instanceof Keras2LayerConfiguration){
-            Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
-            if (getClassNameFromConfig(layerConfig, conf).equals(((Keras2LayerConfiguration) conf).getTENSORFLOW_OP_LAYER())){
+        if (conf instanceof Keras2LayerConfiguration) {
+            Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration) conf;
+            if (getClassNameFromConfig(layerConfig, conf).equals(((Keras2LayerConfiguration) conf).getTENSORFLOW_OP_LAYER())) {
                 if (!layerConfig.containsKey(conf.getLAYER_FIELD_NAME()))
                     throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_NAME()
                             + " missing from layer config");
@@ -496,10 +498,10 @@ public class KerasLayerUtils {
         List<String> inboundLayerNames = new ArrayList<>();
         if (layerConfig.containsKey(conf.getLAYER_FIELD_INBOUND_NODES())) {
             List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
-            if(!inboundNodes.isEmpty()) {
-                for(Object nodeName : inboundNodes) {
+            if (!inboundNodes.isEmpty()) {
+                for (Object nodeName : inboundNodes) {
                     List<Object> list = (List<Object>) nodeName;
-                    for(Object o : list) {
+                    for (Object o : list) {
                         List<Object> list2 = (List<Object>) o;
                         inboundLayerNames.add(list2.get(0).toString());
 
@@ -563,10 +565,10 @@ public class KerasLayerUtils {
 
     public static Integer getNInFromInputDim(Map<String, Object> layerConfig, KerasLayerConfiguration conf) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if(innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM())){
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM())) {
             Object id = innerConfig.get(conf.getLAYER_FIELD_INPUT_DIM());
-            if(id instanceof Number){
-                return ((Number)id).intValue();
+            if (id instanceof Number) {
+                return ((Number) id).intValue();
             }
         }
         return null;
@@ -672,7 +674,7 @@ public class KerasLayerUtils {
      * Remove weights from config after weight setting.
      *
      * @param weights layer weights
-     * @param conf Keras layer configuration
+     * @param conf    Keras layer configuration
      */
     public static void removeDefaultWeights(Map<String, INDArray> weights, KerasLayerConfiguration conf) {
         if (weights.size() > 2) {

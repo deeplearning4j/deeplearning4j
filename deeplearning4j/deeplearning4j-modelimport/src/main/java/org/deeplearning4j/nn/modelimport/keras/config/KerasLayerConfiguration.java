@@ -122,7 +122,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_1D = "SeparableConv1D"; // Keras 2 only
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
-    private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv2DTranspose"; // Keras 2 only
+    private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv3DTranspose"; // Keras 2 only
 
     // Locally connected layers
     private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_2D = "LocallyConnected2D";

@@ -171,10 +171,10 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
                     //being channels first has side effects when working with other models
                     Convolution3D.DataFormat dataFormat = (Convolution3D.DataFormat) this.format;
                     if(dataFormat == Convolution3D.DataFormat.NCDHW) {
-                        ret =  InputType.convolutional3D(dataFormat,shape[2],shape[3],shape[4],shape[0]);
+                        ret =  InputType.convolutional3D(dataFormat,shape[2],shape[3],shape[4],shape[1]);
                         //default value
                     } else if(dataFormat == Convolution3D.DataFormat.NDHWC || dataFormat == null) {
-                        ret =  InputType.convolutional3D(dataFormat,shape[1],shape[2],shape[3],shape[0]);
+                        ret =  InputType.convolutional3D(dataFormat,shape[1],shape[2],shape[3],shape[4]);
                     } else {
                         throw new IllegalArgumentException("Illegal format found " + dataFormat);
                     }
