@@ -355,7 +355,6 @@ public class KerasModel {
     }
 
     List<String> findNearestNodesTo(String original,String target,List<String> targetedNodes,List<String> topoSortNodes,int k) {
-        List<String> ret = new ArrayList<>();
         int idx = topoSortNodes.indexOf(target);
         Counter<String> rankByDistance = new Counter<>();
 
@@ -554,6 +553,7 @@ public class KerasModel {
                     if(prevLayer.isInputPreProcessor()) {
                         InputType inputType = this.outputTypes.get(layerName);
                         InputPreProcessor preprocessor = prevLayer.getInputPreprocessor(inputType);
+                        KerasModelUtils.setDataFormatIfNeeded(preprocessor,layer);
                         InputType outputType = preprocessor.getOutputType(inputType);
                         inputTypes2[inboundIdx] = outputType;
                         inboundIdx++;
