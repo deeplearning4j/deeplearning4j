@@ -53,7 +53,7 @@ object ImportReflectionCache {
             val opNames = rule.parameterValues["opNames"].value as Array<String>
             opNames.forEach { opName ->
                 if(!preProcessRuleImplementationsByOp.containsKey(opName)) {
-                    preProcessRuleImplementationsByNode[opName] = ArrayList()
+                    preProcessRuleImplementationsByOp[opName] = ArrayList()
                 }
 
                 preProcessRuleImplementationsByOp[opName]!!.add(instance)

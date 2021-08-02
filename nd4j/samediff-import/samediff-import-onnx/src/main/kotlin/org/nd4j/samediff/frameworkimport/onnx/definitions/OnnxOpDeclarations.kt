@@ -390,9 +390,8 @@ val or = OnnxMappingProcess(
         inputFrameworkOpName = "Or",
         opMappingRegistry = onnxOpRegistry,
         attributeMappingRules = listOf(
-                booleanConstant(inputName = "inPlace", constantValue = false,argumentIndex = 0)[0],
                 doubleConstant(inputName = "comparable", constantValue = 0.0,argumentIndex = 0)[0]),
-        tensorMappingRules = listOf(mappingNDArrayInputs((mutableMapOf("input" to "A"))))
+        tensorMappingRules = listOf(mappingNDArrayInputs((mutableMapOf("input" to "A","y" to "B"))))
 )
 
 val xor = OnnxMappingProcess(
@@ -476,7 +475,8 @@ val leakyRelu = OnnxMappingProcess(
         inputFrameworkOpName = "LeakyRelu",
         opName = "leakyrelu",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("alpha" to "alpha"))),
+        attributeMappingRules = listOf(valueMappings(mapOf("alpha" to "alpha")),
+                booleanConstant("inPlace",false,argumentIndex = 0)[0]),
         opMappingRegistry = onnxOpRegistry
 )
 //TODO: LinearClassifier
@@ -489,6 +489,9 @@ val matMul = OnnxMappingProcess(
         inputFrameworkOpName = "MatMul",
         opName = "matmul",
         attributeMappingRules = listOf(
+                booleanConstant(inputName = "transX",constantValue = false,argumentIndex = 0)[0],
+                booleanConstant(inputName = "transY",constantValue = false,argumentIndex = 1)[0],
+                booleanConstant(inputName = "transZ",constantValue = false,argumentIndex = 2)[0],
                 booleanConstant(inputName = "transposeX",constantValue = false,argumentIndex = 0)[0],
                 booleanConstant(inputName = "transposeY",constantValue = false,argumentIndex = 1)[0],
                 booleanConstant(inputName = "transposeZ",constantValue = false,argumentIndex = 2)[0],
@@ -631,8 +634,11 @@ val randomUniform = OnnxMappingProcess(
         inputFrameworkOpName = "RandomUniform",
         opName = "randomuniform",
         opMappingRegistry = onnxOpRegistry,
-        attributeMappingRules = listOf(valueMappings(mapOf("min" to "low","max" to "high")),
-                listNumberToNDarray(outputAttributeValue = "shape",inputAttributeValue = "shape"))
+        attributeMappingRules = listOf(
+                valueMappings(mapOf("min" to "low","max" to "high")),
+                intConstant(inputName = "seed",constantValue = 0,argumentIndex = 0)[0],
+                listNumberToNDarray(outputAttributeValue = "shape",
+                        inputAttributeValue = "shape"))
 )
 
 //TODO: RandomUniformLike
@@ -683,7 +689,7 @@ val reduceLogSumExp = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
         attributeMappingRules = listOf(
                 invertBooleanNumber(mutableMapOf("keepDims" to "keepdims")),
-                valueMappings(mutableMapOf("keepDims" to "keepdims")),
+                valueMappings(mutableMapOf("keepDim" to "keepdims")),
                 listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
         opMappingRegistry = onnxOpRegistry
 )
@@ -737,7 +743,7 @@ val flatten = OnnxMappingProcess(
         inputFrameworkOpName = "Flatten",
         opName = "flatten_2d",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("flattenDimension" to "axis"))),
+        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimensions" to "axis"))),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -906,7 +912,7 @@ val transpose = OnnxMappingProcess(
         opName = "transpose",
         inputFrameworkOpName = "Transpose",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permuteDims", inputAttributeValue = "perm")),
+        attributeMappingRules = listOf(listNumberToListNumber(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
         opMappingRegistry = onnxOpRegistry
 )
 

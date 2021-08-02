@@ -44,6 +44,7 @@ import org.nd4j.common.primitives.CounterMap;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.descriptor.proposal.ArgDescriptorProposal;
 import org.nd4j.descriptor.proposal.ArgDescriptorSource;
+import org.nd4j.graph.OpType;
 import org.nd4j.ir.OpNamespace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -505,6 +506,23 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                     .setIsArray(false)
                                     .setArgIndex(1)
                                     .build()).build());
+                }
+                
+                if(funcInstance instanceof BaseTransformBoolOp) {
+                    BaseTransformBoolOp baseTransformBoolOp = (BaseTransformBoolOp) funcInstance;
+                    if(baseTransformBoolOp.getOpType() == Op.Type.PAIRWISE_BOOL) {
+                        if(numProposalsWithType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR,argDescriptorProposals) < 2) {
+                            argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                    .sourceOfProposal("java")
+                                    .proposalWeight(9999.0)
+                                    .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                            .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                            .setName("y")
+                                            .setIsArray(false)
+                                            .setArgIndex(1)
+                                            .build()).build());
+                        }
+                    }
                 }
 
 
