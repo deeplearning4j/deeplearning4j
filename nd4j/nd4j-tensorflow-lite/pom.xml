@@ -38,7 +38,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <tensorflow-lite.version>2.5.0</tensorflow-lite.version>
-        <tensorflow-lite.javacpp.version>${tensorflow-lite.version}-1.5.6-SNAPSHOT</tensorflow-lite.javacpp.version>
+        <tensorflow-lite.javacpp.version>${tensorflow-lite.version}-${javacpp.version}</tensorflow-lite.javacpp.version>
     </properties>
 
     <dependencies>

@@ -195,9 +195,9 @@
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
-        <javacpp.version>1.5.5</javacpp.version>
-        <javacpp-presets.version>1.5.5</javacpp-presets.version>
-        <javacv.version>1.5.5</javacv.version>
+        <javacpp.version>1.5.6</javacpp.version>
+        <javacpp-presets.version>1.5.6</javacpp-presets.version>
+        <javacv.version>1.5.6</javacv.version>
         <javacpp.platform.additionalIncludePaths />
         <javacpp.platform.cppincludepath />
         <javacpp.platform.library.path />
@@ -206,19 +206,19 @@
         <nd4j.cuda.basedir />
 
 
-        <python.version>3.9.2</python.version>
+        <python.version>3.9.6</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.20.1</numpy.version>
+        <numpy.version>1.21.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
-        <openblas.version>0.3.13</openblas.version>
-        <mkl.version>2021.1</mkl.version>
-        <opencv.version>4.5.1</opencv.version>
-        <ffmpeg.version>4.3.2</ffmpeg.version>
-        <leptonica.version>1.80.0</leptonica.version>
-        <hdf5.version>1.12.0</hdf5.version>
+        <openblas.version>0.3.17</openblas.version>
+        <mkl.version>2021.3</mkl.version>
+        <opencv.version>4.5.3</opencv.version>
+        <ffmpeg.version>4.4</ffmpeg.version>
+        <leptonica.version>1.81.1</leptonica.version>
+        <hdf5.version>1.12.1</hdf5.version>
         <ale.version>0.6.1</ale.version>
-        <gym.version>0.18.0</gym.version>
+        <gym.version>0.18.3</gym.version>
         <tensorflow.version>1.15.5</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
