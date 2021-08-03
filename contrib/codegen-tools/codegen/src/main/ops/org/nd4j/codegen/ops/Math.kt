@@ -32,7 +32,7 @@ import org.nd4j.codegen.dsl.*
 import org.nd4j.codegen.mixins.*
 
 
-fun Math() =  Namespace("Math"){
+fun Math() =  Namespace("Math") {
     Op("abs", transformSame) {
         javaOpClass = "Abs"
         Doc(Language.ANY, DocScope.ALL){
@@ -80,9 +80,8 @@ fun Math() =  Namespace("Math"){
     }
 
 
-    // TODO should we call these "reduceAMax", "reduceAMean", "reduceMin" etc?
-    // TODO: There are 2 implementations of amax in org.nd4j.linalg.api.ops.impl
-    Op("amax", reduceSame) {
+
+    Op("reduceAMax", reduceSame) {
         javaOpClass = "AMax"
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -91,7 +90,25 @@ fun Math() =  Namespace("Math"){
         }
     }
 
-    Op("amean", reduceFloating) {
+    Op("reduceAMax", reduceSameVariable) {
+        javaOpClass = "AMax"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
+            """.trimIndent()
+        }
+    }
+
+    Op("reduceAmean", reduceFloating) {
+        javaOpClass = "AMean"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
+            """.trimIndent()
+        }
+    }
+
+    Op("reduceAmean", reduceFloatingVariable) {
         javaOpClass = "AMean"
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -101,7 +118,16 @@ fun Math() =  Namespace("Math"){
     }
 
     // TODO: There are 2 implementations of amax in org.nd4j.linalg.api.ops.impl
-    Op("amin", reduceSame) {
+    Op("reduceAmin", reduceSame) {
+        javaOpClass = "AMin"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
+            """.trimIndent()
+        }
+    }
+
+    Op("reduceAmin", reduceSameVariable) {
         javaOpClass = "AMin"
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -839,6 +865,63 @@ fun Math() =  Namespace("Math"){
         }
     }
 
+
+    Op("reduceMax", reduceSame) {
+        javaOpClass = "Max"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               The max of an array along each dimension
+            """.trimIndent()
+        }
+    }
+
+    Op("reduceMax", reduceSameVariable) {
+        javaOpClass = "Max"
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+               The max of an array long each dimension
+            """.trimIndent()
+        }
+    }
+
+
+    Op("mean", reduceFloating) {
+        javaOpClass = "Mean"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
+            """.trimIndent()
+        }
+    }
+
+    Op("mean", reduceFloatingVariable) {
+        javaOpClass = "Mean"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
+            """.trimIndent()
+        }
+    }
+
+
+    Op("reduceMin", reduceSame) {
+        javaOpClass = "Min"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               The minimum of an array along each dimension
+            """.trimIndent()
+        }
+    }
+
+    Op("reduceMin", reduceSameVariable) {
+        javaOpClass = "Min"
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+               The minimum of an array long each dimension
+            """.trimIndent()
+        }
+    }
+
     Op("mergeAdd") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic"
         javaOpClass = "MergeAddOp"
@@ -923,6 +1006,60 @@ fun Math() =  Namespace("Math"){
         }
     }
 
+    Op("norm1", reduceFloating) {
+        javaOpClass = "Norm1"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
+            """.trimIndent()
+        }
+    }
+
+    Op("norm1", reduceFloatingVariable) {
+        javaOpClass = "Norm1"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Sum of absolute differences.
+            """.trimIndent()
+        }
+    }
+
+    Op("norm2", reduceFloating) {
+        javaOpClass = "Norm2"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Euclidean norm: euclidean distance of a vector from the origin
+            """.trimIndent()
+        }
+    }
+
+    Op("norm2", reduceFloatingVariable) {
+        javaOpClass = "Norm2"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                  Euclidean norm: euclidean distance of a vector from the origin
+            """.trimIndent()
+        }
+    }
+
+    Op("normMax", reduceFloating) {
+        javaOpClass = "NormMax"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Differences between max absolute value
+            """.trimIndent()
+        }
+    }
+
+    Op("normMax", reduceFloatingVariable) {
+        javaOpClass = "NormMax"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                  Differences between max absolute value
+            """.trimIndent()
+        }
+    }
+
     Op("or") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool"
         Input(BOOL, "x") { description = "Input 1" }
@@ -955,6 +1092,25 @@ fun Math() =  Namespace("Math"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Element-wise (broadcastable) power function: out = x[i]^y[i]
+            """.trimIndent()
+        }
+    }
+
+
+    Op("prod", reduceSame) {
+        javaOpClass = "Prod"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               The max of an array along each dimension
+            """.trimIndent()
+        }
+    }
+
+    Op("prod", reduceSameVariable) {
+        javaOpClass = "Prod"
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+               The product of an array long each dimension
             """.trimIndent()
         }
     }
@@ -1071,6 +1227,14 @@ fun Math() =  Namespace("Math"){
         }
     }
 
+    Op("shannonEntropy", reduceFloatingVariable) {
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Shannon Entropy reduction: -sum(x * log2(x))
+            """.trimIndent()
+        }
+    }
+
     Op("sign", transformSame) {
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1124,6 +1288,25 @@ fun Math() =  Namespace("Math"){
         useMixin(broadcastingDoc)
     }
 
+    Op("squaredNorm", reduceFloating) {
+        javaOpClass = "SquaredNorm"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Sum of squared differences.
+            """.trimIndent()
+        }
+    }
+
+    Op("squaredNorm", reduceFloatingVariable) {
+        javaOpClass = "SquaredNorm"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Sum of squared differences.
+            """.trimIndent()
+        }
+    }
+
+
     Op("step", scalar) {
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1172,6 +1355,24 @@ fun Math() =  Namespace("Math"){
         Doc(Language.ANY, DocScope.ALL){
             """ 
                 Scalar subtraction operation, out = in - scalar
+            """.trimIndent()
+        }
+    }
+
+    Op("sum", reduceSame) {
+        javaOpClass = "Sum"
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Sum of an array, optionally along specified dimensions: out = sum(x))
+            """.trimIndent()
+        }
+    }
+
+    Op("sum", reduceSameVariable) {
+        javaOpClass = "Sum"
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+               Sum of an array, optionally along specified dimensions: out = sum(x))
             """.trimIndent()
         }
     }
