@@ -19,10 +19,6 @@
  */
 package org.nd4j.codegen.ir;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-@DisplayName("Serialization Test")
 class SerializationTest {
 
     public static void main(String... args) {

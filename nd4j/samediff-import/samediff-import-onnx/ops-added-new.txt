@@ -1,2 +1,2 @@
-Constant,input
-Exp,output
+Constant,x
+GlobalAveragePool,y

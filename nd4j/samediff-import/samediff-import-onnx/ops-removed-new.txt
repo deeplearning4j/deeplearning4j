@@ -1,2 +1,2 @@
-input
-output
+x
+y

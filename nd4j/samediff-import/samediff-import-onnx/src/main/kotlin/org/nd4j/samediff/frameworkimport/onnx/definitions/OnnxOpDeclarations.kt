@@ -360,8 +360,18 @@ val gemm = OnnxMappingProcess(
                 invertBooleanNumber(mutableMapOf("transX" to "transA","transY" to "transB")))
 )
 //TODO: GlobalAveragePool
+val globalAveragePooling = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GlobalAveragePool",
+        opMappingRegistry = onnxOpRegistry
+)
 //TODO: GlobalLpPool
 //TODO: GlobalMaxPool
+val globalMaxPooling = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "GlobalMaxPool",
+        opMappingRegistry = onnxOpRegistry
+)
 //TODO: Gradient
 //TODO: GraphCall
 val hardSigmoid = OnnxMappingProcess(

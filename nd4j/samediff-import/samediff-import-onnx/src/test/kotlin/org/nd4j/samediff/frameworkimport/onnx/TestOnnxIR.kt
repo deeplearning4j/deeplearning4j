@@ -115,24 +115,19 @@ class TestOnnxIR {
                 Output("y")
                 name = "y"
                 opType = "GlobalAveragePool"
-
-
-
             })
 
-            Output(createValueInfoFromTensor(inputTensor,"output",false))
+            Output(createValueInfoFromTensor(inputTensor,"y",false))
         }
 
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
-        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("input"),listOf("output"))
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x"),listOf("y"))
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
-        val inputs = mapOf("input" to inputTensor)
+        val inputs = mapOf("x" to inputTensor)
         val assertion = onnxGraphRunner.run(inputs)
-        val result = importedGraph.output(inputs,"output")
-        //assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
-
-
+        val result = importedGraph.output(inputs,"y")
+        assertEquals(assertion,result)
     }
 
     @Test

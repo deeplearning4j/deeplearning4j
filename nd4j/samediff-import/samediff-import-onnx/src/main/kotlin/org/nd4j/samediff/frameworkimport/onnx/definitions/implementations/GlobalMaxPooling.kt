@@ -18,13 +18,12 @@ class GlobalMaxPooling: PreImportHook {
     ): HookResult {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
         val rankOf = sd.rank(inputVariable)
-        val rangeMin = minNum(rankOf.eval().getInt(0))
-        val rankList = ArrayUtil.range(rangeMin as Long,rankOf as Long).map { input ->input.toInt() }.toIntArray()
-        val output = sd.mean(inputVariable,true,*rankList)
+        val range = sd.range(sd.constant(2),rankOf,sd.constant(1),inputVariable.dataType())
+        val output = sd.math.reduceMax(op.name,inputVariable,range,true)
         sd.ops.remove(op.name)
-        sd.variables.remove(op.name)
         return HookResult(outputVariables = mapOf(output.name() to listOf(output)),
             proceedWithInit = false)
+
     }
 
     fun minNum (rank: Int): Int {

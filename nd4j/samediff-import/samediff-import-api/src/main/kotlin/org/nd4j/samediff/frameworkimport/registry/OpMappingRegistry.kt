@@ -124,6 +124,9 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
             val noRules = allRules.filterKeys { input -> input == inputFrameworkOpName }.values.isEmpty()
             if(noRules)
                 throw IllegalArgumentException("No import process defined for $inputFrameworkOpName")
+            else {
+                println()
+            }
         }
         return registeredOps[inputFrameworkOpName]!!.first()
     }
@@ -132,6 +135,13 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         val descriptor = nd4jOpDescriptors.findOp(nd4jOpName)
         return descriptor.opDeclarationType
     }
+
+    fun opHasRuleNoProcess(inputFrameworkOpName: String): Boolean {
+        val allRules = cache.preProcessRuleImplementationsByOp
+        val noRules = allRules.filterKeys { input -> input == inputFrameworkOpName }.values.isEmpty()
+        return noRules && !registeredOps.containsKey(inputFrameworkOpName)
+    }
+
 
     /**
      * TODO: Make loading op mapping rules (both tensor and attribute), input framework op definitions casted as
