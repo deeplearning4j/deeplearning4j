@@ -81,7 +81,7 @@ public class Enter extends BaseCompatOp {
     }
 
     @Override
-    public Op.Type opType() {
+    public Type opType() {
         return Type.LOGIC;
     }
 

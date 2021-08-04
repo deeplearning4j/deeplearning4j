@@ -627,7 +627,7 @@ public class Nd4j {
      * @return array of maximum values.
      */
     public static INDArray argMax(INDArray arr, @NonNull int... dimension) {
-        val imax = new ArgMax(arr, dimension);
+        val imax = new ArgMax(new INDArray[]{arr},null,false, dimension);
         return Nd4j.getExecutioner().exec(imax)[0];
     }
 
@@ -635,7 +635,7 @@ public class Nd4j {
      * See {@link #argMax(INDArray, int...)} but return minimum values.
      */
     public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
-        val imin = new ArgMin(arr, dimension);
+        val imin = new ArgMin(new INDArray[]{arr}, null,false,dimension);
         return Nd4j.getExecutioner().exec(imin)[0];
     }
 

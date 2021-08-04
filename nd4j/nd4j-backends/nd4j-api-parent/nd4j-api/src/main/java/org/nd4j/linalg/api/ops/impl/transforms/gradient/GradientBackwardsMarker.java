@@ -73,7 +73,7 @@ public class GradientBackwardsMarker extends DynamicCustomOp {
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //Dummy variable
         return Collections.singletonList(DataType.FLOAT);
     }
