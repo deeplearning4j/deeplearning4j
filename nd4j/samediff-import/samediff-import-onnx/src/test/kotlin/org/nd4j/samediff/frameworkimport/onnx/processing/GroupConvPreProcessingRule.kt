@@ -33,7 +33,7 @@ import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import java.lang.IllegalArgumentException
 
-@PreHookRule(nodeNames = ["conv2_1"],opNames = [],"onnx")
+@PreHookRule(nodeNames = ["conv2_1"],opNames = [],frameworkName = "onnx")
 class GroupConvPreProcessingRule: PreImportHook {
     override fun preProcess(
         op: SameDiffOp,
