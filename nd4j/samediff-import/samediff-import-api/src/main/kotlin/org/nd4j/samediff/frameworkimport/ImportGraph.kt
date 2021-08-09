@@ -248,12 +248,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
         //get an updated set of number of nodes
         nNodes = irGraph.nodeList().size
-
+        //Setup initial inputs
         for (i in 0 until nNodes) {
             val nd = irGraph.nodeList()[i]
 
             val op = nd.opName()
             val numInputs = nd.numInputs()
+            val numOutputs = nd.numOutputs()
             val name = nd.nodeName()
             Preconditions.checkState(name.isNotEmpty(), "Node name was empty!")
             if (irGraph.isConstantOpName(op)|| numInputs == 0) {
@@ -261,6 +262,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 availableToAddSet.add(name)
             } else {
                 remainingNodes[name] = nd
+
 
                 for (inputIdx in 0 until numInputs) {
                     var inOpName = stripVarSuffix(stripControl(nd.inputAt(inputIdx)))
@@ -270,6 +272,27 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     //don't add the same name twice, we risk repeating additions above
                     if(!nodeInputTo[inOpName]!!.contains(name))
                         nodeInputTo[inOpName]!!.add(name)
+                }
+
+                if(irGraph.addGraphOutputsAsProcessingNodes()) {
+                    //add outputs or current nodes to available to add
+                    //queue to ensure processing happens
+                    //some frameworks have independent output names of actual nodes
+                    //in this case, nodes should be added
+                    for(outputIdx in 0 until numOutputs) {
+                        var outOpName = stripVarSuffix(stripControl(nd.outputAt(outputIdx)))
+                        if(irGraph.hasNode(outOpName) && !irGraph.isConstant(outOpName)) {
+                            availableToAdd.add(irGraph.irNodeByName(outOpName))
+                            availableToAddSet.add(outOpName)
+                        } else {
+                            //no node for output name, avoid duplicates being added to the processing
+                            //queue
+                            if(!availableToAddSet.contains(nd.nodeName())) {
+                                availableToAdd.add(nd)
+                                availableToAddSet.add(nd.nodeName())
+                            }
+                        }
+                    }
                 }
 
             }
@@ -287,7 +310,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
             availableToAddSet.remove(name)
             println("Adding operation to graph: $opName (name=$name)")
-            opsAdded.add(opName + "," + name)
+            opsAdded.add("$opName,$name")
             var skipCase = false
             val rawAttrMap = HashMap<String, ATTR_VALUE_TYPE>()
             nd.attributeMap().forEach { (name, def) ->
@@ -385,7 +408,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 val knownBaseName = stripVarSuffix(inName)
                                 if(!sd.hasVariable(knownBaseName)) {
                                     throw IllegalArgumentException("No variable name found for $inName")
-                                } else {
+                                }
+                                else {
                                     val knownBaseVar = sd.getVariable(stripVarSuffix(inName))
                                     sd.`var`(
                                         SDVariable(
@@ -400,6 +424,31 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 }
                             }
 
+                            //auto declare variables if they don't exist, avoid constants. Pull constants out
+                            //from the graph and initialize them if an input name appears before a mention of a constant.
+                            //This can happen in certain frameworks. Sometimes frameworks will have auto sorted
+                            //DAGS, this may not be true for all situations though.
+                            if(!sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName)) {
+                                val otherInputs = nd.inputs().filter { input -> sd.hasVariable(input) }
+                                var dataType = DataType.FLOAT
+                                //guess input from other data types
+                                if(!otherInputs.isEmpty()) {
+                                    dataType = sd.getVariable(otherInputs[0]).dataType()
+                                }
+                                sd.`var`(
+                                    SDVariable(
+                                        inName,
+                                        VariableType.ARRAY,
+                                        sd,
+                                        null,
+                                        dataType
+                                    )
+                                )
+                            } else if(!sd.hasVariable(inName) && irGraph.hasConstantInitializer(inName)) {
+                                val const = irGraph.getConstantArrayForName(inName)
+                                sd.constant(inName,const)
+                            }
+
                             val v = sd.variables[inName]
                             if (v == null && df is Merge) {
                                 //Edge case for import - we allow merge ops to be added before both inputs are available
@@ -408,11 +457,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 continue
                             }
 
-                            if (!isControlDep && (v!!.inputsForOp == null || !v.inputsForOp.contains(name))) {
+                            if (v != null && !isControlDep && (v!!.inputsForOp == null || !v.inputsForOp.contains(name))) {
                                 //May already be present - for example, add(x,x)
                                 if (v.inputsForOp == null) v.inputsForOp = java.util.ArrayList()
                                 v.inputsForOp.add(name)
-                            } else if (isControlDep) {
+                            } else if (v != null && isControlDep) {
                                 if (v!!.controlDepsForOp == null) v.controlDepsForOp = java.util.ArrayList()
                                 if (!v.controlDepsForOp.contains(name)) {
                                     v.controlDepsForOp.add(name)
@@ -481,7 +530,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         val attributes = mappingContext.nodeAttributesAsMap()
                         var proceedWithInit = true
                         mappingContext.relevantPrehookRules().forEach { rule ->
-                            proceedWithInit = proceedWithInit && rule.preProcess(op, sd, attributes,importInfo[name]!!.second).proceedWithInit
+                            proceedWithInit = proceedWithInit && rule.preProcess(
+                                op,
+                                sd,
+                                attributes,
+                                importInfo[name]!!.second,
+                                nd.outputs()
+                            ).proceedWithInit
                         }
 
                         if(proceedWithInit)
@@ -490,7 +545,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                         //add nodes/other post processing in order for this node to work
                         mappingContext.relevantPosthookRules().forEach { rule ->
-                            rule.postProcess(op, sd, attributes,importInfo[name]!!.second)
+                            rule.postProcess(op, sd, attributes, importInfo[name]!!.second,nd.outputs())
                         }
 
                         //only add to the graph if the pre processing didn't over ride the node
@@ -533,7 +588,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //Create output variables and add to graph
                             for (i in 0 until numOutputs) {
                                 val dt = outputDataTypes[i]
-                                val varName = name + if (i == 0) "" else ":$i"
+                                val varName = nd.outputAt(i)
                                 //TODO: handle variadic type in kotlin
                                 /**
                                  * TODO: handle data type import
@@ -550,7 +605,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                     .build()
                                 sd.variables[varName] = outVars[i]
                                 println("Added variable to graph: $varName (output of op $name)")
-                                variablesAdded.add(varName + "," + name)
+                                variablesAdded.add("$varName,$name")
                             }
 
                             sd.ops[name]!!.outputsOfOp = outNames
@@ -659,7 +714,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         }
 
 //                        log.info("Input: {}, {}", s, inName);
-                        if (!sd.hasVariable(inName) && !skipCase) {
+                        //note on initializers, sometimes ops mentions pre initialized constants
+                        //that haven't been seen by import yet. In this case, we need to allow the
+                        //op to be added, otherwise no further import can happen
+                        if (!sd.hasVariable(inName) && !skipCase && !irGraph.hasConstantInitializer(inName) && !irGraph.hasConstantInitializer(inName) && irGraph.isConstantOpName(name)) {
 //                            log.info("Not found: {} for op {}", inName, nextOpDef.getName());
                             allAlreadyInGraph = false
                             break

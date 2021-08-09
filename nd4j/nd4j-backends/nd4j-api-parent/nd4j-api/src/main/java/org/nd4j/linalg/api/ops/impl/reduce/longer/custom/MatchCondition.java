@@ -37,6 +37,93 @@ public class MatchCondition extends BaseDynamicCustomLongReduction {
     private double eps;
     private int mode;
 
+    public MatchCondition() {
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable[] args, boolean keepDims) {
+        super(sameDiff, args, keepDims);
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable[] args, boolean keepDims, int[] dimensions) {
+        super(sameDiff, args, keepDims, dimensions);
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex) {
+        super(sameDiff, args, keepDims, isComplex);
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(sameDiff, args, keepDims, isComplex, dimensions);
+    }
+
+    public MatchCondition(INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
+    }
+
+    public MatchCondition(INDArray[] inputs, INDArray[] outputs, boolean keepDims) {
+        super(inputs, outputs, keepDims);
+    }
+
+    public MatchCondition(INDArray[] inputs, INDArray[] outputs, boolean keepDims, int[] dimensions) {
+        super(inputs, outputs, keepDims, dimensions);
+    }
+
+    public MatchCondition(INDArray[] inputs, boolean keepDims, int[] dimensions) {
+        super(inputs, keepDims, dimensions);
+    }
+
+    public MatchCondition(boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable arg, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(sameDiff, arg, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(sameDiff, args, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, sameDiff, args, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, input, output, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, inputs, outputs, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, inputs, outputs, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(inputs, outputs, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, inputs, outputs, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, sameDiff, args, inPlace, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(sameDiff, args, inPlace, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(String opName, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public MatchCondition(INDArray[] input, INDArray[] output, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(input, output, keepDims, isComplex, dimensions);
+    }
+
     public MatchCondition(double compare, double eps, int mode) {
         this.compare = compare;
         this.eps = eps;

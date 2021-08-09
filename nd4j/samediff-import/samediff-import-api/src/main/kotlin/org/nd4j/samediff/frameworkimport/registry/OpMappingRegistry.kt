@@ -89,11 +89,15 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
     fun lookupInputFrameworkOpDef(name:String): OP_DEF_TYPE {
         if(opDefList.isEmpty()) {
             val opList =  OpDescriptorLoaderHolder.listForFramework<OP_DEF_TYPE>(inputFrameworkName)
-            opList.forEach {  name,opDefType ->
+            opList.forEach { (name, opDefType) ->
                 opDefList[name] = opDefType
             }
         }
-        return opDefList[name]!!
+
+        //workaround for placeholder not being defined, only used in limited circumstances
+        if(name == "Placeholder")
+            return opDefList["Constant"]!!
+        return  opDefList[name]!!
     }
 
     fun registerInputFrameworkOpDef(name: String,opDef: OP_DEF_TYPE) {

@@ -183,10 +183,10 @@ val batchNorm = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X","mean" to "mean","variance" to "var","gamma" to "scale"))),
         attributeMappingRules = listOf(valueMappings(mapOf("epsilon" to "epsilon")),
                 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0],
-                booleanConstant(inputName = "applyGamma",constantValue = true,argumentIndex = 1)[0],
-                booleanConstant(inputName = "applyBeta",constantValue = true,argumentIndex = 2)[0],
-                intConstant(inputName = "applyScale",constantValue = 1,argumentIndex = 0)[0],
-                intConstant(inputName = "applyOffset",constantValue = 1,argumentIndex = 1)[0]
+                booleanConstant(inputName = "applyGamma",constantValue = false,argumentIndex = 1)[0],
+                booleanConstant(inputName = "applyBeta",constantValue = false,argumentIndex = 2)[0],
+                intConstant(inputName = "applyScale",constantValue = 0,argumentIndex = 0)[0],
+                intConstant(inputName = "applyOffset",constantValue = 0,argumentIndex = 1)[0]
         ))
 //TODO: Binarizer
 //TODO: Bitshift
@@ -948,6 +948,14 @@ val const = OnnxMappingProcess(
         tensorMappingRules = listOf(),
         attributeMappingRules = listOf())
 
+//note: this is not a real onnx op and meant to be a dummy node to indicate placeholders
+//samediff/tensorflow parlance
+val placeHolder = OnnxMappingProcess(
+        inputFrameworkOpName = "Placeholder",
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf())
 
 val conv2d = OnnxMappingProcess(
         inputFramework = "onnx",
@@ -996,7 +1004,8 @@ val elu = defOnnxSingleTransform(opName = "elu",inputFrameworkOpName = "Elu",out
 
 
 
-val relu = defOnnxSingleTransform(inputFrameworkOpName = "Relu",opName = "relu",inputFrameworkInput = "X",outputName = "input",
+val relu = defOnnxSingleTransform(inputFrameworkOpName = "Relu",opName = "relu",
+        inputFrameworkInput = "X",outputName = "input",
         attributeMappingRules = listOf(
                 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0],
                 doubleConstant(inputName = "cutoff",constantValue = 0.0,argumentIndex = 0)[0]))
