@@ -29,17 +29,16 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-onnxruntime</artifactId>
+    <artifactId>nd4j-tensorflow-lite</artifactId>
 
-    <name>nd4j-onnxruntime</name>
-
+    <name>nd4j-tensorflow-lite</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <onnxruntime.version>1.8.1</onnxruntime.version>
-        <onnxruntime.javacpp.version>${onnxruntime.version}-${javacpp.version}</onnxruntime.javacpp.version>
+        <tensorflow-lite.version>2.5.0</tensorflow-lite.version>
+        <tensorflow-lite.javacpp.version>${tensorflow-lite.version}-${javacpp.version}</tensorflow-lite.javacpp.version>
     </properties>
 
     <dependencies>
@@ -55,14 +54,14 @@
 
         <dependency>
             <groupId>org.bytedeco</groupId>
-            <artifactId>onnxruntime-platform</artifactId>
-            <version>${onnxruntime.javacpp.version}</version>
+            <artifactId>tensorflow-lite-platform</artifactId>
+            <version>${tensorflow-lite.javacpp.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.bytedeco</groupId>
-            <artifactId>onnxruntime</artifactId>
-            <version>${onnxruntime.javacpp.version}</version>
+            <artifactId>tensorflow-lite</artifactId>
+            <version>${tensorflow-lite.javacpp.version}</version>
         </dependency>
 
         <dependency>
@@ -104,63 +103,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-        </profile>
-        <!-- For running unit tests with nd4j-cuda-${CUDA_VERSION}: "mvn clean test -P test-nd4j-cuda-${CUDA_VERSION}" -->
-        <profile>
-            <id>nd4j-tests-cuda</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <!-- Note we put these properties here because the cuda modules themselves  have the cuda version tied to the artifact name. This allows us to use variables for the testing.  -->
-                <cuda.version>11.0</cuda.version>
-                <cudnn.version>8.0</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
-                <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
-                <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
-
-            </properties>
-
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${dl4j-test-resources.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-11.0</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.bytedeco</groupId>
-                    <artifactId>cuda-platform-redist</artifactId>
-                    <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <environmentVariables>
-                                <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
-                            </environmentVariables>
-                            <parallelMavenExecution>false</parallelMavenExecution>
-                            <parallel>false</parallel>
-                            <forkCount>0</forkCount>
-                            <threadCount>1</threadCount>
-                            <perCoreThreadCount>false</perCoreThreadCount>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>
