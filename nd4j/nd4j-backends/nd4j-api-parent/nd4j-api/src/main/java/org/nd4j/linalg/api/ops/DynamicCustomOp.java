@@ -20,6 +20,10 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.ir.OpDescriptorHolder;
+import org.nd4j.ir.OpNamespace;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.guava.collect.Lists;
 import org.nd4j.shade.guava.primitives.Doubles;
@@ -925,5 +929,39 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         public int getNumOutputs(){
             return -1;
         }
+    }
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        return super.mappingsForFunction();
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        OpNamespace.OpDescriptor opDescriptor = OpDescriptorHolder.descriptorForOpName(opName());
+        Map<String,Object> ret = new LinkedHashMap<>();
+        for(OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
+            switch(argDescriptor.getArgType()) {
+                case BOOL:
+                    if(argDescriptor.getArgIndex() < numBArguments())
+                        ret.put(argDescriptor.getName(),getBArgument(argDescriptor.getArgIndex()));
+                    break;
+                case FLOAT:
+                case DOUBLE:
+                    if(argDescriptor.getArgIndex() < numTArguments())
+                        ret.put(argDescriptor.getName(),getTArgument(argDescriptor.getArgIndex()));
+                    break;
+                case INT32:
+                case INT64:
+                    if(argDescriptor.getArgIndex() < numIArguments())
+                        ret.put(argDescriptor.getName(),getIArgument(argDescriptor.getArgIndex()));
+                    break;
+                case DATA_TYPE:
+                    if(argDescriptor.getArgIndex() < numDArguments())
+                        ret.put(argDescriptor.getName(),dArguments.get(argDescriptor.getArgIndex()));
+                    break;
+            }
+        }
+        return ret;
     }
 }
