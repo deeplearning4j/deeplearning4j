@@ -139,6 +139,10 @@ public class ArgMin extends BaseDynamicCustomIndexReduction {
         this(new INDArray[]{in},keepDims,dimensions);
     }
 
+    public ArgMin(INDArray arr) {
+        this(new INDArray[]{arr});
+    }
+
     @Override
     public String opName() {
         return "argmin";

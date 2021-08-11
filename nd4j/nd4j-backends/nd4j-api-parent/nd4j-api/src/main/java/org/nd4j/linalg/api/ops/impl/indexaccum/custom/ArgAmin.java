@@ -51,6 +51,11 @@ public class ArgAmin extends BaseDynamicCustomIndexReduction {
         super(sameDiff, args, keepDims, dimensions);
     }
 
+    public ArgAmin(INDArray[] inputs) {
+        super(inputs, null);
+    }
+
+
     public ArgAmin(INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
@@ -62,6 +67,11 @@ public class ArgAmin extends BaseDynamicCustomIndexReduction {
     public ArgAmin(INDArray[] inputs, INDArray[] outputs, boolean keepDims, int... dimensions) {
         super(inputs, outputs, keepDims, dimensions);
     }
+
+    public ArgAmin(INDArray[] inputs, int[] dim) {
+        this(inputs,null,false,dim);
+    }
+
 
     @Override
     public String opName() {

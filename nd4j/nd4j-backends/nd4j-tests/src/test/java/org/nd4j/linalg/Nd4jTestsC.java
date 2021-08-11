@@ -3986,8 +3986,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
-        val iMax = new ArgMax(arr);
-        val iaMax = new ArgAmax(arr.dup());
+        val iMax = new ArgMax(new INDArray[]{arr});
+        val iaMax = new ArgAmax(new INDArray[]{arr.dup()});
         val imax = Nd4j.getExecutioner().exec(iMax)[0].getInt(0);
         val iamax = Nd4j.getExecutioner().exec(iaMax)[0].getInt(0);
 //        System.out.println("IMAX: " + imax);
@@ -4002,8 +4002,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void testIMinIAMin(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
         INDArray abs = Transforms.abs(arr);
-        val iaMin = new ArgAmin(abs);
-        val iMin = new ArgMin(arr.dup());
+        val iaMin = new ArgAmin(new INDArray[]{abs});
+        val iMin = new ArgMin(new INDArray[]{arr.dup()});
         double imin = Nd4j.getExecutioner().exec(iMin)[0].getDouble(0);
         double iamin = Nd4j.getExecutioner().exec(iaMin)[0].getDouble(0);
 //        System.out.println("IMin: " + imin);
@@ -4304,7 +4304,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
         }
 
-        INDArray out = Nd4j.exec(new ArgMax(arr, 1,2))[0];
+        INDArray out = Nd4j.exec(new ArgMax(arr, false,new int[]{1,2}))[0];
 
         assertEquals(DataType.LONG, out.dataType());
 
@@ -4347,8 +4347,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             }
         }
 
-        INDArray actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), 0,1))[0].castTo(DataType.DOUBLE);
-        INDArray actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'),  0,1))[0].castTo(DataType.DOUBLE);
+        INDArray actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), false,new int[]{0,1}))[0].castTo(DataType.DOUBLE);
+        INDArray actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'),  false,new int[]{0,1}))[0].castTo(DataType.DOUBLE);
         //
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -4381,8 +4381,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), 2, 3))[0];
-        actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'), 2, 3))[0];
+        actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), false,new int[]{2, 3}))[0];
+        actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'), false,new int[]{2, 3}))[0];
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);

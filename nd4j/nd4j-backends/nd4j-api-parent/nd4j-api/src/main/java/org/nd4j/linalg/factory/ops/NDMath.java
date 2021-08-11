@@ -476,15 +476,14 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray cosineDistance(INDArray x, INDArray y, boolean keepDims, int... dimensions) {
+  public INDArray cosineDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(x, y, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(x, y, false, false, dimensions))[0];
   }
 
   /**
@@ -514,15 +513,14 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray cosineSimilarity(INDArray x, INDArray y, boolean keepDims, int... dimensions) {
+  public INDArray cosineSimilarity(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(x, y, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(x, y, false, false, dimensions))[0];
   }
 
   /**
@@ -744,15 +742,14 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray euclideanDistance(INDArray x, INDArray y, boolean keepDims, int... dimensions) {
+  public INDArray euclideanDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(x, y, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(x, y, false, false, dimensions))[0];
   }
 
   /**
@@ -975,15 +972,14 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray hammingDistance(INDArray x, INDArray y, boolean keepDims, int... dimensions) {
+  public INDArray hammingDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(x, y, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(x, y, false, false, dimensions))[0];
   }
 
   /**
@@ -1147,15 +1143,14 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray jaccardDistance(INDArray x, INDArray y, boolean keepDims, int... dimensions) {
+  public INDArray jaccardDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(x, y, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(x, y, false, false, dimensions))[0];
   }
 
   /**
@@ -1317,15 +1312,14 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray manhattanDistance(INDArray x, INDArray y, boolean keepDims, int... dimensions) {
+  public INDArray manhattanDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(x, y, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(x, y, false, false, dimensions))[0];
   }
 
   /**

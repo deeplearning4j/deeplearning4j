@@ -140,7 +140,7 @@ val reduce3 = Mixin("reduce3"){
     javaPackage = "org.nd4j.linalg.api.ops.impl.reduce3.custom"
     Input(DataType.NUMERIC, "x") { description = "Input variable x" }
     Input(DataType.NUMERIC, "y") { description = "Input variable y" }
-    Arg(DataType.BOOL,"keepDims",{description = "Whether to preserve original dimensions or not"})
+    Arg(DataType.BOOL,"keepDims",{description = "Whether to preserve original dimensions or not"; defaultValue = false})
     Arg(DataType.BOOL,"isComplex",{description = "Depending on the implementation, such as distance calculations, this can determine whether all distance calculations for all points should be done."; defaultValue = false})
     val dims = Arg(DataType.INT, "dimensions"){ count = AtLeast(1); isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Output variable" }
@@ -152,6 +152,9 @@ val reduce3Variable = Mixin("reduce3Variable"){
     Input(DataType.NUMERIC, "y") { description = "Input variable y" }
     Input(DataType.NUMERIC, "dimensions"){  description = "Dimensions to calculate %OPNAME% over" }
     Output(DataType.NUMERIC, "output"){ description = "Output variable" }
+    Arg(DataType.BOOL,"keepDims",{description = "Whether to preserve original dimensions or not"; defaultValue = false})
+    Arg(DataType.BOOL,"isComplex",{description = "Depending on the implementation, such as distance calculations, this can determine whether all distance calculations for all points should be done."; defaultValue = false})
+
 }
 
 val indexAccum = Mixin("indexAccum"){

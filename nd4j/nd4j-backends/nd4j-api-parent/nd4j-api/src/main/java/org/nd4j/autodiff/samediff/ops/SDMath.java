@@ -981,16 +981,14 @@ public class SDMath extends SDOps {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable cosineDistance(SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable cosineDistance(SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("cosineDistance", "x", x);
     SDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -1001,16 +999,14 @@ public class SDMath extends SDOps {
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable cosineDistance(String name, SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable cosineDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("cosineDistance", "x", x);
     SDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1063,16 +1059,14 @@ public class SDMath extends SDOps {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable cosineSimilarity(SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable cosineSimilarity(SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("cosineSimilarity", "x", x);
     SDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, keepDims, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -1083,16 +1077,14 @@ public class SDMath extends SDOps {
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable cosineSimilarity(String name, SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable cosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("cosineSimilarity", "x", x);
     SDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, keepDims, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1557,16 +1549,14 @@ public class SDMath extends SDOps {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable euclideanDistance(SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable euclideanDistance(SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("euclideanDistance", "x", x);
     SDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -1577,16 +1567,14 @@ public class SDMath extends SDOps {
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable euclideanDistance(String name, SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable euclideanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("euclideanDistance", "x", x);
     SDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2051,16 +2039,14 @@ public class SDMath extends SDOps {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable hammingDistance(SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable hammingDistance(SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("hammingDistance", "x", x);
     SDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -2071,16 +2057,14 @@ public class SDMath extends SDOps {
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable hammingDistance(String name, SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable hammingDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("hammingDistance", "x", x);
     SDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2422,16 +2406,14 @@ public class SDMath extends SDOps {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable jaccardDistance(SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable jaccardDistance(SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("jaccardDistance", "x", x);
     SDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -2441,16 +2423,14 @@ public class SDMath extends SDOps {
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable jaccardDistance(String name, SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable jaccardDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("jaccardDistance", "x", x);
     SDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2787,16 +2767,14 @@ public class SDMath extends SDOps {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable manhattanDistance(SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable manhattanDistance(SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("manhattanDistance", "x", x);
     SDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -2807,16 +2785,14 @@ public class SDMath extends SDOps {
    * @param name name May be null. Name for the output variable
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param keepDims Whether to preserve original dimensions or not
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable manhattanDistance(String name, SDVariable x, SDVariable y, boolean keepDims,
-      int... dimensions) {
+  public SDVariable manhattanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
     SDValidation.validateNumerical("manhattanDistance", "x", x);
     SDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, keepDims, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

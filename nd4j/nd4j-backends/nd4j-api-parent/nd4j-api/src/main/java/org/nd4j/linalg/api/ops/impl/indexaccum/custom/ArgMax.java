@@ -140,6 +140,10 @@ public class ArgMax extends BaseDynamicCustomIndexReduction {
         this(new INDArray[]{in},keepDims,dimensions);
     }
 
+    public ArgMax(INDArray arr) {
+        this(new INDArray[]{arr},false,null);
+    }
+
     @Override
     public String opName() {
         return "argmax";

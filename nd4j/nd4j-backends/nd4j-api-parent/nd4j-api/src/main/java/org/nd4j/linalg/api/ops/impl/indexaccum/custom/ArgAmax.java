@@ -42,6 +42,10 @@ public class ArgAmax extends BaseDynamicCustomIndexReduction {
         super(inputs, outputs);
     }
 
+    public ArgAmax(INDArray[] inputs) {
+        super(inputs, null);
+    }
+
     public ArgAmax(INDArray[] inputs, INDArray[] outputs, boolean keepDims) {
         super(inputs, outputs, keepDims);
     }
@@ -51,6 +55,10 @@ public class ArgAmax extends BaseDynamicCustomIndexReduction {
     }
 
     public ArgAmax() {
+    }
+
+    public ArgAmax(INDArray[] inputs, int[] dim) {
+        this(inputs,null,false,dim);
     }
 
     @Override
