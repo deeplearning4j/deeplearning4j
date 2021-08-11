@@ -37,6 +37,13 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Frozen layer freezes parameters of the layer it wraps, but allows the backpropagation to continue.
+ *
+ * @author Ugljesa Jovanovic (ugljesa.jovanovic@ionspin.com) on 06/05/2018.
+ * @see FrozenLayer
+ */
+
 @Data
 public class FrozenLayerWithBackprop extends BaseWrapperLayer {
 
