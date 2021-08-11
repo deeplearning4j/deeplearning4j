@@ -49,6 +49,14 @@ public class ASum extends BaseReduceSameOp {
         super(x, null, z, dimensions);
     }
 
+    public ASum(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        super(sd,in,dimensions,keepDims);
+    }
+
+    public ASum(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 4;

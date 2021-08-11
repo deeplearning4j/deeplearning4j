@@ -39,8 +39,8 @@ import java.util.*;
 public class OneHot extends DynamicCustomOp {
     public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 
-    private int depth;
-    private int jaxis = -1;
+    private long depth;
+    private long jaxis = -1;
     private double on;
     private double off;
     private DataType outputType;

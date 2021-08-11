@@ -136,4 +136,8 @@ public abstract class BaseDynamicCustomLongReduction extends BaseDynamicCustomRe
         return Collections.singletonList(DataType.LONG);
     }
 
+    @Override
+    public int getNumOutputs() {
+        return 1;
+    }
 }

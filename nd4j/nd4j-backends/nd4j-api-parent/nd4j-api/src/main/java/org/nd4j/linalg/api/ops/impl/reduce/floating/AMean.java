@@ -49,6 +49,14 @@ public class  AMean extends BaseReduceFloatOp {
         super(x);
     }
 
+    public AMean(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
+    public AMean(INDArray in, INDArray dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions.toIntVector());
+    }
+
     @Override
     public int opNum() {
         return 1;

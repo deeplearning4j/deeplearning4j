@@ -32,13 +32,20 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLongOp {
-
     public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
     protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
     }
 
     protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
@@ -49,12 +56,28 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         super(x, dimensions);
     }
 
+    public BaseReduceLongOp(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     public BaseReduceLongOp(INDArray x, INDArray z, int... dimensions) {
         super(x, z, dimensions);
     }
 
+    public BaseReduceLongOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public BaseReduceLongOp(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
     protected BaseReduceLongOp() {
         super();
+    }
+
+    public BaseReduceLongOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
     }
 
     @Override

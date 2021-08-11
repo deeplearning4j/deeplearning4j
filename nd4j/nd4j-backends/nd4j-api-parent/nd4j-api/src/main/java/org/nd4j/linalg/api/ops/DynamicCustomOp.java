@@ -20,26 +20,28 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.common.io.ClassPathResource;
-import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.ir.OpDescriptorHolder;
-import org.nd4j.ir.OpNamespace;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.shade.guava.collect.Lists;
-import org.nd4j.shade.guava.primitives.Doubles;
-import org.nd4j.shade.guava.primitives.Longs;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.ir.OpDescriptorHolder;
+import org.nd4j.ir.OpNamespace;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.shade.guava.collect.Lists;
+import org.nd4j.shade.guava.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -163,7 +165,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @param outputs the outputs of the op, may be null
      */
     public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs) {
-        this(opName, inputs, outputs, Lists.<Double>newArrayList(), Lists.<Integer>newArrayList());
+        this(opName, inputs, outputs, Lists.newArrayList(), Lists.newArrayList());
     }
 
     /**

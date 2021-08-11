@@ -107,28 +107,33 @@ val reduceVariableDimensions = Mixin("reduceVariable") {
 
 val reduceFloating = Mixin("reduceFloating"){
     useMixin(reduce)
-    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
+    legacy = true
+    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
 }
 
 val reduceFloatingVariable = Mixin("reduceFloatingVariable"){
     useMixin(reduceVariableDimensions)
-    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
+    legacy = true
+    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
 }
 
 
 val reduceSame = Mixin("reduceSame"){
     useMixin(reduce)
-    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same.custom"
+    legacy = true
+    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same"
 }
 
 val reduceSameVariable = Mixin("reduceSameVariable"){
     useMixin(reduceVariableDimensions)
-    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same.custom"
+    legacy = true
+    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same"
 }
 
 val reduceLong = Mixin("reduceLong"){
     useMixin(reduce)
-    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.longer.custom"
+    legacy = true
+    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.longer"
 }
 
 val reduceLongVariable = Mixin("reduceLongVariable"){

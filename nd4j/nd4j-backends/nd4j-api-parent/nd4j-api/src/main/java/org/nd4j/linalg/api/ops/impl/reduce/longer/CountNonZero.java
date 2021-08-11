@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.longer;
 
-import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,8 +28,14 @@ import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import java.util.Collections;
 import java.util.List;
 
-@NoArgsConstructor
 public class CountNonZero extends BaseReduceLongOp {
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
 
     public CountNonZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
         super(sameDiff, input, dimensions);
@@ -39,6 +44,21 @@ public class CountNonZero extends BaseReduceLongOp {
 
     public CountNonZero(INDArray x, int... dimensions) {
         super(x, dimensions);
+    }
+
+    public CountNonZero(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
+    }
+
+    public CountNonZero() {
+    }
+
+    public CountNonZero(INDArray in, boolean keepDims, int[] dimensions) {
+       super(in,keepDims,dimensions);
+    }
+
+    public CountNonZero(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        super(sd,in,dimensions,keepDims);
     }
 
 

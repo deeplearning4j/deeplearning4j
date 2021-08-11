@@ -49,6 +49,14 @@ public class AMin extends BaseReduceSameOp {
         super(x, null, z, dimensions);
     }
 
+    public AMin(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
+    public AMin(INDArray in, INDArray dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions.toIntVector());
+    }
+
 
     @Override
     public int opNum() {

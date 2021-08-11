@@ -50,6 +50,14 @@ public class AMax extends BaseReduceSameOp {
         super(x, null, null, dimensions);
     }
 
+    public AMax(INDArray in, INDArray dimensions, boolean keepDims) {
+        super(in,keepDims,in.toIntVector());
+    }
+
+    public AMax(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
 
     @Override
     public int opNum() {

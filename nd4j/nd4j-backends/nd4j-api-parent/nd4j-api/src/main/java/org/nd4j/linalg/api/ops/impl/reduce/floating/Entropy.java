@@ -44,6 +44,10 @@ public class Entropy extends BaseReduceFloatOp {
         super(x, dimensions);
     }
 
+    public Entropy(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 8;

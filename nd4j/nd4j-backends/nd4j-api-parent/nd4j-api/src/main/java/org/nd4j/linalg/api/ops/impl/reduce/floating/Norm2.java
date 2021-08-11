@@ -49,6 +49,10 @@ public class Norm2 extends BaseReduceFloatOp {
         super(x, keepDims, dimensions);
     }
 
+    public Norm2(INDArray in, INDArray indArray, boolean keepDims) {
+        super(in,null,keepDims);
+    }
+
     @Override
     public INDArray noOp() {
         return Transforms.abs(x());

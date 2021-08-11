@@ -45,6 +45,10 @@ public class  LogEntropy extends BaseReduceFloatOp {
         super(x, dimensions);
     }
 
+    public LogEntropy(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 9;

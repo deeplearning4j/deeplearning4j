@@ -30,7 +30,6 @@ import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import java.util.Collections;
 import java.util.List;
 
-@NoArgsConstructor
 public class CountZero extends BaseReduceLongOp {
 
     public CountZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
@@ -40,6 +39,49 @@ public class CountZero extends BaseReduceLongOp {
 
     public CountZero(INDArray x, int... dimensions) {
         super(x, dimensions);
+    }
+
+    public CountZero(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
+    public CountZero(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
+    }
+
+    public CountZero(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public CountZero(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public CountZero() {
+    }
+
+    public CountZero(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public CountZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public CountZero(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public CountZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public CountZero(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
+
+    public CountZero(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        super(sd,in,dimensions,keepDims);
     }
 
 
