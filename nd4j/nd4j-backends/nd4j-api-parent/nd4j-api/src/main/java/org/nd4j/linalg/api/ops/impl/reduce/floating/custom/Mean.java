@@ -127,6 +127,18 @@ public class Mean extends BaseDynamicCustomReduction {
         super(sameDiff, new SDVariable[]{args}, keepDims, dimensions);
     }
 
+    public Mean(SameDiff sd, SDVariable in, SDVariable dimensions, boolean keepDims) {
+        this(sd,new SDVariable[]{in,dimensions},keepDims);
+    }
+
+    public Mean(INDArray in, INDArray dimensions, boolean keepDims) {
+        this(new INDArray[]{in,dimensions},(INDArray[]) null,keepDims);
+    }
+
+    public Mean(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 0;

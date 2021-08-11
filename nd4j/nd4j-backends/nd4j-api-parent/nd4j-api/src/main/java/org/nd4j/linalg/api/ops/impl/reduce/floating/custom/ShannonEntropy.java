@@ -120,6 +120,22 @@ public class ShannonEntropy extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public ShannonEntropy(SameDiff sd, SDVariable in, SDVariable dimensions, boolean keepDims) {
+        this(sd,new SDVariable[]{in,dimensions},keepDims);
+    }
+
+    public ShannonEntropy(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public ShannonEntropy(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
+    public ShannonEntropy(INDArray in, INDArray dimensions, boolean keepDims) {
+        this(new INDArray[]{in,dimensions},null,keepDims);
+    }
+
     @Override
     public int opNum() {
         return 10;

@@ -122,6 +122,14 @@ public class EuclideanDistance extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public EuclideanDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        this(sd,new SDVariable[]{x,y},keepDims,isComplex,dimensions);
+    }
+
+    public EuclideanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        this(new INDArray[]{x,y},null,keepDims,isComplex,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 1;

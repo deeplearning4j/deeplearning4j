@@ -122,6 +122,14 @@ public class ManhattanDistance extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public ManhattanDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        this(sd,new SDVariable[]{x,y},keepDims,isComplex,dimensions);
+    }
+
+    public ManhattanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        this(new INDArray[]{x,y},(INDArray[])null,keepDims,isComplex,dimensions);
+    }
+
     protected void addArgs() {
         super.addArgs();
         addBArgument(isComplex);

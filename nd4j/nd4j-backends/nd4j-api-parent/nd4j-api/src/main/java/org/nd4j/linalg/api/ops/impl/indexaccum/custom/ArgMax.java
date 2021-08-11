@@ -132,6 +132,14 @@ public class ArgMax extends BaseDynamicCustomIndexReduction {
     public ArgMax() {
     }
 
+    public ArgMax(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public ArgMax(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public String opName() {
         return "argmax";

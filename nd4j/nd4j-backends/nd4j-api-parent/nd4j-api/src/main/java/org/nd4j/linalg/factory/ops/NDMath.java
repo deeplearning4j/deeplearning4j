@@ -20,7 +20,6 @@ package org.nd4j.linalg.factory.ops;
 
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -197,7 +196,7 @@ public class NDMath {
   public INDArray asum(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.ASum(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.ASum(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -454,7 +453,7 @@ public class NDMath {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(new INDArray[]{x, y},null, keepDims, isComplex, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(x, y, keepDims, isComplex, dimensions))[0];
   }
 
   /**
@@ -472,7 +471,7 @@ public class NDMath {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(new INDArray[]{x, y},null, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(x, y, keepDims, false, dimensions))[0];
   }
 
   /**
@@ -492,7 +491,7 @@ public class NDMath {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(new INDArray[]{x, y},null, keepDims, isComplex, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(x, y, keepDims, isComplex, dimensions))[0];
   }
 
   /**
@@ -510,7 +509,7 @@ public class NDMath {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(new INDArray[]{x, y},null, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(x, y, keepDims, false, dimensions))[0];
   }
 
   /**
@@ -524,7 +523,7 @@ public class NDMath {
   public INDArray countNonZero(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.custom.CountNonZero(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.custom.CountNonZero(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -538,7 +537,7 @@ public class NDMath {
   public INDArray countZero(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.custom.CountZero(new INDArray[]{in},null, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.custom.CountZero(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -641,7 +640,7 @@ public class NDMath {
   public INDArray entropy(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Entropy(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Entropy(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -683,7 +682,7 @@ public class NDMath {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(new INDArray[]{x, y},null, keepDims, isComplex, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(x, y, keepDims, isComplex, dimensions))[0];
   }
 
   /**
@@ -701,7 +700,7 @@ public class NDMath {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(new INDArray[]{x, y},null, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(x, y, keepDims, false, dimensions))[0];
   }
 
   /**
@@ -914,7 +913,7 @@ public class NDMath {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(new INDArray[]{x, y},null, keepDims, isComplex, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(x, y, keepDims, isComplex, dimensions))[0];
   }
 
   /**
@@ -932,7 +931,7 @@ public class NDMath {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(new INDArray[]{x, y}, null,keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(x, y, keepDims, false, dimensions))[0];
   }
 
   /**
@@ -946,7 +945,7 @@ public class NDMath {
   public INDArray iamax(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(new INDArray[]{in}, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, false, dimensions))[0];
   }
 
   /**
@@ -961,7 +960,7 @@ public class NDMath {
   public INDArray iamax(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(new INDArray[]{in},null, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -975,7 +974,7 @@ public class NDMath {
   public INDArray iamin(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(new INDArray[]{in}, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, false, dimensions))[0];
   }
 
   /**
@@ -990,7 +989,7 @@ public class NDMath {
   public INDArray iamin(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1087,7 +1086,7 @@ public class NDMath {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(new INDArray[]{x, y},null, keepDims, isComplex, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(x, y, keepDims, isComplex, dimensions))[0];
   }
 
   /**
@@ -1104,7 +1103,7 @@ public class NDMath {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(new INDArray[]{x, y}, null,keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(x, y, keepDims, false, dimensions))[0];
   }
 
   /**
@@ -1209,7 +1208,7 @@ public class NDMath {
   public INDArray logEntropy(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.LogEntropy(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.LogEntropy(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1243,7 +1242,7 @@ public class NDMath {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(new INDArray[]{x, y},null, keepDims, isComplex, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(x, y, keepDims, isComplex, dimensions))[0];
   }
 
   /**
@@ -1261,7 +1260,7 @@ public class NDMath {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(new INDArray[]{x, y},null, keepDims, false, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(x, y, keepDims, false, dimensions))[0];
   }
 
   /**
@@ -1318,7 +1317,7 @@ public class NDMath {
   public INDArray mean(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(new INDArray[]{in},null, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1332,7 +1331,7 @@ public class NDMath {
   public INDArray mean(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("mean", "in", in);
     NDValidation.validateNumerical("mean", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(new INDArray[]{in,dimensions} , null,keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1344,7 +1343,7 @@ public class NDMath {
    */
   public INDArray mean(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("mean", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(in, null, keepDims))[0];
   }
 
   /**
@@ -1495,7 +1494,7 @@ public class NDMath {
   public INDArray norm1(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1509,7 +1508,7 @@ public class NDMath {
   public INDArray norm1(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("norm1", "in", in);
     NDValidation.validateNumerical("norm1", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(new INDArray[]{in, dimensions}, null,keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1521,7 +1520,7 @@ public class NDMath {
    */
   public INDArray norm1(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("norm1", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(in, null, keepDims))[0];
   }
 
   /**
@@ -1535,7 +1534,7 @@ public class NDMath {
   public INDArray norm2(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1549,7 +1548,7 @@ public class NDMath {
   public INDArray norm2(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("norm2", "in", in);
     NDValidation.validateNumerical("norm2", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(new INDArray[]{in,dimensions}, null,keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1561,7 +1560,7 @@ public class NDMath {
    */
   public INDArray norm2(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("norm2", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(in, null, keepDims))[0];
   }
 
   /**
@@ -1575,7 +1574,7 @@ public class NDMath {
   public INDArray normMax(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1589,7 +1588,7 @@ public class NDMath {
   public INDArray normMax(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("normMax", "in", in);
     NDValidation.validateNumerical("normMax", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1601,7 +1600,7 @@ public class NDMath {
    */
   public INDArray normMax(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("normMax", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(in, null, keepDims))[0];
   }
 
   /**
@@ -1672,7 +1671,7 @@ public class NDMath {
   public INDArray prod(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Prod(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Prod(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1686,7 +1685,7 @@ public class NDMath {
   public INDArray prod(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("prod", "in", in);
     NDValidation.validateNumerical("prod", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Prod(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Prod(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1698,7 +1697,7 @@ public class NDMath {
    */
   public INDArray prod(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("prod", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Prod(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Prod(in, null, keepDims))[0];
   }
 
   /**
@@ -1776,7 +1775,7 @@ public class NDMath {
   public INDArray reduceAMax(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMax(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMax(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1790,7 +1789,7 @@ public class NDMath {
   public INDArray reduceAMax(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("reduceAMax", "in", in);
     NDValidation.validateNumerical("reduceAMax", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMax(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMax(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1802,7 +1801,7 @@ public class NDMath {
    */
   public INDArray reduceAMax(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("reduceAMax", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMax(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMax(in, null, keepDims))[0];
   }
 
   /**
@@ -1816,7 +1815,7 @@ public class NDMath {
   public INDArray reduceAmean(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1830,7 +1829,7 @@ public class NDMath {
   public INDArray reduceAmean(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
     NDValidation.validateNumerical("reduceAmean", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1842,7 +1841,7 @@ public class NDMath {
    */
   public INDArray reduceAmean(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(in, null, keepDims))[0];
   }
 
   /**
@@ -1856,7 +1855,7 @@ public class NDMath {
   public INDArray reduceAmin(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMin(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMin(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1870,7 +1869,7 @@ public class NDMath {
   public INDArray reduceAmin(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("reduceAmin", "in", in);
     NDValidation.validateNumerical("reduceAmin", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMin(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMin(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1882,7 +1881,7 @@ public class NDMath {
    */
   public INDArray reduceAmin(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("reduceAmin", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMin(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.AMin(in, null, keepDims))[0];
   }
 
   /**
@@ -1896,7 +1895,7 @@ public class NDMath {
   public INDArray reduceMax(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Max(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Max(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1910,7 +1909,7 @@ public class NDMath {
   public INDArray reduceMax(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("reduceMax", "in", in);
     NDValidation.validateNumerical("reduceMax", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Max(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Max(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1922,7 +1921,7 @@ public class NDMath {
    */
   public INDArray reduceMax(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("reduceMax", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Max(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Max(in, null, keepDims))[0];
   }
 
   /**
@@ -1936,7 +1935,7 @@ public class NDMath {
   public INDArray reduceMin(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Min(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Min(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -1950,7 +1949,7 @@ public class NDMath {
   public INDArray reduceMin(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("reduceMin", "in", in);
     NDValidation.validateNumerical("reduceMin", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Min(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Min(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1962,7 +1961,7 @@ public class NDMath {
    */
   public INDArray reduceMin(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("reduceMin", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Min(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Min(in, null, keepDims))[0];
   }
 
   /**
@@ -2049,7 +2048,7 @@ public class NDMath {
   public INDArray shannonEntropy(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -2063,7 +2062,7 @@ public class NDMath {
   public INDArray shannonEntropy(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
     NDValidation.validateNumerical("shannonEntropy", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -2075,7 +2074,7 @@ public class NDMath {
    */
   public INDArray shannonEntropy(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(in, null, keepDims))[0];
   }
 
   /**
@@ -2164,7 +2163,7 @@ public class NDMath {
   public INDArray squaredNorm(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -2178,7 +2177,7 @@ public class NDMath {
   public INDArray squaredNorm(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
     NDValidation.validateNumerical("squaredNorm", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -2190,7 +2189,7 @@ public class NDMath {
    */
   public INDArray squaredNorm(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(in, null, keepDims))[0];
   }
 
   /**
@@ -2271,7 +2270,7 @@ public class NDMath {
   public INDArray sum(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Sum(new INDArray[]{in}, keepDims, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Sum(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -2285,7 +2284,7 @@ public class NDMath {
   public INDArray sum(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("sum", "in", in);
     NDValidation.validateNumerical("sum", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Sum(new INDArray[]{in, dimensions},null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Sum(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -2297,7 +2296,7 @@ public class NDMath {
    */
   public INDArray sum(INDArray in, boolean keepDims) {
     NDValidation.validateNumerical("sum", "in", in);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Sum(new INDArray[]{in}, null, keepDims))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.custom.Sum(in, null, keepDims))[0];
   }
 
   /**

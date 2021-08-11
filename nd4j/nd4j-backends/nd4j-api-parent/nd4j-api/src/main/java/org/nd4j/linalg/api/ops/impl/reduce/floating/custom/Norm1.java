@@ -125,6 +125,24 @@ public class Norm1 extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+
+
+    public Norm1(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public Norm1(SameDiff sd, SDVariable in, SDVariable dimensions, boolean keepDims) {
+        this(sd,new SDVariable[]{in,dimensions},keepDims);
+    }
+
+    public Norm1(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
+    public Norm1(INDArray in, INDArray dimensions, boolean keepDims) {
+        this(new INDArray[]{in,dimensions},null,keepDims);
+    }
+
     @Override
     public int opNum() {
         return 2;

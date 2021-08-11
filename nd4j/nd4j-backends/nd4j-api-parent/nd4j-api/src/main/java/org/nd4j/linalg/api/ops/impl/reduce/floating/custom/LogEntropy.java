@@ -119,6 +119,14 @@ public class  LogEntropy extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public LogEntropy(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public LogEntropy(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 9;

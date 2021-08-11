@@ -118,6 +118,22 @@ public class Min extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public Min(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public Min(SameDiff sd, SDVariable in, SDVariable dimensions, boolean keepDims) {
+        this(sd,new SDVariable[]{in,dimensions},keepDims);
+    }
+
+    public Min(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
+    public Min(INDArray in, INDArray dimensions, boolean keepDims) {
+        this(new INDArray[]{in,dimensions},null,keepDims);
+    }
+
     @Override
     public int opNum() {
         return 2;

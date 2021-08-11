@@ -120,6 +120,22 @@ public class  AMean extends BaseDynamicCustomReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public AMean(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public AMean(SameDiff sd, SDVariable in, SDVariable dimensions, boolean keepDims) {
+        this(sd,new SDVariable[]{in,dimensions},keepDims);
+    }
+
+    public AMean(INDArray in, INDArray dimensions, boolean keepDims) {
+        this(new INDArray[]{in,dimensions},null,keepDims);
+    }
+
+    public AMean(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 1;

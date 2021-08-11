@@ -119,6 +119,14 @@ public class CountZero extends BaseDynamicCustomLongReduction {
     public CountZero() {
     }
 
+    public CountZero(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public CountZero(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 1;

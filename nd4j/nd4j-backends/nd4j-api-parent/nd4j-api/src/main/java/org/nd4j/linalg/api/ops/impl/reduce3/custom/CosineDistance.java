@@ -117,6 +117,14 @@ public class CosineDistance extends BaseDynamicCustomReduction {
         super(input,output,keepDims,isComplex,dimensions);
     }
 
+    public CosineDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        this(sd,new SDVariable[]{x,y},keepDims,isComplex,dimensions);
+    }
+
+    public CosineDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        this(new INDArray[]{x,y},(INDArray[]) null,keepDims,isComplex,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 5;

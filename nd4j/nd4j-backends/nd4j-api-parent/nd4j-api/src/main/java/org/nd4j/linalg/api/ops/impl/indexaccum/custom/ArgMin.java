@@ -131,6 +131,14 @@ public class ArgMin extends BaseDynamicCustomIndexReduction {
     public ArgMin() {
     }
 
+    public ArgMin(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
+    }
+
+    public ArgMin(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public String opName() {
         return "argmin";

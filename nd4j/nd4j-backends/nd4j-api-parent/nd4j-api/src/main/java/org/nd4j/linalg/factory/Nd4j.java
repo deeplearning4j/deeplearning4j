@@ -6557,6 +6557,8 @@ public class Nd4j {
         return getExecutioner().exec(op, context);
     }
 
+
+
     /**
      * Execute the operation and return the result
      *

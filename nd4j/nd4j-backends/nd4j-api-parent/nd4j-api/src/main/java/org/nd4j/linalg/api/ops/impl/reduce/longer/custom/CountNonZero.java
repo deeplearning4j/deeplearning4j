@@ -122,6 +122,10 @@ public class CountNonZero extends BaseDynamicCustomLongReduction {
         super(input, output, keepDims, isComplex, dimensions);
     }
 
+    public CountNonZero(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 0;

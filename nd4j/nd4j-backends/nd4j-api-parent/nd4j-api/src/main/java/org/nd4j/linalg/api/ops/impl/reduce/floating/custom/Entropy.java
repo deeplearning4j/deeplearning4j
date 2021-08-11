@@ -127,6 +127,10 @@ public class Entropy extends BaseDynamicCustomReduction {
         super(sameDiff, new SDVariable[]{args}, keepDims, dimensions);
     }
 
+    public Entropy(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
+    }
+
     @Override
     public int opNum() {
         return 8;
