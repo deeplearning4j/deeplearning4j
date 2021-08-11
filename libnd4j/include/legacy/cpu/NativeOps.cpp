@@ -55,7 +55,6 @@
 #include <ops/declarable/CustomOperations.h>
 #include <errno.h>
 
-
 char *name;
 bool nameSet = false;
 
@@ -1059,7 +1058,11 @@ void initializeFunctions(Nd4jPointer *functions) {
        * @param flags optional parameter
        */
 Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
+#if defined(USE_ALIGNED_ALLOC)
+    return static_cast<Nd4jPointer*>(aligned_alloc(DESIRED_ALIGNMENT, (memorySize + DESIRED_ALIGNMENT-1) & (-DESIRED_ALIGNMENT) ));
+#else
     return reinterpret_cast<Nd4jPointer>(new int8_t[memorySize]);
+#endif
 }
 
 /**
@@ -1083,7 +1086,11 @@ Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
  * @param pointer pointer that'll be freed
  */
 int freeHost(Nd4jPointer pointer) {
+#if defined(USE_ALIGNED_ALLOC)
+    free(pointer);
+#else
     delete[] reinterpret_cast<int8_t *>(pointer);
+#endif
     return 1L;
 }
 

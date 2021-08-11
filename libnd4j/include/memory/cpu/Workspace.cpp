@@ -140,9 +140,11 @@ namespace sd {
             if (_offset.load() + numBytes > _currentSize) {
                 nd4j_debug("Allocating %lld bytes in spills\n", numBytes);
                 this->_mutexAllocation.unlock();
-
+#if defined(USE_ALIGNED_ALLOC)
+                void *p = aligned_alloc(DESIRED_ALIGNMENT, (numBytes + DESIRED_ALIGNMENT-1) & (-DESIRED_ALIGNMENT));
+#else
                 void *p = malloc(numBytes);
-
+#endif
                 CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
 
                 _mutexSpills.lock();
