@@ -1,0 +1,2 @@
+#!/bin/bash
+CUDA_VER=10.2 CURRENT_TARGET=jetson-arm64 BUILD_USING_MAVEN=1 LOCAL_CUDA_INSTALLED_VER=10.2 bash  -c './pi_build.sh'
