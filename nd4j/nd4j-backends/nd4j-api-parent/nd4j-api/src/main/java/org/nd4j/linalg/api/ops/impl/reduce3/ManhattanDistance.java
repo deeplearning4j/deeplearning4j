@@ -40,6 +40,14 @@ public class ManhattanDistance extends BaseReduce3Op {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public ManhattanDistance(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public ManhattanDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public ManhattanDistance() {}
 
 
@@ -63,6 +71,18 @@ public class ManhattanDistance extends BaseReduce3Op {
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
         super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
+    }
+
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public ManhattanDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(sd,x,y,keepDims,isComplex,dimensions);
+    }
+
+    public ManhattanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(x,y,null,keepDims,isComplex,dimensions);
     }
 
     @Override

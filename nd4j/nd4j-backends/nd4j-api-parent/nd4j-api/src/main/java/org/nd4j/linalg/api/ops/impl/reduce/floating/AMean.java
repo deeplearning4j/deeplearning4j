@@ -35,8 +35,36 @@ public class  AMean extends BaseReduceFloatOp {
         super(sameDiff, i_v, dimensions);
     }
 
+    public AMean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public AMean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public AMean(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public AMean(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public AMean(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+        super(input, output, keepDims, dimensions);
+    }
+
+    public AMean(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
     public AMean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public AMean(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
     }
 
     public AMean() {}
@@ -55,6 +83,18 @@ public class  AMean extends BaseReduceFloatOp {
 
     public AMean(INDArray in, INDArray dimensions, boolean keepDims) {
         super(in,keepDims,dimensions.toIntVector());
+    }
+
+    public AMean(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public AMean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public AMean(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
     @Override

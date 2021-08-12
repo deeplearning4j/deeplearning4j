@@ -34,6 +34,42 @@ public class Norm2 extends BaseReduceFloatOp {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
+    public Norm2(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public Norm2(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public Norm2(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public Norm2(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public Norm2(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public Norm2(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public Norm2(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public Norm2(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+        super(input, output, keepDims, dimensions);
+    }
+
+    public Norm2(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
     public Norm2() {
     }
 
@@ -51,6 +87,14 @@ public class Norm2 extends BaseReduceFloatOp {
 
     public Norm2(INDArray in, INDArray indArray, boolean keepDims) {
         super(in,null,keepDims);
+    }
+
+    public Norm2(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public Norm2(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
     @Override

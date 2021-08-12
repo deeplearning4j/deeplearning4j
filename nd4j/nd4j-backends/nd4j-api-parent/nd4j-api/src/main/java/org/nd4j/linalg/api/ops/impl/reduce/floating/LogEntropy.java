@@ -35,6 +35,30 @@ public class  LogEntropy extends BaseReduceFloatOp {
         super(sameDiff, i_v, dimensions);
     }
 
+    public LogEntropy(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public LogEntropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public LogEntropy(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public LogEntropy(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public LogEntropy(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+        super(input, output, keepDims, dimensions);
+    }
+
+    public LogEntropy(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
     public LogEntropy() {}
 
     public LogEntropy(INDArray x, INDArray z, int... dimensions) {
@@ -46,6 +70,26 @@ public class  LogEntropy extends BaseReduceFloatOp {
     }
 
     public LogEntropy(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
+    public LogEntropy(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public LogEntropy(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public LogEntropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public LogEntropy(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public LogEntropy(INDArray in, int[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

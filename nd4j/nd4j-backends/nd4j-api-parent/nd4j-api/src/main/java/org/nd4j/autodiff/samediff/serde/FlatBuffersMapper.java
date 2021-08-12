@@ -442,10 +442,15 @@ public class FlatBuffersMapper {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
+                if(extraBools.length > 0)
+                    ba.setKeepDims(extraBools[0]);
+
             } else if (opType == Op.Type.INDEXREDUCE) {
                 BaseIndexAccumulation bia = (BaseIndexAccumulation) op;
                 bia.setDimensions(dimensions);
                 bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
+                if(extraBools.length > 0)
+                    bia.setKeepDims(extraBools[0]);
             }
             /*
             Op types that don't need any extra/special mapping:
@@ -709,7 +714,7 @@ public class FlatBuffersMapper {
     }
 
     public static int asFlatNode(@NonNull SameDiff sameDiff, @NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
-                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
+                                 Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
         val opName = node.opName();
         val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);

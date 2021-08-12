@@ -33,6 +33,14 @@ public class Dot extends BaseReduce3Op {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public Dot() {
     }
 
@@ -58,6 +66,10 @@ public class Dot extends BaseReduce3Op {
         this(x, y, null, dimensions);
     }
 
+    public Dot(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        super(x, y, allDistances, dimensions);
+    }
+
     /**
      * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
      */
@@ -65,11 +77,19 @@ public class Dot extends BaseReduce3Op {
         this(x, y, z, null);
     }
 
+    public Dot(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
     /**
      * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
      */
     public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, y, z, keepDims, false, dimensions);
+    }
+
+    public Dot(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
     }
 
     @Override

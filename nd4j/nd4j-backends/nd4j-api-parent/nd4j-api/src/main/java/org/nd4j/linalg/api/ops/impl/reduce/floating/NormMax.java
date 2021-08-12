@@ -44,6 +44,38 @@ public class NormMax extends BaseReduceFloatOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public NormMax(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public NormMax(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public NormMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public NormMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public NormMax(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public NormMax(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public NormMax(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+        super(input, output, keepDims, dimensions);
+    }
+
+    public NormMax(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
     public NormMax() {
     }
 
@@ -61,6 +93,14 @@ public class NormMax extends BaseReduceFloatOp {
 
     public NormMax(INDArray in, INDArray indArray, boolean keepDims) {
         super(in,indArray,keepDims);
+    }
+
+    public NormMax(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public NormMax(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
     @Override

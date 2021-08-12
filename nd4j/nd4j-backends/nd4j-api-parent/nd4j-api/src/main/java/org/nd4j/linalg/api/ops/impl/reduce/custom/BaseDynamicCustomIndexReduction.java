@@ -65,7 +65,7 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
 
 
     public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims,int...dimensions) {
-        super(inputs, outputs, keepDims);
+        super(inputs, outputs, keepDims,dimensions);
         addDArgument(DataType.INT64);
     }
 

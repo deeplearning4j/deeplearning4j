@@ -368,14 +368,14 @@ public class SDMath extends SDOps {
    * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable asum(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable asum(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -383,14 +383,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable asum(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable asum(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -404,7 +404,7 @@ public class SDMath extends SDOps {
   public SDVariable asum(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -418,7 +418,7 @@ public class SDMath extends SDOps {
   public SDVariable asum(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -949,7 +949,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineDistance", "x", x);
     SDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
   }
 
   /**
@@ -970,7 +970,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineDistance", "x", x);
     SDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -988,7 +988,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineDistance", "x", x);
     SDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, false, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -1006,7 +1006,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineDistance", "x", x);
     SDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineDistance(sd,x, y, false, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1027,7 +1027,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineSimilarity", "x", x);
     SDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
   }
 
   /**
@@ -1048,7 +1048,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineSimilarity", "x", x);
     SDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1066,7 +1066,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineSimilarity", "x", x);
     SDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, false, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -1084,7 +1084,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("cosineSimilarity", "x", x);
     SDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.CosineSimilarity(sd,x, y, false, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1092,14 +1092,14 @@ public class SDMath extends SDOps {
    * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable countNonZero(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable countNonZero(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -1107,14 +1107,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable countNonZero(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable countNonZero(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1128,7 +1128,7 @@ public class SDMath extends SDOps {
   public SDVariable countNonZero(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -1142,7 +1142,7 @@ public class SDMath extends SDOps {
   public SDVariable countNonZero(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1150,14 +1150,14 @@ public class SDMath extends SDOps {
    * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable countZero(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable countZero(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -1165,14 +1165,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable countZero(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable countZero(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1186,7 +1186,7 @@ public class SDMath extends SDOps {
   public SDVariable countZero(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -1200,7 +1200,7 @@ public class SDMath extends SDOps {
   public SDVariable countZero(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1398,14 +1398,14 @@ public class SDMath extends SDOps {
    * Entropy reduction: -sum(x * log(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable entropy(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable entropy(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -1413,14 +1413,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable entropy(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable entropy(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1434,7 +1434,7 @@ public class SDMath extends SDOps {
   public SDVariable entropy(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -1448,7 +1448,7 @@ public class SDMath extends SDOps {
   public SDVariable entropy(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1517,7 +1517,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("euclideanDistance", "x", x);
     SDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
   }
 
   /**
@@ -1538,7 +1538,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("euclideanDistance", "x", x);
     SDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1556,7 +1556,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("euclideanDistance", "x", x);
     SDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, false, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -1574,7 +1574,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("euclideanDistance", "x", x);
     SDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.EuclideanDistance(sd,x, y, false, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2007,7 +2007,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("hammingDistance", "x", x);
     SDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
   }
 
   /**
@@ -2028,7 +2028,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("hammingDistance", "x", x);
     SDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2046,7 +2046,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("hammingDistance", "x", x);
     SDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, false, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -2064,7 +2064,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("hammingDistance", "x", x);
     SDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.HammingDistance(sd,x, y, false, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2376,7 +2376,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("jaccardDistance", "x", x);
     SDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
   }
 
   /**
@@ -2396,7 +2396,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("jaccardDistance", "x", x);
     SDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2413,7 +2413,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("jaccardDistance", "x", x);
     SDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, false, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -2430,7 +2430,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("jaccardDistance", "x", x);
     SDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.JaccardDistance(sd,x, y, false, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2634,14 +2634,14 @@ public class SDMath extends SDOps {
    * Log entropy reduction: log(-sum(x * log(x)))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable logEntropy(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable logEntropy(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -2649,14 +2649,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable logEntropy(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable logEntropy(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2670,7 +2670,7 @@ public class SDMath extends SDOps {
   public SDVariable logEntropy(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -2684,7 +2684,7 @@ public class SDMath extends SDOps {
   public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2735,7 +2735,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("manhattanDistance", "x", x);
     SDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
   }
 
   /**
@@ -2756,7 +2756,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("manhattanDistance", "x", x);
     SDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance(sd,x, y, keepDims, isComplex, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2774,7 +2774,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("manhattanDistance", "x", x);
     SDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, false, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance(sd,x, y, false, false, dimensions).outputVariable();
   }
 
   /**
@@ -2792,7 +2792,7 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("manhattanDistance", "x", x);
     SDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.custom.ManhattanDistance(sd,x, y, false, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance(sd,x, y, false, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2892,14 +2892,14 @@ public class SDMath extends SDOps {
    * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable mean(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable mean(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -2907,14 +2907,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable mean(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable mean(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2928,7 +2928,7 @@ public class SDMath extends SDOps {
   public SDVariable mean(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -2942,7 +2942,7 @@ public class SDMath extends SDOps {
   public SDVariable mean(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2980,11 +2980,13 @@ public class SDMath extends SDOps {
    * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable mean(SDVariable in) {
+  public SDVariable mean(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("mean", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("mean", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -2992,11 +2994,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable mean(String name, SDVariable in) {
+  public SDVariable mean(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("mean", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("mean", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3298,14 +3302,14 @@ public class SDMath extends SDOps {
    * Mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm1(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable norm1(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -3313,14 +3317,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm1(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable norm1(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3334,7 +3338,7 @@ public class SDMath extends SDOps {
   public SDVariable norm1(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3348,7 +3352,7 @@ public class SDMath extends SDOps {
   public SDVariable norm1(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3386,11 +3390,13 @@ public class SDMath extends SDOps {
    * Sum of absolute differences.<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm1(SDVariable in) {
+  public SDVariable norm1(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("norm1", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("norm1", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3398,11 +3404,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm1(String name, SDVariable in) {
+  public SDVariable norm1(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("norm1", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("norm1", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3410,14 +3418,14 @@ public class SDMath extends SDOps {
    * Euclidean norm: euclidean distance of a vector from the origin<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm2(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable norm2(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -3425,14 +3433,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm2(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable norm2(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3446,7 +3454,7 @@ public class SDMath extends SDOps {
   public SDVariable norm2(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3460,7 +3468,7 @@ public class SDMath extends SDOps {
   public SDVariable norm2(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3498,11 +3506,13 @@ public class SDMath extends SDOps {
    * Euclidean norm: euclidean distance of a vector from the origin<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm2(SDVariable in) {
+  public SDVariable norm2(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("norm2", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("norm2", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3510,11 +3520,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable norm2(String name, SDVariable in) {
+  public SDVariable norm2(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("norm2", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("norm2", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3522,14 +3534,14 @@ public class SDMath extends SDOps {
    * Differences between max absolute value<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable normMax(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable normMax(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -3537,14 +3549,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable normMax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable normMax(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3558,7 +3570,7 @@ public class SDMath extends SDOps {
   public SDVariable normMax(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3572,7 +3584,7 @@ public class SDMath extends SDOps {
   public SDVariable normMax(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3610,11 +3622,13 @@ public class SDMath extends SDOps {
    * Differences between max absolute value<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable normMax(SDVariable in) {
+  public SDVariable normMax(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("normMax", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("normMax", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3622,11 +3636,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable normMax(String name, SDVariable in) {
+  public SDVariable normMax(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("normMax", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("normMax", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3756,14 +3772,14 @@ public class SDMath extends SDOps {
    * The max of an array along each dimension<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable prod(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable prod(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -3771,14 +3787,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable prod(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable prod(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3792,7 +3808,7 @@ public class SDMath extends SDOps {
   public SDVariable prod(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3806,7 +3822,7 @@ public class SDMath extends SDOps {
   public SDVariable prod(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3844,11 +3860,13 @@ public class SDMath extends SDOps {
    * The product of an array long each dimension<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable prod(SDVariable in) {
+  public SDVariable prod(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("prod", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("prod", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -3856,11 +3874,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable prod(String name, SDVariable in) {
+  public SDVariable prod(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("prod", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("prod", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4006,14 +4026,14 @@ public class SDMath extends SDOps {
    * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAMax(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceAMax(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -4021,14 +4041,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAMax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceAMax(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4042,7 +4062,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceAMax(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4056,7 +4076,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceAMax(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4095,11 +4115,13 @@ public class SDMath extends SDOps {
    * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAMax(SDVariable in) {
+  public SDVariable reduceAMax(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceAMax", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceAMax", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4107,11 +4129,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAMax(String name, SDVariable in) {
+  public SDVariable reduceAMax(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceAMax", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceAMax", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4119,14 +4143,14 @@ public class SDMath extends SDOps {
    * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmean(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceAmean(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -4134,14 +4158,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmean(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceAmean(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4155,7 +4179,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceAmean(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4169,7 +4193,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceAmean(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4208,11 +4232,13 @@ public class SDMath extends SDOps {
    * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmean(SDVariable in) {
+  public SDVariable reduceAmean(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceAmean", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceAmean", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4220,11 +4246,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmean(String name, SDVariable in) {
+  public SDVariable reduceAmean(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceAmean", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceAmean", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4232,14 +4260,14 @@ public class SDMath extends SDOps {
    * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmin(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceAmin(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -4247,14 +4275,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceAmin(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4268,7 +4296,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceAmin(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4282,7 +4310,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceAmin(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4321,11 +4349,13 @@ public class SDMath extends SDOps {
    * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmin(SDVariable in) {
+  public SDVariable reduceAmin(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceAmin", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceAmin", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4333,11 +4363,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceAmin(String name, SDVariable in) {
+  public SDVariable reduceAmin(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceAmin", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceAmin", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4345,14 +4377,14 @@ public class SDMath extends SDOps {
    * The max of an array along each dimension<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMax(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceMax(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -4360,14 +4392,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceMax(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4381,7 +4413,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceMax(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4395,7 +4427,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceMax(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4433,11 +4465,13 @@ public class SDMath extends SDOps {
    * The max of an array long each dimension<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMax(SDVariable in) {
+  public SDVariable reduceMax(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceMax", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceMax", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4445,11 +4479,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMax(String name, SDVariable in) {
+  public SDVariable reduceMax(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceMax", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceMax", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Max(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4457,14 +4493,14 @@ public class SDMath extends SDOps {
    * The minimum of an array along each dimension<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMin(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceMin(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -4472,14 +4508,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable reduceMin(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4493,7 +4529,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceMin(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4507,7 +4543,7 @@ public class SDMath extends SDOps {
   public SDVariable reduceMin(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4545,11 +4581,13 @@ public class SDMath extends SDOps {
    * The minimum of an array long each dimension<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMin(SDVariable in) {
+  public SDVariable reduceMin(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceMin", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceMin", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4557,11 +4595,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable reduceMin(String name, SDVariable in) {
+  public SDVariable reduceMin(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("reduceMin", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("reduceMin", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Min(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4725,14 +4765,14 @@ public class SDMath extends SDOps {
    * Shannon Entropy reduction: -sum(x * log2(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable shannonEntropy(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable shannonEntropy(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -4740,15 +4780,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable shannonEntropy(String name, SDVariable in, boolean keepDims,
-      int... dimensions) {
+  public SDVariable shannonEntropy(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4762,7 +4801,7 @@ public class SDMath extends SDOps {
   public SDVariable shannonEntropy(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4776,7 +4815,7 @@ public class SDMath extends SDOps {
   public SDVariable shannonEntropy(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4815,11 +4854,13 @@ public class SDMath extends SDOps {
    * Shannon Entropy reduction: -sum(x * log2(x))<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable shannonEntropy(SDVariable in) {
+  public SDVariable shannonEntropy(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("shannonEntropy", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("shannonEntropy", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -4827,11 +4868,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable shannonEntropy(String name, SDVariable in) {
+  public SDVariable shannonEntropy(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("shannonEntropy", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("shannonEntropy", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5001,14 +5044,14 @@ public class SDMath extends SDOps {
    * Sum of squared differences.<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable squaredNorm(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable squaredNorm(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -5016,14 +5059,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable squaredNorm(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable squaredNorm(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5037,7 +5080,7 @@ public class SDMath extends SDOps {
   public SDVariable squaredNorm(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -5051,7 +5094,7 @@ public class SDMath extends SDOps {
   public SDVariable squaredNorm(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5090,11 +5133,13 @@ public class SDMath extends SDOps {
    * Sum of squared differences.<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable squaredNorm(SDVariable in) {
+  public SDVariable squaredNorm(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("squaredNorm", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("squaredNorm", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -5102,11 +5147,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable squaredNorm(String name, SDVariable in) {
+  public SDVariable squaredNorm(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("squaredNorm", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("squaredNorm", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5256,14 +5303,14 @@ public class SDMath extends SDOps {
    * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable sum(SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable sum(SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, keepDims, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, dimensions, keepDims).outputVariable();
   }
 
   /**
@@ -5271,14 +5318,14 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
-   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep the original  dimensions or produce a shrunk array with less dimensions
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable sum(String name, SDVariable in, boolean keepDims, int... dimensions) {
+  public SDVariable sum(String name, SDVariable in, int[] dimensions, boolean keepDims) {
     SDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, keepDims, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, dimensions, keepDims).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5292,7 +5339,7 @@ public class SDMath extends SDOps {
   public SDVariable sum(SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, false, dimensions).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -5306,7 +5353,7 @@ public class SDMath extends SDOps {
   public SDVariable sum(String name, SDVariable in, int... dimensions) {
     SDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, false, dimensions).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -5344,11 +5391,13 @@ public class SDMath extends SDOps {
    * Sum of an array, optionally along specified dimensions: out = sum(x))<br>
    *
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable sum(SDVariable in) {
+  public SDVariable sum(SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("sum", "in", in);
-    return new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("sum", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, dimensions, false).outputVariable();
   }
 
   /**
@@ -5356,11 +5405,13 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce along (NUMERIC type)
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public SDVariable sum(String name, SDVariable in) {
+  public SDVariable sum(String name, SDVariable in, SDVariable dimensions) {
     SDValidation.validateNumerical("sum", "in", in);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, null, false).outputVariable();
+    SDValidation.validateNumerical("sum", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,in, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseReduce3Op extends BaseReduceFloatOp {
+
     public BaseReduce3Op(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -40,6 +41,20 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
     public BaseReduce3Op(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
+
+    public BaseReduce3Op(SameDiff sameDiff, SDVariable i_v,SDVariable dimensions) {
+        super(sameDiff, i_v, (int[]) null);
+        if(dimensions != null)
+            sameDiff.addArgsFor(new String[]{dimensions.name()},this);
+
+    }
+
+    public BaseReduce3Op(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, (int[]) null);
+        if(dimensions != null)
+            sameDiff.addArgsFor(new String[]{dimensions.name()},this);
+    }
+
 
     public BaseReduce3Op() {}
 
@@ -69,6 +84,12 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
 
     public BaseReduce3Op(INDArray x, INDArray y, INDArray z, int... dimensions) {
         super(x, y, z, false, dimensions);
+    }
+
+    public BaseReduce3Op(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(sd,x,y,dimensions);
+        this.keepDims = keepDims;
+        this.isComplex = isComplex;
     }
 
     @Override

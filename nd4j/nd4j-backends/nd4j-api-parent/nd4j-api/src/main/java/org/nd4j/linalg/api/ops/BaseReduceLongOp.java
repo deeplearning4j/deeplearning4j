@@ -36,6 +36,18 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
     protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
@@ -70,6 +82,10 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
 
     public BaseReduceLongOp(SameDiff sameDiff) {
         super(sameDiff);
+    }
+
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
     }
 
     protected BaseReduceLongOp() {

@@ -35,11 +35,55 @@ public class AMin extends BaseReduceSameOp {
         super(sameDiff, i_v, dimensions);
     }
 
+    public AMin(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, z, keepDims, dimensions);
+    }
+
+    public AMin(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public AMin(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public AMin(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
+    public AMin(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public AMin(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
+
     public AMin() {}
+
+    public AMin(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
 
     public AMin(INDArray x, int... dimensions) {
         super(x, dimensions);
@@ -55,6 +99,10 @@ public class AMin extends BaseReduceSameOp {
 
     public AMin(INDArray in, INDArray dimensions, boolean keepDims) {
         super(in,keepDims,dimensions.toIntVector());
+    }
+
+    public AMin(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
 

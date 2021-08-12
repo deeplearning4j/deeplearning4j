@@ -47,7 +47,9 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
@@ -937,6 +939,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         return super.mappingsForFunction();
     }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
+
+    @Override
+    public Object getValue(Field property) {
+        return super.getValue(property);
+    }
+
+    @Override
+    public void setValueFor(Field target, Object value) {
+
+    }
+
 
     @Override
     public Map<String, Object> propertiesForFunction() {

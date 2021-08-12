@@ -71,6 +71,291 @@ public class MatchCondition extends BaseReduceLongOp {
         defineDimensions(dimensions);
     }
 
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, boolean keepDims, double compare) {
+        super(sameDiff, i_v, keepDims);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims, double compare) {
+        super(sameDiff, i_v, dimensions, keepDims);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double compare) {
+        super(sameDiff, i_v, i_v2);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims, double compare) {
+        super(sameDiff, input, dimensions, keepDims);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double compare) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, double compare) {
+        super(sameDiff, i_v);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, int... dimensions) {
+        super(sameDiff, input, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(INDArray x, double compare, int... dimensions) {
+        super(x, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(INDArray x, boolean keepDims, double compare, int... dimensions) {
+        super(x, keepDims, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(INDArray x, INDArray z, double compare, int... dimensions) {
+        super(x, z, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, int... dimensions) {
+        super(x, y, z, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, double compare) {
+        super(sameDiff);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions, double compare) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(double compare) {
+        this.compare = compare;
+    }
+
+    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double compare) {
+        super(x, y, z, keepDims, dimensions);
+        this.compare = compare;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare, double eps) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, boolean keepDims, double compare, double eps) {
+        super(sameDiff, i_v, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims, double compare, double eps) {
+        super(sameDiff, i_v, dimensions, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double compare, double eps) {
+        super(sameDiff, i_v, i_v2);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims, double compare, double eps) {
+        super(sameDiff, input, dimensions, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double compare, double eps) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, double compare, double eps) {
+        super(sameDiff, i_v);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, double eps, int... dimensions) {
+        super(sameDiff, input, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(INDArray x, double compare, double eps, int... dimensions) {
+        super(x, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(INDArray x, boolean keepDims, double compare, double eps, int... dimensions) {
+        super(x, keepDims, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(INDArray x, INDArray z, double compare, double eps, int... dimensions) {
+        super(x, z, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, double eps, int... dimensions) {
+        super(x, y, z, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, double compare, double eps) {
+        super(sameDiff);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions, double compare, double eps) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(double compare, double eps) {
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double compare, double eps) {
+        super(x, y, z, keepDims, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare, double eps, int mode) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, boolean keepDims, double compare, double eps, int mode) {
+        super(sameDiff, i_v, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims, double compare, double eps, int mode) {
+        super(sameDiff, i_v, dimensions, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double compare, double eps, int mode) {
+        super(sameDiff, i_v, i_v2);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims, double compare, double eps, int mode) {
+        super(sameDiff, input, dimensions, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double compare, double eps, int mode) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, double compare, double eps, int mode) {
+        super(sameDiff, i_v);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, double eps, int mode, int... dimensions) {
+        super(sameDiff, input, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(INDArray x, double compare, double eps, int mode, int... dimensions) {
+        super(x, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(INDArray x, boolean keepDims, double compare, double eps, int mode, int... dimensions) {
+        super(x, keepDims, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(INDArray x, INDArray z, double compare, double eps, int mode, int... dimensions) {
+        super(x, z, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, double eps, int mode, int... dimensions) {
+        super(x, y, z, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, double compare, double eps, int mode) {
+        super(sameDiff);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions, double compare, double eps, int mode) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(double compare, double eps, int mode) {
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double compare, double eps, int mode) {
+        super(x, y, z, keepDims, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
     @Override
     public int opNum() {
         return 2;
