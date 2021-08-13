@@ -105,6 +105,10 @@ public class AMin extends BaseReduceSameOp {
         super(in,keepDims,dimensions);
     }
 
+    public AMin(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        super(sd,in,dimensions,keepDims);
+    }
+
 
     @Override
     public int opNum() {

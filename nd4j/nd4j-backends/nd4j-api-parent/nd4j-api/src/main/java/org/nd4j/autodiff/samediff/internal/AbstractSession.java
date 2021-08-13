@@ -317,6 +317,7 @@ public abstract class AbstractSession<T, O> {
                     //Parent is current (input) frame
                     String outFrame = ((Enter) o).getFrameName();
                     outFrameIter = new FrameIter(outFrame, 0, es.getFrameIter());
+
                 } else if (o instanceof Exit) {
                     //Exit node forwards input to parent frame
                     String outFrame = es.getFrameIter().getParentFrame().getFrame();

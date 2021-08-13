@@ -74,6 +74,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     protected List<DataType> dArguments = new ArrayList<>();
 
     @Builder.Default
+    protected List<String> sArguments = new ArrayList<>();
+
+
+    @Builder.Default
     protected List<Integer> axis = new ArrayList<>();
 
     @Getter
@@ -89,6 +93,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         tArguments = new ArrayList<>();
         bArguments = new ArrayList<>();
         dArguments = new ArrayList<>();
+        sArguments = new ArrayList<>();
     }
 
     public DynamicCustomOp(SameDiff sameDiff, SDVariable arg) {
@@ -106,6 +111,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         tArguments = new ArrayList<>();
         bArguments = new ArrayList<>();
         dArguments = new ArrayList<>();
+        sArguments = new ArrayList<>();
     }
 
     public DynamicCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments) {
@@ -139,10 +145,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             this.tArguments = tArguments;
         }
         this.iArguments = new ArrayList<>();
+        this.sArguments = new ArrayList<>();
 
         if(iArguments != null) {
             for (val a : iArguments)
-                this.iArguments.add((Long) a.longValue());
+                this.iArguments.add(a.longValue());
         }
         bArguments = new ArrayList<>();
         dArguments = new ArrayList<>();
@@ -188,6 +195,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         tArguments = new ArrayList<>();
         bArguments = new ArrayList<>();
         dArguments = new ArrayList<>();
+        sArguments = new ArrayList<>();
         this.inplaceCall = inPlace;
     }
 
@@ -201,6 +209,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         tArguments = new ArrayList<>();
         bArguments = new ArrayList<>();
         dArguments = new ArrayList<>();
+        sArguments = new ArrayList<>();
     }
 
 
@@ -282,6 +291,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public int numSArguments() {
+        return sArguments == null ? 0 : sArguments.size();
+    }
+
+    @Override
     public List<INDArray> outputArguments() {
         return outputArguments;
     }
@@ -307,6 +321,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public String[] sArgs() {
+        return sArguments.toArray(new String[sArguments.size()]);
+    }
+
+    @Override
     public void addIArgument(int... arg) {
         for (long a: arg)
             iArguments.add(a);
@@ -320,12 +339,27 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private void addIArgument(Integer... arg) {
         for (val a: arg)
-            addIArgument((Long) a.longValue());
+            addIArgument(a.longValue());
     }
 
     @Override
     public void removeIArgument(Integer arg) {
         iArguments.remove(arg);
+    }
+
+    @Override
+    public void addSArgument(String... args) {
+        sArguments.addAll(Arrays.asList(args));
+    }
+
+    @Override
+    public void removeSArgument(String argument) {
+        sArguments.remove(argument);
+    }
+
+    @Override
+    public String getSArgument(int index) {
+        return sArguments.get(index);
     }
 
     @Override
@@ -692,6 +726,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         protected int numTArguments;
         protected int numIArguments;
         protected int numBArguments;
+        protected int numSArguments;
         protected boolean inplaceCall;
         protected boolean inplaceAllowed;
         protected long opHash;
@@ -703,14 +738,20 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         private List<Long> iArguments = new ArrayList<>();
         private List<DataType> dArguments = new ArrayList<>();
         private List<Boolean> bArguments = new ArrayList<>();
+        private List<String> sArguments = new ArrayList<>();
 
         protected DynamicCustomOpsBuilder(String opName, long hash, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
+            this(opName,hash,numInputs,numOutputs,inplaceAllowed,numTArguments,numIArguments,0);
+        }
+
+        protected DynamicCustomOpsBuilder(String opName, long hash, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments,int numSArguments) {
             this.opHash = hash;
             this.opName = opName;
             this.numInputs = numInputs;
             this.numOutputs = numOutputs;
             this.numIArguments = numIArguments;
             this.numTArguments = numTArguments;
+            this.numSArguments = numSArguments;
             this.inplaceAllowed = inplaceAllowed;
         }
 
@@ -801,6 +842,73 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
             for (val in : iargs)
                 iArguments.add(in.longValue());
+
+            return this;
+        }
+
+        /**
+         * This method takes arbitrary number of String arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param sArgs
+         * @return
+         */
+        public DynamicCustomOpsBuilder addStringArguments(List<String> sArgs) {
+            if (numSArguments >= 0) {
+                if (sArgs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numSArguments + " string arguments. Null was passed instead.");
+
+                if (numSArguments > sArgs.size())
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numSArguments + " string arguments, but "
+                            + sArgs.size() + " was passed to constructor");
+            }
+
+            for (val in : sArgs)
+                sArguments.add(in);
+
+            return this;
+        }
+
+        /**
+         * This method takes arbitrary number of String arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param arg
+         * @return
+         */
+        public DynamicCustomOpsBuilder addStringArguments(String arg) {
+            if (numSArguments != 1 && numSArguments > 0)
+                throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numSArguments + " string arguments. One arg was passed instead.");
+
+            sArguments.add(arg);
+
+            return this;
+        }
+
+        /**
+         * This method takes arbitrary number of String arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param sArgs
+         * @return
+         */
+        public DynamicCustomOpsBuilder addStringArguments(String... sArgs) {
+            if (numSArguments >= 0) {
+                if (sArgs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numSArguments + " integer arguments. Null was passed instead.");
+
+                if (numSArguments > sArgs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numSArguments + " integer arguments, but " + sArgs.length + " was passed to constructor");
+            }
+
+            for (val in : sArgs)
+                sArguments.add(in);
 
             return this;
         }
@@ -962,6 +1070,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         Map<String,Object> ret = new LinkedHashMap<>();
         for(OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
             switch(argDescriptor.getArgType()) {
+                case STRING:
+                    if(argDescriptor.getArgIndex() < numSArguments())
+                        ret.put(argDescriptor.getName(),getSArgument(argDescriptor.getArgIndex()));
+                    break;
                 case BOOL:
                     if(argDescriptor.getArgIndex() < numBArguments())
                         ret.put(argDescriptor.getName(),getBArgument(argDescriptor.getArgIndex()));

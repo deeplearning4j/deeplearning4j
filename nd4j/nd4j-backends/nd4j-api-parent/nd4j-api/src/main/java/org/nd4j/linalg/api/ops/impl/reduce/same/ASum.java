@@ -105,6 +105,8 @@ public class ASum extends BaseReduceSameOp {
         super(in,keepDims,dimensions);
     }
 
+
+
     @Override
     public int opNum() {
         return 4;

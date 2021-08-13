@@ -236,8 +236,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
             SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap());
 
-//            System.out.println(sd.summary());
-            sd.summary();
+
 
 //            System.out.println("----------------------------------");
             //This particular test/graph doesn't use placeholders

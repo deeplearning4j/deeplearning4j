@@ -83,6 +83,8 @@ public class CosineDistance extends BaseReduce3Op {
         super(x,y,null,keepDims,isComplex,dimensions);
     }
 
+
+
     @Override
     public int opNum() {
         return 5;

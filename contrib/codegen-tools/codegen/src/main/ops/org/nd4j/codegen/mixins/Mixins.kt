@@ -93,15 +93,15 @@ val scalar = Mixin("scalar"){
 
 val reduce = Mixin("reduce"){
     Input(DataType.NUMERIC, "in") { description = "Input variable" }
-    Arg(DataType.INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Arg(DataType.BOOL,"keepDims"){ description = "Whether to keep the original  dimensions or produce a shrunk array with less dimensions"; defaultValue = false}
+    Arg(DataType.INT, "dimensions"){  count = AtLeast(1); isVargarg = true;  description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
 }
 
 val reduceVariableDimensions = Mixin("reduceVariable") {
     Input(DataType.NUMERIC, "in") { description = "Input variable" }
-    Input(DataType.NUMERIC, name = "dimensions"){description = "Dimensions to reduce along"; }
     Arg(DataType.BOOL,"keepDims"){ description = "Whether to keep the original  dimensions or produce a shrunk array with less dimensions"; defaultValue = false}
+    Input(DataType.NUMERIC, name = "dimensions"){description = "Dimensions to reduce along"; }
     Output(DataType.NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
 }
 
@@ -148,7 +148,7 @@ val reduce3 = Mixin("reduce3"){
     Input(DataType.NUMERIC, "y") { description = "Input variable y" }
     Arg(DataType.BOOL,"keepDims",{description = "Whether to preserve original dimensions or not"; defaultValue = false})
     Arg(DataType.BOOL,"isComplex",{description = "Depending on the implementation, such as distance calculations, this can determine whether all distance calculations for all points should be done."; defaultValue = false})
-    val dims = Arg(DataType.INT, "dimensions"){ count = AtLeast(1); isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+    val dims = Arg(DataType.INT, "dimensions"){ count = AtLeast(0);  isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Output variable" }
 }
 

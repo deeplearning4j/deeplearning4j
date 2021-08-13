@@ -1513,7 +1513,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         };
 
         for(int j = 0; j < testIndicesForMask.length; j++) {
-            INDArray mask = asarray.match(testIndicesForMask[j], Conditions.equals());
+            INDArray mask = asarray.match(testIndicesForMask[j], Conditions.equals(testIndicesForMask[j]));
             assertEquals(assertions[j],mask);
 
         }

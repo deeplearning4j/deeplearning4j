@@ -7522,7 +7522,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(0, mask2.castTo(DataType.INT).maxNumber().intValue());
 
         INDArray[] matchIndexes2 = Nd4j.where(mask2, null, null);
-        for( int i=0; i<matchIndexes2.length; i++ ){
+        for( int i = 0; i < matchIndexes2.length; i++) {
             assertTrue(matchIndexes2[i].isEmpty());
         }
     }
