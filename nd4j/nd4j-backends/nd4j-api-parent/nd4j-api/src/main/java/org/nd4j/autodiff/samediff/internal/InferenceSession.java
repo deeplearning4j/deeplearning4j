@@ -301,11 +301,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         FrameIter fi = outputFrameIter.getParentFrame();
                         Dep d = new OpDep(opName, fi.getFrame(), fi.getIteration(), fi.getParentFrame());
                         arrayUseTracker.addDependency(out[i], d);       //Op defined by "d" needs to be executed before specified array can be closed
-                    } else if(outputFrameIter.getFrame() == null) {
-                        Dep d = new ExecDoneDep();
-                        arrayUseTracker.addDependency(out[i], d);
-                    }
-                    else {
+                    } else {
                         //All other ops...
                         Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
                         arrayUseTracker.addDependency(out[i], d);       //Op defined by "d" needs to be executed before specified array can be closed
