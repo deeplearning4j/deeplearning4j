@@ -74,4 +74,10 @@ public class Medium_NDArray {
         state.array1.assign(state.array2);
     }
 
+    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    public void mmul(SetupState state) {
+        state.array1.mmul(state.array2);
+    }
+
+
 }
