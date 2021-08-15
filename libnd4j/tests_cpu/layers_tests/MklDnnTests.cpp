@@ -21,7 +21,7 @@
 // @author raver119@gmail.com
 //
 
-#ifdef HAVE_MKLDNN
+#ifdef HAVE_ONEDNN
 
 #include "testlayers.h"
 #include <initializer_list>

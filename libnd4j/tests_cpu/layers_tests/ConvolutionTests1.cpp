@@ -35,7 +35,7 @@
 #include <helpers/PointersManager.h>
 #include <helpers/GradCheck.h>
 
-#ifdef HAVE_MKLDNN
+#ifdef HAVE_ONEDNN
 #include <ops/declarable/platform/mkldnn/mkldnnUtils.h>
 #endif
 

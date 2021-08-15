@@ -33,7 +33,7 @@ NEED TO SET DEFAULTS FOR VISUAL STUDIO, NO VCINSTALLDIR environment variable fou
 !!                                                                                                           !!
 !!                                                 WARNING!                                                  !!
 !!                                      No helper packages configured!                                       !!
-!!                          You can specify helper by using -h key. I.e. <-h mkldnn>                         !!
+!!                          You can specify helper by using -h key. I.e. <-h onednn>                         !!
 !!                                                                                                           !!
 !!                                                                                                           !!
 !!                                                                                                           !!

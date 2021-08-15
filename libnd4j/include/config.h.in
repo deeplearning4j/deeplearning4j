@@ -1,11 +1,11 @@
 #ifndef LIBND4J_CONFIG_H
 #define LIBND4J_CONFIG_H
 
-#cmakedefine HAVE_MKLDNN
+#cmakedefine HAVE_ONEDNN
 
 #cmakedefine HAVE_ARMCOMPUTE
 
-#cmakedefine MKLDNN_PATH "@MKLDNN_PATH@"
+#cmakedefine ONEDNN_PATH "@ONEDNN_PATH@"
 
 #cmakedefine HAVE_OPENBLAS
 

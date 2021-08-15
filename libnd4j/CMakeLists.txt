@@ -22,8 +22,8 @@ if (SD_CUDA)
     enable_language(CUDA)
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
             message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
-            set(CMAKE_CXX_STANDARD 17)
-            set(CMAKE_CUDA_STANDARD 17)
+            set(CMAKE_CXX_STANDARD 11)
+            set(CMAKE_CUDA_STANDARD 11)
              else()
                    set(CMAKE_CXX_STANDARD 11)
             message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
@@ -188,7 +188,7 @@ endif()
 
 
 if(NOT SD_CUDA)
-    # we need this definition to avoid global memory use within mkldnn
+    # we need this definition to avoid global memory use within onednn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
 
     # there's a chance, we have no BLAS provided externally
@@ -269,35 +269,35 @@ endif()
 
 
 
-# new mkl-dnn entry
-if (${HELPERS_mkldnn})
-    message("Going to pull & build mkldnn")
-    set(HAVE_MKLDNN 1)
+# new one-dnn entry
+if (${HELPERS_onednn})
+    message("Going to pull & build onednn")
+    set(HAVE_ONEDNN 1)
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
-    configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
+    configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
     if(result)
-        message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+        message(FATAL_ERROR "CMake step for onednn failed: ${result}")
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
     if(result)
-        message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+        message(FATAL_ERROR "Build step for onednn failed: ${result}")
     endif()
 
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
-            ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/onednn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/onednn-build
             EXCLUDE_FROM_ALL)
 
-    set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
-    set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
-    set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
-    include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
-    set(MKLDNN dnnl)
+    set(onednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-build)
+    set(onednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-src)
+    set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
+    include_directories(${onednn_SOURCE_DIR}/include ${onednn_EXT_DIR}/include ${onednn_SOURCE_DIR})
+    set(ONEDNN dnnl)
 endif()
 
 
