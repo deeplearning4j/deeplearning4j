@@ -1097,7 +1097,7 @@ public class NDBase {
   }
 
   /**
-   * Convert the array to a one-hot array with walues and  for each entry<br>
+   * Convert the array to a one-hot array with values and  for each entry<br>
    * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
    * with {out[i, ..., j, in[i,...,j]]  with other values being set to<br>
    *
@@ -1116,7 +1116,7 @@ public class NDBase {
   }
 
   /**
-   * Convert the array to a one-hot array with walues and  for each entry<br>
+   * Convert the array to a one-hot array with values and  for each entry<br>
    * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
    * with {out[i, ..., j, in[i,...,j]]  with other values being set to<br>
    *
@@ -1133,7 +1133,7 @@ public class NDBase {
   }
 
   /**
-   * Convert the array to a one-hot array with walues 0 and 1 for each entry<br>
+   * Convert the array to a one-hot array with values 0 and 1 for each entry<br>
    * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],<br>
    * with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0<br>
    * see oneHot(SDVariable, int, int, double, double)<br>

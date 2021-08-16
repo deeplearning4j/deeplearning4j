@@ -35,6 +35,12 @@ public class AbsValueGreaterThan extends BaseCondition {
         super(value);
     }
 
+
+    @Override
+    public void setValue(Number value) {
+        //no op where we can pass values in
+    }
+
     /**
      * Returns condition ID for native side
      *

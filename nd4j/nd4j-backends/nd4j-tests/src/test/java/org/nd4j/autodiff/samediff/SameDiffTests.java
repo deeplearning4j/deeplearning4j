@@ -1521,6 +1521,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray a = Nd4j.rand(new long[]{3, 4}).addi(0.1);
         INDArray b = Nd4j.rand(new long[]{3, 4}).addi(0.1);
 
+
         SameDiff sd = SameDiff.create();
         SDVariable in1 = sd.var("in1", a);
         SDVariable in2 = sd.var("in2", b);

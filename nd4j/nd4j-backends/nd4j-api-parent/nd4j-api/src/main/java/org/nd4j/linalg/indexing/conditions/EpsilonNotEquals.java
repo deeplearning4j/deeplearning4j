@@ -41,6 +41,12 @@ public class EpsilonNotEquals extends BaseCondition {
         this.eps = eps.doubleValue();
     }
 
+
+    @Override
+    public void setValue(Number value) {
+        //no op where we can pass values in
+    }
+
     /**
      * Returns condition ID for native side
      *

@@ -36,16 +36,18 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@NoArgsConstructor
 public class Enter extends BaseCompatOp {
 
     protected boolean isConstant;
+
+    public Enter() {
+    }
 
     public Enter(SameDiff sameDiff, SDVariable[] inputs){
         super(sameDiff, inputs);
     }
 
-    public Enter(SameDiff sameDiff, String frameName, SDVariable input ){
+    public Enter(SameDiff sameDiff, String frameName, SDVariable input) {
         super(sameDiff, new SDVariable[]{input});
         this.frameName = frameName;
         isConstant = input.isConstant();
@@ -81,7 +83,7 @@ public class Enter extends BaseCompatOp {
     }
 
     @Override
-    public Op.Type opType() {
+    public Type opType() {
         return Type.LOGIC;
     }
 
@@ -90,6 +92,8 @@ public class Enter extends BaseCompatOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
         isConstant = attributesForNode.get("is_constant").getB();
     }
+
+
 
     @Override
     public int getNumOutputs(){

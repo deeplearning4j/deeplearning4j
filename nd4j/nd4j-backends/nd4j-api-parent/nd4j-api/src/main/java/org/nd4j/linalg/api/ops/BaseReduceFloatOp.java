@@ -54,6 +54,34 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
         super(sameDiff, input, dimensions);
     }
 
+
+
+
+
+
+
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+
+
+
+
+
     public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, int... dimensions){
         super(input, null, output, dimensions);
         this.keepDims = keepDims;

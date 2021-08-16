@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.longer;
 
-import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,8 +28,34 @@ import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import java.util.Collections;
 import java.util.List;
 
-@NoArgsConstructor
 public class CountNonZero extends BaseReduceLongOp {
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
 
     public CountNonZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
         super(sameDiff, input, dimensions);
@@ -39,6 +64,41 @@ public class CountNonZero extends BaseReduceLongOp {
 
     public CountNonZero(INDArray x, int... dimensions) {
         super(x, dimensions);
+    }
+
+    public CountNonZero(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
+    }
+
+    public CountNonZero(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public CountNonZero(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public CountNonZero() {
+    }
+
+    public CountNonZero(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public CountNonZero(INDArray in, boolean keepDims, int[] dimensions) {
+       super(in,keepDims,dimensions);
+    }
+
+    public CountNonZero(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        super(sd,in,dimensions,keepDims);
+    }
+
+    public CountNonZero(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
 

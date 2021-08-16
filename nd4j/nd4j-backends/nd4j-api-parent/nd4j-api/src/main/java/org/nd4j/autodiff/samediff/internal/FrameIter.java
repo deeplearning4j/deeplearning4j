@@ -20,15 +20,19 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class FrameIter {
     private String frame;
     private int iteration;
     private FrameIter parentFrame;
+
+    public FrameIter(String frame, int iteration, FrameIter parentFrame) {
+        this.frame = frame;
+        this.iteration = iteration;
+        this.parentFrame = parentFrame;
+    }
 
     @Override
     public String toString() {

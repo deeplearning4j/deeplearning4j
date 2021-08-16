@@ -294,7 +294,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     public void testIamax2(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         assertEquals( 3, Nd4j.getBlasWrapper().iamax(linspace),getFailureMessage(backend));
-        val op = new ArgAmax(linspace);
+        val op = new ArgAmax(new INDArray[]{linspace});
 
         int iamax = Nd4j.getExecutioner().exec(op)[0].getInt(0);
         assertEquals(3, iamax);
@@ -591,11 +591,11 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMax(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
-        ArgMax imax = new ArgMax(arr);
+        ArgMax imax = new ArgMax(new INDArray[]{arr});
         assertEquals(9, Nd4j.getExecutioner().exec(imax)[0].getInt(0));
 
         arr.muli(-1);
-        imax = new ArgMax(arr);
+        imax = new ArgMax(new INDArray[]{arr});
         int maxIdx = Nd4j.getExecutioner().exec(imax)[0].getInt(0);
         assertEquals(0, maxIdx);
     }
@@ -604,11 +604,11 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIMin(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
-        ArgMin imin = new ArgMin(arr);
+        ArgMin imin = new ArgMin(new INDArray[]{arr});
         assertEquals(0, Nd4j.getExecutioner().exec(imin)[0].getInt(0));
 
         arr.muli(-1);
-        imin = new ArgMin(arr);
+        imin = new ArgMin(new INDArray[]{arr});
         int minIdx = Nd4j.getExecutioner().exec(imin)[0].getInt(0);
         assertEquals(9, minIdx);
     }

@@ -33,6 +33,34 @@ public class Mean extends BaseReduceFloatOp {
         super(sameDiff, i_v, keepDims, dimensions);
     }
 
+    public Mean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public Mean(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public Mean(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public Mean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public Mean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public Mean(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public Mean(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
     public Mean() {
     }
 
@@ -51,6 +79,19 @@ public class Mean extends BaseReduceFloatOp {
     public Mean(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
         super(x, z, keepDims, dimensions);
     }
+
+    public Mean(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public Mean(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public Mean(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
+    }
+
 
     @Override
     public int opNum() {

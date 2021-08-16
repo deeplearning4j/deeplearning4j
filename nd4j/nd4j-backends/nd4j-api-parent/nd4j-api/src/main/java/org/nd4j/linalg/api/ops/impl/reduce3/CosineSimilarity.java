@@ -40,6 +40,14 @@ public class CosineSimilarity extends BaseReduce3Op {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public CosineSimilarity() {
         extraArgs = new Object[]{0.0f, 0.0f};
     }
@@ -69,6 +77,14 @@ public class CosineSimilarity extends BaseReduce3Op {
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
         super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
+    }
+
+    public CosineSimilarity(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(sd, x, y, keepDims, isComplex, dimensions);
+    }
+
+    public CosineSimilarity(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(x,y,null,keepDims,isComplex,dimensions);
     }
 
     @Override
