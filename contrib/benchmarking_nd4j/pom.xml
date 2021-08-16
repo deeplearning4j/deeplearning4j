@@ -80,13 +80,6 @@
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
         </dependency>
-
-
-        <dependency>
-            <groupId>uncomplicate</groupId>
-            <artifactId>fluokitten</artifactId>
-            <version>0.6.1</version>
-        </dependency>
     </dependencies>
 
 
