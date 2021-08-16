@@ -18,7 +18,7 @@ if(result)
   message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
 
-# OPTIONAL MKL-DNN
+# OPTIONAL ONE-DNN
 if ("${BUILD_ONEDNN}")
     # Download and unpack mkl-dnn at configure time
     configure_file(../../CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
