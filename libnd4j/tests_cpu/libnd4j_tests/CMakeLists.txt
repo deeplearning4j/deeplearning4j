@@ -41,7 +41,7 @@ if ("${BUILD_ONEDNN}")
     set(onednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-src)
     set(HAVE_ONEDNN 1)
     add_definitions("-DHAVE_ONEDNN")
-    include_directories(${onednn_SOURCE_DIR}/include ${onednn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
+    include_directories(${onednn_SOURCE_DIR}/include ${onednn_SOURCE_DIR})
     set(ONEDNN dnnl)
 endif()
 
