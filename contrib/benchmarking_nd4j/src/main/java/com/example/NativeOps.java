@@ -26,9 +26,6 @@ public class NativeOps {
         INDArray arrayOrderedC = Nd4j.zeros(512, 512,'c');
         INDArray arrayOrderedF = Nd4j.zeros(512, 512, 'f');
 
-        {
-            float sum = (float) array.sumNumber().doubleValue();
-        }
     }
 
 

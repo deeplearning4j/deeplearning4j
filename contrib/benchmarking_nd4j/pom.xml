@@ -2,12 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>benchmark</artifactId>
-    <version>1.0</version>
+    <groupId>org.nd4j</groupId>
+    <artifactId>nd4j-benchmark</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>JMH benchmark sample: Java</name>
+    <name>ND4J Benchmarks</name>
 
     <!--
        This is the demo/sample template build script for building Java benchmarks with JMH.
@@ -58,7 +58,7 @@
     <dependencies>
         <dependency>
             <groupId>org.bytedeco</groupId>
-            <artifactId>openblas-platform</artifactId>
+            <artifactId>openblas</artifactId>
             <version>0.3.17-1.5.6</version>
         </dependency>
         <dependency>
@@ -83,7 +83,7 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
-            <artifactId>mkl-platform</artifactId>
+            <artifactId>mkl</artifactId>
             <version>2021.3-1.5.6</version>
         </dependency>
         <dependency>
@@ -92,17 +92,6 @@
             <version>1.2.3</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.clojure</groupId>
-            <artifactId>clojure</artifactId>
-            <version>1.9.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>uncomplicate</groupId>
-            <artifactId>neanderthal</artifactId>
-            <version>0.39.0</version>
-        </dependency>
 
         <dependency>
             <groupId>uncomplicate</groupId>
@@ -114,21 +103,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>com.theoryinpractise</groupId>
-                <artifactId>clojure-maven-plugin</artifactId>
-                <version>1.8.1</version>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>execution1</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
