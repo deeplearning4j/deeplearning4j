@@ -756,11 +756,10 @@ public class FlatBuffersMapper {
             }
 
             if(dynamicCustomOp.numSArguments() > 0) {
-                sArgs = new String[dynamicCustomOp.numSArguments()];
+                sArgs = dynamicCustomOp.sArgs();
                 extraStringIds = new int[dynamicCustomOp.numSArguments()];
                 val sArgs2 = dynamicCustomOp.sArgs();
                 for(int i = 0; i < sArgs2.length; i++) {
-                    sArgs[i] = sArgs2[i];
                     extraStringIds[i] = bufferBuilder.createString(sArgs[i]);
                 }
             }
