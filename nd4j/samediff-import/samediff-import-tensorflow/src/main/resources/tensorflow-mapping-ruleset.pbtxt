@@ -585,12 +585,12 @@ mappings {
     outputTensorName: "shape"
     outputTensorName: "lambda"
     inputToOutput {
-      key: "shape"
-      value: "shape"
-    }
-    inputToOutput {
       key: "lambda"
       value: "rate"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "shape"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "RandomPoisson"
@@ -603,12 +603,12 @@ mappings {
     inputDataTypeName: "dtype"
     outputDataTypeName: "dtype"
     inputToOutput {
-      key: "seed"
-      value: "seed"
-    }
-    inputToOutput {
       key: "dtype"
       value: "dtype"
+    }
+    inputToOutput {
+      key: "seed"
+      value: "seed"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "RandomPoisson"
@@ -1442,12 +1442,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "delta"
     inputToOutput {
-      key: "input"
-      value: "images"
-    }
-    inputToOutput {
       key: "delta"
       value: "delta"
+    }
+    inputToOutput {
+      key: "input"
+      value: "images"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "AdjustHue"
@@ -1528,12 +1528,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "factor"
     inputToOutput {
-      key: "input"
-      value: "images"
-    }
-    inputToOutput {
       key: "factor"
       value: "scale"
+    }
+    inputToOutput {
+      key: "input"
+      value: "images"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "AdjustSaturation"
@@ -1597,12 +1597,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "tensor"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "tensor"
     }
     inputToOutput {
       key: "updates"
@@ -1689,12 +1689,12 @@ mappings {
     outputTensorName: "idxSegments"
     outputTensorName: "numSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     inputToOutput {
       key: "numSegments"
@@ -1706,7 +1706,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -1927,12 +1926,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Sum"
@@ -1952,7 +1951,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -1996,12 +1994,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "dimension"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ArgMax"
@@ -2061,12 +2059,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Min"
@@ -2086,7 +2084,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -2375,10 +2372,10 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
     outputBooleanName: "computeUv"
+    outputBooleanName: "fullUV"
     inputToOutput {
       key: "computeUv"
       value: "compute_uv"
@@ -2394,9 +2391,9 @@ mappings {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
     outputIntName: "calcUV"
-    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
+    outputBooleanName: "fullUV"
     inputToOutput {
       key: "calcUV"
       value: "compute_uv"
@@ -2491,12 +2488,12 @@ mappings {
     outputTensorName: "n"
     outputTensorName: "input"
     inputToOutput {
-      key: "n"
-      value: "a"
-    }
-    inputToOutput {
       key: "input"
       value: "x"
+    }
+    inputToOutput {
+      key: "n"
+      value: "a"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Polygamma"
@@ -2520,12 +2517,12 @@ mappings {
       value: "input"
     }
     inputToOutput {
-      key: "minLowerT"
-      value: "num_lower"
-    }
-    inputToOutput {
       key: "maxUpperT"
       value: "num_upper"
+    }
+    inputToOutput {
+      key: "minLowerT"
+      value: "num_lower"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "MatrixBandPart"
@@ -2613,12 +2610,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "tensor"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "tensor"
     }
     inputToOutput {
       key: "updates"
@@ -4425,12 +4422,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "idxSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "SegmentMax"
@@ -4750,12 +4747,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "input"
       value: "ref"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterSub"
@@ -4826,7 +4823,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -5046,12 +5042,12 @@ mappings {
     inputFrameworkOpName: "SparseSoftmaxCrossEntropyWithLogits"
   }
   indexOverrides {
-    key: 1
-    value: 0
-  }
-  indexOverrides {
     key: 0
     value: 1
+  }
+  indexOverrides {
+    key: 1
+    value: 0
   }
 }
 mappings {
@@ -5126,12 +5122,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "ref"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "ref"
     }
     inputToOutput {
       key: "updates"
@@ -5302,7 +5298,7 @@ mappings {
     functionName: "stringequals"
     inputStringAttrName: "padding"
     inputStringAttrName: "padding"
-    outputIntName: "isSameMode"
+    outputBooleanName: "isSameMode"
     inputToOutput {
       key: "isSameMode"
       value: "padding"
@@ -5873,16 +5869,16 @@ mappings {
     outputTensorName: "boxes"
     outputTensorName: "colors"
     inputToOutput {
-      key: "images"
-      value: "images"
-    }
-    inputToOutput {
       key: "boxes"
       value: "boxes"
     }
     inputToOutput {
       key: "colors"
       value: "colors"
+    }
+    inputToOutput {
+      key: "images"
+      value: "images"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "DrawBoundingBoxesV2"
@@ -6131,12 +6127,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "axis"
+    }
+    inputToOutput {
+      key: "input"
+      value: "x"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Cumsum"
@@ -6144,10 +6140,10 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
     inputBooleanName: "exclusive"
     inputBooleanName: "reverse"
+    outputBooleanName: "exclusive"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -6215,12 +6211,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "indices"
     inputToOutput {
-      key: "input"
-      value: "params"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "params"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Gather"
@@ -6312,12 +6308,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "input"
       value: "ref"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterNdAdd"
@@ -6421,28 +6417,28 @@ mappings {
     outputTensorName: "bru"
     outputTensorName: "bc"
     inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    inputToOutput {
-      key: "hLast"
-      value: "h_prev"
+      key: "Wc"
+      value: "w_c"
     }
     inputToOutput {
       key: "Wru"
       value: "w_ru"
     }
     inputToOutput {
-      key: "Wc"
-      value: "w_c"
+      key: "bc"
+      value: "b_c"
     }
     inputToOutput {
       key: "bru"
       value: "b_ru"
     }
     inputToOutput {
-      key: "bc"
-      value: "b_c"
+      key: "hLast"
+      value: "h_prev"
+    }
+    inputToOutput {
+      key: "input"
+      value: "x"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "GRUBlockCell"
@@ -6586,12 +6582,12 @@ mappings {
     inputBooleanName: "is_constant"
     outputBooleanName: "isConstant"
     inputToOutput {
-      key: "isConstant"
-      value: "is_constant"
-    }
-    inputToOutput {
       key: "frameName"
       value: "frame_name"
+    }
+    inputToOutput {
+      key: "isConstant"
+      value: "is_constant"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Enter"
@@ -6671,12 +6667,12 @@ mappings {
     outputTensorName: "dimensions"
     outputTensorName: "shiftsI"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "axis"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     inputToOutput {
       key: "shiftsI"
@@ -6709,12 +6705,12 @@ mappings {
     outputTensorName: "target"
     outputTensorName: "predictions"
     inputToOutput {
-      key: "target"
-      value: "targets"
-    }
-    inputToOutput {
       key: "predictions"
       value: "predictions"
+    }
+    inputToOutput {
+      key: "target"
+      value: "targets"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "InTopK"
@@ -6802,12 +6798,12 @@ mappings {
     outputTensorName: "idxSegments"
     outputTensorName: "numSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     inputToOutput {
       key: "numSegments"
@@ -6819,7 +6815,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -6912,12 +6907,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "input"
       value: "ref"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterNdUpdate"
@@ -6959,10 +6954,10 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "outputType"
     inputBooleanName: "init"
     outputBooleanName: "init"
     inputDataTypeName: "dtype"
+    outputDataTypeName: "outputType"
     inputToOutput {
       key: "init"
       value: "init"
@@ -6977,8 +6972,8 @@ mappings {
   rule {
     ruleName: "datatypetoint"
     functionName: "datatypetoint"
-    outputIntName: "outputType"
     inputDataTypeName: "dtype"
+    outputDataTypeName: "outputType"
     inputToOutput {
       key: "outputType"
       value: "dtype"
@@ -7053,10 +7048,6 @@ mappings {
     outputTensorName: "finish"
     outputTensorName: "numOfElements"
     inputToOutput {
-      key: "start"
-      value: "start"
-    }
-    inputToOutput {
       key: "finish"
       value: "stop"
     }
@@ -7064,13 +7055,16 @@ mappings {
       key: "numOfElements"
       value: "num"
     }
+    inputToOutput {
+      key: "start"
+      value: "start"
+    }
     ruleType: "tensor"
     inputFrameworkOpName: "LinSpace"
   }
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "start"
     outputDoubleName: "stop"
     inputToOutput {
       key: "start"
@@ -7086,8 +7080,8 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "dataType"
     inputDataTypeName: "T"
+    outputDataTypeName: "dataType"
     inputToOutput {
       key: "dataType"
       value: "T"
@@ -7131,12 +7125,12 @@ mappings {
     outputTensorName: "shape"
     outputTensorName: "alpha"
     inputToOutput {
-      key: "shape"
-      value: "shape"
-    }
-    inputToOutput {
       key: "alpha"
       value: "alpha"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "shape"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "RandomGamma"
@@ -7216,12 +7210,12 @@ mappings {
     outputTensorName: "idxSegments"
     outputTensorName: "numSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     inputToOutput {
       key: "numSegments"
@@ -7233,7 +7227,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -7297,12 +7290,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "diagonal"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "diagonal"
       value: "diagonal"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "MatrixSetDiag"
@@ -7334,12 +7327,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "indices"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "indices"
       value: "partitions"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "DynamicPartition"
@@ -7424,12 +7417,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "input"
       value: "ref"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterMul"
@@ -7470,12 +7463,12 @@ mappings {
     outputTensorName: "shape"
     outputTensorName: "lambda"
     inputToOutput {
-      key: "shape"
-      value: "shape"
-    }
-    inputToOutput {
       key: "lambda"
       value: "rate"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "shape"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "RandomPoissonV2"
@@ -7488,12 +7481,12 @@ mappings {
     inputDataTypeName: "dtype"
     outputDataTypeName: "dtype"
     inputToOutput {
-      key: "seed"
-      value: "seed"
-    }
-    inputToOutput {
       key: "dtype"
       value: "dtype"
+    }
+    inputToOutput {
+      key: "seed"
+      value: "seed"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "RandomPoissonV2"
@@ -7755,16 +7748,16 @@ mappings {
     outputTensorName: "boxIndexes"
     outputTensorName: "newImageSize"
     inputToOutput {
-      key: "image"
-      value: "image"
+      key: "boxIndexes"
+      value: "box_ind"
     }
     inputToOutput {
       key: "boxes"
       value: "boxes"
     }
     inputToOutput {
-      key: "boxIndexes"
-      value: "box_ind"
+      key: "image"
+      value: "image"
     }
     inputToOutput {
       key: "newImageSize"
@@ -7863,12 +7856,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "shape"
       value: "shape"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterNd"
@@ -7957,12 +7950,16 @@ mappings {
       value: "begin_mask"
     }
     inputToOutput {
-      key: "end_mask"
-      value: "end_mask"
+      key: "dtype"
+      value: "T"
     }
     inputToOutput {
       key: "ellipsis_mask"
       value: "ellipsis_mask"
+    }
+    inputToOutput {
+      key: "end_mask"
+      value: "end_mask"
     }
     inputToOutput {
       key: "new_axis_mask"
@@ -7971,10 +7968,6 @@ mappings {
     inputToOutput {
       key: "shrink_axis_mask"
       value: "shrink_axis_mask"
-    }
-    inputToOutput {
-      key: "dtype"
-      value: "T"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "StridedSlice"
@@ -8099,16 +8092,16 @@ mappings {
       value: "x"
     }
     inputToOutput {
-      key: "scale"
-      value: "scale"
+      key: "mean"
+      value: "mean"
     }
     inputToOutput {
       key: "offset"
       value: "offset"
     }
     inputToOutput {
-      key: "mean"
-      value: "mean"
+      key: "scale"
+      value: "scale"
     }
     inputToOutput {
       key: "variance"
@@ -8125,12 +8118,12 @@ mappings {
     inputDataTypeName: "T"
     outputDataTypeName: "dtype"
     inputToOutput {
-      key: "epsilon"
-      value: "epsilon"
-    }
-    inputToOutput {
       key: "dtype"
       value: "T"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "epsilon"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FusedBatchNorm"
@@ -8183,12 +8176,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "tensor"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "tensor"
     }
     inputToOutput {
       key: "updates"
@@ -8265,12 +8258,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "input"
       value: "ref"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterNdSub"
@@ -8420,12 +8413,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "bias"
     inputToOutput {
-      key: "input"
-      value: "value"
-    }
-    inputToOutput {
       key: "bias"
       value: "bias"
+    }
+    inputToOutput {
+      key: "input"
+      value: "value"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BiasAdd"
@@ -8680,28 +8673,16 @@ mappings {
     outputTensorName: "Wco"
     outputTensorName: "b"
     inputToOutput {
-      key: "xt"
-      value: "x"
-    }
-    inputToOutput {
-      key: "cLast"
-      value: "cs_prev"
-    }
-    inputToOutput {
-      key: "yLast"
-      value: "h_prev"
-    }
-    inputToOutput {
       key: "W"
       value: "w"
     }
     inputToOutput {
-      key: "Wci"
-      value: "wci"
-    }
-    inputToOutput {
       key: "Wcf"
       value: "wcf"
+    }
+    inputToOutput {
+      key: "Wci"
+      value: "wci"
     }
     inputToOutput {
       key: "Wco"
@@ -8710,6 +8691,18 @@ mappings {
     inputToOutput {
       key: "b"
       value: "b"
+    }
+    inputToOutput {
+      key: "cLast"
+      value: "cs_prev"
+    }
+    inputToOutput {
+      key: "xt"
+      value: "x"
+    }
+    inputToOutput {
+      key: "yLast"
+      value: "h_prev"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "LSTMBlockCell"
@@ -8722,12 +8715,12 @@ mappings {
     outputDoubleName: "forgetBias"
     outputDoubleName: "clippingCellValue"
     inputToOutput {
-      key: "forgetBias"
-      value: "forget_bias"
-    }
-    inputToOutput {
       key: "clippingCellValue"
       value: "cell_clip"
+    }
+    inputToOutput {
+      key: "forgetBias"
+      value: "forget_bias"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "LSTMBlockCell"
@@ -8810,16 +8803,16 @@ mappings {
       value: "boxes"
     }
     inputToOutput {
-      key: "scales"
-      value: "scores"
+      key: "iouThreshold"
+      value: "iou_threshold"
     }
     inputToOutput {
       key: "maxOutSize"
       value: "max_output_size"
     }
     inputToOutput {
-      key: "iouThreshold"
-      value: "iou_threshold"
+      key: "scales"
+      value: "scores"
     }
     inputToOutput {
       key: "scoreThreshold"
@@ -8909,16 +8902,16 @@ mappings {
       value: "boxes"
     }
     inputToOutput {
-      key: "scales"
-      value: "scores"
-    }
-    inputToOutput {
       key: "iouThreshold"
       value: "iou_threshold"
     }
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
+    }
+    inputToOutput {
+      key: "scales"
+      value: "scores"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "NonMaxSuppressionV2"
@@ -8942,7 +8935,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "maxOutputSize"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -8973,16 +8965,16 @@ mappings {
       value: "boxes"
     }
     inputToOutput {
-      key: "scales"
-      value: "scores"
+      key: "iouThreshold"
+      value: "iou_threshold"
     }
     inputToOutput {
       key: "maxOutSize"
       value: "max_output_size"
     }
     inputToOutput {
-      key: "iouThreshold"
-      value: "iou_threshold"
+      key: "scales"
+      value: "scores"
     }
     inputToOutput {
       key: "scoreThreshold"
@@ -9022,20 +9014,17 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "depth"
-    outputDoubleName: "on"
-    outputDoubleName: "off"
     inputToOutput {
-      key: "on"
-      value: "on_value"
+      key: "depth"
+      value: "depth"
     }
     inputToOutput {
       key: "off"
       value: "off_value"
     }
     inputToOutput {
-      key: "depth"
-      value: "depth"
+      key: "on"
+      value: "on_value"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "OneHot"
@@ -9048,12 +9037,12 @@ mappings {
     outputIntName: "dataType"
     inputDataTypeName: "T"
     inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    inputToOutput {
       key: "dataType"
       value: "T"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "OneHot"
@@ -9069,13 +9058,13 @@ mappings {
     inputTensorName: "x"
     inputTensorName: "perm"
     outputTensorName: "input"
-    outputTensorName: "permuteDims"
+    outputTensorName: "permutationVector"
     inputToOutput {
       key: "input"
       value: "x"
     }
     inputToOutput {
-      key: "permuteDims"
+      key: "permutationVector"
       value: "perm"
     }
     ruleType: "tensor"
@@ -9172,12 +9161,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "idxSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "SegmentMin"
@@ -9220,12 +9209,12 @@ mappings {
     outputTensorName: "idxSegments"
     outputTensorName: "numSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     inputToOutput {
       key: "numSegments"
@@ -9237,7 +9226,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -9258,12 +9246,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "idxSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "SegmentSum"
@@ -9297,13 +9285,13 @@ mappings {
     inputBooleanName: "align_corners"
     inputBooleanName: "half_pixel_centers"
     outputBooleanName: "alignCorners"
-    outputBooleanName: "halfPixelCenter"
+    outputBooleanName: "halfPixelCenters"
     inputToOutput {
       key: "alignCorners"
       value: "align_corners"
     }
     inputToOutput {
-      key: "halfPixelCenter"
+      key: "halfPixelCenters"
       value: "half_pixel_centers"
     }
     ruleType: "attribute"
@@ -9670,12 +9658,12 @@ mappings {
       value: "boxes"
     }
     inputToOutput {
-      key: "scales"
-      value: "scores"
-    }
-    inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
+    }
+    inputToOutput {
+      key: "scales"
+      value: "scores"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "NonMaxSuppression"
@@ -9710,7 +9698,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "maxOutputSize"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -9745,32 +9732,16 @@ mappings {
     outputTensorName: "Wco"
     outputTensorName: "b"
     inputToOutput {
-      key: "maxTSLength"
-      value: "seq_len_max"
-    }
-    inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    inputToOutput {
-      key: "cLast"
-      value: "cs_prev"
-    }
-    inputToOutput {
-      key: "yLast"
-      value: "h_prev"
-    }
-    inputToOutput {
       key: "W"
       value: "w"
     }
     inputToOutput {
-      key: "Wci"
-      value: "wci"
-    }
-    inputToOutput {
       key: "Wcf"
       value: "wcf"
+    }
+    inputToOutput {
+      key: "Wci"
+      value: "wci"
     }
     inputToOutput {
       key: "Wco"
@@ -9779,6 +9750,22 @@ mappings {
     inputToOutput {
       key: "b"
       value: "b"
+    }
+    inputToOutput {
+      key: "cLast"
+      value: "cs_prev"
+    }
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    inputToOutput {
+      key: "maxTSLength"
+      value: "seq_len_max"
+    }
+    inputToOutput {
+      key: "yLast"
+      value: "h_prev"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BlockLSTM"
@@ -9791,12 +9778,12 @@ mappings {
     outputDoubleName: "forgetBias"
     outputDoubleName: "clippingCellValue"
     inputToOutput {
-      key: "forgetBias"
-      value: "forget_bias"
-    }
-    inputToOutput {
       key: "clippingCellValue"
       value: "cell_clip"
+    }
+    inputToOutput {
+      key: "forgetBias"
+      value: "forget_bias"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "BlockLSTM"
@@ -9911,12 +9898,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Max"
@@ -9936,7 +9923,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -9976,12 +9962,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "ref"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "ref"
     }
     inputToOutput {
       key: "updates"
@@ -10059,16 +10045,16 @@ mappings {
     outputTensorName: "values"
     outputTensorName: "min"
     inputToOutput {
-      key: "weights"
-      value: "weights"
+      key: "min"
+      value: "size"
     }
     inputToOutput {
       key: "values"
       value: "arr"
     }
     inputToOutput {
-      key: "min"
-      value: "size"
+      key: "weights"
+      value: "weights"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Bincount"
@@ -10076,8 +10062,8 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "outputType"
     inputDataTypeName: "T"
+    outputDataTypeName: "outputType"
     inputToOutput {
       key: "outputType"
       value: "T"
@@ -10100,12 +10086,12 @@ mappings {
     outputTensorName: "blockShape"
     outputTensorName: "padding"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "blockShape"
       value: "block_shape"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     inputToOutput {
       key: "padding"
@@ -10152,12 +10138,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Prod"
@@ -10177,7 +10163,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -10327,16 +10312,16 @@ mappings {
       value: "inputs"
     }
     inputToOutput {
-      key: "targetLabels"
-      value: "labels_values"
+      key: "logitInputLengths"
+      value: "sequence_length"
     }
     inputToOutput {
       key: "targetLabelLengths"
       value: "labels_indices"
     }
     inputToOutput {
-      key: "logitInputLengths"
-      value: "sequence_length"
+      key: "targetLabels"
+      value: "labels_values"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "CTCLoss"
@@ -10373,15 +10358,13 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "min"
-    outputDoubleName: "max"
-    inputToOutput {
-      key: "min"
-      value: "minval"
-    }
     inputToOutput {
       key: "max"
       value: "maxval"
+    }
+    inputToOutput {
+      key: "min"
+      value: "minval"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "RandomUniformInt"
@@ -10454,12 +10437,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "dimension"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ArgMin"
@@ -10577,16 +10560,16 @@ mappings {
     outputTensorName: "sizes"
     outputTensorName: "_a"
     inputToOutput {
+      key: "_a"
+      value: "split_dim"
+    }
+    inputToOutput {
       key: "input"
       value: "value"
     }
     inputToOutput {
       key: "sizes"
       value: "size_splits"
-    }
-    inputToOutput {
-      key: "_a"
-      value: "split_dim"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "SplitV"
@@ -10813,12 +10796,12 @@ mappings {
       value: "input_sizes"
     }
     inputToOutput {
-      key: "weights"
-      value: "filter"
-    }
-    inputToOutput {
       key: "gradO"
       value: "out_backprop"
+    }
+    inputToOutput {
+      key: "weights"
+      value: "filter"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Conv2DBackpropInput"
@@ -11657,12 +11640,12 @@ mappings {
     outputBooleanName: "useAdjoint"
     outputBooleanName: "isLower"
     inputToOutput {
-      key: "useAdjoint"
-      value: "adjoint"
-    }
-    inputToOutput {
       key: "isLower"
       value: "lower"
+    }
+    inputToOutput {
+      key: "useAdjoint"
+      value: "adjoint"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "MatrixTriangularSolve"
@@ -11711,12 +11694,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "indices"
     inputToOutput {
-      key: "input"
-      value: "params"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "params"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "GatherV2"
@@ -11775,20 +11758,20 @@ mappings {
     inputBooleanName: "narrow_range"
     outputBooleanName: "narrowRange"
     inputToOutput {
-      key: "min"
-      value: "min"
-    }
-    inputToOutput {
       key: "max"
       value: "max"
     }
     inputToOutput {
-      key: "numBits"
-      value: "num_bits"
+      key: "min"
+      value: "min"
     }
     inputToOutput {
       key: "narrowRange"
       value: "narrow_range"
+    }
+    inputToOutput {
+      key: "numBits"
+      value: "num_bits"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FakeQuantWithMinMaxArgs"
@@ -11806,12 +11789,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "All"
@@ -11831,7 +11814,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -11885,6 +11867,17 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
+  opName: "noop"
+  inputFrameworkOpName: "IteratorGetNext"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    ruleType: "tensor"
+    inputFrameworkOpName: "IteratorGetNext"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
   opName: "fill"
   inputFrameworkOpName: "Fill"
   rule {
@@ -11895,12 +11888,12 @@ mappings {
     outputTensorName: "shape"
     outputTensorName: "outputs"
     inputToOutput {
-      key: "shape"
-      value: "dims"
-    }
-    inputToOutput {
       key: "outputs"
       value: "value"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "dims"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Fill"
@@ -11919,8 +11912,8 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "dtype"
     inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
     inputToOutput {
       key: "dtype"
       value: "T"
@@ -11943,12 +11936,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "ref"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "ref"
     }
     inputToOutput {
       key: "updates"
@@ -12243,16 +12236,16 @@ mappings {
       value: "x"
     }
     inputToOutput {
-      key: "scale"
-      value: "scale"
+      key: "mean"
+      value: "mean"
     }
     inputToOutput {
       key: "offset"
       value: "offset"
     }
     inputToOutput {
-      key: "mean"
-      value: "mean"
+      key: "scale"
+      value: "scale"
     }
     inputToOutput {
       key: "variance"
@@ -12269,12 +12262,12 @@ mappings {
     inputDataTypeName: "T"
     outputDataTypeName: "dtype"
     inputToOutput {
-      key: "epsilon"
-      value: "epsilon"
-    }
-    inputToOutput {
       key: "dtype"
       value: "T"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "epsilon"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FusedBatchNormV3"
@@ -12398,20 +12391,20 @@ mappings {
     outputDoubleName: "bias"
     outputDoubleName: "beta"
     inputToOutput {
-      key: "depth"
-      value: "depth_radius"
-    }
-    inputToOutput {
       key: "alpha"
       value: "alpha"
+    }
+    inputToOutput {
+      key: "beta"
+      value: "beta"
     }
     inputToOutput {
       key: "bias"
       value: "bias"
     }
     inputToOutput {
-      key: "beta"
-      value: "beta"
+      key: "depth"
+      value: "depth_radius"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "LRN"
@@ -12503,12 +12496,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "concatDimension"
     inputToOutput {
-      key: "input"
-      value: "values"
-    }
-    inputToOutput {
       key: "concatDimension"
       value: "concat_dim"
+    }
+    inputToOutput {
+      key: "input"
+      value: "values"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Concat"
@@ -12516,7 +12509,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "concat_dim"
@@ -12564,12 +12556,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "idxSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "SegmentProd"
@@ -12599,12 +12591,12 @@ mappings {
     inputBooleanName: "sorted"
     outputBooleanName: "needSort"
     inputToOutput {
-      key: "needSort"
-      value: "sorted"
-    }
-    inputToOutput {
       key: "k"
       value: "k"
+    }
+    inputToOutput {
+      key: "needSort"
+      value: "sorted"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "TopK"
@@ -12628,12 +12620,12 @@ mappings {
       value: "inputs"
     }
     inputToOutput {
-      key: "min"
-      value: "min"
-    }
-    inputToOutput {
       key: "max"
       value: "max"
+    }
+    inputToOutput {
+      key: "min"
+      value: "min"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "FakeQuantWithMinMaxVarsPerChannel"
@@ -12646,12 +12638,12 @@ mappings {
     inputBooleanName: "narrow_range"
     outputBooleanName: "narrowed"
     inputToOutput {
-      key: "numBits"
-      value: "num_bits"
-    }
-    inputToOutput {
       key: "narrowed"
       value: "narrow_range"
+    }
+    inputToOutput {
+      key: "numBits"
+      value: "num_bits"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FakeQuantWithMinMaxVarsPerChannel"
@@ -12802,16 +12794,16 @@ mappings {
       value: "x"
     }
     inputToOutput {
-      key: "scale"
-      value: "scale"
+      key: "mean"
+      value: "mean"
     }
     inputToOutput {
       key: "offset"
       value: "offset"
     }
     inputToOutput {
-      key: "mean"
-      value: "mean"
+      key: "scale"
+      value: "scale"
     }
     inputToOutput {
       key: "variance"
@@ -12828,12 +12820,12 @@ mappings {
     inputDataTypeName: "T"
     outputDataTypeName: "dtype"
     inputToOutput {
-      key: "epsilon"
-      value: "epsilon"
-    }
-    inputToOutput {
       key: "dtype"
       value: "T"
+    }
+    inputToOutput {
+      key: "epsilon"
+      value: "epsilon"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FusedBatchNormV2"
@@ -12901,12 +12893,12 @@ mappings {
     outputTensorName: "target"
     outputTensorName: "predictions"
     inputToOutput {
-      key: "target"
-      value: "targets"
-    }
-    inputToOutput {
       key: "predictions"
       value: "predictions"
+    }
+    inputToOutput {
+      key: "target"
+      value: "targets"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "InTopKV2"
@@ -12999,12 +12991,12 @@ mappings {
     outputTensorName: "n"
     outputTensorName: "input"
     inputToOutput {
-      key: "n"
-      value: "n"
-    }
-    inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "n"
+      value: "n"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "NthElement"
@@ -13012,8 +13004,8 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
-    outputIntName: "reverse"
     inputBooleanName: "reverse"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "reverse"
       value: "reverse"
@@ -13235,12 +13227,12 @@ mappings {
       value: "start"
     }
     inputToOutput {
-      key: "to"
-      value: "limit"
-    }
-    inputToOutput {
       key: "step"
       value: "delta"
+    }
+    inputToOutput {
+      key: "to"
+      value: "limit"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Range"
@@ -13248,20 +13240,17 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "from"
-    outputIntName: "to"
-    outputIntName: "step"
     inputToOutput {
       key: "from"
       value: "start"
     }
     inputToOutput {
-      key: "to"
-      value: "limit"
-    }
-    inputToOutput {
       key: "step"
       value: "delta"
+    }
+    inputToOutput {
+      key: "to"
+      value: "limit"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Range"
@@ -13297,12 +13286,12 @@ mappings {
       value: "values"
     }
     inputToOutput {
-      key: "range"
-      value: "value_range"
-    }
-    inputToOutput {
       key: "numBins"
       value: "nbins"
+    }
+    inputToOutput {
+      key: "range"
+      value: "value_range"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "HistogramFixedWidth"
@@ -13379,12 +13368,12 @@ mappings {
     outputTensorName: "indices"
     outputTensorName: "updates"
     inputToOutput {
-      key: "input"
-      value: "ref"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "ref"
     }
     inputToOutput {
       key: "updates"
@@ -13462,16 +13451,16 @@ mappings {
     outputTensorName: "b"
     outputTensorName: "e"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "b"
       value: "begin"
     }
     inputToOutput {
       key: "e"
       value: "size"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Slice"
@@ -13610,12 +13599,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "crop"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "crop"
       value: "crops"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BatchToSpace"
@@ -13688,12 +13677,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "indices"
     inputToOutput {
-      key: "input"
-      value: "params"
-    }
-    inputToOutput {
       key: "indices"
       value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "params"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "GatherNd"
@@ -14338,16 +14327,16 @@ mappings {
     outputTensorName: "crop"
     outputTensorName: "blockShape"
     inputToOutput {
-      key: "input"
-      value: "input"
+      key: "blockShape"
+      value: "block_shape"
     }
     inputToOutput {
       key: "crop"
       value: "crops"
     }
     inputToOutput {
-      key: "blockShape"
-      value: "block_shape"
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BatchToSpaceND"
@@ -14390,12 +14379,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Mean"
@@ -14415,7 +14404,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -14556,12 +14544,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "diagonal"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "diagonal"
       value: "diagonal"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BatchMatrixSetDiag"
@@ -14583,6 +14571,17 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
+  opName: "noop"
+  inputFrameworkOpName: "IteratorV2"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    ruleType: "tensor"
+    inputFrameworkOpName: "IteratorV2"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
   opName: "non_max_suppression_overlaps"
   inputFrameworkOpName: "NonMaxSuppressionWithOverlaps"
   rule {
@@ -14593,12 +14592,12 @@ mappings {
     outputTensorName: "scales"
     outputTensorName: "boxes"
     inputToOutput {
-      key: "scales"
-      value: "scores"
-    }
-    inputToOutput {
       key: "boxes"
       value: "overlaps"
+    }
+    inputToOutput {
+      key: "scales"
+      value: "scores"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "NonMaxSuppressionWithOverlaps"
@@ -14608,7 +14607,6 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "maxOutputSize"
     outputDoubleName: "overlapThreshold"
-    outputDoubleName: "scoreThreshold"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -14638,7 +14636,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -14723,12 +14720,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "input"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Any"
@@ -14748,7 +14745,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -15030,12 +15026,12 @@ mappings {
       value: "inputs"
     }
     inputToOutput {
-      key: "min"
-      value: "min"
-    }
-    inputToOutput {
       key: "max"
       value: "max"
+    }
+    inputToOutput {
+      key: "min"
+      value: "min"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "FakeQuantWithMinMaxVars"
@@ -15048,12 +15044,12 @@ mappings {
     inputBooleanName: "narrow_range"
     outputBooleanName: "narrowed"
     inputToOutput {
-      key: "numBits"
-      value: "num_bits"
-    }
-    inputToOutput {
       key: "narrowed"
       value: "narrow_range"
+    }
+    inputToOutput {
+      key: "numBits"
+      value: "num_bits"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FakeQuantWithMinMaxVars"
@@ -15194,32 +15190,16 @@ mappings {
     outputTensorName: "Wco"
     outputTensorName: "b"
     inputToOutput {
-      key: "maxTSLength"
-      value: "seq_len_max"
-    }
-    inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    inputToOutput {
-      key: "cLast"
-      value: "cs_prev"
-    }
-    inputToOutput {
-      key: "yLast"
-      value: "h_prev"
-    }
-    inputToOutput {
       key: "W"
       value: "w"
     }
     inputToOutput {
-      key: "Wci"
-      value: "wci"
-    }
-    inputToOutput {
       key: "Wcf"
       value: "wcf"
+    }
+    inputToOutput {
+      key: "Wci"
+      value: "wci"
     }
     inputToOutput {
       key: "Wco"
@@ -15228,6 +15208,22 @@ mappings {
     inputToOutput {
       key: "b"
       value: "b"
+    }
+    inputToOutput {
+      key: "cLast"
+      value: "cs_prev"
+    }
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    inputToOutput {
+      key: "maxTSLength"
+      value: "seq_len_max"
+    }
+    inputToOutput {
+      key: "yLast"
+      value: "h_prev"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BlockLSTMV2"
@@ -15351,12 +15347,12 @@ mappings {
     outputDoubleName: "clipValueMin"
     outputDoubleName: "clipValueMax"
     inputToOutput {
-      key: "clipValueMin"
-      value: "clip_value_min"
-    }
-    inputToOutput {
       key: "clipValueMax"
       value: "clip_value_max"
+    }
+    inputToOutput {
+      key: "clipValueMin"
+      value: "clip_value_min"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "ClipByValue"
@@ -15388,12 +15384,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "idxSegments"
     inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
       key: "idxSegments"
       value: "segment_ids"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "SegmentMean"
@@ -15456,16 +15452,16 @@ mappings {
     outputTensorName: "updates"
     outputTensorName: "indices"
     inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
       key: "operand"
       value: "ref"
     }
     inputToOutput {
       key: "updates"
       value: "updates"
-    }
-    inputToOutput {
-      key: "indices"
-      value: "indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterUpdate"
@@ -15543,12 +15539,12 @@ mappings {
     outputTensorName: "values"
     outputTensorName: "keep"
     inputToOutput {
-      key: "values"
-      value: "x"
-    }
-    inputToOutput {
       key: "keep"
       value: "y"
+    }
+    inputToOutput {
+      key: "values"
+      value: "x"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ListDiff"
@@ -15599,16 +15595,16 @@ mappings {
     outputTensorName: "updates"
     outputTensorName: "indices"
     inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
       key: "operand"
       value: "tensor"
     }
     inputToOutput {
       key: "updates"
       value: "updates"
-    }
-    inputToOutput {
-      key: "indices"
-      value: "indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "TensorScatterUpdate"
@@ -15632,12 +15628,12 @@ mappings {
       value: "indices"
     }
     inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
       key: "input"
       value: "tensor"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "TensorScatterSub"
@@ -15684,12 +15680,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "dimensions"
     inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    inputToOutput {
       key: "dimensions"
       value: "axis"
+    }
+    inputToOutput {
+      key: "input"
+      value: "x"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Cumprod"
@@ -15697,10 +15693,10 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
     inputBooleanName: "exclusive"
     inputBooleanName: "reverse"
+    outputBooleanName: "exclusive"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -15906,12 +15902,12 @@ mappings {
     outputTensorName: "input"
     outputTensorName: "factor"
     inputToOutput {
-      key: "input"
-      value: "images"
-    }
-    inputToOutput {
       key: "factor"
       value: "contrast_factor"
+    }
+    inputToOutput {
+      key: "input"
+      value: "images"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "AdjustContrastv2"

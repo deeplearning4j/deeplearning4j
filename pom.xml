@@ -340,8 +340,8 @@
         <neoitertools.version>1.0.0</neoitertools.version>
         <rxjava.version>2.2.0</rxjava.version>
         <kotlin.version>1.4.31</kotlin.version>
-        <test.heap.size>512m</test.heap.size>
-        <test.offheap.size>512m</test.offheap.size>
+        <test.heap.size>8g</test.heap.size>
+        <test.offheap.size>8g</test.offheap.size>
     </properties>
 
 
@@ -860,8 +860,8 @@
         <profile>
             <id>test-larger-heap-size</id>
             <properties>
-                <test.heap.size>2g</test.heap.size>
-                <test.offheap.size>4g</test.offheap.size>
+                <test.heap.size>8g</test.heap.size>
+                <test.offheap.size>8g</test.offheap.size>
             </properties>
         </profile>
 
