@@ -110,7 +110,7 @@ abstract class ValueMapping<
                 }
 
                 else -> {
-                    throw IllegalArgumentException("Unable to map value $k. Please use different rule for list values and tensors.")
+                    throw IllegalArgumentException("Unable to map value $k for op name ${mappingCtx.opName() }. Please use different rule for list values and tensors.")
                 }
             }
 

@@ -102,7 +102,35 @@ class TestOnnxIR {
 
 
     @Test
-    @Disabled
+    fun testOpExecutionHooks() {
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.ones(1,3,5,5)
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+
+            //Initializer(convertedTensor)
+            Node(NodeProto {
+                Input("x")
+                Output("y")
+                name = "y"
+                opType = "GlobalAveragePool"
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"y",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x"),listOf("y"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
+        val inputs = mapOf("x" to inputTensor)
+        val assertion = onnxGraphRunner.run(inputs)
+        val result = importedGraph.output(inputs,"y")
+        assertEquals(assertion,result)
+    }
+
+    @Test
     fun testOpsMapped() {
         val onnxOpRegistry = registry()
 
@@ -206,7 +234,6 @@ class TestOnnxIR {
     }
 
     @Test
-    @Disabled
     fun testOpExecution() {
         val onnxOpRegistry = registry()
 

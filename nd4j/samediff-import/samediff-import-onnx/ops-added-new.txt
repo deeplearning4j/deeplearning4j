@@ -1,3 +1,2 @@
 Constant,x
-Constant,y
-Or,output
+GlobalAveragePool,y

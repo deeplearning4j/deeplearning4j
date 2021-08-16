@@ -446,17 +446,29 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         val numInputsToTake = resolvedArgInputs.size
 
                         if(numInputsToTake != inNames.size) {
-                            if(numInputsToTake < inNames.size)
+                            // See NO OP NOTE below for an explanation for this exception
+                            if(numInputsToTake < inNames.size && op.op.opName() != "noop")
                                 op.inputsToOp = inNames.subList(0, numInputsToTake)
-                            else if(numInputsToTake > inNames.size) {
+                            else if(numInputsToTake > inNames.size && op.op.opName() != "noop") {
                                 op.inputsToOp = resolvedArgInputs.map { input -> input.name }
-                            }
+                            }  else if(op.op.opName() == "noop")
+                                op.inputsToOp = inNames
+                            //we want the default names used for no op or other situations
                         } else
                             op.inputsToOp = inNames
                         //add nodes/other pre processing in order for this node to work
                         sd.ops[name] = op
                         //clear out inputs for variables as well to reflect the actual graph structure
-                        if(numInputsToTake < numInputs) {
+                        //NO OP NOTE: we make an exception for no op mappings. No op mappings are a potential
+                        //signal that we are using  pre hook rules as substitutions for operations
+                        //without a mapping process. This can happen when we don't have an exact mapping
+                        //for an op and need a way of substituting the op with an equivalent set of samediff
+                        //op calls. Specifying no nop as a way of handling mapping processes allows a special
+                        //sentinel value  that , in combination with pre hook rules, can be used
+                        //to substitute ops when they may not otherwise be supported.
+                        //The reason we can't take away the inputs is the user may specify the inputs
+                        //to the op and the hook rule may need those inputs to use as a base for calculations.
+                        if(numInputsToTake < numInputs && op.op.opName() != "noop") {
                             for(i in numInputsToTake until numInputs) {
                                 if(sd.hasVariable(nd.inputAt(i))) {
                                     val currInputVar = sd.variables[nd.inputAt(i)]!!

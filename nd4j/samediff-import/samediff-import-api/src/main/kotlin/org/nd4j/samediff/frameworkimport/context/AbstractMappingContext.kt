@@ -63,12 +63,12 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
             relevantPreProcessingHooks.addAll(hooks)
         }
 
-        ImportReflectionCache.preProcessRuleImplementationsByOp.filterKeys { input -> input == nd4jOpName() }.values.forEach { hooks ->
+        ImportReflectionCache.preProcessRuleImplementationsByOp.filterKeys { input -> input == opName() }.values.forEach { hooks ->
             relevantPreProcessingHooks.addAll(hooks)
         }
 
 
-        ImportReflectionCache.postProcessRuleImplementationsByOp.filterKeys { input -> input == nd4jOpName() }.values.forEach { hooks ->
+        ImportReflectionCache.postProcessRuleImplementationsByOp.filterKeys { input -> input == opName() }.values.forEach { hooks ->
             relevantPostProcessingHooks.addAll(hooks)
         }
 
