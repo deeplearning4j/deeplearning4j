@@ -37,8 +37,7 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
 
     static {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-//        isCudaBackend = "CUDA".equalsIgnoreCase(backend);
-        isCudaBackend = true;   //For testing only
+        isCudaBackend = "CUDA".equalsIgnoreCase(backend);
     }
 
     /**
