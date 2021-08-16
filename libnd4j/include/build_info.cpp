@@ -45,8 +45,8 @@ const char* buildInfo() {
 #if defined(HAVE_FLATBUFFERS)
         "\nHAVE_FLATBUFFERS"
 #endif
-#if defined(HAVE_MKLDNN)
-        "\nHAVE_MKLDNN"
+#if defined(HAVE_ONEDNN)
+        "\nHAVE_ONEDNN"
 #endif
 #if defined(__EXTERNAL_BLAS__)
         "\nHAVE_EXTERNAL_BLAS"

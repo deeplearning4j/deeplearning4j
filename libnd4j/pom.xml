@@ -392,30 +392,6 @@
                 </plugins>
             </build>
         </profile>
-        <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
-        <profile>
-            <id>libnd4j-helper-avx2</id>
-            <activation>
-                <property>
-                    <name>libnd4j.extension</name>
-                    <value>avx2</value>
-                </property>
-            </activation>
-            <properties>
-                <libnd4j.helper>mkldnn</libnd4j.helper>
-            </properties>
-        </profile>
-        <profile>
-            <id>libnd4j-helper-avx512</id>
-            <activation>
-                <property>
-                    <name>libnd4j.extension</name>
-                    <value>avx512</value>
-                </property>
-            </activation>
-            <properties>
-                <libnd4j.helper>mkldnn</libnd4j.helper>
-            </properties>
-        </profile>
+
     </profiles>
 </project>

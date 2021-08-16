@@ -18,31 +18,31 @@ if(result)
   message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
 
-# OPTIONAL MKL-DNN
-if ("${BUILD_MKLDNN}")
+# OPTIONAL ONE-DNN
+if ("${BUILD_ONEDNN}")
     # Download and unpack mkl-dnn at configure time
     configure_file(../../CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
     if(result)
-        message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+        message(FATAL_ERROR "CMake step for onednn failed: ${result}")
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
         RESULT_VARIABLE result
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
     if(result)
-        message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+        message(FATAL_ERROR "Build step for onednn failed: ${result}")
     endif()
 
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
-        ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/onednn-src
+        ${CMAKE_CURRENT_BINARY_DIR}/onednn-build
         EXCLUDE_FROM_ALL)
-    set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
-    set(HAVE_MKLDNN 1)
-    add_definitions("-DHAVE_MKLDNN")
-    include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
-    set(MKLDNN dnnl)
+    set(onednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-src)
+    set(HAVE_ONEDNN 1)
+    add_definitions("-DHAVE_ONEDNN")
+    include_directories(${onednn_SOURCE_DIR}/include ${onednn_SOURCE_DIR})
+    set(ONEDNN dnnl)
 endif()
 
 if (${HELPERS_armcompute})
@@ -201,7 +201,7 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release" OR "${BUILD_MKLDNN}")
+if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release" OR "${BUILD_ONEDNN}")
     message("Looking for BLAS")
     find_package(BLAS REQUIRED)
     if (BLAS_FOUND)
@@ -225,8 +225,8 @@ file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp)
 file(GLOB_RECURSE LEGACY_SOURCES false ../../include/legacy/impl/*.cpp  ../../include/legacy/cpu/*.cpp ../../include/legacy/*.h)
 file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/loops/*.h)
 
-# optionally build mkldnn
-if ("${BUILD_MKLDNN}")
+# optionally build onednn
+if ("${BUILD_ONEDNN}")
     file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkldnn/*.cpp)
 endif()
 
@@ -297,5 +297,5 @@ add_executable(runtests ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${EXEC_SOURCES} ${HEL
     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
-target_link_libraries(runtests gtest ${MKLDNN} ${ARMCOMPUTE_LIBRARIES} gtest_main ${BLAS_LIBRARIES})
+target_link_libraries(runtests gtest ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} gtest_main ${BLAS_LIBRARIES})
 

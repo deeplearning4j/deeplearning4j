@@ -22,14 +22,14 @@
 // Created by saudet on 8/30/2018.
 //
 
-#ifndef LIBND4J_MKLDNNSTREAM_H
-#define LIBND4J_MKLDNNSTREAM_H
+#ifndef LIBND4J_ONEDNNSTREAM_H
+#define LIBND4J_ONEDNNSTREAM_H
 
 #if !defined(__STANDALONE_BUILD__)
 #include "config.h"
 #endif
 
-#if defined(HAVE_MKLDNN)
+#if defined(HAVE_ONEDNN)
 
 namespace sd {
     class MKLDNNStream {
@@ -75,4 +75,4 @@ namespace sd {
 }
 #endif
 
-#endif //LIBND4J_MKLDNNSTREAM_H
+#endif //LIBND4J_ONEDNNSTREAM_H

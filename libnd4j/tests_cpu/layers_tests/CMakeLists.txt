@@ -149,7 +149,7 @@ if (SD_CPU)
     endif()
 
 	add_executable(runtests ${TEST_SOURCES})
-	target_link_libraries(runtests samediff_obj ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
+	target_link_libraries(runtests samediff_obj ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${ONEDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
 elseif(SD_CUDA)
 
 	add_executable(runtests ${TEST_SOURCES})
@@ -167,5 +167,5 @@ elseif(SD_CUDA)
         message("CUDNN library: ${CUDNN}")
     endif()
 
-	target_link_libraries(runtests samediff_obj ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN} gtest gtest_main)
+	target_link_libraries(runtests samediff_obj ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${ONEDNN} gtest gtest_main)
 endif()
