@@ -1,4 +1,4 @@
-package com.example.bypass;
+package org.nd4j.bypass;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.openblas.global.openblas;
