@@ -14,22 +14,22 @@ public class Flattening {
         public INDArray small_f = org.nd4j.linalg.factory.Nd4j.create(new int[]{1<<10, 1<<10}, 'f');
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void toFlattened_CC_Small(SetupState state) throws IOException {
         org.nd4j.linalg.factory.Nd4j.toFlattened('c', state.small_c);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void toFlattened_CF_Small(SetupState state) throws IOException {
         org.nd4j.linalg.factory.Nd4j.toFlattened('f', state.small_c);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void toFlattened_FF_Small(SetupState state) throws IOException {
         org.nd4j.linalg.factory.Nd4j.toFlattened('f', state.small_f);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void toFlattened_FC_Small(SetupState state) throws IOException {
         org.nd4j.linalg.factory.Nd4j.toFlattened('c', state.small_f);
     }

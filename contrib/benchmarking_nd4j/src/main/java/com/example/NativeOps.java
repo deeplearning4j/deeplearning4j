@@ -32,24 +32,24 @@ public class NativeOps {
     }
 
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void broadcastColumn(SetupState state) throws IOException {
         state.array.addiColumnVector(state.arrayColumn);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void broadcastRow(SetupState state) throws IOException {
         state.array.addiRowVector(state.arrayRow);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void transformOp(SetupState state) throws IOException {
         Nd4j.getExecutioner().exec(new Exp(state.array1, state.array2));
     }
 
 
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void scalarOp2(SetupState state) throws IOException {
         Nd4j.getExecutioner().exec(new ScalarMultiplication(state.arrayUnordered, 2.5f));
     }
@@ -57,38 +57,38 @@ public class NativeOps {
 
 
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void dupDifferentOrdersOp(SetupState state) throws IOException {
         state.arrayUnordered.assign(state.arrayOrderedF);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void dupSameOrdersOp(SetupState state) throws IOException {
         state.arrayUnordered.assign(state.arrayOrderedC);
     }
 
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void pairwiseOp1(SetupState state) throws IOException {
         state.array1.addiRowVector(state.array2);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void broadcastOp2(SetupState state) throws IOException {
         state.array.addiRowVector(state.arrayRow);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void reduceOp1(SetupState state) throws IOException {
         state.array.sum(0);
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void reduceOp2(SetupState state) throws IOException {
         state.array.sumNumber().floatValue();
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void scalarOp1(SetupState state) throws IOException {
         state.array2.addi(0.5f);
     }

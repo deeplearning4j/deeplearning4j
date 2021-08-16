@@ -44,7 +44,7 @@ public class BypassComparison_2x2 {
     }
 
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public void sgemm(SetupState state, Blackhole bh) {
         final GemmParams params = state.params;
         try {
@@ -56,7 +56,7 @@ public class BypassComparison_2x2 {
         }
     }
 
-    @Benchmark @BenchmarkMode(Mode.SampleTime) @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @Benchmark @BenchmarkMode(Mode.AverageTime) @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public void cblas_gemm(SetupState state, Blackhole bh) {
         final GemmParams params = state.params;
         openblas.cblas_sgemm(102,111, 111, params.getM(), params.getN(), params.getK(), 1.0f, state.a, params.getLda(), state.b, params.getLdb(), 0.0f, state.c, params.getLdc());
