@@ -44,7 +44,7 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private long dH = 1;
     @Builder.Default
-    private Pooling3D.Pooling3DType type = Pooling3DType.MAX;
+    private Pooling3DType type = Pooling3DType.MAX;
     private boolean isSameMode;
     @Builder.Default private boolean isNCDHW = true;
 

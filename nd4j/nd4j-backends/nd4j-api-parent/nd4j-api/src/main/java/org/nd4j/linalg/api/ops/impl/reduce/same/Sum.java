@@ -39,7 +39,39 @@ public class Sum extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
     public Sum() {
+    }
+
+    public Sum(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
     }
 
     public Sum(INDArray x, int... dimensions) {
@@ -54,8 +86,24 @@ public class Sum extends BaseReduceSameOp {
         super(x, z, keepDims, dimensions);
     }
 
+    public Sum(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public Sum(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public Sum(INDArray x, boolean keepDims, int... dimensions) {
         this(x, null, keepDims, dimensions);
+    }
+
+    public Sum(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
     @Override

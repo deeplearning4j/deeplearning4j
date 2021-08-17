@@ -41,6 +41,12 @@ public class EpsilonEquals extends BaseCondition {
     }
 
     @Override
+    public void setValue(Number value) {
+        //no op where we can pass values in
+    }
+
+
+    @Override
     public double epsThreshold() {
         return this.eps;
     }

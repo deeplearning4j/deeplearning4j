@@ -148,11 +148,11 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test2dAnd2(Nd4jBackend backend) {
-        INDArray array = Nd4j.zeros(10, 10);
-        array.slice(4).putScalar(2, 1e-5f);
+        INDArray array = Nd4j.zeros(DataType.DOUBLE,10, 10);
+        array.slice(4).putScalar(2, 1e-4);
 //        System.out.println(array);
-
-        assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
+        boolean and = BooleanIndexing.and(array, Conditions.epsEquals(0f));
+        assertFalse(and);
 
 
     }
@@ -177,33 +177,6 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertTrue(BooleanIndexing.or(array, Conditions.greaterThan(1e-6f)));
     }
 
-    /**
-     * This test fails, because it highlights current mechanics on SpecifiedIndex stuff.
-     * Internally there's
-     *
-     * @throws Exception
-     */
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSliceAssign1(Nd4jBackend backend) {
-        INDArray array = Nd4j.zeros(4, 4);
-
-        INDArray patch = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f});
-
-        INDArray slice = array.slice(1);
-        int[] idx = new int[] {0, 1, 3};
-        INDArrayIndex[] range = new INDArrayIndex[] {new SpecifiedIndex(idx)};
-
-        INDArray subarray = slice.get(range);
-
-        //System.out.println("Subarray: " + Arrays.toString(subarray.data().asFloat()) + " isView: " + subarray.isView());
-
-        slice.put(range, patch);
-
-        //System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
-
-        assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

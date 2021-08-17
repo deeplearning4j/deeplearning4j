@@ -59,6 +59,8 @@ public interface CustomOp {
 
     void addTArgument(double... arg);
 
+    String[] sArgs();
+
     void addIArgument(int... arg);
 
     void addIArgument(long... arg);
@@ -68,6 +70,12 @@ public interface CustomOp {
     void addDArgument(DataType... arg);
 
     void removeIArgument(Integer arg);
+
+    void addSArgument(String ... args);
+
+    void removeSArgument(String argument);
+
+    String getSArgument(int index);
 
     Boolean getBArgument(int index);
 
@@ -84,6 +92,8 @@ public interface CustomOp {
     int numBArguments();
 
     int numDArguments();
+
+    int numSArguments();
 
     void addInputArgument(INDArray... arg);
 

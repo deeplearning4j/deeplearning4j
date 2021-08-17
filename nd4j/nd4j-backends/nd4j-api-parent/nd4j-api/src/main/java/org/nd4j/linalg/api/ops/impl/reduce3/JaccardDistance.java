@@ -38,12 +38,24 @@ public class JaccardDistance extends BaseReduce3Op {
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
+    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public JaccardDistance() {
 
     }
 
     public JaccardDistance(INDArray x, INDArray y, int... dimensions) {
         this(x, y, null, false, dimensions);
+    }
+
+    public JaccardDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        super(x, y, allDistances, dimensions);
     }
 
     public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
@@ -63,6 +75,22 @@ public class JaccardDistance extends BaseReduce3Op {
     public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
         super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
+    }
+
+    public JaccardDistance(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public JaccardDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(sd,x,y,keepDims,isComplex,dimensions);
+    }
+
+    public JaccardDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(x,y,null,keepDims,isComplex,dimensions);
     }
 
     @Override

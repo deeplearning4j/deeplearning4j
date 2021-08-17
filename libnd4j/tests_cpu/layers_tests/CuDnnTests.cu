@@ -92,7 +92,7 @@ TEST_F(CuDnnTests, helpers_includer) {
 
 
 TEST_F(CuDnnTests, mixed_helpers_test_1) {
-#if defined(HAVE_CUDNN) && defined (HAVE_MKLDNN)
+#if defined(HAVE_CUDNN) && defined (HAVE_ONEDNN)
     nd4j_printf("Mixed platforms test\n", "");
 
 

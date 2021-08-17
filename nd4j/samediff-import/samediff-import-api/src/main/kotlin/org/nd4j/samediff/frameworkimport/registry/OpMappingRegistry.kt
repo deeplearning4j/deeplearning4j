@@ -32,6 +32,7 @@ import org.nd4j.samediff.frameworkimport.findOp
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.process.MappingProcess
 import org.nd4j.samediff.frameworkimport.process.MappingProcessLoader
+import org.nd4j.samediff.frameworkimport.reflect.ImportReflectionCache
 import org.nd4j.shade.protobuf.TextFormat
 import java.io.File
 import java.lang.IllegalArgumentException
@@ -47,20 +48,13 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         ATTRIBUTE_VALUE_TYPE: GeneratedMessageV3>(inputFrameworkName: String,nd4jOpDescriptors: OpNamespace.OpDescriptorList) {
 
     val registeredOps: MultiValuedMap<String, MappingProcess<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE,
-            TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>> = HashSetValuedHashMap<
-            String,MappingProcess<GRAPH_TYPE,
-            OP_DEF_TYPE,
-            NODE_TYPE,
-            TENSOR_TYPE,
-            ATTRIBUTE_TYPE,
-            ATTRIBUTE_VALUE_TYPE,
-            DATA_TYPE>>()
+            TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>> = HashSetValuedHashMap()
 
     val opDefList = HashMap<String,OP_DEF_TYPE>()
     val nd4jOpDefs = HashMap<String,OpNamespace.OpDescriptor>()
     val inputFrameworkName = inputFrameworkName
     val nd4jOpDescriptors = nd4jOpDescriptors
-
+    val cache = ImportReflectionCache
 
     fun mappedNd4jOpNames(): Set<String> {
         return registeredOps.values().map { input -> input.opName() }.toSortedSet()!!
@@ -126,7 +120,13 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
 
 
         if(!registeredOps.containsKey(inputFrameworkOpName)) {
-            throw IllegalArgumentException("No import process defined for $inputFrameworkOpName")
+            val allRules = cache.preProcessRuleImplementationsByOp
+            val noRules = allRules.filterKeys { input -> input == inputFrameworkOpName }.values.isEmpty()
+            if(noRules)
+                throw IllegalArgumentException("No import process defined for $inputFrameworkOpName")
+            else {
+                println()
+            }
         }
         return registeredOps[inputFrameworkOpName]!!.first()
     }
@@ -135,6 +135,13 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         val descriptor = nd4jOpDescriptors.findOp(nd4jOpName)
         return descriptor.opDeclarationType
     }
+
+    fun opHasRuleNoProcess(inputFrameworkOpName: String): Boolean {
+        val allRules = cache.preProcessRuleImplementationsByOp
+        val noRules = allRules.filterKeys { input -> input == inputFrameworkOpName }.values.isEmpty()
+        return noRules && !registeredOps.containsKey(inputFrameworkOpName)
+    }
+
 
     /**
      * TODO: Make loading op mapping rules (both tensor and attribute), input framework op definitions casted as

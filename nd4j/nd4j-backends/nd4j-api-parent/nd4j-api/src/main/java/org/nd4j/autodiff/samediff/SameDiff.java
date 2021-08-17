@@ -112,8 +112,11 @@ public class SameDiff extends SDBaseOps {
     private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
-
+    @Getter
+    @Setter
     private ArrayHolder constantArrays = new ThreadSafeArrayHolder(true);
+    @Getter
+    @Setter
     private ArrayHolder variablesArrays = new ThreadSafeArrayHolder(true);
     private final Map<Long, Map<String, INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
@@ -4725,7 +4728,7 @@ public class SameDiff extends SDBaseOps {
                 0,
                 0,
                 -1,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0);
 
         return flatNode;
     }

@@ -32,14 +32,14 @@ sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #endif
 
-#ifdef HAVE_MKLDNN
+#ifdef HAVE_ONEDNN
 #include <dnnl.hpp>
 #endif
 
 namespace sd {
 
     LaunchContext::~LaunchContext() {
-#ifdef HAVE_MKLDNN
+#ifdef HAVE_ONEDNN
         delete reinterpret_cast<dnnl::engine*>(_engine);
 #endif
     }
@@ -54,7 +54,7 @@ namespace sd {
         _workspace = nullptr;
         _deviceID = 0;
 
-#ifdef HAVE_MKLDNN
+#ifdef HAVE_ONEDNN
         _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
 #endif
     }

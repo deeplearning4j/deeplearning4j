@@ -32,13 +32,32 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSameOp {
-
     public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
     protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
     }
 
     protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
@@ -53,6 +72,14 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(x, y, z, dimensions);
     }
 
+    public BaseReduceSameOp(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public BaseReduceSameOp(INDArray x, int... dimensions) {
         super(x, dimensions);
     }
@@ -61,8 +88,16 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(x, keepDims, dimensions);
     }
 
+    public BaseReduceSameOp(INDArray x, INDArray y, int... dimensions) {
+        super(x, y, dimensions);
+    }
+
     protected BaseReduceSameOp() {
         super();
+    }
+
+    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
     }
 
     @Override

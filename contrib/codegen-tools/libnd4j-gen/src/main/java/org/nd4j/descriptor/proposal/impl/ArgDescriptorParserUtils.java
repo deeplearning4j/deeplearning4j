@@ -339,6 +339,18 @@ public class ArgDescriptorParserUtils {
         return null;
     }
 
+
+    public static int numProposalsWithType(OpNamespace.ArgDescriptor.ArgType argType, Collection<ArgDescriptorProposal> proposals) {
+        int count = 0;
+        for(ArgDescriptorProposal proposal : proposals) {
+            if(proposal.getDescriptor().getArgType() == argType) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     public static boolean containsProposalWithDescriptorName(String name, Collection<ArgDescriptorProposal> proposals) {
         for(ArgDescriptorProposal proposal : proposals) {
             if(proposal.getDescriptor().getName().equals(name)) {

@@ -94,7 +94,10 @@ public class DifferentialFunctionClassHolder {
      * @return the fields for a given function
      */
     public Map<String,Field> getFieldsForFunction(DifferentialFunction function) {
-        return fieldsForFunction.get(function.opName());
+        if(!fieldsForFunction.containsKey(function.getClass().getName())) {
+            return Collections.emptyMap();
+        }
+        return fieldsForFunction.get(function.getClass().getName());
     }
 
     /**
@@ -148,7 +151,9 @@ public class DifferentialFunctionClassHolder {
         fieldsForFunction = new LinkedHashMap<>();
 
         for(DifferentialFunction df : ImportClassMapping.getOpNameMapping().values()){
-
+            if(df == null || df.opName() == null) {
+                continue;
+            }
             try {
                 //accumulate the field names for a given function
                 //this is mainly used in import
@@ -221,7 +226,7 @@ public class DifferentialFunctionClassHolder {
 
                 }
 
-                fieldsForFunction.put(df.opName(), fieldNames);
+                fieldsForFunction.put(df.getClass().getName(), fieldNames);
             } catch (NoOpNameFoundException e) {
                 log.trace("Skipping function  " + df.getClass());
             } catch (Exception e) {

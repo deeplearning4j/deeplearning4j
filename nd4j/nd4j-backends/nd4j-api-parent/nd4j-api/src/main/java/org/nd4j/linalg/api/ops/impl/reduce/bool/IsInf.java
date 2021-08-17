@@ -33,12 +33,52 @@ public class IsInf extends BaseReduceBoolOp {
         super(sameDiff, i_v, dims);
     }
 
+    public IsInf(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, z, keepDims, dimensions);
+    }
+
+    public IsInf(INDArray x, int... dimensions) {
+        super(x, dimensions);
+    }
+
+    public IsInf(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
+    public IsInf(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
+    }
+
+    public IsInf(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public IsInf(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public IsInf(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public IsInf(SameDiff sameDiff, SDVariable i_v, int[] dims, boolean keepDims) {
         super(sameDiff, i_v, dims, keepDims);
     }
 
+    public IsInf(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public IsInf(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
+
 
     public IsInf() {}
+
+    public IsInf(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
 
     public IsInf(INDArray x, INDArray z) {
         super(x, z, false, null);
@@ -46,6 +86,22 @@ public class IsInf extends BaseReduceBoolOp {
 
     public IsInf(INDArray x) {
         super(x);
+    }
+
+    public IsInf(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public IsInf(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public IsInf(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public IsInf(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
     }
 
     @Override
