@@ -36,6 +36,8 @@
   <name>samediff-import-onnx</name>
   <properties>
     <jgit.version>5.10.0.202012080955-r</jgit.version>
+    <test.offheap.size>3g</test.offheap.size>
+    <test.heap.size>3g</test.heap.size>
   </properties>
 
   <build>
@@ -46,6 +48,7 @@
       </plugin>
     </plugins>
   </build>
+
 
 
   <dependencies>
@@ -76,7 +79,11 @@
       <version>${jgit.version}</version>
     </dependency>
 
-
+    <dependency>
+      <groupId>org.nd4j</groupId>
+      <artifactId>nd4j-native</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <profiles>

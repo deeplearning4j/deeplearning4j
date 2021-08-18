@@ -1,7 +1,7 @@
 mappings {
   frameworkName: "onnx"
-  opName: "add"
-  inputFrameworkOpName: "Add"
+  opName: "or"
+  inputFrameworkOpName: "Or"
   rule {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
@@ -18,82 +18,6 @@ mappings {
       value: "B"
     }
     ruleType: "tensor"
-    inputFrameworkOpName: "Add"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Add"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "tan"
-  inputFrameworkOpName: "Tan"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Tan"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Tan"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "or"
-  inputFrameworkOpName: "Or"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Or"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
     inputFrameworkOpName: "Or"
   }
   rule {
@@ -142,7 +66,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -506,67 +429,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "lrn"
-  inputFrameworkOpName: "LRN"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "LRN"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "size"
-    outputIntName: "depth"
-    inputFloatName: "alpha"
-    inputFloatName: "beta"
-    inputFloatName: "bias"
-    outputDoubleName: "alpha"
-    outputDoubleName: "beta"
-    outputDoubleName: "bias"
-    inputToOutput {
-      key: "alpha"
-      value: "alpha"
-    }
-    inputToOutput {
-      key: "beta"
-      value: "beta"
-    }
-    inputToOutput {
-      key: "bias"
-      value: "bias"
-    }
-    inputToOutput {
-      key: "depth"
-      value: "size"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "LRN"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "LRN"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "isinf"
   inputFrameworkOpName: "IsInf"
   rule {
@@ -594,242 +456,6 @@ mappings {
       }
     }
     inputFrameworkOpName: "IsInf"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "batchnorm"
-  inputFrameworkOpName: "BatchNormalization"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    inputTensorName: "mean"
-    inputTensorName: "var"
-    inputTensorName: "scale"
-    outputTensorName: "input"
-    outputTensorName: "mean"
-    outputTensorName: "variance"
-    outputTensorName: "gamma"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    inputToOutput {
-      key: "mean"
-      value: "mean"
-    }
-    inputToOutput {
-      key: "variance"
-      value: "var"
-    }
-    inputToOutput {
-      key: "gamma"
-      value: "scale"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputFloatName: "epsilon"
-    outputDoubleName: "epsilon"
-    inputToOutput {
-      key: "epsilon"
-      value: "epsilon"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "applyGamma"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyGamma"
-        boolValue: true
-        argType: BOOL
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "applyBeta"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyBeta"
-        boolValue: true
-        argType: BOOL
-        argIndex: 2
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "applyScale"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyScale"
-        int64Value: 1
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "applyOffset"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyOffset"
-        int64Value: 1
-        argType: INT64
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "elu"
-  inputFrameworkOpName: "Elu"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Elu"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputFloatName: "alpha"
-    outputDoubleName: "alpha"
-    inputToOutput {
-      key: "alpha"
-      value: "alpha"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Elu"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "concat"
-  inputFrameworkOpName: "Concat"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "inputs"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "inputs"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Concat"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "axis"
-    outputIntName: "concatDimension"
-    inputToOutput {
-      key: "concatDimension"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Concat"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "isDynamicAxis"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "isDynamicAxis"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Concat"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "top_k"
-  inputFrameworkOpName: "TopK"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "TopK"
-  }
-  rule {
-    ruleName: "invertbooleannumber"
-    functionName: "invertbooleannumber"
-    inputIntName: "sorted"
-    outputBooleanName: "needSort"
-    inputToOutput {
-      key: "needSort"
-      value: "sorted"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "TopK"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "k"
-    inputToOutput {
-      key: "k"
-      value: "K"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "TopK"
   }
 }
 mappings {
@@ -871,103 +497,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "matmul"
-  inputFrameworkOpName: "MatMul"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "y"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    inputToOutput {
-      key: "y"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "MatMul"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "transposeX"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "transposeX"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "MatMul"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "transposeY"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "transposeY"
-        argType: BOOL
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "MatMul"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "transposeZ"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "transposeZ"
-        argType: BOOL
-        argIndex: 2
-      }
-    }
-    inputFrameworkOpName: "MatMul"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputFloatName: "alpha"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "alpha"
-        argType: DOUBLE
-      }
-    }
-    inputFrameworkOpName: "MatMul"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputFloatName: "beta"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "beta"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "MatMul"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "reduce_min"
   inputFrameworkOpName: "ReduceMin"
   rule {
@@ -997,113 +526,12 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "ReduceMin"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "sinh"
-  inputFrameworkOpName: "Sinh"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Sinh"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Sinh"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "asinh"
-  inputFrameworkOpName: "Asinh"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Asinh"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Asinh"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "gather_nd"
-  inputFrameworkOpName: "GatherND"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "indices"
-    inputTensorName: "data"
-    outputTensorName: "indices"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "indices"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "GatherND"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "checkIndices"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "checkIndices"
-        boolValue: true
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "GatherND"
   }
 }
 mappings {
@@ -1177,74 +605,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "less"
-  inputFrameworkOpName: "Less"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "y"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    inputToOutput {
-      key: "y"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Less"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Less"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "softplus"
-  inputFrameworkOpName: "Softplus"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Softplus"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Softplus"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "reduce_sum"
   inputFrameworkOpName: "ReduceSum"
   rule {
@@ -1274,7 +634,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1353,83 +712,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "reduce_prod"
-  inputFrameworkOpName: "ReduceProd"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "ReduceProd"
-  }
-  rule {
-    ruleName: "invertbooleannumber"
-    functionName: "invertbooleannumber"
-    inputIntName: "keepdims"
-    outputBooleanName: "keepDims"
-    inputToOutput {
-      key: "keepDims"
-      value: "keepdims"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "ReduceProd"
-  }
-  rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axes"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "ReduceProd"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "multiply"
-  inputFrameworkOpName: "Mul"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "y"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    inputToOutput {
-      key: "y"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Mul"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Mul"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "log"
   inputFrameworkOpName: "Log"
   rule {
@@ -1479,75 +761,13 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "flattenDimension"
+    outputIntName: "dimensions"
     inputToOutput {
-      key: "flattenDimension"
+      key: "dimensions"
       value: "axis"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Flatten"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "range"
-  inputFrameworkOpName: "Range"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "start"
-    inputTensorName: "limit"
-    inputTensorName: "delta"
-    outputTensorName: "from"
-    outputTensorName: "to"
-    outputTensorName: "step"
-    inputToOutput {
-      key: "from"
-      value: "start"
-    }
-    inputToOutput {
-      key: "to"
-      value: "limit"
-    }
-    inputToOutput {
-      key: "step"
-      value: "delta"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Range"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "from"
-    inputToOutput {
-      key: "from"
-      value: "start"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Range"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "to"
-    inputToOutput {
-      key: "to"
-      value: "limit"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Range"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "step"
-    inputToOutput {
-      key: "step"
-      value: "delta"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Range"
   }
 }
 mappings {
@@ -1567,63 +787,15 @@ mappings {
     inputFrameworkOpName: "Transpose"
   }
   rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    outputIntName: "permuteDims"
     inputToOutput {
       key: "permuteDims"
       value: "perm"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Transpose"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "gather"
-  inputFrameworkOpName: "Gather"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "indices"
-    inputTensorName: "data"
-    outputTensorName: "indices"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "indices"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Gather"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "axis"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Gather"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Gather"
   }
 }
 mappings {
@@ -1658,44 +830,12 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "ArgMax"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "not"
-  inputFrameworkOpName: "Not"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Not"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputFloatName: "comparable"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "comparable"
-        argType: DOUBLE
-      }
-    }
-    inputFrameworkOpName: "Not"
   }
 }
 mappings {
@@ -1729,103 +869,12 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "ReduceMean"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "reshape"
-  inputFrameworkOpName: "Reshape"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    inputTensorName: "shape"
-    outputTensorName: "input"
-    outputTensorName: "shape"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
-      key: "shape"
-      value: "shape"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Reshape"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "shapeArr"
-    inputToOutput {
-      key: "shapeArr"
-      value: "shape"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Reshape"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "randomuniform"
-  inputFrameworkOpName: "RandomUniform"
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputFloatName: "low"
-    inputFloatName: "high"
-    outputDoubleName: "min"
-    outputDoubleName: "max"
-    inputToOutput {
-      key: "min"
-      value: "low"
-    }
-    inputToOutput {
-      key: "max"
-      value: "high"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "RandomUniform"
-  }
-  rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "shape"
-      value: "shape"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "RandomUniform"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "boolean_and"
-  inputFrameworkOpName: "And"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "y"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    inputToOutput {
-      key: "y"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "And"
   }
 }
 mappings {
@@ -1869,35 +918,6 @@ mappings {
       }
     }
     inputFrameworkOpName: "Softmax"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "leakyrelu"
-  inputFrameworkOpName: "LeakyRelu"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "LeakyRelu"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputFloatName: "alpha"
-    outputDoubleName: "alpha"
-    inputToOutput {
-      key: "alpha"
-      value: "alpha"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "LeakyRelu"
   }
 }
 mappings {
@@ -1966,68 +986,6 @@ mappings {
       }
     }
     inputFrameworkOpName: "Pow"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "acos"
-  inputFrameworkOpName: "Acos"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Acos"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Acos"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "sin"
-  inputFrameworkOpName: "Sin"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Sin"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Sin"
   }
 }
 mappings {
@@ -2145,6 +1103,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "GlobalAveragePool"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "split"
   inputFrameworkOpName: "Split"
   rule {
@@ -2228,9 +1191,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "keepdims"
-    outputDoubleName: "keepDims"
+    outputBooleanName: "keepDim"
     inputToOutput {
-      key: "keepDims"
+      key: "keepDim"
       value: "keepdims"
     }
     ruleType: "attribute"
@@ -2239,7 +1202,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -2419,34 +1381,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "cosh"
-  inputFrameworkOpName: "Cosh"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Cosh"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Cosh"
-  }
+  opName: "noop"
+  inputFrameworkOpName: "Placeholder"
 }
 mappings {
   frameworkName: "onnx"
@@ -2470,16 +1406,16 @@ mappings {
       value: "boxes"
     }
     inputToOutput {
-      key: "scales"
-      value: "scores"
+      key: "iouThreshold"
+      value: "iou_threshold"
     }
     inputToOutput {
       key: "maxOutSize"
       value: "max_output_boxes_per_class"
     }
     inputToOutput {
-      key: "iouThreshold"
-      value: "iou_threshold"
+      key: "scales"
+      value: "scores"
     }
     inputToOutput {
       key: "scoreThreshold"
@@ -2498,35 +1434,6 @@ mappings {
     }
     ruleType: "attribute"
     inputFrameworkOpName: "NonMaxSuppression"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "log_softmax"
-  inputFrameworkOpName: "LogSoftmax"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "LogSoftmax"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "axis"
-    outputIntName: "dimension"
-    inputToOutput {
-      key: "dimension"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "LogSoftmax"
   }
 }
 mappings {
@@ -2608,133 +1515,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "noop"
-  inputFrameworkOpName: "Constant"
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "cumsum"
-  inputFrameworkOpName: "CumSum"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "x"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "CumSum"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "exclusive"
-    inputIntName: "reverse"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
-    inputToOutput {
-      key: "exclusive"
-      value: "exclusive"
-    }
-    inputToOutput {
-      key: "reverse"
-      value: "reverse"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "CumSum"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "CumSum"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "scatter_update"
-  inputFrameworkOpName: "ScatterElements"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    inputTensorName: "updates"
-    inputTensorName: "indices"
-    outputTensorName: "operand"
-    outputTensorName: "updates"
-    outputTensorName: "indices"
-    inputToOutput {
-      key: "operand"
-      value: "data"
-    }
-    inputToOutput {
-      key: "updates"
-      value: "updates"
-    }
-    inputToOutput {
-      key: "indices"
-      value: "indices"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "ScatterElements"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "gruCell"
-  inputFrameworkOpName: "GRU"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    inputTensorName: "R"
-    inputTensorName: "W"
-    inputTensorName: "B"
-    inputTensorName: "initial_h"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "Wru"
-    outputTensorName: "Wc"
-    outputTensorName: "bc"
-    outputTensorName: "hLast"
-    outputTensorName: "bru"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    inputToOutput {
-      key: "Wru"
-      value: "R"
-    }
-    inputToOutput {
-      key: "Wc"
-      value: "W"
-    }
-    inputToOutput {
-      key: "bc"
-      value: "B"
-    }
-    inputToOutput {
-      key: "hLast"
-      value: "initial_h"
-    }
-    inputToOutput {
-      key: "bru"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "GRU"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "reduce_norm1"
   inputFrameworkOpName: "ReduceL1"
   rule {
@@ -2764,7 +1544,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -2806,49 +1585,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "fill"
-  inputFrameworkOpName: "ConstantOfShape"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "shape"
-    inputToOutput {
-      key: "shape"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-  rule {
-    ruleName: "attributendarraytoscalarattribute"
-    functionName: "attributendarraytoscalarattribute"
-    outputDoubleName: "value"
-    inputTensorName: "value"
-    inputToOutput {
-      key: "value"
-      value: "value"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "outputDataType"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "outputDataType"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "reduce_norm2"
   inputFrameworkOpName: "ReduceL2"
   rule {
@@ -2878,44 +1614,12 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "ReduceL2"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "round"
-  inputFrameworkOpName: "Round"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Round"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Round"
   }
 }
 mappings {
@@ -2981,7 +1685,6 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -2992,34 +1695,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "sigmoid"
-  inputFrameworkOpName: "Sigmoid"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Sigmoid"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Sigmoid"
-  }
+  opName: "noop"
+  inputFrameworkOpName: "GlobalMaxPool"
 }
 mappings {
   frameworkName: "onnx"
@@ -3237,134 +1914,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "dropout_inverted"
-  inputFrameworkOpName: "Dropout"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Dropout"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "p"
-    inputToOutput {
-      key: "p"
-      value: "ratio"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Dropout"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "atan"
-  inputFrameworkOpName: "Atan"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Atan"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Atan"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "floor"
-  inputFrameworkOpName: "Floor"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Floor"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Floor"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "prelu"
-  inputFrameworkOpName: "PRelu"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    inputTensorName: "slope"
-    outputTensorName: "input"
-    outputTensorName: "alpha"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    inputToOutput {
-      key: "alpha"
-      value: "slope"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "PRelu"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "sharedAxes"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "sharedAxes"
-        int64Value: -1
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "PRelu"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "atanh"
   inputFrameworkOpName: "Atanh"
   rule {
@@ -3396,43 +1945,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "mod"
-  inputFrameworkOpName: "Mod"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "y"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    inputToOutput {
-      key: "y"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Mod"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Mod"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "lstmLayer"
   inputFrameworkOpName: "LSTM"
   rule {
@@ -3455,36 +1967,36 @@ mappings {
     outputTensorName: "hI"
     outputTensorName: "cI"
     inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    inputToOutput {
-      key: "Wx"
-      value: "W"
+      key: "Wp"
+      value: "P"
     }
     inputToOutput {
       key: "Wr"
       value: "R"
     }
     inputToOutput {
-      key: "Wp"
-      value: "P"
+      key: "Wx"
+      value: "W"
     }
     inputToOutput {
       key: "b"
       value: "B"
     }
     inputToOutput {
-      key: "seqLen"
-      value: "sequence_lens"
+      key: "cI"
+      value: "initial_c"
     }
     inputToOutput {
       key: "hI"
       value: "initial_h"
     }
     inputToOutput {
-      key: "cI"
-      value: "initial_c"
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "seqLen"
+      value: "sequence_lens"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "LSTM"
@@ -5864,134 +4376,6 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "asin"
-  inputFrameworkOpName: "Asin"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Asin"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Asin"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "space_to_depth"
-  inputFrameworkOpName: "SpaceToDepth"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "SpaceToDepth"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "blocksize"
-    outputIntName: "block_size"
-    inputToOutput {
-      key: "block_size"
-      value: "blocksize"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "SpaceToDepth"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "isNHWC"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "isNHWC"
-        int64Value: 1
-        argType: INT64
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "SpaceToDepth"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "tile"
-  inputFrameworkOpName: "Tile"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    inputTensorName: "repeats"
-    outputTensorName: "input"
-    outputTensorName: "reps_vector"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    inputToOutput {
-      key: "reps_vector"
-      value: "repeats"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Tile"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "is_static_reps"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "is_static_reps"
-        boolValue: true
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Tile"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "dimensions"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "dimensions"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "Tile"
-  }
-}
-mappings {
-  frameworkName: "onnx"
   opName: "greater_equal"
   inputFrameworkOpName: "GreaterOrEqual"
   rule {
@@ -6025,51 +4409,6 @@ mappings {
       }
     }
     inputFrameworkOpName: "GreaterOrEqual"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "depth_to_space"
-  inputFrameworkOpName: "DepthToSpace"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "DepthToSpace"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "blocksize"
-    outputIntName: "block_size"
-    inputToOutput {
-      key: "block_size"
-      value: "blocksize"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "DepthToSpace"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "isNHWC"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "isNHWC"
-        int64Value: 1
-        argType: INT64
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "DepthToSpace"
   }
 }
 mappings {
@@ -6169,37 +4508,6 @@ mappings {
       }
     }
     inputFrameworkOpName: "Neg"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "matrix_determinant"
-  inputFrameworkOpName: "Det"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Det"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Det"
   }
 }
 mappings {
@@ -6313,16 +4621,16 @@ mappings {
     outputTensorName: "weights"
     outputTensorName: "bias"
     inputToOutput {
+      key: "bias"
+      value: "B"
+    }
+    inputToOutput {
       key: "input"
       value: "X"
     }
     inputToOutput {
       key: "weights"
       value: "W"
-    }
-    inputToOutput {
-      key: "bias"
-      value: "B"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Conv"
@@ -6619,6 +4927,1788 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "softsign"
+  inputFrameworkOpName: "Softsign"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Softsign"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Softsign"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "add"
+  inputFrameworkOpName: "Add"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Add"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Add"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "tan"
+  inputFrameworkOpName: "Tan"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Tan"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Tan"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "lrn"
+  inputFrameworkOpName: "LRN"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LRN"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "size"
+    outputIntName: "depth"
+    inputFloatName: "alpha"
+    inputFloatName: "beta"
+    inputFloatName: "bias"
+    outputDoubleName: "alpha"
+    outputDoubleName: "beta"
+    outputDoubleName: "bias"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    inputToOutput {
+      key: "beta"
+      value: "beta"
+    }
+    inputToOutput {
+      key: "bias"
+      value: "bias"
+    }
+    inputToOutput {
+      key: "depth"
+      value: "size"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LRN"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "LRN"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "batchnorm"
+  inputFrameworkOpName: "BatchNormalization"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "mean"
+    inputTensorName: "var"
+    inputTensorName: "scale"
+    outputTensorName: "input"
+    outputTensorName: "mean"
+    outputTensorName: "variance"
+    outputTensorName: "gamma"
+    inputToOutput {
+      key: "gamma"
+      value: "scale"
+    }
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "mean"
+      value: "mean"
+    }
+    inputToOutput {
+      key: "variance"
+      value: "var"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "epsilon"
+    outputDoubleName: "epsilon"
+    inputToOutput {
+      key: "epsilon"
+      value: "epsilon"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "applyGamma"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyGamma"
+        argType: BOOL
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "applyBeta"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyBeta"
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "applyScale"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyScale"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "applyOffset"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "applyOffset"
+        argType: INT64
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "elu"
+  inputFrameworkOpName: "Elu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Elu"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "alpha"
+    outputDoubleName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Elu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "concat"
+  inputFrameworkOpName: "Concat"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "inputs"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "inputs"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Concat"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    inputToOutput {
+      key: "concatDimension"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Concat"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "isDynamicAxis"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isDynamicAxis"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Concat"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "top_k"
+  inputFrameworkOpName: "TopK"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "TopK"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "sorted"
+    outputBooleanName: "needSort"
+    inputToOutput {
+      key: "needSort"
+      value: "sorted"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "TopK"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "k"
+    inputToOutput {
+      key: "k"
+      value: "K"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "TopK"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "matmul"
+  inputFrameworkOpName: "MatMul"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transX"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transX"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transY"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transY"
+        argType: BOOL
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transZ"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transZ"
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeX"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeX"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeY"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeY"
+        argType: BOOL
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "transposeZ"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "transposeZ"
+        argType: BOOL
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "alpha"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "alpha"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "beta"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "beta"
+        doubleValue: 1.0
+        argType: DOUBLE
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "MatMul"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sinh"
+  inputFrameworkOpName: "Sinh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sinh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sinh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "asinh"
+  inputFrameworkOpName: "Asinh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Asinh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Asinh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "gather_nd"
+  inputFrameworkOpName: "GatherND"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "indices"
+    inputTensorName: "data"
+    outputTensorName: "indices"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "GatherND"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "checkIndices"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "checkIndices"
+        boolValue: true
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "GatherND"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "less"
+  inputFrameworkOpName: "Less"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Less"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Less"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "softplus"
+  inputFrameworkOpName: "Softplus"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Softplus"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Softplus"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reduce_prod"
+  inputFrameworkOpName: "ReduceProd"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ReduceProd"
+  }
+  rule {
+    ruleName: "invertbooleannumber"
+    functionName: "invertbooleannumber"
+    inputIntName: "keepdims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keepdims"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceProd"
+  }
+  rule {
+    ruleName: "listnumbertolistnumber"
+    functionName: "listnumbertolistnumber"
+    inputToOutput {
+      key: "dimensions"
+      value: "axes"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ReduceProd"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "multiply"
+  inputFrameworkOpName: "Mul"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Mul"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Mul"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "range"
+  inputFrameworkOpName: "Range"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "start"
+    inputTensorName: "limit"
+    inputTensorName: "delta"
+    outputTensorName: "from"
+    outputTensorName: "to"
+    outputTensorName: "step"
+    inputToOutput {
+      key: "from"
+      value: "start"
+    }
+    inputToOutput {
+      key: "step"
+      value: "delta"
+    }
+    inputToOutput {
+      key: "to"
+      value: "limit"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Range"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    inputToOutput {
+      key: "from"
+      value: "start"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Range"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    inputToOutput {
+      key: "to"
+      value: "limit"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Range"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    inputToOutput {
+      key: "step"
+      value: "delta"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Range"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "gather"
+  inputFrameworkOpName: "Gather"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "indices"
+    inputTensorName: "data"
+    outputTensorName: "indices"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Gather"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Gather"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Gather"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "not"
+  inputFrameworkOpName: "Not"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Not"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "comparable"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "comparable"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "Not"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "reshape"
+  inputFrameworkOpName: "Reshape"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    inputTensorName: "shape"
+    outputTensorName: "input"
+    outputTensorName: "shape"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "shape"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Reshape"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "shapeArr"
+    inputToOutput {
+      key: "shapeArr"
+      value: "shape"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Reshape"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "randomuniform"
+  inputFrameworkOpName: "RandomUniform"
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "low"
+    inputFloatName: "high"
+    inputToOutput {
+      key: "max"
+      value: "high"
+    }
+    inputToOutput {
+      key: "min"
+      value: "low"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "RandomUniform"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "seed"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "seed"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "RandomUniform"
+  }
+  rule {
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
+    inputToOutput {
+      key: "shape"
+      value: "shape"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "RandomUniform"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "boolean_and"
+  inputFrameworkOpName: "And"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "And"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "leakyrelu"
+  inputFrameworkOpName: "LeakyRelu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LeakyRelu"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputFloatName: "alpha"
+    outputDoubleName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "alpha"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LeakyRelu"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "LeakyRelu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "acos"
+  inputFrameworkOpName: "Acos"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Acos"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Acos"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sin"
+  inputFrameworkOpName: "Sin"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sin"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sin"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "cosh"
+  inputFrameworkOpName: "Cosh"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Cosh"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Cosh"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "log_softmax"
+  inputFrameworkOpName: "LogSoftmax"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "LogSoftmax"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "axis"
+    outputIntName: "dimension"
+    inputToOutput {
+      key: "dimension"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "LogSoftmax"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Constant"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "cumsum"
+  inputFrameworkOpName: "CumSum"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "x"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "x"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "CumSum"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "exclusive"
+    inputIntName: "reverse"
+    outputBooleanName: "exclusive"
+    outputBooleanName: "reverse"
+    inputToOutput {
+      key: "exclusive"
+      value: "exclusive"
+    }
+    inputToOutput {
+      key: "reverse"
+      value: "reverse"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "CumSum"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "CumSum"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "scatter_update"
+  inputFrameworkOpName: "ScatterElements"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    inputTensorName: "updates"
+    inputTensorName: "indices"
+    outputTensorName: "operand"
+    outputTensorName: "updates"
+    outputTensorName: "indices"
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
+      key: "operand"
+      value: "data"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ScatterElements"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "gruCell"
+  inputFrameworkOpName: "GRU"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "R"
+    inputTensorName: "W"
+    inputTensorName: "B"
+    inputTensorName: "initial_h"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "Wru"
+    outputTensorName: "Wc"
+    outputTensorName: "bc"
+    outputTensorName: "hLast"
+    outputTensorName: "bru"
+    inputToOutput {
+      key: "Wc"
+      value: "W"
+    }
+    inputToOutput {
+      key: "Wru"
+      value: "R"
+    }
+    inputToOutput {
+      key: "bc"
+      value: "B"
+    }
+    inputToOutput {
+      key: "bru"
+      value: "B"
+    }
+    inputToOutput {
+      key: "hLast"
+      value: "initial_h"
+    }
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "GRU"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "fill"
+  inputFrameworkOpName: "ConstantOfShape"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "shape"
+    inputToOutput {
+      key: "shape"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ConstantOfShape"
+  }
+  rule {
+    ruleName: "attributendarraytoscalarattribute"
+    functionName: "attributendarraytoscalarattribute"
+    outputDoubleName: "value"
+    inputTensorName: "value"
+    inputToOutput {
+      key: "value"
+      value: "value"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ConstantOfShape"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "outputDataType"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "outputDataType"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "ConstantOfShape"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "round"
+  inputFrameworkOpName: "Round"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Round"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Round"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "sigmoid"
+  inputFrameworkOpName: "Sigmoid"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Sigmoid"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Sigmoid"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "dropout_inverted"
+  inputFrameworkOpName: "Dropout"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "data"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "data"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Dropout"
+  }
+  rule {
+    ruleName: "ndarrayinputtonumericalattribute"
+    functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "p"
+    inputToOutput {
+      key: "p"
+      value: "ratio"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Dropout"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "atan"
+  inputFrameworkOpName: "Atan"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Atan"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Atan"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "floor"
+  inputFrameworkOpName: "Floor"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Floor"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Floor"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "prelu"
+  inputFrameworkOpName: "PRelu"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    inputTensorName: "slope"
+    outputTensorName: "input"
+    outputTensorName: "alpha"
+    inputToOutput {
+      key: "alpha"
+      value: "slope"
+    }
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "PRelu"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "sharedAxes"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "sharedAxes"
+        int64Value: -1
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "PRelu"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "mod"
+  inputFrameworkOpName: "Mod"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "A"
+    inputTensorName: "B"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "A"
+    }
+    inputToOutput {
+      key: "y"
+      value: "B"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Mod"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Mod"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "asin"
+  inputFrameworkOpName: "Asin"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Asin"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Asin"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "space_to_depth"
+  inputFrameworkOpName: "SpaceToDepth"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SpaceToDepth"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "blocksize"
+    outputIntName: "block_size"
+    inputToOutput {
+      key: "block_size"
+      value: "blocksize"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "SpaceToDepth"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isNHWC"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNHWC"
+        int64Value: 1
+        argType: INT64
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "SpaceToDepth"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "tile"
+  inputFrameworkOpName: "Tile"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    inputTensorName: "repeats"
+    outputTensorName: "input"
+    outputTensorName: "reps_vector"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    inputToOutput {
+      key: "reps_vector"
+      value: "repeats"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Tile"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "is_static_reps"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "is_static_reps"
+        boolValue: true
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Tile"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "dimensions"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "dimensions"
+        argType: INT64
+      }
+    }
+    inputFrameworkOpName: "Tile"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "depth_to_space"
+  inputFrameworkOpName: "DepthToSpace"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "DepthToSpace"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "blocksize"
+    outputIntName: "block_size"
+    inputToOutput {
+      key: "block_size"
+      value: "blocksize"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "DepthToSpace"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "isNHWC"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "isNHWC"
+        int64Value: 1
+        argType: INT64
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "DepthToSpace"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "matrix_determinant"
+  inputFrameworkOpName: "Det"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "X"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Det"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputBooleanName: "inPlace"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "inPlace"
+        argType: BOOL
+      }
+    }
+    inputFrameworkOpName: "Det"
+  }
+}
+mappings {
+  frameworkName: "onnx"
   opName: "greater"
   inputFrameworkOpName: "Greater"
   rule {
@@ -6683,37 +6773,6 @@ mappings {
       }
     }
     inputFrameworkOpName: "Sign"
-  }
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "softsign"
-  inputFrameworkOpName: "Softsign"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Softsign"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "Softsign"
   }
 }
 mappings {

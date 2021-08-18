@@ -2,7 +2,6 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.common.util.ArrayUtil
 import org.nd4j.ir.OpNamespace
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
@@ -14,7 +13,8 @@ class GlobalMaxPooling: PreImportHook {
         op: SameDiffOp,
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor
+        descriptor: OpNamespace.OpDescriptor,
+        outputNames: List<String>
     ): HookResult {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
         val rankOf = sd.rank(inputVariable)

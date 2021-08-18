@@ -95,6 +95,8 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
     }
 
     override fun irNode(): IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType> {
+        if(node.opType == "Placeholder")
+            return OnnxIRNode(node,  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")["Constant"]!!,graph.opMappingRegistry())
         return OnnxIRNode(node,  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")[node.opType]!!,graph.opMappingRegistry())
     }
 
