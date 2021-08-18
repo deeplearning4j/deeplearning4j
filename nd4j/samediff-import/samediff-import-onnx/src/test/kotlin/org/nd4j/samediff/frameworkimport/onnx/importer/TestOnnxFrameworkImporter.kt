@@ -19,12 +19,25 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
-import org.junit.jupiter.api.Disabled
 import org.junit.Test
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.nd4j.common.io.ClassPathResource
+import org.nd4j.linalg.factory.Nd4j
+import java.io.File
+import java.util.*
 
 class TestOnnxFrameworkImporter {
+
+    @Test
+    fun testAgeRace() {
+        val importer = OnnxFrameworkImporter()
+        val file = ClassPathResource("agerace_v2.onnx").file
+        val result  = importer.runImport(file.absolutePath, emptyMap())
+        val arr = Nd4j.ones(1, 3, 224, 224)
+        result.batchOutput().inputs(Collections.singletonMap("input", arr))
+            .output("output").output()
+        println(result.summary())
+        result.asFlatFile(File("agerace-samediff.fb"))
+    }
 
 
 }
