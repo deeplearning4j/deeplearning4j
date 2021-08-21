@@ -66,7 +66,7 @@ namespace sd {
             std::vector<sd::DataType> _dataTypes;
 
             sd::ops::OpDescriptor* _opDescriptor;
-            bool _useMKLDNN = sd::Environment::getInstance().isUseMKLDNN();
+            bool _useONEDNN = sd::Environment::getInstance().isUseONEDNN();
 
             // target engine for execution
             samediff::Engine _engine = DEFAULT_ENGINE;
@@ -116,8 +116,8 @@ namespace sd {
             int opNum();
             void setOpNum(int opNum);
 
-            bool isUseMKLDNN() { return _useMKLDNN; }
-            void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN = useMKLDNN; }
+            bool isUseONEDNN() { return _useONEDNN; }
+            void setUseONEDNN(bool useONEDNN) { _useONEDNN = useONEDNN; }
 
             /**
              * This method returns number of inputs available in this block

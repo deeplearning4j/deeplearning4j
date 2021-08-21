@@ -574,7 +574,7 @@ if [ "$HELPER" == "" ]; then
   echo "!!                                                                                                           !!"
   echo "!!                                                 WARNING!                                                  !!"
   echo "!!                                      No helper packages configured!                                       !!"
-  echo "!!                          You can specify helper by using -h key. I.e. <-h mkldnn>                         !!"
+  echo "!!                          You can specify helper by using -h key. I.e. <-h onednn>                         !!"
   echo "!!                                                                                                           !!"
   echo "!!                                                                                                           !!"
   echo "!!                                                                                                           !!"

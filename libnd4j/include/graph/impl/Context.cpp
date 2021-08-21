@@ -56,7 +56,7 @@ namespace sd {
                 this->_opNum = prototype->opNum();
                 this->_isInplace = prototype->isInplace();
                 this->_nodeId = prototype->nodeId();
-                this->_useMKLDNN = prototype->isUseMKLDNN();
+                this->_useONEDNN = prototype->isUseONEDNN();
             }
 
 

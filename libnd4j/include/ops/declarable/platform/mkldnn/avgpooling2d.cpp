@@ -80,7 +80,7 @@ PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    return block.isUseONEDNN() && sd::MKLDNNStream::isSupported({input, output});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ PLATFORM_CHECK(avgpool2d_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    return block.isUseONEDNN() && sd::MKLDNNStream::isSupported({input, output});
 }
 
 

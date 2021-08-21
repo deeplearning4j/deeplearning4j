@@ -363,7 +363,7 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
     const DataType zType = output->dataType();
     const DataType bType = bias != nullptr ? bias->dataType() : zType;
 
-    return block.isUseMKLDNN() && (dH <= 1 && dW <= 1 && !paddingMode) &&
+    return block.isUseONEDNN() && (dH <= 1 && dW <= 1 && !paddingMode) &&
           (
             (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
             ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
@@ -446,7 +446,7 @@ PLATFORM_CHECK(deconv2d_bp, ENGINE_CPU) {
     const DataType gradWType = gradW->dataType();
     const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
 
-    return block.isUseMKLDNN() && (dH <= 1 && dW <= 1 && !paddingMode) && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+    return block.isUseONEDNN() && (dH <= 1 && dW <= 1 && !paddingMode) && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
 }
 
 

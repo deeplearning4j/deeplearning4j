@@ -88,7 +88,7 @@ namespace sd {
                 auto input = INPUT_VARIABLE(0);
                 auto output = OUTPUT_VARIABLE(0);
 
-                return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+                return block.isUseONEDNN() && sd::MKLDNNStream::isSupported({input, output});
             }
         }
     }

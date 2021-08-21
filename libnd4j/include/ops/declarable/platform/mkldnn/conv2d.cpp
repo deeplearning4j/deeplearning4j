@@ -521,7 +521,7 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
     auto weights = INPUT_VARIABLE(1);
 
     // conv2d is only available for float32 dtype
-    return block.isUseMKLDNN() && input->dataType() == sd::DataType::FLOAT32 &&
+    return block.isUseONEDNN() && input->dataType() == sd::DataType::FLOAT32 &&
            weights->dataType() == sd::DataType::FLOAT32;
 }
 
@@ -583,7 +583,7 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
 
-    return block.isUseMKLDNN() &&
+    return block.isUseONEDNN() &&
            sd::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
 }
 

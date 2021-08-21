@@ -442,7 +442,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 
     const int inRank = input->rankOf();
 
-    return block.isUseMKLDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
+    return block.isUseONEDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
             (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 && varType == DataType::FLOAT32 &&
              gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
 }
@@ -573,7 +573,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 //     else
 //         axes.push_back(input->rankOf() - 1);
 
-//     return block.isUseMKLDNN() &&
+//     return block.isUseONEDNN() &&
 //            sd::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
 //            axes.size() == 1;
 // }
@@ -722,7 +722,7 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
 
     const int inRank = input->rankOf();
 
-    return block.isUseMKLDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
+    return block.isUseONEDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
             (inputType == DataType::FLOAT32 && meanType  == DataType::FLOAT32 && varType  == DataType::FLOAT32 &&
              dLdOType  == DataType::FLOAT32 && gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&
              dLdIType  == DataType::FLOAT32 && dLdGType  == DataType::FLOAT32 && dLdBType == DataType::FLOAT32);

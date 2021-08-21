@@ -522,7 +522,7 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
     auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
     auto output = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
 
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, weights, bias, output});
+    return block.isUseONEDNN() && sd::MKLDNNStream::isSupported({input, weights, bias, output});
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -589,7 +589,7 @@ PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
     auto gradW = OUTPUT_VARIABLE(1);                                                // [kD, kH, kW, iC, oC], [oC, iC, kD, kH, kW], [oC, kD, kH, kW, iC]
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                  // [oC]
 
-    return block.isUseMKLDNN() &&
+    return block.isUseONEDNN() &&
            sd::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
 }
 

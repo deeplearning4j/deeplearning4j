@@ -141,7 +141,7 @@ namespace sd {
                 Source     Destination
                 f32 	    f32
                 */
-                return  !x->isEmpty() && block.isUseMKLDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+                return  !x->isEmpty() && block.isUseONEDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && zType == DataType::FLOAT32);
 
             }
 
@@ -257,7 +257,7 @@ namespace sd {
 
                 //Source     Destination
                 //f32 	    f32
-                return block.isUseMKLDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32);
+                return block.isUseONEDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32);
             }
 
         }

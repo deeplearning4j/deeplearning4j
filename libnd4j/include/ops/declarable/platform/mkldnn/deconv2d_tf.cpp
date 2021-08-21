@@ -208,7 +208,7 @@ PLATFORM_CHECK(deconv2d_tf, ENGINE_CPU) {
     const DataType gradOType = gradO->dataType();
     const DataType gradIType = gradI->dataType();
 
-    return block.isUseMKLDNN() && ((wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16));
+    return block.isUseONEDNN() && ((wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16));
 }
 
 }

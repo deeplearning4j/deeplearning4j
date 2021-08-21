@@ -109,7 +109,7 @@ namespace sd {
                 Source     Destination
                 f32 	    f32
                 */
-                return  block.isUseMKLDNN() && bSupportedRanks;
+                return  block.isUseONEDNN() && bSupportedRanks;
             }
 
 
@@ -213,7 +213,7 @@ namespace sd {
 
                 //Source     Destination
                 //f32 	    f32
-                return block.isUseMKLDNN() && bSupportedRanks;
+                return block.isUseONEDNN() && bSupportedRanks;
             }
 
         }

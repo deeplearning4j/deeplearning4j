@@ -266,9 +266,13 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
     return Status::OK();
 }
-
+#include <iostream>
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(matmul, ENGINE_CPU) {
+#if 1
+    sd::Environment::getInstance().setDebug(true);
+    sd::Environment::getInstance().setVerbose(true);
+#endif
 
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
@@ -282,19 +286,59 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
     float alpha = block.numT() > 0 ? T_ARG(0) : 1.0f;
     float beta = block.numT() > 1 ? T_ARG(1) : 0.0f;
 
+    Requirements req("ONEDNN MATMUL OP");
+    
     // we're skipping if result order is F or arrays are not continuous
-    bool skip2D = z->rankOf() == 2 && (z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3);
 
-    // we're skipping 3D cases if they are not C continuoys
-    bool skip3D = z->rankOf() == 3 && (x->ordering() == 'f' || y->ordering() == 'f' || z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+    if(z->rankOf()==2){
+        req.setPrefix("ONEDNN MATMUL OP: case#1").expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_INPUT1), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_OUTPUT1), 1 )
+        && req.expectNotEq(makeInfoVariable(z->ordering(), ORDERING_MSG_OUTPUT), 'f' );
+    }
+    else if(z->rankOf() == 3){
+        req.setPrefix("ONEDNN MATMUL OP: case#2").expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_INPUT1), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_OUTPUT1), 1 )
+        && req.expectNotEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'f' )
+        && req.expectNotEq(makeInfoVariable(y->ordering(), ORDERING_MSG_INPUT1), 'f' )
+        && req.expectNotEq(makeInfoVariable(z->ordering(), ORDERING_MSG_OUTPUT), 'f' );
 
-    return !skip2D && !skip3D && block.isUseMKLDNN() && x->rankOf() < 3 &&
-          (
-            (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
-            (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||
-            (xType==DataType::BFLOAT16 && yType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
-            ((xType==DataType::UINT8 || xType==DataType::INT8) && (yType==DataType::UINT8 || yType==DataType::INT8) && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32))
-          );
+    }
+
+    req.setPrefix("ONEDNN MATMUL OP").expectTrue(
+        makeInfoVariable(
+            [xType, yType, zType]{
+                    return (
+                       (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
+                       (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||
+                       (xType==DataType::BFLOAT16 && yType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
+                       ((xType==DataType::UINT8 || xType==DataType::INT8) && (yType==DataType::UINT8 || yType==DataType::INT8) && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32))
+                     );
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+
+    //log the success state, before returning
+    req.logTheSuccess();
+
+    return req;
+
+    //NOTE: here is the old check. will be removed
+    // bool skip2D = z->rankOf() == 2 && (z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+
+    // // we're skipping 3D cases if they are not C continuoys
+    // bool skip3D = z->rankOf() == 3 && (x->ordering() == 'f' || y->ordering() == 'f' || z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+
+    // return !skip2D && !skip3D && block.isUseONEDNN() && x->rankOf() < 3 &&
+    //       (
+    //         (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
+    //         (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||
+    //         (xType==DataType::BFLOAT16 && yType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
+    //         ((xType==DataType::UINT8 || xType==DataType::INT8) && (yType==DataType::UINT8 || yType==DataType::INT8) && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32))
+    //       );
 }
 
 

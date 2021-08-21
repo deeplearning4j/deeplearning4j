@@ -425,6 +425,11 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
 PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
 
+#if 1
+    sd::Environment::getInstance().setDebug(true);
+    sd::Environment::getInstance().setVerbose(true);
+#endif
+
     const auto dataFormat    = INT_ARG(0);    // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL], for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
     const auto directionMode = INT_ARG(1);    // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3)
 
@@ -462,21 +467,46 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     DataType hType  = h  != nullptr ? h->dataType()  : xType;
     DataType hLType = hL != nullptr ? hL->dataType() : xType;
     DataType cLType = cL != nullptr ? cL->dataType() : xType;
+    Requirements req("ONEDNN LstmLayer OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(cellClip, "Cell clippin"), 0) &&
+    req.expectTrue(makeInfoVariable(retFullSeq, "Return full sequence")) &&
+    req.expectFalse(makeInfoVariable(hasPH, "Having the Peephole connections"), EXPECTED_NOT_SUPPORTED) &&
+    req.expectFalse(makeInfoVariable(hasSeqLen, "Having theSequence length array"), EXPECTED_NOT_SUPPORTED) &&
+    req.expectLess(makeInfoVariable(dataFormat, "Data format"), 2) &&
+    req.expectLess(makeInfoVariable(directionMode, "Direction mode"), 4) &&
+    req.expectEq(makeInfoVariable(retLastH, "Return lastH"), makeInfoVariable(retLastC, "Return lastC")) &&
+    req.expectEq(makeInfoVariable(hasInitH, "Has initial H"), makeInfoVariable(hasInitC, "Has initial C")) &&
+    req.expectTrue(
+        makeInfoVariable(
+            [xType, WxType, WrType, bType, hIType, cIType, hType, hLType, cLType]{
+                return (
+                (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
+                (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
+                (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))
+                  );
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+    
+    req.logTheSuccess();
+    return req;
+    // auto featuresSupported = (cellClip == 0)     //Cell clipping not supported
+    //     && retFullSeq                            //Always return full sequence in case of MKL DNN
+    //     && !hasPH                                //Peephole connections not supported in MKL DNN
+	// 	&& !hasSeqLen                            //Sequence length array not supported in MKL DNN
+	// 	&& dataFormat < 2                        //Data format - only 0 and 1 supported in MKL DNN- 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn]
+	// 	&& directionMode < 4                     //Direction mode - only 0-3 supported in MKL DNN (no extra dim option) - 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat
+	// 	&& retLastH == retLastC                  //Return both lastH and lastC, or return neither (not just 1 or other)
+	// 	&& hasInitH == hasInitC;				 //Need both or neither initial H and C
 
-    auto featuresSupported = (cellClip == 0)     //Cell clipping not supported
-        && retFullSeq                            //Always return full sequence in case of MKL DNN
-        && !hasPH                                //Peephole connections not supported in MKL DNN
-		&& !hasSeqLen                            //Sequence length array not supported in MKL DNN
-		&& dataFormat < 2                        //Data format - only 0 and 1 supported in MKL DNN- 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn]
-		&& directionMode < 4                     //Direction mode - only 0-3 supported in MKL DNN (no extra dim option) - 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat
-		&& retLastH == retLastC                  //Return both lastH and lastC, or return neither (not just 1 or other)
-		&& hasInitH == hasInitC;				 //Need both or neither initial H and C
+    // return block.isUseONEDNN() && featuresSupported &&
+    // (
+    //         (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
+    //         (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
+    //         (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))
+    //       );
 
-    return block.isUseMKLDNN() && featuresSupported && (
-            (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
-            (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
-            (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))
-          );
 }
 
 

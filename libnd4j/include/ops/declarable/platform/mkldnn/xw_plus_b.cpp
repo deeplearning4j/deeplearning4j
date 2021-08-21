@@ -311,7 +311,7 @@ namespace sd {
                 f32 	    f32 	f32 	            f32
                 u8, s8  	s8 	    u8, s8, s32, f32 	u8, s8, s32, f32
                 */
-                return block.isUseMKLDNN() &&
+                return block.isUseONEDNN() &&
                     ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
                         ( // x
                             (xType == DataType::UINT8 || xType == DataType::INT8) &&
@@ -378,7 +378,7 @@ namespace sd {
                 Source    Weights   Destination         Bias
                 f32 	    f32 	f32 	            f32
                 */
-                return block.isUseMKLDNN() &&
+                return block.isUseONEDNN() &&
                     (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
                         bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
                         dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&

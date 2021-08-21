@@ -21,10 +21,10 @@ endif()
 # OPTIONAL ONE-DNN
 if ("${BUILD_ONEDNN}")
     # Download and unpack mkl-dnn at configure time
-    configure_file(../../CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
+    configure_file(../../CMakeLists.txt.mkldnn.in onednn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
     if(result)
         message(FATAL_ERROR "CMake step for onednn failed: ${result}")
     endif()
