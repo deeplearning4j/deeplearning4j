@@ -117,16 +117,16 @@ jobs:
               command="mvn ${{ matrix.mvn_ext }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               libnd4j_download_file_url=""
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.0-${{ matrix.helper }}-${{matrix.extension}}"
+                  mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.4-${{ matrix.helper }}-${{matrix.extension}}"
                   libnd4j_download_file_url="linux-cuda-11-${{ matrix.extension }}-${{ matrix.helper }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.0-${{ matrix.helper }}"
+                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.4-${{ matrix.helper }}"
                   libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
 
               else
                   echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
                   libnd4j_download_file_url="linux-cuda-11"
-                  mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.0"
+                  mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.4"
               fi
 
               command="${command} ${mvn_ext}"
@@ -180,7 +180,7 @@ jobs:
               sudo apt list --installed
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
-          cuda: 11.0.167
+          cuda: 11.4
           GCC:  7
 
       - name: Setup libnd4j home if a download url is specified
@@ -204,8 +204,8 @@ jobs:
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           MODULES: ${{ matrix.mvn_flags }}
-          CUDA_PATH: /usr/local/cuda-11.0
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.0/
+          CUDA_PATH: /usr/local/cuda-11.4
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.4/
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
@@ -223,8 +223,8 @@ jobs:
 
           sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export CUDA_PATH=/usr/local/cuda-11.0
-          export PATH="/usr/local/cuda-11.0/bin:$PATH"
+          export CUDA_PATH=/usr/local/cuda-11.4
+          export PATH="/usr/local/cuda-11.4/bin:$PATH"
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           echo "Helper is ${HELPER}"
