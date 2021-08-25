@@ -19,7 +19,6 @@
  */
 package org.nd4j.autodiff.optimization.util;
 
-import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;

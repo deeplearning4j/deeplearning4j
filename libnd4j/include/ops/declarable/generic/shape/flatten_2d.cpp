@@ -82,7 +82,6 @@ DECLARE_SHAPE_FN(flatten_2d) {
 
     shapeNew.push_back(firstDim);
     shapeNew.push_back(lastDim);
-    nd4j_printf("Shape %d %d\n",firstDim,lastDim);
     auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
     REQUIRE_TRUE(x->lengthOf() == len, 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
 
