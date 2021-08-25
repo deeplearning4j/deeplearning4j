@@ -194,7 +194,6 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-common-tests</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>
