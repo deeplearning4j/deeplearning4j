@@ -1,3 +1,0 @@
-alpha
-Sum/reduction_indices
-Sum
