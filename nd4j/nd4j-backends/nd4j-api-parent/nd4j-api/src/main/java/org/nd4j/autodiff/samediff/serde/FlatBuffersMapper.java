@@ -371,6 +371,11 @@ public class FlatBuffersMapper {
             extraDTypes[i] = DataType.fromInt(fn.extraTypes(i));
         }
 
+        String[] extraStrings = new String[fn.extraStringsLength()];
+        for (int i = 0; i < extraStrings.length; i++) {
+            extraStrings[i] = fn.extraStrings(i);
+        }
+
         int[] dimensions = new int[fn.dimensionsLength()];
         for (int i = 0; i < dimensions.length; i++) {
             dimensions[i] = fn.dimensions(i);
@@ -412,6 +417,7 @@ public class FlatBuffersMapper {
             ((CustomOp) op).addTArgument(extraParams);
             ((CustomOp) op).addBArgument(extraBools);
             ((CustomOp) op).addDArgument(extraDTypes);
+            ((CustomOp) op).addSArgument(extraStrings);
 
             op.setPropertiesForFunction(props);
             return op;
@@ -442,10 +448,15 @@ public class FlatBuffersMapper {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
+                if(extraBools.length > 0)
+                    ba.setKeepDims(extraBools[0]);
+
             } else if (opType == Op.Type.INDEXREDUCE) {
                 BaseIndexAccumulation bia = (BaseIndexAccumulation) op;
                 bia.setDimensions(dimensions);
                 bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
+                if(extraBools.length > 0)
+                    bia.setKeepDims(extraBools[0]);
             }
             /*
             Op types that don't need any extra/special mapping:
@@ -709,7 +720,7 @@ public class FlatBuffersMapper {
     }
 
     public static int asFlatNode(@NonNull SameDiff sameDiff, @NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
-                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
+                                 Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
         val opName = node.opName();
         val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
@@ -729,6 +740,8 @@ public class FlatBuffersMapper {
         boolean[] boolArgs = null;
         byte[] dtypeArgs = null;
         long[] extraBits = null;
+        int[] extraStringIds = null;
+        String[] sArgs = null;
         if (node.opType() == Op.Type.CUSTOM) {
             val dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
@@ -741,6 +754,15 @@ public class FlatBuffersMapper {
                     dtypeArgs[e] = (byte) d[e].toInt();
                 }
             }
+
+            if(dynamicCustomOp.numSArguments() > 0) {
+                sArgs = dynamicCustomOp.sArgs();
+                extraStringIds = new int[dynamicCustomOp.numSArguments()];
+                for(int i = 0; i < sArgs.length; i++) {
+                    extraStringIds[i] = bufferBuilder.createString(sArgs[i]);
+                }
+            }
+
         } else if (node instanceof Enter) {
             // in case of Enter node we'll be storing unique frame reference
             val frameName = ((Enter) node).getFrameName();
@@ -748,6 +770,13 @@ public class FlatBuffersMapper {
                 framesMap.put(frameName, idCounter.incrementAndGet());
 
             extraBits = new long[]{framesMap.get(frameName).intValue()};
+            //keep old extra bits for compatibility, but use extra string ids like the dynamic ops support instead
+            sArgs = new String[1];
+            extraStringIds = new int[1];
+            sArgs[0] = frameName;
+            extraStringIds[0] = bufferBuilder.createString(sArgs[0]);
+
+
         } else
             extraBits = new long[]{};
 
@@ -845,6 +874,7 @@ public class FlatBuffersMapper {
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(node.getOwnName());
         int scopeName = bufferBuilder.createString("");
+        int sArgs3 = FlatNode.createExtraStringsVector(bufferBuilder, extraStringIds != null ? extraStringIds : new int[0]);
         int scalar = 0;
         if (node instanceof ScalarOp) {
             ScalarOp sOp = (ScalarOp) node;
@@ -922,7 +952,8 @@ public class FlatBuffersMapper {
                 opCds,
                 varCds,
                 cdsFor,
-                dArgs
+                dArgs,
+                sArgs3
         );
 
         return flatNode;

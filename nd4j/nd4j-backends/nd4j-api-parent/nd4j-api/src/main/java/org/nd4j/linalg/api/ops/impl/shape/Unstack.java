@@ -148,7 +148,7 @@ public class Unstack extends DynamicCustomOp {
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
         //Output types are same as input type - i.e., just unpack rank R array into N rank R-1 arrays
         List<DataType> out = new ArrayList<>();

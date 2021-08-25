@@ -26,6 +26,12 @@ import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 
 interface PreImportHook {
 
-    fun preProcess(op: SameDiffOp, sd: SameDiff, attributes: Map<String, Any>, descriptor: OpNamespace.OpDescriptor): HookResult
+    fun preProcess(
+        op: SameDiffOp,
+        sd: SameDiff,
+        attributes: Map<String, Any>,
+        descriptor: OpNamespace.OpDescriptor,
+        outputNames: List<String>
+    ): HookResult
 
 }

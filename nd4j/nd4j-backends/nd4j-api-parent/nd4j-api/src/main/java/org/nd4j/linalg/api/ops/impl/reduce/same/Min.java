@@ -36,6 +36,10 @@ public class Min extends BaseReduceSameOp {
     public Min() {
     }
 
+    public Min(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
     public Min(INDArray x, int... dimensions) {
         super(x, dimensions);
     }
@@ -50,6 +54,54 @@ public class Min extends BaseReduceSameOp {
 
     public Min(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
         super(x, z, keepDims, dimensions);
+    }
+
+    public Min(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public Min(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
+
+    public Min(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public Min(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
 

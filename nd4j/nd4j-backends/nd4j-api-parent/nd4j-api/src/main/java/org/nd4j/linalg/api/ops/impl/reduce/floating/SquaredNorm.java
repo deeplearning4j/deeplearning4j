@@ -35,8 +35,44 @@ public class SquaredNorm extends BaseReduceFloatOp {
         super(sameDiff, input, keepDims, dimensions);
     }
 
+    public SquaredNorm(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public SquaredNorm(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
+    }
+
+    public SquaredNorm(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
     public SquaredNorm(INDArray input, INDArray output, boolean keepDims, int... dimensions){
         super(input, output, keepDims, dimensions);
+    }
+
+    public SquaredNorm(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public SquaredNorm(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
 
     public SquaredNorm(INDArray input, boolean keepDims, int... dimensions){
@@ -47,6 +83,14 @@ public class SquaredNorm extends BaseReduceFloatOp {
 
     public SquaredNorm(INDArray x, int... dimensions){
         super(x,  dimensions);
+    }
+
+    public SquaredNorm(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public SquaredNorm(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
     }
 
     @Override

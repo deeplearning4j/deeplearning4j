@@ -36,13 +36,34 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
     protected BaseReduceBoolOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
     }
 
     protected BaseReduceBoolOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
         super(sameDiff, input, dimensions);
     }
+
 
     public BaseReduceBoolOp(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
         super(x, null, z, keepDims, dimensions);
@@ -52,12 +73,32 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         this(x, null, false, dimensions);
     }
 
+    public BaseReduceBoolOp(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     public BaseReduceBoolOp(INDArray x, INDArray z, int... dimensions) {
         this(x, z, false, dimensions);
     }
 
+    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public BaseReduceBoolOp(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     protected BaseReduceBoolOp() {
         super();
+    }
+
+    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
     }
 
     @Override

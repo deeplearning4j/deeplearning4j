@@ -1337,15 +1337,17 @@ public class TransformOpValidation extends BaseOpValidation {
 
             log.info("Testing condition: " + c.getClass().getSimpleName());
             INDArray inArr = Nd4j.rand(DataType.DOUBLE, 3, 4);
+            INDArray inArr2 = inArr.dup();
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", inArr);
-            SDVariable where = sd.replaceWhere(in, 10, c);
+            SDVariable where = sd.replaceWhere("out",in, 10, c);
 
             INDArray exp = inArr.dup();
             BooleanIndexing.replaceWhere(exp, 10, c);
 
             SDVariable loss = where.std(true);
-
+            Map<String, INDArray> input = sd.output(Collections.singletonMap("in", inArr2), where.name());
+            assertEquals(exp,input.get(where.name()));
             TestCase tc = new TestCase(sd);
 
             String err = OpValidation.validate(tc);

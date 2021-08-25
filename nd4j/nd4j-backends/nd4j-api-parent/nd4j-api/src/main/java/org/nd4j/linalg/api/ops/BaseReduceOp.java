@@ -43,9 +43,12 @@ import java.util.Map;
 public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Setter @Getter
     protected boolean keepDims = false;
+    @Setter @Getter
     protected boolean isComplex = false;
     @Setter @Getter
     protected boolean isEmptyReduce = false;
+    @Setter @Getter
+    protected SDVariable dimensionVariable;
 
 
     public BaseReduceOp(SameDiff sameDiff,
@@ -96,7 +99,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v) {
-        this(sameDiff, i_v, null, false);
+        this(sameDiff, i_v, false);
     }
 
 
@@ -113,6 +116,63 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         int[] dimensions) {
         this(sameDiff,i_v,i_v2,dimensions,false);
     }
+
+
+
+
+
+
+
+
+
+    //Special constructors for allowing dimensions to be an SDVariable
+
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        boolean keepDims) {
+        super(sameDiff, null);
+        if (i_v != null) {
+            if(dimensions == null || dimensions.length < 1)
+                dimensions = new int[] {Integer.MAX_VALUE};
+
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
+            this.keepDims = keepDims;
+            this.xVertexId = i_v.name();
+            sameDiff.addArgsFor(new String[]{xVertexId},this);
+        } else {
+            throw new IllegalArgumentException("Input not null variable.");
+        }
+
+        defineDimensions(dimensions);
+    }
+
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        SDVariable dimensions,
+                        boolean keepDims) {
+        super(sameDiff,null);
+
+        this.dimensionVariable = dimensions;
+
+
+        this.xVertexId = i_v.name();
+        this.yVertexId = dimensions.name();
+        SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
+        SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, dimensions, this);
+        this.keepDims = keepDims;
+        sameDiff.addArgsFor(new String[]{xVertexId,yVertexId},this);
+
+    }
+
+
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        SDVariable i_v2) {
+        this(sameDiff,i_v,i_v2,false);
+    }
+
+
+
 
 
 
@@ -145,6 +205,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
+    }
+
+    public BaseReduceOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        this(sameDiff,i_v,dimensions,false);
     }
 
     @Override

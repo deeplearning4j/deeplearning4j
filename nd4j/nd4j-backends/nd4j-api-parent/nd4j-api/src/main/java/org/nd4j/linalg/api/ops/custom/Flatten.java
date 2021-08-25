@@ -36,7 +36,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public class Flatten extends DynamicCustomOp {
-    private int order;
+    private long order;
 
     public Flatten(char order, INDArray... inputs) {
         this.order = order;

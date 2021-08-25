@@ -28,6 +28,7 @@ import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.samediff.frameworkimport.onnx.attrDefaultValue
 import org.nd4j.samediff.frameworkimport.process.MappingProcess
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import java.lang.IllegalArgumentException
 import java.util.HashMap
 
 class OnnxIRNode(inputNode: Onnx.NodeProto, inputOpDef: Onnx.NodeProto,opMappingRegistry: OpMappingRegistry<Onnx.GraphProto,
@@ -80,7 +81,13 @@ class OnnxIRNode(inputNode: Onnx.NodeProto, inputOpDef: Onnx.NodeProto,opMapping
     }
 
     override fun outputAt(index: Int): String {
-        return opDef.getOutput(index)
+        //Identity's output is just its node name and has no output
+        if(nodeDef.opType == "Identity" && index == 0) {
+            return nodeDef.name
+        } else if(nodeDef.opType == "Identity" && index > 0) {
+            throw IllegalArgumentException("Invalid index for Identity op. Only 0 is valid, received $index")
+        }
+        return nodeDef.getOutput(index)
     }
 
 

@@ -31,8 +31,43 @@ import java.util.List;
 public class EqualsWithEps extends BaseReduce3Op {
     private double eps;
 
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double eps) {
         super(sameDiff, i_v, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double eps, int... dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, double eps) {
+        super(sameDiff, i_v, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions, double eps) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(double eps) {
         this.eps = eps;
     }
 
@@ -43,6 +78,14 @@ public class EqualsWithEps extends BaseReduce3Op {
 
     public EqualsWithEps() {}
 
+    public EqualsWithEps(INDArray x, INDArray y, int... dimensions) {
+        super(x, y, dimensions);
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        super(x, y, allDistances, dimensions);
+    }
+
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps, int... dimensions) {
         super(x, y, z, false, dimensions);
         this.extraArgs = new Object[] {0.0, 0.0, eps};
@@ -52,8 +95,40 @@ public class EqualsWithEps extends BaseReduce3Op {
         this(x, y, null, eps, dimensions);
     }
 
+    public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, double eps, int... dimensions) {
+        super(x, y, allDistances, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps) {
+        super(x, y, z);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, double eps, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, double eps, int... dimensions) {
+        super(x, y, z, keepDims, allDistances, dimensions);
+        this.eps = eps;
+    }
+
     public EqualsWithEps(INDArray x, INDArray y, INDArray z) {
         this(x, y, z, Nd4j.EPS_THRESHOLD, null);
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions) {
+        super(x, y, z, keepDims, allDistances, dimensions);
+    }
+
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
     }
 
     @Override

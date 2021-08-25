@@ -39,8 +39,8 @@ import java.util.*;
 public class OneHot extends DynamicCustomOp {
     public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 
-    private int depth;
-    private int jaxis = -1;
+    private long depth;
+    private long jaxis = -1;
     private double on;
     private double off;
     private DataType outputType;
@@ -166,7 +166,7 @@ public class OneHot extends DynamicCustomOp {
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes.size() >= 1 && dataTypes.size() <= 4, "Expected list with 1 to 4 datatypes for %s, got %s", getClass(), dataTypes);
         if(outputType != null){
             return Collections.singletonList(outputType);

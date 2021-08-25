@@ -498,7 +498,7 @@ public class Shape {
     }
 
     public static long[] getReducedShape(long[] wholeShape, int[] dimensions, boolean keepDims) {
-        return getReducedShape(wholeShape, dimensions, keepDims, true);
+         return getReducedShape(wholeShape, dimensions, keepDims, true);
     }
 
     public static long[] getReducedShape(long[] wholeShape, int[] dimensions, boolean keepDims, boolean newFormat) {

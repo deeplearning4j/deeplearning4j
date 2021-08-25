@@ -35,11 +35,55 @@ public class ASum extends BaseReduceSameOp {
         super(sameDiff, i_v, dimensions);
     }
 
+    public ASum(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, z, keepDims, dimensions);
+    }
+
+    public ASum(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+
+    public ASum(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+    public ASum(SameDiff sameDiff, SDVariable i_v, boolean keepDims) {
+        super(sameDiff, i_v, keepDims);
+    }
+
+    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable dimensions, boolean keepDims) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
+    }
+
+    public ASum(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+        super(sameDiff, i_v, i_v2, dimensions, keepDims);
+    }
+
+    public ASum(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
+    }
+
     public ASum() {}
+
+    public ASum(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, y, z, keepDims, dimensions);
+    }
 
     public ASum(INDArray x, int... dimensions) {
         super(x, dimensions);
@@ -48,6 +92,20 @@ public class ASum extends BaseReduceSameOp {
     public ASum(INDArray x, INDArray z, int... dimensions) {
         super(x, null, z, dimensions);
     }
+
+    public ASum(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        super(sd,in,dimensions,keepDims);
+    }
+
+    public ASum(INDArray in, boolean keepDims, int[] dimensions) {
+        super(in,keepDims,dimensions);
+    }
+
+    public ASum(INDArray in, int[] dimensions, boolean keepDims) {
+        super(in,keepDims,dimensions);
+    }
+
+
 
     @Override
     public int opNum() {

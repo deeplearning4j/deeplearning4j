@@ -26,7 +26,13 @@ import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 
 interface PostImportHook {
 
-    fun postProcess(op: SameDiffOp, sd: SameDiff, attributes: Map<String, Any>, descriptor: OpNamespace.OpDescriptor): HookResult
+    fun postProcess(
+        op: SameDiffOp,
+        sd: SameDiff,
+        attributes: Map<String, Any>,
+        descriptor: OpNamespace.OpDescriptor,
+        outputs: List<String>
+    ): HookResult
 
 
 }

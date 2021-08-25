@@ -797,7 +797,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
         Doc(Language.ANY, DocScope.ALL){
             """
-                Convert the array to a one-hot array with walues and  for each entry
+                Convert the array to a one-hot array with values and  for each entry
                 If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
                 with {out[i, ..., j, in[i,...,j]]  with other values being set to
             """.trimIndent()
@@ -811,7 +811,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Convert the array to a one-hot array with walues 0 and 1 for each entry
+                Convert the array to a one-hot array with values 0 and 1 for each entry
                 If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
                 with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0
                 see oneHot(SDVariable, int, int, double, double)

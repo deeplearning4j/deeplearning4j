@@ -55,6 +55,8 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
     }
 
     public String getFrameName() {
+        if(numSArguments() > 0)
+            return getSArgument(0);
         return frameName;
     }
 
@@ -94,6 +96,15 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
         }
 
         return ret;
+    }
+
+
+    @Override
+    public void addSArgument(String... args) {
+        super.addSArgument(args);
+        if(args != null && args.length >= 1) {
+            setFrameName(args[0]);
+        }
     }
 
     @Override

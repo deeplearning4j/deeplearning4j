@@ -28,6 +28,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.custom.BaseDynamicCustomIndexReduction;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -37,53 +38,109 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class ArgMin extends DynamicCustomOp {
-    protected boolean keepDims = false;
-    private int[] dimensions;
+public class ArgMin extends BaseDynamicCustomIndexReduction {
+    public ArgMin(SameDiff sameDiff, SDVariable[] args, boolean keepDims) {
+        super(sameDiff, args, keepDims);
+    }
 
-    protected DataType outputType = DataType.INT64;
+    public ArgMin(SameDiff sameDiff, SDVariable[] args, boolean keepDims, int[] dimensions) {
+        super(sameDiff, args, keepDims, dimensions);
+    }
 
-    public ArgMin(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
-        super(sameDiff, i_v);
+    public ArgMin(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex) {
+        super(sameDiff, args, keepDims, isComplex);
+    }
 
-        this.keepDims = keepDims;
-        this.dimensions = dimensions;
+    public ArgMin(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(sameDiff, args, keepDims, isComplex, dimensions);
+    }
 
-        if (dimensions != null && dimensions.length > 0)
-            addIArgument(dimensions);
 
-        addBArgument(keepDims);
+    public ArgMin(INDArray[] inputs) {
+        super(inputs, null);
+    }
 
-        addDArgument(outputType);
+    public ArgMin(INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
+    }
+
+    public ArgMin(INDArray[] inputs, INDArray[] outputs, boolean keepDims) {
+        super(inputs, outputs, keepDims);
+    }
+
+    public ArgMin(INDArray[] inputs, INDArray[] outputs, boolean keepDims, int... dimensions) {
+        super(inputs, outputs, keepDims, dimensions);
+    }
+
+    public ArgMin(INDArray[] inputs, boolean keepDims, int[] dimensions) {
+        super(inputs, keepDims, dimensions);
+    }
+
+    public ArgMin(boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(SameDiff sameDiff, SDVariable arg, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(sameDiff, arg, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(sameDiff, args, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, sameDiff, args, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, input, output, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, inputs, outputs, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, inputs, outputs, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(inputs, outputs, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, inputs, outputs, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, sameDiff, args, inPlace, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(sameDiff, args, inPlace, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(String opName, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+        super(opName, keepDims, isComplex, isEmptyReduce, dimensions);
+    }
+
+    public ArgMin(INDArray[] input, INDArray[] output, boolean keepDims, boolean isComplex, int[] dimensions) {
+        super(input, output, keepDims, isComplex, dimensions);
     }
 
     public ArgMin() {
     }
 
-    public ArgMin(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
-        super(new INDArray[]{x}, z != null ? new INDArray[] {z} : new INDArray[0]);
-
-        this.keepDims = keepDims;
-        this.dimensions = dimensions;
-
-        if (dimensions != null && dimensions.length > 0)
-            addIArgument(dimensions);
-
-        addBArgument(keepDims);
-
-        addDArgument(outputType);
+    public ArgMin(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+        this(sd,new SDVariable[]{in},keepDims,dimensions);
     }
 
-    public ArgMin(INDArray x, INDArray z, int... dimensions) {
-        this(x, z, false, dimensions);
+    public ArgMin(INDArray in, boolean keepDims, int[] dimensions) {
+        this(new INDArray[]{in},keepDims,dimensions);
     }
 
-    public ArgMin(INDArray x, int... dimensions) {
-        this(x, null, dimensions);
-    }
-
-    public ArgMin(INDArray x, boolean keepDims, int... dimensions) {
-        this(x, null, keepDims, dimensions);
+    public ArgMin(INDArray arr) {
+        this(new INDArray[]{arr});
     }
 
     @Override
@@ -96,20 +153,5 @@ public class ArgMin extends DynamicCustomOp {
         return "ArgMin";
     }
 
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(attributesForNode.containsKey("output_type")) {
-            outputType = TFGraphMapper.convertType(attributesForNode.get("output_type").getType());
-        } else {
-            outputType = DataType.LONG;
-        }
-    }
 
-    @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 1 || inputDataTypes.size() == 2),
-                "Expected 1 or 2 input datatype to argmax, got %s", inputDataTypes);    //2nd input: axis
-        //TODO make this output datatype configurable! (long/int)
-        return Collections.singletonList(outputType == null ? DataType.LONG : outputType);
-    }
 }

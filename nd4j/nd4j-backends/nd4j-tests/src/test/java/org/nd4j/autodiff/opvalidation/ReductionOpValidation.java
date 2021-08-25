@@ -261,12 +261,12 @@ public class ReductionOpValidation extends BaseOpValidation {
                     gradCheck = false;  //Long out, not floating point
                     break;
                 case 12:
-                    loss = sd.math().amax("loss", input, 0,1);
+                    loss = sd.math().reduceAMax("loss", input, 0,1);
                     name = "amax";
                     tc.expectedOutput("loss", inputArr.amax());
                     break;
                 case 13:
-                    loss = sd.math().amin("loss", input, 0,1);
+                    loss = sd.math().reduceAmin("loss", input, 0,1);
                     name = "amin";
                     tc.expectedOutput("loss", inputArr.amin());
                     break;
@@ -276,7 +276,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new ASum(inputArr.dup())));
                     break;
                 case 15:
-                    loss = sd.math().amean("loss", input, 0,1);
+                    loss = sd.math().reduceAmean("loss", input, 0,1);
                     name = "amean";
                     tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new AMean(inputArr.dup())));
                     break;
@@ -424,11 +424,11 @@ public class ReductionOpValidation extends BaseOpValidation {
                         uDistInput = true;
                         break;
                     case 12:
-                        loss = sd.math().amax("loss", msePerEx, dim);
+                        loss = sd.math().reduceAMax("loss", msePerEx, dim);
                         name = "amax";
                         break;
                     case 13:
-                        loss = sd.math().amin("loss", msePerEx, dim);
+                        loss = sd.math().reduceAmin("loss", msePerEx, dim);
                         name = "amin";
                         break;
                     case 14:
@@ -436,7 +436,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "asum";
                         break;
                     case 15:
-                        loss = sd.math().amean("loss", msePerEx, dim);
+                        loss = sd.math().reduceAmean("loss", msePerEx, dim);
                         name = "amean";
                         break;
                     default:
@@ -602,11 +602,11 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "countZero";
                         break;
                     case 14:
-                        reduced = sd.math().amax("reduced", second, reduceDim);
+                        reduced = sd.math().reduceAMax("reduced", second, reduceDim);
                         name = "amax";
                         break;
                     case 15:
-                        reduced = sd.math().amin("reduced", second, reduceDim);
+                        reduced = sd.math().reduceAmin("reduced", second, reduceDim);
                         name = "amin";
                         break;
                     case 16:
@@ -614,7 +614,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "asum";
                         break;
                     case 17:
-                        reduced = sd.math().amean("reduced", second, reduceDim);
+                        reduced = sd.math().reduceAmean("reduced", second, reduceDim);
                         name = "amean";
                         break;
                     default:
@@ -892,12 +892,12 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         reduce = sd.math().iamax(s, dim);
-                        exp = Nd4j.getExecutioner().exec(new ArgAmax(in.dup(), dim))[0];
+                        exp = Nd4j.getExecutioner().exec(new ArgAmax(new INDArray[]{in.dup()},dim))[0];
                         name = "iamax";
                         break;
                     case 3:
                         reduce = sd.math().iamin(s, dim);
-                        exp = Nd4j.getExecutioner().exec(new ArgAmin(in.dup(), dim))[0];
+                        exp = Nd4j.getExecutioner().exec(new ArgAmin(new INDArray[]{in.dup()}, dim))[0];
                         name = "iamin";
                         break;
                     case 4:

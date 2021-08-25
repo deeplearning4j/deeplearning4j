@@ -45,9 +45,9 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
      */
     private double extra;
     @Builder.Default
-    private Pooling2D.Pooling2DType type = Pooling2DType.MAX;
+    private Pooling2DType type = Pooling2DType.MAX;
     @Builder.Default
-    private Pooling2D.Divisor divisor = Pooling2D.Divisor.EXCLUDE_PADDING;
+    private Divisor divisor = Divisor.EXCLUDE_PADDING;
     private boolean isSameMode;
     @Builder.Default
     private long dH = 1;
