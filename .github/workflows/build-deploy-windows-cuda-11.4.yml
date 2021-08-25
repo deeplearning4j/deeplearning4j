@@ -14,7 +14,7 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M1
+        default: 1.0.0-M2
 
       snapshotVersion:
         description: 'Snapshot version target'
@@ -114,17 +114,17 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-            $command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+            $command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.compute=auto -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
 
             if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
-                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.0-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.4-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                   $libnd4j_download_file_url="windows-cuda-11-${{ matrix.extension }}-${{ matrix.helper }}"
              } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.0-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.4-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                   $libnd4j_download_file_url="windows-cuda-11-${{ matrix.helper }}"
              } else {
                     $libnd4j_download_file_url="windows-cuda-11"
-                    $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.0"
+                    $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.4"
             }
 
             $command2= -join("$($command)","$($mvn_ext)");
@@ -137,7 +137,7 @@ jobs:
             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
             echo $command2  | Out-File -FilePath  "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
             echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-            echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0"  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+            echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4"  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -146,7 +146,7 @@ jobs:
           install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
-          cuda: 11.0.167
+          cuda: 11.4
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -169,8 +169,8 @@ jobs:
       - name: Setup windows path
         shell: powershell
         run: |
-            echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-            echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\lib\x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\lib\x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v1
         env:
@@ -195,8 +195,8 @@ jobs:
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0
-          CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0
+          CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+          CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
           GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
           GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MODULES: ${{ matrix.mvn_flags }}
@@ -224,7 +224,7 @@ jobs:
           set MSYSTEM=MINGW64
           echo "Running cuda build"
           cd "%GITHUB_WORKSPACE%"
-          bash ./change-cuda-versions.sh 11.0
+          bash ./change-cuda-versions.sh 11.4
           Rem  Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           Rem  See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           if "%PERFORM_RELEASE%"=="1" (
