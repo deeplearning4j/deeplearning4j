@@ -55,6 +55,11 @@ public class OptTestConfig {
         private Map<String,Class<? extends Optimizer>> mustApply;
         private List<OptimizerSet> optimizerSets;
 
+        public Builder tempFolder(File tempFolder) {
+            this.tempFolder = tempFolder;
+            return this;
+        }
+
         public Builder original(SameDiff sd){
             original = sd;
             return this;

@@ -20,7 +20,9 @@
 package org.nd4j.autodiff.optimization;
 
 import lombok.Data;
-import org.junit.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
@@ -40,7 +42,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -48,11 +52,13 @@ import static org.junit.Assert.fail;
 
 public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
 
+    @TempDir
+    Path tempDir;
 
 
-
-    @Test
-    public void testOutput() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOutput(Nd4jBackend nd4jBackend) {
 
         //Ensure that optimizer is actually used when calling output methods:
         SameDiff sd = SameDiff.create();
@@ -71,7 +77,7 @@ public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
 
         Map<String, INDArray> ph = Collections.singletonMap("in", Nd4j.rand(DataType.FLOAT, 10, 4));
 
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++) {
             l.ops.clear();
 
             switch (i){
@@ -98,13 +104,15 @@ public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
-    public void testDifferentOutputs(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDifferentOutputs(Nd4jBackend nd4jBackend) {
         //Test when the user requests different outputs instead
     }
 
-    @Test
-    public void testGraphModification(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGraphModification(Nd4jBackend nd4jBackend) {
         //User modifies the graph -> should reoptimize?
 
         fail("Not yet implemented");

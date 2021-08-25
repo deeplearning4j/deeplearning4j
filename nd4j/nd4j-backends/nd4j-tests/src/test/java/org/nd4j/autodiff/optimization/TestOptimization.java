@@ -19,9 +19,9 @@
  */
 package org.nd4j.autodiff.optimization;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.optimization.util.OptTestConfig;
 import org.nd4j.autodiff.optimization.util.OptimizationTestUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -33,16 +33,17 @@ import org.nd4j.autodiff.samediff.optimize.optimizations.IdentityFunctionOptimiz
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
 
 public class TestOptimization extends BaseNd4jTestWithBackends {
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
+    @TempDir
+    Path tempDir;
 
     @Override
     public char ordering() {
@@ -54,8 +55,9 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
         return 1_000_000_000L;
     }
 
-    @Test
-    public void testConstantOpFolding() {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConstantOpFolding(Nd4jBackend nd4jBackend) {
         //We expect 2 things in this test:
         //(a) the output of  add(constant, constant) is pre-calculated and itself becomes a constant
         //(b) the
@@ -85,8 +87,9 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
-    public void testConstantOpFolding2(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConstantOpFolding2(Nd4jBackend nd4jBackend) {
         //We expect 2 things in this test:
         //(a) the output of  add(constant, constant) is pre-calculated and itself becomes a constant
         //(b) the
@@ -98,8 +101,11 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
         SDVariable v = sd.var("variable", Nd4j.scalar(1.0));
         SDVariable out = v.sub("out", c2);
 
+        File subDir = tempDir.resolve("op-folding").toFile();
+        assertTrue(subDir.mkdirs());
         OptTestConfig conf = OptTestConfig.builder()
                 .original(sd)
+                .tempFolder(subDir)
                 .outputs(Collections.singletonList("out"))
                 .mustApply(sd.getVariables().get("add").getOutputOfOp(), ConstantFunctionOptimizations.FoldConstantFunctions.class)
                 .build();
@@ -116,8 +122,9 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
 
     }
 
-    @Test
-    public void testIdentityRemoval(){
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIdentityRemoval(Nd4jBackend nd4jBackend) {
 
         //Ensure that optimizer is actually used when calling output methods:
         SameDiff sd = SameDiff.create();
@@ -129,8 +136,13 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
         SDVariable i3 = sd.identity(b);
         SDVariable out = sd.nn.softmax("out", sd.identity(i1.mmul(i2).add(i3)));
 
+
+        File subDir = tempDir.resolve("new-dir-identity-removal").toFile();
+        assertTrue(subDir.mkdirs());
+
         OptTestConfig conf = OptTestConfig.builder()
                 .original(sd)
+                .tempFolder(subDir)
                 .outputs(Collections.singletonList("out"))
                 .placeholder("in", Nd4j.rand(DataType.FLOAT, 5, 4))
                 .mustApply(sd.getVariables().get(i1.name()).getOutputOfOp(), IdentityFunctionOptimizations.RemoveIdentityOps.class)

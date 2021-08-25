@@ -24,7 +24,7 @@ public class OptimizationTestUtil {
 
     private OptimizationTestUtil(){ }
 
-    public static SameDiff testOptimization(OptTestConfig config){
+    public static SameDiff testOptimization(OptTestConfig config) {
         Preconditions.checkNotNull(config.getTempFolder(), "Temp folder should be specified before running test");
 
         List<OptimizerSet> optimizerSets = config.getOptimizerSets();
