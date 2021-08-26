@@ -157,11 +157,14 @@ endif()
 
 if(SD_CUDA)
     message("Build cublas")
-    find_package(CUDA)
+
+    find_package(CUDA REQUIRED)
     add_definitions(-D__CUDABLAS__=true)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         set (CMAKE_CXX_FLAGS "")
     endif()
+
+
 
     if (CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
@@ -187,14 +190,14 @@ if(SD_CUDA)
         endif()
 
         if(WIN32)
-         message("In windows, setting cublas library and cusolver library")
-         if(NOT DEFINED CUDA_cublas_LIBRARY)
-                  set(CUDA_cublas_LIBRARY ${CUDA_HOME}/lib/x64/cublas.lib)
-          endif()
+            message("In windows, setting cublas library and cusolver library")
+            if(NOT DEFINED CUDA_cublas_LIBRARY)
+                set(CUDA_cublas_LIBRARY ${CUDA_HOME}/lib/x64/cublas.lib)
+            endif()
 
-          if(NOT DEFINED CUDA_cusolver_LIBRARY)
+            if(NOT DEFINED CUDA_cusolver_LIBRARY)
                 set(CUDA_cusolver_LIBRARY ${CUDA_HOME}/lib/x64/cusolver.lib)
-          endif()
+            endif()
         endif()
 
 
@@ -369,13 +372,13 @@ elseif(SD_CPU)
         if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
             add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
             if(ANDROID)
-              # See: https://www.scivision.dev/cmake-ninja-job-pool-limited-memory/
-              # See: https://cmake.org/cmake/help/v3.0/command/cmake_host_system_information.html
-              # See: https://cmake.org/cmake/help/latest/prop_gbl/JOB_POOLS.html
-              cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
-             if(_logical_cores LESS 4)
-               set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
-             endif()
+                # See: https://www.scivision.dev/cmake-ninja-job-pool-limited-memory/
+                # See: https://cmake.org/cmake/help/v3.0/command/cmake_host_system_information.html
+                # See: https://cmake.org/cmake/help/latest/prop_gbl/JOB_POOLS.html
+                cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
+                if(_logical_cores LESS 4)
+                    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
+                endif()
             endif()
         endif()
 
