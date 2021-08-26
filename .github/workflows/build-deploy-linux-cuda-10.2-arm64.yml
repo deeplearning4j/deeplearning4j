@@ -66,7 +66,7 @@ jobs:
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-          env:
+        env:
             cuda: 10.2
             GCC: 7
       - name: Cache cmake install
