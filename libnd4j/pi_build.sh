@@ -170,7 +170,7 @@ function download_extract_base {
 	down_file="${down_dir}_file"
 	if [ ! -f "${down_file}" ]; then
 		message "download ${down_url}"
-		wget --quiet --show-progress -O "${down_file}" "${down_url}"
+		wget  --show-progress -O "${down_file}" "${down_url}"
 	fi
  
 	message "extract $@"
@@ -187,7 +187,7 @@ function download_extract_base {
 }
 
 function download_extract {
-	download_extract_base -xzf "$@"
+	download_extract_base -xvf "$@"
 }
 
 function download_extract_xz {
@@ -225,19 +225,18 @@ function fix_pi_linker {
 function cuda_cross_setup {
 		# $1 is local  cuda toolkit version
 		# $2 the folder where cross cuda toolkit will be
-		loc_VER="${LOCAL_CUDA_INSTALLED_VER}"
-		loc_DIR="${2-/tmp}"
-		CUDA_DIR="${CUDA_DIR-/usr/local/cuda-${loc_VER}}"
-		CUDA_TARGET_STUBS="${loc_DIR}/target_stub${loc_VER}"
-		CUDA_TARGET_STUB_URL=https://github.com/KonduitAI/jetson-release/releases/download/0.1.0/aarch64_linux_cuda_10.2_cudnn8.2.tar.gz
+		export loc_VER="${LOCAL_CUDA_INSTALLED_VER}"
+		export loc_DIR="${2-/tmp}"
+		export CUDA_DIR="${CUDA_DIR-/usr/local/cuda-${loc_VER}}"
+		export CUDA_TARGET_STUBS="${loc_DIR}/target_stub${loc_VER}"
+		export CUDA_TARGET_STUB_URL=https://github.com/KonduitAI/jetson-release/releases/download/0.1.0/aarch64_linux_cuda_10.2_cudnn8.2.tar.gz
 		download_extract "${CUDA_TARGET_STUB_URL}" "${CUDA_TARGET_STUBS}"
 		mv "${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2" "${CUDA_TARGET_STUBS}/aarch64-linux/"
 		message "Moving  ${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2 to ${CUDA_TARGET_STUBS}/aarch64-linux/"
 		message "Files in ${CUDA_TARGET_STUBS}/aarch64-linux/"
+		message "Files in ${CUDA_TARGET_STUBS}/aarch64-linux/"
 		ls "${CUDA_TARGET_STUBS}/aarch64-linux/"
-		message "Files in ${CUDA_TARGET_STUBS}/aarch64-linux/aarch64-linux"
-		ls "${CUDA_TARGET_STUBS}/aarch64-linux/aarch64-linux"
-		cp -r ${CUDA_TARGET_STUBS}/aarch64-linux/aarch64-linux/* "${CUDA_TARGET_STUBS}/aarch64-linux/"
+		cp -r ${CUDA_TARGET_STUBS}/aarch64-linux/* "${CUDA_TARGET_STUBS}/aarch64-linux/"
 		message "lets setup cuda toolkit by combining local cuda-${loc_VER} and target ${CUDA_TARGET_STUBS}"
 		message "cuda cross folder: ${loc_DIR}"
 		check_requirements "${CUDA_DIR}" "${CUDA_TARGET_STUBS}/aarch64-linux/"
@@ -397,7 +396,7 @@ else
 	 	message  "jetson cuda build "
 		cuda_cross_setup ${CUDA_VER}
 		XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -Pcuda -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
 		bash "${BASE_DIR}/../change-cuda-versions.sh" "${CUDA_VER}"
 		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn"
 		export SYSROOT="${CROSS_COMPILER_DIR}/${PREFIX}/libc"

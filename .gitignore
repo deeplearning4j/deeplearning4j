@@ -84,3 +84,4 @@ nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/nativebla
 *.swp
 
 *.dll
+*.tmp
