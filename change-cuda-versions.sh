@@ -70,8 +70,8 @@ case $VERSION in
     VERSION3="1.5.4"
     ;;
   10.2)
-    VERSION2="7.6"
-    VERSION3="1.5.3"
+    VERSION2="8.2"
+    VERSION3="1.5.6"
     ;;
   10.1)
     VERSION2="7.6"
@@ -88,7 +88,9 @@ case $VERSION in
 esac
 
 sed_i() {
-  sed -i "" -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
+  if test -f "$2" && test -f "$1"; then
+     sed -i "" -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
+  fi
 }
 
 export -f sed_i
@@ -106,6 +108,11 @@ BASEDIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 #Artifact ids, ending with "-8.0", "-9.0", etc. nd4j-cuda, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)[0-9.]*<\/artifactId>/\1'$VERSION'<\/artifactId>/g' '{}'" \;
+
+#Artifact ids, ending with "-8.0", "-9.0", etc. nd4j-cuda, etc.
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-preset\)[0-9.]*<\/artifactId>/\1'$VERSION'<\/artifactId>/g' '{}'" \;
+
 
 #Artifact ids, ending with "-8.0-platform", "-9.0-platform", etc. nd4j-cuda-platform, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
