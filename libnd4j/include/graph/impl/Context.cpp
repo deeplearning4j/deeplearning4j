@@ -237,8 +237,8 @@ namespace sd {
             auto p = this->_inputs[idx];
 
             auto v = variable(p);
-
-            if (Environment::getInstance().isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
+            //preconditioned with v->variableType()==VariableType::NDARRAY as for other cases getNDArray() can throw exception
+            if (Environment::getInstance().isDebugAndVerbose() && v != nullptr && v->variableType()==VariableType::NDARRAY && v->getNDArray() != nullptr) {
                 auto array = v->getNDArray();
                 std::string shape_ = ShapeUtils::shapeAsString(array);
                 auto type = DataTypeUtils::asString(array->dataType());
