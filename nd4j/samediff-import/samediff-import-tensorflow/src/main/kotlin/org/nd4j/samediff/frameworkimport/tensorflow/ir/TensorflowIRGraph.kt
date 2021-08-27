@@ -29,8 +29,11 @@ import org.nd4j.samediff.frameworkimport.ir.IRNode
 import org.nd4j.samediff.frameworkimport.ir.importInfoForEachNodeInGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
-import org.nd4j.samediff.frameworkimport.tensorflow.*
+import org.nd4j.samediff.frameworkimport.tensorflow.Attribute
+import org.nd4j.samediff.frameworkimport.tensorflow.NodeDef
 import org.nd4j.samediff.frameworkimport.tensorflow.context.TensorflowMappingContext
+import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
+import org.nd4j.samediff.frameworkimport.tensorflow.nodeByName
 import org.tensorflow.framework.*
 
 class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
@@ -48,23 +51,26 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
     val tensorflowOpRegistry = tensorflowOpMappingRegistry
     var inputs = ArrayList<String>()
     var outputs = ArrayList<String>()
-
+    val cachedNodeList : List<IRNode<NodeDef, TensorProto, OpDef.AttrDef, AttrValue, DataType>>
+    val nodeNames: Set<String>
 
     init {
         val graphInputTo = Counter<String>()
-        graphDef.nodeList.forEach {
-            it.inputList.forEach { inputName -> graphInputTo.incrementCount(inputName,1.0) }
+        cachedNodeList = nodeList()
+        nodeNames = HashSet()
+        cachedNodeList.forEach {
+            it.inputs().forEach { inputName -> graphInputTo.incrementCount(inputName,1.0) }
             //all placeholders are considered inputs
-            if(it.op.contains("Placeholder"))
-                inputs.add(it.name)
+            if(it.opName().contains("Placeholder"))
+                inputs.add(it.nodeName())
+            //node not input in to anything
+            if(graphInputTo.getCount(it.nodeName()) < 1) {
+                outputs.add(it.nodeName())
+            }
+
+            nodeNames.add(it.nodeName())
         }
 
-        graphDef.nodeList.forEach {
-            //node not input in to anything
-            if(graphInputTo.getCount(it.name) < 1) {
-                outputs.add(it.name)
-            }
-        }
     }
 
     override fun nodeByName(input: String): NodeDef {
@@ -212,7 +218,7 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
     }
 
     override fun isVariableOpName(name: String): Boolean {
-      return name == "Variable" || name == "VariableV2"
+        return name == "Variable" || name == "VariableV2"
     }
 
     override fun getConstantArrayForName(name: String): INDArray {
@@ -222,6 +228,32 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
         }
 
         return TensorflowIRTensor(node.getAttrOrThrow("value").tensor).toNd4jNDArray()
+    }
+
+    override fun hasConstantInitializer(name: String): Boolean {
+        val node = nodeByName(name)
+        return node != null && node.op == "Const"
+    }
+
+    override fun indexOfNode(input: String): Int {
+        return cachedNodeList.map { input -> input.nodeName() }.indexOf(input)
+    }
+
+    override fun nodesWithInput(name: String): List<IRNode<NodeDef, TensorProto, OpDef.AttrDef, AttrValue, DataType>> {
+        return cachedNodeList.filter { input -> input.inputs().contains(name) }
+    }
+
+    override fun irNodeByName(input: String): IRNode<NodeDef, TensorProto, OpDef.AttrDef, AttrValue, DataType> {
+        val node = nodeByName(input)
+        return TensorflowIRNode(node,tensorflowOpRegistry.lookupInputFrameworkOpDef(node.op),opMappingRegistry())
+    }
+
+    override fun hasNode(nodeName: String): Boolean {
+        return nodeNames.contains(nodeName)
+    }
+
+    override fun addGraphOutputsAsProcessingNodes(): Boolean {
+        return false
     }
 
 

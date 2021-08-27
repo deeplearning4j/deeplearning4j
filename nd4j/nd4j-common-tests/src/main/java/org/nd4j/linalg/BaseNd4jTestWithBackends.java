@@ -23,14 +23,15 @@ package org.nd4j.linalg;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.runners.Parameterized;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 /**

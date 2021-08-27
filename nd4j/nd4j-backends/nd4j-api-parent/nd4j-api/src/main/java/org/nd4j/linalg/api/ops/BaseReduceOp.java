@@ -152,24 +152,16 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         boolean keepDims) {
         super(sameDiff,null);
 
-        this.dimensionVariable = dimensions;;
-        if(dimensions.getArr() != null) {
-            this.dimensions = dimensions.getArr().toIntVector();
+        this.dimensionVariable = dimensions;
 
-            this.xVertexId = i_v.name();
-            this.yVertexId = dimensions.name();
-            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
-            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, dimensions, this);
-            this.keepDims = keepDims;
-            sameDiff.addArgsFor(new String[]{xVertexId,yVertexId},this);
 
-        } else {
-            throw new IllegalArgumentException("Input not null variable.");
-        }
+        this.xVertexId = i_v.name();
+        this.yVertexId = dimensions.name();
+        SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
+        SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, dimensions, this);
+        this.keepDims = keepDims;
+        sameDiff.addArgsFor(new String[]{xVertexId,yVertexId},this);
 
-        if(this.dimensions == null || this.dimensions.length < 1)
-            this.dimensions = new int[] {Integer.MAX_VALUE};
-        defineDimensions(this.dimensions);
     }
 
 

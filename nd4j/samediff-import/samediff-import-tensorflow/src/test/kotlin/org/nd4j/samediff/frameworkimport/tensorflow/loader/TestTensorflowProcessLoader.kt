@@ -25,8 +25,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
+import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter
 import org.nd4j.samediff.frameworkimport.tensorflow.process.TensorflowMappingProcessLoader
 import org.tensorflow.framework.*
+import java.io.File
 
 class TestTensorflowProcessLoader {
 
@@ -47,6 +49,14 @@ class TestTensorflowProcessLoader {
 
         }
 
+    }
+
+
+    @Test
+    fun testBert() {
+        val importer = TensorflowFrameworkImporter()
+        val imported = importer.runImport("C:\\Users\\agibs\\Downloads\\bert_mrpc_frozen_v1\\bert_mrpc_frozen.pb", emptyMap())
+        imported.asFlatFile(File("output-bert.fb"))
     }
 
     @Test

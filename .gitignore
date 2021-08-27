@@ -57,6 +57,11 @@ nd4j/nd4j-backends/nd4j-tests/src/test/resources/tf_graphs/examples/**/data-all*
 nd4j/nd4j-backends/nd4j-tests/src/test/resources/tf_graphs/examples/**/checkpoint
 nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/onnx/
 nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/tensorflow/
+nd4j/samediff-import/samediff-import-onnx/*.txt
+nd4j/samediff-import/samediff-import-onnx/*.pbtxt
+nd4j/samediff-import/samediff-import-tensorflow/*.txt
+nd4j/samediff-import/samediff-import-tensorflow/*.pbtxt
+*.pom.xml.tmp
 
 doc_sources/
 doc_sources_*
@@ -79,3 +84,4 @@ nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/nativebla
 *.swp
 
 *.dll
+*.tmp

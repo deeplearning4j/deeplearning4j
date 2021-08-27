@@ -14,7 +14,7 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M1
+        default: 1.0.0-M2
 
       serverId:
         description: 'Server id to publish to'
