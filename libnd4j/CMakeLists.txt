@@ -323,18 +323,7 @@ if (${HELPERS_cudnn})
     #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
     SET(CUDNN_LIBNAME "cudnn")
-    if(${SD_ARCH} MATCHES "armv8-a")
-        message("Adding jetson nano specific settings")
-        # Need to manually specify stubbed links in order
-        # for cublas and cusolver to be resolved
-        if(NOT DEFINED CUDA_cublas_LIBRARY)
-            set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
-        endif()
 
-        if(NOT DEFINED CUDA_cusolver_LIBRARY)
-            set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
-        endif()
-    endif()
     if(DEFINED ENV{CUDNN_ROOT_DIR})
        message("Using cudnn root directory from environment")
        set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
