@@ -358,16 +358,25 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
     int dW = INT_ARG(7);                                                        // dilations width
     int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
 
-    const DataType xType = input->dataType();
-    const DataType wType = weights->dataType();
-    const DataType zType = output->dataType();
-    const DataType bType = bias != nullptr ? bias->dataType() : zType;
-
-    return block.isUseONEDNN() && (dH <= 1 && dW <= 1 && !paddingMode) &&
-          (
-            (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
-            ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
-          );
+    Requirements req("ONEDNN DECONV2d OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectLessEq(makeInfoVariable(dH,"Dilation height"), 1) &&
+    req.expectLessEq(makeInfoVariable(dW,"Dilation width"), 1) &&
+    req.expectFalse(makeInfoVariable(paddingMode, "paddingMode")) &&
+    req.expectTrue(makeInfoVariable(
+        [input, weights, bias, output]{
+            const DataType xType = input->dataType();
+            const DataType wType = weights->dataType();
+            const DataType zType = output->dataType();
+            const DataType bType = bias != nullptr ? bias->dataType() : zType;
+            return  ((xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
+                    ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 &&
+                     (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType));
+            } , TYPECHECK_MSG),
+                NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 
@@ -438,15 +447,31 @@ PLATFORM_CHECK(deconv2d_bp, ENGINE_CPU) {
     int dW = INT_ARG(7);                                                        // dilations width
     int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
 
-    const DataType xType = input->dataType();
-    const DataType wType = weights->dataType();
-    const DataType gradOType = gradO->dataType();
+    Requirements req("ONEDNN DECONV2d_BP OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectLessEq(makeInfoVariable(dH,"Dilation height"), 1) &&
+    req.expectLessEq(makeInfoVariable(dW,"Dilation width"), 1) &&
+    req.expectFalse(makeInfoVariable(paddingMode, "paddingMode")) &&
+    req.expectTrue(makeInfoVariable(
+        [input, weights, gradO, gradI,gradW,gradB]{
+            const DataType xType = input->dataType();
+            const DataType wType = weights->dataType();
+            const DataType gradOType = gradO->dataType();
 
-    const DataType gradIType = gradI->dataType();
-    const DataType gradWType = gradW->dataType();
-    const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
-
-    return block.isUseONEDNN() && (dH <= 1 && dW <= 1 && !paddingMode) && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+            const DataType gradIType = gradI->dataType();
+            const DataType gradWType = gradW->dataType();
+            const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
+            return ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) &&
+                (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) &&
+                (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) &&
+                (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) &&
+                (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) &&
+                (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+            } , TYPECHECK_MSG),
+                NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 

@@ -301,19 +301,20 @@ namespace sd {
                 auto b = INPUT_VARIABLE(2);
                 auto z = OUTPUT_VARIABLE(0);
 
-                const DataType xType = x->dataType();
-                const DataType wType = w->dataType();
-                const DataType bType = b->dataType();
-                const DataType zType = z->dataType();
 
-                /*
-                Source    Weights   Destination         Bias
-                f32 	    f32 	f32 	            f32
-                u8, s8  	s8 	    u8, s8, s32, f32 	u8, s8, s32, f32
-                */
-                return block.isUseONEDNN() &&
-                    ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
-                        ( // x
+                Requirements req("ONEDNN XW_PLUS_B OP");
+                req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+                req.expectTrue(
+                    makeInfoVariable(
+                        [x, w ,b ,z ]{
+                            const DataType xType = x->dataType();
+                            const DataType wType = w->dataType();
+                            const DataType bType = b->dataType();
+                            const DataType zType = z->dataType();
+
+                            return
+                            ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
+                            ( // x
                             (xType == DataType::UINT8 || xType == DataType::INT8) &&
                             // w
                             (wType == DataType::UINT8 || wType == DataType::INT8) &&
@@ -322,6 +323,12 @@ namespace sd {
                             // z
                             (zType == DataType::UINT8 || zType == DataType::INT8 || zType == DataType::INT32 || zType == DataType::FLOAT32)
                             ));
+                        }, TYPECHECK_MSG),
+                    NO_MSG
+                );
+                req.logTheSuccess();
+                return req;
+
             }
 
             PLATFORM_IMPL(xw_plus_b_bp, ENGINE_CPU) {
@@ -366,23 +373,28 @@ namespace sd {
                 auto dLdw = OUTPUT_VARIABLE(1);
                 auto dLdb = OUTPUT_VARIABLE(2);
 
-                const DataType xType = x->dataType();
-                const DataType wType = w->dataType();
-                const DataType bType = b->dataType();
-                const DataType dLdzType = dLdz->dataType();
-                const DataType dLdxType = dLdx->dataType();
-                const DataType dLdwType = dLdw->dataType();
-                const DataType dLdbType = dLdb->dataType();
+                Requirements req("ONEDNN XW_PLUS_B_BP OP");
+                req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+                req.expectTrue(
+                    makeInfoVariable(
+                        [x, w, b, dLdz, dLdx, dLdw, dLdb ]{
+                            const DataType xType = x->dataType();
+                            const DataType wType = w->dataType();
+                            const DataType bType = b->dataType();
+                            const DataType dLdzType = dLdz->dataType();
+                            const DataType dLdxType = dLdx->dataType();
+                            const DataType dLdwType = dLdw->dataType();
+                            const DataType dLdbType = dLdb->dataType();
+                            return  (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
+                                  bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
+                                  dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
+                                  dLdwType == DataType::FLOAT32);
+                        }, TYPECHECK_MSG),
+                    NO_MSG
+                );
+                req.logTheSuccess();
+                return req;
 
-                /*
-                Source    Weights   Destination         Bias
-                f32 	    f32 	f32 	            f32
-                */
-                return block.isUseONEDNN() &&
-                    (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
-                        bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
-                        dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
-                        dLdwType == DataType::FLOAT32);
             }
 
         }

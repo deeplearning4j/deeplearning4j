@@ -32,7 +32,7 @@
 #if defined(HAVE_ONEDNN)
 
 namespace sd {
-    class MKLDNNStream {
+    class ONEDNNStream {
     protected:
         std::string _opName;
 
@@ -58,7 +58,7 @@ namespace sd {
             return true;
         }
 
-        explicit MKLDNNStream(const std::string &opName) : _opName(opName) { }
+        explicit ONEDNNStream(const std::string &opName) : _opName(opName) { }
 
         bool checkAndReset(const std::vector<const NDArray*> &inputs, const std::vector<const NDArray*> &outputs,
                 const std::vector<float> &floatArguments, const std::vector<int> &intArguments) {

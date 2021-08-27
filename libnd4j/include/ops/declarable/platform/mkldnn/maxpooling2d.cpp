@@ -77,7 +77,11 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseONEDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN MAXPOOL2d OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,7 +125,11 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseONEDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN MAXPOOL2d_BP OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    req.logTheSuccess();
+    return req;
 }
 
 }

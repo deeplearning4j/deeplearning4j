@@ -132,16 +132,15 @@ namespace sd {
                 auto x = INPUT_VARIABLE(0);
                 auto z = OUTPUT_VARIABLE(0);
 
-                const DataType xType = x->dataType();
-                const DataType zType = z->dataType();
-
-                const int xRank = x->rankOf();
-                bool bSupportedRanks = (xRank > 2 && xRank < 7);
-                /*
-                Source     Destination
-                f32 	    f32
-                */
-                return  !x->isEmpty() && block.isUseONEDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+                Requirements req("ONEDNN SOFTMAX OP");
+                req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+                req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
+                req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
+                req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 2) &&
+                req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
+                req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+                req.logTheSuccess();
+                return req;
 
             }
 
@@ -237,27 +236,29 @@ namespace sd {
                 auto dLdz = INPUT_VARIABLE(1);
                 auto dLdx = OUTPUT_VARIABLE(0);
 
-                const DataType xType = x->dataType();
-                const DataType dLdzType = dLdz->dataType();
-                const DataType dLdxType = dLdx->dataType();
-
-                const int xRank = x->rankOf();
-                const int dLdzRank = dLdz->rankOf();
-
-                bool bSupportedRanks = xRank < 7 && dLdzRank == xRank && (!x->isEmpty() && !dLdz->isEmpty());
-
-                if (bSupportedRanks) {
-                    for (int i = 0; i < xRank; i++) {
-                        if (x->sizeAt(i) != dLdz->sizeAt(i)) {
-                            bSupportedRanks = false;
-                            break;
+                Requirements req("ONEDNN SOFTMAX_BP OP");
+                req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+                req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT0), EXPECTED_FALSE) &&
+                req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
+                req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
+                req.expectEq(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), makeInfoVariable(dLdz->rankOf(), RANK_MSG_INPUT1)) &&
+                req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
+                req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
+                req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
+                req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+                req.expect(makeShapeInfoVariable(x, SHAPE_MSG_INPUT0), makeShapeInfoVariable(dLdz, SHAPE_MSG_INPUT1),
+                    [](const decltype(x)& l, const decltype(dLdz)& r){
+                        for (int i = 0; i < l->rankOf(); i++) {
+                            if (l->sizeAt(i) != r->sizeAt(i)) {
+                                return false;
+                            }
                         }
+                        return true;
                     }
-                }
+                 , EXPECTED_EQ_MSG);
+                req.logTheSuccess();
+                return req;
 
-                //Source     Destination
-                //f32 	    f32
-                return block.isUseONEDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32);
             }
 
         }

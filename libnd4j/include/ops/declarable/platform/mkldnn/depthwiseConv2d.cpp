@@ -392,19 +392,27 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
 
     auto output  = INPUT_VARIABLE(0);
 
-    const DataType xType = input->dataType();
-    const DataType wType = weights->dataType();
-    const DataType zType = output->dataType();
-    const DataType bType = bias != nullptr ? bias->dataType() : zType;
-
-    const int mC = weights->sizeAt(3);
-
-    return block.isUseONEDNN() && mC == 1 &&
-          (
+    Requirements req("ONEDNN DEPTHWISE_CONV2d OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(weights->sizeAt(3),"weight NdArray size#3"), 1) &&
+    req.expectTrue(makeInfoVariable(
+        [input, weights, bias, output]{
+            const DataType xType = input->dataType();
+            const DataType wType = weights->dataType();
+            const DataType zType = output->dataType();
+            const DataType bType = bias != nullptr ? bias->dataType() : zType;
+            return (
             (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
             (xType==DataType::BFLOAT16 && wType==DataType::BFLOAT16 && bType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
             ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
-          );
+            );
+
+        }
+    ,TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -469,17 +477,29 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
     auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
-    const DataType xType = input->dataType();
-    const DataType wType = weights->dataType();
-    const DataType gradOType = gradO->dataType();
+    Requirements req("ONEDNN DEPTHWISE_CONV2d_BP OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(weights->sizeAt(3),"weight NdArray size#3"), 1) &&
+    req.expectTrue(makeInfoVariable(
+        [input, weights, gradI, gradW, gradB, gradO]{
+            const DataType xType = input->dataType();
+            const DataType wType = weights->dataType();
+            const DataType gradOType = gradO->dataType();
 
-    const DataType gradIType = gradI->dataType();
-    const DataType gradWType = gradW->dataType();
-    const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
-
-    const int mC = weights->sizeAt(3);
-
-    return block.isUseONEDNN() && mC == 1 && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+            const DataType gradIType = gradI->dataType();
+            const DataType gradWType = gradW->dataType();
+            const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
+             return ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && 
+            (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) &&
+            (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) &&
+            (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && 
+             (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+        }
+    ,TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 }

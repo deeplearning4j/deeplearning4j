@@ -178,13 +178,22 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
 
     auto z = OUTPUT_VARIABLE(0);
 
-    const auto zType = z->dataType();
-
     const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
     const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
-
-    return z->rankOf() < 7 && numOfInArrs <= 3072
-           && (zType==DataType::FLOAT32 || zType==DataType::HALF || zType==DataType::BFLOAT16 || zType==DataType::UINT8 || zType==DataType::INT8);
+    Requirements req("ONEDNN CONCAT OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
+    req.expectLessEq(makeInfoVariable(numOfInArrs, "numOfinArrs"), 3072) &&
+    req.expectTrue(
+        makeInfoVariable(
+            [z]{
+                const auto zType = z->dataType();
+                return (zType==DataType::FLOAT32 || zType==DataType::HALF || zType==DataType::BFLOAT16 || zType==DataType::UINT8 || zType==DataType::INT8);
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 }

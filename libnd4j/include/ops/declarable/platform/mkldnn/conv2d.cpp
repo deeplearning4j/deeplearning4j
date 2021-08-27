@@ -521,8 +521,12 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
     auto weights = INPUT_VARIABLE(1);
 
     // conv2d is only available for float32 dtype
-    return block.isUseONEDNN() && input->dataType() == sd::DataType::FLOAT32 &&
-           weights->dataType() == sd::DataType::FLOAT32;
+    Requirements req("ONEDNN CONV2d OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), sd::DataType::FLOAT32) &&
+    req.expectEq(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), sd::DataType::FLOAT32);
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -582,9 +586,11 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
     auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
-
-    return block.isUseONEDNN() &&
-           sd::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
+    Requirements req("ONEDNN CONV2d_BP OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB}), ONEDNN_STREAM_NOT_SUPPORTED );
+    req.logTheSuccess();
+    return req;
 }
 
 

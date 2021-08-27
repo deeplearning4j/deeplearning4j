@@ -433,18 +433,29 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
     else
         axes.push_back(input->rankOf()-1);               // default dimension to reduce along is last dimension
 
-    DataType inputType = input->dataType();
-    DataType meanType  = mean->dataType();
-    DataType varType   = variance->dataType();
-    DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
-    DataType betaType  = beta  != nullptr ? beta->dataType()  : DataType::FLOAT32;
-    DataType outType   = output->dataType();
-
     const int inRank = input->rankOf();
 
-    return block.isUseONEDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
-            (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 && varType == DataType::FLOAT32 &&
-             gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
+    Requirements req("ONEDNN BATCHNORM OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
+    req.expectIn(makeInfoVariable(axes[0], "axes#0"),{1, inRank-1}) &&
+    req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
+    req.expectTrue(
+        makeInfoVariable(
+            [input, mean, variance, gamma, beta, output]{
+                DataType inputType = input->dataType();
+                DataType meanType  = mean->dataType();
+                DataType varType   = variance->dataType();
+                DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
+                DataType betaType  = beta  != nullptr ? beta->dataType()  : DataType::FLOAT32;
+                DataType outType   = output->dataType();
+                return  (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 && varType == DataType::FLOAT32 &&
+                         gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -574,7 +585,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 //         axes.push_back(input->rankOf() - 1);
 
 //     return block.isUseONEDNN() &&
-//            sd::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
+//            sd::ONEDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
 //            axes.size() == 1;
 // }
 
@@ -709,23 +720,34 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
     else
         axes.push_back(input->rankOf()-1);               // default dimension to reduce along is last dimension
 
-    DataType inputType = input->dataType();
-    DataType meanType  = mean->dataType();
-    DataType varType   = variance->dataType();
-    DataType dLdOType  = dLdO->dataType();
-    DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
-    DataType betaType  = beta  != nullptr ? beta->dataType()  : DataType::FLOAT32;
-
-    DataType dLdIType = dLdI->dataType();
-    DataType dLdGType = gamma != nullptr ? dLdG->dataType() : DataType::FLOAT32;
-    DataType dLdBType = beta  != nullptr ? dLdB->dataType() : DataType::FLOAT32;
-
     const int inRank = input->rankOf();
+    Requirements req("ONEDNN BATCHNORM_BP OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
+    req.expectIn(makeInfoVariable(axes[0], "axes#0"),{1, inRank-1}) &&
+    req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
+    req.expectTrue(
+        makeInfoVariable(
+            [input, mean, variance, dLdO, gamma, beta, dLdG, dLdB, dLdI]{
+                DataType inputType = input->dataType();
+                DataType meanType  = mean->dataType();
+                DataType varType   = variance->dataType();
+                DataType dLdOType  = dLdO->dataType();
+                DataType gammaType = gamma != nullptr ? gamma->dataType() : DataType::FLOAT32;
+                DataType betaType  = beta  != nullptr ? beta->dataType()  : DataType::FLOAT32;
 
-    return block.isUseONEDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
-            (inputType == DataType::FLOAT32 && meanType  == DataType::FLOAT32 && varType  == DataType::FLOAT32 &&
-             dLdOType  == DataType::FLOAT32 && gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&
-             dLdIType  == DataType::FLOAT32 && dLdGType  == DataType::FLOAT32 && dLdBType == DataType::FLOAT32);
+                DataType dLdIType = dLdI->dataType();
+                DataType dLdGType = gamma != nullptr ? dLdG->dataType() : DataType::FLOAT32;
+                DataType dLdBType = beta  != nullptr ? dLdB->dataType() : DataType::FLOAT32;
+                return   (inputType == DataType::FLOAT32 && meanType  == DataType::FLOAT32 && varType  == DataType::FLOAT32 &&
+                dLdOType  == DataType::FLOAT32 && gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&
+                dLdIType  == DataType::FLOAT32 && dLdGType  == DataType::FLOAT32 && dLdBType == DataType::FLOAT32);
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
+
 }
 
 }
