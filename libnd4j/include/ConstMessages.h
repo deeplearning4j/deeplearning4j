@@ -22,12 +22,11 @@
 namespace sd{
 
     extern const char* OP_VALIDATION_FAIL_MSG;
+
     extern const char* TYPECHECK_MSG;
     extern const char* NO_MSG;
-
     extern const char* EXPECTED_TRUE;
     extern const char* EXPECTED_FALSE;
-
     extern const char* EXPECTED_NOT_SUPPORTED;
     extern const char* EXPECTED_EQ_MSG;
     extern const char* EXPECTED_NE_MSG;
@@ -36,13 +35,31 @@ namespace sd{
     extern const char* EXPECTED_GT_MSG;
     extern const char* EXPECTED_GE_MSG;
 
-    extern const char* EXPECTED_ANY_MSG;
+    extern const char* EXPECTED_IN;
+
+    extern const char* IS_EMPTY_MSG_INPUT;
+    extern const char* IS_EMPTY_MSG_INPUT0;
+    extern const char* IS_EMPTY_MSG_INPUT1;
+    extern const char* IS_EMPTY_MSG_INPUT2;
+    extern const char* IS_EMPTY_MSG_INPUT3;
 
     extern const char* RANK_MSG_INPUT;
     extern const char* RANK_MSG_INPUT0;
     extern const char* RANK_MSG_INPUT1;
     extern const char* RANK_MSG_INPUT2;
     extern const char* RANK_MSG_INPUT3;
+
+    extern const char* SHAPE_MSG_INPUT;
+    extern const char* SHAPE_MSG_INPUT0;
+    extern const char* SHAPE_MSG_INPUT1;
+    extern const char* SHAPE_MSG_INPUT2;
+    extern const char* SHAPE_MSG_INPUT3;
+
+    extern const char* TYPE_MSG_INPUT;
+    extern const char* TYPE_MSG_INPUT0;
+    extern const char* TYPE_MSG_INPUT1;
+    extern const char* TYPE_MSG_INPUT2;
+    extern const char* TYPE_MSG_INPUT3;
 
     extern const char* EWS_MSG_INPUT;
     extern const char* EWS_MSG_INPUT0;
@@ -60,6 +77,14 @@ namespace sd{
     extern const char* RANK_MSG_OUTPUT0;
     extern const char* RANK_MSG_OUTPUT1;
 
+    extern const char* IS_EMPTY_OUTPUT;
+    extern const char* IS_EMPTY_OUTPUT0;
+    extern const char* IS_EMPTY_OUTPUT1;
+
+    extern const char* TYPE_MSG_OUTPUT;
+    extern const char* TYPE_MSG_OUTPUT0;
+    extern const char* TYPE_MSG_OUTPUT1;
+
     extern const char* EWS_MSG_OUTPUT;
     extern const char* EWS_MSG_OUTPUT0;
     extern const char* EWS_MSG_OUTPUT1;
@@ -69,6 +94,7 @@ namespace sd{
     extern const char* ORDERING_MSG_OUTPUT1;
 
     extern const char* IS_USE_ONEDNN_MSG;
+    extern const char * ONEDNN_STREAM_NOT_SUPPORTED;
 
     extern const char* REQUIREMENTS_MEETS_MSG;
     extern const char* REQUIREMENTS_FAILS_MSG;

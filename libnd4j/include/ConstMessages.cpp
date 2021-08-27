@@ -18,20 +18,24 @@
 
 #include <ConstMessages.h>
 
-
-#define RANK_MSG_INPUT_ "the rank of the input NDArray"
-#define RANK_MSG_OUTPUT_ "the rank of the output NDArray"
-#define EWS_MSG_INPUT_ "the EWS of the input NDArray"
-#define EWS_MSG_OUTPUT_ "the EWS of the output NDArray"
-#define ORDERING_MSG_INPUT_ "the ordering of the input NDArray"
-#define ORDERING_MSG_OUTPUT_ "the ordering of the output NDArray"
+#define IS_EMPTY_MSG_INPUT_ "the Emptiness of the Input NDArray"
+#define IS_EMPTY_MSG_OUTPUT_ "the Emptiness of the Output NDArray"
+#define RANK_MSG_INPUT_ "the Rank of the Input NDArray"
+#define SHAPE_MSG_INPUT_ "the Rank of the Input NDArray"
+#define RANK_MSG_OUTPUT_ "the Rank of the Output NDArray"
+#define TYPE_MSG_INPUT_ "the Type of the Input NDArray"
+#define TYPE_MSG_OUTPUT_ "the Type of the Output NDArray"
+#define EWS_MSG_INPUT_ "the EWS of the Input NDArray"
+#define EWS_MSG_OUTPUT_ "the EWS of the Output NDArray"
+#define ORDERING_MSG_INPUT_ "the Ordering of the Input NDArray"
+#define ORDERING_MSG_OUTPUT_ "the Ordering of the Output NDArray"
 
 namespace sd{
 
 
     const char* OP_VALIDATION_FAIL_MSG = "Op validation failed";
 
-    const char* TYPECHECK_MSG = "Checking the type requirments for the NDArrays";
+    const char* TYPECHECK_MSG = "Checking the Type requirments for the NDArrays";
     const char* NO_MSG = "";
     const char* EXPECTED_TRUE = "expected to be True";
     const char* EXPECTED_FALSE = "expected to be False";
@@ -43,13 +47,31 @@ namespace sd{
     const char* EXPECTED_GT_MSG = "expected to be greater than";
     const char* EXPECTED_GE_MSG = "expected to be greater than or equal";
 
-    const char* EXPECTED_ANY_MSG = "expected any of these to be true";
+    const char* EXPECTED_IN = "expected to be one of these";
+
+    const char* IS_EMPTY_MSG_INPUT= IS_EMPTY_MSG_INPUT_;
+    const char* IS_EMPTY_MSG_INPUT0= IS_EMPTY_MSG_INPUT_ "#0";
+    const char* IS_EMPTY_MSG_INPUT1= IS_EMPTY_MSG_INPUT_ "#1";
+    const char* IS_EMPTY_MSG_INPUT2= IS_EMPTY_MSG_INPUT_ "#2";
+    const char* IS_EMPTY_MSG_INPUT3= IS_EMPTY_MSG_INPUT_ "#3";
 
     const char* RANK_MSG_INPUT= RANK_MSG_INPUT_;
     const char* RANK_MSG_INPUT0= RANK_MSG_INPUT_ "#0";
     const char* RANK_MSG_INPUT1= RANK_MSG_INPUT_ "#1";
     const char* RANK_MSG_INPUT2= RANK_MSG_INPUT_ "#2";
     const char* RANK_MSG_INPUT3= RANK_MSG_INPUT_ "#3";
+
+    const char* SHAPE_MSG_INPUT= SHAPE_MSG_INPUT_;
+    const char* SHAPE_MSG_INPUT0= SHAPE_MSG_INPUT_ "#0";
+    const char* SHAPE_MSG_INPUT1= SHAPE_MSG_INPUT_ "#1";
+    const char* SHAPE_MSG_INPUT2= SHAPE_MSG_INPUT_ "#2";
+    const char* SHAPE_MSG_INPUT3= SHAPE_MSG_INPUT_ "#3";
+
+    const char* TYPE_MSG_INPUT= TYPE_MSG_INPUT_;
+    const char* TYPE_MSG_INPUT0= TYPE_MSG_INPUT_ "#0";
+    const char* TYPE_MSG_INPUT1= TYPE_MSG_INPUT_ "#1";
+    const char* TYPE_MSG_INPUT2= TYPE_MSG_INPUT_ "#2";
+    const char* TYPE_MSG_INPUT3= TYPE_MSG_INPUT_ "#3";
 
     const char* EWS_MSG_INPUT= EWS_MSG_INPUT_;
     const char* EWS_MSG_INPUT0= EWS_MSG_INPUT_ "#0";
@@ -67,6 +89,14 @@ namespace sd{
     const char* RANK_MSG_OUTPUT0= RANK_MSG_OUTPUT_ "#0";
     const char* RANK_MSG_OUTPUT1= RANK_MSG_OUTPUT_ "#1";
 
+    const char* IS_EMPTY_MSG_OUTPUT= IS_EMPTY_MSG_OUTPUT_;
+    const char* IS_EMPTY_MSG_OUTPUT0= IS_EMPTY_MSG_OUTPUT_ "#0";
+    const char* IS_EMPTY_MSG_OUTPUT1= IS_EMPTY_MSG_OUTPUT_ "#1";
+
+    const char* TYPE_MSG_OUTPUT= TYPE_MSG_OUTPUT_;
+    const char* TYPE_MSG_OUTPUT0= TYPE_MSG_OUTPUT_ "#0";
+    const char* TYPE_MSG_OUTPUT1= TYPE_MSG_OUTPUT_ "#1";
+
     const char* EWS_MSG_OUTPUT= EWS_MSG_OUTPUT_;
     const char* EWS_MSG_OUTPUT0= EWS_MSG_OUTPUT_ "#0";
     const char* EWS_MSG_OUTPUT1= EWS_MSG_OUTPUT_ "#1";
@@ -76,6 +106,7 @@ namespace sd{
     const char* ORDERING_MSG_OUTPUT1= ORDERING_MSG_OUTPUT_ "#1";
 
     const char* IS_USE_ONEDNN_MSG = "isUseONEDNN should be enabled to use ONEDNN";
+    const char * ONEDNN_STREAM_NOT_SUPPORTED = "ONEDNN stream is not supported";
 
     const char* REQUIREMENTS_MEETS_MSG = "meets the requirements";
     const char* REQUIREMENTS_FAILS_MSG = "fails the requirements";

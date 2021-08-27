@@ -27,8 +27,31 @@
 #include <helpers/logger.h>
 #include <ConstMessages.h>
 #include <iostream>
+#include <helpers/ShapeUtils.h>
 
+//internal usage only
+//#define ENABLE_LOG_TO_TEST 1
 namespace sd {
+
+template <class T, std::size_t N>
+std::ostream& operator<<(std::ostream& o, const std::array<T, N>& arr)
+{
+    o<<'[';
+    for(auto &x : arr){
+        o<<x<<", ";
+    }
+    o<<']';
+    return o;
+}
+
+template <class T>
+std::ostream& operator<<(std::ostream& o, const std::initializer_list<T>& arr)
+{
+    for(auto &x : arr){
+        o<<x<<", ";
+    }
+    return o;
+}
 
 template<typename T>
 using remove_cvref_t = typename std::remove_cv< typename std::remove_reference<T>::type >::type;
@@ -174,7 +197,12 @@ getStreamValue(const T& x){
 class Requirements{
     public:
 
-    Requirements(const char *prefix_msg=""):prefix(prefix_msg), ok(true){};
+    Requirements(const char *prefix_msg=""):prefix(prefix_msg), ok(true){
+#if defined(ENABLE_LOG_TO_TEST)
+        sd::Environment::getInstance().setDebug(true);
+        sd::Environment::getInstance().setVerbose(true);
+#endif
+    };
 
     //Requirements is implicitly converted to bool.
     //Note: this way you can use shortcircuit operators && to chain requirements
@@ -268,6 +296,23 @@ class Requirements{
         return *this;
     }
 
+    template<typename T, typename T2>
+    Requirements expectIn( const T& expVar, std::initializer_list<T2> vals){
+        if(!ok)  return *this;
+        auto val=getValue(expVar);
+        for(const auto& r_i : vals){
+            if(val==r_i) return *this;
+        }
+        
+        if(sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()){
+            std::stringstream stream;
+            stream<<prefix<<": "<<getMsg(expVar)<<'{'<<getStreamValue(expVar)<<"} "<<EXPECTED_IN<<'{'<<getStreamValue(vals)<<"}\n";
+            sd::Logger::info("%s", stream.str().c_str());
+        }
+        ok = false;
+        return *this;
+    }
+
 
     //Logs the Successfull cases to know if the requiremets met the conditions
     void logTheSuccess(){
@@ -319,6 +364,28 @@ struct InfoVariable{
 template<typename T1, typename T2>
 InfoVariable<T1, T2> makeInfoVariable( T1&& v1,  T2&& v2){
     return InfoVariable<T1, T2>(std::forward<T1>(v1), std::forward<T2>(v2));
+}
+
+template<typename T>
+struct ShapeInfoVariable{ 
+
+    explicit ShapeInfoVariable(const T& val, const char *msg=""):value(val), message(msg){}  
+    const T& value;
+    const char* message; 
+
+    const char* getMsg() const{
+        return message;
+    }
+  
+    const T& getValue() const { return value;}
+
+    std::string getValueStr() const { return ShapeUtils::shapeAsString(value); }
+
+};
+
+template<typename T>
+ShapeInfoVariable<T> makeShapeInfoVariable( T&& v, const char *msg){
+    return ShapeInfoVariable<T>(std::forward<T>(v), msg);
 }
 
 }
