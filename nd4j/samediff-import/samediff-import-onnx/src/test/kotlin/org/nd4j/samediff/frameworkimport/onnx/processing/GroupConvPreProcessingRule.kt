@@ -26,7 +26,6 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.enums.DataFormat
 import org.nd4j.enums.WeightsFormat
 import org.nd4j.ir.OpNamespace
-import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
@@ -39,7 +38,8 @@ class GroupConvPreProcessingRule: PreImportHook {
         op: SameDiffOp,
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor
+        descriptor: OpNamespace.OpDescriptor,
+        outputNames: List<String>
     ): HookResult {
         if(op.op.opName() != "conv2d") {
             throw IllegalArgumentException("Illegal op being processed of type ${op.op.opName()} with node name ${op.op.ownName}")

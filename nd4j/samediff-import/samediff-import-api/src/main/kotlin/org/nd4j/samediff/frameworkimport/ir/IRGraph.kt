@@ -57,6 +57,14 @@ interface IRGraph<
 
     fun nodeByName(input: String): NODE_TYPE
 
+    fun irNodeByName(input: String): IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>
+
+    fun hasNode(nodeName: String): Boolean
+
+    fun indexOfNode(input: String): Int
+
+    fun nodesWithInput(name: String): List<IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>>
+
     fun nodeList(): List<IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>>
 
     fun internalValue(): GRAPH_TYPE
@@ -88,4 +96,18 @@ interface IRGraph<
     fun setInputs(inputs: List<String>)
 
     fun getConstantArrayForName(name: String): INDArray
+
+    fun hasConstantInitializer(name: String): Boolean
+
+    /**
+     * This should return true if not all nodes are reachable
+     * based on their inputs. Some frameworks will have node names
+     * independent of their outputs which means the import algorithm
+     * may miss some. Generally, the algorithm for discovering new input nodes
+     * happens by discovering new nodes based on the inputs.
+     * A problem occurs when the node names are disconnected from their inputs or outputs
+     * and aren't discoverable for processing.
+     */
+    fun addGraphOutputsAsProcessingNodes(): Boolean
+
 }

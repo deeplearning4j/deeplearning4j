@@ -95,9 +95,9 @@
             <properties>
                 <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
                 <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
-                <cuda.version>11.0</cuda.version>
-                <cudnn.version>8.0</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+                <cuda.version>11.4</cuda.version>
+                <cudnn.version>8.2</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
 
             </properties>
             <activation>
@@ -112,13 +112,13 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-11.0</artifactId>
+                    <artifactId>nd4j-cuda-11.4</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-cuda-11.0</artifactId>
+                    <artifactId>deeplearning4j-cuda-11.4</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>

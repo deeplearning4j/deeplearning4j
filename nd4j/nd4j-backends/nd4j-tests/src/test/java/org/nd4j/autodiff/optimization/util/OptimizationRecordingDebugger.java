@@ -17,27 +17,31 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.samediff.frameworkimport.onnx.importer
+package org.nd4j.autodiff.optimization.util;
 
-import org.junit.Test
-import org.nd4j.common.io.ClassPathResource
-import org.nd4j.linalg.factory.Nd4j
-import java.io.File
-import java.util.*
+import lombok.Getter;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.optimize.Optimizer;
+import org.nd4j.autodiff.samediff.optimize.debug.OptimizationDebugger;
 
-class TestOnnxFrameworkImporter {
+import java.util.HashMap;
+import java.util.Map;
 
-    @Test
-    fun testAgeRace() {
-        val importer = OnnxFrameworkImporter()
-        val file = ClassPathResource("agerace_v2.onnx").file
-        val result  = importer.runImport(file.absolutePath, emptyMap())
-        val arr = Nd4j.ones(1, 3, 224, 224)
-        result.batchOutput().inputs(Collections.singletonMap("input", arr))
-            .output("output").output()
-        println(result.summary())
-        result.asFlatFile(File("agerace-samediff.fb"))
+public class OptimizationRecordingDebugger implements OptimizationDebugger {
+
+    @Getter
+    private Map<String,Optimizer> applied = new HashMap<>();
+
+    @Override
+    public void beforeOptimizationCheck(SameDiff sd, SameDiffOp op, Optimizer o) {
+        //No op
     }
 
-
+    @Override
+    public void afterOptimizationsCheck(SameDiff sd, SameDiffOp op, Optimizer o, boolean wasApplied) {
+        if(wasApplied){
+            applied.put(op.getName(), o);
+        }
+    }
 }
