@@ -38,7 +38,7 @@ if [ -z "${PERFORM_RELEASE}" ]; then export PERFORM_RELEASE=0; fi
 if [ -z "${RELEASE_VERSION}" ]; then export RELEASE_VERSION="1.0.0-M2"; fi
 if [ -z "${SNAPSHOT_VERSION}" ]; then export SNAPSHOT_VERSION="1.0.0-SNAPSHOT"; fi
 if [ -z "${MODULES}" ]; then export MODULES=; fi
-if [ -z "${RELEASE_REPO_ID}" ]; then export RELEASE_REPO_ID="deeplearning4j-release-${RELEASE_VERSION}"; fi
+if [ -z "${RELEASE_REPO_ID}" ]; then export RELEASE_REPO_ID=""; fi
 
 echo "BUILDING FOR OS ${CURRENT_TARGET}"
 
