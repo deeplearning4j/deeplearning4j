@@ -355,6 +355,89 @@ dnnl::engine& getEngine(void *ptr) {
 }
 
 
+void checkPoolingONEDNN(Requirements &reqs, sd::graph::Context &block, const sd::NDArray &in, const sd::NDArray &out) {
+    //replicate OneDNN check that was added since v1.8
+    //https://github.com/oneapi-src/oneDNN/blob/master/src/common/pooling.cpp#L108-L110
+    //if (str < 1 || dil < 0 || pad_l < 0 || pad_r + str < 0) return invalid_arguments;
+    if(in.rankOf() > 4 && block.getIArguments()->size() > 12){
+        //pooling 3D
+        int kD = INT_ARG(0); // filter(kernel) depth
+        int kH = INT_ARG(1); // filter(kernel) height
+        int kW = INT_ARG(2); // filter(kernel) width
+        int sD = INT_ARG(3); // strides depth
+        int sH = INT_ARG(4); // strides height
+        int sW = INT_ARG(5); // strides width
+        int pD = INT_ARG(6); // paddings depth
+        int pH = INT_ARG(7); // paddings height
+        int pW = INT_ARG(8); // paddings width
+        int dD = INT_ARG(9); // dilations depth
+        int dH = INT_ARG(10);// dilations height
+        int dW = INT_ARG(11);// dilations width
+        int paddingMode = INT_ARG(12); // 1-SAME,  0-VALID
+        // int extraParam0 = INT_ARG(13); // unnecessary for max case, required only for avg and pnorm cases
+        int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
+        reqs.expectEq(makeInfoVariable(in.rankOf(), RANK_MSG_INPUT0), 5) &&
+        //stride >=1
+        reqs.expectGreaterEq(makeInfoVariable(sD, "strides#Depth"), 1) &&
+        reqs.expectGreaterEq(makeInfoVariable(sH, "strides#Height"), 1) &&
+        reqs.expectGreaterEq(makeInfoVariable(sW, "strides#Width"), 1) &&
+        //dilation >=0
+        reqs.expectGreaterEq(makeInfoVariable(dW, "dilation#Depth"), 0) &&
+        reqs.expectGreaterEq(makeInfoVariable(dH, "dilation#Height"), 0) &&
+        reqs.expectGreaterEq(makeInfoVariable(dW, "dilation#Width"), 0);
+        if(reqs){
+            int bS, iC, iD, iH, iW, oC, oD, oH, oW; // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
+            int indIOioC, indIOioD, indWoC, indWiC, indWkD; // corresponding indexes
+            ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, in, out, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
+
+            if(paddingMode)                       // SAME
+                ops::ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
+            //pad_l >=0
+            reqs.expectGreaterEq(makeInfoVariable(pD, "padding_l#Depth"), 0) &&
+            reqs.expectGreaterEq(makeInfoVariable(pH, "padding_l#Height"), 0) &&
+            reqs.expectGreaterEq(makeInfoVariable(pW, "padding_l#Width"), 0) &&
+            //pad_r+ stride
+            reqs.expectGreaterEq(makeInfoVariable(((oD - 1) * sD - iD + kD - pD) + sD, "padding_r#Depth + stride#Depth"), 0) &&
+            reqs.expectGreaterEq(makeInfoVariable(((oH - 1) * sH - iH + kH - pH) + sH, "padding_r#Height + stride#Height"), 0) &&
+            reqs.expectGreaterEq(makeInfoVariable(((oW - 1) * sW - iW + kW - pW) + sW, "padding_r#Width + stride#Width"), 0) ;
+        }
+    }
+    else if(block.getIArguments()->size() > 8){
+        const int kH = INT_ARG(0);
+        const int kW = INT_ARG(1);
+        const int sH = INT_ARG(2);
+        const int sW = INT_ARG(3);
+            int pH = INT_ARG(4);
+            int pW = INT_ARG(5);
+        const int dH = INT_ARG(6);
+        const int dW = INT_ARG(7);
+        const int paddingMode = INT_ARG(8);
+        const int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;// INT_ARG(10): 1-NHWC, 0-NCHW
+        reqs.expectEq(makeInfoVariable(in.rankOf(), RANK_MSG_INPUT0), 4) &&
+        //stride >=1
+        reqs.expectGreaterEq(makeInfoVariable(sH, "strides#Height"), 1) &&
+        reqs.expectGreaterEq(makeInfoVariable(sW, "strides#Width"), 1) &&
+        //dilation >=0
+        reqs.expectGreaterEq(makeInfoVariable(dH, "dilation#Height"), 0) &&
+        reqs.expectGreaterEq(makeInfoVariable(dW, "dilation#Width"), 0);
+        if(reqs){
+            int bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+            ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, in, out, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+            if (paddingMode){
+                    ops::ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+            }
+            //pad_l >=0
+            reqs.expectGreaterEq(makeInfoVariable(pH, "padding_l#Height"), 0) &&
+            reqs.expectGreaterEq(makeInfoVariable(pW, "padding_l#Width"), 0) &&
+            //pad_r+ stride
+            reqs.expectGreaterEq(makeInfoVariable(((oH - 1) * sH - iH + kH - pH) + sH, "padding_r#Height + stride#Height"), 0) &&
+            reqs.expectGreaterEq(makeInfoVariable(((oW - 1) * sW - iW + kW - pW) + sW, "padding_r#Width + stride#Width"), 0) ;
+        }
+    }
+    return;
+}
+
+
 /*
 //////////////////////////////////////////////////////////////////////////
 void getMKLDNNMemoryDescPool2d(

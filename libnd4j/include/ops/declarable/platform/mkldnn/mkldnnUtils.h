@@ -147,6 +147,16 @@ namespace sd {
         */
         dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engine, const dnnl::stream& stream, const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
                                 dnnl::memory& arg);
+        
+        /**
+         * @brief This function checks adittional ONEDNN pooling requirements
+         * 
+         * @param reqs Requirements block to store the check result
+         * @param block Context block to extract positional integer arguments.
+         * @param in in NDArray
+         * @param out out NDArray
+         */
+        void checkPoolingONEDNN(Requirements &reqs, sd::graph::Context &block, const sd::NDArray &in, const sd::NDArray &out);
 
         /**
          * Utility methods for MKLDNN

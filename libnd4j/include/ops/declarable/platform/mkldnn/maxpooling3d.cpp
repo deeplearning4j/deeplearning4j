@@ -80,6 +80,7 @@ PLATFORM_CHECK(maxpool3dnew, ENGINE_CPU) {
     Requirements req("ONEDNN MAXPOOL3d OP");
     req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
     && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *output);
     req.logTheSuccess();
     return req;
 }
@@ -128,11 +129,13 @@ PLATFORM_IMPL(maxpool3dnew_bp, ENGINE_CPU) {
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(maxpool3dnew_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
 
     Requirements req("ONEDNN MAXPOOL3d_BP OP");
     req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
     && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *gradO);
     req.logTheSuccess();
     return req;
 }
