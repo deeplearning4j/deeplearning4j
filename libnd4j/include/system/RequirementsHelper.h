@@ -33,6 +33,12 @@
 //#define ENABLE_LOG_TO_TEST 1
 namespace sd {
 
+inline std::ostream& operator<<(std::ostream& o, const sd::DataType &type)
+{ 
+    o << DataTypeUtils::asString(type);
+    return o;
+}
+
 template <class T, std::size_t N>
 std::ostream& operator<<(std::ostream& o, const std::array<T, N>& arr)
 {
