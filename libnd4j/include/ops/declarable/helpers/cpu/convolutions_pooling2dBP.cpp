@@ -51,7 +51,7 @@ namespace sd {
             const int oH = gradO.sizeAt(2);
             const int oW = gradO.sizeAt(3);
 
-            nd4j_debug("MKL-DNN is not used for pooling2d_bp!\n", 0);
+            //nd4j_debug("MKL-DNN is not used for pooling2d_bp!\n", 0);
 
             const Nd4jLong iStride0  = input.stridesOf()[0];
             const Nd4jLong iStride1  = input.stridesOf()[1];
