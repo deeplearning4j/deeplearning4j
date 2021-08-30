@@ -20,6 +20,20 @@ option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OF
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 if (SD_CUDA)
     enable_language(CUDA)
+    
+      if(${SD_ARCH} MATCHES "armv8-a")
+        message("Adding jetson nano specific settings")
+        # Need to manually specify stubbed links in order
+        # for cublas and cusolver to be resolved
+        if(NOT DEFINED CUDA_cublas_LIBRARY)
+            set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
+        endif()
+
+        if(NOT DEFINED CUDA_cusolver_LIBRARY)
+            set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
+        endif()
+    endif()
+    
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
             message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
             set(CMAKE_CXX_STANDARD 17)
@@ -309,18 +323,7 @@ if (${HELPERS_cudnn})
     #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
     SET(CUDNN_LIBNAME "cudnn")
-    if(${SD_ARCH} MATCHES "armv8-a")
-        message("Adding jetson nano specific settings")
-        # Need to manually specify stubbed links in order
-        # for cublas and cusolver to be resolved
-        if(NOT DEFINED CUDA_cublas_LIBRARY)
-            set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
-        endif()
 
-        if(NOT DEFINED CUDA_cusolver_LIBRARY)
-            set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
-        endif()
-    endif()
     if(DEFINED ENV{CUDNN_ROOT_DIR})
        message("Using cudnn root directory from environment")
        set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})

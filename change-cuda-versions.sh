@@ -105,45 +105,8 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 BASEDIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-#Artifact ids, ending with "-8.0", "-9.0", etc. nd4j-cuda, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)[0-9.]*<\/artifactId>/\1'$VERSION'<\/artifactId>/g' '{}'" \;
-
-#Artifact ids, ending with "-8.0", "-9.0", etc. nd4j-cuda, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-preset\)[0-9.]*<\/artifactId>/\1'$VERSION'<\/artifactId>/g' '{}'" \;
-
-
-#Artifact ids, ending with "-8.0-platform", "-9.0-platform", etc. nd4j-cuda-platform, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)[0-9.]*-platform<\/artifactId>/\1'$VERSION'-platform<\/artifactId>/g' '{}'" \;
-
-#Artifact ids, ending with "-8.0-preset", "-9.0-preset", etc. nd4j-cuda-preset, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)[0-9.]*-preset<\/artifactId>/\1'$VERSION'-preset<\/artifactId>/g' '{}'" \;
-
-#Profiles ids, ending with "-8.0", "-9.0", etc. test-nd4j-cuda, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(test-nd4j-cuda-\)[0-9.]*</\1'$VERSION'</g' '{}'" \;
-
-#Artifact ids, ending with "-8.0", "-9.0", etc. deeplearning4j-cuda, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>deeplearning4j-cuda-\)[0-9.]*<\/artifactId>/\1'$VERSION'<\/artifactId>/g' '{}'" \;
-
-#Artifact ids, ending with "-8.0-platform", "-9.0-platform", etc. deeplearning4j-cuda-platform, etc.
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>deeplearning4j-cuda-\)[0-9.]*-platform<\/artifactId>/\1'$VERSION'-platform<\/artifactId>/g' '{}'" \;
-
-#CUDA versions, like <cuda.version>9.1</cuda.version>
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(cuda.version>\)[0-9.]*<\/cuda.version>/\1'$VERSION'<\/cuda.version>/g' '{}'" \;
-
-#cuDNN versions, like <cudnn.version>7.0</cudnn.version>
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(cudnn.version>\)[0-9.]*<\/cudnn.version>/\1'$VERSION2'<\/cudnn.version>/g' '{}'" \;
-
-#JavaCPP versions, like <javacpp-presets.cuda.version>1.4</javacpp-presets.cuda.version>
-find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(javacpp-presets.cuda.version>\).*<\/javacpp-presets.cuda.version>/\1'$VERSION3'<\/javacpp-presets.cuda.version>/g' '{}'" \;
+cd "${BASEDIR}/"contrib/version-updater
+mvn clean compile
+mvn exec:java -Dexec.args="--root-dir=${BASEDIR} --cuda-version=${VERSION} --cudnn-version=${VERSION2} --javacpp-version=${VERSION3} --update-type=cuda"
 
 echo "Done updating CUDA versions.";

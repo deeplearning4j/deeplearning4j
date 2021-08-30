@@ -332,6 +332,8 @@
                                         <argument>${libnd4j.tests}</argument>
                                         <argument>-j</argument>
                                         <argument>${libnd4j.buildthreads}</argument>
+                                        <argument>-h</argument>
+                                        <argument>${libnd4j.helper}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

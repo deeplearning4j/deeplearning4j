@@ -35,10 +35,10 @@ if [ -z "${LIBND4J_BUILD_THREADS}" ]; then export  LIBND4J_BUILD_THREADS=$(nproc
 if [ -z "${PROTO_EXEC}" ]; then export PROTO_EXEC="protoc"; fi
 if [ -z "${NDK_VERSION}" ]; then export NDK_VERSION="r21d"; fi
 if [ -z "${PERFORM_RELEASE}" ]; then export PERFORM_RELEASE=0; fi
-if [ -z "${RELEASE_VERSION}" ]; then export RELEASE_VERSION="1.0.0-M1"; fi
+if [ -z "${RELEASE_VERSION}" ]; then export RELEASE_VERSION="1.0.0-M2"; fi
 if [ -z "${SNAPSHOT_VERSION}" ]; then export SNAPSHOT_VERSION="1.0.0-SNAPSHOT"; fi
 if [ -z "${MODULES}" ]; then export MODULES=; fi
-if [ -z "${RELEASE_REPO_ID}" ]; then export RELEASE_REPO_ID="deeplearning4j-release-${RELEASE_VERSION}"; fi
+if [ -z "${RELEASE_REPO_ID}" ]; then export RELEASE_REPO_ID=""; fi
 
 echo "BUILDING FOR OS ${CURRENT_TARGET}"
 
@@ -187,7 +187,7 @@ function download_extract_base {
 }
 
 function download_extract {
-	download_extract_base -xvf "$@"
+	download_extract_base -xf "$@"
 }
 
 function download_extract_xz {
@@ -233,9 +233,6 @@ function cuda_cross_setup {
 		download_extract "${CUDA_TARGET_STUB_URL}" "${CUDA_TARGET_STUBS}"
 		mv "${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2" "${CUDA_TARGET_STUBS}/aarch64-linux/"
 		message "Moving  ${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2 to ${CUDA_TARGET_STUBS}/aarch64-linux/"
-		message "Files in ${CUDA_TARGET_STUBS}/aarch64-linux/"
-		message "Files in ${CUDA_TARGET_STUBS}/aarch64-linux/"
-		ls "${CUDA_TARGET_STUBS}/aarch64-linux/"
 		cp -r ${CUDA_TARGET_STUBS}/aarch64-linux/* "${CUDA_TARGET_STUBS}/aarch64-linux/"
 		message "lets setup cuda toolkit by combining local cuda-${loc_VER} and target ${CUDA_TARGET_STUBS}"
 		message "cuda cross folder: ${loc_DIR}"
@@ -396,8 +393,11 @@ else
 	 	message  "jetson cuda build "
 		cuda_cross_setup ${CUDA_VER}
 		XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -Pcuda -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\",!\":deeplearning4j-cuda-${CUDA_VER}\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+		# need to be in base directory to exec contrib folder
+		cd "${BASE_DIR}/.."
 		bash "${BASE_DIR}/../change-cuda-versions.sh" "${CUDA_VER}"
+		cd "${BASE_DIR}"
 		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn"
 		export SYSROOT="${CROSS_COMPILER_DIR}/${PREFIX}/libc"
 	else
@@ -427,7 +427,7 @@ cd "$BASE_DIR/.."
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\"  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
+  command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\"  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  -DskipTests -Dmaven.test.skip=true"
   message "$command"
   echo "Perform release or not ${PERFORM_RELEASE}"
   if [ "${PERFORM_RELEASE}" == "1" ] || [ "${PERFORM_RELEASE}" == 1 ]; then
