@@ -28,7 +28,7 @@
 using namespace dnnl;
 
 namespace sd        {
-namespace mkldnnUtils {
+namespace onednnUtils {
 
 //////////////////////////////////////////////////////////////////////
 void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims){
@@ -102,7 +102,7 @@ dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engin
 }
 
 //////////////////////////////////////////////////////////////////////
-void poolingMKLDNN(const NDArray *input, NDArray *output,
+void poolingONEDNN(const NDArray *input, NDArray *output,
                 const int kD, const int kH, const int kW,
                 const int sD, const int sH, const int sW,
                 const int pD, const int pH, const int pW,
@@ -153,14 +153,14 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, type, xzFrmat);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFrmat);
-    mkldnnUtils::setBlockStrides(*input, x_user_md, permut);
+    onednnUtils::setBlockStrides(*input, x_user_md, permut);
 
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, type, xzFrmat);
-    mkldnnUtils::setBlockStrides(*output, z_user_md, permut);
+    onednnUtils::setBlockStrides(*output, z_user_md, permut);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // operation primitive description
     dnnl::pooling_forward::desc op_desc(dnnl::prop_kind::forward_inference, mode, x_mkl_md, z_mkl_md, strides, kernel, padding, padding_r);
@@ -174,10 +174,10 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // output
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(*output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::pooling_forward(op_prim_desc).execute(stream, args);
@@ -190,7 +190,7 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
 }
 
 //////////////////////////////////////////////////////////////////////
-void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
+void poolingBpONEDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
                     const int kD, const int kH, const int kW,
                     const int sD, const int sH, const int sW,
                     const int pD, const int pH, const int pW,
@@ -243,19 +243,19 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, type, xzFrmat);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFrmat);
-    mkldnnUtils::setBlockStrides(*input, x_user_md, permut);
+    onednnUtils::setBlockStrides(*input, x_user_md, permut);
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, type, xzFrmat);
-    mkldnnUtils::setBlockStrides(*gradO, gradO_user_md, permut);
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md, permut);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, type, xzFrmat);
-    mkldnnUtils::setBlockStrides(*gradI, gradI_user_md, permut);
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md, permut);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
     dnnl::stream stream(engine);
 
     // forward primitive description
@@ -270,15 +270,15 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     std::unordered_map<int, dnnl::memory> args;
 
     // gradO
-    mkldnnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+    onednnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // gradI
-    auto gradI_user_mem = mkldnnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
+    auto gradI_user_mem = onednnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     if(mode == algorithm::pooling_max) {
 
         // input
-        mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+        onednnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
         // z
         auto z_mkl_mem = dnnl::memory(op_ff_prim_desc.dst_desc(), engine);
@@ -303,7 +303,7 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+void getONEDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
                             dnnl::memory::desc* lrn_src_md, dnnl::memory::desc* lrn_diff_src_md, dnnl::memory::desc* lrn_dst_md,
                             dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis) {
     const Nd4jLong* shape = src->shapeInfo();

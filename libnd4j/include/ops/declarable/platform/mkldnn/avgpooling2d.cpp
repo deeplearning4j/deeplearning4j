@@ -69,7 +69,7 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
 
     auto mode = (extraParam0 == 0) ? algorithm::pooling_avg_exclude_padding : algorithm::pooling_avg_include_padding;
 
-    mkldnnUtils::poolingMKLDNN(input, output, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, mode);
+    onednnUtils::poolingONEDNN(input, output, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, mode);
 
     return Status::OK();
 }
@@ -120,7 +120,7 @@ PLATFORM_IMPL(avgpool2d_bp, ENGINE_CPU) {
 
     auto mode = (extraParam0 == 0) ? algorithm::pooling_avg_exclude_padding : algorithm::pooling_avg_include_padding;
 
-    mkldnnUtils::poolingBpMKLDNN(input, gradO, gradI, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, mode);
+    onednnUtils::poolingBpONEDNN(input, gradO, gradI, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, mode);
 
     return Status::OK();
 }

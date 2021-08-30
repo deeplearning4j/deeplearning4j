@@ -112,9 +112,9 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
         zType = dnnl::memory::data_type::s8;
 
 
-    const auto xFormat = xRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*xTR);
-    const auto yFormat = yRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*yTR);
-    const auto zFormat = zRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*zR);
+    const auto xFormat = xRank == 1 ? dnnl::memory::format_tag::ab : onednnUtils::getFormat(*xTR);
+    const auto yFormat = yRank == 1 ? dnnl::memory::format_tag::ab : onednnUtils::getFormat(*yTR);
+    const auto zFormat = zRank == 1 ? dnnl::memory::format_tag::ab : onednnUtils::getFormat(*zR);
 
     // memory descriptors for arrays
     dnnl::memory::desc x_mkl_md, x_user_md, y_mkl_md, y_user_md, z_mkl_md, z_user_md;
@@ -149,7 +149,7 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
             z_user_md.data.format_desc.blocking.strides[2] = zR->strideAt(2);
     }
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // Create attributes (to handle alpha and beta if necessary)
     dnnl::primitive_attr attr; // it is empty since we have usual values for alpha (=1) and beta (=0)
@@ -172,13 +172,13 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // y
-    mkldnnUtils::loadDataToMklStream(*yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // z
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*zR, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(*zR, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::matmul(op_prim_desc).execute(stream, args);

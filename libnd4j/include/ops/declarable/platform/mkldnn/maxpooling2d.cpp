@@ -67,7 +67,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
     if (paddingMode)
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    mkldnnUtils::poolingMKLDNN(input, output, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
+    onednnUtils::poolingONEDNN(input, output, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
 
     return Status::OK();
 }
@@ -116,7 +116,7 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
     if (paddingMode)                       // SAME
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    mkldnnUtils::poolingBpMKLDNN(input, gradO, gradI, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
+    onednnUtils::poolingBpONEDNN(input, gradO, gradI, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
 
     return Status::OK();
 }

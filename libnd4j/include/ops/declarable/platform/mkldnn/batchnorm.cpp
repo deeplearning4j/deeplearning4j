@@ -93,14 +93,14 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     // x
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
-    mkldnnUtils::setBlockStrides(*x, x_user_md);
+    onednnUtils::setBlockStrides(*x, x_user_md);
 
     // z, output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, format);
-    mkldnnUtils::setBlockStrides(*z, z_user_md);
+    onednnUtils::setBlockStrides(*z, z_user_md);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // batchnorm forward description
     dnnl::batch_normalization_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
@@ -114,10 +114,10 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     // provide memory and check whether reorder is required
 
     // x
-    mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // z
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_ff_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_ff_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // mean
     auto mean_mkl_mem = dnnl::memory(op_ff_prim_desc.mean_desc(), engine, const_cast<void*>(mean->buffer()));
@@ -203,19 +203,19 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
     // x
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
-    mkldnnUtils::setBlockStrides(*x, x_user_md);
+    onednnUtils::setBlockStrides(*x, x_user_md);
 
     // dLdO
     dnnl::memory::desc dLdO_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdO_user_md = dnnl::memory::desc(dims, type, format);
-    mkldnnUtils::setBlockStrides(dLdO, dLdO_user_md);
+    onednnUtils::setBlockStrides(dLdO, dLdO_user_md);
 
     // dLdI
     dnnl::memory::desc dLdI_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdI_user_md = dnnl::memory::desc(dims, type, format);
-    mkldnnUtils::setBlockStrides(*dLdI, dLdI_user_md);
+    onednnUtils::setBlockStrides(*dLdI, dLdI_user_md);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // batchnorm forward description
     dnnl::batch_normalization_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
@@ -233,10 +233,10 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
     // provide memory and check whether reorder is required
 
     // x
-    mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // dLdO
-    mkldnnUtils::loadDataToMklStream(dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+    onednnUtils::loadDataToMklStream(dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // mean
     auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, const_cast<void*>(mean->buffer()));
@@ -247,7 +247,7 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
     args[DNNL_ARG_VARIANCE] = var_mkl_mem;
 
     // dLdI
-    auto dLdI_user_mem = mkldnnUtils::loadDataToMklStream(*dLdI, engine, stream, dLdI_user_md, op_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
+    auto dLdI_user_mem = onednnUtils::loadDataToMklStream(*dLdI, engine, stream, dLdI_user_md, op_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     // gamma and beta (and their gradients) if they are present
     if(weights != nullptr) {
@@ -497,13 +497,13 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 //     if (applyScale || applyOffset)
 //         flag |= dnnl::normalization_flags::use_scale_shift;
 
-//     mkldnnUtils::getMKLDNNMemoryDescBatchNorm(input, nullptr, output,
+//     onednnUtils::getMKLDNNMemoryDescBatchNorm(input, nullptr, output,
 //                                               &batchnorm_src_md, nullptr, &batchnorm_dst_md,
 //                                               &user_src_md, nullptr, &user_dst_md, axes[0]);
 
 //     auto batchnorm_desc = dnnl::batch_normalization_forward::desc(dnnl::prop_kind::forward_inference, batchnorm_src_md, epsilon, flag);
 
-//     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+//     auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 //     dnnl::stream stream(engine);
 //     auto batchnorm_prim_desc = dnnl::batch_normalization_forward::primitive_desc(batchnorm_desc, engine);
 //     auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());

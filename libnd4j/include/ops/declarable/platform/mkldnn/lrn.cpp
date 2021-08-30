@@ -49,13 +49,13 @@ namespace sd {
                 dnnl_memory_desc_t empty;
                 dnnl::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
 
-                mkldnnUtils::getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md,
+                onednnUtils::getONEDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md,
                                                         &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
 
                 auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, algorithm::lrn_across_channels,
                                                       lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
-                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
                 dnnl::stream stream(engine);
                 auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
                 auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());

@@ -43,8 +43,8 @@ namespace sd {
 
                 const int xRank = x->rankOf();
 
-                dnnl::memory::format_tag xFormat = mkldnnUtils::getFormat(*x);
-                dnnl::memory::format_tag zFormat = mkldnnUtils::getFormat(*z);
+                dnnl::memory::format_tag xFormat = onednnUtils::getFormat(*x);
+                dnnl::memory::format_tag zFormat = onednnUtils::getFormat(*z);
 
                 // optimized cases
                 if (2 == xRank && 0 == axis) {
@@ -65,13 +65,13 @@ namespace sd {
                 dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
                 x_user_md = x_mkl_md = dnnl::memory::desc(shape, xType, xFormat);
-                mkldnnUtils::setBlockStrides(*x, x_user_md);
+                onednnUtils::setBlockStrides(*x, x_user_md);
 
                 // z
                 z_user_md = z_mkl_md = dnnl::memory::desc(shape, xType, zFormat);
-                mkldnnUtils::setBlockStrides(*z, z_user_md);
+                onednnUtils::setBlockStrides(*z, z_user_md);
 
-                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
                 // Create attributes (to handle alpha and beta if necessary)
                 dnnl::primitive_attr attr; // it is empty since we have usual values for alpha (=1) and beta (=0)
@@ -89,10 +89,10 @@ namespace sd {
                 // provide memory buffers and check whether reorder is required
 
                 // input
-                mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+                onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
                 // z
-                auto z_user_mem = mkldnnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+                auto z_user_mem = onednnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
                 // run calculations
                 dnnl::softmax_forward(op_prim_desc).execute(stream, args);
@@ -150,18 +150,18 @@ namespace sd {
                 dnnl::memory::desc x_user_md, x_mkl_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
                 // x
-                x_mkl_md = x_user_md = dnnl::memory::desc(x->getShapeAsFlatVector(), dnnl::memory::data_type::f32, mkldnnUtils::getFormat(*x));
-                mkldnnUtils::setBlockStrides(*x, x_user_md);
+                x_mkl_md = x_user_md = dnnl::memory::desc(x->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+                onednnUtils::setBlockStrides(*x, x_user_md);
 
                 // dLdx
-                dLdx_mkl_md = dLdx_user_md = dnnl::memory::desc(dLdx->getShapeAsFlatVector(), dnnl::memory::data_type::f32, mkldnnUtils::getFormat(*dLdx));
-                mkldnnUtils::setBlockStrides(*dLdx, dLdx_user_md);
+                dLdx_mkl_md = dLdx_user_md = dnnl::memory::desc(dLdx->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+                onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
                 // dLdz
-                dLdz_mkl_md = dLdz_user_md = dnnl::memory::desc(dLdz->getShapeAsFlatVector(), dnnl::memory::data_type::f32, mkldnnUtils::getFormat(*dLdz));
-                mkldnnUtils::setBlockStrides(*dLdz, dLdz_user_md);
+                dLdz_mkl_md = dLdz_user_md = dnnl::memory::desc(dLdz->getShapeAsFlatVector(), dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+                onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
-                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
                 // operation primitive description
                 // forward description
@@ -179,13 +179,13 @@ namespace sd {
 
                 // provide memory buffers and check whether reorder is required for forward
                 // input
-                mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), argsff[DNNL_ARG_SRC]);
+                onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), argsff[DNNL_ARG_SRC]);
 
                 // dLdz
-                mkldnnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bp_prim_desc.diff_dst_desc(), argsbp[DNNL_ARG_DIFF_DST]);
+                onednnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bp_prim_desc.diff_dst_desc(), argsbp[DNNL_ARG_DIFF_DST]);
 
                 // dLdx
-                auto dLdx_user_mem = mkldnnUtils::loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md, op_ff_prim_desc.src_desc(), argsff[DNNL_ARG_DST]);
+                auto dLdx_user_mem = onednnUtils::loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md, op_ff_prim_desc.src_desc(), argsff[DNNL_ARG_DST]);
 
                 // check and arg set for backprob
                 argsbp[DNNL_ARG_DIFF_SRC] = argsff[DNNL_ARG_DST];
