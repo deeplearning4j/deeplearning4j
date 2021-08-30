@@ -112,9 +112,9 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
         zType = dnnl::memory::data_type::s8;
 
 
-    const auto xFormat = xRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*xTR);
-    const auto yFormat = yRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*yTR);
-    const auto zFormat = zRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*zR);
+    const auto xFormat = xRank == 1 ? dnnl::memory::format_tag::ab : onednnUtils::getFormat(*xTR);
+    const auto yFormat = yRank == 1 ? dnnl::memory::format_tag::ab : onednnUtils::getFormat(*yTR);
+    const auto zFormat = zRank == 1 ? dnnl::memory::format_tag::ab : onednnUtils::getFormat(*zR);
 
     // memory descriptors for arrays
     dnnl::memory::desc x_mkl_md, x_user_md, y_mkl_md, y_user_md, z_mkl_md, z_user_md;
@@ -149,7 +149,7 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
             z_user_md.data.format_desc.blocking.strides[2] = zR->strideAt(2);
     }
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // Create attributes (to handle alpha and beta if necessary)
     dnnl::primitive_attr attr; // it is empty since we have usual values for alpha (=1) and beta (=0)
@@ -172,13 +172,13 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // y
-    mkldnnUtils::loadDataToMklStream(*yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // z
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*zR, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(*zR, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::matmul(op_prim_desc).execute(stream, args);
@@ -266,7 +266,7 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
     return Status::OK();
 }
-
+#include <iostream>
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(matmul, ENGINE_CPU) {
 
@@ -282,19 +282,45 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
     float alpha = block.numT() > 0 ? T_ARG(0) : 1.0f;
     float beta = block.numT() > 1 ? T_ARG(1) : 0.0f;
 
+    Requirements req("ONEDNN MATMUL OP");
+    
     // we're skipping if result order is F or arrays are not continuous
-    bool skip2D = z->rankOf() == 2 && (z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3);
+    //NOTE: here is the old check. will be removed
+    if(z->rankOf()==2){
+        req.setPrefix("ONEDNN MATMUL OP: case#1").expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_INPUT1), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_OUTPUT1), 1 )
+        && req.expectNotEq(makeInfoVariable(z->ordering(), ORDERING_MSG_OUTPUT), 'f' );
+    }
+    else if(z->rankOf() == 3){
+        req.setPrefix("ONEDNN MATMUL OP: case#2").expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_INPUT1), 1 )
+        && req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_OUTPUT1), 1 )
+        && req.expectNotEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'f' )
+        && req.expectNotEq(makeInfoVariable(y->ordering(), ORDERING_MSG_INPUT1), 'f' )
+        && req.expectNotEq(makeInfoVariable(z->ordering(), ORDERING_MSG_OUTPUT), 'f' );
 
-    // we're skipping 3D cases if they are not C continuoys
-    bool skip3D = z->rankOf() == 3 && (x->ordering() == 'f' || y->ordering() == 'f' || z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+    }
 
-    return !skip2D && !skip3D && block.isUseMKLDNN() && x->rankOf() < 3 &&
-          (
-            (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
-            (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||
-            (xType==DataType::BFLOAT16 && yType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
-            ((xType==DataType::UINT8 || xType==DataType::INT8) && (yType==DataType::UINT8 || yType==DataType::INT8) && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32))
-          );
+    req.setPrefix("ONEDNN MATMUL OP").expectTrue(
+        makeInfoVariable(
+            [xType, yType, zType]{
+                    return (
+                       (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
+                       (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||
+                       (xType==DataType::BFLOAT16 && yType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
+                       ((xType==DataType::UINT8 || xType==DataType::INT8) && (yType==DataType::UINT8 || yType==DataType::INT8) && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32))
+                     );
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+
+    req.logTheSuccess();
+
+    return req;
+
 }
 
 

@@ -69,19 +69,19 @@ static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDA
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
     dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormatMkl);
-    mkldnnUtils::setBlockStrides(*weights, w_user_md, {3,2,0,1});               // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
+    onednnUtils::setBlockStrides(*weights, w_user_md, {3,2,0,1});               // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormatMkl);
-    mkldnnUtils::setBlockStrides(*gradO, gradO_user_md);
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormatMkl);
-    mkldnnUtils::setBlockStrides(*gradI, gradI_user_md);
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // forward primitive description
     dnnl::convolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto, x_mkl_md, w_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
@@ -99,13 +99,13 @@ static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDA
     // provide memory buffers and check whether reorder is required
 
     // weights
-    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
-    mkldnnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+    onednnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // gradI
-    auto gradI_user_mem = mkldnnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
+    auto gradI_user_mem = onednnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     // run backward data calculations
     dnnl::convolution_backward_data(op_data_bp_prim_desc).execute(stream, args);
@@ -202,13 +202,22 @@ PLATFORM_CHECK(deconv2d_tf, ENGINE_CPU) {
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto gradO   = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
     auto gradI   = OUTPUT_VARIABLE(0);                                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI
+    Requirements req("ONEDNN DECONV2d_TF OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectTrue(makeInfoVariable(
+        [weights, gradI, gradO]{
+            const DataType wType = weights->dataType();
+            const DataType gradOType = gradO->dataType();
+            const DataType gradIType = gradI->dataType();
+            return  ((wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) &&
+                    (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) &&
+                    (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16));
+            } , TYPECHECK_MSG),
+                NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 
-
-    const DataType wType = weights->dataType();
-    const DataType gradOType = gradO->dataType();
-    const DataType gradIType = gradI->dataType();
-
-    return block.isUseMKLDNN() && ((wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16));
 }
 
 }

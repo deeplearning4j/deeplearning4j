@@ -29,6 +29,7 @@
 #include <string>
 #include <system/pointercast.h>
 #include <system/dll.h>
+#include <system/RequirementsHelper.h>
 
 namespace sd {
     namespace ops {

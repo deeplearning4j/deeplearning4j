@@ -67,7 +67,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
     if (paddingMode)
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    mkldnnUtils::poolingMKLDNN(input, output, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
+    onednnUtils::poolingONEDNN(input, output, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
 
     return Status::OK();
 }
@@ -77,7 +77,12 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN MAXPOOL2d OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *output);
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -112,16 +117,22 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
     if (paddingMode)                       // SAME
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    mkldnnUtils::poolingBpMKLDNN(input, gradO, gradI, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
+    onednnUtils::poolingBpONEDNN(input, gradO, gradI, 0,kH,kW, 0,sH,sW, 0,pH,pW, isNCHW, algorithm::pooling_max);
 
     return Status::OK();
 }
 
 PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN MAXPOOL2d_BP OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *gradO);
+    req.logTheSuccess();
+    return req;
 }
 
 }

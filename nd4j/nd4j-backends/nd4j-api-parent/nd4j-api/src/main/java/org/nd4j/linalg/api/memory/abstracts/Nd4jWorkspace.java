@@ -122,7 +122,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicLong generationId = new AtomicLong(0);
 
     // this field is used as alignment base for all allocations within this workspace
-    public final static int alignmentBase = 16;
+    public final static int alignmentBase = 32;
 
     // this memory manager implementation will be used to allocate real memory for this workspace
 

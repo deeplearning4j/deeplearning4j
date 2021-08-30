@@ -67,7 +67,7 @@ PLATFORM_IMPL(maxpool3dnew, ENGINE_CPU) {
     if(paddingMode)                       // SAME
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-    mkldnnUtils::poolingMKLDNN(input, output, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, algorithm::pooling_max);
+    onednnUtils::poolingONEDNN(input, output, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, algorithm::pooling_max);
 
     return Status::OK();
 
@@ -77,8 +77,12 @@ PLATFORM_IMPL(maxpool3dnew, ENGINE_CPU) {
 PLATFORM_CHECK(maxpool3dnew, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
-
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN MAXPOOL3d OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *output);
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,7 +121,7 @@ PLATFORM_IMPL(maxpool3dnew_bp, ENGINE_CPU) {
     if(paddngMode)                       // SAME
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-    mkldnnUtils::poolingBpMKLDNN(input, gradO, gradI, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, algorithm::pooling_max);
+    onednnUtils::poolingBpONEDNN(input, gradO, gradI, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, algorithm::pooling_max);
 
     return Status::OK();
 }
@@ -125,9 +129,15 @@ PLATFORM_IMPL(maxpool3dnew_bp, ENGINE_CPU) {
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(maxpool3dnew_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN MAXPOOL3d_BP OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *gradO);
+    req.logTheSuccess();
+    return req;
 }
 
 }

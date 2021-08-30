@@ -132,7 +132,7 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
             direction = rnn_direction::bidirectional_concat;
     }
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     dnnl::memory::desc x_user_md, wx_user_md, wr_user_md, b_user_md, hI_user_md, cI_user_md, h_user_md, hL_user_md, cL_user_md,
                          x_lstm_md, wx_lstm_md, wr_lstm_md, b_lstm_md, hI_lstm_md, cI_lstm_md, h_lstm_md, hL_lstm_md, cL_lstm_md;
@@ -171,43 +171,43 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     x_lstm_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::any);
     // x_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, nIn}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, nIn}, type, dnnl::memory::format_tag::ntc);
     x_user_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::tnc);
-    mkldnnUtils::setBlockStrides(*x, x_user_md);
+    onednnUtils::setBlockStrides(*x, x_user_md);
 
     // wx
     wx_lstm_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::any);
     wx_user_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
-    mkldnnUtils::setBlockStrides(*Wx, wx_user_md);
+    onednnUtils::setBlockStrides(*Wx, wx_user_md);
 
     // wr
     wr_lstm_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::any);
     wr_user_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
-    mkldnnUtils::setBlockStrides(*Wr, wr_user_md);
+    onednnUtils::setBlockStrides(*Wr, wr_user_md);
 
     // h
     h_lstm_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::any);
     // h_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, hDirDim*nOut}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, hDirDim*nOut}, type, dnnl::memory::format_tag::ntc);
     h_user_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::tnc);
-    mkldnnUtils::setBlockStrides(*h, h_user_md);
+    onednnUtils::setBlockStrides(*h, h_user_md);
 
     // b
     if(b) {
         b_lstm_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::any);
         b_user_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::ldgo);
-        mkldnnUtils::setBlockStrides(*b, b_user_md);
+        onednnUtils::setBlockStrides(*b, b_user_md);
     }
 
     // hI
     if(hI) {
         hI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
         hI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
-        mkldnnUtils::setBlockStrides(*hI, hI_user_md);
+        onednnUtils::setBlockStrides(*hI, hI_user_md);
     }
 
     // cI
     if(cI) {
         cI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
         cI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
-        mkldnnUtils::setBlockStrides(*cI, cI_user_md);
+        onednnUtils::setBlockStrides(*cI, cI_user_md);
     }
 
     // hL
@@ -215,13 +215,13 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
         hL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::any);
         hL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
         hL_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        mkldnnUtils::setBlockStrides(*hL, hL_user_md);
+        onednnUtils::setBlockStrides(*hL, hL_user_md);
     }
 
     if(cL) {
         cL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
         cL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
-        mkldnnUtils::setBlockStrides(*cL, cL_user_md);
+        onednnUtils::setBlockStrides(*cL, cL_user_md);
     }
 
     // lstm memory description
@@ -239,38 +239,38 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // provide memory and check whether reorder is required
     // x
-    mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, lstm_prim_desc.src_layer_desc(), args[DNNL_ARG_SRC_LAYER]);
+    onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, lstm_prim_desc.src_layer_desc(), args[DNNL_ARG_SRC_LAYER]);
 
     // wx
-    mkldnnUtils::loadDataToMklStream(*Wx, engine, stream, wx_user_md, lstm_prim_desc.weights_layer_desc(), args[DNNL_ARG_WEIGHTS_LAYER]);
+    onednnUtils::loadDataToMklStream(*Wx, engine, stream, wx_user_md, lstm_prim_desc.weights_layer_desc(), args[DNNL_ARG_WEIGHTS_LAYER]);
 
     // wr
-    mkldnnUtils::loadDataToMklStream(*Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
+    onednnUtils::loadDataToMklStream(*Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
 
     // h
-    auto h_user_mem = mkldnnUtils::loadDataToMklStream(*h, engine, stream, h_user_md, lstm_prim_desc.dst_layer_desc(), args[DNNL_ARG_DST_LAYER]);
+    auto h_user_mem = onednnUtils::loadDataToMklStream(*h, engine, stream, h_user_md, lstm_prim_desc.dst_layer_desc(), args[DNNL_ARG_DST_LAYER]);
 
     // b
     if(b)
-        mkldnnUtils::loadDataToMklStream(*b, engine, stream, b_user_md, lstm_prim_desc.bias_desc(), args[DNNL_ARG_BIAS]);
+        onednnUtils::loadDataToMklStream(*b, engine, stream, b_user_md, lstm_prim_desc.bias_desc(), args[DNNL_ARG_BIAS]);
 
     // hI
     if(hI)
-        mkldnnUtils::loadDataToMklStream(*hI, engine, stream, hI_user_md, lstm_prim_desc.src_iter_desc(), args[DNNL_ARG_SRC_ITER]);
+        onednnUtils::loadDataToMklStream(*hI, engine, stream, hI_user_md, lstm_prim_desc.src_iter_desc(), args[DNNL_ARG_SRC_ITER]);
 
     // cI
     if(cI)
-        mkldnnUtils::loadDataToMklStream(*cI, engine, stream, cI_user_md, lstm_prim_desc.src_iter_c_desc(), args[DNNL_ARG_SRC_ITER_C]);
+        onednnUtils::loadDataToMklStream(*cI, engine, stream, cI_user_md, lstm_prim_desc.src_iter_c_desc(), args[DNNL_ARG_SRC_ITER_C]);
 
     dnnl::memory hL_user_mem, cL_user_mem, hL_lstm_mem, cL_lstm_mem;
 
     // hL
     if(hL)
-        hL_user_mem = mkldnnUtils::loadDataToMklStream(*hL, engine, stream, hL_user_md, lstm_prim_desc.dst_iter_desc(), args[DNNL_ARG_DST_ITER]);
+        hL_user_mem = onednnUtils::loadDataToMklStream(*hL, engine, stream, hL_user_md, lstm_prim_desc.dst_iter_desc(), args[DNNL_ARG_DST_ITER]);
 
     // cL
     if(cL)
-        cL_user_mem = mkldnnUtils::loadDataToMklStream(*cL, engine, stream, cL_user_md, lstm_prim_desc.dst_iter_c_desc(), args[DNNL_ARG_DST_ITER_C]);
+        cL_user_mem = onednnUtils::loadDataToMklStream(*cL, engine, stream, cL_user_md, lstm_prim_desc.dst_iter_c_desc(), args[DNNL_ARG_DST_ITER_C]);
 
     // run calculations
     lstm_forward(lstm_prim_desc).execute(stream, args);
@@ -462,21 +462,31 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     DataType hType  = h  != nullptr ? h->dataType()  : xType;
     DataType hLType = hL != nullptr ? hL->dataType() : xType;
     DataType cLType = cL != nullptr ? cL->dataType() : xType;
+    Requirements req("ONEDNN LstmLayer OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(cellClip, "Cell clippin"), 0) &&
+    req.expectTrue(makeInfoVariable(retFullSeq, "Return full sequence")) &&
+    req.expectFalse(makeInfoVariable(hasPH, "Having the Peephole connections"), EXPECTED_NOT_SUPPORTED) &&
+    req.expectFalse(makeInfoVariable(hasSeqLen, "Having theSequence length array"), EXPECTED_NOT_SUPPORTED) &&
+    req.expectLess(makeInfoVariable(dataFormat, "Data format"), 2) &&
+    req.expectLess(makeInfoVariable(directionMode, "Direction mode"), 4) &&
+    req.expectEq(makeInfoVariable(retLastH, "Return lastH"), makeInfoVariable(retLastC, "Return lastC")) &&
+    req.expectEq(makeInfoVariable(hasInitH, "Has initial H"), makeInfoVariable(hasInitC, "Has initial C")) &&
+    req.expectTrue(
+        makeInfoVariable(
+            [xType, WxType, WrType, bType, hIType, cIType, hType, hLType, cLType]{
+                return (
+                (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
+                (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
+                (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))
+                  );
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+    
+    req.logTheSuccess();
+    return req;
 
-    auto featuresSupported = (cellClip == 0)     //Cell clipping not supported
-        && retFullSeq                            //Always return full sequence in case of MKL DNN
-        && !hasPH                                //Peephole connections not supported in MKL DNN
-		&& !hasSeqLen                            //Sequence length array not supported in MKL DNN
-		&& dataFormat < 2                        //Data format - only 0 and 1 supported in MKL DNN- 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn]
-		&& directionMode < 4                     //Direction mode - only 0-3 supported in MKL DNN (no extra dim option) - 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat
-		&& retLastH == retLastC                  //Return both lastH and lastC, or return neither (not just 1 or other)
-		&& hasInitH == hasInitC;				 //Need both or neither initial H and C
-
-    return block.isUseMKLDNN() && featuresSupported && (
-            (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
-            (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
-            (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))
-          );
 }
 
 

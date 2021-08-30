@@ -86,25 +86,25 @@ namespace sd {
                 // memory descriptors for arrays
                 // x
                 dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, xType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, mkldnnUtils::getFormat(*x));
-                mkldnnUtils::setBlockStrides(*x, x_user_md);
+                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, onednnUtils::getFormat(*x));
+                onednnUtils::setBlockStrides(*x, x_user_md);
 
                 // weights
                 dnnl::memory::desc weights_mkl_md = dnnl::memory::desc(wShape, wType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, wType, mkldnnUtils::getFormat(*weights));
-                mkldnnUtils::setBlockStrides(*weights, weights_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
+                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, wType, onednnUtils::getFormat(*weights));
+                onednnUtils::setBlockStrides(*weights, weights_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
 
                 // bias
                 dnnl::memory::desc bias_mkl_md = dnnl::memory::desc(bShape, bType, dnnl::memory::format_tag::a);
                 dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, bType, dnnl::memory::format_tag::a);
-                mkldnnUtils::setBlockStrides(*bias, bias_user_md);
+                onednnUtils::setBlockStrides(*bias, bias_user_md);
 
                 // z
                 dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zShape, zType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, mkldnnUtils::getFormat(*z));
-                mkldnnUtils::setBlockStrides(*z, z_user_md);
+                dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, onednnUtils::getFormat(*z));
+                onednnUtils::setBlockStrides(*z, z_user_md);
 
-                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
                 // operation primitive description
                 dnnl::inner_product_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_mkl_md, weights_mkl_md, bias_mkl_md, z_mkl_md);
@@ -119,17 +119,17 @@ namespace sd {
                 // provide memory buffers and check whether reorder is required
 
                 // input
-                mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+                onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
                 // weights
-                mkldnnUtils::loadDataToMklStream(*weights, engine, stream, weights_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+                onednnUtils::loadDataToMklStream(*weights, engine, stream, weights_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
                 // bias
                 auto bias_mkl_mem = dnnl::memory(bias_mkl_md, engine, const_cast<void*>(bias->buffer()));
                 args[DNNL_ARG_BIAS] = bias_mkl_mem;
 
                 // z
-                auto z_user_mem = mkldnnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+                auto z_user_mem = onednnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
                 // run calculations
                 dnnl::inner_product_forward(op_prim_desc).execute(stream, args);
@@ -169,42 +169,42 @@ namespace sd {
                 // memory descriptors for arrays
                 // x
                 dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, dataType, mkldnnUtils::getFormat(*x));
-                mkldnnUtils::setBlockStrides(*x, x_user_md);
+                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, dataType, onednnUtils::getFormat(*x));
+                onednnUtils::setBlockStrides(*x, x_user_md);
 
                 // weights
                 dnnl::memory::desc weights_mkl_md = dnnl::memory::desc(wShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, dataType, mkldnnUtils::getFormat(*weights));
-                mkldnnUtils::setBlockStrides(*weights, weights_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
+                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, dataType, onednnUtils::getFormat(*weights));
+                onednnUtils::setBlockStrides(*weights, weights_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
 
                 // bias
                 dnnl::memory::desc bias_mkl_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, dataType, mkldnnUtils::getFormat(*bias));
-                mkldnnUtils::setBlockStrides(*bias, bias_user_md);
+                dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, dataType, onednnUtils::getFormat(*bias));
+                onednnUtils::setBlockStrides(*bias, bias_user_md);
 
                 // dLdz
                 dnnl::memory::desc dLdz_mkl_md = dnnl::memory::desc(dLdzShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc dLdz_user_md = dnnl::memory::desc(dLdzShape, dataType, mkldnnUtils::getFormat(*dLdz));
-                mkldnnUtils::setBlockStrides(*dLdz, dLdz_user_md);
+                dnnl::memory::desc dLdz_user_md = dnnl::memory::desc(dLdzShape, dataType, onednnUtils::getFormat(*dLdz));
+                onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
 
                 // dLdw
                 dnnl::memory::desc dLdw_mkl_md = dnnl::memory::desc(wShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc dLdw_user_md = dnnl::memory::desc(wShape, dataType, mkldnnUtils::getFormat(*dLdw));
-                mkldnnUtils::setBlockStrides(*dLdw, dLdw_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
+                dnnl::memory::desc dLdw_user_md = dnnl::memory::desc(wShape, dataType, onednnUtils::getFormat(*dLdw));
+                onednnUtils::setBlockStrides(*dLdw, dLdw_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
 
                 // dLdb
                 dnnl::memory::desc dLdb_mkl_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc dLdb_user_md = dnnl::memory::desc(bShape, dataType, mkldnnUtils::getFormat(*dLdb));
-                mkldnnUtils::setBlockStrides(*dLdb, dLdb_user_md);
+                dnnl::memory::desc dLdb_user_md = dnnl::memory::desc(bShape, dataType, onednnUtils::getFormat(*dLdb));
+                onednnUtils::setBlockStrides(*dLdb, dLdb_user_md);
 
                 // dLdx
                 dnnl::memory::desc dLdx_mkl_md = dnnl::memory::desc(xShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc dLdx_user_md = dnnl::memory::desc(xShape, dataType, mkldnnUtils::getFormat(*dLdx));
-                mkldnnUtils::setBlockStrides(*dLdx, dLdx_user_md);
+                dnnl::memory::desc dLdx_user_md = dnnl::memory::desc(xShape, dataType, onednnUtils::getFormat(*dLdx));
+                onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
                 // create engine
-                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
                 // forward
                 // operation primitive description
@@ -227,25 +227,25 @@ namespace sd {
                 dnnl::stream stream(engine);
 
                 // dLdz dw
-                mkldnnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bpdw_prim_desc.diff_dst_desc(), argsDw[DNNL_ARG_DIFF_DST]);
+                onednnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bpdw_prim_desc.diff_dst_desc(), argsDw[DNNL_ARG_DIFF_DST]);
 
                 // dLdz - dx
-                mkldnnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bpdx_prim_desc.diff_dst_desc(), argsDx[DNNL_ARG_DIFF_DST]);
+                onednnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bpdx_prim_desc.diff_dst_desc(), argsDx[DNNL_ARG_DIFF_DST]);
 
                 // input x for dw
-                mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_bpdw_prim_desc.src_desc(), argsDw[DNNL_ARG_SRC]);
+                onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_bpdw_prim_desc.src_desc(), argsDw[DNNL_ARG_SRC]);
 
                 // weights - dx
-                mkldnnUtils::loadDataToMklStream(*weights, engine, stream, weights_user_md, op_bpdx_prim_desc.weights_desc(), argsDx[DNNL_ARG_WEIGHTS]);
+                onednnUtils::loadDataToMklStream(*weights, engine, stream, weights_user_md, op_bpdx_prim_desc.weights_desc(), argsDx[DNNL_ARG_WEIGHTS]);
 
                 // dLdw
-                auto dLdw_user_mem = mkldnnUtils::loadDataToMklStream(*dLdw, engine, stream, dLdw_user_md, op_bpdw_prim_desc.diff_weights_desc(), argsDw[DNNL_ARG_DIFF_WEIGHTS]);
+                auto dLdw_user_mem = onednnUtils::loadDataToMklStream(*dLdw, engine, stream, dLdw_user_md, op_bpdw_prim_desc.diff_weights_desc(), argsDw[DNNL_ARG_DIFF_WEIGHTS]);
 
                 // dLdx
-                auto dLdx_user_mem = mkldnnUtils::loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md, op_bpdx_prim_desc.diff_src_desc(), argsDx[DNNL_ARG_DIFF_SRC]);
+                auto dLdx_user_mem = onednnUtils::loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md, op_bpdx_prim_desc.diff_src_desc(), argsDx[DNNL_ARG_DIFF_SRC]);
 
                 // dLdb
-                auto dLdb_user_mem = mkldnnUtils::loadDataToMklStream(*dLdb, engine, stream, dLdb_user_md, op_bpdw_prim_desc.diff_bias_desc(), argsDw[DNNL_ARG_DIFF_BIAS]);
+                auto dLdb_user_mem = onednnUtils::loadDataToMklStream(*dLdb, engine, stream, dLdb_user_md, op_bpdw_prim_desc.diff_bias_desc(), argsDw[DNNL_ARG_DIFF_BIAS]);
 
                 // run calculations dw
                 dnnl::inner_product_backward_weights(op_bpdw_prim_desc).execute(stream, argsDw);
@@ -301,19 +301,20 @@ namespace sd {
                 auto b = INPUT_VARIABLE(2);
                 auto z = OUTPUT_VARIABLE(0);
 
-                const DataType xType = x->dataType();
-                const DataType wType = w->dataType();
-                const DataType bType = b->dataType();
-                const DataType zType = z->dataType();
 
-                /*
-                Source    Weights   Destination         Bias
-                f32 	    f32 	f32 	            f32
-                u8, s8  	s8 	    u8, s8, s32, f32 	u8, s8, s32, f32
-                */
-                return block.isUseMKLDNN() &&
-                    ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
-                        ( // x
+                Requirements req("ONEDNN XW_PLUS_B OP");
+                req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+                req.expectTrue(
+                    makeInfoVariable(
+                        [x, w ,b ,z ]{
+                            const DataType xType = x->dataType();
+                            const DataType wType = w->dataType();
+                            const DataType bType = b->dataType();
+                            const DataType zType = z->dataType();
+
+                            return
+                            ((xType == DataType::FLOAT32 && wType == DataType::FLOAT32 && bType == DataType::FLOAT32 && zType == DataType::FLOAT32) ||
+                            ( // x
                             (xType == DataType::UINT8 || xType == DataType::INT8) &&
                             // w
                             (wType == DataType::UINT8 || wType == DataType::INT8) &&
@@ -322,6 +323,12 @@ namespace sd {
                             // z
                             (zType == DataType::UINT8 || zType == DataType::INT8 || zType == DataType::INT32 || zType == DataType::FLOAT32)
                             ));
+                        }, TYPECHECK_MSG),
+                    NO_MSG
+                );
+                req.logTheSuccess();
+                return req;
+
             }
 
             PLATFORM_IMPL(xw_plus_b_bp, ENGINE_CPU) {
@@ -366,23 +373,28 @@ namespace sd {
                 auto dLdw = OUTPUT_VARIABLE(1);
                 auto dLdb = OUTPUT_VARIABLE(2);
 
-                const DataType xType = x->dataType();
-                const DataType wType = w->dataType();
-                const DataType bType = b->dataType();
-                const DataType dLdzType = dLdz->dataType();
-                const DataType dLdxType = dLdx->dataType();
-                const DataType dLdwType = dLdw->dataType();
-                const DataType dLdbType = dLdb->dataType();
+                Requirements req("ONEDNN XW_PLUS_B_BP OP");
+                req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+                req.expectTrue(
+                    makeInfoVariable(
+                        [x, w, b, dLdz, dLdx, dLdw, dLdb ]{
+                            const DataType xType = x->dataType();
+                            const DataType wType = w->dataType();
+                            const DataType bType = b->dataType();
+                            const DataType dLdzType = dLdz->dataType();
+                            const DataType dLdxType = dLdx->dataType();
+                            const DataType dLdwType = dLdw->dataType();
+                            const DataType dLdbType = dLdb->dataType();
+                            return  (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
+                                  bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
+                                  dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
+                                  dLdwType == DataType::FLOAT32);
+                        }, TYPECHECK_MSG),
+                    NO_MSG
+                );
+                req.logTheSuccess();
+                return req;
 
-                /*
-                Source    Weights   Destination         Bias
-                f32 	    f32 	f32 	            f32
-                */
-                return block.isUseMKLDNN() &&
-                    (xType == DataType::FLOAT32 && wType == DataType::FLOAT32 &&
-                        bType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 &&
-                        dLdbType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32 &&
-                        dLdwType == DataType::FLOAT32);
             }
 
         }

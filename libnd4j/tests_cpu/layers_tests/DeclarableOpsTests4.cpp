@@ -429,25 +429,23 @@ TEST_F(DeclarableOpsTests4, avgpool2d_13) {
     auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
     // auto z('c',{bS,iD,oH,oW});
 
-    auto variableSpace = new VariableSpace();
+    std::unique_ptr<VariableSpace> variableSpace(new VariableSpace());
     variableSpace->putVariable(-1, x);
     // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
+    std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
     block->fillInputs({-1});
     std::vector<int>* argI = block->getIArguments();
     *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     sd::ops::avgpool2d pooling;
-    Nd4jStatus status = pooling.execute(block);
+    Nd4jStatus status = pooling.execute(block.get());
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
     ASSERT_TRUE(exp.isSameShape(result));
 
 
-    delete variableSpace;
-    delete block;
+
 }
 
 //////////////////////////////////////////////////////////////////////

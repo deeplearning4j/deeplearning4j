@@ -88,7 +88,7 @@ namespace ops {
         if (block.isInplace()) output = input;
 
         shiftIsLinear = (axes.size() == 0) || (input->rankOf() == 1);
-        nd4j_debug("Roll: Shift is linear %d Shift is %d, first dimension is %d\n",shiftIsLinear,shifts[0],axes[0]);
+        nd4j_debug("Roll: Shift is linear %d Shift is %d, first dimension is %d\n",(int)shiftIsLinear,(int)shifts[0],axes.size()>0?axes[0]:0);
         bool shiftsSumZero = false;
         auto shiftSum = 0;
         for (auto& s: shifts) {

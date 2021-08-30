@@ -56,19 +56,19 @@ static void concatMKLDNN(const std::vector<const NDArray*>& inArrs, NDArray& out
     for (int i = 0; i < inArrs.size(); ++i) {
 
         dnnl::memory::dims dims = inArrs[i]->getShapeAsFlatVector();
-        x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, mkldnnUtils::getFormat(*inArrs[i]));
-        mkldnnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
+        x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, onednnUtils::getFormat(*inArrs[i]));
+        onednnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
     }
 
     // output
     dnnl::memory::dims dims = output.getShapeAsFlatVector();
     dnnl::memory::desc z_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
-    dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, mkldnnUtils::getFormat(output));
-    mkldnnUtils::setBlockStrides(output, z_user_md);
+    dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
+    onednnUtils::setBlockStrides(output, z_user_md);
 
     std::unordered_map<int, dnnl::memory> args;
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     dnnl::concat::primitive_desc op_prim_desc(axis, x_mkl_md, engine);
 
@@ -76,10 +76,10 @@ static void concatMKLDNN(const std::vector<const NDArray*>& inArrs, NDArray& out
 
     // inputs
     for (int i = 0; i < inArrs.size(); ++i)
-        mkldnnUtils::loadDataToMklStream(*inArrs[i], engine, stream, x_user_md[i], op_prim_desc.src_desc(i), args[DNNL_ARG_MULTIPLE_SRC + i]);
+        onednnUtils::loadDataToMklStream(*inArrs[i], engine, stream, x_user_md[i], op_prim_desc.src_desc(i), args[DNNL_ARG_MULTIPLE_SRC + i]);
 
     // outputs
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // primitive execution
     dnnl::concat(op_prim_desc).execute(stream, args);
@@ -178,13 +178,22 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
 
     auto z = OUTPUT_VARIABLE(0);
 
-    const auto zType = z->dataType();
-
     const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
     const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
-
-    return z->rankOf() < 7 && numOfInArrs <= 3072
-           && (zType==DataType::FLOAT32 || zType==DataType::HALF || zType==DataType::BFLOAT16 || zType==DataType::UINT8 || zType==DataType::INT8);
+    Requirements req("ONEDNN CONCAT OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
+    req.expectLessEq(makeInfoVariable(numOfInArrs, "numOfinArrs"), 3072) &&
+    req.expectTrue(
+        makeInfoVariable(
+            [z]{
+                const auto zType = z->dataType();
+                return (zType==DataType::FLOAT32 || zType==DataType::HALF || zType==DataType::BFLOAT16 || zType==DataType::UINT8 || zType==DataType::INT8);
+            }, TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 }

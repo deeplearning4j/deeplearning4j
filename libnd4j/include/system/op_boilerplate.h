@@ -71,6 +71,28 @@
 #include <system/type_boilerplate.h>
 #include <exceptions/allocation_exception.h>
 #include <memory/MemoryTracker.h>
+#include <string.h>
+#include <stdlib.h>
+
+// define macros for compiler enforcement to make function inline  
+#ifdef __clang__
+#define INLINE_LOOPS
+#define FORCEINLINE inline
+#elif _MSC_VER
+#define FORCEINLINE __forceinline
+#elif __GNUC__
+#define INLINE_LOOPS
+#define FORCEINLINE __attribute__((always_inline)) inline 
+#elif __CUDACC__
+#define FORCEINLINE __forceinline__ inline 
+#else
+#define FORCEINLINE inline 
+#endif
+
+#if defined(_ISOC11_SOURCE) && defined(__AVX2__)
+#define DESIRED_ALIGNMENT 32
+#define USE_ALIGNED_ALLOC 1
+#endif
 
 #ifdef __CUDACC__
 
@@ -1498,17 +1520,42 @@
 
 #endif
 
-#ifdef _RELEASE
 
-#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
-#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { delete[] VARIABLE;};
-
+template<typename TT, typename WW>
+FORCEINLINE TT* internal_alloc_host(WW workSpace, Nd4jLong len){
+    TT* var;
+    if (workSpace == nullptr){
+#if defined(USE_ALIGNED_ALLOC)
+      var = static_cast<TT*>(aligned_alloc(DESIRED_ALIGNMENT, (len * sizeof(TT) + DESIRED_ALIGNMENT-1) & (-DESIRED_ALIGNMENT) ));
 #else
-
-#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
-#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance().countOut(VARIABLE); delete[] VARIABLE;};
-
+      var = new TT[len];
+#endif 
+#if	!defined(_RELEASE)
+      sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, var, len * sizeof(TT));
 #endif
+    } else {
+      var = reinterpret_cast<TT*>(workSpace->allocateBytes(len * sizeof(TT)));
+    }
+   memset(var, 0, len * sizeof(TT));
+   return var;
+}
+
+template<typename TT_PTR, typename WW>
+FORCEINLINE void internal_release_host(WW workspace, TT_PTR var){
+    if(workspace == nullptr) {
+#if	!defined(_RELEASE)
+      sd::memory::MemoryTracker::getInstance().countOut(var);
+#endif
+#if defined(USE_ALIGNED_ALLOC)
+      free(var);
+#else
+      delete[] var;
+#endif
+   }
+}
+
+#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   VARIABLE=internal_alloc_host<TT>(WORKSPACE, LENGTH);
+#define RELEASE(VARIABLE, WORKSPACE)   internal_release_host(WORKSPACE, VARIABLE);
 
 #define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE, block.workspace())
 
@@ -1543,22 +1590,6 @@
 #define COPY_SHAPE(SRC, TGT)    TGT = ShapeBuilders::copyShapeInfo(SRC, true, block.getWorkspace())
 
 #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    TGT = ShapeBuilders::copyShapeInfo(SRC, true, WORKSPACE)
-
-// define macros for compiler enforcement to make function inline  
-#ifdef __clang__
-#define INLINE_LOOPS
-#define FORCEINLINE inline
-#elif _MSC_VER
-#define FORCEINLINE __forceinline
-#elif __GNUC__
-#define INLINE_LOOPS
-#define FORCEINLINE __attribute__((always_inline)) inline 
-#elif __CUDACC__
-#define FORCEINLINE __forceinline__ inline 
-#else
-#define FORCEINLINE inline 
-#endif
-
 
 #ifdef __CUDACC__
 

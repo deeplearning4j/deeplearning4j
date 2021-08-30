@@ -42,7 +42,7 @@ namespace sd{
         std::atomic<bool> _profile;
         std::atomic<sd::DataType> _dataType;
         std::atomic<bool> _precBoost;
-        std::atomic<bool> _useMKLDNN{true};
+        std::atomic<bool> _useONEDNN{true};
         std::atomic<bool> _allowHelpers{true};
 
         std::atomic<int> _maxThreads;
@@ -126,8 +126,8 @@ namespace sd{
         Nd4jLong  getDeviceCounter(int deviceId);
         ////////////////////////
 
-        bool isUseMKLDNN() { return _useMKLDNN.load(); }
-        void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN.store(useMKLDNN); }
+        bool isUseONEDNN() { return _useONEDNN.load(); }
+        void setUseONEDNN(bool useMKLDNN) { _useONEDNN.store(useMKLDNN); }
 
         sd::DataType defaultFloatDataType();
         void setDefaultFloatDataType(sd::DataType dtype);

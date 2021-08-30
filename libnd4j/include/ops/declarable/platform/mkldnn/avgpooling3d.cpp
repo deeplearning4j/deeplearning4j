@@ -70,7 +70,7 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_CPU) {
 
     auto mode = (extraParam0 == 0) ? algorithm::pooling_avg_exclude_padding : algorithm::pooling_avg_include_padding;
 
-    mkldnnUtils::poolingMKLDNN(input, output, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, mode);
+    onednnUtils::poolingONEDNN(input, output, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, mode);
 
     return Status::OK();
 }
@@ -79,8 +79,12 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_CPU) {
 PLATFORM_CHECK(avgpool3dnew, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
-
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN AVGPOOL3d OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *output);
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -121,7 +125,7 @@ PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_CPU) {
 
     auto mode = (extraParam0 == 0) ? algorithm::pooling_avg_exclude_padding : algorithm::pooling_avg_include_padding;
 
-    mkldnnUtils::poolingBpMKLDNN(input, gradO, gradI, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, mode);
+    onednnUtils::poolingBpONEDNN(input, gradO, gradI, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, mode);
 
     return Status::OK();
 }
@@ -130,9 +134,14 @@ PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_CPU) {
 PLATFORM_CHECK(avgpool3dnew_bp, ENGINE_CPU) {
 
     auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
-
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
+    Requirements req("ONEDNN AVGPOOL3d_BP OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    if(req) onednnUtils::checkPoolingONEDNN(req, block, *input, *gradO);
+    req.logTheSuccess();
+    return req;
 }
 
 

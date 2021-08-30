@@ -41,12 +41,25 @@ namespace sd {
             //STORE_2_RESULTS(*input, *input);
 
             // but we'll ensure only one node is active, and other is disabled
+            auto out0 = OUTPUT_VARIABLE(0);
+            auto out1 = OUTPUT_VARIABLE(1);
+
             if (condition->e<int>(0) == 0) {
                 block.setBranch(0);
-                this->storeResult(block, 0, new NDArray(input->dup()));
+                if(!out0){
+                    this->storeResult(block, 0, new NDArray(input->dup()));
+                }
+                else{
+                    out0->assign(input);
+                }
             } else {
                 block.setBranch(1);
-                this->storeResult(block, 1, new NDArray(input->dup()));
+                if(!out1){
+                    this->storeResult(block, 1, new NDArray(input->dup()));
+                } 
+                else{ 
+                    out1->assign(input); 
+                }
             }
 
             return Status::OK();

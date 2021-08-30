@@ -78,12 +78,12 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights,
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*input, x_user_md);
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, type, wFormatMkl);
-    mkldnnUtils::setBlockStrides(*weights, w_user_md, permut);
+    onednnUtils::setBlockStrides(*weights, w_user_md, permut);
 
     // bias
     dnnl::memory::desc b_mkl_md;
@@ -93,9 +93,9 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights,
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, type, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*output, z_user_md);
+    onednnUtils::setBlockStrides(*output, z_user_md);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // operation primitive description
     dnnl::convolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto, x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md, strides, dilation, padding, padding_r);
@@ -109,10 +109,10 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights,
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md,  op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*input, engine, stream, x_user_md,  op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // weights
-    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // bias
     if(bias != nullptr) {
@@ -121,7 +121,7 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights,
     }
 
     // output
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*output, engine, stream, z_user_md,  op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(*output, engine, stream, z_user_md,  op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::convolution_forward(op_prim_desc).execute(stream, args);
@@ -176,36 +176,36 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*input, x_user_md);
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, type, wFormatMkl);
-    mkldnnUtils::setBlockStrides(*weights, w_user_md, permut);
+    onednnUtils::setBlockStrides(*weights, w_user_md, permut);
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, type, xzFormatMkl);
 
-    mkldnnUtils::setBlockStrides(*gradO, gradO_user_md);
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
 
-    mkldnnUtils::setBlockStrides(*gradI, gradI_user_md);
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md);
 
     // gradW
     dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradW_user_md = dnnl::memory::desc(wDims, type, wFormatMkl);
-    mkldnnUtils::setBlockStrides(*gradW, gradW_user_md, permut);
+    onednnUtils::setBlockStrides(*gradW, gradW_user_md, permut);
 
     // gradB
     dnnl::memory::desc gradB_mkl_md;
     if(gradB != nullptr)
         gradB_mkl_md = dnnl::memory::desc({oC}, type, dnnl::memory::format_tag::x);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // forward primitive description
     dnnl::convolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto, x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
@@ -227,10 +227,10 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md,  op_weights_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*input, engine, stream, x_user_md,  op_weights_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // weights
-    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
     auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, const_cast<void*>(gradO->buffer()));
@@ -245,10 +245,10 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
     args[DNNL_ARG_DIFF_DST] = gradO_mkl_memD;
 
     // gradI
-    auto gradI_user_mem = mkldnnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md,  op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
+    auto gradI_user_mem = onednnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md,  op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     // gradW
-    auto gradW_user_mem = mkldnnUtils::loadDataToMklStream(*gradW, engine, stream, gradW_user_md,  op_weights_bp_prim_desc.diff_weights_desc(), args[DNNL_ARG_DIFF_WEIGHTS]);
+    auto gradW_user_mem = onednnUtils::loadDataToMklStream(*gradW, engine, stream, gradW_user_md,  op_weights_bp_prim_desc.diff_weights_desc(), args[DNNL_ARG_DIFF_WEIGHTS]);
 
     // gradB
     if(gradB != nullptr) {
@@ -295,7 +295,7 @@ static void conv3dMKLDNN(sd::graph::Context &block,
 
     dnnl::memory::dims conv_strides, conv_padding, conv_padding_r, conv_dilation;
 
-    mkldnnUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode,
+    onednnUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode,
                                            isNCDHW,
                                            bS, iC, iD, iH, iW, oC, oD, oH, oW, input, nullptr, weights,
                                            nullptr, bias, output,
@@ -307,7 +307,7 @@ static void conv3dMKLDNN(sd::graph::Context &block,
     auto conv_desc = bias != nullptr ? convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto, conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r)
                                      : convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto, conv_src_md, conv_weights_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
     dnnl::stream stream(engine);
 
     auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, engine);
@@ -369,7 +369,7 @@ static void conv3dBpMKLDNN(sd::graph::Context &block,
 
     dnnl::memory::dims conv_strides, conv_padding, conv_padding_r, conv_dilation;
 
-    mkldnnUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode,
+    onednnUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode,
                                            isNCDHW,
                                            bS, iC, iD, iH, iW, oC, oD, oH, oW, input, gradI, weights,
                                            gradW, gradB, gradO,
@@ -382,15 +382,15 @@ static void conv3dBpMKLDNN(sd::graph::Context &block,
     auto conv_desc = gradB != nullptr ? convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto, conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r)
                                       : convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto, conv_src_md, conv_weights_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r);
 
-    auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine()));
+    auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, onednnUtils::getEngine(LaunchContext::defaultContext()->engine()));
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
     dnnl::stream stream(engine);
 
     if (gradW != nullptr) {
 
         auto convW_desc = gradB != nullptr ? convolution_backward_weights::desc(algorithm::convolution_auto, conv_src_md, conv_diff_weights_md, conv_bias_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r)
-                                           : convolution_backward_weights::desc(algorithm::convolution_auto, conv_src_md, conv_diff_weights_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r);        auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                                           : convolution_backward_weights::desc(algorithm::convolution_auto, conv_src_md, conv_diff_weights_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r);        auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
         auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, engine, conv_prim_desc);
 
@@ -521,8 +521,11 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] always
     auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
     auto output = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
-
-    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, weights, bias, output});
+    Requirements req("ONEDNN CONV3d OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, output}), ONEDNN_STREAM_NOT_SUPPORTED );
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -589,8 +592,11 @@ PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
     auto gradW = OUTPUT_VARIABLE(1);                                                // [kD, kH, kW, iC, oC], [oC, iC, kD, kH, kW], [oC, kD, kH, kW, iC]
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                  // [oC]
 
-    return block.isUseMKLDNN() &&
-           sd::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
+    Requirements req("ONEDNN CONV3d_BP OP");
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG)
+    && req.expectTrue(sd::ONEDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB}), ONEDNN_STREAM_NOT_SUPPORTED );
+    req.logTheSuccess();
+    return req;
 }
 
 

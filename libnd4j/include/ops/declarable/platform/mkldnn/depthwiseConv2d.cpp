@@ -112,7 +112,7 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*input, x_user_md);
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -132,9 +132,9 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*output, z_user_md);
+    onednnUtils::setBlockStrides(*output, z_user_md);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // operation primitive description
     dnnl::convolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
@@ -149,10 +149,10 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // weights
-    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // bias
     if(bias != nullptr) {
@@ -161,7 +161,7 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     }
 
     // output
-    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+    auto z_user_mem = onednnUtils::loadDataToMklStream(*output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::convolution_forward(op_prim_desc).execute(stream, args);
@@ -235,7 +235,7 @@ static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*input, x_user_md);
+    onednnUtils::setBlockStrides(*input, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -250,12 +250,12 @@ static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*gradO, gradO_user_md);
+    onednnUtils::setBlockStrides(*gradO, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(*gradI, gradI_user_md);
+    onednnUtils::setBlockStrides(*gradI, gradI_user_md);
 
     // gradW
     dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, gradWType, dnnl::memory::format_tag::any);
@@ -272,7 +272,7 @@ static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights
     if(gradB != nullptr)
         gradB_mkl_md = dnnl::memory::desc({oC}, gradBType, dnnl::memory::format_tag::x);
 
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // forward primitive description
     dnnl::convolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto, x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
@@ -294,10 +294,10 @@ static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_weights_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    onednnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_weights_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // weights
-    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md, op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    onednnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md, op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
     auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, const_cast<void*>(gradO->buffer()));
@@ -312,10 +312,10 @@ static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights
     args[DNNL_ARG_DIFF_DST] = gradO_mkl_memD;
 
     // gradI
-    auto gradI_user_mem = mkldnnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
+    auto gradI_user_mem = onednnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     // gradW
-    auto gradW_user_mem = mkldnnUtils::loadDataToMklStream(*gradW, engine, stream, gradW_user_md, op_weights_bp_prim_desc.diff_weights_desc(), args[DNNL_ARG_DIFF_WEIGHTS]);
+    auto gradW_user_mem = onednnUtils::loadDataToMklStream(*gradW, engine, stream, gradW_user_md, op_weights_bp_prim_desc.diff_weights_desc(), args[DNNL_ARG_DIFF_WEIGHTS]);
 
     // gradB
     if(gradB != nullptr) {
@@ -392,19 +392,27 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
 
     auto output  = INPUT_VARIABLE(0);
 
-    const DataType xType = input->dataType();
-    const DataType wType = weights->dataType();
-    const DataType zType = output->dataType();
-    const DataType bType = bias != nullptr ? bias->dataType() : zType;
-
-    const int mC = weights->sizeAt(3);
-
-    return block.isUseMKLDNN() && mC == 1 &&
-          (
+    Requirements req("ONEDNN DEPTHWISE_CONV2d OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(weights->sizeAt(3),"weight NdArray size#3"), 1) &&
+    req.expectTrue(makeInfoVariable(
+        [input, weights, bias, output]{
+            const DataType xType = input->dataType();
+            const DataType wType = weights->dataType();
+            const DataType zType = output->dataType();
+            const DataType bType = bias != nullptr ? bias->dataType() : zType;
+            return (
             (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
             (xType==DataType::BFLOAT16 && wType==DataType::BFLOAT16 && bType==DataType::BFLOAT16 && zType==DataType::BFLOAT16) ||
             ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
-          );
+            );
+
+        }
+    ,TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -469,17 +477,29 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
     auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
-    const DataType xType = input->dataType();
-    const DataType wType = weights->dataType();
-    const DataType gradOType = gradO->dataType();
+    Requirements req("ONEDNN DEPTHWISE_CONV2d_BP OP"); 
+    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+    req.expectEq(makeInfoVariable(weights->sizeAt(3),"weight NdArray size#3"), 1) &&
+    req.expectTrue(makeInfoVariable(
+        [input, weights, gradI, gradW, gradB, gradO]{
+            const DataType xType = input->dataType();
+            const DataType wType = weights->dataType();
+            const DataType gradOType = gradO->dataType();
 
-    const DataType gradIType = gradI->dataType();
-    const DataType gradWType = gradW->dataType();
-    const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
-
-    const int mC = weights->sizeAt(3);
-
-    return block.isUseMKLDNN() && mC == 1 && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+            const DataType gradIType = gradI->dataType();
+            const DataType gradWType = gradW->dataType();
+            const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
+             return ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && 
+            (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) &&
+            (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) &&
+            (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && 
+             (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+        }
+    ,TYPECHECK_MSG),
+        NO_MSG
+    );
+    req.logTheSuccess();
+    return req;
 }
 
 }
