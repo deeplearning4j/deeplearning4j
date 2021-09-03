@@ -239,7 +239,7 @@
         <commons-io.version>${commonsio.version}</commons-io.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
-        <spark.version>2.4.7</spark.version>
+        <spark.version>2.4.8</spark.version>
         <spark.major.version>2</spark.major.version>
         <args4j.version>2.0.29</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
@@ -319,7 +319,7 @@
         <scala211.version>2.11.12</scala211.version>
         <scala211.binary.version>2.11</scala211.binary.version>
         <!-- Scala 2.12.x -->
-        <scala212.version>2.12.9</scala212.version>
+        <scala212.version>2.12.14</scala212.version>
         <scala212.binary.version>2.12</scala212.binary.version>
 
         <scalatest.version>3.0.5</scalatest.version>
