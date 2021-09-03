@@ -44,9 +44,9 @@
     </modules>
 
     <properties>
-        <scala.macros.version>2.1.0</scala.macros.version>
+        <scala.macros.version>2.1.1</scala.macros.version>
         <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.12.12</scala.version>
+        <scala.version>2.12.14</scala.version>
         <scala.binary.version>2.12</scala.binary.version>
     </properties>
 
