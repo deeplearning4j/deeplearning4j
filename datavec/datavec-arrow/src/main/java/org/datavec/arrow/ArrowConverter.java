@@ -273,42 +273,16 @@ public class ArrowConverter {
      * @param outputStream the output stream to write to
      */
     public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
-        if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
-            val convertedSchema = toArrowSchema(inputSchema);
-            List<FieldVector> columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-            try {
-                VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
-
-                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()),
-                        newChannel(outputStream));
-                writer.start();
-                writer.writeBatch();
-                writer.end();
-
-
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-
+        val convertedSchema = toArrowSchema(inputSchema);
+        List<FieldVector> columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+        try (VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
+            ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()), newChannel(outputStream))) {
+            writer.start();
+            writer.writeBatch();
+            writer.end();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
-        else {
-            val convertedSchema = toArrowSchema(inputSchema);
-            val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-            try {
-                VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,pair,recordBatch.size());
-
-                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()),
-                        newChannel(outputStream));
-                writer.start();
-                writer.writeBatch();
-                writer.end();
-
-
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
     }
 
 
