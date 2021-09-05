@@ -464,10 +464,10 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     DataType cLType = cL != nullptr ? cL->dataType() : xType;
     Requirements req("ONEDNN LstmLayer OP");
     req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-    req.expectEq(makeInfoVariable(cellClip, "Cell clippin"), 0) &&
+    req.expectEq(makeInfoVariable(cellClip, MSG_CELL_CLIPPING), 0) &&
     req.expectTrue(makeInfoVariable(retFullSeq, "Return full sequence")) &&
-    req.expectFalse(makeInfoVariable(hasPH, "Having the Peephole connections"), EXPECTED_NOT_SUPPORTED) &&
-    req.expectFalse(makeInfoVariable(hasSeqLen, "Having theSequence length array"), EXPECTED_NOT_SUPPORTED) &&
+    req.expectFalse(makeInfoVariable(hasPH, HAVE_PEEPHOLE), EXPECTED_NOT_SUPPORTED) &&
+    req.expectFalse(makeInfoVariable(hasSeqLen, HAVE_SEQLENARR), EXPECTED_NOT_SUPPORTED) &&
     req.expectLess(makeInfoVariable(dataFormat, "Data format"), 2) &&
     req.expectLess(makeInfoVariable(directionMode, "Direction mode"), 4) &&
     req.expectEq(makeInfoVariable(retLastH, "Return lastH"), makeInfoVariable(retLastC, "Return lastC")) &&

@@ -320,15 +320,6 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
     const int xRank = input->rankOf();
 
     // *********************************** //
-    if(xRank != 4 && xRank != 5)
-        return false;
-
-    // *********************************** //
-    const bool badType = input->dataType() != DataType::DOUBLE && input->dataType() != DataType::FLOAT32 && input->dataType() != DataType::HALF;
-    if(badType)
-        return false;
-
-    // *********************************** //
     // get axes args to normalize input array over
     std::vector<int> axes;
     if(numOfIntArgs > 2)
@@ -337,32 +328,43 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
     else
         axes.push_back(xRank-1);               // default dimension to reduce along is last dimension
 
-    if(axes.size() != 1 && axes.size() != 3 && axes.size() != 4)
-        return false;
-
-    // *********************************** //
-    bool allParamsHaveSameShapeAndStrides = shape::haveSameShapeAndStrides(mean->shapeInfo(), variance->shapeInfo());
-    if(gamma)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gamma->shapeInfo());
-    if(beta)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), beta->shapeInfo());
-
-    if(!allParamsHaveSameShapeAndStrides)
-        return false;
-
-    // *********************************** //
-    bool isFormatGood = false;
-    if(axes.size() == 1)
-        isFormatGood = mean->lengthOf() == input->sizeAt(1) || mean->lengthOf() == input->sizeAt(-1);   // mean [C]
-    else {
+    Requirements req("CUDNN BATCHNORM OP");
+    req.expectIn(makeInfoVariable(xRank, RANK_MSG_INPUT0), {4, 5}) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+    req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
+    req.expect(makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
+    [](const decltype(mean)& l, const decltype(variance)& r){
+        return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+    }
+    , EXPECTED_EQ_MSG);
+    if(gamma){
+        req.expect(makeShapeInfoVariable(gamma, SHAPE_MSG_INPUT_ "#gamma"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),
+        [](const decltype(gamma)& l, const decltype(mean)& r){
+            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+        }
+        , EXPECTED_EQ_MSG);
+    }
+    if(beta){
+        req.expect(makeShapeInfoVariable(beta, SHAPE_MSG_INPUT_ "#beta"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),
+        [](const decltype(beta)& l, const decltype(mean)& r){
+            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+        }
+        , EXPECTED_EQ_MSG);
+    }
+    if(axes.size() == 1){
+        req.expectIn(makeInfoVariable(mean->lengthOf(), LENGTH_MSG_INPUT1), {-1, 1});
+    }else{
         auto inputShapeModif = input->getShapeAsVector();     // [dim0,dim1,dim2,dim3] 4D or [dim0,dim1,dim2,dim3,dim4]
         inputShapeModif[0] = 1;
-        isFormatGood = mean->isSameShape(inputShapeModif);    // mean [1,dim1,dim2,dim3] 4D or [1,dim1,dim2,dim3,dim4]
+        // mean [1,dim1,dim2,dim3] 4D or [1,dim1,dim2,dim3,dim4]
+        req.expect(makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(inputShapeModif, SHAPE_MSG_INPUT_ "#expect"),
+        [](const decltype(mean)& l, const decltype(inputShapeModif)& r){
+            return l->isSameShape(r);
+        }
+        , EXPECTED_EQ_MSG);
     }
-    if(!isFormatGood)
-        return false;
-
-    return true;
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -487,15 +489,6 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
     const int xRank = input->rankOf();
 
     // *********************************** //
-    if(xRank != 4 && xRank != 5)
-        return false;
-
-    // *********************************** //
-    const bool badType = input->dataType() != DataType::DOUBLE && input->dataType() != DataType::FLOAT32 && input->dataType() != DataType::HALF;
-    if(badType)
-        return false;
-
-    // *********************************** //
     // get axes args to normalize input array over
     std::vector<int> axes;
     if(numOfIntArgs > 2)
@@ -504,34 +497,51 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
     else
         axes.push_back(xRank-1);               // default dimension to reduce along is last dimension
 
-    if(axes.size() != 1 && axes.size() != 3 && axes.size() != 4)
-        return false;
-
-    // *********************************** //
-    bool allParamsHaveSameShapeAndStrides = shape::haveSameShapeAndStrides(mean->shapeInfo(), variance->shapeInfo());
-    if(gamma)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gamma->shapeInfo());
-    if(gradG)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gradG->shapeInfo());
-    if(gradB)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gradB->shapeInfo());
-
-    if(!allParamsHaveSameShapeAndStrides)
-        return false;
-
-    // *********************************** //
-    bool isFormatGood = false;
-    if(axes.size() == 1)
-        isFormatGood = mean->lengthOf() == input->sizeAt(1) || mean->lengthOf() == input->sizeAt(-1);   // mean [C]
-    else {
+    Requirements req("CUDNN BATCHNORM_BP OP");
+    req.expectIn(makeInfoVariable(xRank, RANK_MSG_INPUT0), {4, 5}) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+    req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
+    req.expect(makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
+    [](const decltype(mean)& l, const decltype(variance)& r){
+        return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+    }
+    , EXPECTED_EQ_MSG);
+    if(gamma){
+        req.expect(makeShapeInfoVariable(gamma, SHAPE_MSG_INPUT_ "#gamma"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),
+        [](const decltype(gamma)& l, const decltype(mean)& r){
+            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+        }
+        , EXPECTED_EQ_MSG);
+    }
+    if(gradG){
+        req.expect(makeShapeInfoVariable(gradG, SHAPE_MSG_INPUT_ "#gradG"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),
+        [](const decltype(gradG)& l, const decltype(mean)& r){
+            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+        }
+        , EXPECTED_EQ_MSG);
+    }
+    if(gradB){
+        req.expect(makeShapeInfoVariable(gradB, SHAPE_MSG_INPUT_ "#gradB"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),
+        [](const decltype(gradB)& l, const decltype(mean)& r){
+            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+        }
+        , EXPECTED_EQ_MSG);
+    }
+    if(axes.size() == 1){
+    //     isFormatGood = mean->lengthOf() == input->sizeAt(1) || mean->lengthOf() == input->sizeAt(-1);   // mean [C]
+        req.expectIn(makeInfoVariable(mean->lengthOf(), LENGTH_MSG_INPUT1), {-1, 1});
+    }else{
         auto inputShapeModif = input->getShapeAsVector();     // [dim0,dim1,dim2,dim3] 4D or [dim0,dim1,dim2,dim3,dim4]
         inputShapeModif[0] = 1;
-        isFormatGood = mean->isSameShape(inputShapeModif);    // mean [1,dim1,dim2,dim3] 4D or [1,dim1,dim2,dim3,dim4]
+    //     isFormatGood = mean->isSameShape(inputShapeModif);    // mean [1,dim1,dim2,dim3] 4D or [1,dim1,dim2,dim3,dim4]
+        req.expect(makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(inputShapeModif, SHAPE_MSG_INPUT_ "#expect"),
+        [](const decltype(mean)& l, const decltype(inputShapeModif)& r){
+            return l->isSameShape(r);
+        }
+        , EXPECTED_EQ_MSG);
     }
-    if(!isFormatGood)
-        return false;
-
-    return true;
+    req.logTheSuccess();
+    return req;
 }
 
 

@@ -289,6 +289,15 @@ PLATFORM_CHECK(conv2d, ENGINE_CUDA) {
     const bool badBiasType    = bias == nullptr ? false : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 && bias->dataType() != DataType::HALF);
 
     return paddingMode != 2 && !badInputType && !badWeightsType && !badBiasType;
+    Requirements req("CUDNN CONV2d OP");
+    req.expectNotEq(makeInfoVariable(paddingMode,"paddingMode"), 2) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} ) &&
+    req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    if(bias){
+        req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) ;
+    }
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -382,12 +391,19 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CUDA) {
     const int paddingMode = INT_ARG(8);                                             // 0-VALID, 1-SAME, 2-CAUSAL
     const int isNCHW      = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;    // INT_ARG(9): 0-NCHW, 1-NHWC
 
-    const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
-    const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;
-    const bool badGradOType   = gradO->dataType()   != DataType::DOUBLE && gradO->dataType()   != DataType::FLOAT32 && gradO->dataType()   != DataType::HALF;
-    const bool badBiasType    = bias == nullptr ? false : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 && bias->dataType() != DataType::HALF);
-
-    return isNCHW && paddingMode != 2 && !badInputType && !badWeightsType && !badGradOType && !badBiasType;
+    Requirements req("CUDNN CONV2d_BP OP");
+    req.expectNotEq(makeInfoVariable(paddingMode,"paddingMode"), 2) &&
+    req.expectTrue(makeInfoVariable(isNCHW,"isNCHW")) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} ) &&
+    req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    if(bias){
+        req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT3), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+    }else{
+        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT2), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    }
+    req.logTheSuccess();
+    return req;
 }
 
 

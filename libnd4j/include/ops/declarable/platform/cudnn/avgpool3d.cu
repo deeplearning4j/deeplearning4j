@@ -77,9 +77,11 @@ PLATFORM_CHECK(avgpool3dnew, ENGINE_CUDA) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    const auto goodType  = input->dataType() == DataType::DOUBLE || input->dataType() == DataType::FLOAT32 || input->dataType() == DataType::HALF || input->dataType() == DataType::INT32;
-
-    return goodType && input->dataType() == output->dataType();
+    Requirements req("CUDNN AVGPOOL3d OP");
+    req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT), makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT)) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT),{DataType::INT32, DataType::HALF, DataType::FLOAT32, DataType::DOUBLE });
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -133,11 +135,17 @@ PLATFORM_CHECK(avgpool3dnew_bp, ENGINE_CUDA) {
     auto gradO = INPUT_VARIABLE(1);                          // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
     auto gradI = OUTPUT_VARIABLE(0);                         // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
 
-    const auto goodType = input->dataType() == DataType::DOUBLE || input->dataType() == DataType::FLOAT32 || input->dataType() == DataType::HALF || input->dataType() == DataType::INT32;
-
-    return goodType && (input->dataType() == gradO->dataType())
-                    && (input->dataType() == gradI->dataType())
-                    && shape::haveSameShapeAndStrides(input->shapeInfo(), gradI->shapeInfo());
+    Requirements req("CUDNN AVGPOOL3d_BP OP");
+    req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT1)) &&
+    req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT), makeInfoVariable(gradI->dataType(), TYPE_MSG_OUTPUT)) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT),{DataType::INT32, DataType::HALF, DataType::FLOAT32, DataType::DOUBLE }) &&
+    req.expect(makeShapeInfoVariable(input, SHAPE_MSG_INPUT0), makeShapeInfoVariable(gradI, SHAPE_MSG_OUTPUT),
+    [](const decltype(input)& l, const decltype(gradI)& r){
+        return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+    }
+    , EXPECTED_EQ_MSG);
+    req.logTheSuccess();
+    return req;
 }
 
 
