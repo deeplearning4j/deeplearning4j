@@ -30,7 +30,7 @@
 #include <helpers/ShapeUtils.h>
 
 //internal usage only
-#define ENABLE_LOG_TO_TEST 1
+//#define ENABLE_LOG_TO_TEST 1
 namespace sd {
 
 inline std::ostream& operator<<(std::ostream& o, const sd::DataType &type)
