@@ -31,7 +31,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+    <artifactId>nd4j-parameter-server-node_2.12</artifactId>
 
     <name>nd4j-parameter-server-node</name>
 
