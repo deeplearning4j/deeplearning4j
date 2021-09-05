@@ -31,12 +31,12 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-kryo_2.11</artifactId>
+    <artifactId>nd4j-kryo_2.12</artifactId>
 
     <name>nd4j-kryo</name>
 
     <properties>
-        <kryo.version>2.21</kryo.version>
+        <kryo.version>4.0.2</kryo.version>
         <jkserializers.version>0.41</jkserializers.version>
     </properties>
 
