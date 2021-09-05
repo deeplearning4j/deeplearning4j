@@ -30,7 +30,7 @@
 #include <helpers/ShapeUtils.h>
 
 //internal usage only
-//#define ENABLE_LOG_TO_TEST 1
+#define ENABLE_LOG_TO_TEST 1
 namespace sd {
 
 inline std::ostream& operator<<(std::ostream& o, const sd::DataType &type)
@@ -62,14 +62,24 @@ std::ostream& operator<<(std::ostream& o, const std::initializer_list<T>& arr)
 template<typename T>
 using remove_cvref_t = typename std::remove_cv< typename std::remove_reference<T>::type >::type;
 
-template<typename T, typename = void>
-struct is_callable : std::is_function<T> { };
-
-template<typename T>
-struct is_callable<T, typename std::enable_if<
-    std::is_same<decltype(void(&remove_cvref_t<T>::operator())), void>::value
-    >::type> : std::true_type { };
-
+template <class F>
+struct Check_callable
+{
+  template <class... Args>
+  static std::false_type try_call(Args&&...);
+ 
+  template <class... Args>
+  static auto try_call( F&& f, Args&&... args)
+    -> decltype((void)f(std::forward<Args>(args)...),
+                std::true_type{});
+};
+ 
+template <class F, class... Args>
+using is_callable = decltype
+  (
+    Check_callable<F>::try_call(std::declval<F>(),
+          std::forward<Args>(std::declval<Args>())...)
+  );
 
 template<typename S, typename T>
 class is_streamable
@@ -133,7 +143,7 @@ struct Underline{
 };
 template<typename T >
 struct Underline<T,  typename std::enable_if<has_getValue<T>::value>::type>{
-   using type = decltype(std::declval<T&>().getValue()); 
+   using type = remove_cvref_t<decltype(std::declval<T&>().getValue())>; 
 };
 
 template<typename T, typename Enable=void>
@@ -312,7 +322,7 @@ class Requirements{
         
         if(sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()){
             std::stringstream stream;
-            stream<<prefix<<": "<<getMsg(expVar)<<'{'<<getStreamValue(expVar)<<"} "<<EXPECTED_IN<<'{'<<getStreamValue(vals)<<"}\n";
+            stream<<prefix<<": "<<getMsg(expVar)<<'{'<<getStreamValue(expVar)<<"} "<<EXPECTED_IN<<" {"<<getStreamValue(vals)<<"}\n";
             sd::Logger::info("%s", stream.str().c_str());
         }
         ok = false;
