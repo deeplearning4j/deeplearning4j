@@ -18,23 +18,15 @@
 
 #include <ConstMessages.h>
 
-#define IS_EMPTY_MSG_INPUT_ "the Emptiness of the Input NDArray"
-#define IS_EMPTY_MSG_OUTPUT_ "the Emptiness of the Output NDArray"
-#define RANK_MSG_INPUT_ "the Rank of the Input NDArray"
-#define SHAPE_MSG_INPUT_ "the Rank of the Input NDArray"
-#define RANK_MSG_OUTPUT_ "the Rank of the Output NDArray"
-#define TYPE_MSG_INPUT_ "the Type of the Input NDArray"
-#define TYPE_MSG_OUTPUT_ "the Type of the Output NDArray"
-#define EWS_MSG_INPUT_ "the EWS of the Input NDArray"
-#define EWS_MSG_OUTPUT_ "the EWS of the Output NDArray"
-#define ORDERING_MSG_INPUT_ "the Ordering of the Input NDArray"
-#define ORDERING_MSG_OUTPUT_ "the Ordering of the Output NDArray"
+
 
 namespace sd{
 
 
     const char* OP_VALIDATION_FAIL_MSG = "Op validation failed";
-
+    const char* HAVE_PEEPHOLE = "Having the Peephole connections";
+    const char* HAVE_SEQLENARR = "Having theSequence length array";
+    const char* MSG_CELL_CLIPPING = "Cell clipping";
     const char* TYPECHECK_MSG = "Checking the Type requirments for the NDArrays";
     const char* NO_MSG = "";
     const char* EXPECTED_TRUE = "expected to be True";
@@ -60,6 +52,12 @@ namespace sd{
     const char* RANK_MSG_INPUT1= RANK_MSG_INPUT_ "#1";
     const char* RANK_MSG_INPUT2= RANK_MSG_INPUT_ "#2";
     const char* RANK_MSG_INPUT3= RANK_MSG_INPUT_ "#3";
+
+    const char* LENGTH_MSG_INPUT= LENGTH_MSG_INPUT_;
+    const char* LENGTH_MSG_INPUT0= LENGTH_MSG_INPUT_ "#0";
+    const char* LENGTH_MSG_INPUT1= LENGTH_MSG_INPUT_ "#1";
+    const char* LENGTH_MSG_INPUT2= LENGTH_MSG_INPUT_ "#2";
+    const char* LENGTH_MSG_INPUT3= LENGTH_MSG_INPUT_ "#3";
 
     const char* SHAPE_MSG_INPUT= SHAPE_MSG_INPUT_;
     const char* SHAPE_MSG_INPUT0= SHAPE_MSG_INPUT_ "#0";
@@ -104,6 +102,10 @@ namespace sd{
     const char* ORDERING_MSG_OUTPUT= ORDERING_MSG_OUTPUT_;
     const char* ORDERING_MSG_OUTPUT0= ORDERING_MSG_OUTPUT_ "#0";
     const char* ORDERING_MSG_OUTPUT1= ORDERING_MSG_OUTPUT_ "#1";
+
+    const char* SHAPE_MSG_OUTPUT= SHAPE_MSG_OUTPUT_;
+    const char* SHAPE_MSG_OUTPUT0= SHAPE_MSG_OUTPUT_ "#0";
+    const char* SHAPE_MSG_OUTPUT1= SHAPE_MSG_OUTPUT_ "#1";
 
     const char* IS_USE_ONEDNN_MSG = "isUseONEDNN should be enabled to use ONEDNN";
     const char * ONEDNN_STREAM_NOT_SUPPORTED = "ONEDNN stream is not supported";
