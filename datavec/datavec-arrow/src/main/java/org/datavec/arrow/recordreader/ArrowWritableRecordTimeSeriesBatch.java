@@ -23,6 +23,7 @@ package org.datavec.arrow.recordreader;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
@@ -232,7 +233,7 @@ public class ArrowWritableRecordTimeSeriesBatch extends AbstractTimeSeriesWritab
         if(vectorLoader != null)
             vectorLoader.close();
 
-
+        list.forEach(ValueVector::close);
     }
 
 
