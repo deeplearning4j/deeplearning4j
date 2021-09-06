@@ -6,6 +6,7 @@ import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.nd4j.fileupdater.FileUpdater;
 import org.nd4j.fileupdater.impl.CudaFileUpdater;
+import org.nd4j.fileupdater.impl.SparkFileUpdater;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -25,6 +26,8 @@ public class VersionUpdater implements Callable<Integer> {
     @CommandLine.Option(names = {"--update-type","-t"})
     private String updateType = "cuda";
     private FileUpdater fileUpdater;
+    @CommandLine.Option(names = {"--spark-version","-sv"})
+    private String sparkVersion;
 
 
     public static void main(String... args) {
@@ -39,6 +42,9 @@ public class VersionUpdater implements Callable<Integer> {
                 case "cuda":
                     fileUpdater = new CudaFileUpdater(newCudaVersion, newJavacppVersion, newCudnnVersion);
                     System.out.println("Updating cuda version using cuda version " + newCudaVersion + " javacpp version " + newJavacppVersion + " cudnn version " + newCudnnVersion);
+                    break;
+                case "spark":
+                    fileUpdater = new SparkFileUpdater(sparkVersion);
                     break;
             }
 
