@@ -55,6 +55,7 @@
         <libnd4j.buildthreads></libnd4j.buildthreads>
         <libnd4j.helper></libnd4j.helper>
         <libnd4j.buildprogram>bash</libnd4j.buildprogram>
+        <libnd4j.operations></libnd4j.operations>
     </properties>
 
     <build>
@@ -150,6 +151,9 @@
                                 <argument>${libnd4j.buildthreads}</argument>
                                 <argument>-h</argument>
                                 <argument>${libnd4j.helper}</argument>
+                                <argument>--operations</argument>
+                                <argument>${libnd4j.operations}</argument>
+
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -334,6 +338,8 @@
                                         <argument>${libnd4j.buildthreads}</argument>
                                         <argument>-h</argument>
                                         <argument>${libnd4j.helper}</argument>
+                                        <argument>--operations</argument>
+                                        <argument>"${libnd4j.operations}"</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

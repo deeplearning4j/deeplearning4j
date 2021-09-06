@@ -23,6 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/ctc.h>
 
+#if NOT_EXCLUDED(OP_ctc_loss)
 namespace sd {
 namespace ops  {
 
@@ -132,3 +133,5 @@ DECLARE_SHAPE_FN(ctc_loss_grad) {
 
 }
 }
+
+#endif

@@ -27,7 +27,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 #include <array/NDArray.h>
-
+#if NOT_EXCLUDED(OP_ams_grad_updater)
 namespace sd {
     namespace ops {
 
@@ -100,3 +100,5 @@ namespace sd {
 
     }
 }
+
+#endif

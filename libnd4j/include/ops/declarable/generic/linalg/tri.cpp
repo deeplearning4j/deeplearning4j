@@ -21,7 +21,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-
+#if NOT_EXCLUDED(OP_tri)
 
 namespace sd {
 namespace ops  {
@@ -63,3 +63,5 @@ DECLARE_SHAPE_FN(tri) {
 
 }
 }
+
+#endif

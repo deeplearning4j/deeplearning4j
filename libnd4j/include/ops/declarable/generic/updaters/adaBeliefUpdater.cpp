@@ -27,7 +27,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 #include <array/NDArray.h>
-
+#if NOT_EXCLUDED(OP_adabelief_updater)
 namespace sd {
     namespace ops {
 
@@ -94,3 +94,4 @@ namespace sd {
 
     }
 }
+#endif

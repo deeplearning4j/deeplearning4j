@@ -20,8 +20,10 @@
 // @author raver119@gmail.com
 //
 
+
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/BroadcastBoolOpsTuple.h>
+#if NOT_EXCLUDED(OP_equals)
 
 namespace sd {
     namespace ops {
@@ -52,3 +54,5 @@ namespace sd {
         }
     }
 }
+
+#endif

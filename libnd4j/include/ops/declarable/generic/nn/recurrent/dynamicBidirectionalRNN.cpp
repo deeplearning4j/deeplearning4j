@@ -21,7 +21,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-
+#if NOT_EXCLUDED(OP_dynamic_bidirectional_rnn)
 namespace sd {
 namespace ops  {
 
@@ -228,3 +228,4 @@ DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
 }
 }
 
+#endif

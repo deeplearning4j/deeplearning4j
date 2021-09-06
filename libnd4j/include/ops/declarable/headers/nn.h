@@ -171,8 +171,9 @@ namespace sd {
         /**
          * relu_layer = relu(x*w + b)
          */
+         #if NOT_EXCLUDED(OP_relu_layer)
         DECLARE_CUSTOM_OP(relu_layer, 3, 1, false, 0, 0);
-
+        #endif
         /**
          * applies layer normalization to input
          * y = g * standardize(x) + b

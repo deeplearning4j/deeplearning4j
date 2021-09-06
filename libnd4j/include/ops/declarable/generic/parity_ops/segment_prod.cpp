@@ -22,7 +22,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/segment.h>
-
+#if NOT_EXCLUDED(OP_segment_prod)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(segment_prod, 2, 1, false, 0, 0) {
@@ -106,3 +106,4 @@ namespace sd {
         }
     }
 }
+#endif

@@ -23,7 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-
+#if NOT_EXCLUDED(OP_triu)
 namespace sd {
 namespace ops  {
 
@@ -114,3 +114,5 @@ DECLARE_SHAPE_FN(triu_bp) {
 
 }
 }
+
+#endif

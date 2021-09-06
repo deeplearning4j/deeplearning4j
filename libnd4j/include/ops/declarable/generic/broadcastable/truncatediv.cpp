@@ -22,7 +22,7 @@
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
-
+#if NOT_EXCLUDED(truncatediv)
 namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(truncatediv, 0, 0) {
@@ -50,3 +50,4 @@ namespace sd {
         }
     }
 }
+#endif

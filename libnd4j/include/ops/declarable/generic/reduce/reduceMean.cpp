@@ -23,7 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
-
+#if NOT_EXCLUDED(OP_reduce_mean)
 namespace sd    {
 namespace ops     {
 
@@ -160,3 +160,4 @@ DECLARE_TYPES(reduce_mean_bp) {
 
 }
 }
+#endif

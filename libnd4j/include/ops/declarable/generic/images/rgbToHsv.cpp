@@ -26,7 +26,7 @@
 #include <ops/declarable/CustomOperations.h>  
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
-
+#if NOT_EXCLUDED(OP_rgb_to_hsv)
 namespace sd {
 namespace ops {
 
@@ -62,3 +62,5 @@ DECLARE_TYPES(rgb_to_hsv) {
 
 }
 }
+
+#endif

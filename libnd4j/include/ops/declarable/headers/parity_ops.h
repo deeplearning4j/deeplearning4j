@@ -1705,9 +1705,10 @@ namespace sd {
         * output array:
         *    reduced tensor with calculated means
         */
+        #if NOT_EXCLUDED(OP_reduce_variance)
         DECLARE_CUSTOM_OP(reduce_variance, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(reduce_variance_bp, 2, 1, false, 0, 0)
-
+        #endif
         /**
         * This op calculates sample standard deviation of elements along given dimensions
         *

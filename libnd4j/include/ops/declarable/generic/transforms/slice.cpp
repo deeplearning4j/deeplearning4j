@@ -25,7 +25,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
-
+#if NOT_EXCLUDED(OP_slice)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
@@ -229,4 +229,4 @@ namespace sd {
     }
 }
 
-//#endif
+#endif

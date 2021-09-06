@@ -1264,16 +1264,14 @@
 
 
 #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
-#define NOT_EXCLUDED(NAME) 1>0
+#define NOT_EXCLUDED(NAME) (defined(NAME) || SD_ALL_OPS == true)
 #else
-// for now we don't want minifier mechanics working
-//#define NOT_EXCLUDED(NAME) defined(SD_ALL_OPS) || defined(NAME)
-#define NOT_EXCLUDED(NAME) 1>0
+#define NOT_EXCLUDED(NAME) (defined(NAME) || SD_ALL_OPS == true)
 #endif
 
 #ifdef __JAVACPP_HACK__
 #define REGISTER_H(NAME)
-#elif defined(SD_ALL_OPS)
+#elif SD_ALL_OPS == true
 #define REGISTER_H(NAME)
 #else
 #define REGISTER_H(NAME)  template <typename OpName>  \

@@ -23,6 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/rnn.h>
 
+#if NOT_EXCLUDED(OP_dynamic_rnn)
 namespace sd {
 namespace ops  {
 
@@ -173,3 +174,5 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
 
 }
 }
+
+#endif

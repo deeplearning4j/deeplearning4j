@@ -21,7 +21,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-
+#if NOT_EXCLUDED(OP_expose)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(expose, -1, -1, true, 0, 0) {
@@ -71,3 +71,4 @@ namespace sd {
         }
     }
 }
+#endif

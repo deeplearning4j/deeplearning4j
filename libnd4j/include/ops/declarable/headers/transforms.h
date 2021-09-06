@@ -62,8 +62,10 @@ namespace sd {
         DECLARE_CONFIGURABLE_OP(invert_permutation, 1, 1, false, 0, 0);
         #endif
 
+        #if NOT_EXCLUDED(OP_concat)
         DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(concat_bp, -1, -1, false, 0, 0);
+        #endif
 
         #if NOT_EXCLUDED(OP_mergemax)
         DECLARE_OP(mergemax, -1, 1, false);

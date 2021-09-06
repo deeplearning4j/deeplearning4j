@@ -25,6 +25,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/fake_quantization.h>
+
 namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {

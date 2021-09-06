@@ -20,7 +20,9 @@
 // @author raver119@gmail.com
 //
 
+
 #include <ops/declarable/headers/broadcastable.h>
+#if NOT_EXCLUDED(OP_not_equals)
 
 namespace sd {
     namespace ops {
@@ -49,3 +51,5 @@ namespace sd {
         }
     }
 }
+
+#endif
