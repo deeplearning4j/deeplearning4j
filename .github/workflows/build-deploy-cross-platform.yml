@@ -131,6 +131,16 @@ jobs:
                        eval "$command"
           fi
 
+          ./change-spark-versions.sh 3.1.1
+
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+                        echo "Performing release"
+                        bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                       else
+                           echo "Running build and deploying to snapshots"
+                           eval "$command"
+          fi
+
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled && failure() }}
