@@ -135,8 +135,9 @@ namespace sd {
         * Output array:
         *   0: is considered as batch of matrices, if for example diagonal array has shape [A,B,C] then output array has shape [A,B,C,C]
         */
+        #if NOT_EXCLUDED(OP_matrix_diag)
         DECLARE_CUSTOM_OP(matrix_diag, 1, 1, false, 0, 0);
-
+        #endif
         /**
         * This op calculates regularized incomplete beta integral Ix(a, b).
         * Implementation is based on two algorithms depending on input values of a and b:
@@ -1725,9 +1726,10 @@ namespace sd {
         * output array:
         *    reduced tensor with calculated means
         */
+#if NOT_EXCLUDED(OP_reduce_stdev)
         DECLARE_CUSTOM_OP(reduce_stdev, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(reduce_stdev_bp, 2, 1, false, 0, 0)
-
+#endif
         /**
         * This op calculates backprop dot for two tensors along given dimensions
         *

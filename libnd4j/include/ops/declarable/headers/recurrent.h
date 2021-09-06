@@ -367,8 +367,9 @@ namespace ops  {
        *    0: cell outputs [time x batchSize x numUnits]
        *    1: cell final non-zero output [batchSize x numUnits]
        */
+    #if NOT_EXCLUDED(OP_static_rnn)
         DECLARE_CUSTOM_OP(static_rnn, 4, 2, false, 0, 0);
-
+    #endif
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
@@ -388,8 +389,9 @@ namespace ops  {
        *    0: cell outputs [time x batchSize x numUnits] or [batchSize x time x numUnits]
        *    1: cell final non-zero output [batchSize x numUnits]
        */
+    #if NOT_EXCLUDED(OP_dynamic_rnn)
         DECLARE_CUSTOM_OP(dynamic_rnn, 4, 2, false, 0, 0);
-
+    #endif
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
@@ -411,8 +413,9 @@ namespace ops  {
        *    1: cell final non-zero output for forward RNN  [batchSize x numUnitsFW]
        *    2: cell final non-zero output for backward RNN [batchSize x numUnitsBW]
        */
+    #if NOT_EXCLUDED(OP_static_bidirectional_rnn)
         DECLARE_CUSTOM_OP(static_bidirectional_rnn, 7, 3, false, 0, 0);
-
+     #endif
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
@@ -438,8 +441,9 @@ namespace ops  {
        *    2: cell final non-zero output for forward  RNN [batchSize x numUnitsFW]
        *    3: cell final non-zero output for backward RNN [batchSize x numUnitsBW]
        */
+    #if NOT_EXCLUDED(OP_dynamic_bidirectional_rnn)
         DECLARE_CUSTOM_OP(dynamic_bidirectional_rnn, 7, 4, false, 0, 0);
-
+    #endif
 }
 }
 #endif

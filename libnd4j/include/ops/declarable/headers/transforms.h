@@ -167,13 +167,15 @@ namespace sd {
         #if NOT_EXCLUDED(OP_clip_by_global_norm)
         DECLARE_CUSTOM_OP(clip_by_global_norm, 1, 2, true, 1, 0);
         #endif
-
+#if NOT_EXCLUDED(OP_tri)
         DECLARE_CUSTOM_OP(tri, -2, 1, false, 0, 1);
+#endif
 
+#if NOT_EXCLUDED(OP_triu)
         DECLARE_CUSTOM_OP(triu, 1, 1, false, 0, 0);
 
         DECLARE_CUSTOM_OP(triu_bp, 2, 1, false, 0, 0);
-
+        #endif
         #if NOT_EXCLUDED(OP_mirror_pad)
         DECLARE_CUSTOM_OP(mirror_pad, 2, 1, false, 0, 1);
         #endif

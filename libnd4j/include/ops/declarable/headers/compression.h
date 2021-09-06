@@ -56,9 +56,12 @@ namespace sd {
         DECLARE_CUSTOM_OP(decode_bitmap, 2, 1, true, 0, 0);
         #endif
 
-
+       #if NOT_EXCLUDED(OP_encode_threshold)
         DECLARE_CUSTOM_OP(encode_threshold, 2, 1, true, 1, 0);
+       #endif
+        #if NOT_EXCLUDED(OP_decode_thresold)
         DECLARE_CUSTOM_OP(decode_threshold, 2, 1, true, 0, 0);
+        #endif
     }
 }
 

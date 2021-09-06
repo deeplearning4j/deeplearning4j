@@ -321,10 +321,13 @@ namespace sd {
          * IntArgs:
          * 0: data format: 1 NHWC, 0 NCHW (optional, by default = NHWC)
          */
+#if NOT_EXCLUDED(OP_pointwise_conv2d)
         DECLARE_CUSTOM_OP(pointwise_conv2d, 2, 1, false, 0, 0);
+#endif
 
+#if NOT_EXCLUDED(OP_deconv2d_tf)
         DECLARE_CUSTOM_OP(deconv2d_tf, 2, 1, false, 0, 0);
-
+#endif
     }
 }
 
