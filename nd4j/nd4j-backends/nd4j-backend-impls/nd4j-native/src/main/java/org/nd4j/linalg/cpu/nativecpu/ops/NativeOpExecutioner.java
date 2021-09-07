@@ -116,7 +116,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (env != null) {
             // in this case we just disable mkl-dnn globally
             if (env.equalsIgnoreCase("true")) {
-                Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
+                Nd4jCpu.Environment.getInstance().setUseONEDNN(false);
             } else {
                 val split = env.toLowerCase().split(",");
                 for (val name:split) {
@@ -1904,12 +1904,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op, context);
         boolean mklOverride = false;
         try {
-            if (Nd4jCpu.Environment.getInstance().isUseMKLDNN()) {
+            if (Nd4jCpu.Environment.getInstance().isUseONEDNN()) {
                 val opName = op.opName();
                 val state = mklOverrides.get(op);
                 if (state != null && state == true) {
                     mklOverride = true;
-                    Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
+                    Nd4jCpu.Environment.getInstance().setUseONEDNN(true);
                 }
             }
 
@@ -1986,7 +1986,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw e;
         } finally {
             if (mklOverride)
-                Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
+                Nd4jCpu.Environment.getInstance().setUseONEDNN(true);
             profilingConfigurableHookOut(op, context, st);
         }
     }
