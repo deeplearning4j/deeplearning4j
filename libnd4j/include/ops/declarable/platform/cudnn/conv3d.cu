@@ -313,11 +313,15 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CUDA) {
 
     int paddingMode = INT_ARG(12);                                       // 0-SAME,  1-VALID
 
-    const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
-    const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;
-    const bool badBiasType    = bias == nullptr ? false : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 && bias->dataType() != DataType::HALF);
-
-    return paddingMode != 2 && !badInputType && !badWeightsType && !badBiasType;
+    Requirements req("CUDNN CONV3d OP");
+    req.expectNotEq(makeInfoVariable(paddingMode,"paddingMode"), 2) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} ) &&
+    req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    if(bias){
+        req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) ;
+    }
+    req.logTheSuccess();
+    return req;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -418,12 +422,19 @@ PLATFORM_CHECK(conv3dnew_bp, ENGINE_CUDA) {
     int paddingMode = INT_ARG(12);                                              // 1-SAME,  0-VALID
     int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
 
-    const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
-    const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;
-    const bool badGradOType   = gradO->dataType()   != DataType::DOUBLE && gradO->dataType()   != DataType::FLOAT32 && gradO->dataType()   != DataType::HALF;
-    const bool badBiasType    = bias == nullptr ? false : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 && bias->dataType() != DataType::HALF);
-
-    return isNCDHW && paddingMode != 2 && !badInputType && !badWeightsType && !badGradOType && !badBiasType;
+    Requirements req("CUDNN CONV3d_BP OP");
+    req.expectNotEq(makeInfoVariable(paddingMode,"paddingMode"), 2) &&
+    req.expectTrue(makeInfoVariable(isNCDHW,"isNCDHW")) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} ) &&
+    req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    if(bias){
+        req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT3), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+    }else{
+        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT2), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    }
+    req.logTheSuccess();
+    return req;
 }
 
 }

@@ -306,13 +306,17 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CUDA) {
     const int paddingMode = INT_ARG(8);                                  // 0-VALID, 1-SAME, 2-CAUSAL
     const int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;       // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-    const int mC = weights->sizeAt(0 == wFormat ? 3 : 0);
+    Requirements req("CUDNN DEPTHWISE_CONV2d OP");
+    req.expectNotEq(makeInfoVariable(paddingMode,"paddingMode"), 2) &&
+    req.expectEq(makeInfoVariable(weights->sizeAt(0 == wFormat ? 3 : 0),"weights#mC"), 1) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} ) &&
+    req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    if(bias){
+        req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) ;
+    }
+    req.logTheSuccess();
+    return req;
 
-    const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
-    const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;
-    const bool badBiasType    = bias == nullptr ? false : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 && bias->dataType() != DataType::HALF);
-
-    return mC == 1 && paddingMode != 2 && !badInputType && !badWeightsType && !badBiasType;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -416,14 +420,24 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CUDA) {
     const int isNCHW      = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;    // INT_ARG(9): 0-NCHW, 1-NHWC
     const int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;       // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-    const int mC = weights->sizeAt(0 == wFormat ? 3 : 0);
+    Requirements req("CUDNN DEPTHWISE_CONV2d_BP OP");
+    const auto inType = input->dataType();
+    const auto wType =  weights->dataType();
+    const auto gType = gradO->dataType();
+    req.expectNotEq(makeInfoVariable(paddingMode,"paddingMode"), 2) &&
+    req.expectTrue(makeInfoVariable(isNCHW,"isNCHW")) &&
+    req.expectEq(makeInfoVariable(weights->sizeAt(0 == wFormat ? 3 : 0),"weights#mC"), 1) &&
+    req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} ) &&
+    req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    if(bias){
+        req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT3), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+    }else{
+        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT2), {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE} );
+    }
+    req.logTheSuccess();
+    return req;
 
-    const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
-    const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;
-    const bool badGradOType   = gradO->dataType()   != DataType::DOUBLE && gradO->dataType()   != DataType::FLOAT32 && gradO->dataType()   != DataType::HALF;
-    const bool badBiasType    = bias == nullptr ? false : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 && bias->dataType() != DataType::HALF);
-
-    return mC == 1 && isNCHW && paddingMode != 2 && !badInputType && !badWeightsType && !badGradOType && !badBiasType;
 }
 
 

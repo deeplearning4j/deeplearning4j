@@ -159,23 +159,23 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
     int dH = INT_ARG(6);
     int dW = INT_ARG(7);
     // Data types supported: QASYMM8/QASYMM8_SIGNED/F16/F32.
-    auto dTypeInput = getArmType(input->dataType());
-    auto dTypeWeight = getArmType(weights->dataType());
-    auto dTypeOutput = getArmType(output->dataType());  
-    
-    bool isSupported = dW==1 && dH==1
-            && isArmcomputeFriendly(*input)
-            && isArmcomputeFriendly(*weights)             
-            && isArmcomputeFriendly(*output)
-            && (dTypeInput == Arm_DataType::F32 /*||  dTypeInput == Arm_DataType::F16*/)
-            && (dTypeWeight == dTypeInput)            
-            && (dTypeOutput == dTypeInput); 
-
-#if 0
-nd4j_printf("deconv2d isSupported %d : isArmcomputeFriendly(*input) = %d , isArmcomputeFriendly(*weights) = %d, isArmcomputeFriendly(*output) %d\n",
-isSupported, isArmcomputeFriendly(*input),isArmcomputeFriendly(*weights),isArmcomputeFriendly(*output));
-#endif
-    return  isSupported;            
+    Requirements req("ARMCOMPUTE DECONV2d OP");
+    req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
+    req.expectEq(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
+    req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+    req.expectEq(makeInfoVariable(dH, "dilation#H"), 1) &&
+    req.expectEq(makeInfoVariable(dW, "dilation#W"), 1) &&
+    req.expectLessEq(makeInfoVariable(input->rankOf(),  RANK_MSG_INPUT0 ), arm_compute::MAX_DIMS) &&
+    req.expectEq(makeInfoVariable(input->ordering(),  ORDERING_MSG_INPUT0 ), 'c') &&
+    req.expectEq(makeInfoVariable(input->stridesOf()[input->rankOf()-1] , "input0#lastStride" ), 1 ) &&
+    req.expectLessEq(makeInfoVariable(weights->rankOf(),  RANK_MSG_INPUT1 ), arm_compute::MAX_DIMS) &&
+    req.expectEq(makeInfoVariable(weights->ordering(),  ORDERING_MSG_INPUT1 ), 'c') &&
+    req.expectEq(makeInfoVariable(weights->stridesOf()[weights->rankOf()-1] , "input1#lastStride" ), 1 ) &&
+    req.expectLessEq(makeInfoVariable(output->rankOf(),  RANK_MSG_OUTPUT ), arm_compute::MAX_DIMS) &&
+    req.expectEq(makeInfoVariable(output->ordering(),  ORDERING_MSG_OUTPUT ), 'c') &&
+    req.expectEq(makeInfoVariable(output->stridesOf()[output->rankOf()-1] , "output#lastStride" ), 1 );
+    req.logTheSuccess();
+    return req;
 }
 
 

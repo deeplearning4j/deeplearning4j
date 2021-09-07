@@ -149,14 +149,17 @@ namespace platforms {
         auto outputLosses = OUTPUT_VARIABLE(0);
         int blankIndex = INT_ARG(0);
 
-        auto dTypeInput = logitInput->dataType();
-        auto intType = targetLabelLengths->dataType();
-        auto dTypeOutput = outputLosses->dataType();
-
-        bool is_supported = blankIndex==0 && intType == DataType::INT32  && dTypeInput == DataType::FLOAT32;
-        is_supported = is_supported && outputLosses->ews() && targetLabelLengths->ews() && targetLabels->ews() && logitInputLengths->ews();
-        is_supported = is_supported && checkLabelLength<int32_t>(*targetLabelLengths);
-        return  is_supported;
+        Requirements req("CUDNN CTC_LOSS OP");
+        req.expectEq(makeInfoVariable(blankIndex,"Blank Index"), 0 ) &&
+        req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1),  DataType::FLOAT32) &&
+        req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2),  DataType::INT32) &&
+        req.expectEq(makeInfoVariable(targetLabels->ews(), EWS_MSG_INPUT0), 1) &&
+        req.expectEq(makeInfoVariable(targetLabelLengths->ews(), EWS_MSG_INPUT2), 1) &&
+        req.expectEq(makeInfoVariable(logitInputLengths->ews(), EWS_MSG_INPUT3), 1) &&
+        req.expectEq(makeInfoVariable(outputLosses->ews(), EWS_MSG_OUTPUT), 1) &&
+        req.expectTrue(makeInfoVariable(checkLabelLength<int32_t>(*targetLabelLengths), "target Label lengthes should be <= 256"), NO_MSG);
+        req.logTheSuccess();
+        return req;
     }
 
     PLATFORM_IMPL(ctc_loss_grad, ENGINE_CUDA) {
@@ -189,14 +192,18 @@ namespace platforms {
         auto outputGrads = OUTPUT_VARIABLE(0);
         int blankIndex = INT_ARG(0);
 
-        auto dTypeInput = logitInput->dataType();
-        auto intType = targetLabelLengths->dataType();
-        auto dTypeOutput = outputGrads->dataType();
+        Requirements req("CUDNN CTC_LOSS_GRAD OP");
+        req.expectEq(makeInfoVariable(blankIndex,"Blank Index"), 0 ) &&
+        req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1),  DataType::FLOAT32) &&
+        req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2),  DataType::INT32) &&
+        req.expectEq(makeInfoVariable(targetLabels->ews(), EWS_MSG_INPUT0), 1) &&
+        req.expectEq(makeInfoVariable(targetLabelLengths->ews(), EWS_MSG_INPUT2), 1) &&
+        req.expectEq(makeInfoVariable(logitInputLengths->ews(), EWS_MSG_INPUT3), 1) &&
+        req.expectEq(makeInfoVariable(outputGrads->ews(), EWS_MSG_OUTPUT), 1) &&
+        req.expectTrue(makeInfoVariable(checkLabelLength<int32_t>(*targetLabelLengths), "target Label lengthes should be <= 256"), NO_MSG);
+        req.logTheSuccess();
+        return req;
 
-        bool is_supported = blankIndex==0 && intType == DataType::INT32  && dTypeInput == DataType::FLOAT32;
-        is_supported = is_supported && outputGrads->ews() && targetLabelLengths->ews() && targetLabels->ews() && logitInputLengths->ews();
-        is_supported = is_supported && checkLabelLength<int32_t>(*targetLabelLengths);
-        return  is_supported;
     }
 
 }

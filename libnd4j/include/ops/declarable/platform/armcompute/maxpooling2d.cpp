@@ -96,12 +96,20 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
     const int dH = INT_ARG(6);
     const int dW = INT_ARG(7);
     // Data types supported: QASYMM8/QASYMM8_SIGNED/F16/F32
-    auto dTypeInput = getArmType(input->dataType());
-    auto dTypeOutput = getArmType(output->dataType());  
-    bool isSupported = dH==1 && dW==1 && isArmcomputeFriendly(*input) && isArmcomputeFriendly(*output)
-            && (dTypeInput ==Arm_DataType::F32) 
-            && (dTypeOutput ==Arm_DataType::F32); 
-    return  isSupported; 
+    // for now, we will ignore F16 as it shoulde be preconditioned for pool size 2,3 and arm64-v8.2-a architecture 
+    Requirements req("ARMCOMPUTE MAXPOOL2d OP");
+    req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
+    req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
+    req.expectEq(makeInfoVariable(dH, "dilation#H"), 1) &&
+    req.expectEq(makeInfoVariable(dW, "dilation#W"), 1) &&
+    req.expectLessEq(makeInfoVariable(input->rankOf(),  RANK_MSG_INPUT ), arm_compute::MAX_DIMS) &&
+    req.expectEq(makeInfoVariable(input->ordering(),  ORDERING_MSG_INPUT ), 'c') &&
+    req.expectEq(makeInfoVariable(input->stridesOf()[input->rankOf()-1] , "input#lastStride" ), 1 ) &&
+    req.expectLessEq(makeInfoVariable(output->rankOf(),  RANK_MSG_OUTPUT ), arm_compute::MAX_DIMS) &&
+    req.expectEq(makeInfoVariable(output->ordering(),  ORDERING_MSG_OUTPUT ), 'c') &&
+    req.expectEq(makeInfoVariable(output->stridesOf()[output->rankOf()-1] , "output#lastStride" ), 1 );
+    req.logTheSuccess();
+    return req;
 }
 
 

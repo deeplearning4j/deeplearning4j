@@ -547,42 +547,70 @@ void cudnn_rnn_v8(LaunchContext  *contextPtr, int dataFormat,  NDArray *input, N
     DataType xType  = x->dataType();
     DataType WxType = Wx->dataType();
     DataType WrType = Wr->dataType();
-    DataType bType  = b  != nullptr ? b->dataType() : xType;
-    DataType hIType = hI != nullptr ? hI->dataType() : xType;
-    DataType cIType = cI != nullptr ? cI->dataType() : xType;
-    DataType hType  = h  != nullptr ? h->dataType()  : xType;
-    DataType hLType = hL != nullptr ? hL->dataType() : xType;
-    DataType cLType = cL != nullptr ? cL->dataType() : xType;
-
+    
+    Requirements req("CUDNN LSTMLAYER OP");
     //cudnn related restrictions    //gateAct: sigmoid, cellAct: tanh adn et cetera
-    bool implRestrictions = gateAct ==2 && cellAct == 0 && outAct == 0 && 
-                       !hasPH && (directionMode==0 || directionMode==3);
+    // integer numbers corresponding to activations: 0=tanh, 1=relu, 2=sigmoid, 3=affine,
+    // 4=leaky relu, 5= thresholded relu, 6=scaled tanh, 7=hard sigmoid, 8=ELU, 9=softsign, 10=softplus
+    req.expectEq(makeInfoVariable(gateAct, "gate Activation"),makeInfoVariable(2, "sigmoid")) &&
+    req.expectEq(makeInfoVariable(cellAct, "cell Activation"),makeInfoVariable(2, "tanh")) &&
+    req.expectEq(makeInfoVariable(outAct, "out Activation"),makeInfoVariable(2, "tanh")) &&
+    req.expectFalse(makeInfoVariable(hasPH, HAVE_PEEPHOLE), EXPECTED_NOT_SUPPORTED) &&
+    req.expectIn(makeInfoVariable(directionMode,"directionMode"), {0, 3}) &&
+    req.expectIn(makeInfoVariable(dataFormat, "data Format"), {0, 1});
 
-    //cudnn api version related restrictions in our helpers
-    size_t cudnn_version = cudnnGetVersion();
-    //though seqlengthArray was added in earlier versions we do not handle it below 8.0.0.1
-#if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
-    implRestrictions = implRestrictions && !hasSeqLenArray;
-#else
-    implRestrictions = implRestrictions && (cudnn_version >= CUDNN_NEW_RNN_API_VER || !hasSeqLenArray);
-#endif
-    implRestrictions = implRestrictions && (cudnn_version >= CUDNN_CLIPPING_API_VER || cellClip==0);
-
+    if(req){
+        //cudnn api version related restrictions in our helpers
+        size_t cudnn_version = cudnnGetVersion();
+        //though seqlengthArray was added in earlier versions we do not handle it below 8.0.0.1
+    #if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
+        //implRestrictions = implRestrictions && !hasSeqLenArray;
+        req.expectFalse(makeInfoVariable(hasSeqLenArray, HAVE_SEQLENARR), EXPECTED_NOT_SUPPORTED);
+    #else
+        //implRestrictions = implRestrictions && (cudnn_version >= CUDNN_NEW_RNN_API_VER || !hasSeqLenArray);
+        if(cudnn_version<CUDNN_NEW_RNN_API_VER){
+            req.expectFalse(makeInfoVariable(hasSeqLenArray, HAVE_SEQLENARR), EXPECTED_NOT_SUPPORTED);
+        }
+    #endif
+        //implRestrictions = implRestrictions && (cudnn_version >= CUDNN_CLIPPING_API_VER || cellClip==0);
+        if(cudnn_version < CUDNN_CLIPPING_API_VER){
+            req.expectEq(makeInfoVariable(cellClip, MSG_CELL_CLIPPING), 0) ;
+        }
+    }
     //restriction that comes either from not setting Descriptor or not handling manipulation:
     //restrict0: the same types
-    bool inputRestrictions = WxType == xType && xType == WrType && bType == xType && 
-                    xType == hIType && cIType == xType && xType == hType &&
-                    hLType == xType && xType == cLType; 
-    //restrict1: format and some input output shapes
-    inputRestrictions = inputRestrictions && (dataFormat ==0 || dataFormat ==1) &&
-                (!x  || (x && x->ordering() == 'c'   && x->ews() == 1))  &&
-                (!h  || (h && h->ordering() == 'c'   && h->ews() == 1))  &&
-                (!hI || (hI && hI->ordering() == 'c' && hI->ews() == 1)) &&
-                (!cI || (cI && cI->ordering() == 'c' && cI->ews() == 1)) &&
-                (!hL || (hL && hL->ordering() == 'c' && hL->ews() == 1)) &&
-                (!cL || (cL && cL->ordering() == 'c' && cL->ews() == 1));
-
-    return implRestrictions && inputRestrictions;
+    req.expectEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'c') &&
+    req.expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1) &&
+    req.expectEq(makeInfoVariable(WxType, TYPE_MSG_INPUT1), makeInfoVariable(xType, TYPE_MSG_INPUT0) ) &&
+    req.expectEq(makeInfoVariable(WrType, TYPE_MSG_INPUT2), makeInfoVariable(xType, TYPE_MSG_INPUT0) );
+    if(b) req.expectEq(makeInfoVariable(b->dataType(), TYPE_MSG_INPUT_ "#bias"), makeInfoVariable(xType, TYPE_MSG_INPUT0) );
+    if(hI){
+        req.expectEq(makeInfoVariable(hI->dataType(), TYPE_MSG_INPUT_ "#hI"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+        req.expectEq(makeInfoVariable(hI->ordering(), ORDERING_MSG_INPUT_ "#hI"), 'c') &&
+        req.expectEq(makeInfoVariable(hI->ews(), EWS_MSG_INPUT_ "#hI"), 1);
+    }
+    if(cI){
+        req.expectEq(makeInfoVariable(cI->dataType(), TYPE_MSG_INPUT_ "#cI"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+        req.expectEq(makeInfoVariable(cI->ordering(), ORDERING_MSG_INPUT_ "#cI"), 'c') &&
+        req.expectEq(makeInfoVariable(cI->ews(), EWS_MSG_INPUT_ "#cI"), 1);
+    }
+    if(h){
+        req.expectEq(makeInfoVariable(h->dataType(), TYPE_MSG_OUTPUT_ "#h"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+        req.expectEq(makeInfoVariable(h->ordering(), ORDERING_MSG_OUTPUT_ "#h"), 'c') &&
+        req.expectEq(makeInfoVariable(h->ews(), EWS_MSG_OUTPUT_ "#h"), 1);
+    }
+    if(hL){
+        req.expectEq(makeInfoVariable(hL->dataType(), TYPE_MSG_OUTPUT_ "#hL"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+        req.expectEq(makeInfoVariable(hL->ordering(), ORDERING_MSG_OUTPUT_ "#hL"), 'c') &&
+        req.expectEq(makeInfoVariable(hL->ews(), EWS_MSG_OUTPUT_ "#hL"), 1);
+    }
+    if(cL){
+        req.expectEq(makeInfoVariable(cL->dataType(), TYPE_MSG_OUTPUT_ "#cL"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+        req.expectEq(makeInfoVariable(cL->ordering(), ORDERING_MSG_OUTPUT_ "#cL"), 'c') &&
+        req.expectEq(makeInfoVariable(cL->ews(), EWS_MSG_OUTPUT_ "#cL"), 1);
+    }
+    req.logTheSuccess();
+    return req;
  }
  
  
