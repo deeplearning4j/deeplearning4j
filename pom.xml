@@ -43,13 +43,13 @@
         </license>
     </licenses>
 
-   <developers>
-       <developer>
-           <organization>Eclipse Foundation</organization>
-           <url>https://github.com/eclipse/deeplearning4j</url>
-           <organizationUrl>https://eclipse.org/</organizationUrl>
-       </developer>
-   </developers>
+    <developers>
+        <developer>
+            <organization>Eclipse Foundation</organization>
+            <url>https://github.com/eclipse/deeplearning4j</url>
+            <organizationUrl>https://eclipse.org/</organizationUrl>
+        </developer>
+    </developers>
 
     <modules>
         <module>libnd4j</module>
@@ -210,7 +210,8 @@
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
         <numpy.version>1.21.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
-
+        <onnx.version>1.9.0</onnx.version>
+        <onnx.javacpp.version>${onnx.javacpp.version}-${javacpp-presets.version}</onnx.javacpp.version>
         <openblas.version>0.3.17</openblas.version>
         <mkl.version>2021.3</mkl.version>
         <opencv.version>4.5.3</opencv.version>
