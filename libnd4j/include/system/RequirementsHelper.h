@@ -210,6 +210,10 @@ getStreamValue(const T& x){
     return getValue(x) ? "True" : "False";
 }
 
+/**
+ * @brief Requirements helper is used to replace plain checks for making them output informative messages
+ * @see https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/Helpers.md
+ */
 class Requirements{
     public:
 
