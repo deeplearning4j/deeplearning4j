@@ -124,6 +124,7 @@
                 <configuration>
                     <includes>
                         <include>**/*.so</include>
+                        <include>**/*.pbtxt</include>
                         <include>**/*.so.*</include>
                         <include>META-INF/*</include>
                         <include>META-INF/services/**</include>
