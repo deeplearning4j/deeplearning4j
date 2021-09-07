@@ -23,6 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matrix_diag_part.h>
 
+#if NOT_EXCLUDED(OP_matrix_diag_part)
 
 namespace sd {
     namespace ops {
@@ -71,4 +72,5 @@ namespace sd {
         }
 }
 }
+#endif
 

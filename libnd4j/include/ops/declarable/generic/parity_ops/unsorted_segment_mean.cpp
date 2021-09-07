@@ -22,7 +22,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/segment.h>
-
+#if NOT_EXCLUDED(OP_unsorted_segment_mean)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(unsorted_segment_mean, 2, 1, false, 0, 0) {
@@ -114,3 +114,4 @@ namespace sd {
         }
     }
 }
+#endif

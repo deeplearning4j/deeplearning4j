@@ -238,8 +238,9 @@ namespace sd {
          *
          * @tparam T
          */
+        #if NOT_EXCLUDED(OP_truncatediv)
         DECLARE_BROADCASTABLE_OP(truncatediv, 0, 0);
-
+        #endif
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
          * 1) if shapes are equal that's pairwise operation, result will have the same shape.

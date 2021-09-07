@@ -21,6 +21,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#if NOT_EXCLUDED(OP_less)
 
 namespace sd {
     namespace ops {
@@ -49,3 +50,4 @@ namespace sd {
         }
     }
 }
+#endif

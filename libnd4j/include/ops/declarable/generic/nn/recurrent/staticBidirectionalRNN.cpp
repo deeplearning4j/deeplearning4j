@@ -25,6 +25,7 @@
 #include<ops/declarable/helpers/reverse.h>
 #include<ops/declarable/helpers/transforms.h>
 
+#if NOT_EXCLUDED(static_bi_directional_rnn)
 namespace sd {
 namespace ops  {
 
@@ -219,13 +220,6 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
     return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(hFWFinalPrevShapeInfo), CONSTANT(hBWFinalPrevShapeInfo));
 }
 
-
-
-
-
-
-
-
 }
 }
-
+#endif

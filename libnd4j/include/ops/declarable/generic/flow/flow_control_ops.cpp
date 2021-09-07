@@ -24,6 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <system/op_boilerplate.h>
 
+#if NOT_EXCLUDED(op_Switch)
 namespace sd {
     namespace ops {
         /**
@@ -98,3 +99,5 @@ namespace sd {
         DECLARE_SYN(return, Return);
     }
 }
+
+#endif

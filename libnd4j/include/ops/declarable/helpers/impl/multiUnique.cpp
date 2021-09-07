@@ -22,6 +22,7 @@
 
 #include <ops/declarable/helpers/multiUnique.h>
 #include <ops/declarable/CustomOperations.h>
+#if NOT_EXCLUDED(OP_concat)
 
 namespace sd {
 namespace ops {
@@ -67,3 +68,4 @@ namespace helpers {
 }
 }
 }
+#endif

@@ -21,6 +21,7 @@
 //
 
 #include <ops/declarable/headers/broadcastable.h>
+#if NOT_EXCLUDED(OP_greater_equal)
 
 namespace sd {
     namespace ops {
@@ -49,3 +50,5 @@ namespace sd {
         }
     }
 }
+
+#endif

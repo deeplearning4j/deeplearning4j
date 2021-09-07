@@ -21,7 +21,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-
+#if NOT_EXCLUDED(OP_relu_layer)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(relu_layer, 3, 1, false, 0, 0) {
@@ -64,4 +64,5 @@ namespace sd {
         }
     }
 }
+#endif
 

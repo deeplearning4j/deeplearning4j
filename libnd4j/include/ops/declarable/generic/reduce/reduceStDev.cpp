@@ -24,7 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
-
+#if NOT_EXCLUDED(OP_reduce_stdev)
 namespace sd    {
 namespace ops     {
 
@@ -180,3 +180,4 @@ DECLARE_TYPES(reduce_stdev_bp) {
 
 }
 }
+#endif

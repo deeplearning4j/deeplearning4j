@@ -22,7 +22,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sequence_mask.h>
-
+#if NOT_EXCLUDED(OP_sequence_mask)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(sequence_mask, 1, 1, false, 0, 0) {
@@ -105,4 +105,4 @@ namespace sd {
         }
 }
 }
-
+#endif

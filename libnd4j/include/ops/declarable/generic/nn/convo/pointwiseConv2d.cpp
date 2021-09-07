@@ -23,6 +23,8 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+
+#if NOT_EXCLUDED(op_pointwise_conv2d)
 namespace sd {
 namespace ops  {
 
@@ -113,3 +115,5 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
 
 }
 }
+
+#endif

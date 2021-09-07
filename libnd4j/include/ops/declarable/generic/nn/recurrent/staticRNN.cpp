@@ -22,7 +22,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/rnn.h>
-
+#if NOT_EXCLUDED(OP_static_rnn)
 namespace sd {
 namespace ops  {
 
@@ -143,8 +143,6 @@ DECLARE_SHAPE_FN(static_rnn) {
     return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(hPrevShapeInfo));
 }
 
-
-
-
 }
 }
+#endif

@@ -24,7 +24,7 @@
 #include <ops/declarable/CustomOperations.h>  
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
-
+#if NOT_EXCLUDED(OP_yuv_to_rgb)
 namespace sd {
 namespace ops {
 
@@ -60,3 +60,5 @@ DECLARE_TYPES(yuv_to_rgb) {
 
 }
 }
+
+#endif

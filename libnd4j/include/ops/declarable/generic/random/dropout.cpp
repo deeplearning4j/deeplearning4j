@@ -25,7 +25,6 @@
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/dropout.h>
-
 namespace sd {
 namespace ops {
 

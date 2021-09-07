@@ -24,7 +24,7 @@
 #include <ops/declarable/CustomOperations.h>  
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
-
+#if NOT_EXCLUDED(OP_yiq_to_rgb)
 namespace sd {
     namespace ops {
 
@@ -61,3 +61,5 @@ namespace sd {
          
     }
 }
+
+#endif

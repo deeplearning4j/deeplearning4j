@@ -24,7 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
-
+#if NOT_EXCLUDED(OP_rgb_to_grs)
 namespace sd {
 namespace ops {
 
@@ -74,3 +74,5 @@ DECLARE_SHAPE_FN(rgb_to_grs) {
 
 }
 }
+
+#endif

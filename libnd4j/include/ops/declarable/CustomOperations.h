@@ -69,13 +69,22 @@ namespace sd {
 
     namespace ops {
 
-        // logic ops 
+        // logic ops
+#if NOT_EXCLUDED(OP_Switch)
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
+#endif
+#if NOT_EXCLUDED(OP_While)
         DECLARE_LOGIC_OP(While);
+#endif
+#if NOT_EXCLUDED(OP_Scope)
         DECLARE_LOGIC_OP(Scope);
+#endif
+#if NOT_EXCLUDED(OP_Conditional)
         DECLARE_LOGIC_OP(Conditional);
+#endif
+#if NOT_EXCLUDED(OP_Return)
         DECLARE_LOGIC_OP(Return);
-
+#endif
 
         /**
          * This operations exposes given arguments as it's own outputs, but does it only once.
@@ -83,7 +92,9 @@ namespace sd {
          *
          * PLEASE NOTE: This operation is internal graph operation, and shouldn't be used directly usually.
          */
+#if NOT_EXCLUDED(OP_expose)
         DECLARE_CUSTOM_OP(expose, -1, -1, true, 0, 0);
+#endif
     }
 }
 

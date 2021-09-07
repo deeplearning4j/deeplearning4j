@@ -23,7 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/random_crop.h>
-
+#if NOT_EXCLUDED(OP_random_crop)
 namespace sd {
 namespace ops {
 
@@ -72,3 +72,4 @@ DECLARE_SHAPE_FN(random_crop) {
         }
 }
 }
+#endif

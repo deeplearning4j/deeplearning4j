@@ -21,10 +21,12 @@
 //
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_cholesky)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
+
+#if NOT_EXCLUDED(OP_cholesky)
+
 namespace sd {
     namespace ops {
         OP_IMPL(cholesky, 1, 1, true) {

@@ -22,6 +22,7 @@
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
+#if NOT_EXCLUDED(OP_greater)
 
 namespace sd {
     namespace ops {
@@ -50,3 +51,4 @@ namespace sd {
         }
     }
 }
+#endif

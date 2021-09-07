@@ -24,6 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/threshold.h>
 
+#if NOT_EXCLUDED(OP_encode_threshold)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(encode_threshold, 1, 2, true, 1, 0) {
@@ -104,3 +105,4 @@ namespace sd {
         }
     }
 }
+#endif

@@ -25,7 +25,7 @@
 #include <ops/declarable/headers/datatypes.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <array/NDArrayFactory.h>
-
+#if NOT_EXCLUDED(OP_compare_and_bitpack)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(compare_and_bitpack, 2, 1, false, 0, 0) {
@@ -59,3 +59,5 @@ namespace sd {
 
     }
 }
+
+#endif

@@ -110,12 +110,14 @@ namespace sd {
                         RandomLauncher::applyDropOut(block.launchContext(), block.randomGenerator(), z, prob);
                     }
                     break;
+#if NOT_EXCLUDED(OP_dropout)
                 case sd::random::DropOutInverted: {
                         auto z = OUTPUT_VARIABLE(0);
                         sd::ops::dropout op;
                         return op.execute(&block);
                     }
                     break;
+#endif
                 case sd::random::GaussianDistribution: {
                     // gaussian distribution
                     T mean, stdev;

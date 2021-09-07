@@ -24,10 +24,10 @@
 #include<ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 #include<array>
+#if NOT_EXCLUDED(OP_concat)
 
 namespace sd  {
 namespace ops {
-
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
@@ -439,3 +439,5 @@ DECLARE_SHAPE_FN(concat_bp) {
 
 }
 }
+
+#endif

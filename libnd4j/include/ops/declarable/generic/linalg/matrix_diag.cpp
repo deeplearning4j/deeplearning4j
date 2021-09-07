@@ -24,6 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
 
+#if NOT_EXCLUDED(OP_matrix_diag)
 namespace sd {
 namespace ops  {
 
@@ -67,4 +68,6 @@ DECLARE_TYPES(matrix_diag) {
 }
 }
 }
+
+#endif
 
