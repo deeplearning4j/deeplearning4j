@@ -164,7 +164,9 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     const bool betaPersent = beta;
 
     T3 sum = 0;
+#ifndef __NEC__
     PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance().elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
+#endif
     for(Nd4jLong i = 0; i < length; ++i)
             sum += X[i * incx] * Y[i * incy];
 
