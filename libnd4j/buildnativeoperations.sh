@@ -641,3 +641,9 @@ else
 eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../../..
 fi
 
+case "$OS" in
+    aurora)
+    BLAS_LIBS="/opt/nec/ve/nlc/2.3.0/lib/libcblas.a /opt/nec/ve/nlc/2.3.0/lib/libblas_openmp.a -fopenmp"
+    /opt/nec/ve/bin/mk_veorun_static -o blasbuild/aurora/blas/nd4jaurora blasbuild/aurora/blas/libnd4jaurorastatic.a $BLAS_LIBS
+    ;;
+esac
