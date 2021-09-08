@@ -21,7 +21,7 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 
 
-if (SD_CUDA)
+if (SD_CUDA and NOT SD_AURORA)
     message("Enabling cuda")
     enable_language(CUDA)
 
