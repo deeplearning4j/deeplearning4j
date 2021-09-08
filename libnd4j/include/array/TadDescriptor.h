@@ -42,11 +42,15 @@ namespace sd {
         ~TadDescriptor() = default;
 
         // we use default copy assignment operator
-        TadDescriptor& operator=(const TadDescriptor& other) = default;
+#ifndef __NEC__
 
+            TadDescriptor& operator=(const TadDescriptor& other) = default;
+#endif
         // we use default move assignment operator
-        TadDescriptor& operator=(TadDescriptor&& other) noexcept = default;
+#ifndef __NEC__
 
+            TadDescriptor& operator=(TadDescriptor&& other) noexcept = default;
+#endif
         // equal to operator
         bool operator==(const TadDescriptor &other) const;
 
