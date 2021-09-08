@@ -101,6 +101,8 @@ IF(${SD_ARCH} MATCHES "armv8")
     set(ARCH_TUNE "-march=${SD_ARCH}")
 ELSEIF(${SD_ARCH} MATCHES "armv7")
     set(ARCH_TUNE "-march=${SD_ARCH} -mfpu=neon ")
+ELSEIF(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
+    set_source_files_properties(../include/graph/impl/GraphHolder.cpp PROPERTIES COMPILE_FLAGS -g0)
 ELSEIF(${SD_ARCH} MATCHES "power*")
     set(ARCH_TUNE "-mcpu=${SD_ARCH} -mtune=${SD_ARCH} -D__POWER")
 ELSEIF(${SD_EXTENSION} MATCHES "avx2")
@@ -143,7 +145,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
     set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
     # using GCC
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fmax-errors=2 ")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/")
