@@ -212,6 +212,7 @@ case "$OS" in
       BUILD_PATH=""
       export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/aurora.cmake -DSD_AURORA_BUILD=true"
     ;;
+
     linux-armhf)
       if [ -z "$ARCH" ]; then
         ARCH="armv7-a"

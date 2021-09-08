@@ -22,6 +22,7 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 
 if (SD_CUDA)
+    message("Enabling cuda")
     enable_language(CUDA)
 
     if(${SD_ARCH} MATCHES "armv8-a")
