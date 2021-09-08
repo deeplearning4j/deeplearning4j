@@ -18,6 +18,9 @@ option(SD_SANITIZE "Enable Address Sanitizer" ON)
 
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+
+
+
 if (SD_CUDA)
     enable_language(CUDA)
 
