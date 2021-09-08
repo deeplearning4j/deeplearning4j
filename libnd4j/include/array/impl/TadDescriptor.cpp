@@ -25,7 +25,7 @@
 #include "../TadDescriptor.h"
 
 namespace sd {
-#ifdef __NEC__
+#ifndef __NEC__
     //already defined for NEC compiler
     TadDescriptor::TadDescriptor(const TadDescriptor &other) {
         _originalShape = other._originalShape;
