@@ -25,12 +25,14 @@
 #include "../TadDescriptor.h"
 
 namespace sd {
+#ifdef __NEC__
+    //already defined for NEC compiler
     TadDescriptor::TadDescriptor(const TadDescriptor &other) {
         _originalShape = other._originalShape;
         _axis = other._axis;
         _unitiesInShape = other._unitiesInShape;
     }
-
+#endif
     TadDescriptor::TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length, const bool keepUnitiesInShape) {
         ShapeDescriptor descriptor(originalShape);
 
