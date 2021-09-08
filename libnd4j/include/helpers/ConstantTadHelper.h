@@ -37,7 +37,6 @@
 namespace sd {
     class ND4J_EXPORT ConstantTadHelper {
     private:
-        static ConstantTadHelper *_INSTANCE;
         std::mutex _mutex;
         std::vector<MAP_IMPL<TadDescriptor, TadPack>> _cache;
 

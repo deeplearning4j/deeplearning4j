@@ -181,7 +181,8 @@ namespace samediff {
          * PLEASE NOTE: this function can use smaller number of threads than requested.
          *
         */
-        static int parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, bool adjust = true, size_t type_size = sizeof(float), uint32_t req_numThreads = sd::Environment::getInstance()->maxMasterThreads());
+        static int  parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, size_t type_size = sizeof(float), uint32_t req_numThreads = sd::Environment::getInstance().maxMasterThreads());
+
     };
 }
 
