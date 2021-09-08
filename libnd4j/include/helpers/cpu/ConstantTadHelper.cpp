@@ -36,9 +36,11 @@ namespace sd {
         _cache.emplace_back(pack);
     }
 
-    ConstantTadHelper& ConstantTadHelper::getInstance() {
-      static ConstantTadHelper instance;
-      return instance;
+    ConstantTadHelper* ConstantTadHelper::getInstance() {
+        if (!_INSTANCE)
+            _INSTANCE = new ConstantTadHelper();
+
+        return _INSTANCE;
     }
 
     TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int dimension, const bool keepUnitiesInShape) {

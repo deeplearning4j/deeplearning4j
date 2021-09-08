@@ -97,7 +97,15 @@ namespace samediff {
     };
 
     class ND4J_EXPORT Threads {
-    public:
+
+        #ifdef _OPENMP
+                    public:
+            static std::mutex gThreadmutex;
+            static uint64_t _nFreeThreads;
+            static bool   tryAcquire(int numThreads);
+            static bool   freeThreads(int numThreads);
+        #endif
+        public:
         /**
          * This function executes 1 dimensional loop for a given number of threads
          * PLEASE NOTE: this function can use smaller number of threads than requested.
@@ -173,8 +181,7 @@ namespace samediff {
          * PLEASE NOTE: this function can use smaller number of threads than requested.
          *
         */
-        static int  parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, size_t type_size = sizeof(float), uint32_t req_numThreads = sd::Environment::getInstance().maxMasterThreads());
-
+        static int parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, bool adjust = true, size_t type_size = sizeof(float), uint32_t req_numThreads = sd::Environment::getInstance()->maxMasterThreads());
     };
 }
 
