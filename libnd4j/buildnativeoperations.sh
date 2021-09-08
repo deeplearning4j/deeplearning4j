@@ -461,14 +461,14 @@ fi
 
 if [ "$CHIP" == "cpu" ]; then
     BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
-else
+elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 fi
 
 if [ -z "$NAME" ]; then
     if [ "$CHIP" == "cpu" ]; then
         NAME="nd4jcpu"
-    else
+    elif [ "$CHIP" == "cuda" ]; then
         NAME="nd4jcuda"
     fi
 fi
