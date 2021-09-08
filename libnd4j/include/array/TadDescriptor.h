@@ -38,7 +38,6 @@ namespace sd {
             public:
             explicit TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length, const bool keepUnitiesInShape = false);
             explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
-            explicit TadDescriptor(const TadDescriptor &other);
             ~TadDescriptor() = default;
 
             // we use default copy assignment operator
@@ -46,7 +45,7 @@ namespace sd {
             TadDescriptor& operator=(const TadDescriptor& other) = default;
             // we use default move assignment operator
             TadDescriptor& operator=(TadDescriptor&& other) noexcept = default;
-
+            explicit TadDescriptor(const TadDescriptor &other);
 #endif
 
 #ifdef __NEC__
