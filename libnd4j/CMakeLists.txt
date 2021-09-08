@@ -226,9 +226,31 @@ endif()
 if(NOT SD_CUDA)
     # we need this definition to avoid global memory use within onednn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
+    if (SD_AURORA_BUILD)
+        include_directories("/opt/nec/ve/nlc/2.3.0/include")
+        link_directories("/opt/nec/ve/nlc/2.3.0/lib/")
 
+        # FIXME: we don't want sequential version in master
+        SET(BLAS_LIBNAME "blas_openmp")
+        SET(CBLAS_LIBNAME "cblas")
+
+        find_library(BLAS_LIBRARY ${BLAS_LIBNAME}
+                HINTS /opt/nec/ve/nlc/2.3.0
+                PATH_SUFFIXES lib)
+
+        find_library(CBLAS_LIBRARY ${CBLAS_LIBNAME}
+                HINTS /opt/nec/ve/nlc/2.3.0
+                PATH_SUFFIXES lib)
+
+        if (BLAS_LIBRARY)
+            set(HAVE_OPENBLAS 1)
+            set(BLAS_LIBRARIES ${CBLAS_LIBRARY} ${BLAS_LIBRARY})
+            add_definitions(-D__EXTERNAL_BLAS__=true)
+        else()
+            message(FATAL_ERROR "Unable to find BLAS")
+        endif()
     # there's a chance, we have no BLAS provided externally
-    if ("${OPENBLAS_PATH}" STREQUAL "")
+    elseif ("${OPENBLAS_PATH}" STREQUAL "")
         #we don't want OpenBLAS on Apple
         if (NOT APPLE)
             # note: this is not a typo
