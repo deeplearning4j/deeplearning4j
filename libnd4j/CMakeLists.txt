@@ -31,6 +31,8 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
         set(CMAKE_CXX_STANDARD 17)
         set(CMAKE_CUDA_STANDARD 17)
+    else()
+        set(CMAKE_CXX_STANDARD 11)
     endif()
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 else()
@@ -51,17 +53,6 @@ else()
 
 
 
-    if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
-        message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
-        set(CMAKE_CXX_STANDARD 17)
-        set(CMAKE_CUDA_STANDARD 17)
-    else()
-        set(CMAKE_CXX_STANDARD 11)
-        message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
-
-    endif()
-else()
-set(CMAKE_CXX_STANDARD 11)
 
 endif()
 
@@ -94,69 +85,69 @@ set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
 
 
 function(genCompilation FILE_ITEM)
-get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
+    get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
 
-set(EXTENSION "cpp")
+    set(EXTENSION "cpp")
 
-if(FL_ITEM MATCHES "cu.in$")
-set(EXTENSION "cu")
-endif()
+    if(FL_ITEM MATCHES "cu.in$")
+        set(EXTENSION "cu")
+    endif()
 
-file(READ ${FL_ITEM} CONTENT_FL)
-#check content for types
+    file(READ ${FL_ITEM} CONTENT_FL)
+    #check content for types
 
-#set all to false
-set (FLOAT_TYPE_GEN     0)
-set (INT_TYPE_GEN       0)
-set (LIBND4J_TYPE_GEN   0)
-set (PAIRWISE_TYPE_GEN  0)
-set (RANGE_STOP         -1)
+    #set all to false
+    set (FLOAT_TYPE_GEN     0)
+    set (INT_TYPE_GEN       0)
+    set (LIBND4J_TYPE_GEN   0)
+    set (PAIRWISE_TYPE_GEN  0)
+    set (RANGE_STOP         -1)
 
-string(REGEX MATCHALL "#cmakedefine[ \t]+[^_]+_TYPE_GEN" TYPE_MATCHES ${CONTENT_FL})
+    string(REGEX MATCHALL "#cmakedefine[ \t]+[^_]+_TYPE_GEN" TYPE_MATCHES ${CONTENT_FL})
 
-foreach(TYPEX ${TYPE_MATCHES})
-set(STOP -1)
-if(TYPEX MATCHES "INT_TYPE_GEN$")
-set (INT_TYPE_GEN  1)
-set(STOP 7)
-endif()
-if(TYPEX MATCHES "LIBND4J_TYPE_GEN$")
-set (LIBND4J_TYPE_GEN 1)
-set(STOP 9)
-endif()
-if(TYPEX MATCHES "FLOAT_TYPE_GEN$")
-set (FLOAT_TYPE_GEN 1)
-set(STOP 3)
-endif()
-if(TYPEX MATCHES "PAIRWISE_TYPE_GEN$")
-set (PAIRWISE_TYPE_GEN  1)
-set(STOP 12)
-endif()
-if(STOP GREATER RANGE_STOP)
-set(RANGE_STOP ${STOP})
-endif()
+    foreach(TYPEX ${TYPE_MATCHES})
+        set(STOP -1)
+        if(TYPEX MATCHES "INT_TYPE_GEN$")
+            set (INT_TYPE_GEN  1)
+            set(STOP 7)
+        endif()
+        if(TYPEX MATCHES "LIBND4J_TYPE_GEN$")
+            set (LIBND4J_TYPE_GEN 1)
+            set(STOP 9)
+        endif()
+        if(TYPEX MATCHES "FLOAT_TYPE_GEN$")
+            set (FLOAT_TYPE_GEN 1)
+            set(STOP 3)
+        endif()
+        if(TYPEX MATCHES "PAIRWISE_TYPE_GEN$")
+            set (PAIRWISE_TYPE_GEN  1)
+            set(STOP 12)
+        endif()
+        if(STOP GREATER RANGE_STOP)
+            set(RANGE_STOP ${STOP})
+        endif()
 
-endforeach()
+    endforeach()
 
-if(RANGE_STOP GREATER -1)
-foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
-# set OFF if the index is above
-if(FL_TYPE_INDEX GREATER 3)
-set (FLOAT_TYPE_GEN     0)
-endif()
-if(FL_TYPE_INDEX GREATER 7)
-set (INT_TYPE_GEN     0)
-endif()
-if(FL_TYPE_INDEX GREATER 9)
-set (LIBND4J_TYPE_GEN   0)
-endif()
-set(GENERATED_SOURCE  "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
-configure_file(  "${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
-LIST(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE} )
-endforeach()
-endif()
+    if(RANGE_STOP GREATER -1)
+        foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
+            # set OFF if the index is above
+            if(FL_TYPE_INDEX GREATER 3)
+                set (FLOAT_TYPE_GEN     0)
+            endif()
+            if(FL_TYPE_INDEX GREATER 7)
+                set (INT_TYPE_GEN     0)
+            endif()
+            if(FL_TYPE_INDEX GREATER 9)
+                set (LIBND4J_TYPE_GEN   0)
+            endif()
+            set(GENERATED_SOURCE  "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
+            configure_file(  "${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
+            LIST(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE} )
+        endforeach()
+    endif()
 
-set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
+    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 endfunction()
 
 
@@ -167,168 +158,168 @@ set(MSVC_RT_LIB "MultiThreadedDLL")
 set(SD_X86_BUILD false)
 
 if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*" AND NOT SD_AURORA)
-set(SD_X86_BUILD true)
+    set(SD_X86_BUILD true)
 endif()
 
 # -fsanitize=address
 # -fsanitize=leak
 if (SD_AURORA)
-message("Aurora build in process")
-set(SD_X86_BUILD false)
-set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O3 -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
-set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
+    message("Aurora build in process")
+    set(SD_X86_BUILD false)
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O3 -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
 elseif (SD_ANDROID_BUILD)
-set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
-set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
-set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+    set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
-set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
-set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
-set(SD_X86_BUILD true)
-if (SD_CUDA)
-set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
-set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
-else()
-set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
-set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
-endif()
+    set(SD_X86_BUILD true)
+    if (SD_CUDA)
+        set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
+    endif()
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
-set(CMAKE_CXX_FLAGS_RELEASE  "-w -O3 -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
-set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O0 -fPIC -fno-openmp -fassociative-math")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-w -O3 -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O0 -fPIC -fno-openmp -fassociative-math")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
 
-set(HAVE_OPENBLAS 1)
-include_directories(/opt/nec/ve/nlc/2.3.0/include/)
-link_directories(/opt/nec/ve/nlc/2.3.0/lib/)
-string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-if(UPPERCASE_CMAKE_BUILD_TYPE MATCHES RELEASE)
-set(OPENBLAS_LIBRARIES cblas blas_openmp)
+    set(HAVE_OPENBLAS 1)
+    include_directories(/opt/nec/ve/nlc/2.3.0/include/)
+    link_directories(/opt/nec/ve/nlc/2.3.0/lib/)
+    string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
+    if(UPPERCASE_CMAKE_BUILD_TYPE MATCHES RELEASE)
+        set(OPENBLAS_LIBRARIES cblas blas_openmp)
+    else()
+        set(OPENBLAS_LIBRARIES cblas blas_sequential)
+    endif()
 else()
-set(OPENBLAS_LIBRARIES cblas blas_sequential)
-endif()
-else()
-set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
-set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
-if (SD_CPU AND SD_SANITIZE)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
-endif()
+    if (SD_CPU AND SD_SANITIZE)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+    endif()
 endif()
 
 if(SD_NATIVE)
-IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
-set(SD_X86_BUILD false)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
-ELSE()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-ENDIF()
+    IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+        set(SD_X86_BUILD false)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
+    ELSE()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    ENDIF()
 endif()
 
 
 
 
 if(NOT SD_CUDA)
-# we need this definition to avoid global memory use within onednn
-add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
-if (SD_AURORA)
-include_directories("/opt/nec/ve/nlc/2.3.0/include")
-link_directories("/opt/nec/ve/nlc/2.3.0/lib/")
+    # we need this definition to avoid global memory use within onednn
+    add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
+    if (SD_AURORA)
+        include_directories("/opt/nec/ve/nlc/2.3.0/include")
+        link_directories("/opt/nec/ve/nlc/2.3.0/lib/")
 
-# FIXME: we don't want sequential version in master
-SET(BLAS_LIBNAME "blas_openmp")
-SET(CBLAS_LIBNAME "cblas")
+        # FIXME: we don't want sequential version in master
+        SET(BLAS_LIBNAME "blas_openmp")
+        SET(CBLAS_LIBNAME "cblas")
 
-find_library(BLAS_LIBRARY ${BLAS_LIBNAME}
-HINTS /opt/nec/ve/nlc/2.3.0
-PATH_SUFFIXES lib)
+        find_library(BLAS_LIBRARY ${BLAS_LIBNAME}
+                HINTS /opt/nec/ve/nlc/2.3.0
+                PATH_SUFFIXES lib)
 
-find_library(CBLAS_LIBRARY ${CBLAS_LIBNAME}
-HINTS /opt/nec/ve/nlc/2.3.0
-PATH_SUFFIXES lib)
+        find_library(CBLAS_LIBRARY ${CBLAS_LIBNAME}
+                HINTS /opt/nec/ve/nlc/2.3.0
+                PATH_SUFFIXES lib)
 
-if (BLAS_LIBRARY)
-set(HAVE_OPENBLAS 1)
-set(BLAS_LIBRARIES ${CBLAS_LIBRARY} ${BLAS_LIBRARY})
-add_definitions(-D__EXTERNAL_BLAS__=true)
-else()
-message(FATAL_ERROR "Unable to find BLAS")
-endif()
-# there's a chance, we have no BLAS provided externally
-elseif ("${OPENBLAS_PATH}" STREQUAL "")
-#we don't want OpenBLAS on Apple
-if (NOT APPLE)
-# note: this is not a typo
-set(BLA_VENDOR "OpenBLAS")
-endif()
+        if (BLAS_LIBRARY)
+            set(HAVE_OPENBLAS 1)
+            set(BLAS_LIBRARIES ${CBLAS_LIBRARY} ${BLAS_LIBRARY})
+            add_definitions(-D__EXTERNAL_BLAS__=true)
+        else()
+            message(FATAL_ERROR "Unable to find BLAS")
+        endif()
+        # there's a chance, we have no BLAS provided externally
+    elseif ("${OPENBLAS_PATH}" STREQUAL "")
+        #we don't want OpenBLAS on Apple
+        if (NOT APPLE)
+            # note: this is not a typo
+            set(BLA_VENDOR "OpenBLAS")
+        endif()
 
-# look around for system blas instead, see: https://cmake.org/cmake/help/latest/module/FindBLAS.html
-find_package(BLAS REQUIRED)
-if (BLAS_FOUND)
-message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
-add_definitions(-D__EXTERNAL_BLAS__=true)
-endif()
-else()
-# if we have externally provided OPENBLAS_PATH - let's use it
-set(HAVE_OPENBLAS 1)
-message("Setting openblas")
-include_directories(${OPENBLAS_PATH}/include/)
-link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
-set(OPENBLAS_LIBRARIES openblas)
-endif()
+        # look around for system blas instead, see: https://cmake.org/cmake/help/latest/module/FindBLAS.html
+        find_package(BLAS REQUIRED)
+        if (BLAS_FOUND)
+            message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
+            add_definitions(-D__EXTERNAL_BLAS__=true)
+        endif()
+    else()
+        # if we have externally provided OPENBLAS_PATH - let's use it
+        set(HAVE_OPENBLAS 1)
+        message("Setting openblas")
+        include_directories(${OPENBLAS_PATH}/include/)
+        link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
+        set(OPENBLAS_LIBRARIES openblas)
+    endif()
 
-# building cpu_features
-if (SD_X86_BUILD)
-add_definitions(-DCPU_FEATURES=true)
-set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
-configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
-message("CMAKE_COMMAND: ${CMAKE_COMMAND}")
-execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON -G "${CMAKE_GENERATOR}" .
-RESULT_VARIABLE result
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
+    # building cpu_features
+    if (SD_X86_BUILD)
+        add_definitions(-DCPU_FEATURES=true)
+        set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
+        configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
+        message("CMAKE_COMMAND: ${CMAKE_COMMAND}")
+        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON -G "${CMAKE_GENERATOR}" .
+                RESULT_VARIABLE result
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
 
-if(result)
-message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} --build .
-RESULT_VARIABLE result
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-if(result)
-message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
-endif()
+        if(result)
+            message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
+        endif()
+        execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                RESULT_VARIABLE result
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
+        if(result)
+            message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
+        endif()
 
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
-${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
-EXCLUDE_FROM_ALL)
-set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
-include_directories(${CPUF_SOURCE_DIR}/include)
-set(CPU_FEATURES cpu_features)
-endif()
+        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
+                ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
+                EXCLUDE_FROM_ALL)
+        set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
+        include_directories(${CPUF_SOURCE_DIR}/include)
+        set(CPU_FEATURES cpu_features)
+    endif()
 endif()
 
 
 #arm-compute entry
 if(${HELPERS_armcompute})
-find_package(ARMCOMPUTE REQUIRED)
-execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE ld_version)
-if ("${ld_version}" MATCHES "GNU gold")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold ")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-add_link_options("-Wl,--long-plt")
-endif()
-endif()
+    find_package(ARMCOMPUTE REQUIRED)
+    execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE ld_version)
+    if ("${ld_version}" MATCHES "GNU gold")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold ")
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+            add_link_options("-Wl,--long-plt")
+        endif()
+    endif()
 
-if(ARMCOMPUTE_FOUND)
-message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
-set(HAVE_ARMCOMPUTE 1)
-# Add preprocessor definition for ARM Compute NEON
-add_definitions(-DARMCOMPUTENEON_ENABLED)
-include_directories(${ARMCOMPUTE_INCLUDE})
-message("----${ARMCOMPUTE_INCLUDE}---")
-endif()
+    if(ARMCOMPUTE_FOUND)
+        message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
+        set(HAVE_ARMCOMPUTE 1)
+        # Add preprocessor definition for ARM Compute NEON
+        add_definitions(-DARMCOMPUTENEON_ENABLED)
+        include_directories(${ARMCOMPUTE_INCLUDE})
+        message("----${ARMCOMPUTE_INCLUDE}---")
+    endif()
 
 
 endif()
@@ -337,99 +328,99 @@ endif()
 
 # new one-dnn entry
 if (${HELPERS_onednn})
-message("Going to pull & build onednn")
-set(HAVE_ONEDNN 1)
-set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
+    message("Going to pull & build onednn")
+    set(HAVE_ONEDNN 1)
+    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
-configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-RESULT_VARIABLE result
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
-if(result)
-message(FATAL_ERROR "CMake step for onednn failed: ${result}")
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} --build .
-RESULT_VARIABLE result
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
-if(result)
-message(FATAL_ERROR "Build step for onednn failed: ${result}")
-endif()
+    configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
+    if(result)
+        message(FATAL_ERROR "CMake step for onednn failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
+    if(result)
+        message(FATAL_ERROR "Build step for onednn failed: ${result}")
+    endif()
 
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/onednn-src
-${CMAKE_CURRENT_BINARY_DIR}/onednn-build
-EXCLUDE_FROM_ALL)
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/onednn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/onednn-build
+            EXCLUDE_FROM_ALL)
 
-set(onednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-build)
-set(onednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-src)
-set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
-include_directories(${onednn_SOURCE_DIR}/include ${onednn_EXT_DIR}/include ${onednn_SOURCE_DIR})
-set(ONEDNN dnnl)
+    set(onednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-build)
+    set(onednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-src)
+    set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
+    include_directories(${onednn_SOURCE_DIR}/include ${onednn_EXT_DIR}/include ${onednn_SOURCE_DIR})
+    set(ONEDNN dnnl)
 endif()
 
 
 if (${HELPERS_cudnn})
-if (NOT SD_CUDA)
-message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
-endif()
+    if (NOT SD_CUDA)
+        message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
+    endif()
 
-#set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
+    #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
-SET(CUDNN_LIBNAME "cudnn")
+    SET(CUDNN_LIBNAME "cudnn")
 
-if(DEFINED ENV{CUDNN_ROOT_DIR})
-message("Using cudnn root directory from environment")
-set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
-endif()
-if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
-message("Using cuda root directory from environment")
-set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
-endif()
-message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
-find_path(CUDNN_INCLUDE_DIR cudnn.h
-HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-PATH_SUFFIXES cuda/include include)
-
-
-
-find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
-HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
+    if(DEFINED ENV{CUDNN_ROOT_DIR})
+        message("Using cudnn root directory from environment")
+        set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
+    endif()
+    if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
+        message("Using cuda root directory from environment")
+        set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
+    endif()
+    message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
+    find_path(CUDNN_INCLUDE_DIR cudnn.h
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+            PATH_SUFFIXES cuda/include include)
 
 
-#find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
-#        HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-#        PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+
+    find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
 
 
-if (CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
-message("CUDNN include dir is ${CUDNN_INCLUDE_DIR}")
-include_directories(${CUDNN_INCLUDE_DIR})
-set(HAVE_CUDNN true)
-set(CUDNN ${CUDNN_LIBRARY})
-else()
-message(FATAL_ERROR "Unable to find cuDNN, no library found. Please ensure cudnn is installed under the cuda toolkit directory.")
-endif()
+    #find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
+    #        HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+    #        PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+
+
+    if (CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
+        message("CUDNN include dir is ${CUDNN_INCLUDE_DIR}")
+        include_directories(${CUDNN_INCLUDE_DIR})
+        set(HAVE_CUDNN true)
+        set(CUDNN ${CUDNN_LIBRARY})
+    else()
+        message(FATAL_ERROR "Unable to find cuDNN, no library found. Please ensure cudnn is installed under the cuda toolkit directory.")
+    endif()
 endif()
 
 # Download and unpack flatbuffers at configure time
 configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-RESULT_VARIABLE result
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
 if(result)
-message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
+    message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} --build .
-RESULT_VARIABLE result
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
 if(result)
-message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+    message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
 endif()
 
 # Add flatbuffers directly to our build.
 add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
-${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
-EXCLUDE_FROM_ALL)
+        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+        EXCLUDE_FROM_ALL)
 
 set(HAVE_FLATBUFFERS 1)
 set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
@@ -444,15 +435,15 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_subdirectory(blas)
 if(SD_BUILD_TESTS)
-# tests are always compiled with all ops included
-set(SD_ALL_OPS true)
-set(SD_BUILD_MINIFIER true)
-add_subdirectory(tests_cpu)
+    # tests are always compiled with all ops included
+    set(SD_ALL_OPS true)
+    set(SD_BUILD_MINIFIER true)
+    add_subdirectory(tests_cpu)
 endif()
 
 
 if (MSVC_DEV)
-set(SD_BUILD_MINIFIER false)
+    set(SD_BUILD_MINIFIER false)
 endif ()
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
@@ -480,44 +471,44 @@ execute_process(COMMAND uname -i OUTPUT_VARIABLE ARCHITECTURE)
 # Set package name and type (deb vs rpm)
 if(DISTRIBUTION STREQUAL "Ubuntu")
 
-# Set Ubuntu-specific information (see http://www.cmake.org/Wiki/CMake:CPackPackageGenerators)
-if(ARCHITECTURE MATCHES ".*x86_64.*")
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-else()
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
-endif()
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "raver119")
-set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
-# For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
-# Build deps: libatlas3-base liblapack3 libopenblas-dev libatlas-dev liblapack-dev gcc-5 g++-5
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/eclipse/deeplearning4j")
-set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
-set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
+    # Set Ubuntu-specific information (see http://www.cmake.org/Wiki/CMake:CPackPackageGenerators)
+    if(ARCHITECTURE MATCHES ".*x86_64.*")
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    else()
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+    endif()
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "raver119")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
+    # For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
+    # Build deps: libatlas3-base liblapack3 libopenblas-dev libatlas-dev liblapack-dev gcc-5 g++-5
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/eclipse/deeplearning4j")
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
 
 elseif(DISTRIBUTION STREQUAL "CentOS")
 
-# Set Fedora-specific information (see http://www.cmake.org/Wiki/CMake:CPackPackageGenerators)
-execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
-if(ARCHITECTURE MATCHES ".*x86_64.*")
-set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
-else()
-set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
-endif()
-set(CPACK_PACKAGE_CONTACT "agibsonccc")
-set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
-set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
-set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
-# Build deps: atlas blas lapack cmake3 devtoolset-4-gcc devtoolset-4-gcc-c++
-set(CPACK_RPM_PACKAGE_REQUIRES "")
-set(CPACK_RPM_PACKAGE_URL "https://github.com/eclipse/deeplearning4j/libnd4j")
-set(CPACK_GENERATOR "RPM")
-set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
-set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
-set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
-set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib")
+    # Set Fedora-specific information (see http://www.cmake.org/Wiki/CMake:CPackPackageGenerators)
+    execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(ARCHITECTURE MATCHES ".*x86_64.*")
+        set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+    else()
+        set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
+    endif()
+    set(CPACK_PACKAGE_CONTACT "agibsonccc")
+    set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
+    set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
+    set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
+    # Build deps: atlas blas lapack cmake3 devtoolset-4-gcc devtoolset-4-gcc-c++
+    set(CPACK_RPM_PACKAGE_REQUIRES "")
+    set(CPACK_RPM_PACKAGE_URL "https://github.com/eclipse/deeplearning4j/libnd4j")
+    set(CPACK_GENERATOR "RPM")
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
+    set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
+    set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
+    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib")
 
 endif()
 
