@@ -94,7 +94,7 @@ namespace helpers {
         if (inEWS == 1) {
             for (Nd4jLong i = 0; i < length; i++)
                 max = sd::math::nd4j_max<T>(max, inBuff[i]);
-#ifdef __NEC__
+#ifndef __NEC__
             PRAGMA_OMP_SIMD_SUM(sum)
 #endif
             for (Nd4jLong i = 0; i < length; i++) {
