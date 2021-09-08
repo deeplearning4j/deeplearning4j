@@ -21,6 +21,7 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 if(SD_AURORA)
     set(SD_CUDA false)
+    set(CMAKE_CXX_STANDARD 11)
 endif()
 
 if (SD_CUDA AND NOT SD_AURORA)
