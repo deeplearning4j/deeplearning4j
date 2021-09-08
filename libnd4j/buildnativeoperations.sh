@@ -462,6 +462,8 @@ fi
 
 if [ "$CHIP" == "cpu" ]; then
     BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
+elif [ "$CHIP" == "aurora" ]; then
+    BLAS_ARG="-DSD_AURORA=true -DBLAS=TRUE"
 elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 fi
