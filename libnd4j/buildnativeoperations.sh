@@ -210,7 +210,7 @@ case "$OS" in
       BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
       SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=ON"
       BUILD_PATH=""
-      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/aurora.cmake -DSD_AURORA_BUILD=true"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/aurora.cmake -DSD_AURORA=true"
     ;;
 
     linux-armhf)
