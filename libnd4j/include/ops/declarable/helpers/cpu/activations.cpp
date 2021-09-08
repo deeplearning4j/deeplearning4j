@@ -94,8 +94,9 @@ namespace helpers {
         if (inEWS == 1) {
             for (Nd4jLong i = 0; i < length; i++)
                 max = sd::math::nd4j_max<T>(max, inBuff[i]);
-
+#ifdef __NEC__
             PRAGMA_OMP_SIMD_SUM(sum)
+#endif
             for (Nd4jLong i = 0; i < length; i++) {
                 outBuff[i] = sd::math::nd4j_exp<T,T>(inBuff[i] - max);
                 sum += outBuff[i];
@@ -108,12 +109,14 @@ namespace helpers {
             }
         }
         else if (inEWS > 1) {
-
+#ifndef __NEC__
             PRAGMA_OMP_SIMD_MAX(max)
+#endif
             for (Nd4jLong i = 0; i < length; i++)
                 max = sd::math::nd4j_max<T>(max, inBuff[i * inEWS]);
-
+#ifndef __NEC__
             PRAGMA_OMP_SIMD_SUM(sum)
+#endif
             for (Nd4jLong i = 0; i < length; i++) {
                 outBuff[i * inEWS] = sd::math::nd4j_exp<T,T>(inBuff[i * inEWS] - max);
                 sum += outBuff[i * inEWS];
