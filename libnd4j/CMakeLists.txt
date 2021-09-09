@@ -227,6 +227,7 @@ if(NOT SD_CUDA)
     # we need this definition to avoid global memory use within onednn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
     if (SD_AURORA)
+        message("In aurora using NLC ROOT $ENV{NLC_ROOT}")
         include_directories("$ENV{NLC_ROOT}/include")
         link_directories("$ENV{NLC_ROOT}/lib/")
 
