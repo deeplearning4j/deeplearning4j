@@ -25,7 +25,7 @@
 #include <loops/cpu/reduce3.hpp>
 #cmakedefine  LIBND4J_TYPE_GEN
 namespace functions {
-    namespace reduce3 {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES_0);
-    }
+        namespace reduce3 {
+            BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES_0);
+        }
 }
