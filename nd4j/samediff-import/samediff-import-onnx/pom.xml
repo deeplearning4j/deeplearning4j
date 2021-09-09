@@ -52,13 +52,6 @@
 
 
   <dependencies>
-
-    <dependency>
-      <groupId>org.bytedeco</groupId>
-      <artifactId>onnx-platform</artifactId>
-      <version>${onnx.javacpp.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-common-tests</artifactId>

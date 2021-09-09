@@ -211,7 +211,7 @@
         <numpy.version>1.21.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
         <onnx.version>1.9.0</onnx.version>
-        <onnx.javacpp.version>${onnx.javacpp.version}-${javacpp-presets.version}</onnx.javacpp.version>
+        <onnx.javacpp.version>${onnx.version}-${javacpp-presets.version}</onnx.javacpp.version>
         <openblas.version>0.3.17</openblas.version>
         <mkl.version>2021.3</mkl.version>
         <opencv.version>4.5.3</opencv.version>
