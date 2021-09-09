@@ -169,8 +169,8 @@ if (SD_AURORA)
     set(SD_X86_BUILD false)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O3 -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
 elseif (SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
@@ -190,12 +190,12 @@ elseif(WIN32)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
     set(CMAKE_CXX_FLAGS_RELEASE  "-w -O3 -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O0 -fPIC -fno-openmp -fassociative-math")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.3.0/lib/")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
 
     set(HAVE_OPENBLAS 1)
-    include_directories(/opt/nec/ve/nlc/2.3.0/include/)
-    link_directories(/opt/nec/ve/nlc/2.3.0/lib/)
+    include_directories($ENV{NLC_ROOT}/include/)
+    link_directories($ENV{NLC_ROOT}/lib/)
     string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
     if(UPPERCASE_CMAKE_BUILD_TYPE MATCHES RELEASE)
         set(OPENBLAS_LIBRARIES cblas blas_openmp)
@@ -227,19 +227,19 @@ if(NOT SD_CUDA)
     # we need this definition to avoid global memory use within onednn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
     if (SD_AURORA)
-        include_directories("/opt/nec/ve/nlc/2.3.0/include")
-        link_directories("/opt/nec/ve/nlc/2.3.0/lib/")
+        include_directories("$ENV{NLC_ROOT}/include")
+        link_directories("$ENV{NLC_ROOT}/lib/")
 
         # FIXME: we don't want sequential version in master
         SET(BLAS_LIBNAME "blas_openmp")
         SET(CBLAS_LIBNAME "cblas")
 
         find_library(BLAS_LIBRARY ${BLAS_LIBNAME}
-                HINTS /opt/nec/ve/nlc/2.3.0
+                HINTS $ENV{NLC_ROOT}
                 PATH_SUFFIXES lib)
 
         find_library(CBLAS_LIBRARY ${CBLAS_LIBNAME}
-                HINTS /opt/nec/ve/nlc/2.3.0
+                HINTS $ENV{NLC_ROOT}
                 PATH_SUFFIXES lib)
 
         if (BLAS_LIBRARY)
