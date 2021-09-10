@@ -58,6 +58,8 @@
         <module>deeplearning4j</module>
         <module>python4j</module>
         <module>rl4j</module>
+        <module>nd4j-aurora</module>
+        <module>nd4j-aurora-presets</module>
     </modules>
 
     <scm>
