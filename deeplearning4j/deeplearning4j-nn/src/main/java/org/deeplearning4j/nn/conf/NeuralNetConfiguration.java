@@ -329,6 +329,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                     .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
                     .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
+                    .overrideNinUponBuild(overrideNinUponBuild)
                     .dataType(globalConfig.dataType)
                     .build();
         }
