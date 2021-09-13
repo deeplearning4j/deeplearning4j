@@ -1263,16 +1263,14 @@
                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
 
-#if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
-#define NOT_EXCLUDED(NAME) (defined(NAME) || SD_ALL_OPS == true)
-#else
-#define NOT_EXCLUDED(NAME) (defined(NAME) || SD_ALL_OPS == true)
+#define NOT_EXCLUDED(NAME) (defined(NAME) || defined(SD_ALL_OPS))
+
+#ifdef  SD_ALL_OPS
+#pragma message ( "ALL OPS ARE DEFINED" )
 #endif
 
-#ifdef __JAVACPP_HACK__
-#define REGISTER_H(NAME)
-#elif SD_ALL_OPS == true
-#define REGISTER_H(NAME)
+#if defined(__JAVACPP_HACK__) || defined(SD_ALL_OPS)
+     #define REGISTER_H(NAME)
 #else
 #define REGISTER_H(NAME)  template <typename OpName>  \
                         struct __registrator_##NAME {\
@@ -1284,7 +1282,7 @@
                         static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
 #endif
 
-#ifdef __JAVACPP_HACK__
+#if defined(__JAVACPP_HACK__)
 #define REGISTER_C(NAME)
 #elif defined(SD_ALL_OPS)
 #define REGISTER_C(NAME)   template <typename OpName>  \

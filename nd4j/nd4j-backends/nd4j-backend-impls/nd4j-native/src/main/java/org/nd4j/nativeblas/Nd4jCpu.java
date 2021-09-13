@@ -11712,17 +11712,14 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 //                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
 
-// #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
-// #define NOT_EXCLUDED(NAME) 1>0
-// #else
-// for now we don't want minifier mechanics working
-//#define NOT_EXCLUDED(NAME) defined(SD_ALL_OPS) || defined(NAME)
-// #define NOT_EXCLUDED(NAME) 1>0
+// #define NOT_EXCLUDED(NAME) (defined(NAME) || defined(SD_ALL_OPS))
+
+// #ifdef  SD_ALL_OPS
+// #pragma message ( "ALL OPS ARE DEFINED" )
 // #endif
 
-// #ifdef __JAVACPP_HACK__
-// #define REGISTER_H(NAME)
-// #elif defined(SD_ALL_OPS)
+// #if defined(__JAVACPP_HACK__) || defined(SD_ALL_OPS)
+//      #define REGISTER_H(NAME)
 // #else
 // #define REGISTER_H(NAME)  template <typename OpName>
 //                         struct __registrator_##NAME {
@@ -11734,9 +11731,17 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 //                         static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
 // #endif
 
-// #ifdef __JAVACPP_HACK__
+// #if defined(__JAVACPP_HACK__)
 // #define REGISTER_C(NAME)
 // #elif defined(SD_ALL_OPS)
+// #define REGISTER_C(NAME)   template <typename OpName>
+//                         struct __registrator_##NAME {
+//                             __registrator_##NAME() {
+//                                 OpName *ptr = new OpName();
+//                                 OpRegistrator::getInstance().registerOperation(ptr);
+//                             }
+//                         };
+//                         static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
 // #else
 // #define REGISTER_C(NAME)
 // #endif
@@ -13018,7 +13023,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocate();
     }
 
-        // logic ops 
+        // logic ops
+// #if NOT_EXCLUDED(OP_Switch)
         @Namespace("sd::ops") public static class Switch extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13037,6 +13043,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                 private native void allocate();
                                                                 public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                             }
+// #endif
+// #if NOT_EXCLUDED(OP_While)
         @Namespace("sd::ops") public static class While extends LogicOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13054,6 +13062,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                         public While() { super((Pointer)null); allocate(); }
                                         private native void allocate();
                                     }
+// #endif
+// #if NOT_EXCLUDED(OP_Scope)
         @Namespace("sd::ops") public static class Scope extends LogicOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13071,6 +13081,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                         public Scope() { super((Pointer)null); allocate(); }
                                         private native void allocate();
                                     }
+// #endif
+// #if NOT_EXCLUDED(OP_Conditional)
         @Namespace("sd::ops") public static class Conditional extends LogicOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13088,6 +13100,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                         public Conditional() { super((Pointer)null); allocate(); }
                                         private native void allocate();
                                     }
+// #endif
+// #if NOT_EXCLUDED(OP_Return)
         @Namespace("sd::ops") public static class Return extends LogicOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13105,7 +13119,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                         public Return() { super((Pointer)null); allocate(); }
                                         private native void allocate();
                                     }
-
+// #endif
 
         /**
          * This operations exposes given arguments as it's own outputs, but does it only once.
@@ -13113,6 +13127,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
          *
          * PLEASE NOTE: This operation is internal graph operation, and shouldn't be used directly usually.
          */
+// #if NOT_EXCLUDED(OP_expose)
         @Namespace("sd::ops") public static class expose extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13131,6 +13146,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+// #endif
     
 
 
@@ -15072,6 +15088,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
          *
          * \tparam T
          */
+//         #if NOT_EXCLUDED(OP_truncatediv)
         @Namespace("sd::ops") public static class truncatediv extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -15089,7 +15106,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public truncatediv() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                 }
-
+//         #endif
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
          * 1) if shapes are equal that's pairwise operation, result will have the same shape.
@@ -16447,6 +16464,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
          * IntArgs:
          * 0: data format: 1 NHWC, 0 NCHW (optional, by default = NHWC)
          */
+// #if NOT_EXCLUDED(OP_pointwise_conv2d)
         @Namespace("sd::ops") public static class pointwise_conv2d extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -16465,7 +16483,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+// #endif
 
+// #if NOT_EXCLUDED(OP_deconv2d_tf)
         @Namespace("sd::ops") public static class deconv2d_tf extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -16484,7 +16504,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+// #endif
     
 
 
@@ -17457,6 +17477,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: cell outputs [time x batchSize x numUnits]
        *    1: cell final non-zero output [batchSize x numUnits]
        */
+//     #if NOT_EXCLUDED(OP_static_rnn)
         @Namespace("sd::ops") public static class static_rnn extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17475,7 +17496,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//     #endif
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
@@ -17495,6 +17516,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: cell outputs [time x batchSize x numUnits] or [batchSize x time x numUnits]
        *    1: cell final non-zero output [batchSize x numUnits]
        */
+//     #if NOT_EXCLUDED(OP_dynamic_rnn)
         @Namespace("sd::ops") public static class dynamic_rnn extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17513,7 +17535,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//     #endif
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
@@ -17535,6 +17557,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
        *    1: cell final non-zero output for forward RNN  [batchSize x numUnitsFW]
        *    2: cell final non-zero output for backward RNN [batchSize x numUnitsBW]
        */
+//     #if NOT_EXCLUDED(OP_static_bidirectional_rnn)
         @Namespace("sd::ops") public static class static_bidirectional_rnn extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17553,7 +17576,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//      #endif
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
@@ -17579,6 +17602,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
        *    2: cell final non-zero output for forward  RNN [batchSize x numUnitsFW]
        *    3: cell final non-zero output for backward RNN [batchSize x numUnitsBW]
        */
+//     #if NOT_EXCLUDED(OP_dynamic_bidirectional_rnn)
         @Namespace("sd::ops") public static class dynamic_bidirectional_rnn extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17597,7 +17621,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//     #endif
 
 
 // #endif
@@ -17852,6 +17876,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_concat)
         @Namespace("sd::ops") public static class concat extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17888,6 +17913,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+//         #endif
 
 //         #if NOT_EXCLUDED(OP_mergemax)
         @Namespace("sd::ops") public static class mergemax extends DeclarableOp {
@@ -18329,7 +18355,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-
+// #if NOT_EXCLUDED(OP_tri)
         @Namespace("sd::ops") public static class tri extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -18348,7 +18374,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+// #endif
 
+// #if NOT_EXCLUDED(OP_triu)
         @Namespace("sd::ops") public static class triu extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -18386,7 +18414,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//         #endif
 //         #if NOT_EXCLUDED(OP_mirror_pad)
         @Namespace("sd::ops") public static class mirror_pad extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -18838,6 +18866,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         * Output array:
         *   0: is considered as batch of matrices, if for example diagonal array has shape [A,B,C] then output array has shape [A,B,C,C]
         */
+//         #if NOT_EXCLUDED(OP_matrix_diag)
         @Namespace("sd::ops") public static class matrix_diag extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -18856,7 +18885,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//         #endif
         /**
         * This op calculates regularized incomplete beta integral Ix(a, b).
         * Implementation is based on two algorithms depending on input values of a and b:
@@ -22652,6 +22681,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         * output array:
         *    reduced tensor with calculated means
         */
+//         #if NOT_EXCLUDED(OP_reduce_variance)
         @Namespace("sd::ops") public static class reduce_variance extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -22688,7 +22718,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-                                                                                /**
+                                                                                //         #endif
+        /**
         * This op calculates sample standard deviation of elements along given dimensions
         *
         * input array:
@@ -22704,6 +22735,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         * output array:
         *    reduced tensor with calculated means
         */
+// #if NOT_EXCLUDED(OP_reduce_stdev)
         @Namespace("sd::ops") public static class reduce_stdev extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -22740,7 +22772,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-                                                                                /**
+                                                                                // #endif
+        /**
         * This op calculates backprop dot for two tensors along given dimensions
         *
         * input array:
@@ -24210,6 +24243,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * relu_layer = relu(x*w + b)
          */
+//          #if NOT_EXCLUDED(OP_relu_layer)
         @Namespace("sd::ops") public static class relu_layer extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -24228,7 +24262,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-
+//         #endif
         /**
          * applies layer normalization to input
          * y = g * standardize(x) + b
