@@ -121,7 +121,6 @@ import java.util.*;
                                               "ops/declarable/headers/third_party.h"},
                                    exclude = {"ops/declarable/headers/activations.h",
                                               "ops/declarable/headers/boolean.h",
-                                              "ops/declarable/headers/broadcastable.h",
                                               "ops/declarable/headers/convo.h",
                                               "ops/declarable/headers/list.h",
                                               "ops/declarable/headers/recurrent.h",
