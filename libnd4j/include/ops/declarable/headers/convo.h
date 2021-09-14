@@ -301,7 +301,7 @@ namespace sd {
          * Int params:
          *   9 int with 2x4 vectors and 1 bool value
          */
-        #if NOT_EXCLUDED(OP_max_pool_woth_argmax)
+        #if NOT_EXCLUDED(OP_max_pool_with_argmax)
         DECLARE_CUSTOM_OP(max_pool_with_argmax, 1, 2, false, 0, 9);
         #endif
 

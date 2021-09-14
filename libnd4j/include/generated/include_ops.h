@@ -1,1 +1,2 @@
-#define SD_ALL_OPS 1
+#define OP_add 1
+#define OP_multiply 1

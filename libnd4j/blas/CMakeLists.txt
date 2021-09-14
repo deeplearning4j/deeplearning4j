@@ -79,7 +79,7 @@ else()
     foreach(OP ${SD_OPS_LIST})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOP_${OP}=true")
         message(STATUS "${OP}")
-        file(APPEND "${OP_OUTPUT_FILE}" "#define OP_${OP}")
+        file(APPEND "${OP_OUTPUT_FILE}" "#define OP_${OP} 1\n")
     endforeach()
 
 endif()

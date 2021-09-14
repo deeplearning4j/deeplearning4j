@@ -173,6 +173,10 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
+        // pick up custom operations automatically from CustomOperations.h and headers in libnd4j
+        String separator = properties.getProperty("platform.path.separator");
+        String[] includePaths = properties.getProperty("platform.includepath").split(separator);
+
         infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
                 "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
@@ -218,44 +222,53 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("sd::IndicesList").purify());
 
-        /*
-        String classTemplates[] = {
-                "sd::NDArray",
-                "sd::NDArrayList",
-                "sd::ResultSet",
-                "sd::OpArgsHolder",
-                "sd::graph::GraphState",
-                "sd::graph::Variable",
-                "sd::graph::VariablesSet",
-                "sd::graph::Stash",
-                "sd::graph::VariableSpace",
-                "sd::graph::Context",
-                "sd::graph::ContextPrototype",
-                "sd::ops::DeclarableOp",
-                "sd::ops::DeclarableListOp",
-                "sd::ops::DeclarableReductionOp",
-                "sd::ops::DeclarableCustomOp",
-                "sd::ops::BooleanOp",
-                "sd::ops::BroadcastableOp",
-                "sd::ops::LogicOp"};
-        for (String t : classTemplates) {
-            String s = t.substring(t.lastIndexOf(':') + 1);
-            infoMap.put(new Info(t + "<float>").pointerTypes("Float" + s))
-                   .put(new Info(t + "<float16>").pointerTypes("Half" + s))
-                   .put(new Info(t + "<double>").pointerTypes("Double" + s));
-        }
-        */
-
-        // pick up custom operations automatically from CustomOperations.h and headers in libnd4j
-        String separator = properties.getProperty("platform.path.separator");
-        String[] includePaths = properties.getProperty("platform.includepath").split(separator);
         File file = null;
+        File opFile = null;
+        boolean foundCustom = false;
+        boolean foundOps = false;
         for (String path : includePaths) {
-            file = new File(path, "ops/declarable/CustomOperations.h");
-            if (file.exists()) {
+            if(!foundCustom) {
+                file = new File(path, "ops/declarable/CustomOperations.h");
+                if (file.exists()) {
+                    foundCustom = true;
+                }
+            }
+
+            if(!foundOps) {
+                opFile = new File(path, "generated/include_ops.h");
+                if (opFile.exists()) {
+                    foundOps = true;
+                }
+            }
+
+            if(foundCustom && foundOps) {
                 break;
             }
         }
+
+
+        boolean allOps = false;
+        Set<String> opsToExclude = new HashSet<>();
+        try (Scanner scanner = new Scanner(opFile, "UTF-8")) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine().trim();
+                if(line.contains("SD_ALL_OPS")) {
+                    allOps = true;
+                    System.out.println("All ops found.");
+                    break;
+                }
+
+                String[] lineSplit = line.split(" ");
+                String opName = lineSplit[1].replace("OP_","");
+                opsToExclude.add(opName);
+                //usually gradient ops are co located in the same block
+                opsToExclude.add(opName + "_bp");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
+        }
+
+
         List<File> files = new ArrayList<>();
         List<String> opTemplates = new ArrayList<>();
         if(file == null) {
@@ -266,8 +279,10 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
         if(headers == null) {
             throw new IllegalStateException("No headers found for file " + file.getAbsolutePath());
         }
+
         files.addAll(Arrays.asList(headers));
         Collections.sort(files);
+
         for (File f : files) {
             try (Scanner scanner = new Scanner(f, "UTF-8")) {
                 while (scanner.hasNextLine()) {
@@ -290,24 +305,29 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
             }
         }
-        logger.info("Ops found in CustomOperations.h and headers: " + opTemplates);
-        /*
-        String floatOps = "", halfOps = "", doubleOps = "";
-        for (String t : opTemplates) {
-            String s = "sd::ops::" + t;
-            infoMap.put(new Info(s + "<float>").pointerTypes("float_" + t))
-                   .put(new Info(s + "<float16>").pointerTypes("half_" + t))
-                   .put(new Info(s + "<double>").pointerTypes("double_" + t));
-            floatOps  += "\n        float_" + t + ".class,";
-            halfOps   += "\n        half_" + t + ".class,";
-            doubleOps += "\n        double_" + t + ".class,";
 
+        Collections.sort(opTemplates);
+        logger.info("Ops found in CustomOperations.h and headers: " + opTemplates);
+        //we will be excluding some ops based on the ops defined in the generated op inclusion file
+        if(!allOps) {
+            logger.info("Found ops to only include " + opsToExclude);
+            for(String op : opTemplates)
+                if(!opsToExclude.contains(op)) {
+                    logger.info("Excluding op " + op);
+                    infoMap.put(new Info("NOT_EXCLUDED(OP_" + op + ")")
+                            .skip(true)
+                            .define(false));
+                } else {
+                    logger.info("Including " + op);
+                    infoMap.put(new Info("NOT_EXCLUDED(OP_" + op + ")").define(true));
+                    infoMap.put(new Info("NOT_EXCLUDED(OP_" + op + "_bp)").define(true));
+
+                }
         }
-        infoMap.put(new Info().javaText("\n"
-                                      + "    Class[] floatOps = {" + floatOps + "};" + "\n"
-                                      + "    Class[] halfOps = {" + halfOps + "};" + "\n"
-                                      + "    Class[] doubleOps = {" + doubleOps + "};"));
-        */
+
+
+
+
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
     }
 }

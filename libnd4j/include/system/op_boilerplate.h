@@ -1263,7 +1263,7 @@
                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
 
-#define NOT_EXCLUDED(NAME) (defined(NAME) || defined(SD_ALL_OPS))
+#define NOT_EXCLUDED(NAME) NAME == 1 || SD_ALL_OPS == 1 || SD_ALL_OPS == true
 
 #ifdef  SD_ALL_OPS
 #pragma message ( "ALL OPS ARE DEFINED" )
