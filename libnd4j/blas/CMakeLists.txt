@@ -73,11 +73,13 @@ endif()
 
 if ("${SD_ALL_OPS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=1")
+    file(WRITE "${OP_OUTPUT_FILE}" "#define SD_ALL_OPS 1")
 else()
     message("_OPS: ${SD_OPS_LIST}")
     foreach(OP ${SD_OPS_LIST})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOP_${OP}=true")
         message(STATUS "${OP}")
+        file(APPEND "${OP_OUTPUT_FILE}" "#define OP_${OP}")
     endforeach()
 
 endif()

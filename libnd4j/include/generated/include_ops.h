@@ -1,0 +1,1 @@
+#define SD_ALL_OPS 1

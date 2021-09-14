@@ -267,6 +267,10 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
     }
 }
 
+// Parsed from generated/include_ops.h
+
+public static final int SD_ALL_OPS = 1;
+
 // Parsed from memory/MemoryType.h
 
 //
