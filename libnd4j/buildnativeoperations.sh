@@ -513,6 +513,7 @@ if [ "$PACKAGING" == "msi" ]; then
     PACKAGING_ARG="-DPACKAGING=msi"
 fi
 
+# Use parent of output file to mean source include directory
 OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=../${OP_OUTPUT_FILE}"
 
 EXPERIMENTAL_ARG="";

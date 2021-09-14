@@ -24,10 +24,7 @@ import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
 import org.bytedeco.openblas.global.openblas;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import org.nd4j.presets.OpExclusionUtils;
 
 /**
  *
@@ -35,6 +32,11 @@ import java.util.*;
  */
 @Properties(inherit = openblas.class, target = "org.nd4j.nativeblas.Nd4jCpu", helper = "org.nd4j.nativeblas.Nd4jCpuHelper",
         value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                //note, order matters here
+                //this particular header file is either
+                //going to be the source of ops, see also:
+                //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
+                //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
                 "generated/include_ops.h",
                 "memory/MemoryType.h",
                 "array/DataType.h",
@@ -173,9 +175,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
-        // pick up custom operations automatically from CustomOperations.h and headers in libnd4j
-        String separator = properties.getProperty("platform.path.separator");
-        String[] includePaths = properties.getProperty("platform.includepath").split(separator);
+
 
         infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
                 "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
@@ -222,112 +222,11 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("sd::IndicesList").purify());
 
-        File file = null;
-        File opFile = null;
-        boolean foundCustom = false;
-        boolean foundOps = false;
-        for (String path : includePaths) {
-            if(!foundCustom) {
-                file = new File(path, "ops/declarable/CustomOperations.h");
-                if (file.exists()) {
-                    foundCustom = true;
-                }
-            }
-
-            if(!foundOps) {
-                opFile = new File(path, "generated/include_ops.h");
-                if (opFile.exists()) {
-                    foundOps = true;
-                }
-            }
-
-            if(foundCustom && foundOps) {
-                break;
-            }
-        }
-
-
-        boolean allOps = false;
-        Set<String> opsToExclude = new HashSet<>();
-        try (Scanner scanner = new Scanner(opFile, "UTF-8")) {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine().trim();
-                if(line.contains("SD_ALL_OPS")) {
-                    allOps = true;
-                    System.out.println("All ops found.");
-                    break;
-                }
-
-                String[] lineSplit = line.split(" ");
-                String opName = lineSplit[1].replace("OP_","");
-                opsToExclude.add(opName);
-                //usually gradient ops are co located in the same block
-                opsToExclude.add(opName + "_bp");
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
-        }
-
-
-        List<File> files = new ArrayList<>();
-        List<String> opTemplates = new ArrayList<>();
-        if(file == null) {
-            throw new IllegalStateException("No file found in include paths. Please ensure one of the include paths leads to path/ops/declarable/CustomOperations.h");
-        }
-        files.add(file);
-        File[] headers = new File(file.getParent(), "headers").listFiles();
-        if(headers == null) {
-            throw new IllegalStateException("No headers found for file " + file.getAbsolutePath());
-        }
-
-        files.addAll(Arrays.asList(headers));
-        Collections.sort(files);
-
-        for (File f : files) {
-            try (Scanner scanner = new Scanner(f, "UTF-8")) {
-                while (scanner.hasNextLine()) {
-                    String line = scanner.nextLine().trim();
-                    if (line.startsWith("DECLARE_")) {
-                        try {
-                            int start = line.indexOf('(') + 1;
-                            int end = line.indexOf(',');
-                            if (end < start) {
-                                end = line.indexOf(')');
-                            }
-                            String name = line.substring(start, end).trim();
-                            opTemplates.add(name);
-                        } catch(Exception e) {
-                            throw new RuntimeException("Could not parse line from CustomOperations.h and headers: \"" + line + "\"", e);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
-            }
-        }
-
-        Collections.sort(opTemplates);
-        logger.info("Ops found in CustomOperations.h and headers: " + opTemplates);
-        //we will be excluding some ops based on the ops defined in the generated op inclusion file
-        if(!allOps) {
-            logger.info("Found ops to only include " + opsToExclude);
-            for(String op : opTemplates)
-                if(!opsToExclude.contains(op)) {
-                    logger.info("Excluding op " + op);
-                    infoMap.put(new Info("NOT_EXCLUDED(OP_" + op + ")")
-                            .skip(true)
-                            .define(false));
-                } else {
-                    logger.info("Including " + op);
-                    infoMap.put(new Info("NOT_EXCLUDED(OP_" + op + ")").define(true));
-                    infoMap.put(new Info("NOT_EXCLUDED(OP_" + op + "_bp)").define(true));
-
-                }
-        }
-
-
+        OpExclusionUtils.processOps(logger, properties, infoMap);
 
 
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
     }
+
+
 }
