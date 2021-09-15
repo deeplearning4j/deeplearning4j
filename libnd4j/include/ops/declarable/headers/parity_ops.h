@@ -1395,7 +1395,7 @@ namespace sd {
          * return value:
          *    tensor with average of values according to indices sets.
          */
-        #if NOT_EXCLUDED(OP_unsorted_segment_sqrt)
+        #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n)
         DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n_bp)
@@ -1817,10 +1817,10 @@ namespace sd {
          *     - vector with size M, where M <= output_size by int type
          *
          * */
-        #if NOT_EXCLUDED(OP_image_non_max_suppression)
+        #if NOT_EXCLUDED(OP_non_max_suppression)
         DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
         #endif
-        #if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
+        #if NOT_EXCLUDED(OP_non_max_suppression_v3)
                 DECLARE_CUSTOM_OP(non_max_suppression_v3, 2, 1, false, 0, 0);
         #endif
 
@@ -1839,7 +1839,7 @@ namespace sd {
          * output:
          *     0 - 1D integer tensor with shape [M], epresenting the selected indices from the overlaps tensor, where M <= max_output_size
          * */
-        #if NOT_EXCLUDED(OP_image_non_max_suppression_overlaps)
+        #if NOT_EXCLUDED(OP_non_max_suppression_overlaps)
         DECLARE_CUSTOM_OP(non_max_suppression_overlaps, 2, 1, false, 0, 0);
         #endif
 

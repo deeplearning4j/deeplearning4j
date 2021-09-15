@@ -21,7 +21,7 @@
 //
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_where)
+#if NOT_EXCLUDED(OP_Where)
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
