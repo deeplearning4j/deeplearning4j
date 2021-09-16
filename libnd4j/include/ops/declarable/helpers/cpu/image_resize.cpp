@@ -1292,12 +1292,12 @@ namespace helpers {
         gatherSpans<X, Z>(rowSpans._spanSize, rowStarts, rowWeights, colSpans._spanSize, columnStarts, columnWeights, input, intermediate, output);
         return res;
     }
-
+#if defined(HAS_FLOAT32)
     static int resizeBilinear(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         auto kernel = std::unique_ptr<IKernelFunc>(new TriangleKernelFunc());
         BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                               (kernel.get(), image, (Nd4jLong) width, (Nd4jLong) height, antialias, output),
-                              NUMERIC_TYPES, FLOAT_TYPES_1);
+                              NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
         return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeBilinear: Unknown error occured.");
     }
 
@@ -1306,14 +1306,14 @@ namespace helpers {
             auto kernel = std::unique_ptr<IKernelFunc>(new KeysCubicKernelFunc());
             BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                                   (kernel.get(), image, (Nd4jLong) width, (Nd4jLong) height, antialias, output),
-                                  NUMERIC_TYPES, FLOAT_TYPES_1);
+                                  NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
         }
         else {
             return resizeBicubicFunctorA(context, image, width, height, false, true, output);
         }
         return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeBicubic: Unknown error occured.");
     }
-
+#endif
     static int resizeNeighbor(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         return resizeNeighborFunctor(context, image, width, height, false, true, output);
     }
@@ -1321,31 +1321,31 @@ namespace helpers {
     static int resizeArea(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         return resizeAreaFunctor(context, image, width, height, false, output);
     }
-
+#if defined(HAS_FLOAT32)
     static int resizeLanczos3(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         auto kernel = std::unique_ptr<IKernelFunc>(new LanczosKernelFunc(3.f));
-        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
         return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeLanczos3: Unknown error occured.");
     }
 
     static int resizeLanczos5(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         auto kernel = std::unique_ptr<IKernelFunc>(new LanczosKernelFunc(5.f));
-        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
         return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeLanczos5: Unknown error occured.");
     }
 
     static int resizeGaussian(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         auto kernel = std::unique_ptr<IKernelFunc>(new GaussianKernelFunc());
-        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
         return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeGaussian: Unknown error occured.");
     }
 
     static int resizeMitchellcubic(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
         auto kernel = std::unique_ptr<IKernelFunc>(new MitchellCubicKernelFunc());
-        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+        BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel, (kernel.get(), image, (Nd4jLong)width, (Nd4jLong)height, antialias, output), NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
         return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeMitchelcubic: Unknown error occured.");
     }
-
+#endif
 // ------------------------------------------------------------------------------------------------------------------ //
     int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                       ImageResizeMethods method, bool alignCorners, NDArray* output) {
@@ -1366,14 +1366,27 @@ namespace helpers {
     int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                       ImageResizeMethods method, bool antialias, NDArray* output) {
         switch (method) {
-            case kResizeBilinear:     return resizeBilinear(context, image, width, height, antialias, output);
             case kResizeNearest:      return resizeNeighbor(context, image, width, height,  antialias, output);
-            case kResizeBicubic:      return resizeBicubic(context, image, width, height,  antialias, output);
-            case kResizeArea:         return resizeArea(context, image, width, height, antialias, output);
+            case kResizeArea:         return resizeArea(context, image, width, height, antialias, output); 
+#if defined(HAS_FLOAT32)
+            case kResizeBilinear:     return resizeBilinear(context, image, width, height, antialias, output);
+            case kResizeBicubic:      return resizeBicubic(context, image, width, height,  antialias, output);           
             case kResizeLanczos3:     return resizeLanczos3(context, image, width, height, antialias, output);
             case kResizeLanczos5:     return resizeLanczos5(context, image, width, height, antialias, output);
             case kResizeGaussian:     return resizeGaussian(context, image, width, height, antialias, output);
             case kResizeMitchellcubic: return resizeMitchellcubic(context, image, width, height, antialias, output);
+#else
+            case kResizeBilinear:
+            case kResizeBicubic:
+            case kResizeLanczos3:
+            case kResizeLanczos5:
+            case kResizeGaussian:
+            case kResizeMitchellcubic:{
+                nd4j_printf("helper::resizeFunctor: only float type is supported by this resize method %i\n", (int)method);
+                return Status::CODE(ND4J_STATUS_BAD_INPUT, "helper::resizeFunctor: only float type supported");
+            }
+
+#endif
         }
         nd4j_printf("helper::resizeFunctor: Wrong resize method %i\n", (int)method);
         return Status::CODE(ND4J_STATUS_BAD_INPUT, "helper::resizeFunctor: Wrong resize method");

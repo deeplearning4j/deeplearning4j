@@ -76,8 +76,8 @@
 #if defined(HAS_FLOAT64) && !defined(HAS_DOUBLE)
     #define HAS_DOUBLE
 #endif
-#if defined(HAS_FLOAT32) && !defined(HAS_FLOAT)
-    #define HAS_FLOAT
+#if defined(HAS_FLOAT) && !defined(HAS_FLOAT32)
+    #define HAS_FLOAT32
 #endif
 #if defined(HAS_HALF) && !defined(HAS_FLOAT16)
     #define HAS_FLOAT16
@@ -189,12 +189,14 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
     #pragma message WARN("MSVC old preprocessor")
     #define COUNT_M(...) ND_EXPAND(COUNT_N( __VA_ARGS__,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,\
     16,15,14,13,12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
-    #define COUNT_NARG(...) ND_CALL(COUNT_M,(, __VA_ARGS__))
-    #define ND_CALL(X,Y) X Y
+    #define COUNT_NARG2(...) ND_CALL(COUNT_M,(, __VA_ARGS__))
+    #define COUNT_NARG(...) ND_EXPAND(COUNT_NARG2( __VA_ARGS__))
+    #define ND_CALL(X,Y) X Y 
 #else
     #define COUNT_NARG_(...)   COUNT_N(__VA_ARGS__)
-    #define COUNT_NARG(...)    COUNT_NARG_(_, ##__VA_ARGS__, 33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,\
+    #define COUNT_NARG2(...)    COUNT_NARG_(_, ##__VA_ARGS__, 33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,\
     16,15,14,13,12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+    #define COUNT_NARG(...) COUNT_NARG2(__VA_ARGS__)
 #endif
 
 #define SKIP_FIRST_COMMA(...)  ND_EXPAND(SKIP_FIRST_COMMA_Z(__VA_ARGS__))
@@ -323,7 +325,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_BFLOAT16_DOUBLE_BFLOAT16
         #define TTYPE_BFLOAT16_DOUBLE_DOUBLE
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_BFLOAT16_FLOAT_BFLOAT16  ,(bfloat16, float, bfloat16)
         #define TTYPE_BFLOAT16_FLOAT_FLOAT  ,(bfloat16, float, float)
     #else
@@ -392,7 +394,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_BOOL_DOUBLE_BOOL
         #define TTYPE_BOOL_DOUBLE_DOUBLE
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_BOOL_FLOAT_BOOL  ,(bool, float, bool)
         #define TTYPE_BOOL_FLOAT_FLOAT  ,(bool, float, float)
     #else
@@ -461,7 +463,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_DOUBLE_BOOL_BOOL
         #define TTYPE_DOUBLE_BOOL_DOUBLE
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_DOUBLE_FLOAT_DOUBLE  ,(double, float, double)
         #define TTYPE_DOUBLE_FLOAT_FLOAT  ,(double, float, float)
     #else
@@ -514,7 +516,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
     #define TTYPE_DOUBLE_DOUBLE_DOUBLE
 #endif
 
-#if defined(HAS_FLOAT)
+#if defined(HAS_FLOAT32)
     #define TTYPE_FLOAT_FLOAT_FLOAT  ,(float, float, float)
     #if defined(HAS_BFLOAT16)
         #define TTYPE_FLOAT_BFLOAT16_BFLOAT16  ,(float, bfloat16, bfloat16)
@@ -606,7 +608,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_FLOAT16_DOUBLE_DOUBLE
         #define TTYPE_FLOAT16_DOUBLE_FLOAT16
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_FLOAT16_FLOAT_FLOAT  ,(float16, float, float)
         #define TTYPE_FLOAT16_FLOAT_FLOAT16  ,(float16, float, float16)
     #else
@@ -675,7 +677,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_INT16_DOUBLE_DOUBLE
         #define TTYPE_INT16_DOUBLE_INT16
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_INT16_FLOAT_FLOAT  ,(int16_t, float, float)
         #define TTYPE_INT16_FLOAT_INT16  ,(int16_t, float, int16_t)
     #else
@@ -744,7 +746,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_INT32_DOUBLE_DOUBLE
         #define TTYPE_INT32_DOUBLE_INT32
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_INT32_FLOAT_FLOAT  ,(int32_t, float, float)
         #define TTYPE_INT32_FLOAT_INT32  ,(int32_t, float, int32_t)
     #else
@@ -813,7 +815,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_INT8_DOUBLE_DOUBLE
         #define TTYPE_INT8_DOUBLE_INT8
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_INT8_FLOAT_FLOAT  ,(int8_t, float, float)
         #define TTYPE_INT8_FLOAT_INT8  ,(int8_t, float, int8_t)
     #else
@@ -882,7 +884,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_ND4JLONG_DOUBLE_DOUBLE
         #define TTYPE_ND4JLONG_DOUBLE_ND4JLONG
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_ND4JLONG_FLOAT_FLOAT  ,(Nd4jLong, float, float)
         #define TTYPE_ND4JLONG_FLOAT_ND4JLONG  ,(Nd4jLong, float, Nd4jLong)
     #else
@@ -951,7 +953,7 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
         #define TTYPE_UINT8_DOUBLE_DOUBLE
         #define TTYPE_UINT8_DOUBLE_UINT8
     #endif
-    #if defined(HAS_FLOAT)
+    #if defined(HAS_FLOAT32)
         #define TTYPE_UINT8_FLOAT_FLOAT  ,(uint8_t, float, float)
         #define TTYPE_UINT8_FLOAT_UINT8  ,(uint8_t, float, uint8_t)
     #else
