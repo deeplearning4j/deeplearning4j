@@ -22,9 +22,10 @@
 
 #include <loops/cpu/broadcasting_int.hpp>
 #cmakedefine INT_TYPE_GEN
-
+#if defined(INT_TYPE_GEN) && defined(INTEGER_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT BroadcastInt, , INTEGER_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

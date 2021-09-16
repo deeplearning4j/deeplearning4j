@@ -24,6 +24,8 @@
 
 #include <ops/impl/specials_single.hpp> 
 #cmakedefine LIBND4J_TYPE_GEN
+#if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES_@FL_TYPE_INDEX@);
 }
+#endif

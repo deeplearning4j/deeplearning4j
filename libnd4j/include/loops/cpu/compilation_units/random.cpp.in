@@ -22,8 +22,10 @@
 
 #include <loops/cpu/random.hpp>
 #cmakedefine FLOAT_TYPE_GEN
+#if defined(FLOAT_TYPE_GEN) && defined(FLOAT_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace random {
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT RandomFunction, , FLOAT_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

@@ -24,8 +24,10 @@
 
 #include <loops/cpu/indexreduce.hpp>
 #cmakedefine LIBND4J_TYPE_GEN
+#if  defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@) && defined(HAS_INT32)
 namespace functions {
     namespace indexreduce {
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES_@FL_TYPE_INDEX@, (sd::DataType::INT32, int32_t));
     }
 }
+#endif

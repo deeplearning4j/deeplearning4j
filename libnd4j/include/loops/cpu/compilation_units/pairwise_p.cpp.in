@@ -22,8 +22,10 @@
 
 #include <loops/cpu/pairwise.hpp>
 #cmakedefine PAIRWISE_TYPE_GEN
+#if defined(PAIRWISE_TYPE_GEN) && defined(PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace pairwise_transforms {
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

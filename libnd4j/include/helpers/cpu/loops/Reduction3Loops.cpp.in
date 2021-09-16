@@ -22,8 +22,9 @@
 
 #include <helpers/cpu/loops/Reduction3Loops.hpp>
 #cmakedefine FLOAT_TYPE_GEN
-
+#if defined(FLOAT_TYPE_GEN) && defined(FLOAT_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
   
     BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduction3Loops, , LIBND4J_TYPES, FLOAT_TYPES_@FL_TYPE_INDEX@);
 }
+#endif

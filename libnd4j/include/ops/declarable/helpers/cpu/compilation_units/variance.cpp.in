@@ -23,7 +23,7 @@
 #cmakedefine LIBND4J_TYPE_GEN 
 
 #include <ops/declarable/helpers/cpu/summaryReductions.hpp>
-
+#if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
         namespace helpers {
@@ -31,3 +31,4 @@ namespace sd {
         }
     }
 }
+#endif
