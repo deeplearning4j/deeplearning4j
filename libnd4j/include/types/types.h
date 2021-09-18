@@ -33,6 +33,59 @@
 #include <types/utf8string.h>
 #include <types/bfloat16.h>
 #include <system/type_boilerplate.h>
+/**
+ * @brief type related Macrosses to help with template instantiations.
+ * 
+ *  To restrict certain types one should define SD_SELECTIVE_TYPES and desired types using HAS_${TYPENAME}
+ *  where ${TYPENAME} is a type name written in capital letters:
+ *    #define SD_SELECTIVE_TYPES
+ *    #define HAS_FLOAT
+ *    #define HAS_INT8 
+ *    // and et cetera
+ *    For gcc as compiler args: -DSD_SELECTIVE_TYPES -DHAS_FLOAT -DHAS_INT8
+ * 
+ *  Some types are grouped for the template usages.
+ *  For example:
+ *    FLOAT_TYPES is a list of floating types.
+ *    LIBND4J_TYPES is a list of commonly used types
+ * 
+ *  To access one of the items of that list one could use GET_ELEMENT(INDEX, TYPE_GROUP)
+ *  where is INDEX is number and TYPE_GROUP is the name of that group:
+ *
+ *  GET_ELEMENT(0, FLOAT_TYPES) //will get the first element of the floating-point type list.
+ *  Also, it is preferable to guard against out of boundary access using COUNT_NARG such way:
+ *  #if COUNT_NARG(FLOAT_TYPES) >3
+ *    #define FL_ITEM_3 GET_ELEMENT(3, FLOAT_TYPES)
+ *  #endif
+ *
+ *  As mandatory we define at least one default type for some groups when no specific type was defined for that list.
+ *  Such cases will be informed with a warning message while compilation.
+ *
+ *  If you want to use a specific type you should better use that type directly this way below:
+ * 
+ *  #define HALFTYPE_SINGLETON SKIP_FIRST_COMMA(TTYPE_HALF)
+ *  and use it inside template instantiations for half type only
+ *
+ *  For some compilers we can split types into singletons or into a small sublists to help with template instantiations
+ *  In our case, for our CMAKE generator we pre-defined lists with indices for that purpose.
+ *  And also pairwise types are defined that way as well.
+ *  For example:
+ *  FLOAT_TYPES_0 will be a singleton made of the 1st element
+ *  FLOAT_TYPES_1 will be a singleton made of the 2nd element if it is available.
+ *  As it could be undefined due to limited types, one should guard it with ifdef
+ *  #if defined(FLOAT_TYPES_2)
+ *    //use the 3rd singleton from the floating-type lists
+ *  #endif
+ *
+ *  In the same way pairwise types are used:
+ *
+ *  #if defined(PAIRWISE_TYPES_2)
+ *    //use the third sublist from the pairwise_types
+ *  #endif
+ *
+ *  For GCC and Clang we have defined this STRINGIFY_TEST  macros helper to output lists.
+ *  For example: STRINGIFY_TEST(FLOAT_TYPES)
+ */
 
 #define ND_EXPAND(...) __VA_ARGS__
 #define STRINGISE_IMPL(x) #x
