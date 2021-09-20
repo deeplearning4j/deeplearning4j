@@ -704,6 +704,6 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
     }
 }
 
-//BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT BroadcastInt, , INTEGER_TYPES);
+//BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL BroadcastInt, , INTEGER_TYPES);
 }
 }

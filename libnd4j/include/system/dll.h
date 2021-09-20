@@ -25,10 +25,21 @@
 
 #include <system/msvc.h>
 
-#ifdef _WIN32
-//#include <windows.h>
-#  define ND4J_EXPORT __declspec(dllexport)
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef __GNUC__
+    #define ND4J_EXPORT __attribute__ ((dllexport))
+  #else
+    #define ND4J_EXPORT __declspec(dllexport) 
+  #endif
+  #define ND4J_LOCAL
 #else
-#  define ND4J_EXPORT
+  #if __GNUC__ >= 4
+    #define ND4J_EXPORT __attribute__ ((visibility ("default")))
+    #define ND4J_LOCAL  __attribute__ ((visibility ("hidden")))
+  #else
+    #define ND4J_EXPORT
+    #define ND4J_LOCAL
+  #endif
 #endif
+
 #endif //NATIVEOPERATIONS_DLL_H

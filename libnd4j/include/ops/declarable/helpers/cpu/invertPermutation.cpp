@@ -29,7 +29,7 @@ namespace ops 	  {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
+ND4J_LOCAL void invertPermutation(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     std::set<int> uniqueElems;
     const int length = input.lengthOf();

@@ -867,7 +867,7 @@ void SVD<T>::evalData(const NDArray& matrix) {
 }
 
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SVD,,FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL SVD,,FLOAT_TYPES);
 
 
 

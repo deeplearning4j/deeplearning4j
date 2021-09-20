@@ -81,7 +81,7 @@ namespace sd {
                 _hammingKernel<X, Z><<<256, CUDA_BLOCK_SIZE, 1024, *context->getCudaStream()>>>(x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr, x.lengthOf());
             }
 
-            void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
+            ND4J_LOCAL void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
                 NDArray::prepareSpecialUse({&output}, {&x, &y});
                 BUILD_DOUBLE_SELECTOR(x.dataType(), output.dataType(), _hamming, (context, x, y, output), INTEGER_TYPES, INDEXING_TYPES);
                 NDArray::registerSpecialUse({&output}, {&x, &y});

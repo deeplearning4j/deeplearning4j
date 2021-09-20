@@ -41,7 +41,7 @@ static void trace_(const NDArray& input, NDArray& output) {
     samediff::Threads::parallel_for(func, 0, setOfSubArrs.size());
 }
 
-    void trace(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
+    ND4J_LOCAL void trace(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), trace_, (input, output), LIBND4J_TYPES);
     }
 }

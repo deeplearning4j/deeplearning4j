@@ -174,7 +174,7 @@ static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threa
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+ND4J_LOCAL void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
 
     const int threadsPerBlock = maxIter;
     const int blocksPerGrid = output.lengthOf();

@@ -28,14 +28,14 @@ namespace sd {
 
     template<typename X, typename Z>
     template <typename OpType>
-    void ReductionBoolLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
+    ND4J_LOCAL void ReductionBoolLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
 #ifndef INLINE_LOOPS
         ReductionLoops<X,Z,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
     }
 
     template<typename X, typename Y>
-    void ReductionBoolLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace,
+    ND4J_LOCAL void ReductionBoolLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace,
                                            const X *x, const Nd4jLong *xShapeInfo,
                                            Y *z, const Nd4jLong *zShapeInfo,
                                            const int *dims, X *extraParams) {
@@ -44,6 +44,6 @@ namespace sd {
 #endif
     }
 
-    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReductionBoolLoops, , LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL ReductionBoolLoops, , LIBND4J_TYPES, BOOL_TYPES);
 }
 

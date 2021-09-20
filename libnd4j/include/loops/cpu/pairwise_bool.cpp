@@ -218,6 +218,6 @@ namespace functions {
             }
         }
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
     }
 }

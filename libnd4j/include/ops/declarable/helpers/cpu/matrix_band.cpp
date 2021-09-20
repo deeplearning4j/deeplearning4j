@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void matrixBandPart_(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    ND4J_LOCAL void matrixBandPart_(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         // TO DO: retrieve all 2D submatricies with last dimensions and process them with given bands
         Nd4jLong M = input->sizeAt(-2);
         Nd4jLong N = input->sizeAt(-1);
@@ -65,10 +65,10 @@ namespace helpers {
         }
     }
 
-    void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    ND4J_LOCAL void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (input, output, lowerBand, upperBand), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void matrixBandPart_, (NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
 }
 }
 }

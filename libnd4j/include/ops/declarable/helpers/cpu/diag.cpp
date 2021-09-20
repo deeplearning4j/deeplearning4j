@@ -46,9 +46,9 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), LIBND4J_TYPES);
     }
 
-BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
-void diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
+ND4J_LOCAL void diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
     const int outLen = output->lengthOf();
     const int inLen = input->lengthOf();
     int i(0), j(0);

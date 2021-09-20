@@ -71,7 +71,7 @@ namespace sd {
             }
 
             template <typename T>
-            void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
+            ND4J_LOCAL void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
                 auto blockSize = 32;
                 auto stream = context->getCudaStream();
                 array.syncToDevice();
@@ -122,7 +122,7 @@ namespace sd {
                 NDArray::registerSpecialUse({&result}, {&array});
             }
 
-            void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
+            ND4J_LOCAL void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
                 BUILD_SINGLE_SELECTOR(array.dataType(), hashCode_, (context, array, result), LIBND4J_TYPES);
             }
 

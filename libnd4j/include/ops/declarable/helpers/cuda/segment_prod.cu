@@ -284,7 +284,7 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    int segmentProdFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentProdFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
         segmentProdFunctor_<T, I>(context, input, indices, &tempRes);
@@ -323,7 +323,7 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
 
-    int segmentProdFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentProdFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentProdFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
@@ -372,7 +372,7 @@ namespace helpers {
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentProdFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL int unsortedSegmentProdFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentProdFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});

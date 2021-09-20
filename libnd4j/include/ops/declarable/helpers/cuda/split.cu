@@ -85,7 +85,7 @@ __host__ static void splitCudaLauncher(const int blocksPerGrid, const int thread
 BUILD_SINGLE_TEMPLATE(template void splitCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* pVz, const Nd4jLong* zTadShapeInfo, const int axis), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
+ND4J_LOCAL void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
 
     const int numOfSubArrs = outArrs.size();
     const auto sizeofT     = input.sizeOfT();

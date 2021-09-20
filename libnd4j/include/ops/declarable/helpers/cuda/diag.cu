@@ -103,18 +103,18 @@ static __global__ void diagFunctorKernel(void* outputBuffer, const Nd4jLong* out
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagFunctor - caller for diag functor processor
-    void diagFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
+ND4J_LOCAL void diagFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (context, input, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (sd::LaunchContext * context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _diagFunctor, (sd::LaunchContext * context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagPartFunctor - caller for diag part functor kernel
     template <typename T>
-    void _diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
+    ND4J_LOCAL void _diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
         const int outLen = output->lengthOf();
         const int inLen = input->lengthOf();
         auto stream = context->getCudaStream();
@@ -128,7 +128,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, const Nd4jLong* out
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagPartFunctor - caller for diag part functor processor
-    void diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
+    ND4J_LOCAL void diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
         auto zType = output->dataType();
         BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), NUMERIC_TYPES);
 

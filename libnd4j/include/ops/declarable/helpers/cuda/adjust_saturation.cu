@@ -83,7 +83,7 @@ static _CUDA_H void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
+ND4J_LOCAL void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
 
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  {dimC});
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});

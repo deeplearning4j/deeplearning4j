@@ -919,17 +919,17 @@ namespace helpers {
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
-    int resizeBicubicFunctor_(sd::LaunchContext * context, NDArray const* image, int width, int height,
+    ND4J_LOCAL int resizeBicubicFunctor_(sd::LaunchContext * context, NDArray const* image, int width, int height,
                               bool preserveAspectRatio, bool antialias, NDArray* output) {
         return Status::OK();
     }
 
-    int resizeBicubicFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
+    ND4J_LOCAL int resizeBicubicFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_, (context, image,
                 width, height, preserveAspectRatio, antialias, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int resizeBicubicFunctor_, (sd::LaunchContext * context, NDArray const* image, int width, int height,
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int resizeBicubicFunctor_, (sd::LaunchContext * context, NDArray const* image, int width, int height,
             bool preserveAspectRatio, bool antialias, NDArray* output), NUMERIC_TYPES);
 // ------------------------------------------------------------------------------------------------------------------ //
     struct CachedInterpolation {
@@ -1177,7 +1177,7 @@ namespace helpers {
 
         return res;
     }
-    int resizeAreaFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeAreaFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_, (context, image, width, height, alignCorners, output), NUMERIC_TYPES);
     }
@@ -1186,7 +1186,7 @@ namespace helpers {
 // simplified bicubic resize without antialiasing
 //
     template <typename T>
-    int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int width, int height,
+    ND4J_LOCAL int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int width, int height,
                                bool const alignCorners, bool const halfPixelCenters, NDArray* output) {
 
             ImageResizerState st(alignCorners, halfPixelCenters); // align_corners, half_pixel_align
@@ -1199,17 +1199,17 @@ namespace helpers {
             return res;
     }
 
-    int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int width, int height,
+    ND4J_LOCAL int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int width, int height,
                               bool const alignCorners, bool const halfPixelCenters, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context,
                 image, width, height, alignCorners, halfPixelCenters, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int resizeBicubicFunctorA_, (sd::LaunchContext * context,
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int resizeBicubicFunctorA_, (sd::LaunchContext * context,
             NDArray const* image, int width, int height, bool const alignCorners, bool const halfPixelCenters, NDArray* output), NUMERIC_TYPES);
 
 
 // ------------------------------------------------------------------------------------------------------------------ //
-    int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                             ImageResizeMethods method, bool alignCorners, NDArray* output) {
         switch (method) {
             case kResizeBilinear:
@@ -1361,7 +1361,7 @@ namespace helpers {
 //      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
 //
     template <typename T, typename Z, typename I>
-    void cropAndResizeFunctor_(sd::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices,
+    ND4J_LOCAL void cropAndResizeFunctor_(sd::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices,
                                       NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
         const int batchSize = images->sizeAt(0);
         const int imageHeight = images->sizeAt(1);
@@ -1389,12 +1389,12 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void cropAndResizeFunctor(sd::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
+    ND4J_LOCAL void cropAndResizeFunctor(sd::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
         BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                               (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);
         //
     }
-    BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,
+    BUILD_TRIPLE_TEMPLATE(template ND4J_LOCAL void cropAndResizeFunctor_,
                           (sd::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops),
                           NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);
 }

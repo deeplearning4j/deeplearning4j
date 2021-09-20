@@ -80,7 +80,7 @@ static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
             samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iH, 1);
         }
 
-void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+ND4J_LOCAL void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
             BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling2dBP_, (gradO, gradI, isNCHW), FLOAT_TYPES);
 }
 

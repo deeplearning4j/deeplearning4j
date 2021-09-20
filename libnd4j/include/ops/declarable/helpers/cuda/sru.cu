@@ -47,7 +47,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
+ND4J_LOCAL void sruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
 
     // x   input [bS x inSize], bS - batch size, inSize - number of features
     // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -234,7 +234,7 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruBI(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
+ND4J_LOCAL void sruBI(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
 
     //  x = x * mask
     if(mask)

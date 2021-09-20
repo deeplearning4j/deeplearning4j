@@ -98,7 +98,7 @@ namespace sd {
                 z.p(0, distance);
             }
 
-            void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
+            ND4J_LOCAL void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {
                 BUILD_DOUBLE_SELECTOR(x.dataType(), output.dataType(), _hamming, (x, y, output), INTEGER_TYPES, INDEXING_TYPES);
             }
         }

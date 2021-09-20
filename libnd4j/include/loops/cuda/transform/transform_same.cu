@@ -126,6 +126,6 @@ namespace functions {
             sd::DebugHelper::checkErrorCode(stream, "transformSame(...) failed");
 		}
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL TransformSame, , LIBND4J_TYPES);
     }
 }

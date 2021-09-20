@@ -49,7 +49,7 @@ namespace sd {
                 print_device<T><<<1, 1, 1024, *ctx.getCudaStream()>>>(special, shapeInfo);
             }
 
-            void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message) {
+            ND4J_LOCAL void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message) {
                 NDArray::prepareSpecialUse({}, {&array});
 
                 PointersManager pm(&ctx, "print_device");

@@ -332,7 +332,7 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    int segmentMinFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentMinFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         //int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto stream = context->getCudaStream();
@@ -373,7 +373,7 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     // segmen min
-    int segmentMinFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentMinFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMinFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
@@ -420,7 +420,7 @@ namespace helpers {
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentMinFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL int unsortedSegmentMinFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMinFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});

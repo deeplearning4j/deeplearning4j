@@ -60,7 +60,7 @@ namespace sd {
                 }
             }
 
-            void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
+            ND4J_LOCAL void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
                 Nd4jLong numBins = output.lengthOf();
                 double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
                 double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);

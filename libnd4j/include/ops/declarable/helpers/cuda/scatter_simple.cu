@@ -63,7 +63,7 @@ namespace sd {
             }
 
 
-            void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+            ND4J_LOCAL void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
                 auto xType = input.dataType();
                 auto yType = indices.dataType();
 

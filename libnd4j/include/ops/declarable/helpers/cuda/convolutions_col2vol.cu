@@ -115,7 +115,7 @@ static void col2volCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+ND4J_LOCAL void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     PointersManager manager(block.launchContext(), "col2vol");
 

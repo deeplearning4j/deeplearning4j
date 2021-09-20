@@ -111,10 +111,10 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
 }
 
 ////////////////////////////////////////////////////////////////////////
-void stack(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+ND4J_LOCAL void stack(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
     BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (context, inArrs, output, dim), LIBND4J_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void stack_ , (sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void stack_ , (sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim), LIBND4J_TYPES);
 
 
 ///////////////////////////////////////////////////////////////////
@@ -202,10 +202,10 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
 }
 
 ////////////////////////////////////////////////////////////////////////
-void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+ND4J_LOCAL void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
     BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (context, input, outArrs, dim), LIBND4J_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void unstack_, (sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim), LIBND4J_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 // template <typename T>

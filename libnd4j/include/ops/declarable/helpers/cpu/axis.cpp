@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
+    ND4J_LOCAL void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
         for (Nd4jLong e = 0; e < axisVector->lengthOf(); e++) {
                 auto ca = axisVector->e<int>(e);
@@ -38,7 +38,7 @@ namespace helpers {
         }
     }
 
-    void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector) {
+    ND4J_LOCAL void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector) {
         for (size_t e = 0; e < axisVector.size(); e++) {
             auto a = axisVector[e];
             if (a < 0)

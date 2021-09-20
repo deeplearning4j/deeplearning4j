@@ -573,7 +573,7 @@ namespace sd {
             };
 
             template<typename X, typename Z, typename DeviationOp, bool LastIndexFaster = true>
-            void reductionCase1Scalar(const  int& second_rank, const Nd4jLong* inner_bases, const Nd4jLong* inner_strides, const  X* bufferX, Z* outputZ, bool biasCorrected)
+            static void reductionCase1Scalar(const  int& second_rank, const Nd4jLong* inner_bases, const Nd4jLong* inner_strides, const  X* bufferX, Z* outputZ, bool biasCorrected)
             {
                 using AggType = typename DeviationOp::aggregate_type;
                 Nd4jLong inner_total;
@@ -715,7 +715,7 @@ namespace sd {
             }
 
             template<typename X, typename Z, typename DeviationOp, bool LastIndexFaster = true, typename Movement>
-            void reductionCases(Movement& movement, Nd4jLong loopTotal, const int& second_rank, const Nd4jLong* inner_bases, const Nd4jLong* inner_strides, const X* bufferX, Z* outputZ, bool biasCorrected)
+            static void reductionCases(Movement& movement, Nd4jLong loopTotal, const int& second_rank, const Nd4jLong* inner_bases, const Nd4jLong* inner_strides, const X* bufferX, Z* outputZ, bool biasCorrected)
             {
                 using AggType = typename DeviationOp::aggregate_type;
                 Nd4jLong inner_stride = LastIndexFaster ? inner_strides[second_rank - 1] : inner_strides[0];
@@ -972,7 +972,7 @@ namespace sd {
             }
 
             template<typename X, typename Z, typename DeviationOp, bool LastIndexFaster = true>
-            void reductionCaseNonScalar(const  int& first_rank, const int& output_rank, bool squashed, const  int& second_rank,
+            static void reductionCaseNonScalar(const  int& first_rank, const int& output_rank, bool squashed, const  int& second_rank,
                 const Nd4jLong*& outer_bases, const Nd4jLong* outer_strides, const Nd4jLong* output_strides, const Nd4jLong& output_stride,
                 const Nd4jLong*& inner_bases, const Nd4jLong* inner_strides, const X* bufferX, Z* outputZ, bool biasCorrected)
             {
@@ -1051,7 +1051,7 @@ namespace sd {
             }
 
             template<typename X, typename Z, typename DeviationOp>
-            void  reduction_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+            static void  reduction_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 //nd4j_printf("___%s_________%d+\n", __PRETTY_FUNCTION__, 0);
                 char input_order = input.ordering();
                 bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
@@ -1100,12 +1100,12 @@ namespace sd {
 
 
             template<typename X, typename Z>
-            void  variance_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+            ND4J_LOCAL void  variance_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 return reduction_<X, Z, Deviation<X, Z>>(input, output, dimensions, biasCorrected);
             }
 
             template<typename X, typename Z>
-            void  standardDeviation_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+            ND4J_LOCAL void  standardDeviation_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 return  reduction_<X, Z, Deviation<X, Z, true>>(input, output, dimensions, biasCorrected);
             }
         }

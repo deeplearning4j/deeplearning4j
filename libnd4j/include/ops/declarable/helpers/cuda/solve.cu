@@ -98,7 +98,7 @@ namespace sd {
                 return Status::OK();
             }
 
-            int solveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
+            ND4J_LOCAL int solveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(leftInput->dataType(), return solveFunctor_, (context, leftInput, rightInput, adjoint, output), FLOAT_TYPES);
             }
 
@@ -135,7 +135,7 @@ namespace sd {
                 NDArray::registerSpecialUse({output}, {input});
             }
 
-            void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+            ND4J_LOCAL void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(input->dataType(), adjointMatrix_, (context, input, output), FLOAT_TYPES);
             }
 

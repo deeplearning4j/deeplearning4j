@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
+static void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
     // classic one
     auto lambda = LAMBDA_TT(_x, _y, weight) {
         return _x - (_y * weight);
@@ -36,10 +36,10 @@ void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step
     input->applyPairwiseLambda(*step, lambda, *output);
 }
 
-void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
+ND4J_LOCAL void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
     BUILD_SINGLE_SELECTOR(input->dataType(), applyGradientDescent_, (context, input, step, weight, output), FLOAT_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void applyGradientDescent_, (LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void applyGradientDescent_, (LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output), FLOAT_TYPES);
 }
 }
 }

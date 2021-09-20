@@ -104,7 +104,7 @@ __host__ static void crossCudaLauncher(const int blocksPerGrid, const int thread
 BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES);
 
 
-void crossBatched(sd::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z) {
+ND4J_LOCAL void crossBatched(sd::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z) {
 
 	const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;

@@ -292,6 +292,6 @@ __device__ void BroadcastInt<X>::transformCuda(const void *vx, const Nd4jLong co
 }
 
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT BroadcastInt, , INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL BroadcastInt, , INTEGER_TYPES);
 }
 }

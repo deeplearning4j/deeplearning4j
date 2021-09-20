@@ -200,7 +200,7 @@ namespace helpers {
         }
     }
 
-    void reverseSequence(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
+    ND4J_LOCAL void reverseSequence(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
         NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
         // if op isn't inplace - copy original data into output array
@@ -212,7 +212,7 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
+    ND4J_LOCAL void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
 
         auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), *intArgs);
         auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), *intArgs);

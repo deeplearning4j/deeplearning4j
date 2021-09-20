@@ -85,7 +85,7 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
+ND4J_LOCAL void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
 
     NDArray::prepareSpecialUse({&z}, {&n, &x});
 
@@ -97,7 +97,7 @@ void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, 
     NDArray::registerSpecialUse({&z}, {&n, &x});
 }
 
-BUILD_SINGLE_TEMPLATE(template void polyGammaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vn, const Nd4jLong *nShapeInfo, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void polyGammaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vn, const Nd4jLong *nShapeInfo, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
 
 }
 }

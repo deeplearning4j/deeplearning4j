@@ -39,7 +39,7 @@ namespace sd {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void tanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            ND4J_LOCAL void tanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), tanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
 
@@ -54,7 +54,7 @@ namespace sd {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void hardTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            ND4J_LOCAL void hardTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
 
@@ -67,7 +67,7 @@ namespace sd {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void rationalTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            ND4J_LOCAL void rationalTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), rationalTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
 
@@ -80,7 +80,7 @@ namespace sd {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void rectifiedTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            ND4J_LOCAL void rectifiedTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), rectifiedTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
         }

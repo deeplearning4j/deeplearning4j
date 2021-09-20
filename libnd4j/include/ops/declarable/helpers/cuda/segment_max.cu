@@ -335,7 +335,7 @@ namespace sd {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             template <typename T, typename I>
-            int segmentMaxFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+            ND4J_LOCAL int segmentMaxFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
                 //int numOfClasses = gradOut->sizeAt(0);
                 // if input is a vector: (as if in doc sample)
                 auto stream = context->getCudaStream();
@@ -422,7 +422,7 @@ namespace sd {
                 return Status::OK();
             }
             // -------------------------------------------------------------------------------------------------------------- //
-            int unsortedSegmentMaxFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+            ND4J_LOCAL int unsortedSegmentMaxFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
                 BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
                 NDArray::registerSpecialUse({output}, {input, indices, gradOut});

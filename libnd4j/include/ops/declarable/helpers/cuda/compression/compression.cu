@@ -27,7 +27,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-    void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+    ND4J_LOCAL void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input});
 
@@ -40,7 +40,7 @@ namespace helpers {
         NDArray::registerSpecialUse({output}, {input});
     }
 
-    Nd4jLong encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold) {
+    ND4J_LOCAL Nd4jLong encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold) {
         auto stream = LaunchContext::defaultContext()->getCudaStream();
         int *resultPointer = reinterpret_cast<int *>(LaunchContext::defaultContext()->getScalarPointer());
         int *reductionPointer = reinterpret_cast<int *>(LaunchContext::defaultContext()->getReductionPointer());

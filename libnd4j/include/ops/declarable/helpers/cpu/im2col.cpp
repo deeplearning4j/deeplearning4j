@@ -132,7 +132,7 @@ static void im2col_(sd::LaunchContext & context, const NDArray& input,  NDArray&
 }
 
 
-void im2col(sd::LaunchContext & context, const NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
+ND4J_LOCAL void im2col(sd::LaunchContext & context, const NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
 	BUILD_SINGLE_SELECTOR(im.dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal), FLOAT_TYPES);
 }
 

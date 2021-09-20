@@ -33,7 +33,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // calculate digamma function for array elements
 template <typename T>
-void lgamma_(NDArray& x, NDArray& z) {
+static void lgamma_(NDArray& x, NDArray& z) {
     //auto dtype = x.dataType();
     auto lgammaProc = LAMBDA_T(x_, dtype) {
         return T(DataTypeUtils::fromT<T>() == DataType::DOUBLE?::lgamma(x_): ::lgammaf(x_)); //math::nd4j_log<T,T>(math::nd4j_gamma<T,T>(x));
@@ -42,12 +42,12 @@ void lgamma_(NDArray& x, NDArray& z) {
     x.applyLambda(lgammaProc, z);
 }
 
-void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z) {
+ND4J_LOCAL void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z) {
 
 	BUILD_SINGLE_SELECTOR(x.dataType(), lgamma_, (x, z), FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void lgamma_, (NDArray& x, NDArray& z), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void lgamma_, (NDArray& x, NDArray& z), FLOAT_TYPES);
 
 
 

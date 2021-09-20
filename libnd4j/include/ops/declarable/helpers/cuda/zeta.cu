@@ -29,7 +29,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void zetaCuda(const void *vx, const Nd4jLong *xShapeInfo,
+ND4J_LOCAL __global__ static void zetaCuda(const void *vx, const Nd4jLong *xShapeInfo,
                                 const void *vq, const Nd4jLong *qShapeInfo,
                                       void *vz, const Nd4jLong *zShapeInfo) {
 
@@ -63,7 +63,7 @@ static void zetaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
     zetaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vq, qShapeInfo, vz, zShapeInfo);
 }
 
-void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
+ND4J_LOCAL void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
 
     if(!x.isActualOnDeviceSide()) x.syncToDevice();
     if(!q.isActualOnDeviceSide()) q.syncToDevice();
@@ -78,7 +78,7 @@ void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArr
     z.tickWriteDevice();
 }
 
-BUILD_SINGLE_TEMPLATE(template void zetaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vq, const Nd4jLong *qShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void zetaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vq, const Nd4jLong *qShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
 
 
 }

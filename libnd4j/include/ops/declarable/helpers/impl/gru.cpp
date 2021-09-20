@@ -38,7 +38,7 @@ namespace ops 	  {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
+ND4J_LOCAL void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
              const NDArray* b, const NDArray* bc,
              NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
 
@@ -95,7 +95,7 @@ void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
+ND4J_LOCAL void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
              NDArray* gates, NDArray* h) {
 
     //Inputs:
@@ -149,7 +149,7 @@ void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+ND4J_LOCAL void gruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
     // sL means time steps
 
@@ -176,7 +176,7 @@ void gruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* h
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(sd::LaunchContext* context,
+ND4J_LOCAL void gruCellBp(sd::LaunchContext* context,
               const NDArray* x,    const NDArray* hLast,
               const NDArray* W,    const NDArray* Wc,        const NDArray* b,    const NDArray* bc,
               const NDArray* dLdr, const NDArray* dLdu,      const NDArray* dLdc, const NDArray* dLdh,
@@ -382,7 +382,7 @@ void gruCellBp(sd::LaunchContext* context,
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(sd::LaunchContext* context,
+ND4J_LOCAL void gruCellBp(sd::LaunchContext* context,
               const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* gates,
               NDArray* dLdx, NDArray* dLdhI, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
 
@@ -500,7 +500,7 @@ void gruCellBp(sd::LaunchContext* context,
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoopBp(sd::LaunchContext * context,
+ND4J_LOCAL void gruTimeLoopBp(sd::LaunchContext * context,
                     const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh,
                     NDArray* dLdx, NDArray* dLdhI, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
     // sL means time steps

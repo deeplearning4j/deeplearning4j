@@ -87,7 +87,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void gatherND(sd::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
+ND4J_LOCAL void gatherND(sd::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
     BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), LIBND4J_TYPES, INDEXING_TYPES);
 }
 
@@ -176,7 +176,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
     }
 }
 
-    void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+    ND4J_LOCAL void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
         BUILD_SINGLE_SELECTOR(input->dataType(), gather_, (input, indices, output, intArgs), LIBND4J_TYPES);
     }
 

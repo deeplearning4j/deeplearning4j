@@ -67,7 +67,7 @@ namespace helpers {
     }
 
     template <typename X, typename Z>
-    void _confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    ND4J_LOCAL void _confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto stream = context->getCudaStream();
 
         auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), 1);
@@ -112,7 +112,7 @@ namespace helpers {
         }
     }
 
-    void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    ND4J_LOCAL void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = predictions->dataType();
         auto zType = output->dataType(); // weights can be null
         NDArray::prepareSpecialUse({output}, {labels, predictions, weights});

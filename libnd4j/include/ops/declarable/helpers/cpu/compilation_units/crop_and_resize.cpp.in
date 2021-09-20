@@ -30,7 +30,7 @@
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES, INTEGER_TYPES);
+            BUILD_TRIPLE_TEMPLATE(template ND4J_LOCAL void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES, INTEGER_TYPES);
         }
     }
 }

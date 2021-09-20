@@ -45,11 +45,11 @@ namespace helpers {
         return count;
     }
 
-    Nd4jLong uniqueCount(sd::LaunchContext * context, NDArray* input) {
+    ND4J_LOCAL Nd4jLong uniqueCount(sd::LaunchContext * context, NDArray* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template Nd4jLong uniqueCount_, (NDArray* input), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL Nd4jLong uniqueCount_, (NDArray* input), LIBND4J_TYPES);
 
     template <typename T>
     static Nd4jStatus uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
@@ -88,7 +88,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    Nd4jStatus uniqueFunctor(sd::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+    ND4J_LOCAL Nd4jStatus uniqueFunctor(sd::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
         input->syncToHost();
         values->syncToHost();
         indices->syncToHost();
@@ -106,7 +106,7 @@ namespace helpers {
             counts->syncToDevice();
     }
 
-    BUILD_SINGLE_TEMPLATE(template Nd4jStatus uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL Nd4jStatus uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);
 }
 }
 }

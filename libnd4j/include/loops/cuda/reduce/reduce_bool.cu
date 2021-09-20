@@ -332,7 +332,7 @@ __device__ void initializeShared(X *extraParams, X **sPartials, int sMemSize) {
 }
 
 
-BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceBoolFunction, , LIBND4J_TYPES, BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL ReduceBoolFunction, , LIBND4J_TYPES, BOOL_TYPES);
 
 }
 }

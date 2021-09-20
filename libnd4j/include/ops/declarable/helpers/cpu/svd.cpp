@@ -70,7 +70,7 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
 }
 
 //////////////////////////////////////////////////////////////////////////
-void svd(sd::LaunchContext * context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
+ND4J_LOCAL void svd(sd::LaunchContext * context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
     BUILD_SINGLE_SELECTOR(x->dataType(), svd_, (x, outArrs, fullUV, calcUV, switchNum), FLOAT_TYPES);
 }
 

@@ -223,7 +223,7 @@ void ReduceSameFunction<X>::exec(const int opNum, sd::memory::Workspace* workspa
 
 
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceSameFunction, , LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL ReduceSameFunction, , LIBND4J_TYPES);
 }
 }
 

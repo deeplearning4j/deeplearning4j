@@ -30,14 +30,14 @@ namespace sd {
 
     template<typename X, typename Z>
     template <typename OpType>
-    void ReductionFloatLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const int* dims, Z* extraParams) {
+    ND4J_LOCAL void ReductionFloatLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const int* dims, Z* extraParams) {
 #ifndef INLINE_LOOPS
         ReductionLoops<X,Z,Z>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
     }
 
     template<typename X, typename Y>
-    void ReductionFloatLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace,
+    ND4J_LOCAL void ReductionFloatLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace,
                                             const X *x, const Nd4jLong *xShapeInfo,
                                             Y *z, const Nd4jLong *zShapeInfo,
                                             const int *dims, Y *extraParams) {

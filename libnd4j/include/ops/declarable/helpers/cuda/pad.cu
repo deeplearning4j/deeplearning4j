@@ -128,7 +128,7 @@ namespace sd {
             }
 
 ///////////////////////////////////////////////////////////////////
-            void pad(sd::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
+            ND4J_LOCAL void pad(sd::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
 
                 PointersManager manager(context, "pad");
 
@@ -264,7 +264,7 @@ namespace sd {
                 NDArray::registerSpecialUse({&output}, {&input, &paddings});
             }
 
-            void mirrorPad(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+            ND4J_LOCAL void mirrorPad(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), paddings.dataType(), mirrorPad_, (context, input, paddings, output, mode), LIBND4J_TYPES, INDEXING_TYPES);
             }
 

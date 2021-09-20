@@ -54,6 +54,6 @@ namespace functions {
             sd::TransformLoops<X,Z,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
         }
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
     }
 }

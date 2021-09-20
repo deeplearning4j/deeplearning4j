@@ -202,7 +202,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 }
 
 
-void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+ND4J_LOCAL void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
     BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), ismax_, (input, output, dimensions), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 

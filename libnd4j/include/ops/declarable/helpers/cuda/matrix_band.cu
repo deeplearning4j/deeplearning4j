@@ -89,7 +89,7 @@ namespace helpers {
 // matrixBandPart_ - main algorithm caller
 //
     template <typename T>
-    void matrixBandPart_(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    ND4J_LOCAL void matrixBandPart_(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         dim3 launchDims(256, 512, 8192);
         auto stream = context->getCudaStream();
 
@@ -109,7 +109,7 @@ namespace helpers {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    ND4J_LOCAL void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (context, input, output, lowerBand, upperBand), FLOAT_TYPES);
     }
 }

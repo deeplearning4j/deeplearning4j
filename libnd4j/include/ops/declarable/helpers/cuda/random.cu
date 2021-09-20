@@ -44,7 +44,7 @@ namespace helpers {
      * @return gamma distributed value
      */
     template <typename T>
-    T __device__ gammaLess(T const* U, Nd4jLong index, Nd4jLong maxLength, T const alpha, T const beta) {
+    ND4J_LOCAL T __device__ gammaLess(T const* U, Nd4jLong index, Nd4jLong maxLength, T const alpha, T const beta) {
         auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
         auto a = math::p_pow(T(2.f), alpha) * math::p_pow(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
         auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
@@ -87,7 +87,7 @@ namespace helpers {
      * @return - gamma distributed value with given params
      */
     template <typename T>
-    T __device__ gammaGreat(T const* U, Nd4jLong index, Nd4jLong maxLength, T const alpha, T const beta) {
+    ND4J_LOCAL T __device__ gammaGreat(T const* U, Nd4jLong index, Nd4jLong maxLength, T const alpha, T const beta) {
         auto decreasedAlpha = alpha - T(1.f/3.f);
         auto c = T(1.)/ math::p_sqrt(T(9.f) * decreasedAlpha);
 //        static auto index = 0LL;
@@ -204,7 +204,7 @@ namespace helpers {
 
     }
 
-    void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
+    ND4J_LOCAL void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
         if (beta)
             NDArray::prepareSpecialUse({output}, {alpha, beta});
         else
@@ -215,7 +215,7 @@ namespace helpers {
         else
             NDArray::prepareSpecialUse({output}, {alpha});
     }
-    BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_, (LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output), FLOAT_NATIVE);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void fillRandomGamma_, (LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output), FLOAT_NATIVE);
 
 
     /*
@@ -272,13 +272,13 @@ namespace helpers {
                 output->dataBuffer()->specialAsT<T>(), output->specialShapeInfo());
     }
 
-    void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
+    ND4J_LOCAL void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {lambda});
         BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomPoisson_, (context, rng, lambda, output), FLOAT_NATIVE);
         NDArray::registerSpecialUse({output}, {lambda});
     }
 
-    BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_NATIVE);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void fillRandomPoisson_, (LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_NATIVE);
 
     template <typename T>
     static __global__ void fillUniformKernel(graph::RandomGenerator* devRng, T from, T to, T* output, const Nd4jLong* outputShape) {
@@ -338,7 +338,7 @@ namespace helpers {
         }
     }
 
-    void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
+    ND4J_LOCAL void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomUniform_, (context, rng, min, max, output), NUMERIC_TYPES);
     }
 
@@ -410,7 +410,7 @@ __host__ static void fillMultiNomialCudaLauncher(
 }
  
 ///////////////////////////////////////////////////////////////////
-void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output, const Nd4jLong numOfSamples, const int dimC) {
+ND4J_LOCAL void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output, const Nd4jLong numOfSamples, const int dimC) {
 
      Nd4jLong dimA = (0 == dimC) ? 1 : 0;
 

@@ -164,7 +164,7 @@ static void pooling3dCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+ND4J_LOCAL void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
 
     PointersManager manager(block.launchContext(), "pooling3d");
 

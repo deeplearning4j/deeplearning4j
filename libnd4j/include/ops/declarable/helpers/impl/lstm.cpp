@@ -44,7 +44,7 @@ namespace sd {
         namespace helpers {
 
 /////////////////////////////////////////////////////////////////////////////
-            void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
+            ND4J_LOCAL void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
                                    const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
                                    const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
                                    const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat){
@@ -106,7 +106,7 @@ namespace sd {
 
 
             //////////////////////////////////////////////////////////////////////////
-            void lstmTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+            ND4J_LOCAL void lstmTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                               NDArray* h, NDArray* c, const std::vector<double>& params) {
 
                 // x  input [time x bS x nIn]

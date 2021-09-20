@@ -111,7 +111,7 @@ void PairWiseIntTransform<X>::executeCudaShaped(dim3& launchDims, cudaStream_t *
 	DISPATCH_BY_OPNUM_T(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams), PAIRWISE_INT_OPS);
 }
 
-    BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT PairWiseIntTransform, , INTEGER_TYPES);
+    BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL PairWiseIntTransform, , INTEGER_TYPES);
 }
 }
 

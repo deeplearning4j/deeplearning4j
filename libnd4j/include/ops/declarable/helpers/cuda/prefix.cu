@@ -148,7 +148,7 @@ static void prefixPerBlockCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 ///////////////////////////////////////////////////////////////////
-void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
+ND4J_LOCAL void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
 
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dims);
@@ -170,7 +170,7 @@ void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArr
 }
 
 ///////////////////////////////////////////////////////////////////
-void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+ND4J_LOCAL void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
     prefix(context, op, x, z, {}, exclusive, reverse);
 }
 

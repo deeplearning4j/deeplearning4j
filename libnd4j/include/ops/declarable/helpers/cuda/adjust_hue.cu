@@ -81,7 +81,7 @@ static _CUDA_H void adjustHueCudaLauncher(const int blocksPerGrid, const int thr
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
+ND4J_LOCAL void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
 
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  {dimC});
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});

@@ -28,14 +28,14 @@ namespace sd {
 
     template<typename X>
     template <typename OpType>
-    void ReductionSameLoops<X>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
+    ND4J_LOCAL void ReductionSameLoops<X>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
 #ifndef INLINE_LOOPS
         ReductionLoops<X,X,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
     }
 
     template<typename X>
-    void ReductionSameLoops<X>::wrapper(const int opNum, sd::memory::Workspace* workspace,
+    ND4J_LOCAL void ReductionSameLoops<X>::wrapper(const int opNum, sd::memory::Workspace* workspace,
                                         const X *vx, const Nd4jLong *xShapeInfo,
                                         X *z, const Nd4jLong *zShapeInfo,
                                         const int *dims, X *vextraParams) {
@@ -48,5 +48,5 @@ namespace sd {
 #endif
     }
 
-    BUILD_SINGLE_TEMPLATE(template class ReductionSameLoops, , LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL class ReductionSameLoops, , LIBND4J_TYPES);
 }

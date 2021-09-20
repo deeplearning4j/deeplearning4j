@@ -52,9 +52,9 @@ namespace sd {
                 output.assign(s);
                 delete s;
             }
-            BUILD_SINGLE_TEMPLATE(template void __where,(NDArray &condition, NDArray& output, memory::Workspace *workspace), LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void __where,(NDArray &condition, NDArray& output, memory::Workspace *workspace), LIBND4J_TYPES);
 
-            void _where(sd::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
+            ND4J_LOCAL void _where(sd::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
                 condition.syncToHost();
                 BUILD_SINGLE_SELECTOR(output.dataType(), __where, (condition, output, workspace), LIBND4J_TYPES);
                 output.syncToDevice();

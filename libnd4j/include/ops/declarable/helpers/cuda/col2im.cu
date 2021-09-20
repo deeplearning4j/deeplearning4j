@@ -186,7 +186,7 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+ND4J_LOCAL void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
 
     PointersManager manager(&context, "col2im");
 

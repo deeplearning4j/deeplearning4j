@@ -60,7 +60,7 @@ namespace helpers {
         }
     }
 
-    void swapRows(NDArray* matrix, int theFirst, int theSecond) {
+    ND4J_LOCAL void swapRows(NDArray* matrix, int theFirst, int theSecond) {
         BUILD_SINGLE_SELECTOR(matrix->dataType(), swapRows_, (matrix, theFirst, theSecond), FLOAT_TYPES);
     }
 
@@ -95,7 +95,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void invertLowerMatrix_, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
-    void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+    ND4J_LOCAL void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), invertLowerMatrix_, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
@@ -133,7 +133,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
-    void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+    ND4J_LOCAL void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
@@ -205,7 +205,7 @@ namespace helpers {
         return determinant;
     }
 
-    BUILD_DOUBLE_TEMPLATE(template NDArray lup_, (LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES, INDEXING_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL NDArray lup_, (LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES, INDEXING_TYPES);
     /*
      * lu decomposition with naive algorithm with partial pivoting
      * */
@@ -234,7 +234,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void processColumns(int currentRow, int rowNum, T* compoundBuf, Nd4jLong const* compoundShape) {
+    ND4J_LOCAL void processColumns(int currentRow, int rowNum, T* compoundBuf, Nd4jLong const* compoundShape) {
         Nd4jLong xDiag[] = {currentRow, currentRow};
         auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
         auto loop = PRAGMA_THREADS_FOR {
@@ -380,7 +380,7 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int logAbsDeterminant(sd::LaunchContext * context, NDArray* input, NDArray* output) {
+    ND4J_LOCAL int logAbsDeterminant(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (context, input, output), FLOAT_TYPES);
     }
 
@@ -500,15 +500,15 @@ template <typename T>
         return Status::OK();
     }
 
-    int inverse(sd::LaunchContext * context, NDArray* input, NDArray* output) {
+    ND4J_LOCAL int inverse(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_TYPES);
     }
 
-    int lowerInverseFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
+    ND4J_LOCAL int lowerInverseFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return lowerInverse_, (context, input, output), FLOAT_TYPES);
     }
 
-    int upperInverseFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
+    ND4J_LOCAL int upperInverseFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return upperInverse_, (context, input, output), FLOAT_TYPES);
     }
 
@@ -537,12 +537,12 @@ template <typename T>
         return true;
     }
 
-    bool checkCholeskyInput(sd::LaunchContext * context, NDArray const* input) {
+    ND4J_LOCAL bool checkCholeskyInput(sd::LaunchContext * context, NDArray const* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return checkCholeskyInput_, (context, input), FLOAT_TYPES);
     }
 
     template <typename T>
-    int cholesky_(LaunchContext *context, NDArray* input, NDArray* output, bool inplace) {
+    ND4J_LOCAL int cholesky_(LaunchContext *context, NDArray* input, NDArray* output, bool inplace) {
 
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
@@ -584,12 +584,12 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int cholesky(sd::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
+    ND4J_LOCAL int cholesky(sd::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (context, input, output, inplace), FLOAT_TYPES);
     }
 
     template <typename T>
-    int logdetFunctor_(LaunchContext *context, NDArray* input, NDArray* output) {
+    ND4J_LOCAL int logdetFunctor_(LaunchContext *context, NDArray* input, NDArray* output) {
         auto tempOutput = input->dup();
         int res = cholesky_<T>(context, input, &tempOutput, false);
         if (res != ND4J_STATUS_OK)
@@ -606,11 +606,11 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int logdetFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
+    ND4J_LOCAL int logdetFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (context, input, output), FLOAT_TYPES);
     }
 
-    int lup(sd::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation) {
+    ND4J_LOCAL int lup(sd::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), permutation->dataType(), lup_, (context, input, compound, permutation), FLOAT_NATIVE, INDEXING_TYPES);
         return Status::OK();
     }

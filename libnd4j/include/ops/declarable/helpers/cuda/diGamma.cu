@@ -63,7 +63,7 @@ static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
+ND4J_LOCAL void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
 
     int threadsPerBlock = MAX_NUM_THREADS / 2;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -73,7 +73,7 @@ void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
     NDArray::registerSpecialUse({&z}, {&x});
 }
 
-BUILD_SINGLE_TEMPLATE(template void diGammaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void diGammaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
 
 }
 }

@@ -27,7 +27,7 @@
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_DOUBLE_TEMPLATE(template void standardDeviation_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected), LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES);
+            BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void standardDeviation_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected), LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES);
         }
     }
 }

@@ -53,7 +53,7 @@ namespace helpers {
         double _interpolarValue;
     };
     // calculateResizeScale determines the float scaling factor.
-    inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
+    static inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
                                       bool alignCorners) {
         return (alignCorners && outSize > 1)
                ? (inSize - 1) / static_cast<float>(outSize - 1)
@@ -163,7 +163,7 @@ namespace helpers {
     };
 
     template <class Scaler>
-    inline void computeInterpolationWeights(const Scaler scaler, Nd4jLong outSize,
+    static inline void computeInterpolationWeights(const Scaler scaler, Nd4jLong outSize,
                                             Nd4jLong inSize,
                                             double scale,
                                             BilinearInterpolationData *interpolationData) {
@@ -295,7 +295,7 @@ namespace helpers {
     }
 
     template <class Scaler, typename T>
-    void resizeNeighbor(ImageResizerState const& st, NDArray const *images, bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
+    ND4J_LOCAL void resizeNeighbor(ImageResizerState const& st, NDArray const *images, bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
         const Nd4jLong batchSize = st.batchSize;
         const Nd4jLong inHeight = st.inHeight;
         const Nd4jLong inWidth = st.inWidth;
@@ -330,7 +330,7 @@ namespace helpers {
     }
 
     template<typename T>
-    int resizeNeighborFunctor_(NDArray const *images, int const width, int const height, bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
+    ND4J_LOCAL int resizeNeighborFunctor_(NDArray const *images, int const width, int const height, bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
         ImageResizerState st(alignCorners, halfPixelCenter);
         st.validateAndCalculateOutputSize(images, width, height);
 
@@ -358,13 +358,13 @@ namespace helpers {
 //                              NUMERIC_TYPES, FLOAT_TYPES);
 //    }
 
-    int resizeBilinearFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
+    ND4J_LOCAL int resizeBilinearFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
         BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), NUMERIC_TYPES, FLOAT_TYPES);
         return Status::OK();
     }
 
-    int resizeNeighborFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
+    ND4J_LOCAL int resizeNeighborFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners,  bool const halfPixelCenter, NDArray *output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), LIBND4J_TYPES);
     }
@@ -373,7 +373,7 @@ namespace helpers {
 // ------------------------------------------------------------------------------------------------------------------ //
 // Bicubic interpolation
 // ------------------------------------------------------------------------------------------------------------------ //
-    class CachedInterpolationCalculator {
+    ND4J_LOCAL class CachedInterpolationCalculator {
     public:
         CachedInterpolationCalculator() : _indexes{-1, -1, -1, -1} {}
 
@@ -417,7 +417,7 @@ namespace helpers {
     };
     static const Nd4jLong kTableSize = 1024LL; //(1 << 10);
 
-    const float* initCoeffsTable(const double a) {
+    ND4J_LOCAL const float* initCoeffsTable(const double a) {
         // Allocate and initialize coefficients table using Bicubic
         // convolution algorithm.
         // https://en.wikipedia.org/wiki/Bicubic_interpolation
@@ -434,7 +434,7 @@ namespace helpers {
         return coeffsTable;
     }
 
-    const float* getCoeffsTable(const bool use_keys_cubic) {
+    ND4J_LOCAL const float* getCoeffsTable(const bool use_keys_cubic) {
         // Static so that we initialize it on first use
         if (use_keys_cubic) {
             // http://ieeexplore.ieee.org/document/1163711/
@@ -449,17 +449,17 @@ namespace helpers {
         }
     }
 
-    inline Nd4jLong bound(Nd4jLong val, Nd4jLong limit) {
+    static inline Nd4jLong bound(Nd4jLong val, Nd4jLong limit) {
         return math::nd4j_min(limit - 1ll, math::nd4j_max(Nd4jLong{0}, val));
     }
 
     template <typename T>
-    int resizeBicubicFunctor_(sd::LaunchContext * context, NDArray const* image, int width, int height,
+    ND4J_LOCAL int resizeBicubicFunctor_(sd::LaunchContext * context, NDArray const* image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
         return ND4J_STATUS_OK;
     }
 
-    int resizeBicubicFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
+    ND4J_LOCAL int resizeBicubicFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_, (context, image,
                 width, height, preserveAspectRatio, antialias, output), NUMERIC_TYPES);
@@ -467,7 +467,7 @@ namespace helpers {
 // ------------------------------------------------------------------------------------------------------------------ //
 
         template <typename T>
-        inline float interpolate1D(const float weight0, const float weight1, const float weight2, const float weight3,
+        static inline float interpolate1D(const float weight0, const float weight1, const float weight2, const float weight3,
                                    const T value0, const T value1, const T value2, const T value3) {
             return static_cast<float>(value0) * weight0 +
                    static_cast<float>(value1) * weight1 +
@@ -481,7 +481,7 @@ namespace helpers {
         }
 
         template <typename Scaler, bool use_keys_cubic>
-        inline void getWeightsAndIndices(const float scale, const Nd4jLong out_loc, const Nd4jLong limit, WeightsAndIndices* out) {
+        static inline void getWeightsAndIndices(const float scale, const Nd4jLong out_loc, const Nd4jLong limit, WeightsAndIndices* out) {
             const Scaler scaler;
             const float in_loc_f = scaler(out_loc, scale);
             const Nd4jLong in_loc = std::floor(in_loc_f);
@@ -783,7 +783,7 @@ namespace helpers {
 // simplified bicubic resize without antialiasing
 //
     template <typename T>
-    int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
         ImageResizerState st(alignCorners, halfPixelAlign); // align_corners, half_pixel_align
         int res = st.validateAndCreateOutput(image, width, height);
@@ -792,7 +792,7 @@ namespace helpers {
 
         return res;
     }
-    int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context, image, width, height, alignCorners, halfPixelAlign, output), NUMERIC_TYPES);
     }
@@ -957,7 +957,7 @@ namespace helpers {
     }
 
     template <typename X>
-    int resizeAreaFunctor_(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeAreaFunctor_(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, NDArray* output) {
             ImageResizerState st(alignCorners, false); // Create resize info
             auto res = st.validateAndCalculateOutputSize(image, width, height);
@@ -991,7 +991,7 @@ namespace helpers {
             return res;
     }
 
-    int resizeAreaFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const alignCorners, NDArray* output) {
+    ND4J_LOCAL int resizeAreaFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const alignCorners, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_, (context, image, width, height, alignCorners, output), NUMERIC_TYPES);
     }
 
@@ -1347,7 +1347,7 @@ namespace helpers {
     }
 #endif
 // ------------------------------------------------------------------------------------------------------------------ //
-    int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                       ImageResizeMethods method, bool alignCorners, NDArray* output) {
         switch (method) {
             case kResizeBilinear:
@@ -1363,7 +1363,7 @@ namespace helpers {
         return Status::CODE(ND4J_STATUS_BAD_INPUT, "helper::resizeImagesFunctor: Wrong resize method");
     }
 // ------------------------------------------------------------------------------------------------------------------ //
-    int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+    ND4J_LOCAL int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                       ImageResizeMethods method, bool antialias, NDArray* output) {
         switch (method) {
             case kResizeNearest:      return resizeNeighbor(context, image, width, height,  antialias, output);

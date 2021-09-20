@@ -55,7 +55,7 @@ namespace sd {
 // \@param extrapolationVal - radix to increase/decrease image
 // \@param crops - output image batch (4D with given type)
 //
-            void
+            ND4J_LOCAL void
             cropAndResizeFunctor(sd::LaunchContext * context, NDArray const *images, NDArray const *boxes,
                                  NDArray const *indices, NDArray const *cropSize,
                                  int method, double extrapolationVal, NDArray *crops) {

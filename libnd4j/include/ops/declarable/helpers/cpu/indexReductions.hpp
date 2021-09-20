@@ -37,7 +37,7 @@ namespace sd {
 		namespace helpers {
 			constexpr int threadingThreshold = 4096;
 			template<typename X, typename Z, typename ReductionOp>
-			FORCEINLINE void indexInnerReductionRank1(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount)
+			static FORCEINLINE void indexInnerReductionRank1(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount)
 			{
 				argCurrent = 0;
 				current = buffer[0];
@@ -49,7 +49,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			FORCEINLINE void indexInnerReductionRank1(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount, const Nd4jLong& inner_stride)
+			static FORCEINLINE void indexInnerReductionRank1(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount, const Nd4jLong& inner_stride)
 			{
 				argCurrent = 0;
 				current = buffer[0];
@@ -62,7 +62,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, size_t constRank, bool LastIndexFaster = true>
-			FORCEINLINE void indexInnerReductionConstRank(const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong outerLoopCount, const Nd4jLong& innerLoopCount)
+			static FORCEINLINE void indexInnerReductionConstRank(const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong outerLoopCount, const Nd4jLong& innerLoopCount)
 			{
 				//skip 1 from the beginning or end depending the Order 
 				constexpr size_t updated_index = LastIndexFaster ? 0 : 1;
@@ -87,7 +87,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, size_t constRank, bool LastIndexFaster = true>
-			FORCEINLINE void indexInnerReductionConstRank(const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong outerLoopCount, const Nd4jLong& innerLoopCount, const Nd4jLong& inner_stride)
+			static FORCEINLINE void indexInnerReductionConstRank(const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong outerLoopCount, const Nd4jLong& innerLoopCount, const Nd4jLong& inner_stride)
 			{
 				//skip 1 from the beginning or end depending the Order 
 				constexpr size_t updated_index = LastIndexFaster ? 0 : 1;
@@ -112,7 +112,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, bool LastIndexFaster = true>
-			FORCEINLINE void indexInnerReduction(const int& rank, const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong& outerLoopStart, const Nd4jLong& outerLoopStop, const Nd4jLong& innerLoopCount)
+			static FORCEINLINE void indexInnerReduction(const int& rank, const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong& outerLoopStart, const Nd4jLong& outerLoopStop, const Nd4jLong& innerLoopCount)
 			{
 				size_t offset = 0;
 				Nd4jLong outerLoopCount = outerLoopStop - outerLoopStart;
@@ -140,7 +140,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, bool LastIndexFaster = true>
-			FORCEINLINE void indexInnerReduction(const int& rank, const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong& outerLoopStart, const Nd4jLong& outerLoopStop, const Nd4jLong& innerLoopCount, const Nd4jLong& inner_stride)
+			static FORCEINLINE void indexInnerReduction(const int& rank, const X* buffer, X& current, Z& argCurrent, const Nd4jLong* bases, const Nd4jLong* strides, const Nd4jLong& outerLoopStart, const Nd4jLong& outerLoopStop, const Nd4jLong& innerLoopCount, const Nd4jLong& inner_stride)
 			{
 				size_t offset = 0;
 				Nd4jLong outerLoopCount = outerLoopStop - outerLoopStart;
@@ -168,7 +168,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			FORCEINLINE void indexInnerReductionRank1Block4WithMerge(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount)
+			static FORCEINLINE void indexInnerReductionRank1Block4WithMerge(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount)
 			{
 				argCurrent = 0;
 				current = buffer[0];
@@ -204,7 +204,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			FORCEINLINE void indexInnerReductionRank1Block4WithMerge(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount, const Nd4jLong& inner_stride)
+			static FORCEINLINE void indexInnerReductionRank1Block4WithMerge(const X* buffer, X& current, Z& argCurrent, const Nd4jLong& loopCount, const Nd4jLong& inner_stride)
 			{
 				argCurrent = 0;
 				current = buffer[0];
@@ -243,7 +243,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			FORCEINLINE void indexInnerReductionRank1Block4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3, Z* output, Z* output1, Z* output2, Z* output3, const Nd4jLong& loopCount)
+			static FORCEINLINE void indexInnerReductionRank1Block4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3, Z* output, Z* output1, Z* output2, Z* output3, const Nd4jLong& loopCount)
 			{
 				LOG_CALLS(0)
 				Z argCurrent = 0;
@@ -268,7 +268,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			FORCEINLINE void indexInnerReductionRank1Block4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3, Z* output, Z* output1, Z* output2, Z* output3, const Nd4jLong& loopCount, const Nd4jLong& inner_stride)
+			static FORCEINLINE void indexInnerReductionRank1Block4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3, Z* output, Z* output1, Z* output2, Z* output3, const Nd4jLong& loopCount, const Nd4jLong& inner_stride)
 			{
 				LOG_CALLS(0)
 				Z argCurrent = 0;
@@ -295,7 +295,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, size_t constRank, bool LastIndexFaster = true>
-			FORCEINLINE void indexInnerReductionConstRankBlock4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3,
+			static FORCEINLINE void indexInnerReductionConstRankBlock4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3,
 				Z* output, Z* output1, Z* output2, Z* output3, const Nd4jLong* bases, const Nd4jLong* strides,
 				const Nd4jLong& outerLoopCount, const Nd4jLong& innerLoopCount)
 			{
@@ -340,7 +340,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, size_t constRank, bool LastIndexFaster = true>
-			FORCEINLINE void indexInnerReductionConstRankBlock4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3,
+			static FORCEINLINE void indexInnerReductionConstRankBlock4(const X* buffer, const X* buffer1, const X* buffer2, const X* buffer3,
 				Z* output, Z* output1, Z* output2, Z* output3, const Nd4jLong* bases, const Nd4jLong* strides,
 				const Nd4jLong& outerLoopCount, const Nd4jLong& innerLoopCount, const Nd4jLong& inner_stride)
 			{
@@ -387,7 +387,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, bool LastIndexFaster = true>
-			void argIndexCase1Scalar(const  int& second_rank,const Nd4jLong* inner_bases,const Nd4jLong* inner_strides, const  X* bufferX, Z* outputZ)
+			static void argIndexCase1Scalar(const  int& second_rank,const Nd4jLong* inner_bases,const Nd4jLong* inner_strides, const  X* bufferX, Z* outputZ)
 			{
 				Nd4jLong inner_total;
 				Nd4jLong inner_last = 0;
@@ -454,7 +454,7 @@ namespace sd {
 
 
 			template<typename X, typename Z, typename ReductionOp, typename Movement, bool LastIndexFaster = true>
-			void argReductionInnerCases(Movement& movement, Nd4jLong loopTotal, const int& second_rank,const Nd4jLong* inner_bases,const Nd4jLong* inner_strides, const X* bufferX, Z* outputZ)
+			static void argReductionInnerCases(Movement& movement, Nd4jLong loopTotal, const int& second_rank,const Nd4jLong* inner_bases,const Nd4jLong* inner_strides, const X* bufferX, Z* outputZ)
 			{
 
 				Nd4jLong inner_stride = true /*LastIndexFaster*/ ? inner_strides[second_rank - 1] : inner_strides[0];
@@ -688,7 +688,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp, bool LastIndexFaster = true>
-			void argIndexCaseNonScalar(const  int& first_rank, const int& output_rank, bool squashed, const  int& second_rank,
+			static void argIndexCaseNonScalar(const  int& first_rank, const int& output_rank, bool squashed, const  int& second_rank,
 				const Nd4jLong*& outer_bases,const Nd4jLong* outer_strides,const Nd4jLong* output_strides, const Nd4jLong &output_stride,
 				const Nd4jLong*& inner_bases,const Nd4jLong* inner_strides, const X* bufferX, Z* outputZ)
 			{
@@ -783,7 +783,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			void  argIndex_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			ND4J_LOCAL void  argIndex_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				char input_order = input.ordering();
 				bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
 				const Nd4jLong* input_shapeInfo = input.shapeInfo();
@@ -879,22 +879,22 @@ namespace sd {
 			
 			//////////////////////////////////////////////////////////////////////////
 			template<typename X, typename Z>
-			void  argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			ND4J_LOCAL void  argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexMax<X, Z>>(input, output, dimensions);
 			}
 
 			template<typename X, typename Z>
-			void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			ND4J_LOCAL void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexMin<X, Z>>(input, output, dimensions);
 			}
 
 			template<typename X, typename Z>
-			void  argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			ND4J_LOCAL void  argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexAbsMax<X, Z>>(input, output, dimensions);
 			}
 
 			template<typename X, typename Z>
-			void  argAbsMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			ND4J_LOCAL void  argAbsMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexAbsMin<X, Z>>(input, output, dimensions);
 			}
 		}

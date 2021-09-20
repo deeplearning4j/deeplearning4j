@@ -123,7 +123,7 @@ namespace helpers {
         }
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSqrtNFunctor_, (context, input, indices, numOfClasses, output),
                               FLOAT_TYPES, INDEXING_TYPES);
@@ -249,7 +249,7 @@ namespace helpers {
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentSqrtNFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL int unsortedSegmentSqrtNFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSqrtNFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});
