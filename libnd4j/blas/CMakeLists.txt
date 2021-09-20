@@ -71,6 +71,14 @@ if(WIN32 AND NOT ANDROID)
     SET(CMAKE_NINJA_FORCE_RESPONSE_FILE 1 CACHE INTERNAL "")
 endif()
 
+if(SD_USE_LTO)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(STATUS "Use link time optimizations")
+        add_compile_options(-flto)
+        add_link_options(-flto)
+    endif()
+endif()
+
 set(DEFINITIONS_CONTENT "")
 if ("${SD_ALL_OPS}")
     add_compile_definitions(SD_ALL_OPS=1)
@@ -210,6 +218,8 @@ if(SD_CUDA)
         if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
             message("Enabling fPIC...")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+            #enable gnu extensions
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-std=gnu++11")
         endif()
 
         if(WIN32)
