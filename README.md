@@ -35,12 +35,12 @@ Deeplearning4J has quite a few dependencies. For this reason we only support usa
   <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
-      <version>1.0.0-beta7</version>
+      <version>1.0.0-M1.1</version>
   </dependency>
   <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native-platform</artifactId>
-      <version>1.0.0-beta7</version>
+      <version>1.0.0-M1.1</version>
   </dependency>
 </dependencies>
 ```
@@ -94,7 +94,7 @@ You can find the official documentation for Deeplearning4J and the other librari
 We have separate repository with various examples available: https://github.com/eclipse/deeplearning4j-examples
 
 ## Building from source
-It is preferred to use the official pre-compiled releases (see above). But if you want to build from source, first take a look at the prerequisites for building from source here: https://deeplearning4j.konduit.ai/getting-started/build-from-source.
+It is preferred to use the official pre-compiled releases (see above). But if you want to build from source, first take a look at the prerequisites for building from source here: https://deeplearning4j.konduit.ai/multi-project/how-to-guides/build-from-source.
 
 To build everything, we can use commands like
 ```
@@ -119,4 +119,4 @@ An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
 ## Commercial Support
 Deeplearning4J is actively developed by the team at [Konduit K.K.](http://www.konduit.ai). 
 
-[If you need any commercial support feel free to reach out to us.](https://konduit.ai/konduit-open-source-support/)  
+[If you need any commercial support feel free to reach out to us. at support@konduit.ai)  
