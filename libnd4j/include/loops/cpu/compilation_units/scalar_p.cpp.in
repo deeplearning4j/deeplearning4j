@@ -22,8 +22,10 @@
 
 #include <loops/cpu/scalar.hpp>
 #cmakedefine PAIRWISE_TYPE_GEN
+#if defined(PAIRWISE_TYPE_GEN) && defined(PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace scalar {
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_@FL_TYPE_INDEX@);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_LOCAL ScalarTransform, , PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
+#endif

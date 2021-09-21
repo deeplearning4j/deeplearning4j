@@ -52,7 +52,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void nthElementFunctor_(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    ND4J_LOCAL void nthElementFunctor_(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
 
         NDArray::prepareSpecialUse({output}, {input});
         NDArray sortedVals(*input);
@@ -81,7 +81,7 @@ namespace helpers {
         }
         NDArray::registerSpecialUse({output}, {input});
     }
-    void nthElementFunctor(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    ND4J_LOCAL void nthElementFunctor(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output, reverse), LIBND4J_TYPES);
 
     }

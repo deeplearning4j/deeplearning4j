@@ -57,6 +57,6 @@ void _CUDA_H TransformAny<X, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo
 
 
 
-BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
 }
 }

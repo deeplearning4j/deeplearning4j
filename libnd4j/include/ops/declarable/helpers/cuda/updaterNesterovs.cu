@@ -33,7 +33,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void nesterovsUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vin, const Nd4jLong* inShapeInfo, 
+ND4J_LOCAL __global__ void nesterovsUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vin, const Nd4jLong* inShapeInfo, 
                                      void* vz, const Nd4jLong* zShapeInfo, void* vst, const Nd4jLong* stShapeInfo, const T lr, const T momentum) {
 
     const auto grad = reinterpret_cast<const T*>(vx);
@@ -83,7 +83,7 @@ __global__ void nesterovsUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-linkage void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, 
+ND4J_LOCAL linkage void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, 
                                           const void* vx, const Nd4jLong* xShapeInfo, const void* vin, const Nd4jLong* inShapeInfo, 
                                           void* vz, const Nd4jLong* zShapeInfo, void* vst, const Nd4jLong* stShapeInfo,
                                           const double dLr, const double dMomentum) {
@@ -95,7 +95,7 @@ linkage void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int thr
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, 
+ND4J_LOCAL void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, 
                       NDArray& update, NDArray& stateV, const double dLr, const double dMomentum) {
 
     PointersManager manager(context, "nesterovsUpdater");

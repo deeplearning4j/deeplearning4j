@@ -144,7 +144,7 @@ namespace sd {
                 manager.synchronize();
             }
 
-            void mergeMax(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+            ND4J_LOCAL void mergeMax(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
                 
                 NDArray::prepareSpecialUse({ &output }, inArrs);
                 
@@ -452,9 +452,9 @@ namespace sd {
 
                 manager.synchronize();
             }
-            BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output), NUMERIC_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void mergeAdd_, (sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output), NUMERIC_TYPES);
 
-            void mergeAdd(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+            ND4J_LOCAL void mergeAdd(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
                 
                 NDArray::prepareSpecialUse({ &output }, inArrs);
                 
@@ -525,7 +525,7 @@ namespace sd {
                 manager.synchronize();
             }
 
-            void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
+            ND4J_LOCAL void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
 
                 const std::vector<const NDArray*>& out = reinterpret_cast<const std::vector<const NDArray*>& >(outArrs);
                 NDArray::prepareSpecialUse( out, { &gradient });

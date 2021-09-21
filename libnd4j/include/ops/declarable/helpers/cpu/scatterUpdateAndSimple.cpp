@@ -29,7 +29,7 @@ namespace ops 	  {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(sd::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+ND4J_LOCAL void scatterUpdate(sd::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
 
     int opCode = (*intArgs)[0];
     int dimSize = (*intArgs)[1];
@@ -88,7 +88,7 @@ void scatterUpdate(sd::LaunchContext * context, NDArray& input, NDArray& updates
 
 
 //////////////////////////////////////////////////////////////////////////
-void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+ND4J_LOCAL void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 
     // updates and indices have same length
     const Nd4jLong len = indices.lengthOf();

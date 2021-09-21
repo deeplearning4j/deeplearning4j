@@ -233,30 +233,30 @@ namespace helpers {
         return (Nd4jLong)selected.size();
     }
 
-    Nd4jLong
+    ND4J_LOCAL Nd4jLong
     nonMaxSuppressionGeneric(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                               double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyOverlaps), FLOAT_TYPES, INTEGER_TYPES);
         return 0;
     }
 
-    Nd4jLong
+    ND4J_LOCAL Nd4jLong
     nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                              double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyV3), FLOAT_TYPES, INTEGER_TYPES);
         return 0;
     }
 
-    BUILD_DOUBLE_TEMPLATE(template Nd4jLong nonMaxSuppressionGeneric_, (sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL Nd4jLong nonMaxSuppressionGeneric_, (sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
             float overlapThreshold, float scoreThreshold, NDArray* output, SimiliratyFunc similiratyFunc), FLOAT_TYPES, INTEGER_TYPES);
 
-    void
+    ND4J_LOCAL void
     nonMaxSuppression(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,
             double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_SINGLE_SELECTOR(boxes->dataType(), nonMaxSuppressionV2_, (boxes, scales, maxSize,
                 overlapThreshold, scoreThreshold, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void nonMaxSuppressionV2_, (NDArray* boxes, NDArray* scales, int maxSize,
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void nonMaxSuppressionV2_, (NDArray* boxes, NDArray* scales, int maxSize,
             double overlapThreshold, double scoreThreshold, NDArray* output), NUMERIC_TYPES);
 
 }

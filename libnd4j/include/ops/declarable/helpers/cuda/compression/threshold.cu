@@ -28,7 +28,7 @@
 namespace sd {
     namespace ops {
         namespace helpers {
-            void prescanArrayRecursive(int** g_scanBlockSums, int *dZ, int *dX, int numElements, int level) {
+            ND4J_LOCAL void prescanArrayRecursive(int** g_scanBlockSums, int *dZ, int *dX, int numElements, int level) {
                 auto stream = LaunchContext::defaultContext()->getCudaStream();
 
 
@@ -147,11 +147,11 @@ namespace sd {
                 return std::move(tmp);
             }
 
-            int32_t thresholdEstimate(const NDArray &updates, const float threshold) {
+            ND4J_LOCAL int32_t thresholdEstimate(const NDArray &updates, const float threshold) {
                 return thresholdEstimate_(updates, threshold).e<int>(0);
             }
 
-            void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold) {
+            ND4J_LOCAL void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold) {
                 // we need these blocks in order to know, how many "updates" will be processed by each GPU block
                 auto blocks = thresholdEstimate_(updates, threshold);
 
@@ -221,7 +221,7 @@ namespace sd {
                 NDArray::registerSpecialUse({&encoded, &updates}, {});
             }
 
-            void thresholdDecode(const NDArray &encoded, NDArray &updates) {
+            ND4J_LOCAL void thresholdDecode(const NDArray &encoded, NDArray &updates) {
                 dim3 launchDims(128, 512, 512);
                 auto xType = updates.dataType();
 

@@ -87,7 +87,7 @@ namespace helpers {
         }
     }
 
-    void rollFunctorFull(sd::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
+    ND4J_LOCAL void rollFunctorFull(sd::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
 
         if (!inplace)
             output->assign(input);
@@ -155,11 +155,11 @@ namespace helpers {
         }
     }
 
-    void rollFunctorLinear(sd::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace){
+    ND4J_LOCAL void rollFunctorLinear(sd::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace){
         BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray* input, NDArray* output, int shift, bool inplace), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void rollFunctorLinear_, (NDArray* input, NDArray* output, int shift, bool inplace), LIBND4J_TYPES);
 }
 }
 }

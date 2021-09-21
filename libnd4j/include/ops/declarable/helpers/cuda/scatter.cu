@@ -84,7 +84,7 @@ static void checkIndicesCudaLauncher(const int blocksPerGrid, const int threadsP
 
 
 ///////////////////////////////////////////////////////////////////
-Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
+ND4J_LOCAL Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -336,7 +336,7 @@ static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
 
 ///////////////////////////////////////////////////////////////////
-void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+ND4J_LOCAL void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const auto xType = indices.dataType();
     const auto yType = updates.dataType();
@@ -598,7 +598,7 @@ static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+ND4J_LOCAL void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const int xRank = indices.rankOf();
     const int yRank = updates.rankOf();
@@ -672,7 +672,7 @@ static void scatterForLossCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
+ND4J_LOCAL void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
     // shapes of indices and output must be the same
     // shape of indices should be the same as updates shape with last dimension excluded, for example if updates is {a,b,c} then indices should be {a,b}
 

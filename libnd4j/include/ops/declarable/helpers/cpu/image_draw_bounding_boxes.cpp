@@ -62,7 +62,7 @@ namespace helpers {
         return colorTable;
     }
 
-    void drawBoundingBoxesFunctor(sd::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
+    ND4J_LOCAL void drawBoundingBoxesFunctor(sd::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
         // images - batch of 3D images with BW (last dim = 1), RGB (last dim = 3) or RGBA (last dim = 4) channel set
         // boxes - batch of 2D bounds with last dim (y_start, x_start, y_end, x_end) to compute i and j as
         // floor((height - 1 ) * y_start) => rowStart, floor((height - 1) * y_end) => rowEnd

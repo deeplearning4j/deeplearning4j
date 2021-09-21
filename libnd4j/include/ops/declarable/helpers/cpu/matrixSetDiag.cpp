@@ -31,7 +31,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+ND4J_LOCAL void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
 
     // input and output are the same array (x == z) when zeroPad = true
     // xRank = zRank, xRank = yRank + 1
@@ -72,7 +72,7 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
 }
 
 //////////////////////////////////////////////////////////////////////////
-void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+ND4J_LOCAL void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
     BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiag_, (input, diagonal, output, zeroPad), LIBND4J_TYPES);
 }
 

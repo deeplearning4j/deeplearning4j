@@ -34,7 +34,7 @@ namespace helpers {
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-int _matrixDiagPart(const NDArray* input, NDArray* output) {
+static int _matrixDiagPart(const NDArray* input, NDArray* output) {
 
     auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
     auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
@@ -58,11 +58,11 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     return Status::OK();
 }
 
-    int matrixDiagPart(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
+    ND4J_LOCAL int matrixDiagPart(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template int _matrixDiagPart, (const NDArray* input, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int _matrixDiagPart, (const NDArray* input, NDArray* output), LIBND4J_TYPES);
 
 }
 }

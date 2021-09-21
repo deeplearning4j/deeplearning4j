@@ -84,7 +84,7 @@ static void rmsPropUpdater_(const NDArray& gradient, const NDArray& initState, N
     return;
 }
 
-void updaterRmsProp(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateG,
+ND4J_LOCAL void updaterRmsProp(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateG,
                     const double dLr, const double dRmsDecay, const double dEpsilon) {
     BUILD_SINGLE_SELECTOR(gradient.dataType(), rmsPropUpdater_, (gradient, initState, update, stateG, dLr, dRmsDecay, dEpsilon), FLOAT_TYPES);
 }

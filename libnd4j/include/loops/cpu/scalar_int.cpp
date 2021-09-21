@@ -199,7 +199,7 @@ namespace functions {
                 }
             }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ScalarIntTransform, , INTEGER_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL ScalarIntTransform, , INTEGER_TYPES);
 
 }
 }

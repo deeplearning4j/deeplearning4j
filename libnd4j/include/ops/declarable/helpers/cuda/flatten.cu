@@ -27,7 +27,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
-            void _CUDA_G flattenKernel(void **xBuffers, Nd4jLong **xShapeInfos, Nd4jLong *offsets, Nd4jLong numInputs, void *zBuffer, const Nd4jLong *zShapeInfo, char order) {
+            static void _CUDA_G flattenKernel(void **xBuffers, Nd4jLong **xShapeInfos, Nd4jLong *offsets, Nd4jLong numInputs, void *zBuffer, const Nd4jLong *zShapeInfo, char order) {
 
                 int xCoord[MAX_RANK];
 
@@ -46,7 +46,7 @@ namespace sd {
             }
 
             template <typename T>
-            void flatten_(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            static void flatten_(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 PointersManager pm(context, "flatten");
 
                 std::vector<const void*> hdBuffers(inputs.size());
@@ -74,7 +74,7 @@ namespace sd {
                 pm.synchronize();
             }
 
-            void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            ND4J_LOCAL void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
                 for (auto v:inputs)
                     v->syncToDevice();

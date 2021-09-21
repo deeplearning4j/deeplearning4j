@@ -78,7 +78,7 @@ static void ismax_(sd::LaunchContext * context, const NDArray* input, NDArray* o
 }
 
 
-void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+ND4J_LOCAL void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
     NDArray::prepareSpecialUse({output}, {input});
 
     BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), LIBND4J_TYPES);
@@ -86,7 +86,7 @@ void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, c
     NDArray::registerSpecialUse({output}, {input});
 }
 
-BUILD_SINGLE_TEMPLATE(template void ismax_, (sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void ismax_, (sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
 
 }
 }

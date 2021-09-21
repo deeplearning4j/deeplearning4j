@@ -38,7 +38,7 @@
 namespace sd {
 
     template <typename X, typename Z, typename E>
-    class ND4J_EXPORT ReductionLoops {
+    class ND4J_LOCAL ReductionLoops {
     protected:
     public:
 
@@ -47,7 +47,7 @@ namespace sd {
     };
 
     template <typename X, typename Z>
-    class ReductionFloatLoops : public ReductionLoops<X, Z, Z> {
+    class ND4J_LOCAL ReductionFloatLoops : public ReductionLoops<X, Z, Z> {
     public:
         static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int* dims, Z* extraParams);
 
@@ -56,7 +56,7 @@ namespace sd {
     };
 
     template <typename X, typename Z>
-    class ND4J_EXPORT ReductionBoolLoops : public ReductionLoops<X, Z, X> {
+    class ND4J_LOCAL ReductionBoolLoops : public ReductionLoops<X, Z, X> {
     public:
         static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int* dims, X* extraParams);
 
@@ -65,7 +65,7 @@ namespace sd {
     };
 
     template <typename X, typename Z>
-    class ND4J_EXPORT ReductionLongLoops : public ReductionLoops<X, Z, X> {
+    class ND4J_LOCAL ReductionLongLoops : public ReductionLoops<X, Z, X> {
     public:
         static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int* dims, X* extraParams);
 
@@ -74,7 +74,7 @@ namespace sd {
     };
 
     template <typename X>
-    class ND4J_EXPORT ReductionSameLoops : public ReductionLoops<X, X, X> {
+    class ND4J_LOCAL ReductionSameLoops : public ReductionLoops<X, X, X> {
     public:
         static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const Nd4jLong *xShapeInfo, X* z, const Nd4jLong *zShapeInfo, const int* dims, X* extraParams);
 
@@ -84,7 +84,7 @@ namespace sd {
 
 
     template <typename X, typename Z>
-    class ND4J_EXPORT IndexReductionLoops {
+    class ND4J_LOCAL IndexReductionLoops {
     private:
     public:
         static void wrapIndexReduce(int opNum, const void* x, const Nd4jLong* xShapeInfo, void* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* extraParams);
@@ -95,7 +95,7 @@ namespace sd {
 
 
     template <typename X, typename Z, typename E>
-    class ND4J_EXPORT TransformLoops {
+    class ND4J_LOCAL TransformLoops {
 
     public:
 
@@ -104,7 +104,7 @@ namespace sd {
     };
 
     template <typename X, typename Z>
-    class ND4J_EXPORT Reduction3Loops {
+    class ND4J_LOCAL Reduction3Loops {
     public:
 
         template <typename OpType>
@@ -205,7 +205,7 @@ static void reduceExec31(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec32(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec32(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
@@ -246,7 +246,7 @@ void reduceExec32(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec41(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec41(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   dims[0]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
@@ -302,7 +302,7 @@ void reduceExec41(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec42(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec42(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
@@ -353,7 +353,7 @@ void reduceExec42(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec43(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec43(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
@@ -399,7 +399,7 @@ void reduceExec43(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec51(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec51(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   dims[0]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
@@ -468,7 +468,7 @@ void reduceExec51(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec52(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec52(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
@@ -530,7 +530,7 @@ void reduceExec52(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec53(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec53(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
@@ -587,7 +587,7 @@ void reduceExec53(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceExec54(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceExec54(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const uint     xAxis0 = shape::sizeAt(xShapeInfo,   shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
     const Nd4jLong xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
@@ -640,7 +640,7 @@ void reduceExec54(const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-void reduceDefault(sd::memory::Workspace* workspace, const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
+ND4J_LOCAL void reduceDefault(sd::memory::Workspace* workspace, const X *x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int *dims, E* extraParams) {
 
     const int zRank = shape::rank(zShapeInfo);
     const int tadRank = shape::rank(xShapeInfo) - zRank;
@@ -698,7 +698,7 @@ void reduceDefault(sd::memory::Workspace* workspace, const X *x, const Nd4jLong 
 //////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z, typename E>
 template <typename OpType>
-void sd::ReductionLoops<X, Z, E>::loopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int* dims, E* extraParams) {
+ND4J_LOCAL void sd::ReductionLoops<X, Z, E>::loopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong *xShapeInfo, Z* z, const Nd4jLong *zShapeInfo, const int* dims, E* extraParams) {
 
     const int xRank = shape::rank(xShapeInfo);
     const int zRank = shape::rank(zShapeInfo);
@@ -736,7 +736,7 @@ void sd::ReductionLoops<X, Z, E>::loopReduce(sd::memory::Workspace* workspace, c
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
     template <typename OpType>
-    void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const Nd4jLong* xShapeInfo,
+    ND4J_LOCAL void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const Nd4jLong* xShapeInfo,
                                                     Z* z, const Nd4jLong* zShapeInfo,
                                                     E* extraParams,
                                                     uint64_t threadId, uint64_t numThreads) {

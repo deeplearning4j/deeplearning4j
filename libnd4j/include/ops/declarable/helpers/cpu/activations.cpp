@@ -81,7 +81,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
     template <typename T>
-    void logSoftMaxForVector_(void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo) {
+    ND4J_LOCAL void logSoftMaxForVector_(void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo) {
         auto inBuff  = reinterpret_cast<T const*>(input);
         auto outBuff = reinterpret_cast<T *>(output);
 
@@ -128,7 +128,7 @@ namespace helpers {
     }
 
     ///////////////////////////////////////////////////////////////////
-    void logSoftMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+    ND4J_LOCAL void logSoftMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
         if(!input.isVector() || !output.isVector())
             throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
@@ -139,7 +139,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+ND4J_LOCAL void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
     const Nd4jLong inputLen = input.lengthOf();
     const Nd4jLong* inputShapeInfo = input.shapeInfo();
     const Nd4jLong* alphaShapeInfo = alpha.shapeInfo();
@@ -160,7 +160,7 @@ void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alp
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+ND4J_LOCAL void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
 
     const Nd4jLong inputLen = input.lengthOf();
     const Nd4jLong* inputShapeInfo = input.shapeInfo();
@@ -185,7 +185,7 @@ void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& a
 }
 
 
-    bool checkAlphaShapeLen(std::vector<Nd4jLong> const& expectedShape, Nd4jLong shapeLen) {
+    ND4J_LOCAL bool checkAlphaShapeLen(std::vector<Nd4jLong> const& expectedShape, Nd4jLong shapeLen) {
         Nd4jLong expectedAlphaLen = std::accumulate(expectedShape.cbegin(), expectedShape.cend(), 1, std::multiplies<Nd4jLong>());
         return expectedAlphaLen == shapeLen;
     }
@@ -197,7 +197,7 @@ void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& a
         const_cast<NDArray&>(input).applyLambda<T>(routine, output);
     }
 
-    void thresholdRelu(sd::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
+    ND4J_LOCAL void thresholdRelu(sd::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
     }
 
@@ -209,12 +209,12 @@ void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& a
 
     }
 
-    void thresholdReluDerivative(sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+    ND4J_LOCAL void thresholdReluDerivative(sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdO, output), FLOAT_TYPES);
     }
 
     ///////////////////////////////////////////////////////////////////
-    void logSoftmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+    ND4J_LOCAL void logSoftmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
         const int rank = input.rankOf();
 
@@ -236,9 +236,9 @@ void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& a
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void logSoftMaxForVector_, (void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector, (sd::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void thresholdReluDerivative_, (sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void logSoftMaxForVector_, (void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _softMaxDerivForVector, (sd::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
 
 }
 }

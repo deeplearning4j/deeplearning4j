@@ -94,7 +94,7 @@ namespace helpers {
         depthToSpaceKernel<T><<<512, 512, 1024, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), block_size, isNHWC);
     }
 
-    void _depthToSpace(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+    ND4J_LOCAL void _depthToSpace(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
         auto xType = input.dataType();
 
         NDArray::prepareSpecialUse({output}, {&input});

@@ -188,7 +188,7 @@ namespace helpers {
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void segmentMeanFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+    ND4J_LOCAL void segmentMeanFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices});
@@ -230,7 +230,7 @@ namespace helpers {
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void unsortedSegmentMeanFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL void unsortedSegmentMeanFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMeanFunctor_, (context, input, indices, numOfClasses, output),
                               NUMERIC_TYPES, INDEXING_TYPES);
@@ -312,7 +312,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // backrop for mean
     template <typename T, typename I>
-    int segmentMeanFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentMeanFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         auto numClasses = indices->e<int>(indices->lengthOf() - 1) + 1;
@@ -356,7 +356,7 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     // segmen mean bp main
-    int segmentMeanFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentMeanFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMeanFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
@@ -408,7 +408,7 @@ namespace helpers {
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentMeanFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL int unsortedSegmentMeanFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMeanFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});

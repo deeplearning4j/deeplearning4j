@@ -267,10 +267,10 @@ void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
     MmulHelper::mmul(&schur._U, &temp, &out);
 }
 
-template class ND4J_EXPORT Sqrtm<float>;
-template class ND4J_EXPORT Sqrtm<float16>;
-template class ND4J_EXPORT Sqrtm<bfloat16>;
-template class ND4J_EXPORT Sqrtm<double>;
+template class ND4J_LOCAL Sqrtm<float>;
+template class ND4J_LOCAL Sqrtm<float16>;
+template class ND4J_LOCAL Sqrtm<bfloat16>;
+template class ND4J_LOCAL Sqrtm<double>;
 
 
 }

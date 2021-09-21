@@ -26,31 +26,31 @@ namespace sd {
         namespace helpers {
             //////////////////////////////////////////////////////////////////////////
             template<typename X, typename Z>
-            void  argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+            ND4J_LOCAL void  argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
 
             template<typename X, typename Z>
-            void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+            ND4J_LOCAL void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
 
             template<typename X, typename Z>
-            void  argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+            ND4J_LOCAL void  argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
 
             template<typename X, typename Z>
-            void  argAbsMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+            ND4J_LOCAL void  argAbsMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
 
             //////////////////////////////////////////////////////////////////////////
-            void  argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+            ND4J_LOCAL void  argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argMax_, (input, output, dimensions), LIBND4J_TYPES, INDEXING_TYPES);
             }
 
-            void  argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+            ND4J_LOCAL void  argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argMin_, (input, output, dimensions), LIBND4J_TYPES, INDEXING_TYPES);
             }
 
-            void  argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+            ND4J_LOCAL void  argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argAbsMax_, (input, output, dimensions), LIBND4J_TYPES, INDEXING_TYPES);
             }
 
-            void  argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+            ND4J_LOCAL void  argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argAbsMin_, (input, output, dimensions), LIBND4J_TYPES, INDEXING_TYPES);
             }
         }

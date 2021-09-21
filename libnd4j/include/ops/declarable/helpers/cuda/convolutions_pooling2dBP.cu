@@ -169,7 +169,7 @@ static void pooling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+ND4J_LOCAL void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
 
     // initial zeroing of gradI
     gradI.nullify();

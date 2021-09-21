@@ -32,7 +32,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void amsGradUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vinv, const Nd4jLong* invShapeInfo, 
+ND4J_LOCAL __global__ void amsGradUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vinv, const Nd4jLong* invShapeInfo, 
                                   const void* vinm, const Nd4jLong* inmShapeInfo, const void* vinh, const Nd4jLong* inhShapeInfo,
                                   void* vz, const Nd4jLong* zShapeInfo,  void* vstV, const Nd4jLong* stvShapeInfo, void* vstM, 
                                   const Nd4jLong* stmShapeInfo, void* vstH, const Nd4jLong* sthShapeInfo,
@@ -112,7 +112,7 @@ __global__ void amsGradUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, c
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-linkage void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx, const Nd4jLong* xShapeInfo,
+ND4J_LOCAL linkage void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx, const Nd4jLong* xShapeInfo,
     const void* vinv, const Nd4jLong* invShapeInfo, const void* vinm, const Nd4jLong* inmShapeInfo,
     const void* vinh, const Nd4jLong* inhShapeInfo,  void* vz, const Nd4jLong* zShapeInfo,
     void* vstV, const Nd4jLong* stvShapeInfo, void* vstM, const Nd4jLong* stmShapeInfo, 
@@ -129,7 +129,7 @@ linkage void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threa
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAmsGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateV, const NDArray& initStateM, const NDArray& initStateH, 
+ND4J_LOCAL void updaterAmsGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateV, const NDArray& initStateM, const NDArray& initStateH, 
      NDArray& update, NDArray& stateV, NDArray& stateM, NDArray& stateH, const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
 
     PointersManager manager(context, "amsGradUpdater");

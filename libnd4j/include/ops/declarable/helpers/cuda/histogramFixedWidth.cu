@@ -83,7 +83,7 @@ __host__ static void histogramFixedWidthCudaLauncher(const cudaStream_t *stream,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+ND4J_LOCAL void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
 
     // firstly initialize output with zeros
     output.nullify();

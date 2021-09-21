@@ -58,7 +58,7 @@ static void mergeMaxIndex_(const std::vector<const NDArray*>& inArrs, NDArray& o
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
-void mergeMaxIndex(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+ND4J_LOCAL void mergeMaxIndex(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
     BUILD_DOUBLE_SELECTOR(inArrs[0]->dataType(), output.dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES, INDEXING_TYPES);
 }
 
@@ -85,7 +85,7 @@ static void mergeMax_(const std::vector<const NDArray*>& inArrs, NDArray& output
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
-void mergeMax(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+ND4J_LOCAL void mergeMax(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
     BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (inArrs, output), LIBND4J_TYPES);
 }
 
@@ -174,7 +174,7 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
     return;
 }
 
-void mergeMaxBp(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, std::vector<NDArray*>& outArrs) {
+ND4J_LOCAL void mergeMaxBp(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, std::vector<NDArray*>& outArrs) {
     BUILD_SINGLE_SELECTOR(outArrs[0]->dataType(), mergeMaxBp_, (inArrs, outArrs), LIBND4J_TYPES);
 }
 
@@ -199,7 +199,7 @@ static void mergeAvg_(const std::vector<const NDArray*>& inArrs, NDArray& output
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
-void mergeAvg(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+ND4J_LOCAL void mergeAvg(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
     BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (inArrs, output), LIBND4J_TYPES);
 }
 
@@ -223,7 +223,7 @@ static void mergeAvgBp_(const NDArray& gradient, std::vector<NDArray*>& outArrs)
     samediff::Threads::parallel_for(func, 0, gradient.lengthOf());
 }
 
-void mergeAvgBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
+ND4J_LOCAL void mergeAvgBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
     BUILD_SINGLE_SELECTOR(gradient.dataType(), mergeAvgBp_, (gradient, outArrs), LIBND4J_TYPES);
 }
 
@@ -247,7 +247,7 @@ static void mergeAdd_(const std::vector<const NDArray*>& inArrs, NDArray& output
 
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
-    void mergeAdd(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+    ND4J_LOCAL void mergeAdd(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), LIBND4J_TYPES);
     }
 
@@ -271,7 +271,7 @@ static void mergeAddBp_(const NDArray& gradient, std::vector<NDArray*>& outArrs)
     samediff::Threads::parallel_for(func, 0, gradient.lengthOf());
 }
 
-void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
+ND4J_LOCAL void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
     BUILD_SINGLE_SELECTOR(gradient.dataType(), mergeAddBp_, (gradient, outArrs), LIBND4J_TYPES);
 }
 

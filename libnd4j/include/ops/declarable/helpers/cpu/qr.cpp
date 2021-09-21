@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    NDArray matrixMinor(NDArray& in, Nd4jLong col) {
+    ND4J_LOCAL NDArray matrixMinor(NDArray& in, Nd4jLong col) {
         NDArray m = in.ulike();
         m.setIdentity();
         m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
@@ -41,7 +41,7 @@ namespace helpers {
 
 /* m = I - v v^T */
     template <typename T>
-    NDArray vmul(NDArray const& v, int n)
+    ND4J_LOCAL NDArray vmul(NDArray const& v, int n)
     {
         NDArray res('c', {n,n}, v.dataType(), v.getContext()); // x = matrix_new(n, n);
         T const* vBuf = v.getDataBuffer()->primaryAsT<T>();
@@ -57,7 +57,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
+    ND4J_LOCAL void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
         Nd4jLong M = matrix->sizeAt(-2);
         Nd4jLong N = matrix->sizeAt(-1);
         auto resQ = fullMatricies?Q->ulike():NDArrayFactory::create<T>(matrix->ordering(), {M,M}, Q->getContext());
@@ -110,7 +110,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void qr_(NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    ND4J_LOCAL void qr_(NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         Nd4jLong lastDim = input->rankOf() - 1;
         Nd4jLong preLastDim = input->rankOf() - 2;
         ResultSet listOutQ(outputQ->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
@@ -127,7 +127,7 @@ namespace helpers {
 
     }
 
-    void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    ND4J_LOCAL void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (input, outputQ, outputR, fullMatricies), FLOAT_TYPES);
     }
 

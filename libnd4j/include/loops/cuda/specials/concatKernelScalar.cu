@@ -53,5 +53,5 @@ namespace sd {
         sd::DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
     }
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT concatKernelScalarGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, void * vz), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL concatKernelScalarGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, void * vz), LIBND4J_TYPES);
 }

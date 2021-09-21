@@ -112,7 +112,7 @@ void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_
 	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams), PAIRWISE_BOOL_OPS);
 }
 
-    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
 }
 }
 

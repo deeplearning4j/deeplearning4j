@@ -52,7 +52,7 @@ namespace sd {
                 }
             }
 
-            void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            ND4J_LOCAL void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 BUILD_SINGLE_SELECTOR(output->dataType(), flatten_, (inputs, output, order), LIBND4J_TYPES);
             }
         }

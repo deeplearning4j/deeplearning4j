@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
+    ND4J_LOCAL void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
         axisVector->tickReadDevice(); // mark input as read on device
         axisVector->syncToHost(); // sync to host
@@ -40,7 +40,7 @@ namespace helpers {
         }
     }
 
-    void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector) {
+    ND4J_LOCAL void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector) {
         for (int e = 0; e < axisVector.size(); e++) {
             auto a = axisVector[e];
             if (a < 0) // shift vals on rank for negative vals

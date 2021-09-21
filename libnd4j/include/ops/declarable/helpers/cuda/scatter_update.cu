@@ -106,7 +106,7 @@ namespace sd {
 
 
 //////////////////////////////////////////////////////////////////////////
-            void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+            ND4J_LOCAL void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
 
                 const int opCode    = (*intArgs)[0];
                 const int numOfDims = (*intArgs)[1];

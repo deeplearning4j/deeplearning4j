@@ -327,7 +327,7 @@ __device__ void initializeShared(X *extraParams, X **sPartials, int sMemSize) {
 }
 
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceSameFunction, , LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL ReduceSameFunction, , LIBND4J_TYPES);
 
 }
 }

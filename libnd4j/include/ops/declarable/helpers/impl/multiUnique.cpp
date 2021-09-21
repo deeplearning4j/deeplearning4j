@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace *workspace) {
+    ND4J_LOCAL bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace *workspace) {
         Nd4jLong length = 0;
         std::vector<NDArray> reshaped(inputList.size());
         int pos = 0;

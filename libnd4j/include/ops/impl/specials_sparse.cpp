@@ -222,7 +222,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 #endif
         }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SparseUtils, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL SparseUtils, , LIBND4J_TYPES);
 
         void IndexUtils::ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode){
             Nd4jLong * shape = shape::shapeOf(shapeInfo);

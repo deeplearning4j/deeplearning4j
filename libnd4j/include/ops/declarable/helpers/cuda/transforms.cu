@@ -74,7 +74,7 @@ __host__ static void invertPermutationCudaLauncher(const int blocksPerGrid, cons
 }
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+ND4J_LOCAL void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
     const int threadsPerBlock = MAX_NUM_THREADS;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -152,7 +152,7 @@ static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 
 
 ///////////////////////////////////////////////////////////////////
-void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+ND4J_LOCAL void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
     PointersManager manager(context, "trace");
 
@@ -213,7 +213,7 @@ static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+ND4J_LOCAL void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -275,7 +275,7 @@ static void tileBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 
 
 //////////////////////////////////////////////////////////////////////////
-void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+ND4J_LOCAL void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
 
     NDArray memBuff('c', gradO.getShapeAsVector(), sd::DataType::INT64, context);        // empty auxiliary array for storing device memory which will be used in kernel calculations
 
@@ -293,7 +293,7 @@ void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray
 }
 
     //////////////////////////////////////////////////////////////////////////
-    void eye(sd::LaunchContext * context, NDArray& output) {
+    ND4J_LOCAL void eye(sd::LaunchContext * context, NDArray& output) {
 
         output.setIdentity();
     }

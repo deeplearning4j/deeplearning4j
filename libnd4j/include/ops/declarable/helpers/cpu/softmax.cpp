@@ -76,7 +76,7 @@ namespace sd {
             }
 
             ///////////////////////////////////////////////////////////////////
-            void softMaxForVector(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
+            ND4J_LOCAL void softMaxForVector(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
 
                 if(!input.isVector() || !output.isVector())
                     throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
@@ -86,11 +86,11 @@ namespace sd {
             }
 
             template <typename T>
-            void softmax_loop(const T* input, T *output, const Nd4jLong * offsets, Nd4jLong numOfSubArrs, uint32_t tadLen);
+            ND4J_LOCAL void softmax_loop(const T* input, T *output, const Nd4jLong * offsets, Nd4jLong numOfSubArrs, uint32_t tadLen);
 
 #ifdef _OPENMP
             template <>
-            FORCEINLINE void softmax_loop(const float* input, float *output, const Nd4jLong * offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+            ND4J_LOCAL FORCEINLINE void softmax_loop(const float* input, float *output, const Nd4jLong * offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
 #pragma omp parallel for default(shared)
                     for (Nd4jLong i = 0; i < numOfSubArrs; i++) {
                         auto inBuff = input + offsets[i];
@@ -116,7 +116,7 @@ namespace sd {
             }
 #else
             template <>
-            FORCEINLINE void softmax_loop(const float *input, float *output, const Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+            ND4J_LOCAL FORCEINLINE void softmax_loop(const float *input, float *output, const Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
                 auto func = PRAGMA_THREADS_FOR {
                     for (auto i = start; i < stop; i++) {
                         auto inBuff = input + offsets[i];
@@ -146,7 +146,7 @@ namespace sd {
 
 
             template <typename T>
-            FORCEINLINE void softmax_loop(const T *input, T *output, const Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+            ND4J_LOCAL FORCEINLINE void softmax_loop(const T *input, T *output, const Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
                 auto func = PRAGMA_THREADS_FOR {
                     for (auto i = start; i < stop; i++) {
                         auto inBuff = input + offsets[i];
@@ -247,7 +247,7 @@ namespace sd {
 
 
             ///////////////////////////////////////////////////////////////////
-            void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+            ND4J_LOCAL void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
                 BUILD_SINGLE_SELECTOR(input.dataType(), softmax_, (context, input, output, dimension), FLOAT_TYPES);
             }

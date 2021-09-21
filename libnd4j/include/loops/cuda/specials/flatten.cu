@@ -67,7 +67,7 @@ __host__ void flattenKernelGeneric(dim3& launchDims, cudaStream_t *stream,
     sd::DebugHelper::checkErrorCode(stream, "flattenGeneric(...) failed");
 }
 
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT flattenKernelGeneric, (dim3& launchDims, cudaStream_t *stream, Nd4jPointer *extraPointers, int dOffset, char order, void *vz, Nd4jLong *zShapeInfo, void *vy, Nd4jLong *yShapeInfo), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL flattenKernelGeneric, (dim3& launchDims, cudaStream_t *stream, Nd4jPointer *extraPointers, int dOffset, char order, void *vz, Nd4jLong *zShapeInfo, void *vy, Nd4jLong *yShapeInfo), LIBND4J_TYPES);
 
 
 }

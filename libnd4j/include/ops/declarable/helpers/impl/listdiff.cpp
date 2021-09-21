@@ -41,7 +41,7 @@ namespace helpers {
         return saved;
     }
 
-    Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep) {
+    ND4J_LOCAL Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
 
         NDArray::preparePrimaryUse({},{values, keep});
@@ -51,7 +51,7 @@ namespace helpers {
         NDArray::registerPrimaryUse({},{values, keep});
     }
 
-    BUILD_SINGLE_TEMPLATE(template Nd4jLong listDiffCount_, (NDArray* values, NDArray* keep);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL Nd4jLong listDiffCount_, (NDArray* values, NDArray* keep);, LIBND4J_TYPES);
 
     template <typename T>
     static int listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
@@ -97,7 +97,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
+    ND4J_LOCAL int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
         NDArray::preparePrimaryUse({output1, output2}, {values, keep});
@@ -117,8 +117,8 @@ namespace helpers {
         return result;
     }
 
-    BUILD_SINGLE_TEMPLATE(template int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, INTEGER_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, INTEGER_TYPES);
 
 }
 }

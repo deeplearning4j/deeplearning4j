@@ -99,7 +99,7 @@ namespace sd {
             }
 
 
-            void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
+            ND4J_LOCAL void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
                 BUILD_SINGLE_SELECTOR(array.dataType(), hashCode_, (context, array, result), LIBND4J_TYPES);
             }
         }

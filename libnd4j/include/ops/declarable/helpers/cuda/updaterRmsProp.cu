@@ -32,7 +32,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void rmsPropUpdaterCuda(const void *vx, const Nd4jLong *xShapeInfo, const void *vin, const Nd4jLong *inShapeInfo, 
+ND4J_LOCAL __global__ void rmsPropUpdaterCuda(const void *vx, const Nd4jLong *xShapeInfo, const void *vin, const Nd4jLong *inShapeInfo, 
                                    void *vz, const Nd4jLong *zShapeInfo, void* vst, const Nd4jLong* stShapeInfo,
                                    const T lr, const T rmsDecay, const T epsilon) {
 
@@ -82,7 +82,7 @@ __global__ void rmsPropUpdaterCuda(const void *vx, const Nd4jLong *xShapeInfo, c
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-linkage void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, 
+ND4J_LOCAL linkage void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, 
                                         const void *vx, const Nd4jLong *xShapeInfo, const void *vin, const Nd4jLong *inShapeInfo, 
                                         void *vz, const Nd4jLong *zShapeInfo, void* vst, const Nd4jLong* stShapeInfo,
                                         const double dLr, const double dRmsDecay, const double dEpsilon) {
@@ -96,7 +96,7 @@ linkage void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threa
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterRmsProp(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateG, 
+ND4J_LOCAL void updaterRmsProp(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateG, 
                     const double dLr, const double dRmsDecay, const double dEpsilon) {
 
     PointersManager manager(context, "rmsPropUpdater");

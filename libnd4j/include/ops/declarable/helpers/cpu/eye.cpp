@@ -29,7 +29,7 @@ namespace ops 	  {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void eye(sd::LaunchContext * context, NDArray& output) {
+ND4J_LOCAL void eye(sd::LaunchContext * context, NDArray& output) {
 
     const int rank = output.rankOf();
     auto arrs = output.allTensorsAlongDimension({rank-2, rank-1});

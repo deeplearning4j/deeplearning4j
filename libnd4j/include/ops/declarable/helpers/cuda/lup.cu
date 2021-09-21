@@ -223,7 +223,7 @@ namespace helpers {
 
 // ------------------------------------------------------------------------------------------------------------------ //
 //  invertion of upper triangular matrix - runner routine
-    void invertUpperMatrix(LaunchContext *context, NDArray *inputMatrix, NDArray *invertedMatrix) {
+    ND4J_LOCAL void invertUpperMatrix(LaunchContext *context, NDArray *inputMatrix, NDArray *invertedMatrix) {
         NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
         BUILD_SINGLE_SELECTOR(invertedMatrix->dataType(), invertUpperMatrix_, (context, inputMatrix, invertedMatrix), FLOAT_NATIVE);
         NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
@@ -508,7 +508,7 @@ namespace helpers {
     }
 // ------------------------------------------------------------------------------------------------------------------ //
 
-    BUILD_DOUBLE_TEMPLATE(template void lup_,(LaunchContext * context, NDArray * input, NDArray * output, NDArray * permutation), FLOAT_NATIVE, INDEXING_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void lup_,(LaunchContext * context, NDArray * input, NDArray * output, NDArray * permutation), FLOAT_NATIVE, INDEXING_TYPES);
 
     template <typename T>
     static __device__ void  swapRows(T* matrix, const Nd4jLong* shape, Nd4jLong theFirst, Nd4jLong theSecond, Nd4jLong n) {
@@ -542,7 +542,7 @@ namespace helpers {
     }
 
     template <typename T>
-    __device__ Nd4jLong argmaxCol(Nd4jLong column, T* compoundBuffer, const Nd4jLong* compoundShape) {
+    ND4J_LOCAL __device__ Nd4jLong argmaxCol(Nd4jLong column, T* compoundBuffer, const Nd4jLong* compoundShape) {
         auto rowNum = shape::sizeAt(compoundShape, 0);
         Nd4jLong xInitial[] = {column, column};
         auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
@@ -615,7 +615,7 @@ namespace helpers {
                 permutaionTads.specialShapeInfo(), permutaionTads.specialOffsets(), batchNum);
     }
 
-    void lu(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutations) {
+    ND4J_LOCAL void lu(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutations) {
         NDArray::prepareSpecialUse({output, permutations}, {input});
         BUILD_DOUBLE_SELECTOR(input->dataType(), permutations->dataType(), lu_, (context, input, output, permutations), FLOAT_NATIVE, INDEXING_TYPES);
         NDArray::registerSpecialUse({output, permutations}, {input});
@@ -659,14 +659,14 @@ namespace helpers {
         return Status::OK();
     }
 
-        int determinant(sd::LaunchContext *context, NDArray *input, NDArray *output) {
+        ND4J_LOCAL int determinant(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (context, input, output), FLOAT_NATIVE);
             NDArray::registerSpecialUse({output}, {input});
         }
 
         template<typename T>
-        int logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *output) {
+        ND4J_LOCAL int logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *output) {
             Nd4jLong n = input->sizeAt(-1);
             Nd4jLong n2 = n * n;
             std::vector<int> dims();
@@ -708,7 +708,7 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
-        int logAbsDeterminant(sd::LaunchContext *context, NDArray *input, NDArray *output) {
+        ND4J_LOCAL int logAbsDeterminant(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (context, input, output), FLOAT_NATIVE);
             NDArray::registerSpecialUse({output}, {input});
@@ -798,18 +798,18 @@ namespace helpers {
             return Status::OK();
         }
 
-        int inverse(sd::LaunchContext *context, NDArray *input, NDArray *output) {
+        ND4J_LOCAL int inverse(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_NATIVE);
             NDArray::registerSpecialUse({output}, {input});
         }
 
-        bool checkCholeskyInput(sd::LaunchContext *context, NDArray const *input) {
+        ND4J_LOCAL bool checkCholeskyInput(sd::LaunchContext *context, NDArray const *input) {
             return true;
         }
 
         template<typename F>
-        __global__ void fillBatchKernel(F **dArrayBatch, F *buf, const Nd4jLong *offsets, Nd4jLong batchSize) {
+        ND4J_LOCAL __global__ void fillBatchKernel(F **dArrayBatch, F *buf, const Nd4jLong *offsets, Nd4jLong batchSize) {
             auto start = blockIdx.x * blockDim.x + threadIdx.x;
             auto step = blockDim.x * gridDim.x;
 
@@ -819,7 +819,7 @@ namespace helpers {
         }
 
         template<typename F>
-        __global__ void
+        ND4J_LOCAL __global__ void
         adjustResultsKernel(F *dArray, const Nd4jLong *shape, const Nd4jLong *offsets, Nd4jLong batchSize, Nd4jLong n) {
             //auto i = blockIdx.x * blockDim.x + threadIdx.x;
             Nd4jLong *shapeOf = shape::shapeOf(shape);
@@ -838,7 +838,7 @@ namespace helpers {
         }
 
         template<typename F>
-        int cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
+        ND4J_LOCAL int cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
             if (!inplace)
                 output->assign(input);
             auto tempOutput =output->dup();
@@ -917,7 +917,7 @@ namespace helpers {
         }
 
 //    template <typename T>
-        int cholesky_(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
+        ND4J_LOCAL int cholesky_(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
             NDArray::prepareSpecialUse({output}, {input});
             if (input->dataType() == DataType::DOUBLE)
                 cholesky__<double>(context, input, output, inplace);
@@ -934,12 +934,12 @@ namespace helpers {
             return Status::OK();
         }
 
-        int cholesky(sd::LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
+        ND4J_LOCAL int cholesky(sd::LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
 //        BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (context, input, output, inplace), FLOAT_TYPES);
             return cholesky_(context, input, output, inplace);
         }
 //    BUILD_SINGLE_TEMPLATE(template int cholesky_, (LaunchContext* context, NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
-        BUILD_SINGLE_TEMPLATE(template int inverse_, (sd::LaunchContext * context, NDArray * input, NDArray * output),
+        BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int inverse_, (sd::LaunchContext * context, NDArray * input, NDArray * output),
                               FLOAT_NATIVE);
 
         template<typename T>
@@ -971,7 +971,7 @@ namespace helpers {
         }
 
         template<typename T>
-        int logdetFunctor_(sd::LaunchContext *context, NDArray *input, NDArray *output) {
+        ND4J_LOCAL int logdetFunctor_(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             auto n2 = input->sizeAt(-1) * input->sizeAt(-2);
             auto stream = context->getCudaStream();
@@ -993,14 +993,14 @@ namespace helpers {
             return Status::OK();
         }
 
-        int logdetFunctor(sd::LaunchContext *context, NDArray *input, NDArray *output) {
+        ND4J_LOCAL int logdetFunctor(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             BUILD_SINGLE_SELECTOR(output->dataType(), return logdetFunctor_, (context, input, output), FLOAT_NATIVE);
         }
 
         /*
          * lup - batched input, batched outputs
          * */
-        int lup(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
+         ND4J_LOCAL int lup(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
             BUILD_DOUBLE_SELECTOR(input->dataType(), permutation->dataType(), lup_,(context, input, compound, permutation), FLOAT_NATIVE, INDEXING_TYPES);
             return Status::OK();
         }

@@ -44,7 +44,7 @@ namespace helpers {
         global_range<T><<<512, 512, 2048, *context->getCudaStream()>>>(outVector.specialBuffer(), outVector.lengthOf(), start.e<T>(0), delta.e<T>(0));
     }
 
-    void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    ND4J_LOCAL void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         NDArray::prepareSpecialUse({&outVector}, {&start, &delta});
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (context, start, delta, outVector), LIBND4J_TYPES);
         NDArray::registerSpecialUse({&outVector}, {&start, &delta});

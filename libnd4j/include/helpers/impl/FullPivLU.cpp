@@ -162,10 +162,10 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
         x({colsPermut[i],colsPermut[i]+1, 0,0}, true).nullify();
 }
 
-template class ND4J_EXPORT FullPivLU<float>;
-template class ND4J_EXPORT FullPivLU<float16>;
-template class ND4J_EXPORT FullPivLU<bfloat16>;
-template class ND4J_EXPORT FullPivLU<double>;
+template class ND4J_LOCAL FullPivLU<float>;
+template class ND4J_LOCAL FullPivLU<float16>;
+template class ND4J_LOCAL FullPivLU<bfloat16>;
+template class ND4J_LOCAL FullPivLU<double>;
 
 }
 }

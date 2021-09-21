@@ -56,11 +56,11 @@ namespace helpers {
         NDArray::registerSpecialUse({output}, {input});
     }
 
-    void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
+    ND4J_LOCAL void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (context, input, output, maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
+    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void sequenceMask_, (sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
 }
 }
 }

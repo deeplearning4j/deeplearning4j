@@ -46,7 +46,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(sd::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+ND4J_LOCAL void lstmCell(sd::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
               NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 
     // xt   input [bS x nIn]
@@ -139,7 +139,7 @@ static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, 
 
 //////////////////////////////////////////////////////////////////////////
 
-void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
+ND4J_LOCAL void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
                    const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
                    NDArray* i, NDArray* c, NDArray* f, NDArray* o, NDArray* z, NDArray* h, NDArray* y, const std::vector<double>& params) {
 

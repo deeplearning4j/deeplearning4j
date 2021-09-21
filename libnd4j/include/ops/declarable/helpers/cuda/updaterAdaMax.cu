@@ -32,7 +32,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void adaMaxUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vinv, const Nd4jLong* invShapeInfo, 
+ND4J_LOCAL __global__ void adaMaxUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vinv, const Nd4jLong* invShapeInfo, 
     const void* vinm, const Nd4jLong* inmShapeInfo,  void* vz, const Nd4jLong* zShapeInfo, 
     void* vstV, const Nd4jLong* stvShapeInfo, void* vstM, const Nd4jLong* stmShapeInfo, 
     const T lr, const T beta1, const T beta2, const T epsilon, const T iteration) {
@@ -101,7 +101,7 @@ __global__ void adaMaxUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, co
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-linkage void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx, const Nd4jLong* xShapeInfo, 
+ND4J_LOCAL linkage void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx, const Nd4jLong* xShapeInfo, 
                                        const void* vinv, const Nd4jLong* invShapeInfo, const void* vinm, const Nd4jLong* inmShapeInfo, 
                                         void* vz, const Nd4jLong* zShapeInfo, void* vstV, const Nd4jLong* stvShapeInfo, 
                                         void* vstM, const Nd4jLong* stmShapeInfo, const double dLr, 
@@ -118,7 +118,7 @@ linkage void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaMax(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateU, const NDArray& initStateM,
+ND4J_LOCAL void updaterAdaMax(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateU, const NDArray& initStateM,
                    NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr, const double dBeta1, 
                    const double dBeta2, const double dEpsilon, const int nIteration) {
 

@@ -29,7 +29,7 @@
 namespace sd {
 
     template <typename T>
-    _CUDA_H void TypeCast::convertFromQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+    ND4J_LOCAL _CUDA_H void TypeCast::convertFromQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         //
         auto z = reinterpret_cast<T *>(dz);
 
@@ -47,7 +47,7 @@ namespace sd {
     }
 
     template <typename T>
-    _CUDA_H void TypeCast::convertToQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+    ND4J_LOCAL _CUDA_H void TypeCast::convertToQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         // find min/max first
 
         auto x = reinterpret_cast<T *>(dx);
@@ -92,7 +92,7 @@ namespace sd {
     }
 
     template <typename T>
-    void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
+    ND4J_LOCAL void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         // we suppose that first 4 bytes are integer, second 4 bytes are float
         // integer: enc length
         // integer: dec length
@@ -173,7 +173,7 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
     }
 
     template <typename T>
-    void TypeCast::convertFromThreshold(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz) {
+    ND4J_LOCAL void TypeCast::convertFromThreshold(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz) {
         FloatBits fb;
         auto z = reinterpret_cast<T *>(dz);
         auto x = reinterpret_cast<const int *>(dx);
@@ -205,7 +205,7 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
      * @param dz
      */
     template<typename S, typename T>
-    void TypeCast::convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
+    ND4J_LOCAL void TypeCast::convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         auto x = reinterpret_cast<S *>(dx);
         auto z = reinterpret_cast<T *>(dz);
 
@@ -217,25 +217,25 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
         samediff::Threads::parallel_for(func,  0, N);
     };
 
-    template void TypeCast::convertFromThreshold<double>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromThreshold<float16>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromThreshold<bfloat16>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromThreshold<double>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromThreshold<float16>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromThreshold<bfloat16>(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToThreshold<bfloat16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToThreshold<bfloat16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertFromQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertFromQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertToQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template ND4J_LOCAL void TypeCast::convertToQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
 #ifndef __CLION_IDE__
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
 #endif
 }

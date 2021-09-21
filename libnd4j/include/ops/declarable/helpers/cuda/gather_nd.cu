@@ -123,7 +123,7 @@ namespace sd {
             }
 
 ///////////////////////////////////////////////////////////////////
-            void gatherND(sd::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
+            ND4J_LOCAL void gatherND(sd::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
 
                 const int maxRank = sd::math::nd4j_max<int>(indices.rankOf(), sd::math::nd4j_max<int>(input.rankOf(), output.rankOf()));
 

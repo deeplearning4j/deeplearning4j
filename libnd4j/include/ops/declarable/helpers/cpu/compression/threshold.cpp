@@ -46,17 +46,17 @@ namespace sd {
                 return samediff::Threads::parallel_long(func, LAMBDA_AL { return _old + _new; }, 0, N);
             }
 
-            int32_t thresholdEstimate(const NDArray &updates, const float threshold) {
+            ND4J_LOCAL int32_t thresholdEstimate(const NDArray &updates, const float threshold) {
                 BUILD_SINGLE_SELECTOR(updates.dataType(), return thresholdEstimate_, (updates, threshold), FLOAT_TYPES);
 
                 return 0;
             }
 
-            void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold) {
+            ND4J_LOCAL void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold) {
                 BUILD_SINGLE_SELECTOR(updates.dataType(), sd::TypeCast::convertToThreshold, (nullptr, updates.buffer(), updates.lengthOf(), encoded.buffer()), FLOAT_TYPES);
             }
 
-            void thresholdDecode(const NDArray &encoded, NDArray &updates) {
+            ND4J_LOCAL void thresholdDecode(const NDArray &encoded, NDArray &updates) {
                 BUILD_SINGLE_SELECTOR(updates.dataType(), sd::TypeCast::convertFromThreshold, (nullptr, encoded.buffer(), updates.lengthOf(), updates.buffer()), FLOAT_TYPES);
             }
         }

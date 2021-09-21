@@ -322,10 +322,10 @@ void eig(const NDArray& input, NDArray& vals, NDArray& vecs){
 
 BUILD_SINGLE_TEMPLATE(template void eig_, (const NDArray& input, NDArray& vals, NDArray& vecs), FLOAT_TYPES);
 
-template class ND4J_EXPORT EigenValsAndVecs<float>;
-template class ND4J_EXPORT EigenValsAndVecs<float16>;
-template class ND4J_EXPORT EigenValsAndVecs<bfloat16>;
-template class ND4J_EXPORT EigenValsAndVecs<double>;
+template class ND4J_LOCAL EigenValsAndVecs<float>;
+template class ND4J_LOCAL EigenValsAndVecs<float16>;
+template class ND4J_LOCAL EigenValsAndVecs<bfloat16>;
+template class ND4J_LOCAL EigenValsAndVecs<double>;
 
 }
 }

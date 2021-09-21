@@ -86,7 +86,7 @@ static void inTopKCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const NDArray* targets, NDArray* output, const uint k) {
+ND4J_LOCAL int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const NDArray* targets, NDArray* output, const uint k) {
 
     PointersManager manager(context, "in_top_k");
 
@@ -265,7 +265,7 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
         return Status::OK();
     }
 
-    int topKFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
+    ND4J_LOCAL int topKFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
         input->syncToDevice();
 
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), topKFunctor_, (context, input, values, indices, k, needSort), LIBND4J_TYPES, INDEXING_TYPES);

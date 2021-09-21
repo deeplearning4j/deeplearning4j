@@ -95,13 +95,13 @@ namespace helpers {
         }
     }
 
-    void _depthToSpace(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+    ND4J_LOCAL void _depthToSpace(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
         auto xType = input.dataType();
 
         BUILD_SINGLE_SELECTOR(xType, __depthToSpace, (input, output, block_size, isNHWC), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void __depthToSpace, (const NDArray &input, NDArray *output, int block_size, bool isNHWC);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void __depthToSpace, (const NDArray &input, NDArray *output, int block_size, bool isNHWC);, LIBND4J_TYPES);
 
 }
 }

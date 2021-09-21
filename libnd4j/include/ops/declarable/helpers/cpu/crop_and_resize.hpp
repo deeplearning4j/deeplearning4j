@@ -27,7 +27,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template<typename T, typename F, typename I>
-            void cropAndResizeFunctor_(NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
+            ND4J_LOCAL void cropAndResizeFunctor_(NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
                 const int batchSize = images->sizeAt(0);
                 const int imageHeight = images->sizeAt(1);
                 const int imageWidth = images->sizeAt(2);

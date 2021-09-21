@@ -128,7 +128,7 @@ namespace sd {
             /*
              * binarySearch - find element in haystack buffer (haystack - sorted device memory)
              * */
-            int binarySearch(const int *haystack, const int needle, const int totalElements) {
+             ND4J_LOCAL int binarySearch(const int *haystack, const int needle, const int totalElements) {
                 int firstIndex = 0;
                 int lastIndex = totalElements - 1;
                 int halfIndex = sd::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
@@ -155,7 +155,7 @@ namespace sd {
             }
 
             template <typename T>
-            void skipgram_(NDArray& s0, NDArray& s1, NDArray& s1n, NDArray& expTableV, NDArray& negTableV, NDArray& infV, int target, int ngStarter, NDArray& indices, NDArray& codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds) {
+            ND4J_LOCAL void skipgram_(NDArray& s0, NDArray& s1, NDArray& s1n, NDArray& expTableV, NDArray& negTableV, NDArray& infV, int target, int ngStarter, NDArray& indices, NDArray& codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds) {
 //                    void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
                 auto syn0 = reinterpret_cast<T*>(s0.specialBuffer());
                 auto syn1 = reinterpret_cast<T*>(s1.specialBuffer());
@@ -227,13 +227,13 @@ namespace sd {
                     throw cuda_exception::build("helpers::skipgram_: Cannot deallocate temp memory for lingual net", err);
                 }
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgram_, (NDArray& syn0, NDArray& syn1, NDArray& syn1Neg, NDArray& expTable, NDArray& negTable, NDArray& infVector, int target, int ngStarter, NDArray& indices, NDArray& codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void skipgram_, (NDArray& syn0, NDArray& syn1, NDArray& syn1Neg, NDArray& expTable, NDArray& negTable, NDArray& infVector, int target, int ngStarter, NDArray& indices, NDArray& codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds), FLOAT_TYPES);
 
             /*
              * batched version of skipgram routine
              * */
             template <typename T>
-            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTableV, NDArray& negTableV, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
+            ND4J_LOCAL void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTableV, NDArray& negTableV, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
 //            (NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTable, NDArray& negTable, NDArray& infVector, NDArray& targets, NDArray& negStarters, NDArray& indices, NDArray& codes, NDArray& lr, NDArray& nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
@@ -338,9 +338,9 @@ namespace sd {
 //                        delete[] neu1e;
                 }
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTable, NDArray& negTable, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTable, NDArray& negTable, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads), FLOAT_TYPES);
 
-            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
+            ND4J_LOCAL void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
                     NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
                 auto xType = syn0.dataType();
                 // single round case
@@ -392,7 +392,7 @@ namespace sd {
             }
 
             template <typename T>
-            __global__ void shiftKernel(T* neu1, T* infVector, int contextWidth, int vectorLength) {
+            ND4J_LOCAL __global__ void shiftKernel(T* neu1, T* infVector, int contextWidth, int vectorLength) {
                 auto start = blockIdx.x * blockDim.x + threadIdx.x;
                 auto step = blockDim.x * gridDim.x;
 
@@ -402,7 +402,7 @@ namespace sd {
             }
 
             template <typename T>
-            __global__ void fillUpSynonymsKernel(int starter, int contextWidth, int vectorLength, int* lockedWords, int* context, T* neu1e, T* syn0) {
+            ND4J_LOCAL __global__ void fillUpSynonymsKernel(int starter, int contextWidth, int vectorLength, int* lockedWords, int* context, T* neu1e, T* syn0) {
                 auto start = threadIdx.x + blockIdx.x * blockDim.x;
                 auto step = blockDim.x * gridDim.x;
 
@@ -419,7 +419,7 @@ namespace sd {
             }
 
             template <typename T>
-            void cbow_(LaunchContext* lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int contextWidth, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords) {
+            ND4J_LOCAL void cbow_(LaunchContext* lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int contextWidth, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords) {
                 auto syn0 = reinterpret_cast<T *>(vsyn0);
                 auto syn1 = reinterpret_cast<T *>(vsyn1);
                 auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
@@ -513,7 +513,7 @@ namespace sd {
                             "helpers::cbow_: Cannot deallocate memory for antonims table", err);
                 }
             }
-            BUILD_SINGLE_TEMPLATE(template void cbow_, (LaunchContext* lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int contextWidth, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void cbow_, (LaunchContext* lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int contextWidth, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords), FLOAT_TYPES);
 
             template <typename T>
             static __global__ void buildCurrentWindowKernel(int vocabSize, int contextWidth, int vectorLength, int* bContext, T* syn0, T* neu1, int* actualContext, int e) {
@@ -542,7 +542,7 @@ namespace sd {
             }
 
             template <typename T>
-            __global__ void arrangeNeuKernel(int vectorLength, T* neu1, T* infVector, int* actualContext) {
+            ND4J_LOCAL __global__ void arrangeNeuKernel(int vectorLength, T* neu1, T* infVector, int* actualContext) {
                 auto start = blockIdx.x * blockDim.x + threadIdx.x;
                 auto step = blockDim.x * gridDim.x;
 
@@ -551,7 +551,7 @@ namespace sd {
             }
 
             template <typename T>
-            __global__ void applyShiftKernel(int* bContext, int* bLocker, T* syn0, T* neu1e, int contextWidth, int vectorLength, int e, int starter) {
+            ND4J_LOCAL __global__ void applyShiftKernel(int* bContext, int* bLocker, T* syn0, T* neu1e, int contextWidth, int vectorLength, int e, int starter) {
                 auto step = blockDim.x * gridDim.x;
                 auto start = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -577,7 +577,7 @@ namespace sd {
             }
 
             template <typename T>
-            void cbowBatchExec_(LaunchContext* lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool trainWords, const int numThreads) {
+            ND4J_LOCAL void cbowBatchExec_(LaunchContext* lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool trainWords, const int numThreads) {
                 const auto syn0 = reinterpret_cast<T*>(s0.specialBuffer()); //bufferAsT<T>();
                 const auto syn1 = reinterpret_cast<T*>(s1.specialBuffer()); //bufferAsT<T>();
                 const auto syn1Neg = reinterpret_cast<T*>(s1n.specialBuffer()); //bufferAsT<T>();
@@ -721,9 +721,9 @@ namespace sd {
                 }
 
             }
-            BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (LaunchContext* lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength,  const bool trainWords, const int numThreads), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void cbowBatchExec_, (LaunchContext* lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength,  const bool trainWords, const int numThreads), FLOAT_TYPES);
 
-            void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &numLabels, NDArray &inferenceVector, const bool trainWords, int numWorkers) {
+            ND4J_LOCAL void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &numLabels, NDArray &inferenceVector, const bool trainWords, int numWorkers) {
                 auto xType = syn0.dataType();
                 auto lc = context.getContext();
                 indices.syncToHost();

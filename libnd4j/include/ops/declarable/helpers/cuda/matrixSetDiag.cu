@@ -84,7 +84,7 @@ static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threads
 }
 
 ///////////////////////////////////////////////////////////////////
-void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+ND4J_LOCAL void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

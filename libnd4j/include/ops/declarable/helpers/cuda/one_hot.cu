@@ -88,7 +88,7 @@ static void onehotCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
+ND4J_LOCAL void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
 
 	const auto xType = indices->dataType();
 	const auto zType = output->dataType();

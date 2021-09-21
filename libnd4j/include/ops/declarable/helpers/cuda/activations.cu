@@ -81,7 +81,7 @@ linkage void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+ND4J_LOCAL void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
 
 	PointersManager manager(context, "prelu");
 
@@ -164,7 +164,7 @@ __host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int thr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(sd::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+ND4J_LOCAL void preluBP(sd::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
     dLdA.nullify();
 
 	PointersManager manager(context, "preluBP");
@@ -302,7 +302,7 @@ static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
 
 //////////////////////////////////////////////////////////////////////////
-void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+ND4J_LOCAL void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -432,7 +432,7 @@ linkage void logSoftMaxForVectorCudaLauncher(const cudaStream_t* stream, const v
 }
 
 //////////////////////////////////////////////////////////////////////////
-void logSoftmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+ND4J_LOCAL void logSoftmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -550,7 +550,7 @@ linkage void softMaxDerivForVectorCudaLauncher(const cudaStream_t* stream, const
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+ND4J_LOCAL void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -586,7 +586,7 @@ void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArra
 		const_cast<NDArray&>(input).applyLambda(routine, output);
 	}
 
-	void thresholdRelu(sd::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
+	ND4J_LOCAL void thresholdRelu(sd::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
 		BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
 	}
 
@@ -597,7 +597,7 @@ void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArra
         input->applyPairwiseLambda(*dLdO, derivative, *output);
 	}
 
-	void thresholdReluDerivative(sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+	ND4J_LOCAL void thresholdReluDerivative(sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
 		BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
 	}
 
