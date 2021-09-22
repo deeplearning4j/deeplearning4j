@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -56,6 +56,7 @@
         <libnd4j.helper></libnd4j.helper>
         <libnd4j.buildprogram>bash</libnd4j.buildprogram>
         <libnd4j.operations></libnd4j.operations>
+        <libnd4j.datatypes></libnd4j.datatypes>
     </properties>
 
     <build>
@@ -153,7 +154,8 @@
                                 <argument>${libnd4j.helper}</argument>
                                 <argument>--operations</argument>
                                 <argument>${libnd4j.operations}</argument>
-
+                                <argument>--datatypes</argument>
+                                <argument>${libnd4j.datatypes}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -340,6 +342,8 @@
                                         <argument>${libnd4j.helper}</argument>
                                         <argument>--operations</argument>
                                         <argument>"${libnd4j.operations}"</argument>
+                                        <argument>--datatypes</argument>
+                                        <argument>${libnd4j.datatypes}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
