@@ -98,10 +98,15 @@ public class OpExclusionUtils {
                 }
 
                 String[] lineSplit = line.split(" ");
-                String opName = lineSplit[1].replace("OP_","");
-                opsToExclude.add(opName);
-                //usually gradient ops are co located in the same block
-                opsToExclude.add(opName + "_bp");
+                if(lineSplit.length < 2) {
+                    System.err.println("Unable to add op to exclude. Invalid op found: " + line);
+                } else {
+                    String opName = lineSplit[1].replace("OP_","");
+                    opsToExclude.add(opName);
+                    //usually gradient ops are co located in the same block
+                    opsToExclude.add(opName + "_bp");
+                }
+
             }
         } catch (IOException e) {
             throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
