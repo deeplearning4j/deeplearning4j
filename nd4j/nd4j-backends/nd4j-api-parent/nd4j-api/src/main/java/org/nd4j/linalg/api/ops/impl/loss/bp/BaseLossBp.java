@@ -20,7 +20,9 @@
 
 package org.nd4j.linalg.api.ops.impl.loss.bp;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -33,6 +35,8 @@ import java.util.List;
 
 public abstract class BaseLossBp extends DynamicCustomOp {
 
+    @Getter
+    @Setter
     protected LossReduce lossReduce;
 
     public BaseLossBp(@NonNull SameDiff sameDiff, @NonNull LossReduce lossReduce, @NonNull SDVariable predictions, @NonNull SDVariable weights,
