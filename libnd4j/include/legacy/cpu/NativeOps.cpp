@@ -2867,6 +2867,33 @@ Nd4jLong getRandomGeneratorRelativeLong(sd::graph::RandomGenerator* ptr, Nd4jLon
     return ptr->relativeLong(index);
 }
 
+int getRandomGeneratorNextInt(sd::graph::RandomGenerator* ptr) {
+    //to nullify  _nodeState._long ^= (steps ^ 0xdeadbeef);
+    //we will use step = 0xdeadbeef
+    auto result= ptr->relativeInt(1);
+    ptr->rewindH(0xdeadbeef);
+    return result;
+}
+
+Nd4jLong getRandomGeneratorNextLong(sd::graph::RandomGenerator* ptr) {
+    auto result= ptr->relativeLong(1);
+    ptr->rewindH(0xdeadbeef);
+    return result;
+}
+
+float getRandomGeneratorNextFloat(sd::graph::RandomGenerator* ptr) {
+  auto result= ptr->relativeT<float>(1);
+  ptr->rewindH(0xdeadbeef);
+  return result;
+}
+
+double getRandomGeneratorNextDouble(sd::graph::RandomGenerator* ptr) {
+  auto result= ptr->relativeT<double>(1);
+  ptr->rewindH(0xdeadbeef);
+  return result;
+}
+
+
 void deleteRandomGenerator(sd::graph::RandomGenerator* ptr) {
     delete ptr;
 }

@@ -1641,6 +1641,10 @@ ND4J_EXPORT float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator* ptr, Nd
 ND4J_EXPORT double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator* ptr, Nd4jLong index);
 ND4J_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, Nd4jLong index);
 ND4J_EXPORT Nd4jLong getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, Nd4jLong index);
+ND4J_EXPORT float getRandomGeneratorNextFloat(OpaqueRandomGenerator* ptr);
+ND4J_EXPORT double getRandomGeneratorNextDouble(OpaqueRandomGenerator* ptr);
+ND4J_EXPORT int getRandomGeneratorNextInt(OpaqueRandomGenerator* ptr);
+ND4J_EXPORT Nd4jLong getRandomGeneratorNextLong(OpaqueRandomGenerator* ptr);
 ND4J_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr);
 
 
