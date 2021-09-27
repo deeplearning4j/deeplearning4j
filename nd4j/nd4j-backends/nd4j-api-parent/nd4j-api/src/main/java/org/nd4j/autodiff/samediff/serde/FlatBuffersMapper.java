@@ -20,8 +20,11 @@
 
 package org.nd4j.autodiff.samediff.serde;
 
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.loss.BaseLoss;
+import org.nd4j.linalg.api.ops.impl.loss.bp.BaseLossBp;
 import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import java.nio.ByteOrder;
@@ -64,6 +67,51 @@ import org.nd4j.common.util.ArrayUtil;
 public class FlatBuffersMapper {
 
     private FlatBuffersMapper() {
+    }
+
+
+    /**
+     * Convert the input byte to the equivalent
+     * {@link LossReduce}, will throw an {@link IllegalArgumentException}
+     * if the value is not found
+     * @param input the special input
+     * @return the equivalent {@link LossReduce} value if one is found
+     */
+    public static LossReduce getLossReduceFromByte(byte input) {
+        if(input == org.nd4j.graph.LossReduce.SUM) {
+            return LossReduce.SUM;
+        } else if(input == org.nd4j.graph.LossReduce.NONE) {
+            return LossReduce.NONE;
+        } else if(input == org.nd4j.graph.LossReduce.MEAN_BY_WEIGHT) {
+            return LossReduce.MEAN_BY_WEIGHT;
+        } else if(input == org.nd4j.graph.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT) {
+            return LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT;
+        } else {
+            throw new IllegalArgumentException("Illegal byte did not match any known LossReduce value " + input);
+        }
+    }
+
+    /**
+     * Convert the {@link LossReduce}
+     * enum to its flatbuffers equivalent bytes.
+     * @param lossReduce the loss reduce input
+     * @return
+     */
+    public static byte getLossFunctionAsByte(@NonNull LossReduce lossReduce) {
+        switch(lossReduce) {
+            case SUM:
+                return org.nd4j.graph.LossReduce.SUM;
+            case NONE:
+                return org.nd4j.graph.LossReduce.NONE;
+            case MEAN_BY_WEIGHT:
+                return org.nd4j.graph.LossReduce.MEAN_BY_WEIGHT;
+            case MEAN_BY_NONZERO_WEIGHT_COUNT:
+                return org.nd4j.graph.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT;
+            default:
+                throw new IllegalArgumentException("Illegal loss reduce " + lossReduce);
+
+        }
+
     }
 
     /**
@@ -418,6 +466,14 @@ public class FlatBuffersMapper {
             ((CustomOp) op).addBArgument(extraBools);
             ((CustomOp) op).addDArgument(extraDTypes);
             ((CustomOp) op).addSArgument(extraStrings);
+            //base loss gets saved as an int argument, ensure that the field is set
+            if(op instanceof BaseLoss && extraInteger != null && extraInteger.length > 0) {
+                BaseLoss baseLoss = (BaseLoss) op;
+                baseLoss.setLossReduce(LossReduce.values()[(int) extraInteger[0]]);
+            } else if(op instanceof BaseLossBp && extraInteger != null && extraInteger.length > 0) {
+                BaseLossBp baseLossBp = (BaseLossBp) op;
+                baseLossBp.setLossReduce(LossReduce.values()[(int) extraInteger[0]]);
+            }
 
             op.setPropertiesForFunction(props);
             return op;
@@ -777,7 +833,7 @@ public class FlatBuffersMapper {
             extraStringIds[0] = bufferBuilder.createString(sArgs[0]);
 
 
-        } else
+        }  else
             extraBits = new long[]{};
 
         if (node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_LONG) {
@@ -959,7 +1015,7 @@ public class FlatBuffersMapper {
         return flatNode;
     }
 
-    public static int[] mapOrNull(List<String> list, FlatBufferBuilder fbb){
+    public static int[] mapOrNull(List<String> list, FlatBufferBuilder fbb) {
         if(list == null)
             return null;
         int[] out = new int[list.size()];

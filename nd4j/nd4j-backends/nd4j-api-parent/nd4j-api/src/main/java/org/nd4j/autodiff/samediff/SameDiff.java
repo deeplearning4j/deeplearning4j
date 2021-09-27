@@ -5367,7 +5367,7 @@ public class SameDiff extends SDBaseOps {
             if (fn.controlDepForLength() > 0) {
                 int l = fn.controlDepForLength();
                 List<String> list = new ArrayList<>(l);
-                for( int i=0; i<l; i++ ){
+                for( int i = 0; i < l; i++ ){
                     list.add(fn.controlDepFor(i));
                 }
                 op.setControlDepFor(list);

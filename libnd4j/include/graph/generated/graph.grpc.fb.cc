@@ -17,10 +17,10 @@ namespace sd {
 namespace graph {
 
 static const char* GraphInferenceServer_method_names[] = {
-  "/nd4j.graph.GraphInferenceServer/RegisterGraph",
-  "/nd4j.graph.GraphInferenceServer/ForgetGraph",
-  "/nd4j.graph.GraphInferenceServer/ReplaceGraph",
-  "/nd4j.graph.GraphInferenceServer/InferenceRequest",
+  "/sd.graph.GraphInferenceServer/RegisterGraph",
+  "/sd.graph.GraphInferenceServer/ForgetGraph",
+  "/sd.graph.GraphInferenceServer/ReplaceGraph",
+  "/sd.graph.GraphInferenceServer/InferenceRequest",
 };
 
 std::unique_ptr< GraphInferenceServer::Stub> GraphInferenceServer::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
