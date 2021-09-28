@@ -236,6 +236,6 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
     template ND4J_LOCAL void TypeCast::convertToQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
 #ifndef __CLION_IDE__
-    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), COMMON_TYPES_LIST, COMMON_TYPES_LIST)
 #endif
 }

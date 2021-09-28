@@ -145,7 +145,7 @@ template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext * context) {
     return create_(order, shape, DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray* NDArrayFactory::create_, (const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext * context), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray* NDArrayFactory::create_, (const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext * context), COMMON_TYPES_LIST);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -250,7 +250,7 @@ template ND4J_EXPORT void NDArrayFactory::memcpyFromVector(void *ptr, const std:
 
         return res;
     }
-//    BUILD_DOUBLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::create, (DataType type, const T scalar, sd::LaunchContext * context), LIBND4J_TYPES);
+//    BUILD_DOUBLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::create, (DataType type, const T scalar, sd::LaunchContext * context), COMMON_TYPES_LIST);
     template ND4J_EXPORT NDArray NDArrayFactory::create(DataType type, const double scalar, sd::LaunchContext * context);
     template ND4J_EXPORT NDArray NDArrayFactory::create(DataType type, const float scalar, sd::LaunchContext * context);
     template ND4J_EXPORT NDArray NDArrayFactory::create(DataType type, const float16 scalar, sd::LaunchContext * context);
@@ -410,14 +410,14 @@ template ND4J_EXPORT NDArray* NDArrayFactory::create_(const char order, const st
         std::vector<Nd4jLong> vec(shape);
         return create<T>(order, vec, context);
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::create, (const char, const std::initializer_list<Nd4jLong>&, sd::LaunchContext * context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::create, (const char, const std::initializer_list<Nd4jLong>&, sd::LaunchContext * context), COMMON_TYPES_LIST);
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext * context) {
         return create(order, shape, DataTypeUtils::fromT<T>(), context);
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::create, (const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext * context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::create, (const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext * context), COMMON_TYPES_LIST);
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, sd::DataType dtype, sd::LaunchContext* context) {
@@ -493,7 +493,7 @@ template ND4J_EXPORT NDArray NDArrayFactory::create(const std::vector<bool> &val
 
         return result;
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray* NDArrayFactory::empty_, (sd::LaunchContext * context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray* NDArrayFactory::empty_, (sd::LaunchContext * context), COMMON_TYPES_LIST);
 
     NDArray* NDArrayFactory::empty_(sd::DataType dataType, sd::LaunchContext * context) {
         if (context == nullptr)
@@ -513,7 +513,7 @@ template ND4J_EXPORT NDArray NDArrayFactory::create(const std::vector<bool> &val
     NDArray NDArrayFactory::empty(sd::LaunchContext * context) {
         return empty(DataTypeUtils::fromT<T>(), context);
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::empty, (sd::LaunchContext * context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArrayFactory::empty, (sd::LaunchContext * context), COMMON_TYPES_LIST);
 
     ////////////////////////////////////////////////////////////////////////
     NDArray NDArrayFactory::empty(sd::DataType dataType, sd::LaunchContext * context) {

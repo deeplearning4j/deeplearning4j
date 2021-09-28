@@ -361,6 +361,22 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
     #define GENERIC_NUMERIC_TYPES SKIP_FIRST_COMMA(GENERIC_NUMERIC_TYPES_L)
 #endif
 
+///////////FULL LIST FOR THE METHODS WHICH SHOULD BE DEFINED FOR GENERAL TYPES///////////////
+#define COMMON_TYPES_LIST \
+        (sd::DataType::HALF, float16), \
+        (sd::DataType::FLOAT32, float), \
+        (sd::DataType::DOUBLE, double), \
+        (sd::DataType::BOOL, bool), \
+        (sd::DataType::INT8, int8_t), \
+        (sd::DataType::UINT8, uint8_t), \
+        (sd::DataType::INT16, int16_t), \
+        (sd::DataType::INT32, int32_t), \
+        (sd::DataType::INT64, Nd4jLong), \
+        (sd::DataType::UINT16, uint16_t), \
+        (sd::DataType::UINT64, Nd4jULong), \
+        (sd::DataType::UINT32, uint32_t), \
+        (sd::DataType::BFLOAT16, bfloat16)
+
 ///////////TRIPLES GENERATED MANUALLY USING REGEX /////////////////////////
 #if defined(HAS_BFLOAT16)
     #define TTYPE_BFLOAT16_BFLOAT16_BFLOAT16  ,(bfloat16, bfloat16, bfloat16)
@@ -1506,6 +1522,13 @@ _15, _16, _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33, N
 #endif
 #if COUNT_NARG(FLOAT_TYPES) >3
     #define FLOAT_TYPES_3 GET_ELEMENT(3,FLOAT_TYPES)
+#endif
+
+#if COUNT_NARG(INDEXING_TYPES) >0
+    #define INDEXING_TYPES_0 GET_ELEMENT(0,INDEXING_TYPES)
+#endif
+#if COUNT_NARG(INDEXING_TYPES) >1
+    #define INDEXING_TYPES_1 GET_ELEMENT(1,INDEXING_TYPES)
 #endif
 
 #endif //header
