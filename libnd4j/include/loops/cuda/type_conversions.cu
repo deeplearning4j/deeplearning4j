@@ -535,7 +535,7 @@ BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL cudaDecodeBitmapGeneric, (dim3 &l
     (randomName0, 0), \
     (randomName1, 1)
 
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGenericCuda, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES_EXTENDED, LIBND4J_TYPES_EXTENDED);
+    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGenericCuda, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), COMMON_TYPES_LIST, COMMON_TYPES_LIST);
     BUILD_DOUBLE_TEMPLATE(template void prescanLauncher, (dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex), LIBND4J_BOOLS_LOCAL, LIBND4J_BOOLS_LOCAL);
 
 #undef LIBND4J_BOOLS_LOCAL

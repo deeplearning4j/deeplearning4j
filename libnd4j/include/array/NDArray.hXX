@@ -991,7 +991,7 @@ namespace sd {
             vector[e] = this->e<T>(e);
         return vector;
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::getBufferAsVector() const, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::getBufferAsVector() const, COMMON_TYPES_LIST);
 
 ////////////////////////////////////////////////////////////////////////
     std::vector<int64_t> NDArray::getShapeAsFlatVector() const {
@@ -3253,7 +3253,7 @@ namespace sd {
 
         return result;
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::asVectorT(), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::asVectorT(), COMMON_TYPES_LIST);
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
@@ -3747,7 +3747,7 @@ namespace sd {
         BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong) const, COMMON_TYPES_LIST);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
@@ -3766,7 +3766,7 @@ namespace sd {
 
         return static_cast<T>(119);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong, const Nd4jLong) const, COMMON_TYPES_LIST);
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
@@ -3785,7 +3785,7 @@ namespace sd {
 
         return static_cast<T>(119);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, COMMON_TYPES_LIST);
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
@@ -3804,7 +3804,7 @@ namespace sd {
 
         return static_cast<T>(119);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, COMMON_TYPES_LIST);
 
 //////////////////////////////////////////////////////////////////////////
     NDArray NDArray::e(const Nd4jLong i) const {
