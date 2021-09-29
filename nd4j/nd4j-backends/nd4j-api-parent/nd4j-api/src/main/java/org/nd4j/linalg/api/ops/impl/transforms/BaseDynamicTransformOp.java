@@ -46,6 +46,11 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
     }
 
     @Override
+    public int getNumOutputs() {
+        return 1;
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes for %s, got input %s", getClass(), dataTypes);
 
