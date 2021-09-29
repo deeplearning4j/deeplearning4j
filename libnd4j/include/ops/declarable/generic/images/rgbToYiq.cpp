@@ -25,7 +25,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-#if NOT_EXCLUDED(rgb_to_yiq)
+#if NOT_EXCLUDED(OP_rgb_to_yiq)
 namespace sd {
     namespace ops {
 
