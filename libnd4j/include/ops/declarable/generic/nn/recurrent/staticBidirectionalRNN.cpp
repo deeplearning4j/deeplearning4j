@@ -25,7 +25,7 @@
 #include<ops/declarable/helpers/reverse.h>
 #include<ops/declarable/helpers/transforms.h>
 
-#if NOT_EXCLUDED(static_bi_directional_rnn)
+#if NOT_EXCLUDED(OP_static_bi_directional_rnn)
 namespace sd {
 namespace ops  {
 

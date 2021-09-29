@@ -22,7 +22,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/extract_patches.h>
-#if NOT_EXCLUDED(extract_image_patches)
+#if NOT_EXCLUDED(OP_extract_image_patches)
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {

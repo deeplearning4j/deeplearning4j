@@ -27,7 +27,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 #include <array/NDArray.h>
-#if NOT_EXCLUDED(ada_grad_updater)
+#if NOT_EXCLUDED(OP_ada_grad_updater)
 namespace sd {
     namespace ops {
 
