@@ -24,6 +24,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
@@ -51,6 +52,7 @@ public class TrainingConfig {
     private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
+    private DataType initialLossDataType;
 
 
     private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
@@ -73,7 +75,7 @@ public class TrainingConfig {
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, String dataSetFeatureMapping, String dataSetLabelMapping) {
         this(updater, regularization, true, Collections.singletonList(dataSetFeatureMapping), Collections.singletonList(dataSetLabelMapping),
-                Collections.<String>emptyList(), Collections.<String>emptyList(), null);
+                Collections.<String>emptyList(), Collections.<String>emptyList(), null,DataType.FLOAT);
     }
 
     /**
@@ -92,7 +94,7 @@ public class TrainingConfig {
      * @param dataSetLabelMaskMapping   May be null. If non-null, the variables that the MultiDataSet label mask arrays should be associated with.
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
-                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables) {
+                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables,DataType initialLossDataType) {
         this.updater = updater;
         this.regularization = regularization;
         this.minimize = minimize;
@@ -101,13 +103,14 @@ public class TrainingConfig {
         this.dataSetFeatureMaskMapping = dataSetFeatureMaskMapping;
         this.dataSetLabelMaskMapping = dataSetLabelMaskMapping;
         this.lossVariables = lossVariables;
+        this.initialLossDataType = initialLossDataType;
     }
 
     protected TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
             List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables,
             Map<String, List<IEvaluation>> trainEvaluations, Map<String, Integer> trainEvaluationLabels,
-            Map<String, List<IEvaluation>> validationEvaluations, Map<String, Integer> validationEvaluationLabels){
-        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables);
+            Map<String, List<IEvaluation>> validationEvaluations, Map<String, Integer> validationEvaluationLabels,DataType initialLossDataType) {
+        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables,initialLossDataType);
         this.trainEvaluations = trainEvaluations;
         this.trainEvaluationLabels = trainEvaluationLabels;
         this.validationEvaluations = validationEvaluations;
@@ -153,12 +156,30 @@ public class TrainingConfig {
         private List<String> lossVariables;
         private boolean skipValidation = false;
         private boolean markLabelsUnused = false;
+        private DataType initialLossDataType = DataType.FLOAT;
 
         private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
         private Map<String, Integer> trainEvaluationLabels = new HashMap<>();
 
         private Map<String, List<IEvaluation>> validationEvaluations = new HashMap<>();
         private Map<String, Integer> validationEvaluationLabels = new HashMap<>();
+
+
+        /**
+         * Set the initial loss data type, defaults to
+         * {@link DataType#FLOAT} - when setting a data type for a loss function
+         * we need a beginning data type to compute the gradients. In order to do so,
+         * we need to set an initial number of zero that acts as the initial gradient.
+         * This initial loss data type controls the data type of that number.
+         * This is critical when wanting more fine grained control over the data types
+         * used in the training process.
+         * @param initialLossDataType the initial loss data type
+         * @return
+         */
+        public Builder initialLossDataType(DataType initialLossDataType) {
+            this.initialLossDataType = initialLossDataType;
+            return this;
+        }
 
         /**
          * Set the updater (such as {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs}
@@ -499,7 +520,7 @@ public class TrainingConfig {
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
                     dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables,
-                    trainEvaluations, trainEvaluationLabels, validationEvaluations, validationEvaluationLabels);
+                    trainEvaluations, trainEvaluationLabels, validationEvaluations, validationEvaluationLabels,initialLossDataType);
         }
     }
 
