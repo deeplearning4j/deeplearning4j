@@ -61,7 +61,6 @@ else()
             message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
     endif()
-    else()
            set(CMAKE_CXX_STANDARD 11)
 
 endif()
