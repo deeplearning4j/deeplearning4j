@@ -26,7 +26,6 @@
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
         </dependency>
 
     </dependencies>
