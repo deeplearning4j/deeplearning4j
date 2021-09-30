@@ -59,6 +59,16 @@ public class CpuNativeRandom extends NativeRandom {
     }
 
     @Override
+    public float nextFloat() {
+        return nativeOps.getRandomGeneratorNextFloat((OpaqueRandomGenerator)statePointer);
+    }
+
+    @Override
+    public double nextDouble() {
+        return nativeOps.getRandomGeneratorNextDouble((OpaqueRandomGenerator)statePointer);
+    }
+
+    @Override
     public void setSeed(long seed) {
         this.seed = seed;
         this.currentPosition.set(0);

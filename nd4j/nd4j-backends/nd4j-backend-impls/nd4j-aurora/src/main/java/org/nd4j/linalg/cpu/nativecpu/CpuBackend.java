@@ -20,6 +20,7 @@ import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * Cpu backend
@@ -65,6 +66,11 @@ public class CpuBackend extends Nd4jBackend {
     @Override
     public Environment getEnvironment() {
         return CpuEnvironment.getInstance();
+    }
+
+    @Override
+    public String buildInfo() {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
     }
 
     @Override

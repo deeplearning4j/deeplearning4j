@@ -76,6 +76,11 @@ public class NDArray extends BaseNDArray {
     }
 
 
+    public NDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+                   MemoryWorkspace workspace){
+        super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
+
     public NDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
         this.shapeInformation = shapeInfo;

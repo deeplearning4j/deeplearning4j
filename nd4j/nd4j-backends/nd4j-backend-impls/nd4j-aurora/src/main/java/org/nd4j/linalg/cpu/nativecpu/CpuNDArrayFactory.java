@@ -228,9 +228,15 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray create(DataType dataType, long[] shape, long[] strides,  char ordering, MemoryWorkspace workspace ) {
+    public INDArray create(DataType dataType, long[] shape, long[] strides,  char ordering, MemoryWorkspace workspace) {
         return new NDArray(dataType, shape, strides, 0, ordering);
     }
+
+    @Override
+    public INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering, MemoryWorkspace workspace) {
+        return new NDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
+
 
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
