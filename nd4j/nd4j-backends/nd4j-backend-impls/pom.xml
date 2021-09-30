@@ -153,6 +153,10 @@
                     <name>libnd4j.chip</name>
                     <value>!cuda</value>
                 </property>
+                <property>
+                    <name>libnd4j.chip</name>
+                    <value>!aurora</value>
+                </property>
             </activation>
             <modules>
                 <module>nd4j-native</module>
