@@ -27,7 +27,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
-            void _CUDA_G histogramKernel(void *xBuffer, const Nd4jLong *xShapeInfo, void *zBuffer, const Nd4jLong *zShapeInfo, void *allocationPointer, void *reductionPointer, Nd4jLong numBins, X* min_val, X* max_val) {
+            static void _CUDA_G histogramKernel(void *xBuffer, const Nd4jLong *xShapeInfo, void *zBuffer, const Nd4jLong *zShapeInfo, void *allocationPointer, void *reductionPointer, Nd4jLong numBins, X* min_val, X* max_val) {
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
                 auto dx = reinterpret_cast<X*>(xBuffer);
                 auto result = reinterpret_cast<Z*>(zBuffer);
@@ -121,7 +121,7 @@ namespace sd {
                 cudaStreamSynchronize(*context->getCudaStream());
             }
 
-            void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
+            ND4J_LOCAL void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
                 Nd4jLong numBins = output.lengthOf();
                 NDArray::registerSpecialUse({&output}, {&input});
 

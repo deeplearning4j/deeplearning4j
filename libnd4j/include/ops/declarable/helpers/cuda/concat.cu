@@ -84,7 +84,7 @@ __host__ static void concatCudaLauncher(const int blocksPerGrid, const int threa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+ND4J_LOCAL void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
 
     const int numOfInArrs = inArrs.size();
     const auto sizeofT    = output.sizeOfT();

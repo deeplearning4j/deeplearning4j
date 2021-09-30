@@ -31,7 +31,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
+ND4J_LOCAL void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
 
     const T* x = input.bufferAsT<T>();
           T* z = output.bufferAsT<T>();
@@ -256,7 +256,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 //     }
 // }
 
-void pad(sd::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+ND4J_LOCAL void pad(sd::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
     BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output, padValue), LIBND4J_TYPES);
 }
 
@@ -324,11 +324,11 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     }
 }
 
-    void mirrorPad(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+    ND4J_LOCAL void mirrorPad(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
         BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (input, paddings, output, mode), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mirrorPad_, (const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL mirrorPad_, (const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
 
 
 ////////////////////////////////////////////////////////////////////////

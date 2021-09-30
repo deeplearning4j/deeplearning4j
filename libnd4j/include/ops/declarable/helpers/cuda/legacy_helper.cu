@@ -40,7 +40,7 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void cubeDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    ND4J_LOCAL void cubeDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), cubeDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -56,7 +56,7 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void reduceNorm1(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    ND4J_LOCAL void reduceNorm1(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reduceNorm1_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -72,7 +72,7 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void sigmCrossEntropy(sd::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
+    ND4J_LOCAL void sigmCrossEntropy(sd::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropy_, (logits, labels, output), FLOAT_TYPES);
     }
 
@@ -91,7 +91,7 @@ namespace helpers {
         logits->applyPairwiseLambda(*labels, functor, *output);
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void sigmCrossEntropyGrad(sd::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
+    ND4J_LOCAL void sigmCrossEntropyGrad(sd::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropyGrad_, (logits, labels, output), FLOAT_TYPES);
     }
 
@@ -110,7 +110,7 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void softSignDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    ND4J_LOCAL void softSignDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), softSignDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -125,7 +125,7 @@ namespace helpers {
         input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
-    void softPlusDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    ND4J_LOCAL void softPlusDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), softPlusDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ namespace helpers {
         input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
-    void sigmoidDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    ND4J_LOCAL void sigmoidDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), sigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -156,7 +156,7 @@ namespace helpers {
         input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
-    void hardSigmoidDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    ND4J_LOCAL void hardSigmoidDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardSigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -194,18 +194,18 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void logSumExp(sd::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output) {
+    ND4J_LOCAL void logSumExp(sd::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, axis, output), FLOAT_TYPES);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void logSumExp(sd::LaunchContext * context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
+    ND4J_LOCAL void logSumExp(sd::LaunchContext * context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), FLOAT_TYPES);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
-    void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+    ND4J_LOCAL void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
 
         T posWeight = weights->e<T>(0);
 
@@ -238,7 +238,7 @@ namespace helpers {
         }
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+    ND4J_LOCAL void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {targets, input, weights});
 
         BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output), FLOAT_TYPES);

@@ -4536,7 +4536,7 @@ public class SameDiff extends SDBaseOps {
                 }
 
 
-                return new SDVariable[]{sameDiff.var(GRAD_FN_KEY, org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
+                return new SDVariable[]{sameDiff.var(GRAD_FN_KEY, trainingConfig.getInitialLossDataType(), 1)};
             }
         });
 
@@ -5367,7 +5367,7 @@ public class SameDiff extends SDBaseOps {
             if (fn.controlDepForLength() > 0) {
                 int l = fn.controlDepForLength();
                 List<String> list = new ArrayList<>(l);
-                for( int i=0; i<l; i++ ){
+                for( int i = 0; i < l; i++ ){
                     list.add(fn.controlDepFor(i));
                 }
                 op.setControlDepFor(list);

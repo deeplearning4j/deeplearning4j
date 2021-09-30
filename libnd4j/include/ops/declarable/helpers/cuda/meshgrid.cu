@@ -136,7 +136,7 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void meshgrid(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
+    ND4J_LOCAL void meshgrid(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
 
         BUILD_SINGLE_SELECTOR(inArrs.at(0)->dataType(), meshgrid_, (context, inArrs, outArrs, swapFirst2Dims), NUMERIC_TYPES);
 

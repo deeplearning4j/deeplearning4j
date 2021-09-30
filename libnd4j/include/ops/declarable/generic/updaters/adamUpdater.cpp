@@ -27,7 +27,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 #include <array/NDArray.h>
-#if NOT_EXCLUDED(adam_updater)
+#if NOT_EXCLUDED(OP_adam_updater)
 namespace sd {
     namespace ops {
 

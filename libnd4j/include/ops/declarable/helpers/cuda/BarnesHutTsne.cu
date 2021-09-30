@@ -55,7 +55,7 @@ namespace helpers {
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // row counter caller
-    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
+ND4J_LOCAL Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 
         int* pRowCounts = reinterpret_cast<int*>(rowCounts.specialBuffer());
         int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
@@ -171,12 +171,12 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // symmetrize caller and adoption
 //
-    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
+    ND4J_LOCAL void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
         BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCounts), NUMERIC_TYPES);
 
         *outputVals /= 2.0;
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts), NUMERIC_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // edge forces implementation
@@ -228,18 +228,18 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // edge forces caller
 //
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
+    ND4J_LOCAL void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
         // Loop over all edges in the graph
         BUILD_SINGLE_SELECTOR(output->dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // gains - run a function T((x + 2.) * sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps));
 // for all members in input and put all in output
 //
     template <typename T>
-    void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+    ND4J_LOCAL void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
         auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
             T res = sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps) ? x + T(.2) : x * T(.8);
             if(res < .01) res = .01;
@@ -251,15 +251,15 @@ namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // gains caller
-    void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+    ND4J_LOCAL void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), barnes_gains_, (input, gradX, epsilon, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // cell contains - check cells for given point
 //
-    bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, Nd4jLong dimension) {
+    ND4J_LOCAL bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, Nd4jLong dimension) {
         auto  cornerMinusWidth = *corner - *width;
         auto cornerPlusWidth = *corner + *width;
         // executes on host side, so sync all to host memory

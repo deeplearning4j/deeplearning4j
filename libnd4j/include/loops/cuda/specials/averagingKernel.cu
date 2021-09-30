@@ -102,5 +102,5 @@ namespace sd {
         sd::DebugHelper::checkErrorCode(stream, "averaging(...) failed");
     }
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT averagingKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vdx, void * vdz, int n, Nd4jLong length, bool propagate), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL averagingKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vdx, void * vdz, int n, Nd4jLong length, bool propagate), LIBND4J_TYPES);
 }

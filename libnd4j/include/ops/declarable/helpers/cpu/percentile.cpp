@@ -78,11 +78,11 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
     }
 }
 
-    void percentile(sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
+    ND4J_LOCAL void percentile(sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
         BUILD_SINGLE_SELECTOR(input.dataType(), _percentile, (input, output, axises, q, interpolation), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _percentile, (const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _percentile, (const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation), LIBND4J_TYPES);
 
 }
 }

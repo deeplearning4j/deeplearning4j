@@ -94,7 +94,7 @@ namespace sd {
                 }
             }
 
-            void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
+            ND4J_LOCAL void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
                 auto zType = output->dataType();
                 auto iType = indices->dataType();
 

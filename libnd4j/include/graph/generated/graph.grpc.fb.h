@@ -30,7 +30,7 @@ namespace graph {
 class GraphInferenceServer final {
  public:
   static constexpr char const* service_full_name() {
-    return "nd4j.graph.GraphInferenceServer";
+    return "sd.graph.GraphInferenceServer";
   }
   class StubInterface {
    public:

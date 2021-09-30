@@ -82,7 +82,7 @@ static void upsampling3dCudaLauncher(const int blocksPerGrid, const int threadsP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+ND4J_LOCAL void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
 
     PointersManager manager(block.launchContext(), "upsampling3d");
 

@@ -1,0 +1,70 @@
+[
+  {
+    "name":"org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
+    "name":"org.deeplearning4j.earlystopping.EarlyStoppingModelSaver",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
+    "name":"org.deeplearning4j.earlystopping.termination.EpochTerminationCondition",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
+    "name":"org.deeplearning4j.nn.transferlearning.FineTuneConfiguration",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
+    "name":"org.deeplearning4j.earlystopping.termination.IterationTerminationCondition",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },  {
+  "name":"org.deeplearning4j.nn.conf.inputs.InputType",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true,
+  "allDeclaredClasses" : true,
+  "allPublicClasses" : true
+},  {
+  "name":"org.deeplearning4j.nn.conf.ComputationGraphConfiguration",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true,
+  "allDeclaredClasses" : true,
+  "allPublicClasses" : true
+},  {
+  "name":"org.deeplearning4j.nn.conf.MultiLayerConfiguration",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true,
+  "allDeclaredClasses" : true,
+  "allPublicClasses" : true
+},  {
+  "name":"org.deeplearning4j.nn.conf.graph.GraphVertex",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true,
+  "allDeclaredClasses" : true,
+  "allPublicClasses" : true
+}
+]

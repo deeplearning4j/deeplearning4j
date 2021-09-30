@@ -26,7 +26,7 @@
 
 namespace sd {
     namespace ops {
-#if NOT_EXCLUDED(OP_image_non_max_suppression)
+#if NOT_EXCLUDED(OP_non_max_suppression)
         CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
             auto boxes = INPUT_VARIABLE(0);
             auto scales = INPUT_VARIABLE(1);
@@ -118,7 +118,7 @@ namespace sd {
                     ->setAllowedOutputTypes({ALL_INDICES});
         }
 #endif
-#if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
+#if NOT_EXCLUDED(OP_non_max_suppression_v3)
         DECLARE_TYPES(non_max_suppression_v3) {
             getOpDescriptor()
                     ->setAllowedInputTypes(sd::DataType::ANY)

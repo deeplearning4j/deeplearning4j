@@ -45,7 +45,7 @@ namespace ops 	  {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static void applyActivation(const NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
+static ND4J_LOCAL void applyActivation(const NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
 
     switch (opId) {
         case 0:
@@ -191,7 +191,7 @@ static FORCEINLINE int getBatchTimeTotalIndex(const int dataFormat, const int sL
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
+ND4J_LOCAL void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                    const NDArray* b, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
                    const std::vector<float>& params,
                    NDArray* h, NDArray* c) {
@@ -296,7 +296,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
 //////////////////////////////////////////////////////////////////////////
 // this auxiliary ff should be running before backprop
-void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
+ND4J_LOCAL void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                    const NDArray* b, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
                    const std::vector<float>& params,
                    NDArray* z, NDArray* a, NDArray* h, NDArray* c) {
@@ -350,7 +350,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
+ND4J_LOCAL void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
                      const NDArray* dLdh, const NDArray* dLdhL, const NDArray* dLdcL,
                      const NDArray* z, const NDArray* a, const NDArray* c, const std::vector<float>& params,
                      NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp) {
@@ -584,7 +584,7 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
+ND4J_LOCAL void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                        const NDArray* b, const NDArray* seqLen, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
                        const std::vector<float>& params,
                        const bool forward,
@@ -908,7 +908,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
+ND4J_LOCAL void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                          const NDArray* b, const NDArray* seqLen, NDArray* hI, NDArray* cI, const NDArray* Wp,
                          const NDArray* dLdh, const NDArray* dLdhL, const NDArray* dLdcL,
                          const std::vector<float>& params, const bool forward,
@@ -1200,7 +1200,7 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
 
 //////////////////////////////////////////////////////////////////////////
-// void lstmLayerCellBp(const NDArray* x,    const NDArray* Wx, const NDArray* Wr,
+// ND4J_LOCAL void lstmLayerCellBp(const NDArray* x,    const NDArray* Wx, const NDArray* Wr,
 //                      const NDArray* b,          NDArray* hI,       NDArray* cI, const NDArray* Wp, const NDArray* dLdh,
 //                      const std::vector<float>& params, const bool firstIter,
 

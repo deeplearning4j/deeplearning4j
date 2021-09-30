@@ -28,7 +28,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
-            void rshift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
+            ND4J_LOCAL void rshift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
                 auto lambda = LAMBDA_T(x, shift) {
                     return x >> shift;
                 };
@@ -36,12 +36,12 @@ namespace sd {
                 input.applyLambda(lambda, output);
             }
 
-            void rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
+            ND4J_LOCAL void rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
                 BUILD_SINGLE_SELECTOR(x.dataType(), rshift_bits_, (launchContext, x, z, shift), INTEGER_TYPES);
             }
 
             template <typename T>
-            void shift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
+            ND4J_LOCAL void shift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
                 auto lambda = LAMBDA_T(x, shift) {
                     return x << shift;
                 };
@@ -49,12 +49,12 @@ namespace sd {
                 input.applyLambda(lambda, output);
             }
 
-            void shift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
+            ND4J_LOCAL void shift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
                 BUILD_SINGLE_SELECTOR(x.dataType(), shift_bits_, (launchContext, x, z, shift), INTEGER_TYPES);
             }
 
             template <typename T>
-            void cyclic_rshift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
+            ND4J_LOCAL void cyclic_rshift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
                 auto step = (sizeof(T) * 8) - shift;
                 auto lambda = LAMBDA_T(x, shift, step) {
                     return x >> shift | x << step;
@@ -63,12 +63,12 @@ namespace sd {
                 input.applyLambda(lambda, output);
             }
 
-            void cyclic_rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
+            ND4J_LOCAL void cyclic_rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
                 BUILD_SINGLE_SELECTOR(x.dataType(), cyclic_rshift_bits_, (launchContext, x, z, shift), INTEGER_TYPES);
             }
 
             template <typename T>
-            void cyclic_shift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
+            ND4J_LOCAL void cyclic_shift_bits_(LaunchContext* launchContext, NDArray &input, NDArray &output, uint32_t shift) {
                 auto step = (sizeof(T) * 8) - shift;
                 auto lambda = LAMBDA_T(x, shift, step) {
                     return x << shift | x >> step;
@@ -77,7 +77,7 @@ namespace sd {
                 input.applyLambda(lambda, output);
             }
 
-            void cyclic_shift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
+            ND4J_LOCAL void cyclic_shift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
                 BUILD_SINGLE_SELECTOR(x.dataType(), cyclic_shift_bits_, (launchContext, x, z, shift), INTEGER_TYPES);
             }
         }

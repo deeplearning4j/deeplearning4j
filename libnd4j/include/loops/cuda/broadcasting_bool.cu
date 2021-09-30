@@ -312,6 +312,6 @@ __device__ void BroadcastBool<X,Z>::transformCuda(const void *vx, const Nd4jLong
 }
 
 
-BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT BroadcastBool, , LIBND4J_TYPES, BOOL_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL BroadcastBool, , LIBND4J_TYPES, BOOL_TYPES);
 }
 }

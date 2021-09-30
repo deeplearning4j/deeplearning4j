@@ -90,7 +90,7 @@ static void upsampling3dBPCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
+ND4J_LOCAL void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
 
     PointersManager manager(block.launchContext(), "upsampling3d_bp");
 

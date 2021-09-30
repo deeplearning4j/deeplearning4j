@@ -23,7 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
-#if NOT_EXCLUDED(OP_image_non_max_suppression_overlaps)
+#if NOT_EXCLUDED(OP_non_max_suppression_overlaps)
 
 namespace sd {
     namespace ops {

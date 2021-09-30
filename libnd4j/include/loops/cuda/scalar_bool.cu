@@ -232,7 +232,7 @@ void ScalarBoolTransform<X,Y>::executeCudaAlongDimension(dim3& launchDims, cudaS
     DISPATCH_BY_OPNUM_TT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_BOOL_OPS);
 }
 
-    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ScalarBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL ScalarBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
 }
 }
 

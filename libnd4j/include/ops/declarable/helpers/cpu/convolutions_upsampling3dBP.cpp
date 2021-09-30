@@ -89,7 +89,7 @@ static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
         }
 
         
-        void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+        ND4J_LOCAL void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
             BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling3dBP_, (gradO, gradI, isNCHW), FLOAT_TYPES);
         }
 

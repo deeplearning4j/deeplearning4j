@@ -80,7 +80,7 @@ __host__ static void clipByNormCudaLauncher(const int blocksPerGrid, const int t
 }
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dims, const NDArray& clipNorm, const bool isInplace, const bool useAverage) {
+ND4J_LOCAL void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dims, const NDArray& clipNorm, const bool isInplace, const bool useAverage) {
 
     NDArray* z = nullptr;
 
@@ -182,7 +182,7 @@ __global__ static void clipByNormBpCuda(const void* vClipNorm,
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dims, const NDArray& clipNorm, const bool useAverage) {
+ND4J_LOCAL void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dims, const NDArray& clipNorm, const bool useAverage) {
 
     const int rank = input.rankOf();
 
@@ -230,10 +230,10 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
         manager.synchronize();
     }
 }
-BUILD_SINGLE_TEMPLATE(template void clipByNormBp_, (sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void clipByNormBp_, (sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage) {
+ND4J_LOCAL void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage) {
 
     const NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
     BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_, (context, castedInput, gradO, gradI, dimensions, clipNorm, useAverage), FLOAT_TYPES);
@@ -244,8 +244,8 @@ void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArra
 
 
 
-        template <typename T>
-    void clipByGlobalNorm_(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    template <typename T>
+    ND4J_LOCAL void clipByGlobalNorm_(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         NDArray globalNorm = NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
 
         for (auto i = 0; i < inputs.size(); i++) {
@@ -275,11 +275,11 @@ void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArra
         }
     }
 
-    void clipByGlobalNorm(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    ND4J_LOCAL void clipByGlobalNorm(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_, (context, inputs, clipNorm, workspace, outputs, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void clipByGlobalNorm_, (sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
 
 
     template <typename T>
@@ -324,11 +324,11 @@ void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArra
         NDArray::registerSpecialUse({&output}, {&input});
     }
 
-    void clipByValue(sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
+    ND4J_LOCAL void clipByValue(sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByValue_, (context, input, leftBound, rightBound, output), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByValue_, (sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void clipByValue_, (sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
 
 }
 }

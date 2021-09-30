@@ -199,7 +199,7 @@ __host__ static void batchnormCudaLauncher2(const int blocksPerGrid, const int t
 }
 
 //////////////////////////////////////////////////////////////////////////
-void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+ND4J_LOCAL void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
 	// std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 

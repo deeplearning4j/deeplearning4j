@@ -73,11 +73,11 @@ static void zeta_(sd::LaunchContext * context, const NDArray& x, const NDArray& 
 	samediff::Threads::parallel_for(func, 0, xLen);
 }
 
-void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
+ND4J_LOCAL void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
     BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (context, x, q, z), FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void zeta_, (sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void zeta_, (sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z), FLOAT_TYPES);
 
 }
 }

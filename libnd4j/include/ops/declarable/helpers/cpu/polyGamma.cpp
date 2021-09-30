@@ -85,11 +85,11 @@ static void polyGamma_(sd::LaunchContext * context, const NDArray& n, const NDAr
 	samediff::Threads::parallel_for(func, 0, x.lengthOf());
 }
 
-	void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
+	ND4J_LOCAL void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
 		BUILD_SINGLE_SELECTOR(x.dataType(), polyGamma_, (context, n, x, output), FLOAT_TYPES);
 	}
 
-BUILD_SINGLE_TEMPLATE(template void polyGamma_, (sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void polyGamma_, (sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 

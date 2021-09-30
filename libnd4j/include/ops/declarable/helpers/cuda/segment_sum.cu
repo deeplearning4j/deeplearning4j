@@ -199,7 +199,7 @@ namespace helpers {
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void segmentSumFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+    ND4J_LOCAL void segmentSumFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         output->nullify();
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
@@ -241,7 +241,7 @@ namespace helpers {
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void unsortedSegmentSumFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL void unsortedSegmentSumFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         output->nullify();
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSumFunctor_, (context, input, indices, numOfClasses, output),
@@ -328,7 +328,7 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    int segmentSumFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentSumFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         if (input->isVector()) {
@@ -361,7 +361,7 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
 
-    int segmentSumFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    ND4J_LOCAL int segmentSumFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentSumFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
@@ -401,7 +401,7 @@ namespace helpers {
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentSumFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    ND4J_LOCAL int unsortedSegmentSumFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});

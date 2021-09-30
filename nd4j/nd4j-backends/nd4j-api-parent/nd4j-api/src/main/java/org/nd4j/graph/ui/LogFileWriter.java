@@ -279,7 +279,6 @@ public class LogFileWriter {
                     case UIEventType.SUMMARY_STATISTICS:
                     case UIEventType.OP_TIMING:
                     case UIEventType.HARDWARE_STATE:
-                    case UIEventType.GC_EVENT:
                     default:
                         throw new RuntimeException("Unknown or not yet implemented event type: " + e.eventType());
                 }

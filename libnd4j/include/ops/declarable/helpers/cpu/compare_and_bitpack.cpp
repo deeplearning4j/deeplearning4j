@@ -38,7 +38,7 @@ namespace sd {
 
 
             template<typename X>
-            uint8_t pack(const X* buff, const X& threshold){
+            ND4J_LOCAL uint8_t pack(const X* buff, const X& threshold){
                 uint8_t res;
                 res = (buff[0] > threshold) << 7;
                 res = res | ((buff[1] > threshold) << 6); 
@@ -52,7 +52,7 @@ namespace sd {
             }
 
             template<>
-            uint8_t pack<bool>(const bool* buff, const bool &threshold){
+            ND4J_LOCAL uint8_t pack<bool>(const bool* buff, const bool &threshold){
                 //ignore threshold
                 uint8_t res;
                 res = buff[0] << 7;
@@ -67,7 +67,7 @@ namespace sd {
             }
 
             template<typename X>
-            uint8_t pack(const X* buff, int stride, const X& threshold){
+            ND4J_LOCAL uint8_t pack(const X* buff, int stride, const X& threshold){
                 uint8_t res;
                 res = (buff[0] > threshold) << 7;
                 res = res | ((buff[1*stride] > threshold) << 6); 
@@ -81,7 +81,7 @@ namespace sd {
             }
 
             template<>
-            uint8_t pack<bool>(const bool* buff, int stride, const bool &threshold){
+            ND4J_LOCAL uint8_t pack<bool>(const bool* buff, int stride, const bool &threshold){
                 //ignore threshold
                 uint8_t res;
                 res = buff[0] << 7;
@@ -97,7 +97,7 @@ namespace sd {
 
 
             template <typename X>
-            void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, NDArray& output) {
+            ND4J_LOCAL void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, NDArray& output) {
 
                     auto rank =input.rankOf();
                     X threshold = thresholdScalar.e<X>(0);
@@ -179,12 +179,12 @@ namespace sd {
             }
 
             /////////////////////////////////////////////////////////////
-            void compareAndBitpack(sd::graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output) {
+            ND4J_LOCAL void compareAndBitpack(sd::graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output) {
  
                 BUILD_SINGLE_SELECTOR(input.dataType(), compareAndBitpack_, (input, threshold, output), LIBND4J_TYPES);
             }
 
-            BUILD_SINGLE_TEMPLATE(template void compareAndBitpack_, (const NDArray& input, const NDArray& threshold, NDArray& output), LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void compareAndBitpack_, (const NDArray& input, const NDArray& threshold, NDArray& output), LIBND4J_TYPES);
 
         }
     }

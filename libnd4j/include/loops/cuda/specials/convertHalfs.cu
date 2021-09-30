@@ -44,5 +44,5 @@ namespace sd {
         sd::DebugHelper::checkErrorCode(stream, "convertHalfsToGeneric(...) failed");
     }
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT convertHalfsToGeneric, (dim3 & launchDims, cudaStream_t * stream, half * dx, Nd4jLong n, void * dz), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL convertHalfsToGeneric, (dim3 & launchDims, cudaStream_t * stream, half * dx, Nd4jLong n, void * dz), LIBND4J_TYPES);
 }

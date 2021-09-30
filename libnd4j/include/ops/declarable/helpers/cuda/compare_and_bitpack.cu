@@ -34,7 +34,7 @@ namespace ops     {
 namespace helpers {
 
     template<typename X>
-    _CUDA_HD uint8_t pack(const X* buff, const X& threshold){
+    _CUDA_HD static uint8_t pack(const X* buff, const X& threshold){
         uint8_t res;
         res = (buff[0] > threshold) << 7;
         res = res | ((buff[1] > threshold) << 6); 
@@ -63,7 +63,7 @@ namespace helpers {
     }
 
     template<typename X>
-    _CUDA_HD uint8_t pack(const X* buff, int stride, const X& threshold){
+    _CUDA_HD static uint8_t pack(const X* buff, int stride, const X& threshold){
         uint8_t res;
         res = (buff[0] > threshold) << 7;
         res = res | ((buff[1*stride] > threshold) << 6); 
@@ -178,7 +178,7 @@ static _CUDA_H void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDAr
 }
 
 
-void compareAndBitpack(sd::graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output)  {
+ND4J_LOCAL void compareAndBitpack(sd::graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output)  {
 
     BUILD_SINGLE_SELECTOR(input.dataType(), cmpBitpackCudaLauncher, (block, input, threshold, output), LIBND4J_TYPES);
 }

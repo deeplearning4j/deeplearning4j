@@ -27,7 +27,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template<typename T>
-            void toggle_bits__(NDArray &in, NDArray &out) {
+            static void toggle_bits__(NDArray &in, NDArray &out) {
                 auto lambda = LAMBDA_T(_x) {
                     return BitwiseUtils::flip_bits(_x);
                 };
@@ -35,7 +35,7 @@ namespace sd {
                 in.applyLambda<T>(lambda, out);
             }
 
-            void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out) {
+            ND4J_LOCAL void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out) {
                 BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
             }
         }

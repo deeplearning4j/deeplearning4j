@@ -41,7 +41,7 @@ namespace helpers {
         return true;
     }
 
-    bool segmentIndicesValidate(sd::LaunchContext* context , NDArray* indices, NDArray& expected, NDArray& output) {
+    ND4J_LOCAL bool segmentIndicesValidate(sd::LaunchContext* context , NDArray* indices, NDArray& expected, NDArray& output) {
         BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_, (indices, expected, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
 
@@ -83,7 +83,7 @@ namespace helpers {
         return expected == output;
     }
 
-    bool unsortedSegmentIndicesValidate(sd::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
+    ND4J_LOCAL bool unsortedSegmentIndicesValidate(sd::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
         BUILD_SINGLE_SELECTOR(indices->dataType(), return unsortedSegmentIndicesValidate_, (context, indices, expected, output), INDEXING_TYPES);
     }
 
@@ -124,7 +124,7 @@ namespace helpers {
         }
         // -------------------------------------------------------------------------------------------------------------- //
 
-        void fillUpSegments(NDArray* indices, Nd4jLong numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens) {
+        ND4J_LOCAL void fillUpSegments(NDArray* indices, Nd4jLong numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens) {
             BUILD_SINGLE_SELECTOR(indices->dataType(), fillUpSegments_, (indices, numClasses, classesRangesBegs, classesRangesLens), INDEXING_TYPES);
         }
         // -------------------------------------------------------------------------------------------------------------- //

@@ -249,7 +249,7 @@ __host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, con
     execEncoderKernelP1<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz, threshold);
         sd::DebugHelper::checkErrorCode(stream, "encoderP1(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP1Generic, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz, float threshold), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL encoderKernelP1Generic, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz, float threshold), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 /*
@@ -325,7 +325,7 @@ __host__ void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, voi
     execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
         sd::DebugHelper::checkErrorCode(stream, "encoderP3(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP3Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL encoderKernelP3Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 /*
@@ -366,7 +366,7 @@ __host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const
     execDecoderKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz);
     sd::DebugHelper::checkErrorCode(stream, "execDecoder(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT decoderKernelGeneric, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL decoderKernelGeneric, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz), FLOAT_TYPES);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -447,7 +447,7 @@ __host__ void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, vo
     execCudaEncodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, N, dz, scalar, reductionBuffer, threshold);
     sd::DebugHelper::checkErrorCode(stream, "encodeBitmap(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaEncodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL cudaEncodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold), FLOAT_TYPES);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -512,7 +512,7 @@ __host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, co
     execCudaDecodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, vdz);
     sd::DebugHelper::checkErrorCode(stream, "cudeDecodeBitmap(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *vdz), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL cudaDecodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *vdz), FLOAT_TYPES);
 
 
     template <bool storeSum, bool isNP2>
@@ -535,7 +535,7 @@ BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &
     (randomName0, 0), \
     (randomName1, 1)
 
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGenericCuda, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES_EXTENDED, LIBND4J_TYPES_EXTENDED);
+    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGenericCuda, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), COMMON_TYPES_LIST, COMMON_TYPES_LIST);
     BUILD_DOUBLE_TEMPLATE(template void prescanLauncher, (dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex), LIBND4J_BOOLS_LOCAL, LIBND4J_BOOLS_LOCAL);
 
 #undef LIBND4J_BOOLS_LOCAL

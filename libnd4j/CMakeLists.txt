@@ -15,7 +15,7 @@ option(SD_BUILD_TESTS "Build tests" OFF)
 option(SD_STATIC_LIB "Build static library" OFF)
 option(SD_SHARED_LIB "Build shared library" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" ON)
-
+option(SD_USE_LTO "Use link time optimization" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
@@ -51,9 +51,18 @@ else()
             set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
         endif()
     endif()
+    
+    if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
+            message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
+            set(CMAKE_CXX_STANDARD 17)
+            set(CMAKE_CUDA_STANDARD 17)
+             else()
+                   set(CMAKE_CXX_STANDARD 11)
+            message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
-
-
+    endif()
+    else()
+           set(CMAKE_CXX_STANDARD 11)
 
 endif()
 
@@ -71,11 +80,11 @@ endif()
 # #cmakedefine LIBND4J_TYPE_GEN
 # #cmakedefine FLOAT_TYPE_GEN
 # // below if defines blocks are needed for correctly handling multiple types
-# #if  defined(LIBND4J_TYPE_GEN)
+# #if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
 #  BUILD_DOUBLE_TEMPLATE(template void someFunc, (arg_list,..),
 #                          LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
 # #endif
-# #if defined(FLOAT_TYPE_GEN)
+# #if defined(FLOAT_TYPE_GEN) && defined(FLOAT_TYPES_@FL_TYPE_INDEX@)
 #  BUILD_SINGLE_TEMPLATE(template class SomeClass,, FLOAT_TYPES_@FL_TYPE_INDEX@);
 # #endif
 #////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +100,7 @@ function(genCompilation FILE_ITEM)
     set(EXTENSION "cpp")
 
     if(FL_ITEM MATCHES "cu.in$")
-        set(EXTENSION "cu")
+         set(EXTENSION "cu")
     endif()
 
     file(READ ${FL_ITEM} CONTENT_FL)
@@ -105,27 +114,32 @@ function(genCompilation FILE_ITEM)
     set (RANGE_STOP         -1)
 
     string(REGEX MATCHALL "#cmakedefine[ \t]+[^_]+_TYPE_GEN" TYPE_MATCHES ${CONTENT_FL})
+    #STOP=COUNT(LIBND4J_TYPES)-1
+    set(INT_TYPE_STOP 7)
+    set(LIBND4J_TYPE_STOP 12)
+    set(FLOAT_TYPE_STOP 3)
+    set(PAIRWISE_TYPE_STOP 12)
 
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
         if(TYPEX MATCHES "INT_TYPE_GEN$")
-            set (INT_TYPE_GEN  1)
-            set(STOP 7)
+           set (INT_TYPE_GEN  1)
+           set(STOP ${INT_TYPE_STOP})
         endif()
         if(TYPEX MATCHES "LIBND4J_TYPE_GEN$")
-            set (LIBND4J_TYPE_GEN 1)
-            set(STOP 9)
+           set (LIBND4J_TYPE_GEN 1)
+           set(STOP ${LIBND4J_TYPE_STOP})
         endif()
         if(TYPEX MATCHES "FLOAT_TYPE_GEN$")
-            set (FLOAT_TYPE_GEN 1)
-            set(STOP 3)
+           set (FLOAT_TYPE_GEN 1)
+           set(STOP ${FLOAT_TYPE_STOP})
         endif()
         if(TYPEX MATCHES "PAIRWISE_TYPE_GEN$")
-            set (PAIRWISE_TYPE_GEN  1)
-            set(STOP 12)
+           set (PAIRWISE_TYPE_GEN  1)
+           set(STOP ${PAIRWISE_TYPE_STOP})
         endif()
         if(STOP GREATER RANGE_STOP)
-            set(RANGE_STOP ${STOP})
+           set(RANGE_STOP ${STOP})
         endif()
 
     endforeach()
@@ -133,14 +147,14 @@ function(genCompilation FILE_ITEM)
     if(RANGE_STOP GREATER -1)
         foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
             # set OFF if the index is above
-            if(FL_TYPE_INDEX GREATER 3)
-                set (FLOAT_TYPE_GEN     0)
+            if(FL_TYPE_INDEX GREATER ${FLOAT_TYPE_STOP})
+                 set (FLOAT_TYPE_GEN     0)
             endif()
-            if(FL_TYPE_INDEX GREATER 7)
-                set (INT_TYPE_GEN     0)
+            if(FL_TYPE_INDEX GREATER ${INT_TYPE_STOP})
+                 set (INT_TYPE_GEN     0)
             endif()
-            if(FL_TYPE_INDEX GREATER 9)
-                set (LIBND4J_TYPE_GEN   0)
+            if(FL_TYPE_INDEX GREATER ${LIBND4J_TYPE_STOP})
+                 set (LIBND4J_TYPE_GEN   0)
             endif()
             set(GENERATED_SOURCE  "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
             configure_file(  "${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
@@ -219,8 +233,6 @@ if(SD_NATIVE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     ENDIF()
 endif()
-
-
 
 
 if(NOT SD_CUDA)

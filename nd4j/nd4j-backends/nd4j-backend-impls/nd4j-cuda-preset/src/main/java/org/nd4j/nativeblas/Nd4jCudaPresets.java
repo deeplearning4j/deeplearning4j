@@ -26,9 +26,8 @@ import org.bytedeco.javacpp.LoadEnabled;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
-import org.bytedeco.javacpp.tools.Info;
-import org.bytedeco.javacpp.tools.InfoMap;
-import org.bytedeco.javacpp.tools.InfoMapper;
+import org.bytedeco.javacpp.tools.*;
+import org.nd4j.presets.OpExclusionUtils;
 
 /**
  *
@@ -36,6 +35,12 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda", helper = "org.nd4j.nativeblas.Nd4jCudaHelper",
         value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                //note, order matters here
+                //this particular header file is either
+                //going to be the source of ops, see also:
+                //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/blas/CMakeLists.txt#L76
+                //https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/buildnativeoperations.sh#L517
+                "generated/include_ops.h",
                 "array/DataType.h",
                 "array/DataBuffer.h",
                 "array/PointerDeallocator.h",
@@ -130,7 +135,18 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(extension = {"-cudnn","-"})})
-public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
+public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
+    private Logger logger;
+    private java.util.Properties properties;
+    private String encoding;
+
+
+    @Override
+    public void init(Logger logger, java.util.Properties properties, String encoding) {
+        this.logger = logger;
+        this.properties = properties;
+        this.encoding = encoding;
+    }
 
     @Override public void init(ClassProperties properties) {
         String platform = properties.getProperty("platform");
@@ -207,34 +223,10 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("sd::IndicesList").purify());
-/*
-        String classTemplates[] = {
-                "sd::NDArray",
-                "sd::NDArrayList",
-                "sd::ResultSet",
-                "sd::OpArgsHolder",
-                "sd::graph::GraphState",
-                "sd::graph::Variable",
-                "sd::graph::VariablesSet",
-                "sd::graph::Stash",
-                "sd::graph::VariableSpace",
-                "sd::graph::Context",
-                "sd::graph::ContextPrototype",
-                "sd::ops::DeclarableOp",
-                "sd::ops::DeclarableListOp",
-                "sd::ops::DeclarableReductionOp",
-                "sd::ops::DeclarableCustomOp",
-                "sd::ops::BooleanOp",
-                "sd::ops::BroadcastableOp",
-                "sd::ops::LogicOp"};
-        for (String t : classTemplates) {
-            String s = t.substring(t.lastIndexOf(':') + 1);
-            infoMap.put(new Info(t + "<float>").pointerTypes("Float" + s))
-                    .put(new Info(t + "<float16>").pointerTypes("Half" + s))
-                    .put(new Info(t + "<double>").pointerTypes("Double" + s));
 
-        }
-*/
+        OpExclusionUtils.processOps(logger, properties, infoMap);
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
     }
+
+
 }

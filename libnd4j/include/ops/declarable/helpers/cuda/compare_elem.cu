@@ -123,7 +123,7 @@ namespace sd {
                 output = z.e<bool>(0);
             }
 
-            void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
+            ND4J_LOCAL void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
                 auto xType = input->dataType();
                 input->syncToDevice();
 
@@ -131,7 +131,7 @@ namespace sd {
             }
 
 
-            BUILD_SINGLE_TEMPLATE(template void _compare_elem, (sd::LaunchContext * context, NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _compare_elem, (sd::LaunchContext * context, NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
         }
     }
 }

@@ -220,6 +220,9 @@ Here how the complete cpp.in file will look like:
     #cmakedefine LIBND4J_TYPE_GEN 
     //this header is where our template functions resides
     #include <ops/declarable/helpers/cpu/indexReductions.hpp>
+
+    //guard against undefined cases
+    #if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
     namespace sd {
         namespace ops {
             namespace helpers {
@@ -228,3 +231,5 @@ Here how the complete cpp.in file will look like:
             }
         }
     }
+
+    #endif

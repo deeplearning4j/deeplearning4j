@@ -22,7 +22,7 @@
 
 #include <system/op_boilerplate.h>
 
-#if NOT_EXCLUDED(test_output_reshape)
+#if NOT_EXCLUDED(OP_test_output_reshape)
 #include <ops/declarable/headers/tests.h>
 
 namespace sd {

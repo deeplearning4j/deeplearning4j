@@ -137,6 +137,6 @@ namespace functions {
             sd::DebugHelper::checkErrorCode(stream, "transformBool(...) failed");
 		}
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
     }
 }

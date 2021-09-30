@@ -22,10 +22,12 @@
 // @author raver119@gmail.com
 //
 
-#include <loops/cpu/reduce3.hpp>
+#include <loops/cpu/indexreduce.hpp>
 #cmakedefine LIBND4J_TYPE_GEN
+#if  defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@) && defined(INDEXING_TYPES_0)
 namespace functions {
-        namespace reduce3 {
-            BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES_3);
-        }
+    namespace indexreduce {
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL IndexReduce, , LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES_0);
+    }
 }
+#endif

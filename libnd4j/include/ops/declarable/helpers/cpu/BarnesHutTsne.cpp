@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
+    ND4J_LOCAL Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 
         int* pRowCounts = reinterpret_cast<int*>(rowCounts.buffer());
         int const* pRows = reinterpret_cast<int const*>(rowP->buffer());
@@ -133,7 +133,7 @@ namespace helpers {
             }
         }
     }
-    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
+    ND4J_LOCAL void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
 
         // Divide the result by two
         BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCounts), NUMERIC_TYPES);
@@ -141,7 +141,7 @@ namespace helpers {
         *outputVals /= 2.0;
         //output->assign(symValP);
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts), NUMERIC_TYPES);
 
     template <typename T>
     static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {
@@ -179,11 +179,11 @@ namespace helpers {
         samediff::Threads::parallel_tad(func, 0, N);
     }
 
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
+    ND4J_LOCAL void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
         // Loop over all edges in the graph
         BUILD_SINGLE_SELECTOR(output->dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
 
     template <typename T>
     static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
@@ -200,7 +200,7 @@ namespace helpers {
         input->applyTriplewiseLambda<T>(*gradX, *epsilon, gainsInternal, *output);
     }
 
-    void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+    ND4J_LOCAL void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
         //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
         //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
         BUILD_SINGLE_SELECTOR(input->dataType(), barnes_gains_, (input, gradX, epsilon, output), NUMERIC_TYPES);
@@ -220,9 +220,9 @@ namespace helpers {
 //        leftPart.applyPairwiseTransform(pairwise::Add, &rightPart, output, nullptr);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
 
-    bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, Nd4jLong dimension) {
+    ND4J_LOCAL bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, Nd4jLong dimension) {
         auto  cornerMinusWidth = *corner - *width;
         auto cornerPlusWidth = *corner + *width;
 

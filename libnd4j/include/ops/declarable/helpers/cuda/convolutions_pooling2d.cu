@@ -311,7 +311,7 @@ static void maxPooling2dCudaLauncher(sd::LaunchContext & block, const void *vx, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
+ND4J_LOCAL void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
 
     if(!input.isActualOnDeviceSide()) input.syncToDevice();
 

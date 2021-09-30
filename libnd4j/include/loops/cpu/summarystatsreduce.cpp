@@ -182,6 +182,6 @@ namespace functions {
         }
 
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }

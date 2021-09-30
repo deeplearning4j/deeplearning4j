@@ -23,6 +23,8 @@ package org.nd4j.autodiff.samediff;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,10 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.autodiff.listeners.records.History;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.IEvaluation;
@@ -64,6 +68,8 @@ import org.nd4j.weightinit.impl.XavierInitScheme;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.SAMEDIFF)
 public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
+    @TempDir
+    Path testDir;
 
 
     @ParameterizedTest
@@ -138,6 +144,26 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             double acc = e.accuracy();
             assertTrue( acc >= 0.75,u + " - " + acc);
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLossReducePersist(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 784);
+        SDVariable labels = sd.placeHolder("labels", DataType.FLOAT,-1,10);
+        SDVariable w1 = sd.var("w1", Nd4j.rand(DataType.FLOAT, 784, 100));
+        SDVariable b1 = sd.var("b1", Nd4j.rand(DataType.FLOAT, 100));
+        SDVariable a1 = sd.nn.tanh(in.mmul(w1).add(b1));
+        SDVariable w2 = sd.var("w2", Nd4j.rand(DataType.FLOAT, 100, 10));
+        SDVariable b2 = sd.var("b2", Nd4j.rand(DataType.FLOAT, 10));
+        SDVariable out = sd.nn.softmax("out", a1.mmul(w2).add(b2));
+        sd.loss().logLoss("loss",labels,out,null, LossReduce.SUM,1e-3);
+        File tmpDir = testDir.resolve("path.fb").toFile();
+        sd.save(tmpDir,true);
+
+        SameDiff load = SameDiff.load(tmpDir,true);
+        assertEquals(sd,load);
     }
 
 

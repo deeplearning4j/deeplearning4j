@@ -28,7 +28,7 @@ using namespace simdOps;
 //////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-void sd::IndexReductionLoops<X,Z>::loopIndexReduce(const X* x, const Nd4jLong* xShapeInfo,
+ND4J_LOCAL void sd::IndexReductionLoops<X,Z>::loopIndexReduce(const X* x, const Nd4jLong* xShapeInfo,
                                                    Z* z, const Nd4jLong* zShapeInfo,
                                                    const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                                                    X* extraParams) {
@@ -307,7 +307,7 @@ void sd::IndexReductionLoops<X,Z>::loopIndexReduce(const X* x, const Nd4jLong* x
 }
 
 template <typename X, typename Y>
-void sd::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams) {
+ND4J_LOCAL void sd::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams) {
     auto x = reinterpret_cast<const X *>(vx);
     auto z = reinterpret_cast<Y *>(vz);
     auto extraParams = reinterpret_cast<X *>(vextraParams);

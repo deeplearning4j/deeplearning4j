@@ -163,7 +163,7 @@ if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
 endif()
 
 # tests are always compiled with all ops included
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true -DDEFAULT_ENGINE=samediff::ENGINE_CPU")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=1 -DDEFAULT_ENGINE=samediff::ENGINE_CPU")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -242,8 +242,9 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 endif()
 
-    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in 
-    ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in)
+file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
+../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in
+../include/ops/impl/compilation_units/*.cpp.in)
 
     foreach(FL_ITEM ${COMPILATION_UNITS})   
         genCompilation(FL_ITEM)

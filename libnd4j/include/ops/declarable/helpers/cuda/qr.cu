@@ -56,7 +56,7 @@ namespace helpers {
     }
 
     template <typename T>
-    NDArray matrixMinor(LaunchContext* context, NDArray& in, Nd4jLong col) {
+    ND4J_LOCAL NDArray matrixMinor(LaunchContext* context, NDArray& in, Nd4jLong col) {
         NDArray m = in.ulike();
         m.setIdentity();
         m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
@@ -85,7 +85,7 @@ namespace helpers {
     }
 
     template <typename T>
-    NDArray vmul(LaunchContext* context, NDArray const& v, int n)
+    ND4J_LOCAL NDArray vmul(LaunchContext* context, NDArray const& v, int n)
     {
         NDArray res('c', {n,n}, v.dataType(), context); // x = matrix_new(n, n);
 
@@ -105,7 +105,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
+    ND4J_LOCAL void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
         Nd4jLong M = matrix->sizeAt(0);
         Nd4jLong N = matrix->sizeAt(1);
         auto resQ = fullMatricies?Q->ulike():NDArrayFactory::create<T>(matrix->ordering(), {M,M}, Q->getContext());
@@ -153,7 +153,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    ND4J_LOCAL void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         Nd4jLong lastDim = input->rankOf() - 1;
         Nd4jLong preLastDim = input->rankOf() - 2;
 
@@ -172,7 +172,7 @@ namespace helpers {
         NDArray::registerSpecialUse({outputQ, outputR}, {input});
     }
 
-    void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    ND4J_LOCAL void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (context, input, outputQ, outputR, fullMatricies), FLOAT_TYPES);
     }
 

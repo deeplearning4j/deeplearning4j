@@ -1190,6 +1190,10 @@ public interface NativeOps {
     double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+    float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr);
+    double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr);
+    int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr);
+    long getRandomGeneratorNextLong(OpaqueRandomGenerator ptr);
     void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 
   

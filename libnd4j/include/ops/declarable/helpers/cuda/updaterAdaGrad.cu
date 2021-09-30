@@ -32,7 +32,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void adaGradUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vin, const Nd4jLong* inShapeInfo, 
+ND4J_LOCAL __global__ void adaGradUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vin, const Nd4jLong* inShapeInfo, 
                                    void* vz, const Nd4jLong* zShapeInfo, void* vst, const Nd4jLong* stShapeInfo,
                                    const T lr, const T epsilon) {
 
@@ -82,7 +82,7 @@ __global__ void adaGradUpdaterCuda(const void* vx, const Nd4jLong* xShapeInfo, c
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-linkage void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, 
+ND4J_LOCAL linkage void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, 
                                         const void* vx, const Nd4jLong* xShapeInfo, const void* vin, const Nd4jLong* inShapeInfo, 
                                         void* vz, const Nd4jLong* zShapeInfo, void* vst, const Nd4jLong* stShapeInfo,
                                         const double dLr, const double dEpsilon) {
@@ -95,7 +95,7 @@ linkage void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threa
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, 
+ND4J_LOCAL void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, 
                     NDArray& update, NDArray& stateH, const double dLr, const double dEpsilon) {
 
     PointersManager manager(context, "adaGradUpdater");

@@ -119,7 +119,12 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
 
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public int getNumOutputs() {
+        return 1;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Reduction backprop ops: expect 2 inputs... the original input, and the gradient at the outputs
         //For example, for y=mean(x), inputs to ReduceMeanBp are x and dL/dy; output is dL/dx
         //Now, we expect gradient dL/dx datatype to be same as x - which resticts us to real-valued x input

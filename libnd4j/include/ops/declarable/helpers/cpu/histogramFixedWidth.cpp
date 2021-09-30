@@ -28,7 +28,7 @@ namespace helpers {
 
 
 template <typename T>
-void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& output) {
+ND4J_LOCAL void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& output) {
 
     const int nbins = output.lengthOf();
 
@@ -59,10 +59,10 @@ void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& o
     }
 }
 
-void histogramFixedWidth(sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
+ND4J_LOCAL void histogramFixedWidth(sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
     BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (input, range, output), LIBND4J_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void histogramFixedWidth_, (const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
 
 
 }

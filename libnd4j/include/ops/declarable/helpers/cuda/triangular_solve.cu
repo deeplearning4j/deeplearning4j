@@ -175,7 +175,7 @@ namespace sd {
             /// \param output - output vector (x on equation Tx = b)
             ///
             template <typename T>
-            void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output) {
+            ND4J_LOCAL void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output) {
 
                 triangularSolveFunctor_<T>(context, const_cast<NDArray*>(&leftInput), const_cast<NDArray*>(&rightInput), lower, unitsOnDiag, &output);
 
@@ -192,13 +192,13 @@ namespace sd {
                 // }
                 // output.syncToDevice();
             }
-            BUILD_SINGLE_TEMPLATE(template void triangularSolve2D, (sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void triangularSolve2D, (sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output), FLOAT_TYPES);
 //            template void triangularSolve2D<float>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output);
 //            template void triangularSolve2D<bfloat16>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output);
 //            template void triangularSolve2D<float16>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output);
 //            template void triangularSolve2D<double>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output);
 
-            int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool unitsOnDiag, NDArray* output) {
+            ND4J_LOCAL int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool unitsOnDiag, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(leftInput->dataType(), return triangularSolveFunctor_, (context, leftInput, rightInput, lower, unitsOnDiag, output), FLOAT_NATIVE);
             }
 
@@ -262,7 +262,7 @@ namespace sd {
                 }
             }
 
-            void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+            ND4J_LOCAL void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), FLOAT_NATIVE);
             }
 

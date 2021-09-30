@@ -127,7 +127,7 @@ namespace helpers {
                 samediff::Threads::parallel_for(func, 0, input.lengthOf());
             }
 
-            void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
+            ND4J_LOCAL void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
                 BUILD_SINGLE_SELECTOR(input.dataType(), split_, (input, outArrs, axis), LIBND4J_TYPES);
             }
       }

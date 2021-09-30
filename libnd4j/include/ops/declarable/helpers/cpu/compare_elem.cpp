@@ -64,14 +64,14 @@ namespace sd {
 
             }
 
-            void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
+            ND4J_LOCAL void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _compare_elem, (input, isStrictlyIncreasing, output), LIBND4J_TYPES);
             }
 
 
-            BUILD_SINGLE_TEMPLATE(template void _compare_elem, (NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _compare_elem, (NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
         }
     }
 }

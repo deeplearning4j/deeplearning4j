@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         ResultSet arrs = output->allTensorsAlongDimension({1});
         int lLen = labels->lengthOf();
 
@@ -45,13 +45,13 @@ namespace helpers {
         samediff::Threads::parallel_for(func, 0, lLen);
     }
 
-    void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    ND4J_LOCAL void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = output->dataType(); // weights can be null
 
         BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), NUMERIC_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _confusionFunctor, (NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);, NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _confusionFunctor, (NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);, NUMERIC_TYPES);
 
 }
 }

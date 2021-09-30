@@ -438,52 +438,68 @@ static int resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArr
     return res;
 }
 
+#if defined(HAS_FLOAT32)
+#define FLOAT_TYPES_FLOAT32 SKIP_FIRST_COMMA(TTYPE_FLOAT32)
 
 static int resizeTriangle(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
 //    std::unique_ptr<IKernelFunc> kernel(new TriangleKernelFunc);
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBilinear, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBilinear, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeTriangle: This resize method is avaliable in future versions");
 }
 
 static int resizeLanczos3(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
 //    std::unique_ptr<IKernelFunc> kernel(new LanczosKernelFunc(3.f));
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos3, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos3, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeLanczos3: This resize method is avaliable in future versions");
 }
 
 static int resizeLanczos5(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
 //    std::unique_ptr<IKernelFunc> kernel(new LanczosKernelFunc(5.f));
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos5, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos5, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeLanczos5: This resize method is avaliable in future versions");
 }
 
 static int resizeGaussian(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeGaussian, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeGaussian, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeGaussian: This resize method is avaliable in future versions");
 }
 static int resizeMitchellcubic(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeMitchellcubic, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeMitchellcubic, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeMitchelcubic: This resize method is avaliable in future versions");
 }
 static int resizeKeycubic(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
     if (!antialias)
         return resizeBicubicFunctorA(context, image, width, height, false, true, output);
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBicubic, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_1);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBicubic, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeKeycubic: This resize method is avaliable in future versions");
 }
-
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
+ND4J_LOCAL int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
                   ImageResizeMethods method, bool antialias, NDArray* output) {
     switch (method) {
-        case kResizeBilinear:     return resizeTriangle(context, image, width, height, antialias, output);
+
         case kResizeNearest:      return resizeNeighborFunctor(context, image, width, height, false, true, output);
-        case kResizeBicubic:      return resizeKeycubic(context, image, width, height, antialias, output);
+        case kResizeArea:         return resizeAreaFunctor(context, image, width, height, false, output);
+
+#if defined(HAS_FLOAT32)
+        case kResizeBilinear:     return resizeTriangle(context, image, width, height, antialias, output);
         case kResizeLanczos3:     return resizeLanczos3(context, image, width, height, antialias, output);
         case kResizeLanczos5:     return resizeLanczos5(context, image, width, height, antialias, output);
         case kResizeGaussian:     return resizeGaussian(context, image, width, height, antialias, output);
-        case kResizeArea:         return resizeAreaFunctor(context, image, width, height, false, output);
         case kResizeMitchellcubic: return resizeMitchellcubic(context, image, width, height, antialias, output);
+        case kResizeBicubic:      return resizeKeycubic(context, image, width, height, antialias, output);
+#else
+        case kResizeBilinear:
+        case kResizeLanczos3:
+        case kResizeLanczos5:
+        case kResizeGaussian:
+        case kResizeMitchellcubic:
+        case kResizeBicubic:{
+            nd4j_printf("helper::resizeFunctor: only float type is supported by this resize method %i\n", (int)method);
+            return Status::CODE(ND4J_STATUS_BAD_INPUT, "helper::resizeFunctor: only float type supported");
+        }
+#endif
         default:
             nd4j_printf("helper::resizeFunctor: Wrong resize method %i\n", (int)method);
             throw std::runtime_error("helper::resizeFunctor: Wrong resize method.");

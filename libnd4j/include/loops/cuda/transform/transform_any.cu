@@ -132,6 +132,6 @@ namespace functions {
 			sd::DebugHelper::checkErrorCode(stream, "transformAny(...) failed");
 		}
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
     }
 }

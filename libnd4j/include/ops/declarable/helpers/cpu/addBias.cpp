@@ -190,7 +190,7 @@ namespace sd {
 			* as it is intended for full continous we do not need any rank info
 			*/
 			template<typename T>
-			void channel_atTheEnd_continous_C(T* x, const T* b, T* z, bool inplaceOp, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
+			static void channel_atTheEnd_continous_C(T* x, const T* b, T* z, bool inplaceOp, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
 				size_t nums = (stop - start);
 				size_t num_inc = nums - nums % inc;
 				if (inplaceOp) {
@@ -238,7 +238,7 @@ namespace sd {
 			}
 
 			template<typename T, typename T2, size_t constRank >
-			void channel_NC_generic_C(const Nd4jLong* bases, const Nd4jLong* x_strides, const Nd4jLong* z_strides, const bool& inplaceOp, const bool same_stride, const bool same_order, const Nd4jLong yStrideC, T* x, const T2* b, T* z, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
+			static void channel_NC_generic_C(const Nd4jLong* bases, const Nd4jLong* x_strides, const Nd4jLong* z_strides, const bool& inplaceOp, const bool same_stride, const bool same_order, const Nd4jLong yStrideC, T* x, const T2* b, T* z, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
 
 				//just ensure that passed sameStride is correct,  because when bases are equal orders matters 
 
@@ -278,7 +278,7 @@ namespace sd {
 
 			///
 			template<typename T, typename T2>
-			void channel_NC_continous_numHW_C(Nd4jLong rank, const Nd4jLong* bases, const Nd4jLong* x_strides, T* x, const T2* b, T* z, bool inplaceOp, const Nd4jLong yStrideC, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
+			static void channel_NC_continous_numHW_C(Nd4jLong rank, const Nd4jLong* bases, const Nd4jLong* x_strides, T* x, const T2* b, T* z, bool inplaceOp, const Nd4jLong yStrideC, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
 
 				// (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
 				size_t loop_count = (stop - start) / inc;
@@ -339,7 +339,7 @@ namespace sd {
 
 			///
 			template<typename T, typename T2, size_t constRank, size_t b_index>
-			void channel_generic_F(const Nd4jLong* bases, const Nd4jLong* x_strides, const Nd4jLong* z_strides, const bool& inplaceOp, const bool same_stride, const bool same_order, const Nd4jLong yStrideC, T* x, const T2* b, T* z, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
+			static void channel_generic_F(const Nd4jLong* bases, const Nd4jLong* x_strides, const Nd4jLong* z_strides, const bool& inplaceOp, const bool same_stride, const bool same_order, const Nd4jLong yStrideC, T* x, const T2* b, T* z, Nd4jLong start, Nd4jLong stop, Nd4jLong inc) {
 				//just ensure that passed sameStride is correct,  because when bases are equal orders matters 
 				bool sameOrderStride = same_order && same_stride;
 				if (sameOrderStride && x_strides[0] == 1) {
@@ -638,14 +638,14 @@ namespace sd {
 				}
 			}
 			//////////////////////////////////////////////////////////////////////////
-			void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+			ND4J_LOCAL void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
 
 			    // bias.rankOf() == 1 ? bias : bias.reshape(bias.ordering(), {bias.lengthOf()})
 			    BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), FLOAT_TYPES, FLOAT_TYPES);
 			}
 
 
-			BUILD_DOUBLE_TEMPLATE(template void addBias_, (const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW), FLOAT_TYPES, FLOAT_TYPES);
+			BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void addBias_, (const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW), FLOAT_TYPES, FLOAT_TYPES);
 		}
 	}
 }

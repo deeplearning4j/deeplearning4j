@@ -388,21 +388,21 @@ namespace helpers {
         return res;
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void nonMaxSuppression(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+    ND4J_LOCAL void nonMaxSuppression(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_,
                 (context, boxes, scales, maxSize, threshold, scoreThreshold, output),
                 FLOAT_TYPES, INDEXING_TYPES);
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    Nd4jLong nonMaxSuppressionGeneric(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+    ND4J_LOCAL Nd4jLong nonMaxSuppressionGeneric(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType():DataType::INT32, return nonMaxSuppressionGeneric_,
                               (context, boxes, scales, maxSize, threshold, scoreThreshold, output, true),
                               FLOAT_TYPES, INDEXING_TYPES);
         return boxes->sizeAt(0);
     }
 
-    Nd4jLong
+    ND4J_LOCAL Nd4jLong
     nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                              double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType():DataType::INT32, return nonMaxSuppressionGeneric_,

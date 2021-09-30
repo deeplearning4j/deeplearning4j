@@ -36,7 +36,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////
 // bsxMXK x bSxKxN = bSxMxN
-void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc) {
+ND4J_LOCAL void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc) {
 
     const auto bS = vA.size();      // batch size
 

@@ -85,7 +85,7 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
         if (value == 0)
             countZero++;
 
-        if (value == Double.NaN)
+        if (Double.isNaN(value))
             countNaN++;
 
         if (value == getMinValueSeen())

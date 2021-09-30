@@ -40,7 +40,7 @@ inline std::ostream& operator<<(std::ostream& o, const sd::DataType &type)
 }
 
 template <class T, std::size_t N>
-std::ostream& operator<<(std::ostream& o, const std::array<T, N>& arr)
+ND4J_LOCAL std::ostream& operator<<(std::ostream& o, const std::array<T, N>& arr)
 {
     o<<'[';
     for(auto &x : arr){
@@ -51,7 +51,7 @@ std::ostream& operator<<(std::ostream& o, const std::array<T, N>& arr)
 }
 
 template <class T>
-std::ostream& operator<<(std::ostream& o, const std::initializer_list<T>& arr)
+ND4J_LOCAL std::ostream& operator<<(std::ostream& o, const std::initializer_list<T>& arr)
 {
     for(auto &x : arr){
         o<<x<<", ";
@@ -214,7 +214,7 @@ getStreamValue(const T& x){
  * @brief Requirements helper is used to replace plain checks for making them output informative messages
  * @see https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/Helpers.md
  */
-class Requirements{
+ND4J_LOCAL class Requirements{
     public:
 
     Requirements(const char *prefix_msg=""):prefix(prefix_msg), ok(true){
@@ -350,7 +350,7 @@ class Requirements{
 
 //Generic wrapper where variable and info can be lazy evaluated using the lambda
 template<typename T1, typename T2>
-struct InfoVariable{ 
+ND4J_LOCAL struct InfoVariable{ 
 
     T1 value_or_op;
     T2 message_or_op;
@@ -382,12 +382,12 @@ struct InfoVariable{
 };
 
 template<typename T1, typename T2>
-InfoVariable<T1, T2> makeInfoVariable( T1&& v1,  T2&& v2){
+ND4J_LOCAL InfoVariable<T1, T2> makeInfoVariable( T1&& v1,  T2&& v2){
     return InfoVariable<T1, T2>(std::forward<T1>(v1), std::forward<T2>(v2));
 }
 
 template<typename T>
-struct ShapeInfoVariable{ 
+ND4J_LOCAL struct ShapeInfoVariable{ 
 
     explicit ShapeInfoVariable(const T& val, const char *msg=""):value(val), message(msg){}  
     const T& value;
@@ -404,7 +404,7 @@ struct ShapeInfoVariable{
 };
 
 template<typename T>
-ShapeInfoVariable<T> makeShapeInfoVariable( T&& v, const char *msg){
+ND4J_LOCAL ShapeInfoVariable<T> makeShapeInfoVariable( T&& v, const char *msg){
     return ShapeInfoVariable<T>(std::forward<T>(v), msg);
 }
 

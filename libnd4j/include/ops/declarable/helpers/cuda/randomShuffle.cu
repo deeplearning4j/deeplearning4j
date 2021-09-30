@@ -217,7 +217,7 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
 }
 
 /////////////////////////////////////////////////////////////////////////
-void randomShuffle(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
+ND4J_LOCAL void randomShuffle(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
     BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (context, input, output, rng, isInplace), LIBND4J_TYPES);
 }
 

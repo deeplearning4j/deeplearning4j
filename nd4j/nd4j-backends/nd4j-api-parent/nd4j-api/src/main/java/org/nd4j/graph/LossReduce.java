@@ -6,8 +6,8 @@
  *  * terms of the Apache License, Version 2.0 which is available at
  *  * https://www.apache.org/licenses/LICENSE-2.0.
  *  *
- *  * See the NOTICE file distributed with this work for additional
- *  * information regarding copyright ownership.
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
  *  * Unless required by applicable law or agreed to in writing, software
  *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -18,14 +18,17 @@
  *  *****************************************************************************
  */
 
-//
-// @author raver119@gmail.com
-//
+package org.nd4j.graph;
 
-#include <loops/cpu/indexreduce.hpp>
-#cmakedefine LIBND4J_TYPE_GEN
-namespace functions {
-    namespace indexreduce {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES_@FL_TYPE_INDEX@, (sd::DataType::INT64, Nd4jLong));
-    }
+public final class LossReduce {
+  private LossReduce() { }
+  public static final byte NONE = 0;
+  public static final byte SUM = 1;
+  public static final byte MEAN_BY_WEIGHT = 2;
+  public static final byte MEAN_BY_NONZERO_WEIGHT_COUNT = 3;
+
+  public static final String[] names = { "NONE", "SUM", "MEAN_BY_WEIGHT", "MEAN_BY_NONZERO_WEIGHT_COUNT", };
+
+  public static String name(int e) { return names[e]; }
 }
+

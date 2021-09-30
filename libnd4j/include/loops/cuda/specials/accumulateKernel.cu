@@ -88,5 +88,5 @@ namespace sd {
         sd::DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
     }
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT accumulateKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vx, void * vz, int n, const Nd4jLong length), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL accumulateKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vx, void * vz, int n, const Nd4jLong length), LIBND4J_TYPES);
 }

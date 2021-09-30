@@ -59,10 +59,7 @@ Run ./setuposx.sh (Please ensure you have brew installed)
 
 See [macOSx10 CPU only.md](macOSx10%20%28CPU%20only%29.md)
 
-### Linux
 
-Depends on the distro - ask in the earlyadopters channel for specifics
-on distro
 
 #### Ubuntu Linux 15.10
 
@@ -182,21 +179,7 @@ cd blasbuild/cuda
 make package
 ```
 
-## Uploading package to Bintray
 
-The package upload script is in packaging. The upload command for an rpm built
-for cpu is:
-
-``` bash
-./packages/push_to_bintray.sh myAPIUser myAPIKey deeplearning4j blasbuild/cpu/libnd4j-0.8.0.fc7.3.1611.x86_64.rpm https://github.com/deeplearning4j
-```
-
-
-The upload command for a deb package built for cuda is:
-
-``` bash
-./packages/push_to_bintray.sh myAPIUser myAPIKey deeplearning4j blasbuild/cuda/libnd4j-0.8.0.fc7.3.1611.x86_64.deb https://github.com/deeplearning4j
-```
 
 ## Running tests
 

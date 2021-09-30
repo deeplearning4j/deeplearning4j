@@ -29,7 +29,7 @@ namespace sd {
         namespace helpers {
 
             //////////////////////////////////////////////////////////////////////////
-            void  variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+            ND4J_LOCAL void  variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
 
                 // informs and prepares (syncs) specialBuffer of which NDArrays will be used as read, write. 
                 NDArray::prepareSpecialUse({ &output }, { &input });
@@ -50,7 +50,7 @@ namespace sd {
             }
 
             //////////////////////////////////////////////////////////////////////////
-            void  standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+            ND4J_LOCAL void  standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 // informs and prepares (syncs) of which NDArrays will be used as read, write
                 NDArray::prepareSpecialUse({ &output }, { &input });
                 if (output.isScalar()) {

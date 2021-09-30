@@ -26,7 +26,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
-            void mindistance_(const void* vinput, const void *vlow, const void *vhigh, int32_t length, void *vout) {
+            ND4J_LOCAL void mindistance_(const void* vinput, const void *vlow, const void *vhigh, int32_t length, void *vout) {
                 auto input = reinterpret_cast<const T*>(vinput);
                 auto low = reinterpret_cast<const T*>(vlow);
                 auto high = reinterpret_cast<const T*>(vhigh);
@@ -53,7 +53,7 @@ namespace sd {
                 output[0] = sd::math::nd4j_pow<T, T, T>(res, (T) 0.5f);
             }
 
-            void knn_mindistance(const NDArray &input, const NDArray &lowest, const NDArray &highest, NDArray &output) {
+            ND4J_LOCAL void knn_mindistance(const NDArray &input, const NDArray &lowest, const NDArray &highest, NDArray &output) {
                 NDArray::preparePrimaryUse({&output}, {&input, &lowest, &highest});
 
                 BUILD_SINGLE_SELECTOR(input.dataType(), mindistance_, (input.buffer(), lowest.buffer(), highest.buffer(), input.lengthOf(), output.buffer()), FLOAT_TYPES);

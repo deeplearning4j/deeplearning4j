@@ -432,14 +432,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
     }
 }
 
-
-template class ND4J_EXPORT JacobiSVD<float>;
-template class ND4J_EXPORT JacobiSVD<float16>;
-template class ND4J_EXPORT JacobiSVD<bfloat16>;
-template class ND4J_EXPORT JacobiSVD<double>;
-
-
-
+BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL JacobiSVD,,FLOAT_TYPES);
 
 
 

@@ -78,7 +78,9 @@ PACKAGING=
 CHIP_EXTENSION=
 CHIP_VERSION=
 EXPERIMENTAL=
+#OPERATIONS AND DATATYPES argument are lists with semicolon ; separator
 OPERATIONS=
+DATATYPES=
 CLEAN="false"
 MINIFIER="false"
 TESTS="false"
@@ -87,6 +89,8 @@ VERBOSE_ARG="VERBOSE=1"
 HELPER=
 CHECK_VECTORIZATION="OFF"
 NAME=
+OP_OUTPUT_FILE="include/generated/include_ops.h"
+USE_LTO=
 
 
 
@@ -118,6 +122,7 @@ case $key in
     ;;
     -cc|--compute)
     COMPUTE="$value"
+    echo COMPUTE="$value"
     shift # past argument
     ;;
     -a|--arch)
@@ -144,6 +149,13 @@ case $key in
     OPERATIONS="$value"
     shift # past argument
     ;;
+    -dt|--datatypes)
+    DATATYPES="$value"
+    shift # past argument
+    ;;
+    --use_lto)
+    USE_LTO="-DSD_USE_LTO=true"
+    ;;
     --name)
     NAME="$value"
     shift # past argument
@@ -167,6 +179,13 @@ case $key in
     -V|--verbose)
     VERBOSE="true"
     ;;
+     # cmake will generate a list of ops to include for later
+     # this will setup macros needed to reproduce
+     # the builds on the command line such as what ops to include in a build
+     # usually dynamically handled by cmake
+     -of|--op-output-file)
+      OP_OUTPUT_FILE="$value"
+      ;;
     --default)
     DEFAULT=YES
     ;;
@@ -406,6 +425,17 @@ case "$OS" in
     ;;
 esac
 
+if [ ! -d "include/generated" ]; then
+   mkdir -p "include/generated"
+fi
+
+if [ -f "$OP_OUTPUT_FILE" ]; then
+   rm -f "${OP_OUTPUT_FILE}"
+fi
+
+
+
+
 if [ -z "$BUILD" ]; then
  BUILD="release"
 
@@ -451,9 +481,15 @@ fi
 OPERATIONS_ARG=
 
 if [ -z "$OPERATIONS" ]; then
-   OPERATIONS_ARG="-DSD_ALL_OPS=true"
+  OPERATIONS_ARG="-DSD_ALL_OPS=true"
 else
- OPERATIONS_ARG="$OPERATIONS"
+  OPERATIONS_ARG="-DSD_OPS_LIST=\"$OPERATIONS\""
+fi
+
+DATATYPES_ARG=
+
+if [ -n "$DATATYPES" ]; then
+  DATATYPES_ARG="-DSD_TYPES_LIST=\"$DATATYPES\""
 fi
 
 if [ -z "$EXPERIMENTAL" ]; then
@@ -504,6 +540,9 @@ fi
 if [ "$PACKAGING" == "msi" ]; then
     PACKAGING_ARG="-DPACKAGING=msi"
 fi
+
+# Use parent of output file to mean source include directory
+OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=../${OP_OUTPUT_FILE}"
 
 EXPERIMENTAL_ARG="";
 MINIFIER_ARG="-DSD_BUILD_MINIFIER=false"
@@ -611,18 +650,21 @@ echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo EXPERIMENTAL = ${EXPERIMENTAL}
 echo LIBRARY TYPE    = "${LIBTYPE}"
 echo OPERATIONS = "${OPERATIONS_ARG}"
+echo DATATYPES = "${DATATYPES_ARG}"
 echo MINIFIER = "${MINIFIER_ARG}"
 echo TESTS = "${TESTS_ARG}"
 echo NAME = "${NAME_ARG}"
 echo OPENBLAS_PATH = "$OPENBLAS_PATH"
 echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPERS = "$HELPERS"
+echo OP_OUTPUT_FILE ="$OP_OUTPUT_FILE"
+echo USE_LTO="$USE_LTO"
 mkbuilddir
 pwd
 
 
 
-eval "$CMAKE_COMMAND"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "-DSD_OPS_LIST=${OPERATIONS}" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval "$CMAKE_COMMAND"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$OP_OUTPUT_FILE_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" "$USE_LTO" "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$DATATYPES_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"

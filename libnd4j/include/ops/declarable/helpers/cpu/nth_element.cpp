@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor_(NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    ND4J_LOCAL void nthElementFunctor_(NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
 
         NDArray sortedVals(*input);
         if (input->isVector()) {
@@ -67,11 +67,11 @@ namespace helpers {
         }
     }
 
-    void nthElementFunctor(sd::LaunchContext  *launchContext, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    ND4J_LOCAL void nthElementFunctor(sd::LaunchContext  *launchContext, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, Nd4jLong n, NDArray* output, bool reverse), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void nthElementFunctor_, (NDArray* input, Nd4jLong n, NDArray* output, bool reverse), LIBND4J_TYPES);
 
 }
 }

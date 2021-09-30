@@ -17,6 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+
 package org.nd4j.graph;
 
 public final class ByteOrder {
