@@ -10,6 +10,12 @@
 
   <name>nd4j-aurora</name>
 
+  <parent>
+    <groupId>org.nd4j</groupId>
+    <artifactId>nd4j-backend-impls</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,6 +24,22 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>javacpp</artifactId>
+      <version>${javacpp.version}</version>
+      <classifier>${dependency.platform}</classifier>
+    </dependency>
+
+    <dependency>
+      <groupId>${dependency.groupId}</groupId>
+      <artifactId>${dependency.artifactId}</artifactId>
+      <version>${dependency.version}</version>
+      <type>${dependency.packaging}</type>
+      <classifier>${dependency.classifier}</classifier>
+    </dependency>
+
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native-api</artifactId>
