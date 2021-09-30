@@ -2037,13 +2037,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
-        OpaqueConstantDataBuffer dbf = loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+        OpaqueConstantShapeBuffer dbf = loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
-        val result = new LongBuffer(loop.getConstantDataBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
+        val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-        loop.deleteShapeBuffer(dbf);
+        loop.deleteConstantShapeBuffer(dbf);
 
         return result;
     }
@@ -2074,22 +2074,4 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
     }
 
-
-    @Override
-    public String runLightBenchmarkSuit(boolean printOut) {
-        val s = loop.runLightBenchmarkSuit(printOut);
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
-        return s;
-    }
-
-    @Override
-    public String runFullBenchmarkSuit(boolean printOut) {
-        val s = loop.runFullBenchmarkSuit(printOut);
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
-        return s;
-    }
 }
