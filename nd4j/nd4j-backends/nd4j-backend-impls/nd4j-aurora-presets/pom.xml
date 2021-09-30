@@ -184,7 +184,7 @@
                                 <requireFilesExist>
                                     <files>
                                         <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
-                                        <file>${libnd4jhome}/blasbuild/cpu/blas</file>
+                                        <file>${libnd4jhome}/blasbuild/aurora/blas</file>
                                     </files>
                                     <message>!!! You have to compile libnd4j with cpu support
                                         first!
