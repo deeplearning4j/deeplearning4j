@@ -52,6 +52,92 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>empty-javadoc-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>javadoc</classifier>
+                            <classesDirectory>${basedir}/javadoc</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>empty-sources-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <classesDirectory>${basedir}/src</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>
+                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                </exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>
+                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                </include>
+                                <include>lib/**</include>
+                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
@@ -63,101 +149,54 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/aurora/AuroraPresets.java</include>
+                                <include>org/nd4j/nativeblas/**.java</include>
                             </includes>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.bytedeco</groupId>
-                <artifactId>javacpp</artifactId>
-                <version>${javacpp.version}</version>
-                <configuration>
-                    <properties>${javacpp.platform.properties}</properties>
-                    <propertyKeysAndValues>
-                        <property>
-                            <name>platform.root</name>
-                            <value>${javacpp.platform.root}</value>
-                        </property>
-                        <property>
-                            <name>platform.compiler</name>
-                            <value>${javacpp.platform.compiler}</value>
-                        </property>
-                        <property>
-                            <name>platform.sysroot</name>
-                            <value>${javacpp.platform.sysroot}</value>
-                        </property>
-                        <property>
-                            <name>platform.extension</name>
-                            <value>${javacpp.platform.extension}</value>
-                        </property>
-                    </propertyKeysAndValues>
-                    <classPaths>
-                        <classPath>${project.build.outputDirectory}</classPath>
-                    </classPaths>
-                    <includePaths>
-                    </includePaths>
-                    <linkPath></linkPath>
-                    <resourcePath></resourcePath>
-                    <buildResources>
-                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                    </buildResources>
-                    <includeResources>
-                        <includeResource></includeResource>
-                    </includeResources>
-                    <linkResources>
-                        <linkResource>/${javacpp.platform.library.path}/</linkResource>
-                        <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                    </linkResources>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>javacpp-validate</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>javacpp-parser</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${javacpp.parser.skip}</skip>
-                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.aurora.AuroraPresets</classOrPackageName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>javacpp-compiler</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${javacpp.compiler.skip}</skip>
-                            <classOrPackageName>org.nd4j.aurora.Aurora</classOrPackageName>
-                            <copyLibs>false</copyLibs>
-                            <copyResources>true</copyResources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <source>8</source>
                     <target>8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>libnd4j-checks</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireProperty>
+                                    <property>libnd4jhome</property>
+                                    <message>You must set the LIBND4J_HOME environment variable!
+                                    </message>
+                                    <regex>.*/.*</regex>
+                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!
+                                    </regexMessage>
+                                </requireProperty>
+                                <requireFilesExist>
+                                    <files>
+                                        <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
+                                        <file>${libnd4jhome}/blasbuild/cpu/blas</file>
+                                    </files>
+                                    <message>!!! You have to compile libnd4j with cpu support
+                                        first!
+                                    </message>
+                                </requireFilesExist>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
 </project>
