@@ -44,7 +44,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>com/nec/aurora/AuroraPresets.java</include>
+                                <include>org/nd4j/aurora/AuroraPresets.java</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -120,7 +120,7 @@
                         </goals>
                         <configuration>
                             <skip>${javacpp.compiler.skip}</skip>
-                            <classOrPackageName>com.nec.aurora.Aurora</classOrPackageName>
+                            <classOrPackageName>org.nd4j.aurora.Aurora</classOrPackageName>
                             <copyLibs>false</copyLibs>
                             <copyResources>true</copyResources>
                         </configuration>
