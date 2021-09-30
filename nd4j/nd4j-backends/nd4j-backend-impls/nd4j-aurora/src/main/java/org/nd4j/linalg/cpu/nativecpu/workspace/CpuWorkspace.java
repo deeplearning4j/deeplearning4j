@@ -109,10 +109,6 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         }
     }
 
-    @Override
-    protected void initialize(PagedPointer ptr, long requiredMemory) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memsetSync(new PagedPointer(ptr, 0), 0, requiredMemory, 0, null);
-    }
 
     @Override
     protected void clearPinnedAllocations(boolean extended) {
