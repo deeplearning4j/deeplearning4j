@@ -148,18 +148,9 @@
 
         <profile>
             <id>cpu</id>
-            <activation>
-                <property>
-                    <name>libnd4j.chip</name>
-                    <value>!cuda</value>
-                </property>
-            </activation>
-            <activation>
-                <property>
-                    <name>libnd4j.chip</name>
-                    <value>!aurora</value>
-                </property>
-            </activation>
+           <activation>
+               <activeByDefault>false</activeByDefault>
+           </activation>
             <modules>
                 <module>nd4j-native</module>
                 <module>nd4j-native-preset</module>
