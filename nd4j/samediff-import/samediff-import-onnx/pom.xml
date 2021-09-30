@@ -83,6 +83,11 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>onnx</artifactId>
+      <version>${onnx.javacpp.version}</version>
+    </dependency>
   </dependencies>
 
   <profiles>
