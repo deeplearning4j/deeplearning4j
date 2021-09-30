@@ -509,6 +509,8 @@ if [ -z "$NAME" ]; then
         NAME="nd4jcpu"
     elif [ "$CHIP" == "cuda" ]; then
         NAME="nd4jcuda"
+    elif [ "$CHIP" == "aurora" ]; then
+            NAME="nd4jaurora"
     fi
 fi
 
