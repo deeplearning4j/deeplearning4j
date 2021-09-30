@@ -905,9 +905,11 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public String getNpyArrayNameFromMap(Pointer arg0, int arg1) {
-        return callString("getNpyArrayNameFromMap", arg0, arg1);
+    public String getNpyArrayNameFromMap(Pointer map, int index, BytePointer buffer) {
+        return callString("getNpyArrayNameFromMap",map,index,buffer);
     }
+
+
 
     @Override
     public Pointer getNpyArrayFromMap(Pointer arg0, int arg1) {
@@ -955,9 +957,20 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public void sortCooIndices(PointerPointer arg0, LongPointer arg1, Pointer arg2, long arg3, int arg4) {
-        call("sortCooIndices", arg0, arg1, arg2, arg3, arg4);
+    public void sortCooIndices(PointerPointer extraPointers, LongPointer indices, Pointer x, long length, LongPointer shapeInfo) {
+
     }
+
+    @Override
+    public void ravelMultiIndex(PointerPointer extraPointers, LongPointer indices, LongPointer flatIndices, long length, LongPointer shapeInfo, int mode) {
+
+    }
+
+    @Override
+    public void unravelIndex(PointerPointer extraPointers, LongPointer indices, LongPointer flatIndices, long length, LongPointer shapeInfo) {
+
+    }
+
 
     @Override
     public LongPointer mmapFile(PointerPointer arg0, String arg1, long arg2) {
@@ -1180,8 +1193,13 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public OpaqueConstantDataBuffer shapeBuffer(int arg0, LongPointer arg1, LongPointer arg2, int arg3, char arg4, long arg5, boolean arg6) {
-        return new OpaqueConstantDataBuffer(callPointer("shapeBuffer", arg0, arg1, arg2, arg3, arg4, arg5, arg6));
+    public OpaqueConstantShapeBuffer shapeBuffer(int arg0, LongPointer arg1, LongPointer arg2, int arg3, char arg4, long arg5, boolean arg6) {
+        return new OpaqueConstantShapeBuffer(callPointer("shapeBuffer", arg0, arg1, arg2, arg3, arg4, arg5, arg6));
+    }
+
+    @Override
+    public OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras) {
+        return new OpaqueConstantShapeBuffer(callPointer("shapeBufferEx", shape,strides,dtype,order,ews,extras));
     }
 
     @Override
@@ -1210,14 +1228,27 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public long getConstantDataBufferSizeOf(OpaqueConstantDataBuffer arg0) {
-        return callLong("getConstantDataBufferSizeOf", arg0);
+    public Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) {
+        return callPointer("getConstantShapeBufferPrimary",dbf);
     }
 
     @Override
-    public void deleteShapeBuffer(OpaqueConstantDataBuffer arg0) {
-        call("deleteShapeBuffer", arg0);
+    public Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) {
+        return callPointer("getConstantShapeBufferSpecial",dbf);
     }
+
+    @Override
+    public void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer state) {
+        callPointer("getConstantShapeBufferPrimary",state);
+
+    }
+
+    @Override
+    public void deleteConstantDataBuffer(OpaqueConstantDataBuffer state) {
+
+    }
+
+
 
     @Override
     public OpaqueContext createGraphContext(int arg0) {
@@ -1325,6 +1356,16 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
+    public float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, long index) {
+        return 0;
+    }
+
+    @Override
+    public double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, long index) {
+        return 0;
+    }
+
+    @Override
     public int getRandomGeneratorRelativeInt(OpaqueRandomGenerator arg0, long arg1) {
         return callInt("getRandomGeneratorRelativeInt", arg0, arg1);
     }
@@ -1335,19 +1376,30 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
+    public float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr) {
+        return 0;
+    }
+
+    @Override
+    public double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) {
+        return 0;
+    }
+
+    @Override
+    public int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) {
+        return 0;
+    }
+
+    @Override
+    public long getRandomGeneratorNextLong(OpaqueRandomGenerator ptr) {
+        return 0;
+    }
+
+    @Override
     public void deleteRandomGenerator(OpaqueRandomGenerator arg0) {
         call("deleteRandomGenerator", arg0);
     }
 
-    @Override
-    public String runLightBenchmarkSuit(boolean arg0) {
-        return callString("runLightBenchmarkSuit", arg0);
-    }
-
-    @Override
-    public String runFullBenchmarkSuit(boolean arg0) {
-        return callString("runFullBenchmarkSuit", arg0);
-    }
 
     @Override
     public long getCachedMemory(int arg0) {
@@ -1542,6 +1594,11 @@ public class Nd4jAuroraOps implements NativeOps {
     @Override
     public void dbExpand(OpaqueDataBuffer dataBuffer, long newLength) {
         call("dbExpand", dataBuffer, newLength);
+    }
+
+    @Override
+    public String buildInfo() {
+        return callString("buildInfo");
     }
 
 }
