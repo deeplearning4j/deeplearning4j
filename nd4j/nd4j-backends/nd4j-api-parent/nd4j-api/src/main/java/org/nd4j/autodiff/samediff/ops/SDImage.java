@@ -261,7 +261,7 @@ public class SDImage extends SDOps {
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
    * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
-   * @param antialis Whether to use an anti-aliasing filter when downsampling an image
+   * @param antialias Whether to use an anti-aliasing filter when downsampling an image
    * @param ImageResizeMethod ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
    * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
    * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
@@ -272,10 +272,10 @@ public class SDImage extends SDOps {
    * @return output Output image (NUMERIC type)
    */
   public SDVariable imageResize(SDVariable input, SDVariable size, boolean preserveAspectRatio,
-      boolean antialis, ImageResizeMethod ImageResizeMethod) {
+      boolean antialias, ImageResizeMethod ImageResizeMethod) {
     SDValidation.validateNumerical("imageResize", "input", input);
     SDValidation.validateInteger("imageResize", "size", size);
-    return new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, preserveAspectRatio, antialis, ImageResizeMethod).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, preserveAspectRatio, antialias, ImageResizeMethod).outputVariable();
   }
 
   /**
@@ -285,7 +285,7 @@ public class SDImage extends SDOps {
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
    * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
-   * @param antialis Whether to use an anti-aliasing filter when downsampling an image
+   * @param antialias Whether to use an anti-aliasing filter when downsampling an image
    * @param ImageResizeMethod ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
    * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
    * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
@@ -296,10 +296,10 @@ public class SDImage extends SDOps {
    * @return output Output image (NUMERIC type)
    */
   public SDVariable imageResize(String name, SDVariable input, SDVariable size,
-      boolean preserveAspectRatio, boolean antialis, ImageResizeMethod ImageResizeMethod) {
+      boolean preserveAspectRatio, boolean antialias, ImageResizeMethod ImageResizeMethod) {
     SDValidation.validateNumerical("imageResize", "input", input);
     SDValidation.validateInteger("imageResize", "size", size);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, preserveAspectRatio, antialis, ImageResizeMethod).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, preserveAspectRatio, antialias, ImageResizeMethod).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -408,6 +408,74 @@ public class SDImage extends SDOps {
     SDValidation.validateNumerical("randomCrop", "input", input);
     SDValidation.validateInteger("randomCrop", "shape", shape);
     SDVariable out =  new org.nd4j.linalg.api.ops.custom.RandomCrop(sd,input, shape).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image (NUMERIC type)
+   * @param size the target size to resize to  (INT type)
+   * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
+   * @param alignPixelCenters When resizing, assumes pixels are centered at 0.5.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable resizeBiCubic(SDVariable input, SDVariable size, boolean alignCorners,
+      boolean alignPixelCenters) {
+    SDValidation.validateNumerical("resizeBiCubic", "input", input);
+    SDValidation.validateInteger("resizeBiCubic", "size", size);
+    return new org.nd4j.linalg.api.ops.impl.image.ResizeBicubic(sd,input, size, alignCorners, alignPixelCenters).outputVariable();
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input 4D image (NUMERIC type)
+   * @param size the target size to resize to  (INT type)
+   * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
+   * @param alignPixelCenters When resizing, assumes pixels are centered at 0.5.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable resizeBiCubic(String name, SDVariable input, SDVariable size,
+      boolean alignCorners, boolean alignPixelCenters) {
+    SDValidation.validateNumerical("resizeBiCubic", "input", input);
+    SDValidation.validateInteger("resizeBiCubic", "size", size);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ResizeBicubic(sd,input, size, alignCorners, alignPixelCenters).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image (NUMERIC type)
+   * @param height target height for resizing to 
+   * @param width target width for resizing to
+   * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
+   * @param halfPixelCenters When resizing, assumes pixels are centered at 0.5.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable resizeBiLinear(SDVariable input, int height, int width, boolean alignCorners,
+      boolean halfPixelCenters) {
+    SDValidation.validateNumerical("resizeBiLinear", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.image.ResizeBilinear(sd,input, height, width, alignCorners, halfPixelCenters).outputVariable();
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input 4D image (NUMERIC type)
+   * @param height target height for resizing to 
+   * @param width target width for resizing to
+   * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
+   * @param halfPixelCenters When resizing, assumes pixels are centered at 0.5.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable resizeBiLinear(String name, SDVariable input, int height, int width,
+      boolean alignCorners, boolean halfPixelCenters) {
+    SDValidation.validateNumerical("resizeBiLinear", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ResizeBilinear(sd,input, height, width, alignCorners, halfPixelCenters).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

@@ -767,6 +767,8 @@ val reshape = OnnxMappingProcess(
 
 //TODO: ReduceSumSquare
 //TODO: Resize PRIORITIZE
+//for mapping indices see: https://github.com/eclipse/deeplearning4j/blob/228f6cda30e27999f0fea74badc8d98ee8fb0647/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/enums/ImageResizeMethod.java#L29
+
 //TODO: ReverseSequence
 //TODO: RoiAlign
 //TODO: SVMClassifier

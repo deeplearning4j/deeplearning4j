@@ -141,7 +141,7 @@ public class NDImage {
    * @param input 4D image [NHWC] (NUMERIC type)
    * @param size new height and width (INT type)
    * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
-   * @param antialis Whether to use an anti-aliasing filter when downsampling an image
+   * @param antialias Whether to use an anti-aliasing filter when downsampling an image
    * @param ImageResizeMethod ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
    * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
    * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
@@ -152,10 +152,10 @@ public class NDImage {
    * @return output Output image (NUMERIC type)
    */
   public INDArray imageResize(INDArray input, INDArray size, boolean preserveAspectRatio,
-      boolean antialis, ImageResizeMethod ImageResizeMethod) {
+      boolean antialias, ImageResizeMethod ImageResizeMethod) {
     NDValidation.validateNumerical("imageResize", "input", input);
     NDValidation.validateInteger("imageResize", "size", size);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, preserveAspectRatio, antialis, ImageResizeMethod))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, preserveAspectRatio, antialias, ImageResizeMethod))[0];
   }
 
   /**
@@ -206,6 +206,38 @@ public class NDImage {
     NDValidation.validateNumerical("randomCrop", "input", input);
     NDValidation.validateInteger("randomCrop", "shape", shape);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RandomCrop(input, shape))[0];
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image (NUMERIC type)
+   * @param size the target size to resize to  (INT type)
+   * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
+   * @param alignPixelCenters When resizing, assumes pixels are centered at 0.5.
+   * @return output Output image (NUMERIC type)
+   */
+  public INDArray resizeBiCubic(INDArray input, INDArray size, boolean alignCorners,
+      boolean alignPixelCenters) {
+    NDValidation.validateNumerical("resizeBiCubic", "input", input);
+    NDValidation.validateInteger("resizeBiCubic", "size", size);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBicubic(input, size, alignCorners, alignPixelCenters))[0];
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image (NUMERIC type)
+   * @param height target height for resizing to 
+   * @param width target width for resizing to
+   * @param alignCorners whether to align corners during resizing. Images are aligned to preserve corners.
+   * @param halfPixelCenters When resizing, assumes pixels are centered at 0.5.
+   * @return output Output image (NUMERIC type)
+   */
+  public INDArray resizeBiLinear(INDArray input, int height, int width, boolean alignCorners,
+      boolean halfPixelCenters) {
+    NDValidation.validateNumerical("resizeBiLinear", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ResizeBilinear(input, height, width, alignCorners, halfPixelCenters))[0];
   }
 
   /**
