@@ -32,6 +32,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import java.lang.IllegalArgumentException
 
 /**
  * A port of resize.py from onnx tensorflow for samediff:
@@ -113,7 +114,22 @@ class Resize : PreImportHook  {
                 result = invokeResize(mode, sd, inputVariable, outputSize, false, false)
             }
             else -> {
-                result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeNearest)
+                when(mode) {
+                    "nearest" -> {
+                        result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeNearest)
+                    }
+                    "cubic" -> {
+                        result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeBicubic)
+                    }
+                    "linear" -> {
+                        result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeBilinear)
+
+                    }
+                }
+
+                if(result == null) {
+                    throw IllegalArgumentException("Illegal mode found $mode")
+                }
             }
         }
 

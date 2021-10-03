@@ -22,9 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx
 
 
 import onnx.Onnx
-import org.bytedeco.javacpp.Pointer
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
@@ -33,7 +31,6 @@ import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
-import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
 import kotlin.test.assertTrue
@@ -133,10 +130,49 @@ class TestOnnxIR {
         assertEquals(assertion,result)
     }
 
+
+    @Test
+    fun testUnsqueeze() {
+        val declarations = OnnxOpDeclarations
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        val onnxOpRegistry = registry()
+        val inputData = Nd4j.linspace(1,15,15).reshape(1,3,1,5)
+        val axes = Nd4j.create(floatArrayOf(-2.0f)).castTo(DataType.INT64)
+        val input = mapOf("x" to inputData,"axes" to axes)
+
+        val outputs = listOf("y")
+        val attributes = emptyMap<String,Any>()
+        val inputs = listOf("x","axes")
+        val graph = createSingleNodeGraph(input,"Unsqueeze",attributes,outputs,inputs)
+        assertEquals(input.size,graph.inputCount)
+        assertEquals(1,graph.outputCount)
+        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+        val assertion = onnxGraphRunner.run(input)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val result = importedGraph.output(input,outputs)
+        //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
+        assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
+    }
+
     @Test
     fun testResize() {
         val declarations = OnnxOpDeclarations
 
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
         val onnxOpRegistry = registry()
         val inputData = Nd4j.linspace(1,16,16).reshape(1,1,4,4)
         val scales = Nd4j.create(floatArrayOf(1.0f,1.0f,0.8f,0.8f))
@@ -155,7 +191,8 @@ class TestOnnxIR {
 
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
         val result = importedGraph.output(input,outputs)
-        assertEquals(assertion,result)
+        //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
+        assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
 
     }
 
@@ -171,6 +208,37 @@ class TestOnnxIR {
             outputs.forEach {
                 Output(it)
             }
+            attributes.forEach { (t, u) ->
+                val attr = AttributeProto {
+                    name = t
+                }
+                val toBuilder = attr.toBuilder()
+                when(u.javaClass.name) {
+                    "java.lang.Double" -> {
+                        toBuilder.f = (u as Double).toFloat()
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
+                    }
+                    "java.lang.Float" -> {
+                        toBuilder.f = u as Float
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.FLOAT
+                    }
+                    "java.lang.Integer" -> {
+                        toBuilder.i = (u as Integer).toLong()
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.INT
+                    }
+                    "java.lang.Long" -> {
+                        toBuilder.i = u as Long
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.INT
+                    }
+                    "java.lang.String" -> {
+                        toBuilder.s = byteString(u as String)
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
+                    }
+                }
+
+                toBuilder.name = t
+                Attribute(toBuilder.build())
+            }
             opType = op
         }
 
@@ -185,28 +253,7 @@ class TestOnnxIR {
                 Output(createValueInfoFromTensor(firstTensor,it,false))
             }
 
-            attributes.forEach { (t, u) ->
-                AttributeProto {
-                    name = t
-                    when(u.javaClass.name) {
-                        "java.lang.Double" -> {
-                            f = (u as Double).toFloat()
-                        }
-                        "java.lang.Float" -> {
-                            f = u as Float
-                        }
-                        "java.lang.Integer" -> {
-                            i = (u as Integer).toLong()
-                        }
-                        "java.lang.Long" -> {
-                            i = u as Long
-                        }
-                        "java.lang.String" -> {
-                            s = byteString(u as String)
-                        }
-                    }
-                }
-            }
+
         }
 
         return graphRet

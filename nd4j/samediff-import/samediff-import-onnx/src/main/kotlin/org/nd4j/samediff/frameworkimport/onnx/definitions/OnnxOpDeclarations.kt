@@ -378,6 +378,12 @@ val resize = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+val unsqueeze = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Unsqueeze",
+        opMappingRegistry = onnxOpRegistry
+)
+
 //TODO: Gradient
 //TODO: GraphCall
 val hardSigmoid = OnnxMappingProcess(

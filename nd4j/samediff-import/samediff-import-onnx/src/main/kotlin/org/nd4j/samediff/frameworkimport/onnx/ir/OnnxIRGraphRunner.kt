@@ -58,7 +58,7 @@ class OnnxIRGraphRunner(graphDef: OnnxIRGraph, inputNames: List<String>, outputN
 
         val modelProto = ModelProto {
             OpSetImport(OperatorSetIdProto {
-                version = 12
+                version = 13
             })
 
             irVersion = 7
