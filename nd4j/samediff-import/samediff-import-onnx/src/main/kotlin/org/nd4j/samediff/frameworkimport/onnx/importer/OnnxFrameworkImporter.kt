@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.FrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.OnnxImportGraph
 import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxTensor
+import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxTensors
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.opdefs.OnnxOpDescriptorLoader
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
@@ -47,10 +48,7 @@ class OnnxFrameworkImporter: FrameworkImporter {
     override fun runImport(fileName: String, dynamicVariables: Map<String, INDArray>): SameDiff {
         val loadGraph = Onnx.ModelProto.parseFrom(Files.readAllBytes(File(fileName).toPath()))
         val irGraph = OnnxIRGraph(loadGraph.graph,registry)
-        val dynamicVariablesConverted = HashMap<String,Onnx.TensorProto>()
-        dynamicVariables.forEach { name, array ->
-            dynamicVariablesConverted[name] = convertToOnnxTensor(array,name)
-        }
+        val dynamicVariablesConverted = convertToOnnxTensors(dynamicVariables)
         return onnxImporter.importGraph(irGraph,null,null, dynamicVariablesConverted,registry)
     }
 }

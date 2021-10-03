@@ -34,7 +34,8 @@ class GlobalMaxPooling: PreImportHook {
         sd: SameDiff,
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
-        outputNames: List<String>
+        outputNames: List<String>,
+        isFinalOutput: Boolean
     ): HookResult {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
         val rankOf = sd.rank(inputVariable)

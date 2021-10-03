@@ -51,7 +51,7 @@ public class ImageResize extends DynamicCustomOp {
 
     public ImageResize(@NonNull INDArray in, @NonNull INDArray size, boolean preserveAspectRatio, boolean antialias, ImageResizeMethod method) {
         super("image_resize", new INDArray[]{in, size}, null);
-        Preconditions.checkArgument(in.rank()==4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
+        Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
         addBArgument(preserveAspectRatio, antialias);
         addIArgument(method.ordinal());
     }

@@ -46,11 +46,12 @@ class Resize : PreImportHook  {
         sd: SameDiff,
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
-        outputNames: List<String>
+        outputNames: List<String>,
+        isFinalOutput: Boolean
     ): HookResult {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#resize
-        val inputVariable = sd.getVariable(op.inputsToOp[0])
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
         val inputShape = sd.shape(inputVariable)
         val roi = sd.getVariable(op.inputsToOp[1])
         val scales = sd.getVariable(op.inputsToOp[2])
@@ -82,11 +83,15 @@ class Resize : PreImportHook  {
          */
         val mode = attributes.getOrDefault("mode","nearest") as String
 
+        val outputVarName: String? = if(isFinalOutput) {
+            outputNames[0]
+        } else null
+
         val outputSize = outputSize(sd,op,inputVariable,scales,sizes)
         outputSize!!.setShape(2)
 
         //switch to NWHC (tensorflow format) and then back to NCHW (onnx format)
-        val transpose = sd.permute(inputVariable,0,2,3,1)
+        inputVariable = sd.permute(inputVariable,0,2,3,1)
         var result: SDVariable? = null
         when (coordTransformationMode) {
             "tf_crop_and_resize" -> {
@@ -102,17 +107,22 @@ class Resize : PreImportHook  {
                 result =  sd.image().cropAndResize(inputVariable,boxes,boxIndices,outputSize,extrapolationValue)
             }
             "align_corners" -> {
-                result =  invokeResize(mode,sd,inputVariable,outputSize,true,false)
+                result =  invokeResize(mode, sd, inputVariable, outputSize, true, false)
             }
-            "asymmetirc" -> {
-                result = invokeResize(mode,sd,inputVariable,outputSize,false,false)
+            "asymmetric" -> {
+                result = invokeResize(mode, sd, inputVariable, outputSize, false, false)
             }
             else -> {
                 result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeNearest)
             }
         }
 
-        val finalOutput = sd.permute(result,0,3,1,2)
+        //remove pre existing output variable
+        if(outputVarName != null && sd.hasVariable(outputVarName)) {
+            sd.variables.remove(outputVarName)
+            sd.ops.remove(outputVarName)
+        }
+        val finalOutput = sd.permute(outputVarName,result,0,3,1,2)
 
         return HookResult(outputVariables = mapOf(finalOutput.name() to listOf(finalOutput)),
             proceedWithInit = false)
@@ -120,7 +130,14 @@ class Resize : PreImportHook  {
 
     }
 
-    fun invokeResize(type: String,sd: SameDiff,input: SDVariable,size: SDVariable,alignCorners: Boolean,halfPixelCenters: Boolean): SDVariable? {
+    fun invokeResize(
+        type: String,
+        sd: SameDiff,
+        input: SDVariable,
+        size: SDVariable,
+        alignCorners: Boolean,
+        halfPixelCenters: Boolean
+    ): SDVariable? {
         return when (type) {
             "linear" -> {
                 val height = size.arr.getInt(0)
@@ -131,7 +148,7 @@ class Resize : PreImportHook  {
                 sd.image().resizeBiCubic(input,size,alignCorners,halfPixelCenters)
             }
             else -> {
-                sd.image().imageResize(input,size,false,false,ImageResizeMethod.ResizeNearest)
+                sd.image().imageResize(input,size,true,true,ImageResizeMethod.ResizeNearest)
             }
         }
     }
@@ -140,14 +157,14 @@ class Resize : PreImportHook  {
         var ret: SDVariable? = null
         ret = if(op.inputsToOp.size == 3) {
             val heightWidthScale = sd.constant(scales.arr.get(NDArrayIndex.interval(2,scales.arr.length())))
-            val heightWidthShape = sd.constant(Nd4j.create(input.shape.asList().subList(2,input.shape.size)))
-            val scaled = sd.math.mul(heightWidthScale,heightWidthShape)
+            val heightWidthShape = sd.castTo(sd.constant(Nd4j.create(input.shape.asList().subList(2,input.shape.size))),heightWidthScale.dataType())
+            val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
             scaled
         } else {
             sizes.setShape(*input.shape)
-            sizes.get(SDIndex.interval(2, ArrayUtil.prod(*sizes.shape)))
+            sd.castTo(sizes.get(SDIndex.interval(2, ArrayUtil.prod(*sizes.shape))),DataType.INT32)
         }
-        return ret
+        return ret.castTo(DataType.INT32)
     }
 
     fun alignCornersFor(coordTransformationMode: String): Boolean {

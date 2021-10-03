@@ -39,7 +39,8 @@ class GroupConvPreProcessingRule: PreImportHook {
         sd: SameDiff,
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
-        outputNames: List<String>
+        outputNames: List<String>,
+        isFinalOutput: Boolean
     ): HookResult {
         if(op.op.opName() != "conv2d") {
             throw IllegalArgumentException("Illegal op being processed of type ${op.op.opName()} with node name ${op.op.ownName}")

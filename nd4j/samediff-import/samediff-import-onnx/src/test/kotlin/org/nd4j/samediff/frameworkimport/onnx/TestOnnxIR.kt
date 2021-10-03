@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx
 
 
 import onnx.Onnx
+import org.bytedeco.javacpp.Pointer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -32,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
+import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
 import kotlin.test.assertTrue
@@ -109,6 +111,7 @@ class TestOnnxIR {
         val graphToRun = GraphProto {
             Input(createValueInfoFromTensor(inputTensor,"x",true))
 
+
             //Initializer(convertedTensor)
             Node(NodeProto {
                 Input("x")
@@ -129,6 +132,87 @@ class TestOnnxIR {
         val result = importedGraph.output(inputs,"y")
         assertEquals(assertion,result)
     }
+
+    @Test
+    fun testResize() {
+        val declarations = OnnxOpDeclarations
+
+        val onnxOpRegistry = registry()
+        val inputData = Nd4j.linspace(1,16,16).reshape(1,1,4,4)
+        val scales = Nd4j.create(floatArrayOf(1.0f,1.0f,0.8f,0.8f))
+        val input = mapOf("x" to inputData,"scales" to scales,"roi-empty" to Nd4j.zeros(1,1,1,1))
+
+        val outputs = listOf("y")
+        val attributes = mapOf("mode" to "cubic")
+        val inputs = listOf("x","roi-empty","scales")
+        val graph = createSingleNodeGraph(input,"Resize",attributes,outputs,inputs)
+        assertEquals(input.size,graph.inputCount)
+        assertEquals(1,graph.outputCount)
+        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+        val assertion = onnxGraphRunner.run(input)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val result = importedGraph.output(input,outputs)
+        assertEquals(assertion,result)
+
+    }
+
+    fun createSingleNodeGraph(inputs: Map<String,INDArray>,op: String,attributes: Map<String,Any>,outputs: List<String>,inputNames: List<String>): Onnx.GraphProto {
+
+        val op = NodeProto {
+            inputNames.forEach { t ->
+                Input(t)
+            }
+
+            name = op.toLowerCase()
+
+            outputs.forEach {
+                Output(it)
+            }
+            opType = op
+        }
+
+        val firstTensor = inputs.values.first()
+        val graphRet = GraphProto {
+            Node(op)
+            inputs.forEach { (t, u) ->
+                if(!t.isEmpty())
+                    Input(createValueInfoFromTensor(u,t,false))
+            }
+            outputs.forEach {
+                Output(createValueInfoFromTensor(firstTensor,it,false))
+            }
+
+            attributes.forEach { (t, u) ->
+                AttributeProto {
+                    name = t
+                    when(u.javaClass.name) {
+                        "java.lang.Double" -> {
+                            f = (u as Double).toFloat()
+                        }
+                        "java.lang.Float" -> {
+                            f = u as Float
+                        }
+                        "java.lang.Integer" -> {
+                            i = (u as Integer).toLong()
+                        }
+                        "java.lang.Long" -> {
+                            i = u as Long
+                        }
+                        "java.lang.String" -> {
+                            s = byteString(u as String)
+                        }
+                    }
+                }
+            }
+        }
+
+        return graphRet
+
+    }
+
 
     @Test
     fun testOpsMapped() {
@@ -318,7 +402,7 @@ class TestOnnxIR {
             "reduce_prod" to Nd4j.linspace(1,4,4).reshape(2,2),
             "reduce_norm1" to Nd4j.linspace(1,4,4).reshape(2,2),
             "reduce_norm2" to Nd4j.linspace(1,4,4).reshape(2,2)
-           // "reduce_logsumexp" to Nd4j.linspace(1,4,4).reshape(2,2)
+            // "reduce_logsumexp" to Nd4j.linspace(1,4,4).reshape(2,2)
         )
 
 

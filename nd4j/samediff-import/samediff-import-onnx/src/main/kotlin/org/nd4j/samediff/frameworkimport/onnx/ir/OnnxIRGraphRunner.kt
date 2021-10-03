@@ -50,9 +50,10 @@ class OnnxIRGraphRunner(graphDef: OnnxIRGraph, inputNames: List<String>, outputN
         //already in the model, we need to dynamically modify the model at runtime
         //to allow things like intermediate results
         outputNames.forEach {
-          graphDefBuilder.addOutput(ValueInfoProto {
-              name = it
-          })
+            if(!graphDef.outputList.contains(it))
+                graphDefBuilder.addOutput(ValueInfoProto {
+                    name = it
+                })
         }
 
         val modelProto = ModelProto {

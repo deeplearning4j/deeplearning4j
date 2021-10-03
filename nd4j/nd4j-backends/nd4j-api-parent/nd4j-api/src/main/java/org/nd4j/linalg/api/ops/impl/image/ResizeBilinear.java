@@ -67,6 +67,10 @@ public class ResizeBilinear extends DynamicCustomOp {
         addArgs();
     }
 
+    public ResizeBilinear(INDArray input, int height, int width, boolean alignCorners, boolean halfPixelCenters) {
+        this(input,null,height,width,alignCorners,halfPixelCenters);
+    }
+
     @Override
     public String opName() {
         return "resize_bilinear";

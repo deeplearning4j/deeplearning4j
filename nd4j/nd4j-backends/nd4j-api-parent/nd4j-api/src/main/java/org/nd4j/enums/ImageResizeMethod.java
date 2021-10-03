@@ -19,25 +19,31 @@
 package org.nd4j.enums;
 
 /**
+ *
+ * Reference: https://www.tensorflow.org/api_docs/python/tf/image/resize
+ *
  * ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
  * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
  * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
  * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
  * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
  * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
- * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp. */
+ * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+ *
+ * Note this should match the c++ behavior found in:
+ * https://github.com/eclipse/deeplearning4j/blob/46dbd0b2035fab86f5d500508af46690b97af7c8/libnd4j/include/ops/declarable/helpers/image_resize.h#L33
+ * If these enums do not match, it can cause inaccurate results.
+ * As of this writing, (Oct 3,2021) this should be in the correct order.
+ * */
 public enum ImageResizeMethod {
   ResizeBilinear,
-
-  ResizeBicubic,
-
   ResizeNearest,
-
+  ResizeBicubic,
+  ResizeArea,
   ResizeGaussian,
-
+  ResizeLanczos3,
   ResizeLanczos5,
-
   ResizeMitchelcubic,
 
-  ResizeArea
 }
+
