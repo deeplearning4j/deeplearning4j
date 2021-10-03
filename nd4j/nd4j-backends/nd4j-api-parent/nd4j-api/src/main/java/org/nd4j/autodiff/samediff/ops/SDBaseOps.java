@@ -4826,6 +4826,178 @@ public class SDBaseOps {
   }
 
   /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateNumerical("where", "y", y);
+    SDValidation.validateNumerical("where", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(String name, SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateNumerical("where", "y", y);
+    SDValidation.validateNumerical("where", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x The first array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(SDVariable x, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateNumerical("where", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, condition).outputVariable();
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The first array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(String name, SDVariable x, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateNumerical("where", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Returns elements that are true from the given condition array<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(SDVariable condition) {
+    SDValidation.validateNumerical("where", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,condition).outputVariable();
+  }
+
+  /**
+   * Returns elements that are true from the given condition array<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(String name, SDVariable condition) {
+    SDValidation.validateNumerical("where", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * As implemented in numpy, Return elements chosen from x or y depending on condition.<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable whereNumpy(SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("whereNumpy", "x", x);
+    SDValidation.validateNumerical("whereNumpy", "y", y);
+    SDValidation.validateNumerical("whereNumpy", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(sd,x, y, condition).outputVariable();
+  }
+
+  /**
+   * As implemented in numpy, Return elements chosen from x or y depending on condition.<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable whereNumpy(String name, SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("whereNumpy", "x", x);
+    SDValidation.validateNumerical("whereNumpy", "y", y);
+    SDValidation.validateNumerical("whereNumpy", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(sd,x, y, condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:<br>
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *

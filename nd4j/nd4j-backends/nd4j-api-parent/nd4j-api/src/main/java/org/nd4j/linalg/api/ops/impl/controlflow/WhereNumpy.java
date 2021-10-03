@@ -49,6 +49,11 @@ public class WhereNumpy extends DynamicCustomOp {
         super(null, sameDiff, args, inPlace);
     }
 
+    public WhereNumpy(SameDiff sd, SDVariable x, SDVariable y, SDVariable condition) {
+        this(sd,new SDVariable[]{x,y,condition});
+    }
+
+
     @Override
     public String opName() {
         return "where_np";

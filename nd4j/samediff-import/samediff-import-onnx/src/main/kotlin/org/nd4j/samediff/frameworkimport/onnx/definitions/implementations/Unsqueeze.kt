@@ -37,6 +37,8 @@ class Unsqueeze  : PreImportHook {
         outputNames: List<String>,
         isFinalOutput: Boolean
     ): HookResult {
+        // Parameter docs below are from the onnx operator docs:
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
         val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
             sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
         }

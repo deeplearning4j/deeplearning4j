@@ -588,6 +588,63 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         useMixin(keepDimsDoc)
     }
 
+    Op("whereNumpy") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "WhereNumpy"
+        Input(NUMERIC, "x") { description = "The first array" }
+        Input(NUMERIC, "y") { description = "The second array" }
+        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                As implemented in numpy, Return elements chosen from x or y depending on condition.
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("where") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "Where"
+        Input(NUMERIC, "x") { description = "The first array" }
+        Input(NUMERIC, "y") { description = "The second array" }
+        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("where") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "Where"
+        Input(NUMERIC, "x") { description = "The first array" }
+        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("where") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "Where"
+        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Returns elements that are true from the given condition array
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
     Op("max") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same"
         legacy = true
