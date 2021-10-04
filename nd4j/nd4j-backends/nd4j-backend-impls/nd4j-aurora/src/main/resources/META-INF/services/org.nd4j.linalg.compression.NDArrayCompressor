@@ -14,4 +14,4 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
-org.nd4j.linalg.cpu.nativecpu.compression.CpuThreshold
+org.nd4j.linalg.aurora.compression.CpuThreshold

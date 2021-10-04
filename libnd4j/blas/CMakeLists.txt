@@ -43,7 +43,7 @@ if (SD_ARM_BUILD)
 endif()
 
 if (SD_AURORA)
-    message("Aurora build in process")
+    message("Aurora build in progress")
     set(SD_X86_BUILD false)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O3 -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
