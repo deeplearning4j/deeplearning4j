@@ -891,6 +891,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         for (int i = 0; i < arrays.size(); i++) {
             val array = arrays.get(i);
 
+            //we have to sync manually here as we are calling the method with raw cuda pointers
+            AllocationPoint point = allocator.getAllocationPoint(array); 
+            if(point.isActualOnHostSide()){
+                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
+                point.tickDeviceWrite();
+            }
+
             val x = AtomicAllocator.getInstance().getPointer(array, context);
             val xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
 
