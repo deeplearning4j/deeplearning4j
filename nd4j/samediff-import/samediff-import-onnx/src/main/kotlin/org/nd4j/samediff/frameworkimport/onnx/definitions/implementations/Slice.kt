@@ -19,20 +19,15 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
-import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.common.util.ArrayUtil
-import org.nd4j.enums.ImageResizeMethod
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.linalg.indexing.NDArrayIndex
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
-import java.lang.IllegalArgumentException
 
 /**
  * A port of resize.py from onnx tensorflow for samediff:
@@ -60,34 +55,33 @@ class Slice : PreImportHook  {
         val axes = if(op.inputsToOp.size < 4) sd.range(sd.constant(0),sd.shape(starts),sd.constant(1),starts.dataType())
         else sd.getVariable(op.inputsToOp[3])
         val inputRank = sd.rank(inputVariable)
-        val isAxesNegative = sd.lt("isAxesNegative",axes,sd.zerosLike(axes))
-        val axesWhere = sd.where("axesWhere",axes.add(inputRank),axes,isAxesNegative)
-        val sparseIndices = sd.castTo("sparseIndices",sd.expandDims(axesWhere,-1),DataType.INT64)
-        val sparseShape = sd.gatherNd("sparseShape",sd.shape("inputVariableShape",inputVariable),sparseIndices).castTo(ends.dataType())
-        val startsMin = sd.min("startsMin",starts,sparseShape)
-        val endsMin = sd.min("endsMin",ends,sparseShape)
+        val isAxesNegative = sd.lt(axes,sd.zerosLike(axes))
+        val axesWhere = sd.where(axes.add(inputRank),axes,isAxesNegative)
+        val sparseIndices = sd.castTo(sd.expandDims(axesWhere,-1),DataType.INT64)
+        val sparseShape = sd.gatherNd(sd.shape(inputVariable),sparseIndices).castTo(ends.dataType())
+        val startsMin = sd.min(starts,sparseShape)
+        val endsMin = sd.min(ends,sparseShape)
 
-        val isStartsNegative = sd.lt("isStartsNegative",startsMin,sd.zerosLike(startsMin))
-        val startsFinal = sd.where("startsWhere",startsMin.add("startsMinAdd",sparseShape),startsMin,isStartsNegative)
-        val isEndsNegative = sd.lt("isEndsNegative",endsMin,sd.zerosLike("zerosLikeEndsMin",endsMin))
-        val endsFinal = sd.where("endWhere",endsMin.add(sparseShape),endsMin,isEndsNegative)
-        val outputShape = inputRank.castTo("outputShape",DataType.INT64)
-        val denseBegins = sd.sparseToDense("denseBegins",sparseIndices,outputShape,startsFinal)
+        val isStartsNegative = sd.lt(startsMin,sd.zerosLike(startsMin))
+        val startsFinal = sd.where(startsMin.add(sparseShape),startsMin,isStartsNegative)
+        val isEndsNegative = sd.lt(endsMin,sd.zerosLike(endsMin))
+        val endsFinal = sd.where(endsMin.add(sparseShape),endsMin,isEndsNegative)
+        val outputShape = inputRank.castTo(DataType.INT64)
+        val denseBegins = sd.sparseToDense(sparseIndices,outputShape,startsFinal)
 
 
-        val denseEnds = sd.sparseToDense("denseEnds",sparseIndices,outputShape,endsFinal,sd.constant(Nd4j.create(
+        val denseEnds = sd.sparseToDense(sparseIndices,outputShape,endsFinal,sd.constant(Nd4j.create(
             floatArrayOf(-1.0f)).castTo(denseBegins.dataType())))
-      //TODO: double check when back
-       val denseEnds2 = sd.where("denseEnds2",inputTensorShape,denseEnds,sd.eq(denseEnds,sd.constant(-1).castTo(denseBegins.dataType())))
+       val denseEnds2 = sd.where(inputTensorShape,denseEnds,sd.eq(denseEnds,sd.constant(-1).castTo(denseBegins.dataType())))
 
         val denseSteps: SDVariable = if(op.inputsToOp.size >= 5) {
             val inputVar = sd.getVariable(op.inputsToOp[4])
-            sd.sparseToDense("denseSteps",sparseIndices,
+            sd.sparseToDense(sparseIndices,
                 outputShape,inputVar,
                sd.constant(Nd4j.create(floatArrayOf(1.0f))
                    .castTo(inputVar.dataType())))
         } else {
-            sd.onesLike("denseSteps",inputVariable.shape())
+            sd.onesLike(inputVariable.shape())
         }
 
         val outputVarName: String? = if(isFinalOutput) {
