@@ -53,6 +53,10 @@ public class WhereNumpy extends DynamicCustomOp {
         this(sd,new SDVariable[]{x,y,condition});
     }
 
+    public WhereNumpy(INDArray x, INDArray y, INDArray condition) {
+        this(new INDArray[]{x,y,condition},null);
+    }
+
 
     @Override
     public String opName() {

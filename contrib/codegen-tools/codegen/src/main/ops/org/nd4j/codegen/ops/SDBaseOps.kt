@@ -480,6 +480,38 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+    Op("sparseToDense") {
+        javaPackage = "org.nd4j.linalg.api.ops.compat"
+        javaOpClass = "CompatSparseToDense"
+        Input(NUMERIC, "indices") { description = "The indices of the sparse matrix" }
+        Input(NUMERIC, "shape") { description = "The output shape" }
+        Input(NUMERIC, "values") { description = "The values for the array" }
+        Output(NUMERIC, "output"){ description = "Populated dense INDArray with given values and indices" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Create a dense matrix equivalent of a sparse matrix based on the given input.
+            """.trimIndent()
+        }
+    }
+
+    Op("sparseToDense") {
+        javaPackage = "org.nd4j.linalg.api.ops.compat"
+        javaOpClass = "CompatSparseToDense"
+        Input(NUMERIC, "indices") { description = "The indices of the sparse matrix" }
+        Input(NUMERIC, "shape") { description = "The output shape" }
+        Input(NUMERIC, "values") { description = "The values for the array" }
+        Input(NUMERIC,"defaultValue") { description = "Default value" }
+        Output(NUMERIC, "output"){ description = "Populated dense INDArray with given values and indices" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Create a dense matrix equivalent of a sparse matrix based on the given input.
+            """.trimIndent()
+        }
+    }
+
+
     Op("lt") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarLessThan"
@@ -608,7 +640,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaOpClass = "Where"
         Input(NUMERIC, "x") { description = "The first array" }
         Input(NUMERIC, "y") { description = "The second array" }
-        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
         Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -622,7 +654,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
         javaOpClass = "Where"
         Input(NUMERIC, "x") { description = "The first array" }
-        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
         Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -635,7 +667,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("where") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
         javaOpClass = "Where"
-        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
         Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1445,7 +1477,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Stardard deviation array reduction operation, optionally along specified dimensions
+                Standard deviation array reduction operation, optionally along specified dimensions
             """.trimIndent()
         }
         useMixin(keepDimsDoc)
@@ -1462,6 +1494,28 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Arg(INT, "ellipsisMask") { description = "Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position"; defaultValue=0 }
         Arg(INT, "newAxisMask") { description = "Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point"; defaultValue=0 }
         Arg(INT, "shrinkAxisMask") { description = "Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions"; defaultValue=0 }
+        Output(NUMERIC, "output"){ description = "A subset of the input array" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Get a subset of the specified input, by specifying the first element, last element, and the strides.
+                For example, if input is:
+                [a, b, c]
+                [d, e, f]
+                [g, h, i]
+                then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+                [b, c]
+                [h, i]
+            """.trimIndent()
+        }
+    }
+
+
+    Op("stridedSlice") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        Input(NUMERIC, "in") { description = "Variable to get subset of" }
+        Input(NUMERIC, "begin") { description = "The beginning indices for the slice" }
+        Input(NUMERIC, "end") { description = "The ending indicesof the slice" }
+        Input(NUMERIC, "strides") { description = "The strides for each dimension" }
         Output(NUMERIC, "output"){ description = "A subset of the input array" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1503,7 +1557,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Switch operation
-                Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output
+                Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output
             """.trimIndent()
         }
     }

@@ -53,7 +53,7 @@ public class Where extends DynamicCustomOp {
     }
 
     public Where(SameDiff sd, SDVariable x, SDVariable y, SDVariable condition) {
-        this(sd,new SDVariable[]{x,y,condition});
+        this(sd,new SDVariable[]{condition,x,y});
     }
 
     public Where(SameDiff sd, SDVariable condition) {
@@ -61,7 +61,19 @@ public class Where extends DynamicCustomOp {
     }
 
     public Where(SameDiff sd, SDVariable x, SDVariable condition) {
-        this(sd,new SDVariable[]{x,condition});
+        this(sd,new SDVariable[]{condition,x});
+    }
+
+    public Where(INDArray x, INDArray y, INDArray condition) {
+        this(new INDArray[]{condition,x,y},null);
+    }
+
+    public Where(INDArray x, INDArray condition) {
+        this(new INDArray[]{condition,x},null);
+    }
+
+    public Where(INDArray condition) {
+        this(new INDArray[]{condition},null);
     }
 
     @Override

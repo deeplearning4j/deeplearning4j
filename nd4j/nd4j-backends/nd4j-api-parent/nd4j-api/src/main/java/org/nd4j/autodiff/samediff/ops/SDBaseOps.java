@@ -3800,6 +3800,77 @@ public class SDBaseOps {
   }
 
   /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(SDVariable indices, SDVariable shape, SDVariable values) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    return new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values).outputVariable();
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(String name, SDVariable indices, SDVariable shape,
+      SDVariable values) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    SDVariable out =  new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @param defaultValue Default value (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(SDVariable indices, SDVariable shape, SDVariable values,
+      SDVariable defaultValue) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    SDValidation.validateNumerical("sparseToDense", "defaultValue", defaultValue);
+    return new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values, defaultValue).outputVariable();
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @param defaultValue Default value (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(String name, SDVariable indices, SDVariable shape,
+      SDVariable values, SDVariable defaultValue) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    SDValidation.validateNumerical("sparseToDense", "defaultValue", defaultValue);
+    SDVariable out =  new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values, defaultValue).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Split a value in to a list of ndarrays.<br>
    *
    * @param input Input to split (NUMERIC type)
@@ -3978,7 +4049,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4001,7 +4072,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4026,7 +4097,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4047,7 +4118,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4185,6 +4256,58 @@ public class SDBaseOps {
   }
 
   /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    return new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides).outputVariable();
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(String name, SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Sum array reduction operation, optionally along specified dimensions.<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
@@ -4272,7 +4395,7 @@ public class SDBaseOps {
 
   /**
    * Switch operation<br>
-   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
    *
    * @param x Input variable (NDARRAY type)
    * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
@@ -4284,7 +4407,7 @@ public class SDBaseOps {
 
   /**
    * Switch operation<br>
-   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input variable (NDARRAY type)
@@ -4837,13 +4960,13 @@ public class SDBaseOps {
    *
    * @param x The first array (NUMERIC type)
    * @param y The second array (NUMERIC type)
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(SDVariable x, SDVariable y, SDVariable condition) {
     SDValidation.validateNumerical("where", "x", x);
     SDValidation.validateNumerical("where", "y", y);
-    SDValidation.validateNumerical("where", "condition", condition);
+    SDValidation.validateBool("where", "condition", condition);
     return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
   }
 
@@ -4860,13 +4983,13 @@ public class SDBaseOps {
    * @param name name May be null. Name for the output variable
    * @param x The first array (NUMERIC type)
    * @param y The second array (NUMERIC type)
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(String name, SDVariable x, SDVariable y, SDVariable condition) {
     SDValidation.validateNumerical("where", "x", x);
     SDValidation.validateNumerical("where", "y", y);
-    SDValidation.validateNumerical("where", "condition", condition);
+    SDValidation.validateBool("where", "condition", condition);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4882,12 +5005,12 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * @param x The first array (NUMERIC type)
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(SDVariable x, SDVariable condition) {
     SDValidation.validateNumerical("where", "x", x);
-    SDValidation.validateNumerical("where", "condition", condition);
+    SDValidation.validateBool("where", "condition", condition);
     return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, condition).outputVariable();
   }
 
@@ -4903,12 +5026,12 @@ public class SDBaseOps {
    *
    * @param name name May be null. Name for the output variable
    * @param x The first array (NUMERIC type)
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(String name, SDVariable x, SDVariable condition) {
     SDValidation.validateNumerical("where", "x", x);
-    SDValidation.validateNumerical("where", "condition", condition);
+    SDValidation.validateBool("where", "condition", condition);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, condition).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4923,11 +5046,11 @@ public class SDBaseOps {
    * keepDims = true: [a,1,c]<br>
    * keepDims = false: [a,c]<br>
    *
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(SDVariable condition) {
-    SDValidation.validateNumerical("where", "condition", condition);
+    SDValidation.validateBool("where", "condition", condition);
     return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,condition).outputVariable();
   }
 
@@ -4942,11 +5065,11 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(String name, SDVariable condition) {
-    SDValidation.validateNumerical("where", "condition", condition);
+    SDValidation.validateBool("where", "condition", condition);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,condition).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

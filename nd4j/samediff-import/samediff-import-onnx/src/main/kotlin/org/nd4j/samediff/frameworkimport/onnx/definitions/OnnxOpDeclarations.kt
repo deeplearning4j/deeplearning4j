@@ -384,7 +384,7 @@ val unsqueeze = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-val unsqueeze = OnnxMappingProcess(
+val slice = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Slice",
         opMappingRegistry = onnxOpRegistry

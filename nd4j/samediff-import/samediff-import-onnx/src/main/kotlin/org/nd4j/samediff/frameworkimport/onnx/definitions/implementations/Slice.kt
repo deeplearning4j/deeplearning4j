@@ -58,148 +58,49 @@ class Slice : PreImportHook  {
         val ends = sd.getVariable(op.inputsToOp[2])
         val axes = if(op.inputsToOp.size < 4) sd.range(sd.constant(0),sd.shape(starts),sd.constant(1),starts.dataType())
         else sd.getVariable(op.inputsToOp[3])
-        val isAxesNegative = sd.lt(axes,sd.zerosLike(axes))
-        val where = sd.where(axes.add(sd.rank(inputVariable)),isAxesNegative)
-        val inputShape = sd.shape(inputVariable)
-        val roi = sd.getVariable(op.inputsToOp[1])
-        val scales = sd.getVariable(op.inputsToOp[2])
-        val sizes = sizes(sd,op)
-        /**
-         *
-         * If coordinate_transformation_mode is "half_pixel",
-        x_original = (x_resized + 0.5) / scale - 0.5,
+        val inputRank = sd.rank(inputVariable)
+        val isAxesNegative = sd.lt("isAxesNegative",axes,sd.zerosLike(axes))
+        val axesWhere = sd.where("axesWhere",axes.add(inputRank),axes,isAxesNegative)
+        val sparseIndices = sd.castTo("sparseIndices",sd.expandDims(axesWhere,-1),DataType.INT64)
+        val sparseShape = sd.gatherNd("sparseShape",sd.shape("inputVariableShape",inputVariable),sparseIndices).castTo(ends.dataType())
+        val startsMin = sd.min("startsMin",starts,sparseShape)
+        val endsMin = sd.min("endsMin",ends,sparseShape)
 
-        if coordinate_transformation_mode is "pytorch_half_pixel",
-        x_original = length_resized > 1 ? (x_resized + 0.5) / scale - 0.5 : 0,
-
-        if coordinate_transformation_mode is "align_corners",
-        x_original = x_resized * (length_original - 1) / (length_resized - 1),
-
-        if coordinate_transformation_mode is "asymmetric",
-        x_original = x_resized / scale,
-
-        if coordinate_transformation_mode is "tf_crop_and_resize",
-        x_original = length_resized > 1 ? start_x * (length_original - 1) + x_resized * (end_x - start_x) * (length_original - 1) / (length_resized - 1) : 0.5 * (start_x + end_x) * (length_original - 1).
-         */
-        val coordTransformationMode = attributes.getOrDefault("coordinate_transformation_mode","half_pixel") as String
-        val extrapolationValue = attributes.getOrDefault("extrapolation_value",0.0) as Double
-        /**
-         * Three interpolation modes: nearest (default), linear and cubic. The "linear" mode includes linear
-         * interpolation for 1D tensor and N-linear interpolation for N-D tensor (for example, bilinear interpolation for 2D tensor).
-         * The "cubic" mode includes cubic interpolation for 1D tensor
-         * and N-cubic interpolation for N-D tensor (for example, bicubic interpolation for 2D tensor).
-         */
-        val mode = attributes.getOrDefault("mode","nearest") as String
+        val isStartsNegative = sd.lt("isStartsNegative",startsMin,sd.zerosLike(startsMin))
+        val startsFinal = sd.where("startsWhere",startsMin.add("startsMinAdd",sparseShape),startsMin,isStartsNegative)
+        val isEndsNegative = sd.lt("isEndsNegative",endsMin,sd.zerosLike("zerosLikeEndsMin",endsMin))
+        val endsFinal = sd.where("endWhere",endsMin.add(sparseShape),endsMin,isEndsNegative)
+        val outputShape = inputRank.castTo("outputShape",DataType.INT64)
+        val denseBegins = sd.sparseToDense("denseBegins",sparseIndices,outputShape,startsFinal)
+        val denseEnds = sd.sparseToDense("denseEnds",sparseIndices,outputShape,endsFinal,sd.constant(Nd4j.create(
+            floatArrayOf(-1.0f)).castTo(denseBegins.dataType())))
+        val denseSteps: SDVariable = if(op.inputsToOp.size >= 5) {
+            val inputVar = sd.getVariable(op.inputsToOp[4])
+            sd.sparseToDense("denseSteps",sparseIndices,
+                outputShape,inputVar,
+               sd.constant(Nd4j.create(floatArrayOf(1.0f))
+                   .castTo(inputVar.dataType())))
+        } else {
+            sd.onesLike("denseSteps",inputVariable.shape())
+        }
 
         val outputVarName: String? = if(isFinalOutput) {
             outputNames[0]
         } else null
 
-        val outputSize = outputSize(sd,op,inputVariable,scales,sizes)
-        outputSize!!.setShape(2)
-
-        //switch to NWHC (tensorflow format) and then back to NCHW (onnx format)
-        inputVariable = sd.permute(inputVariable,0,2,3,1)
-        var result: SDVariable? = null
-        when (coordTransformationMode) {
-            "tf_crop_and_resize" -> {
-                val indices = mutableListOf<Int>()
-                val rank = inputVariable.arr.rank()
-                for(i in 2 until rank) {
-                    indices.add(i - 2,i)
-                    indices.add(i,i + rank)
-                }
-
-                val boxes = sd.expandDims(sd.gather(roi,indices.toIntArray(),0),0)
-                val boxIndices = sd.range(0.0,inputVariable.shape[0] as Double,1.0, DataType.INT64)
-                result =  sd.image().cropAndResize(inputVariable,boxes,boxIndices,outputSize,extrapolationValue)
-            }
-            "align_corners" -> {
-                result =  invokeResize(mode, sd, inputVariable, outputSize, true, false)
-            }
-            "asymmetric" -> {
-                result = invokeResize(mode, sd, inputVariable, outputSize, false, false)
-            }
-            else -> {
-                when(mode) {
-                    "nearest" -> {
-                        result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeNearest)
-                    }
-                    "cubic" -> {
-                        result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeBicubic)
-                    }
-                    "linear" -> {
-                        result = sd.image().imageResize(inputVariable,outputSize,false,false,ImageResizeMethod.ResizeBilinear)
-
-                    }
-                }
-
-                if(result == null) {
-                    throw IllegalArgumentException("Illegal mode found $mode")
-                }
-            }
-        }
-
-        //remove pre existing output variable
         if(outputVarName != null && sd.hasVariable(outputVarName)) {
             sd.variables.remove(outputVarName)
             sd.ops.remove(outputVarName)
         }
-        val finalOutput = sd.permute(outputVarName,result,0,3,1,2)
 
-        return HookResult(outputVariables = mapOf(finalOutput.name() to listOf(finalOutput)),
+        val finalVal = sd.stridedSlice(outputVarName,inputVariable,denseBegins,denseEnds,denseSteps)
+
+        return HookResult(outputVariables = mapOf(finalVal.name() to listOf(finalVal)),
             proceedWithInit = false)
 
 
     }
 
-    fun invokeResize(
-        type: String,
-        sd: SameDiff,
-        input: SDVariable,
-        size: SDVariable,
-        alignCorners: Boolean,
-        halfPixelCenters: Boolean
-    ): SDVariable? {
-        return when (type) {
-            "linear" -> {
-                val height = size.arr.getInt(0)
-                val width = size.arr.getInt(1)
-                sd.image().resizeBiLinear(input,height,width, alignCorners, halfPixelCenters)
-            }
-            "cubic" -> {
-                sd.image().resizeBiCubic(input,size,alignCorners,halfPixelCenters)
-            }
-            else -> {
-                sd.image().imageResize(input,size,true,true,ImageResizeMethod.ResizeNearest)
-            }
-        }
-    }
 
-    fun outputSize(sd: SameDiff,op: SameDiffOp,input: SDVariable,scales: SDVariable,sizes: SDVariable): SDVariable?  {
-        var ret: SDVariable? = null
-        ret = if(op.inputsToOp.size == 3) {
-            val heightWidthScale = sd.constant(scales.arr.get(NDArrayIndex.interval(2,scales.arr.length())))
-            val heightWidthShape = sd.castTo(sd.constant(Nd4j.create(input.shape.asList().subList(2,input.shape.size))),heightWidthScale.dataType())
-            val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
-            scaled
-        } else {
-            sizes.setShape(*input.shape)
-            sd.castTo(sizes.get(SDIndex.interval(2, ArrayUtil.prod(*sizes.shape))),DataType.INT32)
-        }
-        return ret.castTo(DataType.INT32)
-    }
-
-    fun alignCornersFor(coordTransformationMode: String): Boolean {
-        //note this includes the coordTransformationMode == "asymmetric"
-        return coordTransformationMode == "align_corners"
-    }
-
-    fun sizes(sd: SameDiff,op: SameDiffOp): SDVariable {
-        if(op.inputsToOp.size == 4)
-            return sd.getVariable(op.inputsToOp[3])
-        else
-            return sd.constant(Nd4j.empty())
-    }
 
 }

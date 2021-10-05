@@ -1801,6 +1801,39 @@ public class NDBase {
   }
 
   /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public INDArray sparseToDense(INDArray indices, INDArray shape, INDArray values) {
+    NDValidation.validateNumerical("sparseToDense", "indices", indices);
+    NDValidation.validateNumerical("sparseToDense", "shape", shape);
+    NDValidation.validateNumerical("sparseToDense", "values", values);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(indices, shape, values))[0];
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @param defaultValue Default value (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public INDArray sparseToDense(INDArray indices, INDArray shape, INDArray values,
+      INDArray defaultValue) {
+    NDValidation.validateNumerical("sparseToDense", "indices", indices);
+    NDValidation.validateNumerical("sparseToDense", "shape", shape);
+    NDValidation.validateNumerical("sparseToDense", "values", values);
+    NDValidation.validateNumerical("sparseToDense", "defaultValue", defaultValue);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(indices, shape, values, defaultValue))[0];
+  }
+
+  /**
    * Split a value in to a list of ndarrays.<br>
    *
    * @param input Input to split (NUMERIC type)
@@ -1885,7 +1918,7 @@ public class NDBase {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -1908,7 +1941,7 @@ public class NDBase {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -1983,6 +2016,30 @@ public class NDBase {
   }
 
   /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public INDArray stridedSlice(INDArray in, INDArray begin, INDArray end, INDArray strides) {
+    NDValidation.validateNumerical("stridedSlice", "in", in);
+    NDValidation.validateNumerical("stridedSlice", "begin", begin);
+    NDValidation.validateNumerical("stridedSlice", "end", end);
+    NDValidation.validateNumerical("stridedSlice", "strides", strides);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(in, begin, end, strides))[0];
+  }
+
+  /**
    * Sum array reduction operation, optionally along specified dimensions.<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
@@ -2025,7 +2082,7 @@ public class NDBase {
 
   /**
    * Switch operation<br>
-   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
    *
    * @param x Input variable (NDARRAY type)
    * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
@@ -2293,13 +2350,13 @@ public class NDBase {
    *
    * @param x The first array (NUMERIC type)
    * @param y The second array (NUMERIC type)
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public INDArray where(INDArray x, INDArray y, INDArray condition) {
     NDValidation.validateNumerical("where", "x", x);
     NDValidation.validateNumerical("where", "y", y);
-    NDValidation.validateNumerical("where", "condition", condition);
+    NDValidation.validateBool("where", "condition", condition);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, y, condition))[0];
   }
 
@@ -2314,12 +2371,12 @@ public class NDBase {
    * keepDims = false: [a,c]<br>
    *
    * @param x The first array (NUMERIC type)
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public INDArray where(INDArray x, INDArray condition) {
     NDValidation.validateNumerical("where", "x", x);
-    NDValidation.validateNumerical("where", "condition", condition);
+    NDValidation.validateBool("where", "condition", condition);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, condition))[0];
   }
 
@@ -2333,11 +2390,11 @@ public class NDBase {
    * keepDims = true: [a,1,c]<br>
    * keepDims = false: [a,c]<br>
    *
-   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public INDArray where(INDArray condition) {
-    NDValidation.validateNumerical("where", "condition", condition);
+    NDValidation.validateBool("where", "condition", condition);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(condition))[0];
   }
 

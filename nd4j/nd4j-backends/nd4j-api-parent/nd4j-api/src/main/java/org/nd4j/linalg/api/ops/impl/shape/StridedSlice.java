@@ -116,6 +116,15 @@ public class StridedSlice extends DynamicCustomOp {
         addArguments();
     }
 
+    public StridedSlice(SameDiff sd, SDVariable in, SDVariable begin, SDVariable end, SDVariable strides) {
+        super(sd,new SDVariable[]{in,begin,end,strides});
+    }
+
+    public StridedSlice(INDArray in, INDArray begin, INDArray end, INDArray strides) {
+        super(new INDArray[]{in,begin,end,strides},null);
+    }
+
+
     private void addArguments(){
         addIArgument(beginMask);
         addIArgument(ellipsisMask);

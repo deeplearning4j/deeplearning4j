@@ -41,16 +41,19 @@ class GlobalMaxPooling: PreImportHook {
         val rankOf = sd.rank(inputVariable)
         val range = sd.range(sd.constant(2),rankOf,sd.constant(1), DataType.INT64)
         val output = sd.math.reduceMax(op.name,inputVariable,range,true)
-        sd.ops.remove(op.name)
+        //remove pre existing output variable
+
+        val outputVarName: String? = if(isFinalOutput) {
+            outputNames[0]
+        } else null
+
+        if(outputVarName != null && sd.hasVariable(outputVarName)) {
+            sd.variables.remove(outputVarName)
+            sd.ops.remove(outputVarName)
+        }
         return HookResult(outputVariables = mapOf(output.name() to listOf(output)),
             proceedWithInit = false)
 
-    }
-
-    fun minNum (rank: Int): Int {
-        if(rank < 4)
-            return 2
-        return 3
     }
 
 }

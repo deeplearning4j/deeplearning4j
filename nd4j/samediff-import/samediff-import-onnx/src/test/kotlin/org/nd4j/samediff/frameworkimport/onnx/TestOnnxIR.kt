@@ -132,6 +132,47 @@ class TestOnnxIR {
 
 
     @Test
+    fun testSlice() {
+        val declarations = OnnxOpDeclarations
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
+
+        val onnxOpRegistry = registry()
+        val x = Nd4j.linspace(1,1000,1000).reshape(20,10,5)
+        val starts = Nd4j.zeros(2).castTo(DataType.INT64)
+        val ends = Nd4j.create(Nd4j.createBuffer(longArrayOf(3,10))).reshape(2)
+        val axes = Nd4j.create(Nd4j.createBuffer(longArrayOf(0,1))).reshape(2)
+        val steps = Nd4j.ones(2).castTo(DataType.INT64).reshape(2)
+
+        val input = mapOf("x" to x,"starts" to starts,"ends" to ends,"axes" to axes,"steps" to steps)
+
+        val outputs = listOf("y")
+        val attributes = emptyMap<String,Any>()
+        val inputs = listOf("x","starts","ends","axes","steps")
+        val graph = createSingleNodeGraph(input,"Slice",attributes,outputs,inputs)
+        assertEquals(input.size,graph.inputCount)
+        assertEquals(1,graph.outputCount)
+        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+        val assertion = onnxGraphRunner.run(input)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val result = importedGraph.output(input,outputs)
+        //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
+        assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
+    }
+
+
+
+    @Test
     fun testUnsqueeze() {
         val declarations = OnnxOpDeclarations
 
