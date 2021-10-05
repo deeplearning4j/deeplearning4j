@@ -41,13 +41,13 @@ import static org.nd4j.linalg.api.buffer.DataType.INT8;
  *
  * @author raver119@gmail.com
  */
-public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
+public abstract class BaseAuroraDataBuffer extends BaseDataBuffer implements Deallocatable {
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected transient OpaqueDataBuffer ptrDataBuffer;
 
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
 
-    protected BaseCpuDataBuffer() {
+    protected BaseAuroraDataBuffer() {
 
     }
 
@@ -59,7 +59,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     public Deallocator deallocator() {
-        return new CpuDeallocator(this);
+        return new AuroraDeallocator(this);
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
@@ -356,7 +356,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param length
      * @param elementSize
      */
-    public BaseCpuDataBuffer(long length, int elementSize) {
+    public BaseAuroraDataBuffer(long length, int elementSize) {
         if (length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
         initTypeAndSize();
@@ -429,7 +429,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param length
      * @param elementSize
      */
-    public BaseCpuDataBuffer(int length, int elementSize, long offset) {
+    public BaseAuroraDataBuffer(int length, int elementSize, long offset) {
         this(length, elementSize);
         this.offset = offset;
         this.originalOffset = offset;
@@ -438,11 +438,11 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
 
-    protected BaseCpuDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
+    protected BaseAuroraDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
 
         // for vew we need "externally managed" pointer and deallocator registration
-        ptrDataBuffer = ((BaseCpuDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
+        ptrDataBuffer = ((BaseAuroraDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
         Nd4j.getDeallocatorService().pickObject(this);
 
 
@@ -450,7 +450,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         actualizePointerAndIndexer();
     }
 
-    protected BaseCpuDataBuffer(ByteBuffer buffer, DataType dtype, long length, long offset) {
+    protected BaseAuroraDataBuffer(ByteBuffer buffer, DataType dtype, long length, long offset) {
         this(length, Nd4j.sizeOfDataType(dtype));
 
         Pointer temp = null;
@@ -554,11 +554,11 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      *
      * @param length the length of the buffer
      */
-    protected BaseCpuDataBuffer(long length) {
+    protected BaseAuroraDataBuffer(long length) {
         this(length, true);
     }
 
-    protected BaseCpuDataBuffer(long length, boolean initialize) {
+    protected BaseAuroraDataBuffer(long length, boolean initialize) {
         if (length < 0)
             throw new IllegalArgumentException("Length must be >= 0");
         initTypeAndSize();
@@ -753,7 +753,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         }
     }
 
-    protected BaseCpuDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+    protected BaseAuroraDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         if (length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
         initTypeAndSize();
@@ -869,7 +869,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         workspaceGenerationId = workspace.getGenerationId();
     }
 
-    public BaseCpuDataBuffer(Pointer pointer, Indexer indexer, long length) {
+    public BaseAuroraDataBuffer(Pointer pointer, Indexer indexer, long length) {
         super(pointer, indexer, length);
 
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), new PagedPointer(pointer, 0), null);
@@ -881,7 +881,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(float[] data, boolean copy, long offset) {
+    public BaseAuroraDataBuffer(float[] data, boolean copy, long offset) {
         this(data, copy);
         this.offset = offset;
         this.originalOffset = offset;
@@ -890,7 +890,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     }
 
-    public BaseCpuDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         this(data, copy, workspace);
         this.offset = offset;
         this.originalOffset = offset;
@@ -903,7 +903,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(float[] data, boolean copy) {
+    public BaseAuroraDataBuffer(float[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
 
@@ -923,7 +923,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         underlyingLength = data.length;
     }
 
-    public BaseCpuDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         length = data.length;
         underlyingLength = data.length;
@@ -946,7 +946,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         //wrappedBuffer = pointer.asByteBuffer();
     }
 
-    public BaseCpuDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         length = data.length;
         underlyingLength = data.length;
@@ -970,7 +970,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
 
-    public BaseCpuDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         length = data.length;
         underlyingLength = data.length;
@@ -993,7 +993,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         //wrappedBuffer = pointer.asByteBuffer();
     }
 
-    public BaseCpuDataBuffer(long[] data, boolean copy, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(long[] data, boolean copy, MemoryWorkspace workspace) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         length = data.length;
         underlyingLength = data.length;
@@ -1022,7 +1022,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(double[] data, boolean copy, long offset) {
+    public BaseAuroraDataBuffer(double[] data, boolean copy, long offset) {
         this(data, copy);
         this.offset = offset;
         this.originalOffset = offset;
@@ -1030,7 +1030,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         this.length = underlyingLength - offset;
     }
 
-    public BaseCpuDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         this(data, copy, workspace);
         this.offset = offset;
         this.originalOffset = offset;
@@ -1043,7 +1043,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(double[] data, boolean copy) {
+    public BaseAuroraDataBuffer(double[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
 
@@ -1067,7 +1067,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(int[] data, boolean copy, long offset) {
+    public BaseAuroraDataBuffer(int[] data, boolean copy, long offset) {
         this(data, copy);
         this.offset = offset;
         this.originalOffset = offset;
@@ -1080,7 +1080,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(int[] data, boolean copy) {
+    public BaseAuroraDataBuffer(int[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
 
@@ -1103,7 +1103,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * @param data
      * @param copy
      */
-    public BaseCpuDataBuffer(long[] data, boolean copy) {
+    public BaseAuroraDataBuffer(long[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
 
@@ -1126,7 +1126,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      *
      * @param data
      */
-    public BaseCpuDataBuffer(double[] data) {
+    public BaseAuroraDataBuffer(double[] data) {
         this(data, true);
     }
 
@@ -1134,7 +1134,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      *
      * @param data
      */
-    public BaseCpuDataBuffer(int[] data) {
+    public BaseAuroraDataBuffer(int[] data) {
         this(data, true);
     }
 
@@ -1142,11 +1142,11 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      *
      * @param data
      */
-    public BaseCpuDataBuffer(float[] data) {
+    public BaseAuroraDataBuffer(float[] data) {
         this(data, true);
     }
 
-    public BaseCpuDataBuffer(float[] data, MemoryWorkspace workspace) {
+    public BaseAuroraDataBuffer(float[] data, MemoryWorkspace workspace) {
         this(data, true, workspace);
     }
 

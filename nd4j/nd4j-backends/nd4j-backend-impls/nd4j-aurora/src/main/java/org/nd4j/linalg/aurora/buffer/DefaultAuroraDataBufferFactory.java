@@ -39,7 +39,7 @@ import java.nio.ByteBuffer;
  *
  * @author Adam Gibson
  */
-public class DefaultDataBufferFactory implements DataBufferFactory {
+public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
     protected DataBuffer.AllocationMode allocationMode;
 
 
@@ -752,7 +752,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         doublePointer.capacity(length);
         doublePointer.limit(length);
         doublePointer.position(0);
-        return new DoubleBuffer(doublePointer, new BaseCpuDataBuffer.DeviceDoubleIndexer(doublePointer), length);
+        return new DoubleBuffer(doublePointer, new BaseAuroraDataBuffer.DeviceDoubleIndexer(doublePointer), length);
     }
 
     /**
@@ -765,7 +765,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         intPointer.capacity(length);
         intPointer.limit(length);
         intPointer.position(0);
-        return new IntBuffer(intPointer, new BaseCpuDataBuffer.DeviceIntIndexer(intPointer), length);
+        return new IntBuffer(intPointer, new BaseAuroraDataBuffer.DeviceIntIndexer(intPointer), length);
     }
 
     /**
@@ -778,7 +778,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         floatPointer.capacity(length);
         floatPointer.limit(length);
         floatPointer.position(0);
-        return new FloatBuffer(floatPointer, new BaseCpuDataBuffer.DeviceFloatIndexer(floatPointer), length);
+        return new FloatBuffer(floatPointer, new BaseAuroraDataBuffer.DeviceFloatIndexer(floatPointer), length);
     }
 
 

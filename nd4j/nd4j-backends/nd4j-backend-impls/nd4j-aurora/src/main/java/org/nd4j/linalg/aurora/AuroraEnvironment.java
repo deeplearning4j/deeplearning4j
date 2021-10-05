@@ -22,16 +22,16 @@ import org.nd4j.linalg.factory.Environment;
  *
  * @author Alex Black
  */
-public class CpuEnvironment implements Environment {
+public class AuroraEnvironment implements Environment {
 
 
-    private static final CpuEnvironment INSTANCE = new CpuEnvironment();
+    private static final AuroraEnvironment INSTANCE = new AuroraEnvironment();
 
-    public static CpuEnvironment getInstance(){
+    public static AuroraEnvironment getInstance(){
         return INSTANCE;
     }
 
-    protected CpuEnvironment(){
+    protected AuroraEnvironment(){
     }
 
     @Override

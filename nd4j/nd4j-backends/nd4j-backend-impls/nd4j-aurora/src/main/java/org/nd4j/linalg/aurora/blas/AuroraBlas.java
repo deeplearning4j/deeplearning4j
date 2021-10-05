@@ -31,7 +31,7 @@ import org.nd4j.nativeblas.Nd4jBlas;
  * @author saudet
  */
 @Slf4j
-public class CpuBlas extends Nd4jBlas {
+public class AuroraBlas extends Nd4jBlas {
 
     // values from /opt/nec/ve/nlc/2.0.0/include/cblas.h
     static final int CblasRowMajor=101, CblasColMajor=102,

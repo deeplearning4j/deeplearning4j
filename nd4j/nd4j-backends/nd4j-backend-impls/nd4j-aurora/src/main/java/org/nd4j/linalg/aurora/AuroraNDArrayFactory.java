@@ -35,7 +35,7 @@ import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.aurora.blas.*;
 import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.cpu.aurora.blas.*;
-import org.nd4j.linalg.aurora.buffer.BaseCpuDataBuffer;
+import org.nd4j.linalg.aurora.buffer.BaseAuroraDataBuffer;
 import org.nd4j.linalg.aurora.buffer.LongBuffer;
 import org.nd4j.linalg.aurora.buffer.Utf8Buffer;
 import org.nd4j.common.primitives.Pair;
@@ -62,13 +62,13 @@ import java.util.*;
  * @author Adam Gibson
  */
 @Slf4j
-public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
+public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
 
     protected ThreadLocal<PointerPointer> extrazA = new ThreadLocal<>();
     protected ThreadLocal<PointerPointer> extrazB = new ThreadLocal<>();
     protected ThreadLocal<Integer> extrazSize = new ThreadLocal<>();
 
-    public CpuNDArrayFactory() {}
+    public AuroraNDArrayFactory() {}
 
     static {
         //invoke the override
@@ -76,11 +76,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
 
-    public CpuNDArrayFactory(DataType dtype, Character order) {
+    public AuroraNDArrayFactory(DataType dtype, Character order) {
         super(dtype, order);
     }
 
-    public CpuNDArrayFactory(DataType dtype, char order) {
+    public AuroraNDArrayFactory(DataType dtype, char order) {
         super(dtype, order);
     }
 
@@ -119,7 +119,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             log.warn("*************************************************************************************************");
         }
 
-        blas = new CpuBlas();
+        blas = new AuroraBlas();
 
         // TODO: add batched gemm here
 
@@ -155,27 +155,27 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public void createLevel1() {
-        level1 = new CpuLevel1();
+        level1 = new AuroraLevel1();
     }
 
     @Override
     public void createLevel2() {
-        level2 = new CpuLevel2();
+        level2 = new AuroraLevel2();
     }
 
     @Override
     public void createLevel3() {
-        level3 = new CpuLevel3();
+        level3 = new AuroraLevel3();
     }
 
     @Override
     public void createLapack() {
-        lapack = new CpuLapack();
+        lapack = new AuroraLapack();
     }
 
     @Override
     public INDArray create(int[] shape, DataBuffer buffer) {
-        return new NDArray(shape, buffer);
+        return new AuroraNDArray(shape, buffer);
     }
 
     /**
@@ -186,17 +186,17 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      */
     @Override
     public INDArray create(double[][] data) {
-        return new NDArray(data);
+        return new AuroraNDArray(data);
     }
 
     @Override
     public INDArray create(double[][] data, char ordering) {
-        return new NDArray(data, ordering);
+        return new AuroraNDArray(data, ordering);
     }
 
     @Override
     public INDArray create(DataBuffer data) {
-        return new NDArray(data);
+        return new AuroraNDArray(data);
     }
 
     @Override
@@ -211,67 +211,67 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(int[] shape, char ordering) {
-        return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering);
+        return new AuroraNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
 
     @Override
     public INDArray create(long[] shape, char ordering) {
-        return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering);
+        return new AuroraNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
 
     @Override
     public INDArray createUninitialized(int[] shape, char ordering) {
-        return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        return new AuroraNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
     }
 
     @Override
     public INDArray createUninitialized(long[] shape, char ordering) {
-        return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        return new AuroraNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
     }
 
     @Override
     public INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
-        return new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, workspace);
+        return new AuroraNDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, workspace);
     }
 
     @Override
     public INDArray create(DataType dataType, long[] shape, long[] strides,  char ordering, MemoryWorkspace workspace) {
-        return new NDArray(dataType, shape, strides, 0, ordering);
+        return new AuroraNDArray(dataType, shape, strides, 0, ordering);
     }
 
     @Override
     public INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering, MemoryWorkspace workspace) {
-        return new NDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+        return new AuroraNDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
     }
 
 
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
-        return new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false, workspace);
+        return new AuroraNDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false, workspace);
     }
 
     @Override
     public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        INDArray ret = new AuroraNDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
         return ret;
     }
 
     @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
-        return new NDArray(data, newShape, newStride, offset, ordering);
+        return new AuroraNDArray(data, newShape, newStride, offset, ordering);
     }
 
     @Override
     public INDArray create(float[] data, int[] shape, long offset, Character order) {
-        return new NDArray(data, shape, offset, order);
+        return new AuroraNDArray(data, shape, offset, order);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long offset, Character order) {
-        return new NDArray(data, shape, offset, order);
+        return new AuroraNDArray(data, shape, offset, order);
     }
 
     @Override
@@ -281,7 +281,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(double[] data, int[] shape, char ordering) {
-        return new NDArray(Nd4j.createBuffer(data), shape, ordering);
+        return new AuroraNDArray(Nd4j.createBuffer(data), shape, ordering);
     }
 
     @Override
@@ -296,131 +296,131 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(List<INDArray> list, int[] shape, char ordering) {
-        return new NDArray(list, shape, ordering);
+        return new AuroraNDArray(list, shape, ordering);
     }
 
 
 
     @Override
     public INDArray create(List<INDArray> list, long[] shape, char ordering) {
-        return new NDArray(list, shape, ordering);
+        return new AuroraNDArray(list, shape, ordering);
     }
 
     @Override
     public INDArray create(double[] data, int[] shape, long offset) {
-        return new NDArray(Nd4j.createBuffer(data), shape, offset);
+        return new AuroraNDArray(Nd4j.createBuffer(data), shape, offset);
     }
 
     @Override
     public INDArray create(double[] data, long[] shape, long offset, Character order) {
-        return new NDArray(data, shape, offset, order.charValue());
+        return new AuroraNDArray(data, shape, offset, order.charValue());
     }
 
 
 
     @Override
     public INDArray create(double[] data, int[] shape, int[] stride, long offset, char ordering) {
-        return new NDArray(Nd4j.createTypedBuffer(data, DataType.DOUBLE), shape, stride, offset, ordering);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, DataType.DOUBLE), shape, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, long offset, char ordering) {
-        return new NDArray(Nd4j.createTypedBuffer(data, DataType.DOUBLE), shape, stride, offset, ordering);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, DataType.DOUBLE), shape, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, long offset, char ordering) {
-        return new NDArray(Nd4j.createTypedBuffer(data, DataType.FLOAT), shape, stride, offset, ordering);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, DataType.FLOAT), shape, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, long offset) {
-        return new NDArray(data, shape, stride, offset, Nd4j.order());
+        return new AuroraNDArray(data, shape, stride, offset, Nd4j.order());
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType) {
-        return new NDArray(data, shape, stride, 0, order);
+        return new AuroraNDArray(data, shape, stride, 0, order);
     }
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, long offset) {
-        return new NDArray(data, shape, stride, offset, Nd4j.order());
+        return new AuroraNDArray(data, shape, stride, offset, Nd4j.order());
     }
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType, workspace);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType, workspace);
     }
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new AuroraNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(DataBuffer data, long[] shape) {
-        return new NDArray(data, shape);
+        return new AuroraNDArray(data, shape);
     }
 
     @Override
@@ -430,22 +430,22 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset, char ordering) {
-        return new NDArray(data, shape, stride, offset, ordering);
+        return new AuroraNDArray(data, shape, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset, long ews, char ordering) {
-        return new NDArray(data, shape, stride, offset, ews, ordering);
+        return new AuroraNDArray(data, shape, stride, offset, ews, ordering);
     }
 
     @Override
     public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
-        return new NDArray(data, shape, stride, offset, ordering, dataType);
+        return new AuroraNDArray(data, shape, stride, offset, ordering, dataType);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, long offset) {
-        return new NDArray(data, shape, stride, offset, order);
+        return new AuroraNDArray(data, shape, stride, offset, order);
     }
 
     /**
@@ -459,7 +459,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      */
     @Override
     public INDArray create(float[] data, int[] shape, int[] stride, long offset) {
-        return new NDArray(data, shape, stride, offset);
+        return new AuroraNDArray(data, shape, stride, offset);
     }
 
 
@@ -474,17 +474,17 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      */
     @Override
     public INDArray create(double[] data, int[] shape, int[] stride, long offset) {
-        return new NDArray(data, shape, stride, offset);
+        return new AuroraNDArray(data, shape, stride, offset);
     }
 
     @Override
     public INDArray create(DataBuffer data, int[] shape) {
-        return new NDArray(data, shape);
+        return new AuroraNDArray(data, shape);
     }
 
     @Override
     public INDArray create(DataBuffer data, int[] shape, int[] stride, long offset) {
-        return new NDArray(data, shape, stride, offset, Nd4j.order());
+        return new AuroraNDArray(data, shape, stride, offset, Nd4j.order());
     }
 
     /**
@@ -496,12 +496,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      */
     @Override
     public INDArray create(List<INDArray> list, int[] shape) {
-        return new NDArray(list, shape, Nd4j.getStrides(shape));
+        return new AuroraNDArray(list, shape, Nd4j.getStrides(shape));
     }
 
     @Override
     public INDArray create(List<INDArray> list, long[] shape) {
-        return new NDArray(list, shape, Nd4j.getStrides(shape));
+        return new AuroraNDArray(list, shape, Nd4j.getStrides(shape));
     }
 
     @Override
@@ -509,32 +509,32 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
         extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1,'c', extras);
-        return new NDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
+        return new AuroraNDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
     }
 
     @Override
     public INDArray create(float[][] floats) {
-        return new NDArray(floats);
+        return new AuroraNDArray(floats);
     }
 
     @Override
     public INDArray create(float[][] data, char ordering) {
-        return new NDArray(data, ordering);
+        return new AuroraNDArray(data, ordering);
     }
 
     @Override
     public INDArray create(float[] data, int[] shape, int[] stride, long offset, char ordering) {
-        return new NDArray(data, shape, stride, offset, ordering);
+        return new AuroraNDArray(data, shape, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, long offset) {
-        return new NDArray(buffer, shape, Nd4j.getStrides(shape), offset);
+        return new AuroraNDArray(buffer, shape, Nd4j.getStrides(shape), offset);
     }
 
     @Override
     public INDArray create(float[] data, int[] shape, long offset) {
-        return new NDArray(data, shape, offset);
+        return new AuroraNDArray(data, shape, offset);
     }
 
     @Override
@@ -574,7 +574,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
             nativeOps.tear(null,
-                    ((BaseCpuDataBuffer) tensor.data()).getOpaqueDataBuffer(), (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(), null,
+                    ((BaseAuroraDataBuffer) tensor.data()).getOpaqueDataBuffer(), (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(), null,
                     targets, (LongPointer) result[0].shapeInfoDataBuffer().addressPointer(),
                     (LongPointer) tadBuffers.getFirst().addressPointer(), new LongPointerWrapper(tadBuffers.getSecond().addressPointer())
             );
@@ -715,8 +715,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.pullRows(dummy,
-                    ((BaseCpuDataBuffer) source.data()).getOpaqueDataBuffer(), (LongPointer) source.shapeInfoDataBuffer().addressPointer(), null,
-                    ((BaseCpuDataBuffer) ret.data()).getOpaqueDataBuffer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), null,
+                    ((BaseAuroraDataBuffer) source.data()).getOpaqueDataBuffer(), (LongPointer) source.shapeInfoDataBuffer().addressPointer(), null,
+                    ((BaseAuroraDataBuffer) ret.data()).getOpaqueDataBuffer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), null,
                     indexes.length, pIndex,
                     (LongPointer) hostTadShapeInfo,
                     new LongPointerWrapper(hostTadOffsets),

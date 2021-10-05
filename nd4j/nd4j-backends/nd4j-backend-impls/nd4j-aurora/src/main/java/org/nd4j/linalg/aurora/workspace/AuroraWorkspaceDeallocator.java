@@ -40,14 +40,14 @@ import java.util.Queue;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuWorkspaceDeallocator implements Deallocator {
+public class AuroraWorkspaceDeallocator implements Deallocator {
     private PointersPair pointersPair;
     private Queue<PointersPair> pinnedPointers;
     private List<PointersPair> externalPointers;
     private LocationPolicy location;
     private Pair<LongPointer, Long> mmapInfo;
 
-    public CpuWorkspaceDeallocator(@NonNull CpuWorkspace workspace) {
+    public AuroraWorkspaceDeallocator(@NonNull AuroraWorkspace workspace) {
         this.pointersPair = workspace.workspace();
         this.pinnedPointers = workspace.pinnedPointers();
         this.externalPointers = workspace.externalPointers();

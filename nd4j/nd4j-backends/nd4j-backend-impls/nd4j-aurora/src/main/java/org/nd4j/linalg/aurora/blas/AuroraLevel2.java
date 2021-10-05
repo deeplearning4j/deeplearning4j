@@ -35,14 +35,14 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 /**
  * @author Adam Gibson
  */
-public class CpuLevel2 extends BaseLevel2 {
+public class AuroraLevel2 extends BaseLevel2 {
     private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
     Nd4jAuroraOps nativeOps = (Nd4jAuroraOps)NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_sgemv", CpuBlas.convertOrder('f'), CpuBlas.convertTranspose(TransA), M, N, alpha, (FloatPointer) A.data().addressPointer(),
+        nativeOps.call("cblas_sgemv", AuroraBlas.convertOrder('f'), AuroraBlas.convertTranspose(TransA), M, N, alpha, (FloatPointer) A.data().addressPointer(),
                         lda, (FloatPointer) X.data().addressPointer(), incX, beta,
                         (FloatPointer) Y.data().addressPointer(), incY);
     }
@@ -50,7 +50,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void sgbmv(char order, char TransA, int M, int N, int KL, int KU, float alpha, INDArray A, int lda,
                     INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_sgbmv", CpuBlas.convertOrder('f'), CpuBlas.convertTranspose(TransA), M, N, KL, KU, alpha,
+        nativeOps.call("cblas_sgbmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertTranspose(TransA), M, N, KL, KU, alpha,
                         (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) X.data().addressPointer(), incX,
                         beta, (FloatPointer) Y.data().addressPointer(), incY);
     }
@@ -64,41 +64,41 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void stbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_stbmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N, K,
+        nativeOps.call("cblas_stbmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N, K,
                         (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) X.data().addressPointer(), incX);
     }
 
     @Override
     protected void stpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nativeOps.call("cblas_stpmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_stpmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (FloatPointer) Ap.data().addressPointer(), (FloatPointer) X.data().addressPointer(), incX);
     }
 
     @Override
     protected void strsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_strsv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_strsv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) X.data().addressPointer(), incX);
     }
 
     @Override
     protected void stbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_stbsv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N, K,
+        nativeOps.call("cblas_stbsv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N, K,
                         (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) X.data().addressPointer(), incX);
 
     }
 
     @Override
     protected void stpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nativeOps.call("cblas_stpsv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_stpsv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (FloatPointer) Ap.data().addressPointer(), (FloatPointer) X.data().addressPointer(), incX);
     }
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_dgemv", CpuBlas.convertOrder('f'), CpuBlas.convertTranspose(TransA), M, N, alpha, (DoublePointer) A.data().addressPointer(),
+        nativeOps.call("cblas_dgemv", AuroraBlas.convertOrder('f'), AuroraBlas.convertTranspose(TransA), M, N, alpha, (DoublePointer) A.data().addressPointer(),
                         lda, (DoublePointer) X.data().addressPointer(), incX, beta,
                         (DoublePointer) Y.data().addressPointer(), incY);
     }
@@ -106,7 +106,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dgbmv(char order, char TransA, int M, int N, int KL, int KU, double alpha, INDArray A, int lda,
                     INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_dgbmv", CpuBlas.convertOrder('f'), CpuBlas.convertTranspose(TransA), M, N, KL, KU, alpha,
+        nativeOps.call("cblas_dgbmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertTranspose(TransA), M, N, KL, KU, alpha,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) X.data().addressPointer(), incX,
                         beta, (DoublePointer) Y.data().addressPointer(), incY);
     }
@@ -114,7 +114,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dtrmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_dtrmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_dtrmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) X.data().addressPointer(),
                         incX);
     }
@@ -122,21 +122,21 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dtbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_dtbmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N, K,
+        nativeOps.call("cblas_dtbmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N, K,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) X.data().addressPointer(),
                         incX);
     }
 
     @Override
     protected void dtpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nativeOps.call("cblas_dtpmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_dtpmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (DoublePointer) Ap.data().addressPointer(), (DoublePointer) X.data().addressPointer(), incX);
     }
 
     @Override
     protected void dtrsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_dtrsv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_dtrsv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) X.data().addressPointer(),
                         incX);
     }
@@ -144,21 +144,21 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dtbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        nativeOps.call("cblas_dtbsv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N, K,
+        nativeOps.call("cblas_dtbsv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N, K,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) X.data().addressPointer(),
                         incX);
     }
 
     @Override
     protected void dtpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nativeOps.call("cblas_dtpsv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), CpuBlas.convertTranspose(TransA), CpuBlas.convertDiag(Diag), N,
+        nativeOps.call("cblas_dtpsv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), AuroraBlas.convertTranspose(TransA), AuroraBlas.convertDiag(Diag), N,
                         (DoublePointer) Ap.data().addressPointer(), (DoublePointer) X.data().addressPointer(), incX);
     }
 
     @Override
     protected void ssymv(char order, char Uplo, int N, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_ssymv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (FloatPointer) A.data().addressPointer(), lda,
+        nativeOps.call("cblas_ssymv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (FloatPointer) A.data().addressPointer(), lda,
                         (FloatPointer) X.data().addressPointer(), incX, beta, (FloatPointer) Y.data().addressPointer(),
                         incY);
     }
@@ -166,7 +166,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void ssbmv(char order, char Uplo, int N, int K, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_ssbmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, K, alpha, (FloatPointer) A.data().addressPointer(), lda,
+        nativeOps.call("cblas_ssbmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, K, alpha, (FloatPointer) A.data().addressPointer(), lda,
                         (FloatPointer) X.data().addressPointer(), incX, beta, (FloatPointer) Y.data().addressPointer(),
                         incY);
     }
@@ -174,7 +174,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void sspmv(char order, char Uplo, int N, float alpha, INDArray Ap, INDArray X, int incX, float beta,
                     INDArray Y, int incY) {
-        nativeOps.call("cblas_sspmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (FloatPointer) Ap.data().addressPointer(),
+        nativeOps.call("cblas_sspmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (FloatPointer) Ap.data().addressPointer(),
                         (FloatPointer) X.data().addressPointer(), incX, beta, (FloatPointer) Y.data().addressPointer(),
                         incY);
 
@@ -183,40 +183,40 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void sger(char order, int M, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A,
                     int lda) {
-        nativeOps.call("cblas_sger", CpuBlas.convertOrder('f'), M, N, alpha, (FloatPointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_sger", AuroraBlas.convertOrder('f'), M, N, alpha, (FloatPointer) X.data().addressPointer(), incX,
                         (FloatPointer) Y.data().addressPointer(), incY, (FloatPointer) A.data().addressPointer(), lda);
     }
 
     @Override
     protected void ssyr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray A, int lda) {
-        nativeOps.call("cblas_ssyr", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_ssyr", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
                         (FloatPointer) A.data().addressPointer(), lda);
     }
 
     @Override
     protected void sspr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Ap) {
-        nativeOps.call("cblas_sspr", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_sspr", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
                         (FloatPointer) Ap.data().addressPointer());
     }
 
     @Override
     protected void ssyr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A, int lda) {
-        nativeOps.call("cblas_ssyr2", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_ssyr2", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
                         (FloatPointer) Y.data().addressPointer(), incY, (FloatPointer) A.data().addressPointer(), lda);
     }
 
     @Override
     protected void sspr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A) {
-        nativeOps.call("cblas_sspr2", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_sspr2", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (FloatPointer) X.data().addressPointer(), incX,
                         (FloatPointer) Y.data().addressPointer(), incY, (FloatPointer) A.data().addressPointer());
     }
 
     @Override
     protected void dsymv(char order, char Uplo, int N, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_dsymv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (DoublePointer) A.data().addressPointer(), lda,
+        nativeOps.call("cblas_dsymv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (DoublePointer) A.data().addressPointer(), lda,
                         (DoublePointer) X.data().addressPointer(), incX, beta,
                         (DoublePointer) Y.data().addressPointer(), incY);
     }
@@ -224,7 +224,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dsbmv(char order, char Uplo, int N, int K, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        nativeOps.call("cblas_dsbmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, K, alpha, (DoublePointer) A.data().addressPointer(), lda,
+        nativeOps.call("cblas_dsbmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, K, alpha, (DoublePointer) A.data().addressPointer(), lda,
                         (DoublePointer) X.data().addressPointer(), incX, beta,
                         (DoublePointer) Y.data().addressPointer(), incY);
     }
@@ -232,7 +232,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dspmv(char order, char Uplo, int N, double alpha, INDArray Ap, INDArray X, int incX, double beta,
                     INDArray Y, int incY) {
-        nativeOps.call("cblas_dspmv", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (DoublePointer) Ap.data().addressPointer(),
+        nativeOps.call("cblas_dspmv", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (DoublePointer) Ap.data().addressPointer(),
                         (DoublePointer) X.data().addressPointer(), incX, beta,
                         (DoublePointer) Y.data().addressPointer(), incY);
     }
@@ -240,27 +240,27 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dger(char order, int M, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A,
                     int lda) {
-        nativeOps.call("cblas_dger", CpuBlas.convertOrder('f'), M, N, alpha, (DoublePointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_dger", AuroraBlas.convertOrder('f'), M, N, alpha, (DoublePointer) X.data().addressPointer(), incX,
                         (DoublePointer) Y.data().addressPointer(), incY, (DoublePointer) A.data().addressPointer(),
                         lda);
     }
 
     @Override
     protected void dsyr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray A, int lda) {
-        nativeOps.call("cblas_dsyr", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_dsyr", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
                         (DoublePointer) A.data().addressPointer(), lda);
     }
 
     @Override
     protected void dspr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Ap) {
-        nativeOps.call("cblas_dspr", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_dspr", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
                         (DoublePointer) Ap.data().addressPointer());
     }
 
     @Override
     protected void dsyr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A, int lda) {
-        nativeOps.call("cblas_dsyr2", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_dsyr2", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
                         (DoublePointer) Y.data().addressPointer(), incY, (DoublePointer) A.data().addressPointer(),
                         lda);
     }
@@ -268,7 +268,7 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void dspr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A) {
-        nativeOps.call("cblas_dspr2", CpuBlas.convertOrder('f'), CpuBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
+        nativeOps.call("cblas_dspr2", AuroraBlas.convertOrder('f'), AuroraBlas.convertUplo(Uplo), N, alpha, (DoublePointer) X.data().addressPointer(), incX,
                         (DoublePointer) Y.data().addressPointer(), incY, (DoublePointer) A.data().addressPointer());
     }
 }

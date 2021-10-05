@@ -32,18 +32,18 @@ import org.nd4j.rng.NativeRandom;
  *
  * @author raver119@gmail.com
  */
-public class CpuNativeRandom extends NativeRandom {
+public class AuroraNativeRandom extends NativeRandom {
     private NativeOps nativeOps;
 
-    public CpuNativeRandom() {
+    public AuroraNativeRandom() {
         super();
     }
 
-    public CpuNativeRandom(long seed) {
+    public AuroraNativeRandom(long seed) {
         super(seed);
     }
 
-    public CpuNativeRandom(long seed, long numberOfElements) {
+    public AuroraNativeRandom(long seed, long numberOfElements) {
         super(seed, numberOfElements);
     }
 

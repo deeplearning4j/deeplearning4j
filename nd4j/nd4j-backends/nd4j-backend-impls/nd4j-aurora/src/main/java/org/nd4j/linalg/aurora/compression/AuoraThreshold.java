@@ -50,7 +50,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuThreshold extends AbstractCompressor {
+public class AuoraThreshold extends AbstractCompressor {
     @Getter @Setter protected float threshold = 1e-3f;
 
     /**

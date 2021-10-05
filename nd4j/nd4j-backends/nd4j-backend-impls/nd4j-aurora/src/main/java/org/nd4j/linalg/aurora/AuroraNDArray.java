@@ -68,54 +68,54 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  *
  * @author Adam Gibson
  */
-public class NDArray extends BaseNDArray {
+public class AuroraNDArray extends BaseNDArray {
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     static {
         //invoke the override
         Nd4j.getBlasWrapper();
     }
 
-    public NDArray() {
+    public AuroraNDArray() {
         super();
     }
 
 
-    public NDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
-                   MemoryWorkspace workspace){
+    public AuroraNDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+                         MemoryWorkspace workspace){
         super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
     }
 
-    public NDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
+    public AuroraNDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
         this.shapeInformation = shapeInfo;
         this.data = buffer;
     }
 
-    public NDArray(DataBuffer buffer) {
+    public AuroraNDArray(DataBuffer buffer) {
         super(buffer);
     }
 
-    public NDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
+    public AuroraNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
         super(buffer, shape, stride, offset, ordering);
     }
 
-    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
+    public AuroraNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
         super(buffer, shape, stride, offset, ordering);
     }
 
-    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering) {
+    public AuroraNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering) {
         super(buffer, shape, stride, offset, ews, ordering);
     }
 
-    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
+    public AuroraNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
         super(buffer, shape, stride, offset, ordering, dataType);
     }
 
-    public NDArray(double[][] data) {
+    public AuroraNDArray(double[][] data) {
         super(data);
     }
 
-    public NDArray(double[][] data, char ordering) {
+    public AuroraNDArray(double[][] data, char ordering) {
         super(data, ordering);
     }
 
@@ -126,7 +126,7 @@ public class NDArray extends BaseNDArray {
      * @param shape    the shape of the ndarray
      * @param ordering
      */
-    public NDArray(float[] data, int[] shape, char ordering) {
+    public AuroraNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
@@ -136,31 +136,31 @@ public class NDArray extends BaseNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering of the ndarray
      */
-    public NDArray(float[] data, int[] shape, long offset, char ordering) {
+    public AuroraNDArray(float[] data, int[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
-    public NDArray(float[] data, long[] shape, long offset, char ordering) {
+    public AuroraNDArray(float[] data, long[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
-    public NDArray(float[] data, long[] shape, long[] stride, long offset, char ordering) {
+    public AuroraNDArray(float[] data, long[] shape, long[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public NDArray(double[] data, long[] shape, long[] stride, long offset, char ordering) {
+    public AuroraNDArray(double[] data, long[] shape, long[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public NDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type) {
+    public AuroraNDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type) {
         super(data, shape, stride, ordering, type);
     }
 
-    public NDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
+    public AuroraNDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
         super(data, shape, stride, ordering, type, workspace);
     }
 
-    public NDArray(double[] data, long[] shape, long offset, char ordering) {
+    public AuroraNDArray(double[] data, long[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
@@ -173,11 +173,11 @@ public class NDArray extends BaseNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering of the ndarray
      */
-    public NDArray(int[] shape, int[] stride, long offset, char ordering) {
+    public AuroraNDArray(int[] shape, int[] stride, long offset, char ordering) {
         super(shape, stride, offset, ordering);
     }
 
-    public NDArray(long[] shape, long[] stride, long offset, char ordering) {
+    public AuroraNDArray(long[] shape, long[] stride, long offset, char ordering) {
         super(shape, stride, offset, ordering);
     }
 
@@ -192,27 +192,27 @@ public class NDArray extends BaseNDArray {
      * @param ordering the ordering of the ndarray
      * @param initialize Whether to initialize the INDArray. If true: initialize. If false: don't.
      */
-    public NDArray(int[] shape, int[] stride, long offset, char ordering, boolean initialize) {
+    public AuroraNDArray(int[] shape, int[] stride, long offset, char ordering, boolean initialize) {
         super(shape, stride, offset, ordering, initialize);
     }
 
-    public NDArray(long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+    public AuroraNDArray(long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
         super(shape, stride, offset, ordering, initialize);
     }
 
-    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering) {
+    public AuroraNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering) {
         super(type, shape, stride, offset, ordering, true);
     }
 
-    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, MemoryWorkspace workspace) {
+    public AuroraNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, MemoryWorkspace workspace) {
         super(type, shape, stride, offset, ordering, true, workspace);
     }
 
-    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+    public AuroraNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
         super(type, shape, stride, offset, ordering, initialize);
     }
 
-    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize, MemoryWorkspace workspace) {
+    public AuroraNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize, MemoryWorkspace workspace) {
         super(type, shape, stride, offset, ordering, initialize, workspace);
     }
 
@@ -224,15 +224,15 @@ public class NDArray extends BaseNDArray {
      * @param stride   the stride of the ndarray
      * @param ordering the ordering of the ndarray
      */
-    public NDArray(int[] shape, int[] stride, char ordering) {
+    public AuroraNDArray(int[] shape, int[] stride, char ordering) {
         super(shape, stride, ordering);
     }
 
-    public NDArray(int[] shape, long offset, char ordering) {
+    public AuroraNDArray(int[] shape, long offset, char ordering) {
         super(shape, offset, ordering);
     }
 
-    public NDArray(int[] shape) {
+    public AuroraNDArray(int[] shape) {
         super(shape);
     }
 
@@ -243,11 +243,11 @@ public class NDArray extends BaseNDArray {
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      * @param ordering
      */
-    public NDArray(int newRows, int newColumns, char ordering) {
+    public AuroraNDArray(int newRows, int newColumns, char ordering) {
         super(newRows, newColumns, ordering);
     }
 
-    public NDArray(long newRows, long newColumns, char ordering) {
+    public AuroraNDArray(long newRows, long newColumns, char ordering) {
         super(newRows, newColumns, ordering);
     }
 
@@ -261,11 +261,11 @@ public class NDArray extends BaseNDArray {
      * @param shape    the shape of the ndarray
      * @param ordering
      */
-    public NDArray(List<INDArray> slices, int[] shape, char ordering) {
+    public AuroraNDArray(List<INDArray> slices, int[] shape, char ordering) {
         super(slices, shape, ordering);
     }
 
-    public NDArray(List<INDArray> slices, long[] shape, char ordering) {
+    public AuroraNDArray(List<INDArray> slices, long[] shape, char ordering) {
         super(slices, shape, ordering);
     }
 
@@ -280,15 +280,15 @@ public class NDArray extends BaseNDArray {
      * @param stride
      * @param ordering
      */
-    public NDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
+    public AuroraNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
         super(slices, shape, stride, ordering);
     }
 
-    public NDArray(float[] data, int[] shape, int[] stride, char ordering) {
+    public AuroraNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
     }
 
-    public NDArray(float[] data, int[] shape, int[] stride, long offset, char ordering) {
+    public AuroraNDArray(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
@@ -298,11 +298,11 @@ public class NDArray extends BaseNDArray {
      * @param data  the data to use
      * @param shape the shape of the ndarray
      */
-    public NDArray(float[] data, int[] shape) {
+    public AuroraNDArray(float[] data, int[] shape) {
         super(data, shape);
     }
 
-    public NDArray(float[] data, int[] shape, long offset) {
+    public AuroraNDArray(float[] data, int[] shape, long offset) {
         super(data, shape, offset);
     }
 
@@ -314,11 +314,11 @@ public class NDArray extends BaseNDArray {
      * @param stride the stride of the ndarray
      * @param offset the desired offset
      */
-    public NDArray(int[] shape, int[] stride, long offset) {
+    public AuroraNDArray(int[] shape, int[] stride, long offset) {
         super(shape, stride, offset);
     }
 
-    public NDArray(long[] shape, long[] stride, long offset) {
+    public AuroraNDArray(long[] shape, long[] stride, long offset) {
         super(shape, stride, offset);
     }
 
@@ -329,15 +329,15 @@ public class NDArray extends BaseNDArray {
      * @param shape  the shape of the ndarray
      * @param stride the stride of the ndarray
      */
-    public NDArray(int[] shape, int[] stride) {
+    public AuroraNDArray(int[] shape, int[] stride) {
         super(shape, stride);
     }
 
-    public NDArray(int[] shape, long offset) {
+    public AuroraNDArray(int[] shape, long offset) {
         super(shape, offset);
     }
 
-    public NDArray(int[] shape, char ordering) {
+    public AuroraNDArray(int[] shape, char ordering) {
         super(shape, ordering);
     }
 
@@ -347,11 +347,11 @@ public class NDArray extends BaseNDArray {
      * @param newRows    the number of rows (<i>n</i>) of the new matrix.
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      */
-    public NDArray(int newRows, int newColumns) {
+    public AuroraNDArray(int newRows, int newColumns) {
         super(newRows, newColumns);
     }
 
-    public NDArray(long newRows, long newColumns) {
+    public AuroraNDArray(long newRows, long newColumns) {
         super(newRows, newColumns);
     }
 
@@ -364,11 +364,11 @@ public class NDArray extends BaseNDArray {
      * @param slices the slices to merge
      * @param shape  the shape of the ndarray
      */
-    public NDArray(List<INDArray> slices, int[] shape) {
+    public AuroraNDArray(List<INDArray> slices, int[] shape) {
         super(slices, shape);
     }
 
-    public NDArray(List<INDArray> slices, long[] shape) {
+    public AuroraNDArray(List<INDArray> slices, long[] shape) {
         super(slices, shape);
     }
 
@@ -382,99 +382,99 @@ public class NDArray extends BaseNDArray {
      * @param shape  the shape of the ndarray
      * @param stride
      */
-    public NDArray(List<INDArray> slices, int[] shape, int[] stride) {
+    public AuroraNDArray(List<INDArray> slices, int[] shape, int[] stride) {
         super(slices, shape, stride);
     }
 
-    public NDArray(List<INDArray> slices, long[] shape, long[] stride) {
+    public AuroraNDArray(List<INDArray> slices, long[] shape, long[] stride) {
         super(slices, shape, stride);
     }
 
-    public NDArray(float[] data, int[] shape, int[] stride) {
+    public AuroraNDArray(float[] data, int[] shape, int[] stride) {
         super(data, shape, stride);
     }
 
 
-    public NDArray(float[] data, int[] shape, int[] stride, long offset) {
+    public AuroraNDArray(float[] data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
     }
 
-    public NDArray(float[] data) {
+    public AuroraNDArray(float[] data) {
         super(data);
     }
 
 
 
-    public NDArray(double[] data, int[] shape, int[] stride, long offset) {
+    public AuroraNDArray(double[] data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
     }
 
-    public NDArray(float[][] floats) {
+    public AuroraNDArray(float[][] floats) {
         super(floats);
     }
 
-    public NDArray(float[][] data, char ordering) {
+    public AuroraNDArray(float[][] data, char ordering) {
         super(data, ordering);
     }
 
-    public NDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
+    public AuroraNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
 
     }
 
-    public NDArray(int[] data, int[] shape, int[] strides) {
+    public AuroraNDArray(int[] data, int[] shape, int[] strides) {
         super(data, shape, strides);
     }
 
-    public NDArray(DataBuffer data, int[] shape) {
+    public AuroraNDArray(DataBuffer data, int[] shape) {
         super(data, shape);
     }
 
-    public NDArray(DataBuffer data, long[] shape) {
+    public AuroraNDArray(DataBuffer data, long[] shape) {
         super(data, shape);
     }
 
-    public NDArray(DataBuffer buffer, int[] shape, long offset) {
+    public AuroraNDArray(DataBuffer buffer, int[] shape, long offset) {
         super(buffer, shape, offset);
     }
 
-    public NDArray(DataBuffer buffer, int[] shape, char ordering) {
+    public AuroraNDArray(DataBuffer buffer, int[] shape, char ordering) {
         super(buffer, shape, ordering);
     }
 
-    public NDArray(double[] data, int[] shape, char ordering) {
+    public AuroraNDArray(double[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
-    public NDArray(double[] data, long[] shape, char ordering) {
+    public AuroraNDArray(double[] data, long[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
-    public NDArray(double[] data, int[] shape, int[] stride, long offset, char ordering) {
+    public AuroraNDArray(double[] data, int[] shape, int[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public NDArray(float[] data, char order) {
+    public AuroraNDArray(float[] data, char order) {
         super(data, order);
     }
 
-    public NDArray(FloatBuffer floatBuffer, char order) {
+    public AuroraNDArray(FloatBuffer floatBuffer, char order) {
         super(floatBuffer, order);
     }
 
-    public NDArray(DataBuffer buffer, int[] shape, int[] strides) {
+    public AuroraNDArray(DataBuffer buffer, int[] shape, int[] strides) {
         super(buffer, shape, strides);
     }
 
-    public NDArray(DoubleBuffer buffer, int[] shape, char ordering) {
+    public AuroraNDArray(DoubleBuffer buffer, int[] shape, char ordering) {
         super(buffer, shape, 0, ordering);
     }
 
-    public NDArray(DoubleBuffer buffer, int[] shape, long offset) {
+    public AuroraNDArray(DoubleBuffer buffer, int[] shape, long offset) {
         super(buffer, shape, offset);
     }
 
-    public NDArray(int[] shape, DataBuffer buffer) {
+    public AuroraNDArray(int[] shape, DataBuffer buffer) {
         super(shape, buffer);
     }
 

@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
+public class AuroraDirectShapeInfoProvider extends BaseShapeInfoProvider {
     // TODO: to be removed
     private Map<ShapeDescriptor, Pair<DataBuffer, long[]>> shapeCache = new ConcurrentHashMap<>();
 

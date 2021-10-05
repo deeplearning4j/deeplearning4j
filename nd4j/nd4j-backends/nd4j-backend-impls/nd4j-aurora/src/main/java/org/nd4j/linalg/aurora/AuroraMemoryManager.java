@@ -43,7 +43,7 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuMemoryManager extends BasicMemoryManager {
+public class AuroraMemoryManager extends BasicMemoryManager {
     /**
      * This method returns
      * PLEASE NOTE: Cache options depend on specific implementations

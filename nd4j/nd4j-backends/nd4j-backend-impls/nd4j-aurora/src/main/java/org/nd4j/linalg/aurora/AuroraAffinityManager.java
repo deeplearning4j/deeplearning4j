@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author raver119@gmail.com
  */
-public class CpuAffinityManager extends BasicAffinityManager {
+public class AuroraAffinityManager extends BasicAffinityManager {
 
     /**
      * Utility method, to associate INDArray with specific device (backend-specific)

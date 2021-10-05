@@ -32,7 +32,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  *
  * @author Adam Gibson
  */
-public class CpuBackend extends Nd4jBackend {
+public class AuroraBackend extends Nd4jBackend {
 
 
     private final static String LINALG_PROPS = "/nd4j-native.properties";
@@ -60,17 +60,17 @@ public class CpuBackend extends Nd4jBackend {
 
     @Override
     public Resource getConfigurationResource() {
-        return new ClassPathResource(LINALG_PROPS, CpuBackend.class.getClassLoader());
+        return new ClassPathResource(LINALG_PROPS, AuroraBackend.class.getClassLoader());
     }
 
     @Override
     public Class getNDArrayClass() {
-        return NDArray.class;
+        return AuroraNDArray.class;
     }
 
     @Override
     public Environment getEnvironment() {
-        return CpuEnvironment.getInstance();
+        return AuroraEnvironment.getInstance();
     }
 
     @Override

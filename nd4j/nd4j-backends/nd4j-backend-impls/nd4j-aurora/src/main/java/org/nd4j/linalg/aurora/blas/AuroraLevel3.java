@@ -34,7 +34,7 @@ import org.nd4j.nativeblas.Nd4jAuroraOps;
 import org.nd4j.nativeblas.Nd4jBlas;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.nd4j.linalg.aurora.blas.CpuBlas.*;
+import static org.nd4j.linalg.aurora.blas.AuroraBlas.*;
 
 /**
  *
@@ -42,7 +42,7 @@ import static org.nd4j.linalg.aurora.blas.CpuBlas.*;
  *
  * @author Adam Gibson
  */
-public class CpuLevel3 extends BaseLevel3 {
+public class AuroraLevel3 extends BaseLevel3 {
     private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
     Nd4jAuroraOps nativeOps = (Nd4jAuroraOps)NativeOpsHolder.getInstance().getDeviceNativeOps();
 

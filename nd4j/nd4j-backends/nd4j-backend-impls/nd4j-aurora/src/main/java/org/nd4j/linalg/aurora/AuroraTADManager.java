@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
-public class CpuTADManager implements TADManager {
+public class AuroraTADManager implements TADManager {
     private Map<TadDescriptor, Pair<DataBuffer, DataBuffer>> cache = new ConcurrentHashMap<>();
     private NativeOps nativeOps;
     private ConstantHandler constantHandler;
@@ -49,7 +49,7 @@ public class CpuTADManager implements TADManager {
     private AtomicInteger counter = new AtomicInteger(0);
     private static final int MAX_ENTRIES = 100;
 
-    public CpuTADManager() {
+    public AuroraTADManager() {
         //
     }
 

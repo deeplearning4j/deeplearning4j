@@ -42,9 +42,9 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  *
  * @author raver119@gmail.com
  */
-public class CpuFlexibleThreshold extends CpuThreshold {
+public class AuroraFlexibleThreshold extends AuoraThreshold {
 
-    public CpuFlexibleThreshold() {
+    public AuroraFlexibleThreshold() {
         super();
         this.threshold = 0.1f;
     }

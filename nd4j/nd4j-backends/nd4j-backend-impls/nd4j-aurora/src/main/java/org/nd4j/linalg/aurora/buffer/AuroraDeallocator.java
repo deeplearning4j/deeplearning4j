@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,21 +14,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.aurora.ops;
+package org.nd4j.linalg.aurora.buffer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.OpaqueContext;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
-public class CpuOpContextDeallocator implements Deallocator {
-    private transient final OpaqueContext context;
+/**
+ * This class is responsible for OpaqueDataBuffer deletion on native side, once it's not used anymore in Java
+ *
+ * @author raver119@gmail.com
+ */
+@Slf4j
+public class AuroraDeallocator implements Deallocator {
+    private final transient OpaqueDataBuffer opaqueDataBuffer;
 
-    public CpuOpContextDeallocator(CpuOpContext ctx) {
-        context = (OpaqueContext) ctx.contextPointer();
+    public AuroraDeallocator(BaseAuroraDataBuffer buffer) {
+        opaqueDataBuffer = buffer.getOpaqueDataBuffer();
     }
 
     @Override
     public void deallocate() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
+        if (opaqueDataBuffer == null)
+            throw new RuntimeException("opaqueDataBuffer is null");
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }
 }

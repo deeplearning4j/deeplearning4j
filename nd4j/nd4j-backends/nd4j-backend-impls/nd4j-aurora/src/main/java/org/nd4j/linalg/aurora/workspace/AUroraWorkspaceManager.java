@@ -34,22 +34,22 @@ import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuWorkspaceManager extends BasicWorkspaceManager {
+public class AUroraWorkspaceManager extends BasicWorkspaceManager {
 
-    public CpuWorkspaceManager() {
+    public AUroraWorkspaceManager() {
         super();
     }
 
     protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration) {
-        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CpuWorkspace(configuration);
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new AuroraWorkspace(configuration);
     }
 
     protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration, String id) {
-        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CpuWorkspace(configuration, id);
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new AuroraWorkspace(configuration, id);
     }
 
     protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration, String id, int deviceId) {
-        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CpuWorkspace(configuration, id, deviceId);
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new AuroraWorkspace(configuration, id, deviceId);
     }
 
     @Override

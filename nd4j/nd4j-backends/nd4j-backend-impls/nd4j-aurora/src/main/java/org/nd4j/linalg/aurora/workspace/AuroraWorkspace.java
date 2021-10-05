@@ -48,19 +48,19 @@ import java.util.Queue;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
+public class AuroraWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     protected LongPointer mmap;
 
-    public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
+    public AuroraWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
     }
 
-    public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
+    public AuroraWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
         super(configuration, workspaceId);
     }
 
-    public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
+    public AuroraWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
         super(configuration, workspaceId);
         this.deviceId = deviceId;
     }
@@ -80,7 +80,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
             }
         };
         */
-         return new CpuWorkspaceDeallocator(this);
+         return new AuroraWorkspaceDeallocator(this);
     }
 
     @Override

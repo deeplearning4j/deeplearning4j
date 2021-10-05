@@ -39,7 +39,7 @@ import org.nd4j.linalg.api.blas.BlasException ;
 /**
  * CPU lapack implementation
  */
-public class CpuLapack extends BaseLapack {
+public class AuroraLapack extends BaseLapack {
     Nd4jAuroraOps nativeOps = (Nd4jAuroraOps)NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     // LAPACKE not supported by Aurora??

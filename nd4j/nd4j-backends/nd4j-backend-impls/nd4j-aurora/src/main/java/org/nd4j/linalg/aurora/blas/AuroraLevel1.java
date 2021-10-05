@@ -36,7 +36,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 /**
  * @author Adam Gibson
  */
-public class CpuLevel1 extends BaseLevel1 {
+public class AuroraLevel1 extends BaseLevel1 {
     private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
     Nd4jAuroraOps nativeOps = (Nd4jAuroraOps)NativeOpsHolder.getInstance().getDeviceNativeOps();
 
