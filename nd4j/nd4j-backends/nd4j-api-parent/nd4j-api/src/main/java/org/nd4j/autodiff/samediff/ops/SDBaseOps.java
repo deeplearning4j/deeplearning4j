@@ -4269,6 +4269,70 @@ public class SDBaseOps {
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
+   * @param beginMask Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored, and a value of 0 is used instead for the beginning index for that dimension
+   * @param endMask Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored, and a value of size(i)-1 is used instead for the end index for that dimension
+   * @param ellipsisMask Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position
+   * @param newAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point
+   * @param shrinkAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
+      int shrinkAxisMask) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    return new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask).outputVariable();
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @param beginMask Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored, and a value of 0 is used instead for the beginning index for that dimension
+   * @param endMask Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored, and a value of size(i)-1 is used instead for the end index for that dimension
+   * @param ellipsisMask Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position
+   * @param newAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point
+   * @param shrinkAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(String name, SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
+      int shrinkAxisMask) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
    * @return output A subset of the input array (NUMERIC type)
    */
   public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
@@ -4277,7 +4341,7 @@ public class SDBaseOps {
     SDValidation.validateNumerical("stridedSlice", "begin", begin);
     SDValidation.validateNumerical("stridedSlice", "end", end);
     SDValidation.validateNumerical("stridedSlice", "strides", strides);
-    return new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, 0, 0, 0, 0, 0).outputVariable();
   }
 
   /**
@@ -4303,7 +4367,7 @@ public class SDBaseOps {
     SDValidation.validateNumerical("stridedSlice", "begin", begin);
     SDValidation.validateNumerical("stridedSlice", "end", end);
     SDValidation.validateNumerical("stridedSlice", "strides", strides);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, 0, 0, 0, 0, 0).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

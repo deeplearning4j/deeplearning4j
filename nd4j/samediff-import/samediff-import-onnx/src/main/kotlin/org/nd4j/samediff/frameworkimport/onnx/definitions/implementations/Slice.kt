@@ -54,6 +54,7 @@ class Slice : PreImportHook  {
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val inputTensorShape = sd.shape(inputVariable)
         val starts = sd.getVariable(op.inputsToOp[1])
         val ends = sd.getVariable(op.inputsToOp[2])
         val axes = if(op.inputsToOp.size < 4) sd.range(sd.constant(0),sd.shape(starts),sd.constant(1),starts.dataType())
@@ -72,8 +73,13 @@ class Slice : PreImportHook  {
         val endsFinal = sd.where("endWhere",endsMin.add(sparseShape),endsMin,isEndsNegative)
         val outputShape = inputRank.castTo("outputShape",DataType.INT64)
         val denseBegins = sd.sparseToDense("denseBegins",sparseIndices,outputShape,startsFinal)
+
+
         val denseEnds = sd.sparseToDense("denseEnds",sparseIndices,outputShape,endsFinal,sd.constant(Nd4j.create(
             floatArrayOf(-1.0f)).castTo(denseBegins.dataType())))
+      //TODO: double check when back
+       val denseEnds2 = sd.where("denseEnds2",inputTensorShape,denseEnds,sd.eq(denseEnds,sd.constant(-1).castTo(denseBegins.dataType())))
+
         val denseSteps: SDVariable = if(op.inputsToOp.size >= 5) {
             val inputVar = sd.getVariable(op.inputsToOp[4])
             sd.sparseToDense("denseSteps",sparseIndices,
@@ -93,7 +99,7 @@ class Slice : PreImportHook  {
             sd.ops.remove(outputVarName)
         }
 
-        val finalVal = sd.stridedSlice(outputVarName,inputVariable,denseBegins,denseEnds,denseSteps)
+        val finalVal = sd.stridedSlice(outputVarName,inputVariable,denseBegins,denseEnds2,denseSteps,0,0,0,0,0)
 
         return HookResult(outputVariables = mapOf(finalVal.name() to listOf(finalVal)),
             proceedWithInit = false)

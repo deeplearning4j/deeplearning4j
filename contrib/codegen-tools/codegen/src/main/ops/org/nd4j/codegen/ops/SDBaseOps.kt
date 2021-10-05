@@ -1516,6 +1516,11 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "begin") { description = "The beginning indices for the slice" }
         Input(NUMERIC, "end") { description = "The ending indicesof the slice" }
         Input(NUMERIC, "strides") { description = "The strides for each dimension" }
+        Arg(INT, "beginMask") { description = "Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored, and a value of 0 is used instead for the beginning index for that dimension"; defaultValue=0 }
+        Arg(INT, "endMask") { description = "Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored, and a value of size(i)-1 is used instead for the end index for that dimension"; defaultValue=0 }
+        Arg(INT, "ellipsisMask") { description = "Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position"; defaultValue=0 }
+        Arg(INT, "newAxisMask") { description = "Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point"; defaultValue=0 }
+        Arg(INT, "shrinkAxisMask") { description = "Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions"; defaultValue=0 }
         Output(NUMERIC, "output"){ description = "A subset of the input array" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1530,6 +1535,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
             """.trimIndent()
         }
     }
+
+
+
 
     Op("sum") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same"
