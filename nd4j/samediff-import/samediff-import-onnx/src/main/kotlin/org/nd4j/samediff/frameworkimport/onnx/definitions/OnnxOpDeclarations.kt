@@ -389,6 +389,11 @@ val slice = OnnxMappingProcess(
         inputFrameworkOpName = "Slice",
         opMappingRegistry = onnxOpRegistry
 )
+val expand = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Expand",
+        opMappingRegistry = onnxOpRegistry
+)
 
 
 //TODO: Gradient
@@ -802,14 +807,6 @@ val scatter = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("operand" to "data","updates" to "updates","indices" to "indices")))
 )
 
-/*
-val scatterNd = OnnxMappingProcess(
-        opName = "scatter_nd_update",
-        inputFrameworkOpName = "ScatterNd",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","indices" to "indices","updates" to "updates"))),
-        opMappingRegistry = onnxOpRegistry
-)
-*/
 
 //TODO: SequenceAt
 //TODO: SequenceConstruct
@@ -850,17 +847,7 @@ val size = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs((mutableMapOf("input" to "data"))))
 )
 
-//TODO: map axes
-//TODO: slice and strided slice work too differently,revisit one
-/*val slice = OnnxMappingProcess(
-        opMappingRegistry = onnxOpRegistry,
-        inputFrameworkOpName = "Slice",
-        opName = "strided_slice",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("v_begin" to "starts","v_end" to "ends","v_stride" to "steps",
-        //TODO: note these mappings are erroneous, we need better default values here for equivalent functionality in onnx
-        "begin_mask" to "begin","end_mask" to "end")))
-)*/
+
 
 
 //TODO: SoftmaxCrossEntropyLoss
@@ -944,6 +931,12 @@ val transpose = OnnxMappingProcess(
         inputFrameworkOpName = "Transpose",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
         attributeMappingRules = listOf(listNumberToListNumber(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
+        opMappingRegistry = onnxOpRegistry
+)
+
+val where = OnnxMappingProcess(
+        inputFrameworkOpName = "Where",
+        opName = "where",
         opMappingRegistry = onnxOpRegistry
 )
 
