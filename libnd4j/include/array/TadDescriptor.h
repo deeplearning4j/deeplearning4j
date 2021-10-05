@@ -42,6 +42,7 @@ namespace sd {
 
             // we use default copy assignment operator
 #ifndef __NEC__
+           //NCC has issues with copy constructors
             TadDescriptor& operator=(const TadDescriptor& other) = default;
             // we use default move assignment operator
             TadDescriptor& operator=(TadDescriptor&& other) noexcept = default;

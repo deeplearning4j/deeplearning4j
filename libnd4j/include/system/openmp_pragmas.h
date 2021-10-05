@@ -41,6 +41,7 @@
 #define PRAGMA_OMP_SIMD_ARGS(args)
 #define PRAGMA_OMP_SIMD_SUM(args)
 #define PRAGMA_OMP_SIMD_MAX(args)
+#define PRAGMA_OMP_SIMD_MAX_2(args)
 #define PRAGMA_OMP_PARALLEL _Pragma(OMP_STRINGIFY(omp parallel default(shared)))
 #define PRAGMA_OMP_PARALLEL_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel reduction(args) default(shared)))
 #define PRAGMA_OMP_PARALLEL_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
@@ -63,6 +64,7 @@
 #define PRAGMA_OMP_SINGLE _Pragma(OMP_STRINGIFY(omp single))
 #define PRAGMA_OMP_SINGLE_ARGS(args) _Pragma(OMP_STRINGIFY(omp single args))
 #define PRAGMA_OMP_TASK _Pragma(OMP_STRINGIFY(omp task))
+#define PRAGMA_SUM_ENV(length,sum)
 
 
 #elif defined(_MSC_VER)
@@ -119,6 +121,7 @@
 #define PRAGMA_OMP_SIMD_ARGS(args) _Pragma(OMP_STRINGIFY(omp simd args))
 #define PRAGMA_OMP_SIMD_SUM(args) _Pragma(OMP_STRINGIFY(omp simd reduction(sumT:args)))
 #define PRAGMA_OMP_SIMD_MAX(args) _Pragma(OMP_STRINGIFY(omp simd reduction(maxTF:args)))
+#define PRAGMA_OMP_SIMD_MAX_2(args) _Pragma(OMP_STRINGIFY(omp simd reduction(maxT:args)))
 #define PRAGMA_OMP_PARALLEL _Pragma(OMP_STRINGIFY(omp parallel default(shared)))
 #define PRAGMA_OMP_PARALLEL_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel reduction(args) default(shared)))
 #define PRAGMA_OMP_PARALLEL_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
@@ -141,7 +144,8 @@
 #define PRAGMA_OMP_SINGLE _Pragma(OMP_STRINGIFY(omp single))
 #define PRAGMA_OMP_SINGLE_ARGS(args) _Pragma(OMP_STRINGIFY(omp single args))
 #define PRAGMA_OMP_TASK _Pragma(OMP_STRINGIFY(omp task))
-
+#define PRAGMA_SUM_ENV(length,sum) PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance().elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
+#define PRAGMA_OMP_SIMD_REDUCE(reduce)
 #endif
 
 // reductions
