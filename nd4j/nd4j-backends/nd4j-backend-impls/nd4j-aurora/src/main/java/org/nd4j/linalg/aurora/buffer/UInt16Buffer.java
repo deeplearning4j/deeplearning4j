@@ -35,7 +35,7 @@ import java.nio.ByteBuffer;
  *
  * @author Adam Gibson
  */
-public class UInt16Buffer extends BaseCpuDataBuffer {
+public class UInt16Buffer extends BaseAuroraDataBuffer {
 
     /**
      * Meant for creating another view of a buffer

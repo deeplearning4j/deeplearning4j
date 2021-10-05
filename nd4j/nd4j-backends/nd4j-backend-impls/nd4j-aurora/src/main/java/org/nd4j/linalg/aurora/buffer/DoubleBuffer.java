@@ -35,7 +35,7 @@ import java.nio.ByteBuffer;
  *
  * @author Adam Gibson
  */
-public class DoubleBuffer extends BaseCpuDataBuffer {
+public class DoubleBuffer extends BaseAuroraDataBuffer {
     /**
      * Meant for creating another view of a buffer
      *

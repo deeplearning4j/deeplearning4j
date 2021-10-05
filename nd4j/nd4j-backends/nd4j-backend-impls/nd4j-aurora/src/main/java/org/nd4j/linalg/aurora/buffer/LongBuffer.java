@@ -40,7 +40,7 @@ import java.nio.ByteBuffer;
  *
  * @author Adam Gibson
  */
-public class LongBuffer extends BaseCpuDataBuffer {
+public class LongBuffer extends BaseAuroraDataBuffer {
 
     /**
      * Meant for creating another view of a buffer

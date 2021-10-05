@@ -43,7 +43,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public class Utf8Buffer extends BaseCpuDataBuffer {
+public class Utf8Buffer extends BaseAuroraDataBuffer {
 
     protected Collection<Pointer> references = new ArrayList<>();
 
