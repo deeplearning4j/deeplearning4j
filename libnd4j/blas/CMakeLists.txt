@@ -42,15 +42,6 @@ if (SD_ARM_BUILD)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_ARM_BUILD=true")
 endif()
 
-if (SD_AURORA)
-    message("Aurora build in progress")
-    set(SD_X86_BUILD false)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O3 -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
-endif()
-
 
 if (SD_ANDROID_BUILD)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_ANDROID_BUILD=true")
