@@ -100,6 +100,29 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testShuffleActualMemoryOnHostSide(Nd4jBackend backend){
+        String backendName = backend.getClass().getName().toLowerCase();
+        if (backendName.contains("jcublasbackend")) {
+            INDArray array = Nd4j.linspace(1, 3*10, 3*10).reshape(10, 3);
+            for (int i = 0; i < 10; i++) {
+                //change each row to {i+1.0, i+1.0, i+1.0} with putScalar
+                array.putScalar(i, 0, i + 1.0);
+                array.putScalar(i, 1, i + 1.0);
+                array.putScalar(i, 2, i + 1.0);
+            }
+            //after putScalar calls we have modified buffer only on the Cpu side
+
+            OrderScanner2D scanner = new OrderScanner2D(array);
+
+            assertArrayEquals(new float[] { 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f}, scanner.getMap(), 0.01f);
+            Nd4j.shuffle(array, 1);
+
+            assertTrue(scanner.compareRow(array));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSymmetricShuffle1(Nd4jBackend backend) {
         INDArray features = Nd4j.zeros(10, 10);
         INDArray labels = Nd4j.zeros(10, 3);
