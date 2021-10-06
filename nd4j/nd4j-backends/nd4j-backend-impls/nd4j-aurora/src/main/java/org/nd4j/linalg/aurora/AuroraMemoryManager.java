@@ -40,7 +40,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Map;
 
 /**
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AuroraMemoryManager extends BasicMemoryManager {

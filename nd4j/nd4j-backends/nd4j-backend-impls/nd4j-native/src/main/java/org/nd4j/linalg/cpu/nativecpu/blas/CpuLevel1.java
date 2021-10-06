@@ -52,12 +52,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float hdot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected float hdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -75,7 +75,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -93,7 +93,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -109,7 +109,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -124,7 +124,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double dasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -134,7 +134,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(long N, DataBuffer X, int offsetX, int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -144,7 +144,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(long N, DataBuffer X, int offsetX, int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -159,12 +159,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected void haxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -175,12 +175,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     public void haxpy(long n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void saxpy(long n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
 
@@ -198,7 +198,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -210,12 +210,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     public void daxpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected void srotg(float a, float b, float c, float s) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
 
     }
 
@@ -274,11 +274,11 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float hasum(long N, INDArray X, int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected float hasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 }

@@ -149,7 +149,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (point.getAllocationStatus() == AllocationStatus.HOST
                             && CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.DELAYED) {
                 //AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
-                throw new NotImplementedException ("Pew-pew");
+                throw new UnsupportedOperationException("Pew-pew");
             }
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -178,7 +178,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (point.getAllocationStatus() == AllocationStatus.HOST
                             && CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.DELAYED) {
                 //AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
-                throw new NotImplementedException ("Pew-pew");
+                throw new UnsupportedOperationException("Pew-pew");
             }
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -213,7 +213,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         point.setAllocationStatus(AllocationStatus.CONSTANT);
         //point.setDevicePointer(new CudaPointer(cAddr));
         if (1 > 0)
-            throw new NotImplementedException ("Pew-pew");
+            throw new UnsupportedOperationException("Pew-pew");
 
         point.setConstant(true);
         point.tickDeviceWrite();

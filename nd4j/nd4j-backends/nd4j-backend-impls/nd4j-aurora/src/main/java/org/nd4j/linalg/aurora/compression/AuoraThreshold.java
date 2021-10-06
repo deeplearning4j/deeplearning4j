@@ -47,7 +47,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  *
  * PLEASE NOTE: DO NOT USE THIS COMPRESSOR UNLESS YOU'RE 100% SURE WHAT YOU DO!
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AuoraThreshold extends AbstractCompressor {
@@ -154,6 +154,6 @@ public class AuoraThreshold extends AbstractCompressor {
 
     @Override
     protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length, int elementSize) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 }

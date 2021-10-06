@@ -40,7 +40,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  *
  * PLEASE NOTE: DO NOT USE THIS COMPRESSOR UNLESS YOU'RE 100% SURE WHAT YOU DO!
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 public class AuroraFlexibleThreshold extends AuoraThreshold {
 

@@ -30,7 +30,7 @@ import org.nd4j.rng.NativeRandom;
 /**
  * CPU implementation for NativeRandom
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 public class AuroraNativeRandom extends NativeRandom {
     private NativeOps nativeOps;

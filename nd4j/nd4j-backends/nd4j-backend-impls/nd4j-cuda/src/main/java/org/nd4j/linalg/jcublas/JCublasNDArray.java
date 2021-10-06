@@ -775,7 +775,7 @@ public class JCublasNDArray extends BaseNDArray {
     @Override
     public String getString(long index) {
         if (!isS())
-            throw new NotImplementedException ("This method is usable only on String dataType, but got [" + this.dataType() + "]");
+            throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
 
         return ((CudaUtf8Buffer) data).getString(index);
     }

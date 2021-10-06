@@ -24,7 +24,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 /**
  * This class is responsible for OpaqueDataBuffer deletion on native side, once it's not used anymore in Java
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AuroraDeallocator implements Deallocator {

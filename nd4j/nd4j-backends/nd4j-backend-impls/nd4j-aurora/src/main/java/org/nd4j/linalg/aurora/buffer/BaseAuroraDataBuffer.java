@@ -39,7 +39,7 @@ import static org.nd4j.linalg.api.buffer.DataType.INT8;
 /**
  * Base implementation for DataBuffer for CPU-like backend
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 public abstract class BaseAuroraDataBuffer extends BaseDataBuffer implements Deallocatable {
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -541,7 +541,7 @@ public abstract class BaseAuroraDataBuffer extends BaseDataBuffer implements Dea
 
     @Override
     protected ByteBuffer wrappedBuffer() {
-        throw new NotImplementedException ("Not supported yet.");
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override

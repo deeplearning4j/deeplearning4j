@@ -42,7 +42,7 @@ import org.nd4j.nativeblas.OpaqueRandomGenerator;
 /**
  * CPU backend Context wrapper
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 public class AuroraOpContext extends BaseOpContext implements OpContext, Deallocatable {
     // we might want to have configurable

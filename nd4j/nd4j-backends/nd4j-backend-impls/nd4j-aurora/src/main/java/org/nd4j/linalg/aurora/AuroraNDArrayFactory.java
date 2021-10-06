@@ -24,31 +24,31 @@ package org.nd4j.linalg.aurora;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.*;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
-import org.nd4j.linalg.api.buffer.*;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.aurora.blas.*;
-import org.nd4j.linalg.compression.CompressionUtils;
-import org.nd4j.linalg.cpu.aurora.blas.*;
 import org.nd4j.linalg.aurora.buffer.BaseAuroraDataBuffer;
 import org.nd4j.linalg.aurora.buffer.LongBuffer;
 import org.nd4j.linalg.aurora.buffer.Utf8Buffer;
-import org.nd4j.common.primitives.Pair;
-import org.bytedeco.javacpp.*;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
-import org.nd4j.linalg.cpu.nativecpu.blas.*;
+import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -653,7 +653,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
-            throw new NotImplementedException ("2D input is expected");
+            throw new UnsupportedOperationException("2D input is expected");
 
         return pullRows(source, Nd4j.createUninitialized(source.dataType(), shape, order), sourceDimension, indexes);
     }
@@ -678,7 +678,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
-            throw new NotImplementedException ("2D input is expected");
+            throw new UnsupportedOperationException("2D input is expected");
 
         INDArray ret = destination;
         if(ret == null){
@@ -976,7 +976,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst) {
         if (source.isView())
-            throw new NotImplementedException ("Impossible to compress View. Consider using dup() before. ");
+            throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
 
         DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
         if (nativeOps.lastErrorCode() != 0)
@@ -1004,7 +1004,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
         else if (typeDst.ordinal() == 7)
             elementSize = 8;
         else
-            throw new NotImplementedException ("Unknown target TypeEx: " + typeDst.name());
+            throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
 
         DataBuffer buffer = null;
 
@@ -1090,7 +1090,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray sortCooIndices(INDArray x) {
-        throw new NotImplementedException ("Not an COO ndarray");
+        throw new UnsupportedOperationException("Not an COO ndarray");
     }
 
 

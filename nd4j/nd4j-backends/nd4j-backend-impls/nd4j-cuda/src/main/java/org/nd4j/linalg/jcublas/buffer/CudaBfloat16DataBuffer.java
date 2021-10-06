@@ -150,9 +150,9 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
             */
-            throw new NotImplementedException ();
+            throw new UnsupportedOperationException();
         } else
-            throw new NotImplementedException ("Only contiguous supported");
+            throw new UnsupportedOperationException("Only contiguous supported");
     }
 
     @Override

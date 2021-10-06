@@ -358,7 +358,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     }
                     break;
                     default:
-                        throw new NotImplementedException ("Not supported MetaType: [" + type + "]");
+                        throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
                 }
             } catch (Throwable t){
                 //Try to provide a more useful exception. Because of the async nature of grid execution, sometimes the
@@ -919,7 +919,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 dequeueOp(op);
                 pushToGrid(op, false);
             } else {
-                throw new NotImplementedException ("Experimental flush isn't supported yet");
+                throw new UnsupportedOperationException("Experimental flush isn't supported yet");
             }
         } else {
             //      logger.info("Queue is empty");

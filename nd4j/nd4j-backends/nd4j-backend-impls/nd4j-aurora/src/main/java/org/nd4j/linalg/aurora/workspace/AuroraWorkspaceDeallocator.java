@@ -37,7 +37,7 @@ import java.util.Queue;
 
 /**
  * Deallocator implementation for CpuWorkspace
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AuroraWorkspaceDeallocator implements Deallocator {

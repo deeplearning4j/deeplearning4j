@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 public class AuroraAffinityManager extends BasicAffinityManager {
 

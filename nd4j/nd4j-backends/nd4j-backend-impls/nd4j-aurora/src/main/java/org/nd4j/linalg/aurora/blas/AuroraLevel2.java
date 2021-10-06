@@ -58,7 +58,7 @@ public class AuroraLevel2 extends BaseLevel2 {
     @Override
     protected void strmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override

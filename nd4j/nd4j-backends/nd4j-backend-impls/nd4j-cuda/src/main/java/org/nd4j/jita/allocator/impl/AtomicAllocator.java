@@ -306,7 +306,7 @@ public class AtomicAllocator implements Allocator {
     public Pointer getPointer(INDArray array, CudaContext context) {
         //    DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         if (array.isEmpty() || array.isS())
-            throw new NotImplementedException ("Pew-pew");
+            throw new UnsupportedOperationException("Pew-pew");
 
         return memoryHandler.getDevicePointer(array.data(), context);
     }
@@ -434,7 +434,7 @@ public class AtomicAllocator implements Allocator {
         return point;
          */
 
-        throw new NotImplementedException ("Pew-pew");
+        throw new UnsupportedOperationException("Pew-pew");
     }
 
     /**
@@ -447,7 +447,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public AllocationPoint allocateMemory(DataBuffer buffer, AllocationShape requiredMemory, AllocationStatus location, boolean initialize) {
-        throw new NotImplementedException ("Pew-pew");
+        throw new UnsupportedOperationException("Pew-pew");
     }
 
 
@@ -536,7 +536,7 @@ public class AtomicAllocator implements Allocator {
                 if (point.getBuffer() == null) {
                     purgeZeroObject(bucketId, object, point, false);
                     //freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
-                    throw new NotImplementedException ("Pew-pew");
+                    throw new UnsupportedOperationException("Pew-pew");
 
                     //elementsDropped.incrementAndGet();
                     //continue;
@@ -606,7 +606,7 @@ public class AtomicAllocator implements Allocator {
 
                     //elementsDropped.incrementAndGet();
                     //continue;
-                    throw new NotImplementedException ("Pew-pew");
+                    throw new UnsupportedOperationException("Pew-pew");
                 } ;
             } else {
                 elementsSurvived.incrementAndGet();

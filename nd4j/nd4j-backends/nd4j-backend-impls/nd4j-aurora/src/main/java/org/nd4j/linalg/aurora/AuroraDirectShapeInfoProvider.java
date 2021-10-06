@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AuroraDirectShapeInfoProvider extends BaseShapeInfoProvider {

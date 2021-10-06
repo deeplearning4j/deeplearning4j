@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 
 /**
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AUroraWorkspaceManager extends BasicWorkspaceManager {

@@ -377,7 +377,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = ByteIndexer.create((BytePointer) pointer);
                 break;
             default:
-                throw new NotImplementedException ();
+                throw new UnsupportedOperationException();
         }
     }
 
@@ -562,7 +562,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = ByteIndexer.create((BytePointer) pointer);
                 break;
             default:
-                throw new NotImplementedException ();
+                throw new UnsupportedOperationException();
         }
     }
 
@@ -733,7 +733,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             default:
-                throw new NotImplementedException ("Unsupported data type: " + dataType());
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
 
@@ -844,7 +844,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             default:
-                throw new NotImplementedException ("Unsupported data type: " + dataType());
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
 
     }
@@ -947,7 +947,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             default:
-                throw new NotImplementedException ("Unsupported data type: " + dataType());
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
 
@@ -1049,7 +1049,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             default:
-                throw new NotImplementedException ("Unsupported data type: " + dataType());
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
 
@@ -1087,7 +1087,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     protected void setNioBuffer() {
-        throw new NotImplementedException ("setNioBuffer() is not supported for CUDA backend");
+        throw new UnsupportedOperationException("setNioBuffer() is not supported for CUDA backend");
     }
 
     @Override
@@ -1115,7 +1115,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer getHostPointer(long offset) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1143,12 +1143,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Deprecated
     public Pointer getHostPointer(INDArray arr, int stride, long offset, int length) {
-        throw new NotImplementedException ("This method is deprecated");
+        throw new UnsupportedOperationException("This method is deprecated");
     }
 
     @Deprecated
     public void set(Pointer pointer) {
-        throw new NotImplementedException ("set(Pointer) is not supported");
+        throw new UnsupportedOperationException("set(Pointer) is not supported");
     }
 
     @Override
@@ -1215,7 +1215,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                             "Illegal offset " + offset + " with index of " + index + " and length " + length());
 
         // TODO: fix this
-        throw new NotImplementedException ("Deprecated set() call");
+        throw new UnsupportedOperationException("Deprecated set() call");
     }
 
     /**
@@ -1406,7 +1406,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             case COMPRESSED:
                 break;
             default:
-                throw new NotImplementedException ();
+                throw new UnsupportedOperationException();
         }
         */
     }
@@ -1492,7 +1492,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     }
                     break;
                 default:
-                    throw new NotImplementedException ("Unsupported data type: " + type);
+                    throw new UnsupportedOperationException("Unsupported data type: " + type);
             }
 
             readContent(s, t, t);

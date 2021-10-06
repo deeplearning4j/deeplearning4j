@@ -209,17 +209,17 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
 
     @Override
     public DataBuffer create(double[] data) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public DataBuffer create(float[] data) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public DataBuffer create(int[] data) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
     }
 
     private static long stringBufferRequiredLength(@NonNull Collection<String> strings) {
@@ -233,7 +233,7 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
     }
 
     public void put(long index, Pointer pointer) {
-        throw new NotImplementedException ();
+        throw new UnsupportedOperationException();
         //references.add(pointer);
         //((LongIndexer) indexer).put(index, pointer.address());
     }

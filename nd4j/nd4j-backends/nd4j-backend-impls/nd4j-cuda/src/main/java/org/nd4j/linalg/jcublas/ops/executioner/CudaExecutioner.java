@@ -188,7 +188,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.dimensions().shapeInfoDataBuffer()), (LongPointer) AtomicAllocator.getInstance().getPointer(op.dimensions().shapeInfoDataBuffer(), context));
                 break;
             default:
-                throw new NotImplementedException ("Unknown op type: " + op.getOpType());
+                throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
 
         if (nativeOps.lastErrorCode() != 0)
@@ -390,7 +390,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     z, (LongPointer) hostZShapeInfo,(LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
                             break;
                         default:
-                            throw new NotImplementedException ();
+                            throw new UnsupportedOperationException();
                     }
                 } else {
                     switch (op.getOpType()) {
@@ -423,7 +423,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                             break;
                         default:
-                            throw new NotImplementedException ();
+                            throw new UnsupportedOperationException();
                     }
                 }
             }
@@ -630,7 +630,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
             if (op.z() != null)
-                throw new NotImplementedException ("Pew-pew");
+                throw new UnsupportedOperationException("Pew-pew");
                 //AtomicAllocator.getInstance().tickHostWrite(op.z());
 
             return null;
@@ -761,7 +761,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                 break;
             default:
-                throw new NotImplementedException ("Unknown opType: " + op.getOpType());
+                throw new UnsupportedOperationException("Unknown opType: " + op.getOpType());
         }
 
         if (nativeOps.lastErrorCode() != 0)
@@ -1057,7 +1057,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo);
                         break;
                     default:
-                        throw new NotImplementedException ();
+                        throw new UnsupportedOperationException();
                 }
             }
         } else {
@@ -1112,7 +1112,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                             break;
                         default:
-                            throw new NotImplementedException ();
+                            throw new UnsupportedOperationException();
                     }
                 }
             }
@@ -1202,7 +1202,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
             default:
-                throw new NotImplementedException ();
+                throw new UnsupportedOperationException();
         }
 
         if (nativeOps.lastErrorCode() != 0)
@@ -1298,7 +1298,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         extraArgs);
                 break;
             default:
-                throw new NotImplementedException ("Unknown op type: " + op.getOpType());
+                throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
 
         if (nativeOps.lastErrorCode() != 0)
@@ -1455,7 +1455,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             extraArgs);
                     break;
                 default:
-                    throw new NotImplementedException ();
+                    throw new UnsupportedOperationException();
             }
         }
 
@@ -1482,7 +1482,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
-        throw new NotImplementedException ("Pew-pew");
+        throw new UnsupportedOperationException("Pew-pew");
     }
 
     @Override
@@ -1501,7 +1501,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void exec(Aggregate op) {
-        throw new NotImplementedException ("Pew-pew");
+        throw new UnsupportedOperationException("Pew-pew");
     }
 
     /**
@@ -1986,7 +1986,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
             //AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
             if (1 > 0)
-                throw new NotImplementedException ("Pew-pew");
+                throw new UnsupportedOperationException("Pew-pew");
 
             String nodeName = nativeOps.getVariableName(var);
             newMap.put(nodeName, array);

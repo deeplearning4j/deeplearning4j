@@ -237,7 +237,7 @@ public class Nd4jAuroraOps implements NativeOps {
                     }
                 }
             } else {
-                throw new NotImplementedException ("Not supported yet: " + arg);
+                throw new UnsupportedOperationException("Not supported yet: " + arg);
             }
         }
         long id = veo_call_async(ctx, sym, argp);

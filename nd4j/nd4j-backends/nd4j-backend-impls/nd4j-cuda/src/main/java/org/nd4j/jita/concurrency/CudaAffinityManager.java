@@ -191,7 +191,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
             return array.dup(array.ordering());
 
         if (array.isView())
-            throw new NotImplementedException ("It's impossible to replicate View");
+            throw new UnsupportedOperationException("It's impossible to replicate View");
 
         val shape = array.shape();
         val stride = array.stride();

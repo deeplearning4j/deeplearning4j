@@ -45,7 +45,7 @@ import java.util.Queue;
 /**
  * CPU-only MemoryWorkspace implementation
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
 @Slf4j
 public class AuroraWorkspace extends Nd4jWorkspace implements Deallocatable {

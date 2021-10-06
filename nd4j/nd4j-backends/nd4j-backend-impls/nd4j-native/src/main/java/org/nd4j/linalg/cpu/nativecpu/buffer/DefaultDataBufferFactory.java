@@ -798,7 +798,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(float[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -810,7 +810,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(double[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -823,7 +823,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, double[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -836,7 +836,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, float[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -849,7 +849,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, int[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -861,7 +861,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, double[] data) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -873,12 +873,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, float[] data) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     @Override
     public DataBuffer createHalf(long offset, float[] data, MemoryWorkspace workspace) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -890,7 +890,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, int[] data) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -903,7 +903,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, byte[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -915,7 +915,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(int[] data, boolean copy) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -926,7 +926,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(float[] data) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -937,7 +937,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(double[] data) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     /**
@@ -948,7 +948,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(int[] data) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
 
@@ -961,22 +961,22 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(long offset, int length) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     @Override
     public DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     @Override
     public DataBuffer createHalf(float[] data, MemoryWorkspace workspace) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     @Override
     public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
-        throw new NotImplementedException ("FP16 isn't supported for CPU yet");
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 
     @Override

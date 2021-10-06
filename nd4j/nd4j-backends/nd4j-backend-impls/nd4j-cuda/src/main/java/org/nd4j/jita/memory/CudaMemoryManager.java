@@ -297,6 +297,6 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     @Override
     public void releaseCurrentContext() {
-        throw new NotImplementedException ("Not implemented yet");
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }
