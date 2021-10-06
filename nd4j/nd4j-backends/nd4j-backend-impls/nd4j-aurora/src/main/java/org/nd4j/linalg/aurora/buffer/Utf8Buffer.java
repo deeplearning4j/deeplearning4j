@@ -205,17 +205,17 @@ public class Utf8Buffer extends BaseAuroraDataBuffer {
 
     @Override
     public DataBuffer create(double[] data) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     public DataBuffer create(float[] data) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     public DataBuffer create(int[] data) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     private static long stringBufferRequiredLength(@NonNull Collection<String> strings) {
@@ -229,7 +229,7 @@ public class Utf8Buffer extends BaseAuroraDataBuffer {
     }
 
     public void put(long index, Pointer pointer) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
         //references.add(pointer);
         //((LongIndexer) indexer).put(index, pointer.address());
     }

@@ -150,9 +150,9 @@ public class CudaUInt64DataBuffer extends BaseCudaDataBuffer {
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
             */
-            throw new UnsupportedOperationException();
+            throw new NotImplementedException ();
         } else
-            throw new UnsupportedOperationException("Only contiguous supported");
+            throw new NotImplementedException ("Only contiguous supported");
     }
 
     @Override

@@ -45,7 +45,7 @@ public class OpUtil {
             default: throw new IllegalArgumentException("No op found");
         }
         */
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
 }

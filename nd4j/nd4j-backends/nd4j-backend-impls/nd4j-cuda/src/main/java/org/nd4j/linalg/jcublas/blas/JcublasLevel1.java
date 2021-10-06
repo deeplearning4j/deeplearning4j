@@ -61,12 +61,12 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdsdot(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected double dsdot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
 
@@ -126,12 +126,12 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float hdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
     protected float sdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -164,7 +164,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -217,12 +217,12 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float hasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
     protected float sasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -264,7 +264,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -294,7 +294,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -325,7 +325,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -377,7 +377,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(long N, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -407,13 +407,13 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void haxpy(long N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
     protected void saxpy(long N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -463,7 +463,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(long N, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
@@ -481,54 +481,54 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void daxpy(long N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY) {
-        throw new UnsupportedOperationException("not yet implemented");
+        throw new NotImplementedException ("not yet implemented");
     }
 
     @Override
     protected void srotg(float a, float b, float c, float s) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void srotmg(float d1, float d2, float b1, float b2, INDArray P) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void srot(long N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void srotm(long N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void drotg(double a, double b, double c, double s) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void drotmg(double d1, double d2, double b1, double b2, INDArray P) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void drot(long N, INDArray X, int incX, INDArray Y, int incY, double c, double s) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void drotm(long N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 

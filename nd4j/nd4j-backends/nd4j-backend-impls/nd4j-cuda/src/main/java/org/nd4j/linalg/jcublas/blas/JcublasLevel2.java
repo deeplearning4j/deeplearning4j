@@ -81,46 +81,46 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void sgbmv(char order, char TransA, int M, int N, int KL, int KU, float alpha, INDArray A, int lda,
                     INDArray X, int incX, float beta, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected void strmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void stbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void stpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void strsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void stbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void stpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
@@ -153,152 +153,152 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void dgbmv(char order, char TransA, int M, int N, int KL, int KU, double alpha, INDArray A, int lda,
                     INDArray X, int incX, double beta, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dtrmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dtbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dtpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dtrsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected void dtbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected void dtpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected void ssymv(char order, char Uplo, int N, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void ssbmv(char order, char Uplo, int N, int K, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void sspmv(char order, char Uplo, int N, float alpha, INDArray Ap, INDArray X, int incX, float beta,
                     INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void sger(char order, int M, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A,
                     int lda) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void ssyr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray A, int lda) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void sspr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Ap) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void ssyr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A, int lda) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void sspr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dsymv(char order, char Uplo, int N, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dsbmv(char order, char Uplo, int N, int K, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dspmv(char order, char Uplo, int N, double alpha, INDArray Ap, INDArray X, int incX, double beta,
                     INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dger(char order, int M, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A,
                     int lda) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dsyr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray A, int lda) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dspr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Ap) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dsyr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A, int lda) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void dspr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 }

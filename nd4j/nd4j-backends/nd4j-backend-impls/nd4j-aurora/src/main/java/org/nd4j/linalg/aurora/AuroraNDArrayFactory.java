@@ -653,7 +653,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
-            throw new UnsupportedOperationException("2D input is expected");
+            throw new NotImplementedException ("2D input is expected");
 
         return pullRows(source, Nd4j.createUninitialized(source.dataType(), shape, order), sourceDimension, indexes);
     }
@@ -678,7 +678,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
-            throw new UnsupportedOperationException("2D input is expected");
+            throw new NotImplementedException ("2D input is expected");
 
         INDArray ret = destination;
         if(ret == null){
@@ -976,7 +976,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst) {
         if (source.isView())
-            throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
+            throw new NotImplementedException ("Impossible to compress View. Consider using dup() before. ");
 
         DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
         if (nativeOps.lastErrorCode() != 0)
@@ -1004,7 +1004,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
         else if (typeDst.ordinal() == 7)
             elementSize = 8;
         else
-            throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());
+            throw new NotImplementedException ("Unknown target TypeEx: " + typeDst.name());
 
         DataBuffer buffer = null;
 
@@ -1090,7 +1090,7 @@ public class AuroraNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray sortCooIndices(INDArray x) {
-        throw new UnsupportedOperationException("Not an COO ndarray");
+        throw new NotImplementedException ("Not an COO ndarray");
     }
 
 

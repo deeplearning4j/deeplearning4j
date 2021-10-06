@@ -205,14 +205,14 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void ssyr2k(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, INDArray B,
                     int ldb, float beta, INDArray C, int ldc) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
     @Override
     protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override

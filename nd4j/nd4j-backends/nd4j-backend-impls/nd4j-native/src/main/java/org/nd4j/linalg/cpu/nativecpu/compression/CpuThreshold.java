@@ -145,6 +145,6 @@ public class CpuThreshold extends AbstractCompressor {
 
     @Override
     protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length, int elementSize) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 }

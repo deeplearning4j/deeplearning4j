@@ -541,7 +541,7 @@ public abstract class BaseAuroraDataBuffer extends BaseDataBuffer implements Dea
 
     @Override
     protected ByteBuffer wrappedBuffer() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new NotImplementedException ("Not supported yet.");
     }
 
     @Override

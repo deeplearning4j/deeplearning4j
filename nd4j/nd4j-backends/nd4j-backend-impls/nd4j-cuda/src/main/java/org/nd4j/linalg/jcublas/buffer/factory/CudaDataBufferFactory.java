@@ -156,7 +156,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case HALF:
                 return createHalf(buffer.length(), init);
             default:
-                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+                throw new NotImplementedException ("Unknown dataType: " + buffer.dataType());
         }
     }
 
@@ -181,7 +181,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case HALF:
                 return createHalf(buffer.length(), init, workspace);
             default:
-                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+                throw new NotImplementedException ("Unknown dataType: " + buffer.dataType());
         }
     }
 
@@ -387,7 +387,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case UTF8:
                 return new CudaUtf8Buffer(length, true);
             default:
-                throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
+                throw new NotImplementedException ("Unknown data type: [" + dataType + "]");
         }
     }
 
@@ -424,7 +424,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case BOOL:
                 return new CudaBoolDataBuffer(length, initialize, workspace);
             default:
-                throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
+                throw new NotImplementedException ("Unknown data type: [" + dataType + "]");
         }
     }
 

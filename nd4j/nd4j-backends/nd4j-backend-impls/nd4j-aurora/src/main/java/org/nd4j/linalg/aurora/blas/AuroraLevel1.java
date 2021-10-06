@@ -54,12 +54,12 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected float hdot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected float hdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -77,7 +77,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -95,7 +95,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -111,7 +111,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected float sasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -126,7 +126,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected double dasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -136,7 +136,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -146,7 +146,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -161,12 +161,12 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected void haxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -177,12 +177,12 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     public void haxpy(long n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     public void saxpy(long n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
 
@@ -200,7 +200,7 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
@@ -212,12 +212,12 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     public void daxpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected void srotg(float a, float b, float c, float s) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
 
     }
 
@@ -276,11 +276,11 @@ public class AuroraLevel1 extends BaseLevel1 {
 
     @Override
     protected float hasum(long N, INDArray X, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
     @Override
     protected float hasum(long N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 }

@@ -207,7 +207,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape,
                     boolean initialize) {
 
-            throw new UnsupportedOperationException();
+            throw new NotImplementedException ();
     }
 
     /**
@@ -251,7 +251,7 @@ public class CudaZeroHandler implements MemoryHandler {
          */
         //   log.info("copyback() called on shape: " + point.getShape());
         //  relocate(point.getAllocationStatus(), AllocationStatus.HOST, point, shape);
-        throw new UnsupportedOperationException("Deprecated call");
+        throw new NotImplementedException ("Deprecated call");
     }
 
     /**
@@ -263,7 +263,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     @Deprecated
     public void copyforward(AllocationPoint point, AllocationShape shape) {
-        throw new UnsupportedOperationException("Deprecated call");
+        throw new NotImplementedException ("Deprecated call");
     }
 
     /**
@@ -540,7 +540,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
                 //relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
-                throw new UnsupportedOperationException("Pew-pew");
+                throw new NotImplementedException ("Pew-pew");
             }
         }
 
@@ -626,7 +626,7 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
 
         if (1 > 0)
-            throw new UnsupportedOperationException("Pew-pew");
+            throw new NotImplementedException ("Pew-pew");
 
         // we don't relocate non-DEVICE buffers (i.e HOST or CONSTANT)
         if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
@@ -763,7 +763,7 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(buffer);
 
         if (1 > 0)
-            throw new UnsupportedOperationException("Pew-pew");
+            throw new NotImplementedException ("Pew-pew");
 
         if (dstPoint.getAllocationStatus() != AllocationStatus.HOST)
             return false;
@@ -944,7 +944,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
         if (1 > 0)
-            throw new UnsupportedOperationException("Pew-pew");
+            throw new NotImplementedException ("Pew-pew");
 
         forget(point, AllocationStatus.HOST);
 

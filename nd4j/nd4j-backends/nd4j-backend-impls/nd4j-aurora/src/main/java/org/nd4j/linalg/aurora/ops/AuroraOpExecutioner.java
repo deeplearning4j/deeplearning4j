@@ -496,7 +496,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                                     zb, (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), null);
                             break;
                         default:
-                            throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                            throw new NotImplementedException ("Unsupported op used in reduce: "+ op.getOpType());
                     }
                 } else {
                     switch (op.getOpType()) {
@@ -532,7 +532,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                             break;
                         default:
-                            throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                            throw new NotImplementedException ("Unsupported op used in reduce: "+ op.getOpType());
                     }
                 }
             }
@@ -615,7 +615,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
             default:
-                throw new UnsupportedOperationException();
+                throw new NotImplementedException ();
         }
 
         if (loop.lastErrorCode() != 0)
@@ -874,7 +874,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                         break;
                         }
                     default:
-                        throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
+                        throw new NotImplementedException ("Unknown transform type: [" + op.getOpType() + "]");
                 }
 
             }
@@ -955,7 +955,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                         ((BaseAuroraDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                 break;
             default:
-                throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
+                throw new NotImplementedException ("Unknown operation type: [" + op.getOpType() + "]");
         }
 
         if (loop.lastErrorCode() != 0)
@@ -1869,7 +1869,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public String getString(DataBuffer buffer, long index) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new NotImplementedException ("Not supported yet.");
 /*
         Preconditions.checkArgument(buffer instanceof Utf8Buffer, "Expected Utf8Buffer");
 
@@ -2007,7 +2007,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArrayStatistics inspectArray(INDArray array) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new NotImplementedException ("Not supported yet.");
 /*
         val debugInfo = new Nd4jCpu.DebugInfo();
 

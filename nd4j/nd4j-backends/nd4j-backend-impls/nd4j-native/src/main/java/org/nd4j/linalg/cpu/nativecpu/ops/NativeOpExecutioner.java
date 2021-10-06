@@ -491,7 +491,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 zb, (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), null);
                         break;
                     default:
-                        throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                        throw new NotImplementedException ("Unsupported op used in reduce: "+ op.getOpType());
                 }
             } else {
                 switch (op.getOpType()) {
@@ -527,7 +527,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                         break;
                     default:
-                        throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                        throw new NotImplementedException ("Unsupported op used in reduce: "+ op.getOpType());
                 }
             }
         }
@@ -610,7 +610,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
             default:
-                throw new UnsupportedOperationException();
+                throw new NotImplementedException ();
         }
 
         if (loop.lastErrorCode() != 0)
@@ -866,7 +866,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     break;
                 }
                 default:
-                    throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
+                    throw new NotImplementedException ("Unknown transform type: [" + op.getOpType() + "]");
             }
 
         }
@@ -947,7 +947,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                 break;
             default:
-                throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
+                throw new NotImplementedException ("Unknown operation type: [" + op.getOpType() + "]");
         }
 
         if (loop.lastErrorCode() != 0)

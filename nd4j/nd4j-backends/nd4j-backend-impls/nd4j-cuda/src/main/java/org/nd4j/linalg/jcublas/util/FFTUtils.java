@@ -37,7 +37,7 @@ public class FFTUtils {
         else
             return cufftType.CUFFT_Z2Z;
             */
-        throw new UnsupportedOperationException();
+        throw new NotImplementedException ();
     }
 
 

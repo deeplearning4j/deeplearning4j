@@ -519,7 +519,7 @@ public class NDArray extends BaseNDArray {
     @Override
     public String getString(long index) {
         if (!isS())
-            throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
+            throw new NotImplementedException ("This method is usable only on String dataType, but got [" + this.dataType() + "]");
 
         return ((Utf8Buffer) data).getString(index);
     }
