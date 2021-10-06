@@ -20,9 +20,17 @@
 
 package org.nd4j.linalg.api.ops.compat;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class CompatSparseToDense extends DynamicCustomOp {
 
@@ -37,10 +45,30 @@ public class CompatSparseToDense extends DynamicCustomOp {
         inputArguments.add(values);
     }
 
-    public CompatSparseToDense(INDArray indices, INDArray shape, INDArray values, INDArray defaultVaule) {
-        this(indices, shape, values);
-        Preconditions.checkArgument(defaultVaule.dataType() == values.dataType(), "Values array must have the same data type as defaultValue array");
-        inputArguments.add(defaultVaule);
+
+
+    public CompatSparseToDense(SameDiff sd, SDVariable indices, SDVariable shape, SDVariable values) {
+        super(sd,new SDVariable[]{indices,shape,values});
+    }
+
+    public CompatSparseToDense(SameDiff sd, SDVariable indices, SDVariable shape, SDVariable values, SDVariable defaultValue) {
+        super(sd,new SDVariable[]{indices,shape,values,defaultValue});
+    }
+
+    public CompatSparseToDense(INDArray indices, INDArray shape, INDArray values, INDArray defaultValue) {
+        super(new INDArray[]{indices,shape,values,defaultValue},null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        return Arrays.asList(LongShapeDescriptor.fromShape(oc.getInputArrays().get(1).toLongVector(),oc.getInputArrays().get(0).dataType()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        if(!dArguments.isEmpty())
+            return Arrays.asList(dataTypes.get(0));
+        return Arrays.asList(dataTypes.get(0));
     }
 
     @Override

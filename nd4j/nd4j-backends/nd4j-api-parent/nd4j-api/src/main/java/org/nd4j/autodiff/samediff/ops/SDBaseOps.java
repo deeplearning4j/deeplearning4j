@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
@@ -437,6 +441,63 @@ public class SDBaseOps {
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Concat(sd,inputs, dimension).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param shape Input INDArray  (NUMERIC type)
+   * @param dataType Data type of array
+   * @param order Order of array 
+   * @param initialize Whether to initialize the array or not 
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable create(SDVariable shape, DataType dataType, String order, boolean initialize) {
+    SDValidation.validateNumerical("create", "shape", shape);
+    return new org.nd4j.linalg.api.ops.impl.shape.Create(sd,shape, dataType, order, initialize).outputVariable();
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param shape Input INDArray  (NUMERIC type)
+   * @param dataType Data type of array
+   * @param order Order of array 
+   * @param initialize Whether to initialize the array or not 
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable create(String name, SDVariable shape, DataType dataType, String order,
+      boolean initialize) {
+    SDValidation.validateNumerical("create", "shape", shape);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Create(sd,shape, dataType, order, initialize).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param shape Input INDArray  (NUMERIC type)
+   * @param dataType Data type of array
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable create(SDVariable shape, DataType dataType) {
+    SDValidation.validateNumerical("create", "shape", shape);
+    return new org.nd4j.linalg.api.ops.impl.shape.Create(sd,shape, dataType, "c", false).outputVariable();
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param shape Input INDArray  (NUMERIC type)
+   * @param dataType Data type of array
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable create(String name, SDVariable shape, DataType dataType) {
+    SDValidation.validateNumerical("create", "shape", shape);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Create(sd,shape, dataType, "c", false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -3800,6 +3861,77 @@ public class SDBaseOps {
   }
 
   /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(SDVariable indices, SDVariable shape, SDVariable values) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    return new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values).outputVariable();
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(String name, SDVariable indices, SDVariable shape,
+      SDVariable values) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    SDVariable out =  new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @param defaultValue Default value (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(SDVariable indices, SDVariable shape, SDVariable values,
+      SDVariable defaultValue) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    SDValidation.validateNumerical("sparseToDense", "defaultValue", defaultValue);
+    return new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values, defaultValue).outputVariable();
+  }
+
+  /**
+   * Create a dense matrix equivalent of a sparse matrix based on the given input.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param indices The indices of the sparse matrix (NUMERIC type)
+   * @param shape The output shape (NUMERIC type)
+   * @param values The values for the array (NUMERIC type)
+   * @param defaultValue Default value (NUMERIC type)
+   * @return output Populated dense INDArray with given values and indices (NUMERIC type)
+   */
+  public SDVariable sparseToDense(String name, SDVariable indices, SDVariable shape,
+      SDVariable values, SDVariable defaultValue) {
+    SDValidation.validateNumerical("sparseToDense", "indices", indices);
+    SDValidation.validateNumerical("sparseToDense", "shape", shape);
+    SDValidation.validateNumerical("sparseToDense", "values", values);
+    SDValidation.validateNumerical("sparseToDense", "defaultValue", defaultValue);
+    SDVariable out =  new org.nd4j.linalg.api.ops.compat.CompatSparseToDense(sd,indices, shape, values, defaultValue).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Split a value in to a list of ndarrays.<br>
    *
    * @param input Input to split (NUMERIC type)
@@ -3978,7 +4110,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4001,7 +4133,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4026,7 +4158,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4047,7 +4179,7 @@ public class SDBaseOps {
   }
 
   /**
-   * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+   * Standard deviation array reduction operation, optionally along specified dimensions<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
    * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
@@ -4185,6 +4317,122 @@ public class SDBaseOps {
   }
 
   /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @param beginMask Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored, and a value of 0 is used instead for the beginning index for that dimension
+   * @param endMask Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored, and a value of size(i)-1 is used instead for the end index for that dimension
+   * @param ellipsisMask Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position
+   * @param newAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point
+   * @param shrinkAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
+      int shrinkAxisMask) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    return new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask).outputVariable();
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @param beginMask Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored, and a value of 0 is used instead for the beginning index for that dimension
+   * @param endMask Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored, and a value of size(i)-1 is used instead for the end index for that dimension
+   * @param ellipsisMask Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position
+   * @param newAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point
+   * @param shrinkAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(String name, SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
+      int shrinkAxisMask) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    return new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, 0, 0, 0, 0, 0).outputVariable();
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * [g, h, i]<br>
+   * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:<br>
+   * [b, c]<br>
+   * [h, i]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param in Variable to get subset of (NUMERIC type)
+   * @param begin The beginning indices for the slice (NUMERIC type)
+   * @param end The ending indicesof the slice (NUMERIC type)
+   * @param strides The strides for each dimension (NUMERIC type)
+   * @return output A subset of the input array (NUMERIC type)
+   */
+  public SDVariable stridedSlice(String name, SDVariable in, SDVariable begin, SDVariable end,
+      SDVariable strides) {
+    SDValidation.validateNumerical("stridedSlice", "in", in);
+    SDValidation.validateNumerical("stridedSlice", "begin", begin);
+    SDValidation.validateNumerical("stridedSlice", "end", end);
+    SDValidation.validateNumerical("stridedSlice", "strides", strides);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.StridedSlice(sd,in, begin, end, strides, 0, 0, 0, 0, 0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Sum array reduction operation, optionally along specified dimensions.<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
@@ -4272,7 +4520,7 @@ public class SDBaseOps {
 
   /**
    * Switch operation<br>
-   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
    *
    * @param x Input variable (NDARRAY type)
    * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
@@ -4284,7 +4532,7 @@ public class SDBaseOps {
 
   /**
    * Switch operation<br>
-   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   * Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input variable (NDARRAY type)
@@ -4822,6 +5070,178 @@ public class SDBaseOps {
     SDValidation.validateNumerical("variance", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.summarystats.Variance(sd,x, biasCorrected, false, dimensions).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateNumerical("where", "y", y);
+    SDValidation.validateBool("where", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(String name, SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateNumerical("where", "y", y);
+    SDValidation.validateBool("where", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x The first array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(SDVariable x, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateBool("where", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, condition).outputVariable();
+  }
+
+  /**
+   * Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The first array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(String name, SDVariable x, SDVariable condition) {
+    SDValidation.validateNumerical("where", "x", x);
+    SDValidation.validateBool("where", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Returns elements that are true from the given condition array<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(SDVariable condition) {
+    SDValidation.validateBool("where", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,condition).outputVariable();
+  }
+
+  /**
+   * Returns elements that are true from the given condition array<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable where(String name, SDVariable condition) {
+    SDValidation.validateBool("where", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,condition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * As implemented in numpy, Return elements chosen from x or y depending on condition.<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable whereNumpy(SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("whereNumpy", "x", x);
+    SDValidation.validateNumerical("whereNumpy", "y", y);
+    SDValidation.validateNumerical("whereNumpy", "condition", condition);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(sd,x, y, condition).outputVariable();
+  }
+
+  /**
+   * As implemented in numpy, Return elements chosen from x or y depending on condition.<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The first array (NUMERIC type)
+   * @param y The second array (NUMERIC type)
+   * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
+   * @return output Number of elements that the condition is satisfied for (NUMERIC type)
+   */
+  public SDVariable whereNumpy(String name, SDVariable x, SDVariable y, SDVariable condition) {
+    SDValidation.validateNumerical("whereNumpy", "x", x);
+    SDValidation.validateNumerical("whereNumpy", "y", y);
+    SDValidation.validateNumerical("whereNumpy", "condition", condition);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(sd,x, y, condition).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

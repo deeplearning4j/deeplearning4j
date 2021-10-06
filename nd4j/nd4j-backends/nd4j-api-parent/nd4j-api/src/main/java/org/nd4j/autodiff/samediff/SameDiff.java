@@ -2593,6 +2593,9 @@ public class SameDiff extends SDBaseOps {
         return one(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
+
+
+
     /**
      * See {@link #one(String, DataType, long...)}.
      * Creates a constant - i.e., CONSTANT type SDVariable.
@@ -2987,9 +2990,6 @@ public class SameDiff extends SDBaseOps {
     public SDVariable var(String name, @NonNull INDArray arr) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
-        Preconditions.checkState(arr.dataType().isFPType(), "Cannot create variable with non-floating point type:" +
-                " provided array has datatype %s. Variables must be floating point type to be trainable by backpropagation.\n" +
-                "For non floating point types, these should be created as placeholders or constants instead.", arr.dataType());
         Preconditions.checkArgument(!arr.isEmpty(), "Empty arrays cannot be used when creating variables. Array shape: %ndShape", arr);
 
         if (name == null || name.length() < 1)

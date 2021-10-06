@@ -52,6 +52,30 @@ public class Where extends DynamicCustomOp {
         super(null, sameDiff, args, inPlace);
     }
 
+    public Where(SameDiff sd, SDVariable x, SDVariable y, SDVariable condition) {
+        this(sd,new SDVariable[]{condition,x,y});
+    }
+
+    public Where(SameDiff sd, SDVariable condition) {
+        this(sd,new SDVariable[]{condition});
+    }
+
+    public Where(SameDiff sd, SDVariable x, SDVariable condition) {
+        this(sd,new SDVariable[]{condition,x});
+    }
+
+    public Where(INDArray x, INDArray y, INDArray condition) {
+        this(new INDArray[]{condition,x,y},null);
+    }
+
+    public Where(INDArray x, INDArray condition) {
+        this(new INDArray[]{condition,x},null);
+    }
+
+    public Where(INDArray condition) {
+        this(new INDArray[]{condition},null);
+    }
+
     @Override
     public String opName() {
         return "Where";

@@ -41,6 +41,7 @@ import static org.nd4j.onnxruntime.util.ONNXUtils.getTensor;
 
 @Slf4j
 public class OnnxRuntimeRunner implements Closeable  {
+
     private Session session;
     private RunOptions runOptions;
     private MemoryInfo memoryInfo;

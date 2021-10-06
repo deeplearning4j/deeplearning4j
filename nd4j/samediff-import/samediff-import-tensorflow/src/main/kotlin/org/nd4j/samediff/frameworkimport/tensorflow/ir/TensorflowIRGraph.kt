@@ -34,6 +34,7 @@ import org.nd4j.samediff.frameworkimport.tensorflow.NodeDef
 import org.nd4j.samediff.frameworkimport.tensorflow.context.TensorflowMappingContext
 import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
 import org.nd4j.samediff.frameworkimport.tensorflow.nodeByName
+import org.nd4j.tensorflow.conversion.TensorflowConversion
 import org.tensorflow.framework.*
 
 class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
@@ -254,6 +255,10 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
 
     override fun addGraphOutputsAsProcessingNodes(): Boolean {
         return false
+    }
+
+    override fun convertToNDArray(tensorTypeInput: TensorProto): INDArray {
+        return TensorflowIRTensor(tensorTypeInput).toNd4jNDArray()
     }
 
 

@@ -31,7 +31,8 @@ interface PreImportHook {
         sd: SameDiff,
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
-        outputNames: List<String>
+        outputNames: List<String>,
+        isFinalOutput: Boolean
     ): HookResult
 
 }

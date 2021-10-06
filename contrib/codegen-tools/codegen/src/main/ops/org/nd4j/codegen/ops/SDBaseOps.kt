@@ -24,6 +24,7 @@
 package org.nd4j.codegen.ops
 
 import org.nd4j.codegen.api.AtLeast
+import org.nd4j.codegen.api.DataType
 import org.nd4j.codegen.api.Language
 import org.nd4j.codegen.api.doc.DocScope
 import org.nd4j.codegen.dsl.*
@@ -480,6 +481,38 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+    Op("sparseToDense") {
+        javaPackage = "org.nd4j.linalg.api.ops.compat"
+        javaOpClass = "CompatSparseToDense"
+        Input(NUMERIC, "indices") { description = "The indices of the sparse matrix" }
+        Input(NUMERIC, "shape") { description = "The output shape" }
+        Input(NUMERIC, "values") { description = "The values for the array" }
+        Output(NUMERIC, "output"){ description = "Populated dense INDArray with given values and indices" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Create a dense matrix equivalent of a sparse matrix based on the given input.
+            """.trimIndent()
+        }
+    }
+
+    Op("sparseToDense") {
+        javaPackage = "org.nd4j.linalg.api.ops.compat"
+        javaOpClass = "CompatSparseToDense"
+        Input(NUMERIC, "indices") { description = "The indices of the sparse matrix" }
+        Input(NUMERIC, "shape") { description = "The output shape" }
+        Input(NUMERIC, "values") { description = "The values for the array" }
+        Input(NUMERIC,"defaultValue") { description = "Default value" }
+        Output(NUMERIC, "output"){ description = "Populated dense INDArray with given values and indices" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Create a dense matrix equivalent of a sparse matrix based on the given input.
+            """.trimIndent()
+        }
+    }
+
+
     Op("lt") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarLessThan"
@@ -583,6 +616,63 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Returns a count of the number of elements that satisfy the condition (for each slice along the specified dimensions)
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("whereNumpy") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "WhereNumpy"
+        Input(NUMERIC, "x") { description = "The first array" }
+        Input(NUMERIC, "y") { description = "The second array" }
+        Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                As implemented in numpy, Return elements chosen from x or y depending on condition.
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("where") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "Where"
+        Input(NUMERIC, "x") { description = "The first array" }
+        Input(NUMERIC, "y") { description = "The second array" }
+        Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("where") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "Where"
+        Input(NUMERIC, "x") { description = "The first array" }
+        Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Similar to numpy where, takes elements from x or y depending on whether the condition at a given element is true or false
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("where") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
+        javaOpClass = "Where"
+        Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
+        Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Returns elements that are true from the given condition array
             """.trimIndent()
         }
         useMixin(keepDimsDoc)
@@ -818,6 +908,25 @@ fun SDBaseOps() =  Namespace("BaseOps"){
             """.trimIndent()
         }
     }
+
+
+    Op("create") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "Create"
+        Input(NUMERIC, "shape") { description = "Input INDArray " }
+        Arg(DATA_TYPE,"dataType") {description = "Data type of array"}
+        //note when generating strings you need to add quotes as well or it's generated incorrectly
+        Arg(STRING,"order") {description = "Order of array "; defaultValue="\"c\""}
+        Arg(BOOL,"initialize") {description = "Whether to initialize the array or not "; defaultValue=false}
+        Output(NUMERIC, "output"){ description = "A new INDArray  with the same (dynamic) shape as the input" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Return a newly created variable,  with the specified shape and data type.
+            """.trimIndent()
+        }
+    }
+
+
 
     Op("onesLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
@@ -1388,7 +1497,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
-                Stardard deviation array reduction operation, optionally along specified dimensions
+                Standard deviation array reduction operation, optionally along specified dimensions
             """.trimIndent()
         }
         useMixin(keepDimsDoc)
@@ -1420,6 +1529,36 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+    Op("stridedSlice") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        Input(NUMERIC, "in") { description = "Variable to get subset of" }
+        Input(NUMERIC, "begin") { description = "The beginning indices for the slice" }
+        Input(NUMERIC, "end") { description = "The ending indicesof the slice" }
+        Input(NUMERIC, "strides") { description = "The strides for each dimension" }
+        Arg(INT, "beginMask") { description = "Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored, and a value of 0 is used instead for the beginning index for that dimension"; defaultValue=0 }
+        Arg(INT, "endMask") { description = "Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored, and a value of size(i)-1 is used instead for the end index for that dimension"; defaultValue=0 }
+        Arg(INT, "ellipsisMask") { description = "Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other dimensions are inserted as required at the specified position"; defaultValue=0 }
+        Arg(INT, "newAxisMask") { description = "Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is inserted at this point"; defaultValue=0 }
+        Arg(INT, "shrinkAxisMask") { description = "Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions"; defaultValue=0 }
+        Output(NUMERIC, "output"){ description = "A subset of the input array" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Get a subset of the specified input, by specifying the first element, last element, and the strides.
+                For example, if input is:
+                [a, b, c]
+                [d, e, f]
+                [g, h, i]
+                then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1], all masks = 0) will return:
+                [b, c]
+                [h, i]
+            """.trimIndent()
+        }
+    }
+
+
+
+
     Op("sum") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same"
         legacy = true
@@ -1446,7 +1585,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Switch operation
-                Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output
+                Predicate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output
             """.trimIndent()
         }
     }
@@ -1604,6 +1743,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
         useMixin(keepDimsDoc)
     }
+
+
+
 
     Op("zerosLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"

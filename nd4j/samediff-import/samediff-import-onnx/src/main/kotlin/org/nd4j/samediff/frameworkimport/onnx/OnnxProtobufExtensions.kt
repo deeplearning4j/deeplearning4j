@@ -37,6 +37,19 @@ fun Onnx.AttributeProto.Builder.TensorValue(inputValue: Onnx.TensorProto) {
     this.addTensors(inputValue)
 }
 
+
+fun convertToOnnxTensors(inputs: Map<String,INDArray>): MutableMap<String,Onnx.TensorProto> {
+    val ret = HashMap<String,Onnx.TensorProto>()
+    inputs.forEach { (name, array) ->
+        ret[name] = convertToOnnxTensor(array,name)
+    }
+
+    return ret
+}
+
+fun byteString(input: String): ByteString {
+    return ByteString.copyFrom(input.toByteArray(Charset.defaultCharset()))
+}
 fun Onnx.AttributeProto.Builder.StringValue(inputValue: String) {
     this.addStrings(ByteString.copyFrom(inputValue.toByteArray(Charset.defaultCharset())))
 }

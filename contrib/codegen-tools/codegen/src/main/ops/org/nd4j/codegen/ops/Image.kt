@@ -241,7 +241,7 @@ fun SDImage() =  Namespace("Image"){
         Arg(BOOL, "preserveAspectRatio") { description = "Whether to preserve the aspect ratio." +
                 " If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio" +
                 " of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False."; defaultValue=false; }
-        Arg(BOOL, "antialis") { description = "Whether to use an anti-aliasing filter when downsampling an image"; defaultValue=false;  }
+        Arg(BOOL, "antialias") { description = "Whether to use an anti-aliasing filter when downsampling an image"; defaultValue=false;  }
         Arg(ENUM, "ImageResizeMethod") { possibleValues = listOf( "ResizeBilinear", "ResizeBicubic", "ResizeNearest", "ResizeGaussian",
                 "ResizeLanczos5", "ResizeMitchelcubic", "ResizeArea"); description = "ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.\n" +
                 "ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.\n" +
@@ -259,4 +259,36 @@ fun SDImage() =  Namespace("Image"){
             """.trimIndent()
         }
     }
+
+    Op("resizeBiLinear") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.image"
+        javaOpClass = "ResizeBilinear"
+        Input(NUMERIC,"input") { description = "4D image"}
+        Arg(INT ,"height") { description = "target height for resizing to "}
+        Arg(INT ,"width") { description = "target width for resizing to"}
+        Arg(BOOL ,"alignCorners") { description = "whether to align corners during resizing. Images are aligned to preserve corners."}
+        Arg(BOOL,"halfPixelCenters") { description = "When resizing, assumes pixels are centered at 0.5."}
+        Output(NUMERIC, "output"){ description = "Output image" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Resize images to size using the specified method.
+            """.trimIndent()
+        }
+    }
+
+    Op("resizeBiCubic") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.image"
+        javaOpClass = "ResizeBicubic"
+        Input(NUMERIC,"input") { description = "4D image"}
+        Input(INT ,"size") { description = "the target size to resize to "}
+        Arg(BOOL ,"alignCorners") { description = "whether to align corners during resizing. Images are aligned to preserve corners."}
+        Arg(BOOL,"alignPixelCenters") { description = "When resizing, assumes pixels are centered at 0.5."}
+        Output(NUMERIC, "output"){ description = "Output image" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Resize images to size using the specified method.
+            """.trimIndent()
+        }
+    }
+
 }

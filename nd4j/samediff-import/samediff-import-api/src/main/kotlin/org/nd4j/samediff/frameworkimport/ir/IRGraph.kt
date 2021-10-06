@@ -63,6 +63,8 @@ interface IRGraph<
 
     fun indexOfNode(input: String): Int
 
+    fun convertToNDArray(tensorTypeInput: TENSOR_TYPE): INDArray
+
     fun nodesWithInput(name: String): List<IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>>
 
     fun nodeList(): List<IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>>

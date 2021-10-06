@@ -227,6 +227,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val importInfo = irGraph.importInfoForEachNode(dynamicVariables = dynamicVariables)
         //First, add any constants, placeholders, and zero-input ops
         val sd = SameDiff.create()
+        if(dynamicVariables != null) {
+            //declare as variables
+            dynamicVariables.forEach { (name, ndarray) ->
+                val converted = irGraph.convertToNDArray(ndarray)
+                if(!sd.hasVariable(name))
+                    sd.`var`(name,converted)
+            }
+        }
         val defaultRunner =
             DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
 
@@ -535,7 +543,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 sd,
                                 attributes,
                                 importInfo[name]!!.second,
-                                nd.outputs()
+                                nd.outputs(),
+                                availableToAdd.isEmpty()
                             ).proceedWithInit
                         }
 

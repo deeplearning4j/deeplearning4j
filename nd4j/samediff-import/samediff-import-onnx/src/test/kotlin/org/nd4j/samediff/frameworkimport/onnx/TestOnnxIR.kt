@@ -23,8 +23,8 @@ package org.nd4j.samediff.frameworkimport.onnx
 
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.nd4j.common.util.ArrayUtil
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -109,6 +109,7 @@ class TestOnnxIR {
         val graphToRun = GraphProto {
             Input(createValueInfoFromTensor(inputTensor,"x",true))
 
+
             //Initializer(convertedTensor)
             Node(NodeProto {
                 Input("x")
@@ -129,6 +130,200 @@ class TestOnnxIR {
         val result = importedGraph.output(inputs,"y")
         assertEquals(assertion,result)
     }
+
+
+    @Test
+    fun testExpand() {
+        val declarations = OnnxOpDeclarations
+        val onnxOpRegistry = registry()
+        val shape = longArrayOf(3,1)
+        val newShape = longArrayOf(2,1,6)
+        val inputNewShape = Nd4j.create(Nd4j.createBuffer(newShape))
+        val inputs = mapOf("data" to Nd4j.arange(1.0, ArrayUtil.prod(*shape).toDouble() + 1.0).reshape(*shape),
+            "newShape" to inputNewShape)
+        val inputNames = listOf("data","newShape")
+        val outputs = listOf("expanded")
+        val graph = createSingleNodeGraph(inputs,"Expand", emptyMap(),outputs,inputNames)
+        runAssertion(graph,inputs,outputs)
+
+    }
+
+    @Test
+    fun testSlice() {
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
+
+        val x = Nd4j.linspace(1,1000,1000).reshape(20,10,5)
+        val starts = Nd4j.zeros(2).castTo(DataType.INT64)
+        val ends = Nd4j.create(Nd4j.createBuffer(longArrayOf(3,10))).reshape(2)
+        val axes = Nd4j.create(Nd4j.createBuffer(longArrayOf(0,1))).reshape(2)
+        val steps = Nd4j.ones(2).castTo(DataType.INT64).reshape(2)
+
+        val input = mapOf("x" to x,"starts" to starts,"ends" to ends,"axes" to axes,"steps" to steps)
+
+        val outputs = listOf("y")
+        val attributes = emptyMap<String,Any>()
+        val inputs = listOf("x","starts","ends","axes","steps")
+        val graph = createSingleNodeGraph(input,"Slice",attributes,outputs,inputs)
+        assertEquals(input.size,graph.inputCount)
+        assertEquals(1,graph.outputCount)
+        runAssertion(graph,input,outputs)
+    }
+
+    fun runAssertion(graph: Onnx.GraphProto,input: Map<String,INDArray>,outputs: List<String>) {
+        val declarations = OnnxOpDeclarations
+        val onnxOpRegistry = registry()
+
+        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+        val assertion = onnxGraphRunner.run(input)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val result = importedGraph.output(input,outputs)
+        assertEquals(assertion,result)
+    }
+
+
+
+    @Test
+    fun testUnsqueeze() {
+        val declarations = OnnxOpDeclarations
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        val onnxOpRegistry = registry()
+        val inputData = Nd4j.linspace(1,15,15).reshape(1,3,1,5)
+        val axes = Nd4j.create(floatArrayOf(-2.0f)).castTo(DataType.INT64)
+        val input = mapOf("x" to inputData,"axes" to axes)
+
+        val outputs = listOf("y")
+        val attributes = emptyMap<String,Any>()
+        val inputs = listOf("x","axes")
+        val graph = createSingleNodeGraph(input,"Unsqueeze",attributes,outputs,inputs)
+        assertEquals(input.size,graph.inputCount)
+        assertEquals(1,graph.outputCount)
+        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+        val assertion = onnxGraphRunner.run(input)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val result = importedGraph.output(input,outputs)
+        //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
+        assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
+    }
+
+
+
+    @Test
+    fun testResize() {
+        val declarations = OnnxOpDeclarations
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        val onnxOpRegistry = registry()
+        val inputData = Nd4j.linspace(1,16,16).reshape(1,1,4,4)
+        val scales = Nd4j.create(floatArrayOf(1.0f,1.0f,0.8f,0.8f))
+        val input = mapOf("x" to inputData,"scales" to scales,"roi-empty" to Nd4j.zeros(1,1,1,1))
+
+        val outputs = listOf("y")
+        val attributes = mapOf("mode" to "cubic")
+        val inputs = listOf("x","roi-empty","scales")
+        val graph = createSingleNodeGraph(input,"Resize",attributes,outputs,inputs)
+        assertEquals(input.size,graph.inputCount)
+        assertEquals(1,graph.outputCount)
+        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+        val assertion = onnxGraphRunner.run(input)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val result = importedGraph.output(input,outputs)
+        //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
+        assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
+
+    }
+
+    fun createSingleNodeGraph(inputs: Map<String,INDArray>,op: String,attributes: Map<String,Any>,outputs: List<String>,inputNames: List<String>): Onnx.GraphProto {
+
+        val op = NodeProto {
+            inputNames.forEach { t ->
+                Input(t)
+            }
+
+            name = op.toLowerCase()
+
+            outputs.forEach {
+                Output(it)
+            }
+            attributes.forEach { (t, u) ->
+                val attr = AttributeProto {
+                    name = t
+                }
+                val toBuilder = attr.toBuilder()
+                when(u.javaClass.name) {
+                    "java.lang.Double" -> {
+                        toBuilder.f = (u as Double).toFloat()
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
+                    }
+                    "java.lang.Float" -> {
+                        toBuilder.f = u as Float
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.FLOAT
+                    }
+                    "java.lang.Integer" -> {
+                        toBuilder.i = (u as Integer).toLong()
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.INT
+                    }
+                    "java.lang.Long" -> {
+                        toBuilder.i = u as Long
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.INT
+                    }
+                    "java.lang.String" -> {
+                        toBuilder.s = byteString(u as String)
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
+                    }
+                }
+
+                toBuilder.name = t
+                Attribute(toBuilder.build())
+            }
+            opType = op
+        }
+
+        val firstTensor = inputs.values.first()
+        val graphRet = GraphProto {
+            Node(op)
+            inputs.forEach { (t, u) ->
+                if(!t.isEmpty())
+                    Input(createValueInfoFromTensor(u,t,false))
+            }
+            outputs.forEach {
+                Output(createValueInfoFromTensor(firstTensor,it,false))
+            }
+
+
+        }
+
+        return graphRet
+
+    }
+
 
     @Test
     fun testOpsMapped() {
@@ -318,7 +513,7 @@ class TestOnnxIR {
             "reduce_prod" to Nd4j.linspace(1,4,4).reshape(2,2),
             "reduce_norm1" to Nd4j.linspace(1,4,4).reshape(2,2),
             "reduce_norm2" to Nd4j.linspace(1,4,4).reshape(2,2)
-           // "reduce_logsumexp" to Nd4j.linspace(1,4,4).reshape(2,2)
+            // "reduce_logsumexp" to Nd4j.linspace(1,4,4).reshape(2,2)
         )
 
 

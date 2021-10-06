@@ -40,72 +40,50 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class Create extends DynamicCustomOp {
+public class OnesAs extends DynamicCustomOp {
 
-    protected boolean initialize = false;
-    protected char order = 'c';
-    protected DataType outputType = DataType.FLOAT;    //Allow customizing dtype for TF import
+    protected DataType outputType;    //Allow customizing dtype for TF import
 
-    public Create() {
+    public OnesAs() {
     }
 
-    public Create(String name, SameDiff sameDiff, SDVariable input, boolean initialize) {
-        this(name, sameDiff, input, 'c', initialize, input.dataType());
+    public OnesAs(SameDiff sameDiff, SDVariable input) {
+        this(null, sameDiff, input);
     }
 
-    public Create(String name, SameDiff sameDiff, SDVariable input, char order, boolean initialize, DataType dataType) {
+    public OnesAs(String name, SameDiff sameDiff, SDVariable input) {
+        this(name, sameDiff, input, input.dataType());
+    }
+
+    public OnesAs(SameDiff sameDiff, SDVariable input, DataType dataType) {
+        this(null, sameDiff, input, dataType);
+    }
+
+    public OnesAs(String name, SameDiff sameDiff, SDVariable input, DataType dataType) {
         super(name, sameDiff, new SDVariable[]{input}, false);
         this.outputType = dataType;
-        this.initialize = initialize;
-        this.order = order;
-
         addArgs();
     }
 
-    public Create(INDArray shape, DataType dataType) {
-        this(shape, 'c', false, dataType);
-    }
-
-    public Create(INDArray shape, boolean initialize, DataType dataType) {
-        this(shape, 'c', initialize, dataType);
-    }
-
-    public Create(@NonNull INDArray shape, char order, boolean initialize, DataType dataType) {
-        super(new INDArray[]{shape}, new INDArray[0]);
-        this.order = order;
-        this.initialize = initialize;
+    public OnesAs(@NonNull INDArray input, DataType dataType) {
+        this.addInputArgument(input);
         this.outputType = dataType;
-
         addArgs();
     }
 
-    public Create(SameDiff sd, SDVariable shape, DataType dataType) {
-        super(sd,new SDVariable[]{shape});
-        addDArgument(dataType);
-        addBArgument(false);
-        addIArgument((int) 'c', dataType.toInt());
+    public OnesAs(@NonNull INDArray input) {
+        this(input, input.dataType());
     }
 
-    public Create(SameDiff sd, SDVariable shape, DataType dataType, String order, boolean initialize) {
-        this(sd,shape,dataType);
-        addIArgument((int) order.charAt(0),dataType.toInt());
-        addBArgument(initialize);
+    public void addArgs() {
+        if (outputType != null)
+            addDArgument(outputType);
     }
 
-    public Create(INDArray shape, DataType dataType, String order, boolean initialize) {
-        super(new INDArray[]{shape},null);
-        addBArgument(initialize);
-        addIArgument((int) order.charAt(0),dataType.toInt());
-    }
-
-    protected void addArgs() {
-        addBArgument(initialize);
-        addIArgument((int) order,outputType.toInt());
-    }
 
     @Override
     public String opName() {
-        return "create";
+        return "ones_as";
     }
 
 
@@ -116,24 +94,16 @@ public class Create extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Empty";
+        return "Ones";
     }
 
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        // convert output data type
-        if(attributesForNode.containsKey("dtype")) {
-            outputType = TFGraphMapper.convertType(attributesForNode.get("dtype").getType());
+        if(attributesForNode.containsKey("T")) {
+            outputType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
         }
 
-        // get init field
-        if(attributesForNode.containsKey("init")) {
-            initialize = attributesForNode.get("init").getB();
-        }
-
-        // there's no order in TF, just plain C
-        this.order = 'c';
         addArgs();
     }
 

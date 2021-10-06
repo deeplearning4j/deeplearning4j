@@ -82,13 +82,6 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             nodeNames.add(node.nodeName())
         }
 
-        if(indexToNode.isNotEmpty()) {
-            indexToNode.forEach { (index, node) ->
-                graphDefBuilder.setNode(index,node)
-            }
-
-            this.graphDef = graphDefBuilder.build()
-        }
 
         cachedNodeList.forEach { node ->
             opTypes[node.nodeName()] = node.opName()
@@ -337,5 +330,9 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
     override fun addGraphOutputsAsProcessingNodes(): Boolean {
         return true
+    }
+
+    override fun convertToNDArray(tensorTypeInput: Onnx.TensorProto): INDArray {
+        return OnnxIRTensor(tensorTypeInput).toNd4jNDArray()
     }
 }

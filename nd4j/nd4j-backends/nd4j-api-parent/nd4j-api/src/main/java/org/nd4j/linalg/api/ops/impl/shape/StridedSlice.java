@@ -116,15 +116,58 @@ public class StridedSlice extends DynamicCustomOp {
         addArguments();
     }
 
+
+    public StridedSlice(SameDiff sd, SDVariable in, SDVariable begin, SDVariable end, SDVariable strides) {
+        this(sd,in,begin,end,strides,0,0,0,0,0);
+    }
+
+
+    public StridedSlice(SameDiff sd, SDVariable in, SDVariable begin, SDVariable end, SDVariable strides,
+                        int beginMask,
+                        int endMask,
+                        int ellipsisMask,
+                        int newAxisMask,
+                        int shrinkAxisMask) {
+        super(sd,new SDVariable[]{in,begin,end,strides});
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+        addArguments();
+    }
+
+    public StridedSlice(INDArray in, INDArray begin, INDArray end, INDArray strides) {
+        super(new INDArray[]{in,begin,end,strides},null);
+        addArguments();
+    }
+
+    public StridedSlice(INDArray in, INDArray begin, INDArray end, INDArray strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        super(new INDArray[]{in,begin,end,strides},null);
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+        addArguments();
+    }
+
+
     private void addArguments(){
+        //even without any specification java defaults to zero, we can safely call this as long as
+        //the check is in place for begin, end and strides
         addIArgument(beginMask);
         addIArgument(ellipsisMask);
         addIArgument(endMask);
         addIArgument(newAxisMask);
         addIArgument(shrinkAxisMask);
-        addIArgument(begin);
-        addIArgument(end);
-        addIArgument(strides);
+        //these can  be inputs and maybe variables, it's not guaranteed that these will be specified
+        if(begin != null)
+            addIArgument(begin);
+        if(end != null)
+            addIArgument(end);
+        if(strides != null)
+            addIArgument(strides);
     }
 
 

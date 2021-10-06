@@ -208,6 +208,8 @@ public class ONNXUtils {
      * @return the equivalent data buffer
      */
     public static DataBuffer getDataBuffer(Value tens) {
+       if(tens.isNull())
+           throw new IllegalArgumentException("Native underlying tensor value was null!");
         try (PointerScope scope = new PointerScope()) {
             DataBuffer buffer = null;
             int type = tens.GetTensorTypeAndShapeInfo().GetElementType();
