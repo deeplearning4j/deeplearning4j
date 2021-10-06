@@ -20,7 +20,7 @@ import org.nd4j.linalg.factory.Environment;
 /**
  * CPU backend implementation of {@link Environment}
  *
- * @author Alex Black
+ * @author Adam Gibson
  */
 public class AuroraEnvironment implements Environment {
 
