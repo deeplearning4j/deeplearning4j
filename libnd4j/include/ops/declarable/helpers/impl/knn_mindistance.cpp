@@ -35,8 +35,7 @@ namespace sd {
                 T res = 0.0f;
                 T po = 2.f;
                 T o = 1.f;
-
-#pragma omp simd reduction(sumT:res)
+PRAGMA_OMP_SIMD_SUM(res)
                 for (auto e = 0; e < length; e++) {
                     T p = input[e];
                     T l = low[e];

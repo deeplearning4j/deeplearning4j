@@ -86,6 +86,8 @@ namespace samediff {
         _threads.resize(_available.load());
         _interfaces.resize(_available.load());
 
+#ifndef __NEC__
+        // we're not creating threadpool on aurora
         // creating threads here
         for (int e = 0; e < _available.load(); e++) {
             _queues[e] = new BlockingQueue<CallableWithArguments*>(2);
@@ -119,6 +121,7 @@ namespace samediff {
 #endif
              */
         }
+#endif
     }
 
     ThreadPool::~ThreadPool() {

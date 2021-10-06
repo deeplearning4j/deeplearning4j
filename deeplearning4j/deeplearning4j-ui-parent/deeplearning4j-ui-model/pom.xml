@@ -109,5 +109,8 @@
         <profile>
             <id>nd4j-tests-cuda</id>
         </profile>
+  <profile>
+            <id>nd4j-tests-aurora</id>
+        </profile>
     </profiles>
 </project>

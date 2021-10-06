@@ -223,6 +223,15 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
 fi
 
 case "$OS" in
+    aurora)
+      CHIP="aurora"
+      NAME="nd4jaurora"
+      BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
+      SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=ON"
+      BUILD_PATH=""
+      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/aurora.cmake -DSD_AURORA=true"
+    ;;
+
     linux-armhf)
       if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
@@ -489,15 +498,19 @@ fi
 
 if [ "$CHIP" == "cpu" ]; then
     BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
-else
+elif [ "$CHIP" == "aurora" ]; then
+    BLAS_ARG="-DSD_AURORA=true -DBLAS=TRUE"
+elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 fi
 
 if [ -z "$NAME" ]; then
     if [ "$CHIP" == "cpu" ]; then
         NAME="nd4jcpu"
-    else
+    elif [ "$CHIP" == "cuda" ]; then
         NAME="nd4jcuda"
+    elif [ "$CHIP" == "aurora" ]; then
+            NAME="nd4jaurora"
     fi
 fi
 

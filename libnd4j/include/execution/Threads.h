@@ -97,7 +97,15 @@ namespace samediff {
     };
 
     class ND4J_EXPORT Threads {
-    public:
+
+        #ifdef _OPENMP
+                    public:
+            static std::mutex gThreadmutex;
+            static uint64_t _nFreeThreads;
+            static bool   tryAcquire(int numThreads);
+            static bool   freeThreads(int numThreads);
+        #endif
+        public:
         /**
          * This function executes 1 dimensional loop for a given number of threads
          * PLEASE NOTE: this function can use smaller number of threads than requested.
