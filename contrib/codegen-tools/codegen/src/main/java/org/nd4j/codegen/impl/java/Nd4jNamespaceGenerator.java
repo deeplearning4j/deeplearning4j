@@ -57,21 +57,25 @@ public class Nd4jNamespaceGenerator {
     private static Map<Config, TypeName> configMapping = new HashMap<>();
     public static Count exactlyOne = new Exactly(1);
     private static String copyright =
-            "/*******************************************************************************\n" +
-            " * Copyright (c) 2019-2020 Konduit K.K.\n" +
-            " *\n" +
-            " * This program and the accompanying materials are made available under the\n" +
-            " * terms of the Apache License, Version 2.0 which is available at\n" +
-            " * https://www.apache.org/licenses/LICENSE-2.0.\n" +
-            " *\n" +
-            " * Unless required by applicable law or agreed to in writing, software\n" +
-            " * distributed under the License is distributed on an \"AS IS\" BASIS, WITHOUT\n" +
-            " * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the\n" +
-            " * License for the specific language governing permissions and limitations\n" +
-            " * under the License.\n" +
-            " *\n" +
-            " * SPDX-License-Identifier: Apache-2.0\n" +
-            " ******************************************************************************/\n";
+            "/*\n" +
+                    " *  ******************************************************************************\n" +
+                    " *  *\n" +
+                    " *  *\n" +
+                    " *  * This program and the accompanying materials are made available under the\n" +
+                    " *  * terms of the Apache License, Version 2.0 which is available at\n" +
+                    " *  * https://www.apache.org/licenses/LICENSE-2.0.\n" +
+                    " *  *\n" +
+                    " *  *  See the NOTICE file distributed with this work for additional\n" +
+                    " *  *  information regarding copyright ownership.\n" +
+                    " *  * Unless required by applicable law or agreed to in writing, software\n" +
+                    " *  * distributed under the License is distributed on an \"AS IS\" BASIS, WITHOUT\n" +
+                    " *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the\n" +
+                    " *  * License for the specific language governing permissions and limitations\n" +
+                    " *  * under the License.\n" +
+                    " *  *\n" +
+                    " *  * SPDX-License-Identifier: Apache-2.0\n" +
+                    " *  *****************************************************************************\n" +
+                    " */\n";
     private static String codeGenWarning =
             "\n//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================\n\n";
 
@@ -84,6 +88,7 @@ public class Nd4jNamespaceGenerator {
         typeMapping.put(DataType.DATA_TYPE, org.nd4j.linalg.api.buffer.DataType.class);
         typeMapping.put(DataType.LOSS_REDUCE, org.nd4j.autodiff.loss.LossReduce.class);
         typeMapping.put(DataType.CONDITION, Condition.class);
+        typeMapping.put(DataType.STRING, String.class);
 
         validationMapping.put(DataType.BOOL, "validateBool");
         validationMapping.put(DataType.FLOATING_POINT, "validateFloatingPoint");

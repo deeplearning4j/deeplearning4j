@@ -24,6 +24,7 @@
 package org.nd4j.codegen.ops
 
 import org.nd4j.codegen.api.AtLeast
+import org.nd4j.codegen.api.DataType
 import org.nd4j.codegen.api.Language
 import org.nd4j.codegen.api.doc.DocScope
 import org.nd4j.codegen.dsl.*
@@ -908,6 +909,25 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+    Op("create") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "Create"
+        Input(NUMERIC, "shape") { description = "Input INDArray " }
+        Arg(DATA_TYPE,"dataType") {description = "Data type of array"}
+        //note when generating strings you need to add quotes as well or it's generated incorrectly
+        Arg(STRING,"order") {description = "Order of array "; defaultValue="\"c\""}
+        Arg(BOOL,"initialize") {description = "Whether to initialize the array or not "; defaultValue=false}
+        Output(NUMERIC, "output"){ description = "A new INDArray  with the same (dynamic) shape as the input" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Return a newly created variable,  with the specified shape and data type.
+            """.trimIndent()
+        }
+    }
+
+
+
     Op("onesLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Input(NUMERIC, "input") { description = "Input INDArray " }
@@ -1723,6 +1743,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
         useMixin(keepDimsDoc)
     }
+
+
+
 
     Op("zerosLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"

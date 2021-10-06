@@ -24,6 +24,7 @@ package org.nd4j.samediff.frameworkimport.onnx
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.nd4j.common.util.ArrayUtil
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -132,8 +133,23 @@ class TestOnnxIR {
 
 
     @Test
-    fun testSlice() {
+    fun testExpand() {
         val declarations = OnnxOpDeclarations
+        val onnxOpRegistry = registry()
+        val shape = longArrayOf(3,1)
+        val newShape = longArrayOf(2,1,6)
+        val inputNewShape = Nd4j.create(Nd4j.createBuffer(newShape))
+        val inputs = mapOf("data" to Nd4j.arange(1.0, ArrayUtil.prod(*shape).toDouble() + 1.0).reshape(*shape),
+            "newShape" to inputNewShape)
+        val inputNames = listOf("data","newShape")
+        val outputs = listOf("expanded")
+        val graph = createSingleNodeGraph(inputs,"Expand", emptyMap(),outputs,inputNames)
+        runAssertion(graph,inputs,outputs)
+
+    }
+
+    @Test
+    fun testSlice() {
 
         /**
          * Note that this test case is manual due to subtle differences in
@@ -144,7 +160,6 @@ class TestOnnxIR {
         Nd4j.getExecutioner().enableDebugMode(true)
         Nd4j.getExecutioner().enableVerboseMode(true)
 
-        val onnxOpRegistry = registry()
         val x = Nd4j.linspace(1,1000,1000).reshape(20,10,5)
         val starts = Nd4j.zeros(2).castTo(DataType.INT64)
         val ends = Nd4j.create(Nd4j.createBuffer(longArrayOf(3,10))).reshape(2)
@@ -159,6 +174,13 @@ class TestOnnxIR {
         val graph = createSingleNodeGraph(input,"Slice",attributes,outputs,inputs)
         assertEquals(input.size,graph.inputCount)
         assertEquals(1,graph.outputCount)
+        runAssertion(graph,input,outputs)
+    }
+
+    fun runAssertion(graph: Onnx.GraphProto,input: Map<String,INDArray>,outputs: List<String>) {
+        val declarations = OnnxOpDeclarations
+        val onnxOpRegistry = registry()
+
         val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
         val assertion = onnxGraphRunner.run(input)
@@ -166,8 +188,7 @@ class TestOnnxIR {
 
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
         val result = importedGraph.output(input,outputs)
-        //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
-        assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
+        assertEquals(assertion,result)
     }
 
 

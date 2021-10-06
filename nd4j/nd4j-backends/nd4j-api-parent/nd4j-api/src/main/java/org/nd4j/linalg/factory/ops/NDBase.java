@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
@@ -20,6 +24,7 @@ package org.nd4j.linalg.factory.ops;
 
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
+import java.lang.String;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -222,6 +227,32 @@ public class NDBase {
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Concat(inputs, dimension))[0];
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param shape Input INDArray  (NUMERIC type)
+   * @param dataType Data type of array
+   * @param order Order of array 
+   * @param initialize Whether to initialize the array or not 
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public INDArray create(INDArray shape, DataType dataType, String order, boolean initialize) {
+    NDValidation.validateNumerical("create", "shape", shape);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Create(shape, dataType, order, initialize))[0];
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param shape Input INDArray  (NUMERIC type)
+   * @param dataType Data type of array
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public INDArray create(INDArray shape, DataType dataType) {
+    NDValidation.validateNumerical("create", "shape", shape);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Create(shape, dataType, "c", false))[0];
   }
 
   /**

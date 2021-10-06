@@ -2593,6 +2593,9 @@ public class SameDiff extends SDBaseOps {
         return one(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
+
+
+
     /**
      * See {@link #one(String, DataType, long...)}.
      * Creates a constant - i.e., CONSTANT type SDVariable.

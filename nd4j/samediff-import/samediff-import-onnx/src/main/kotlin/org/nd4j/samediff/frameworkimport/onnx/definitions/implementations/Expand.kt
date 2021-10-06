@@ -49,6 +49,7 @@ class Expand : PreImportHook  {
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val newShape = sd.getVariable(op.inputsToOp[1])
         val inputTensorShape = sd.shape(inputVariable)
         val outputVarName: String? = if(isFinalOutput) {
             outputNames[0]
@@ -60,12 +61,14 @@ class Expand : PreImportHook  {
         }
 
         var outputVar: SDVariable = if(inputVariable.dataType() == DataType.BOOL) {
-             val ones = sd.onesLike(inputVariable,DataType.INT8)
-             val r = sd.castTo(inputVariable,DataType.INT8).mul(ones)
-              sd.castTo(outputVarName,r,DataType.BOOL)
-         } else {
-            val ones = sd.onesLike(inputVariable,inputVariable.dataType())
-            ones.mul(inputVariable)
+            val ones = sd.create(newShape,DataType.INT8)
+            val assignedOnes = ones.assign(1.0)
+            val r = sd.castTo(inputVariable,DataType.INT8).mul(assignedOnes)
+            sd.castTo(outputVarName,r,DataType.BOOL)
+        } else {
+            val ones = sd.create(newShape,inputVariable.dataType())
+            val assignedOnes = ones.assign(1.0)
+            assignedOnes.mul(outputVarName,inputVariable)
         }
 
         return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
