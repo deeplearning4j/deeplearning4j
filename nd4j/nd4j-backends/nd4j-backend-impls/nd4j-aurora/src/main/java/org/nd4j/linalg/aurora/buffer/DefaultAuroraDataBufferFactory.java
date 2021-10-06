@@ -74,23 +74,11 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
             return new LongBuffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.BOOL) {
             return new BoolBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.SHORT) {
-            return new Int16Buffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.BYTE) {
-            return new Int8Buffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.UBYTE) {
-            return new UInt8Buffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.UINT16) {
-            return new UInt16Buffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.UINT32) {
+        }   else if (underlyingBuffer.dataType() == DataType.UINT32) {
             return new UInt32Buffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.UINT64) {
             return new UInt64Buffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.BFLOAT16) {
-            return new BFloat16Buffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.HALF) {
-            return new HalfBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.UTF8) {
+        }   else if (underlyingBuffer.dataType() == DataType.UTF8) {
             return new Utf8Buffer(underlyingBuffer, length, offset);
         }
         return null;
@@ -258,26 +246,14 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
                 return new DoubleBuffer(underlyingBuffer, dataType, length, offset);
             case FLOAT:
                 return new FloatBuffer(underlyingBuffer, dataType, length, offset);
-            case HALF:
-                return new HalfBuffer(underlyingBuffer, dataType, length, offset);
-            case BFLOAT16:
-                return new BFloat16Buffer(underlyingBuffer, dataType, length, offset);
             case LONG:
                 return new LongBuffer(underlyingBuffer, dataType, length, offset);
             case INT:
                 return new IntBuffer(underlyingBuffer, dataType, length, offset);
-            case SHORT:
-                return new Int16Buffer(underlyingBuffer, dataType, length, offset);
-            case UBYTE:
-                return new UInt8Buffer(underlyingBuffer, dataType, length, offset);
-            case UINT16:
-                return new UInt16Buffer(underlyingBuffer, dataType, length, offset);
             case UINT32:
                 return new UInt32Buffer(underlyingBuffer, dataType, length, offset);
             case UINT64:
                 return new UInt64Buffer(underlyingBuffer, dataType, length, offset);
-            case BYTE:
-                return new Int8Buffer(underlyingBuffer, dataType, length, offset);
             case BOOL:
                 return new BoolBuffer(underlyingBuffer, dataType, length, offset);
             case UTF8:
@@ -294,26 +270,14 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
                 return new DoubleBuffer(length, initialize);
             case FLOAT:
                 return new FloatBuffer(length, initialize);
-            case HALF:
-                return new HalfBuffer(length, initialize);
-            case BFLOAT16:
-                return new BFloat16Buffer(length, initialize);
             case LONG:
                 return new LongBuffer(length, initialize);
             case INT:
                 return new IntBuffer(length, initialize);
-            case SHORT:
-                return new Int16Buffer(length, initialize);
-            case UBYTE:
-                return new UInt8Buffer(length, initialize);
-            case UINT16:
-                return new UInt16Buffer(length, initialize);
             case UINT32:
                 return new UInt32Buffer(length, initialize);
             case UINT64:
                 return new UInt64Buffer(length, initialize);
-            case BYTE:
-                return new Int8Buffer(length, initialize);
             case BOOL:
                 return new BoolBuffer(length, initialize);
             case UTF8:
@@ -330,26 +294,14 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
                 return new DoubleBuffer(length, initialize, workspace);
             case FLOAT:
                 return new FloatBuffer(length, initialize, workspace);
-            case BFLOAT16:
-                return new BFloat16Buffer(length, initialize, workspace);
-            case HALF:
-                return new HalfBuffer(length, initialize, workspace);
             case LONG:
                 return new LongBuffer(length, initialize, workspace);
             case INT:
                 return new IntBuffer(length, initialize, workspace);
-            case SHORT:
-                return new Int16Buffer(length, initialize, workspace);
-            case UBYTE:
-                return new UInt8Buffer(length, initialize, workspace);
-            case UINT16:
-                return new UInt16Buffer(length, initialize, workspace);
             case UINT32:
                 return new UInt32Buffer(length, initialize, workspace);
             case UINT64:
                 return new UInt64Buffer(length, initialize, workspace);
-            case BYTE:
-                return new Int8Buffer(length, initialize, workspace);
             case BOOL:
                 return new BoolBuffer(length, initialize, workspace);
             default:
@@ -364,7 +316,7 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createBFloat16(long length) {
-        return new BFloat16Buffer(length);
+       throw new UnsupportedOperationException("Aurora backend does not support  BFloat16 data type");
     }
 
     @Override
@@ -374,12 +326,12 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createUShort(long length) {
-        return new UInt16Buffer(length);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt16 data type");
     }
 
     @Override
     public DataBuffer createUByte(long length) {
-        return new UInt8Buffer(length);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt8 data type");
     }
 
     @Override
@@ -394,17 +346,17 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createShort(long length) {
-        return new Int16Buffer(length);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt16 data type");
     }
 
     @Override
     public DataBuffer createByte(long length) {
-        return new Int8Buffer(length);
+        throw new UnsupportedOperationException("Aurora backend does not support  Int8 data type");
     }
 
     @Override
     public DataBuffer createBFloat16(long length, boolean initialize) {
-        return new BFloat16Buffer(length, initialize);
+        throw new UnsupportedOperationException("Aurora backend does not support  Bfloat16 data type");
     }
 
     @Override
@@ -414,12 +366,12 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createUShort(long length, boolean initialize) {
-        return new UInt16Buffer(length, initialize);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt16 data type");
     }
 
     @Override
     public DataBuffer createUByte(long length, boolean initialize) {
-        return new UInt8Buffer(length, initialize);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt8 data type");
     }
 
     @Override
@@ -434,12 +386,12 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createShort(long length, boolean initialize) {
-        return new Int16Buffer(length, initialize);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt16 data type");
     }
 
     @Override
     public DataBuffer createByte(long length, boolean initialize) {
-        return new Int8Buffer(length, initialize);
+        throw new UnsupportedOperationException("Aurora backend does not support  Int8 data type");
     }
 
     @Override
@@ -449,7 +401,7 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createBFloat16(long length, boolean initialize,  MemoryWorkspace workspace) {
-        return new BFloat16Buffer(length, initialize, workspace);
+        throw new UnsupportedOperationException("Aurora backend does not support  BFloat16 data type");
     }
 
     @Override
@@ -459,12 +411,12 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createUShort(long length, boolean initialize,  MemoryWorkspace workspace) {
-        return new UInt16Buffer(length, initialize, workspace);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt16 data type");
     }
 
     @Override
     public DataBuffer createUByte(long length, boolean initialize,  MemoryWorkspace workspace) {
-        return new UInt8Buffer(length, initialize, workspace);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt8 data type");
     }
 
     @Override
@@ -479,12 +431,12 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createShort(long length, boolean initialize,  MemoryWorkspace workspace) {
-        return new Int16Buffer(length, initialize, workspace);
+        throw new UnsupportedOperationException("Aurora backend does not support  UInt16 data type");
     }
 
     @Override
     public DataBuffer createByte(long length, boolean initialize,  MemoryWorkspace workspace) {
-        return new Int8Buffer(length, initialize, workspace);
+        throw new UnsupportedOperationException("Aurora backend does not support  Int8 data type");
     }
 
 
@@ -709,26 +661,14 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
         switch (type) {
             case BOOL:
                 return new BoolBuffer(pointer, indexer, length);
-            case BYTE:
-                return new Int8Buffer(pointer, indexer, length);
-            case UBYTE:
-                return new UInt8Buffer(pointer, indexer, length);
-            case UINT16:
-                return new UInt16Buffer(pointer, indexer, length);
             case UINT32:
                 return new UInt32Buffer(pointer, indexer, length);
             case UINT64:
                 return new UInt64Buffer(pointer, indexer, length);
-            case SHORT:
-                return new Int16Buffer(pointer, indexer, length);
             case INT:
                 return new IntBuffer(pointer, indexer, length);
             case LONG:
                 return new LongBuffer(pointer, indexer, length);
-            case HALF:
-                return new HalfBuffer(pointer, indexer, length);
-            case BFLOAT16:
-                return new BFloat16Buffer(pointer, indexer, length);
             case FLOAT:
                 return new FloatBuffer(pointer, indexer, length);
             case DOUBLE:
@@ -784,12 +724,12 @@ public class DefaultAuroraDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createHalf(long length) {
-        return new HalfBuffer(length);
+        throw new UnsupportedOperationException("Aurora backend does not support  FP16 data type");
     }
 
     @Override
     public DataBuffer createHalf(long length, boolean initialize) {
-        return new HalfBuffer(length, initialize);
+        throw new UnsupportedOperationException("Aurora backend does not support  FP16 data type");
     }
 
     /**
