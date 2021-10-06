@@ -4535,8 +4535,8 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
-
-                return new SDVariable[]{sameDiff.var(GRAD_FN_KEY, trainingConfig.getInitialLossDataType(), 1)};
+                DataType dataType = trainingConfig == null ? DataType.FLOAT : (trainingConfig.getInitialLossDataType() != null ? trainingConfig.getInitialLossDataType() : DataType.FLOAT);
+                return new SDVariable[]{sameDiff.var(GRAD_FN_KEY, dataType, 1)};
             }
         });
 

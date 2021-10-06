@@ -27,6 +27,12 @@
 #include <math/templatemath.h>
 #include <helpers/shape.h>
 
+#ifdef _OPENMP
+
+#include <omp.h>
+
+#endif
+
 
 namespace samediff {
 

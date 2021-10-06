@@ -33,7 +33,8 @@
 #include <array/ShapeDescriptor.h>
 #include <array/TadDescriptor.h>
 #include <array/TadPack.h>
-
+#include <array/ConstantDescriptor.h>
+#include <array/ConstantDataBuffer.h>
 namespace sd {
     class ND4J_EXPORT ConstantTadHelper {
     private:
