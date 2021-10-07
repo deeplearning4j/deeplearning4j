@@ -21,8 +21,6 @@ package org.nd4j.samediff.frameworkimport.onnx.optimize
 
 import org.nd4j.samediff.frameworkimport.optimize.ModelOptimizer
 import java.io.File
-import org.bytedeco.onnx.*
-import org.bytedeco.onnx.global.onnx.*
 
 class OnnxOptimizer: ModelOptimizer {
 
