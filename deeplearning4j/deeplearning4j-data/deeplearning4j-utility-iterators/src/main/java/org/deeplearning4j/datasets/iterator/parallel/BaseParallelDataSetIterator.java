@@ -112,7 +112,7 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
             }
             default:
                 throw new ND4JIllegalStateException(
-                                "Unknown InequalityHanding option was passed in: " + inequalityHandling);
+                        "Unknown InequalityHanding option was passed in: " + inequalityHandling);
         }
     }
 

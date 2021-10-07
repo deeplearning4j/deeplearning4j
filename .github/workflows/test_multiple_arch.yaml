@@ -15,7 +15,7 @@ jobs:
   build_and_test_cross_platform:
     needs: pre-ci
     # The host should always be linux
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
 
     # Run steps on a matrix of 2 arch/distro combinations
