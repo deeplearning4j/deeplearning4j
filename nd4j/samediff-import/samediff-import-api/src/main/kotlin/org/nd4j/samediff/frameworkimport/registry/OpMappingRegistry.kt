@@ -96,7 +96,7 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
 
         //workaround for placeholder not being defined, only used in limited circumstances
         if(name == "Placeholder")
-            return opDefList["Constant"]!!
+            return opDefList["Const"]!!
         return  opDefList[name]!!
     }
 

@@ -20,20 +20,31 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.importer
 
 import junit.framework.Assert
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.common.io.ClassPathResource
+import org.nd4j.samediff.frameworkimport.FrameworkImportConfig
 
 class TestTensorflowImporter {
 
+
     @Test
-    @Disabled
+    fun testSavedModel() {
+        val tfFrameworkImporter = TensorflowFrameworkImporter()
+        val tfFile = ClassPathResource("my_mul/saved_model.pb").file
+        val frameworkImportConfig = FrameworkImportConfig()
+        frameworkImportConfig.setVal("savedModel","true")
+        val graph = tfFrameworkImporter.runImport(tfFile.absolutePath,emptyMap(),frameworkImportConfig)
+    }
+
+    @Test
     fun testImporter() {
         val tfFrameworkImport = TensorflowFrameworkImporter()
         val tfFile = ClassPathResource("lenet_frozen.pb").file
-        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath)
+        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath,emptyMap(),FrameworkImportConfig())
         //note this is just a test to make sure everything runs, we test the underlying import elsewhere
-        Assert.assertNotNull(graph)
+        assertNotNull(graph)
     }
 
 }

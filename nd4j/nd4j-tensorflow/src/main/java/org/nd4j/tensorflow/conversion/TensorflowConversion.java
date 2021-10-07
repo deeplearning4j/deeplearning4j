@@ -396,6 +396,7 @@ public class TensorflowConversion {
         } catch (InvalidProtocolBufferException ex) {
             throw new IllegalStateException("ERROR: Unable to import model " + ex);
         }
+
         Map<String, SignatureDef> signatureDefMap = metaGraphDef.getSignatureDefMap();
         SignatureDef signatureDef = signatureDefMap.get(savedModelConfig.getSignatureKey());
 

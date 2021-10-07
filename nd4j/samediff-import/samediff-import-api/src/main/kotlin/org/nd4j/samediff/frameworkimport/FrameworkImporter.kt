@@ -25,7 +25,11 @@ import org.nd4j.linalg.api.ndarray.INDArray
 
 interface FrameworkImporter {
 
-    fun runImport(fileName: String, dynamicVariables: Map<String, INDArray> = emptyMap()): SameDiff
+    fun runImport(
+        fileName: String,
+        dynamicVariables: Map<String, INDArray> = emptyMap(),
+        importConfig: FrameworkImportConfig
+    ): SameDiff
 
 
 }

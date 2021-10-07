@@ -62,6 +62,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.samediff.frameworkimport.FrameworkImportConfig;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
 import org.nd4j.shade.guava.io.Files;
 import org.springframework.core.io.FileSystemResource;
@@ -106,7 +107,7 @@ public class TFGraphTestAllHelper {
             else
                 System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
 
-            return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap());
+            return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap(), new FrameworkImportConfig());
         }
     }
 

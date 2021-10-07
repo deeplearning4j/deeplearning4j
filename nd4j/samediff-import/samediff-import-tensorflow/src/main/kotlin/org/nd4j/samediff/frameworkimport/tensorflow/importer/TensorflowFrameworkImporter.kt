@@ -20,18 +20,20 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.importer
 
 import org.nd4j.autodiff.samediff.SameDiff
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.samediff.frameworkimport.FrameworkImportConfig
 import org.nd4j.samediff.frameworkimport.FrameworkImporter
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.tensorflow.TensorflowImportGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
-import org.nd4j.samediff.frameworkimport.tensorflow.definitions.gruCell
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.tensorflowOpRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.opdefs.TensorflowOpDescriptorLoader
+import org.nd4j.shade.protobuf.InvalidProtocolBufferException
+import org.tensorflow.SavedModelBundle
 import org.tensorflow.framework.*
 import java.io.File
+import java.io.FileInputStream
 import java.nio.file.Files
 
 class TensorflowFrameworkImporter: FrameworkImporter {
@@ -59,8 +61,25 @@ class TensorflowFrameworkImporter: FrameworkImporter {
 
     }
 
-    override fun runImport(fileName: String, dynamicVariables: Map<String, INDArray>): SameDiff {
-        val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
-        return importFromGraph(graphDef = loadGraph, dynamicVariables = dynamicVariables)
+    override fun runImport(
+        fileName: String,
+        dynamicVariables: Map<String, INDArray>,
+        importConfig: FrameworkImportConfig
+    ): SameDiff {
+        val isSavedModel = if(importConfig.hasValue("savedModel")) {
+            importConfig.getVal("savedModel").toBoolean()
+        } else {
+            false
+        }
+        if(!isSavedModel) {
+            val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
+            return importFromGraph(graphDef = loadGraph, dynamicVariables = dynamicVariables)
+        } else {
+            val def2 = SavedModel.parseFrom((Files.readAllBytes(File(fileName).toPath())))
+            val metaGraphDef = def2.getMetaGraphs(0)
+            return importFromGraph(graphDef = metaGraphDef.graphDef, dynamicVariables = dynamicVariables)
+
+        }
+
     }
 }

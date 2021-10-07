@@ -31,7 +31,7 @@ class TestOnnxFrameworkImporter {
     fun testAgeRace() {
         val importer = OnnxFrameworkImporter()
         val file = ClassPathResource("agerace_v2.onnx").file
-        val result  = importer.runImport(file.absolutePath, emptyMap())
+        val result  = importer.runImport(file.absolutePath, emptyMap(),)
         val arr = Nd4j.ones(1, 3, 224, 224)
         result.batchOutput().inputs(Collections.singletonMap("input", arr))
             .output("output").output()

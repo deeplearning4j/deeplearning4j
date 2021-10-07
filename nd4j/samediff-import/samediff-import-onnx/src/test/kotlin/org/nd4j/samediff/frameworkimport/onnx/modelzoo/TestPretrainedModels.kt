@@ -277,7 +277,7 @@ class TestPretrainedModels {
                 debugPrint.append("$name and shape ${array.shapeInfoToString()}\n")
             }
             println(debugPrint)
-            val imported = onnxImporter.runImport(modelFile.absolutePath,dynamicVariables)
+            val imported = onnxImporter.runImport(modelFile.absolutePath, dynamicVariables,)
             println(imported.summary())
             val batchOutput = imported.batchOutput()
             batchOutput.placeholders = dynamicVariables

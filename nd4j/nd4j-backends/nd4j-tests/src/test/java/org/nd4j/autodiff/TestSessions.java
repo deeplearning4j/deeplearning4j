@@ -234,7 +234,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         for( int numIter : new int[]{1,3}) {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
             TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-            SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap());
+            SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap(), );
 
 
 
