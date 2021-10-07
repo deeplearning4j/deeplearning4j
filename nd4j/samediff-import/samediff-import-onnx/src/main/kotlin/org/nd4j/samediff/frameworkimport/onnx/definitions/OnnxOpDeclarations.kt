@@ -190,7 +190,6 @@ val batchNorm = OnnxMappingProcess(
         ))
 //TODO: Binarizer
 //TODO: Bitshift
-//TODO: Cast
 //TODO: CastMap
 //TODO: CategoryMapper
 //TODO: Celu
@@ -369,6 +368,12 @@ val globalAveragePooling = OnnxMappingProcess(
 val globalMaxPooling = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GlobalMaxPool",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val cast = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Cast",
         opMappingRegistry = onnxOpRegistry
 )
 

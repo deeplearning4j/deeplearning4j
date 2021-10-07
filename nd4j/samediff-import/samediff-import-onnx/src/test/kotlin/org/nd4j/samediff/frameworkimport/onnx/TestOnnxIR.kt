@@ -228,6 +228,25 @@ class TestOnnxIR {
 
 
     @Test
+    fun testCast() {
+        val declarations = OnnxOpDeclarations
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        val onnxOpRegistry = registry()
+        val startInput = Nd4j.ones(2).castTo(DataType.DOUBLE)
+        val inputData = mapOf("x" to startInput)
+        val outputs = listOf("y")
+        val attributes = mapOf("to" to Onnx.TensorProto.DataType.FLOAT.ordinal)
+        val graph = createSingleNodeGraph(inputData,"Cast",attributes,outputs,listOf("x"),Nd4j.ones(2).castTo(DataType.FLOAT))
+        runAssertion(graph,inputData,outputs)
+    }
+
+    @Test
     fun testResize() {
         val declarations = OnnxOpDeclarations
 
@@ -260,7 +279,7 @@ class TestOnnxIR {
 
     }
 
-    fun createSingleNodeGraph(inputs: Map<String,INDArray>,op: String,attributes: Map<String,Any>,outputs: List<String>,inputNames: List<String>): Onnx.GraphProto {
+    fun createSingleNodeGraph(inputs: Map<String,INDArray>,op: String,attributes: Map<String,Any>,outputs: List<String>,inputNames: List<String>,templateTensor: INDArray = inputs.values.first()): Onnx.GraphProto {
 
         val op = NodeProto {
             inputNames.forEach { t ->
@@ -306,7 +325,6 @@ class TestOnnxIR {
             opType = op
         }
 
-        val firstTensor = inputs.values.first()
         val graphRet = GraphProto {
             Node(op)
             inputs.forEach { (t, u) ->
@@ -314,7 +332,7 @@ class TestOnnxIR {
                     Input(createValueInfoFromTensor(u,t,false))
             }
             outputs.forEach {
-                Output(createValueInfoFromTensor(firstTensor,it,false))
+                Output(createValueInfoFromTensor(templateTensor,it,false))
             }
 
 

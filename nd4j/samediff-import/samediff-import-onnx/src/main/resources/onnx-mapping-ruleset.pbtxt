@@ -460,6 +460,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Unsqueeze"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "equals"
   inputFrameworkOpName: "Equal"
   rule {
@@ -879,6 +884,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Expand"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "softmax"
   inputFrameworkOpName: "Softmax"
   rule {
@@ -1212,6 +1222,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "where"
+  inputFrameworkOpName: "Where"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "matmul"
   inputFrameworkOpName: "Gemm"
   rule {
@@ -1310,6 +1325,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Gemm"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Cast"
 }
 mappings {
   frameworkName: "onnx"
@@ -4314,6 +4334,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Resize"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "cos"
   inputFrameworkOpName: "Cos"
   rule {
@@ -5873,6 +5898,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Reshape"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Slice"
 }
 mappings {
   frameworkName: "onnx"
