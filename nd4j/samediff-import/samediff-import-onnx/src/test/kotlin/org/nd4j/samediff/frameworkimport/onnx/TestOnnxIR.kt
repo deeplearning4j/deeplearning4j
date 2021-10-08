@@ -228,6 +228,24 @@ class TestOnnxIR {
 
 
     @Test
+    fun testAssign() {
+        val declarations = OnnxOpDeclarations
+
+        /**
+         * Note that this test case is manual due to subtle differences in
+         * how onnxruntime and tensorflow appear to interpret their nearest neighbor results.
+         * In our test case here, we are verifying against tensorflow-onnx as the implementation.
+         *
+         */
+        val onnxOpRegistry = registry()
+        val startInput = Nd4j.ones(2).castTo(DataType.DOUBLE)
+        val inputData = mapOf("x" to startInput,"y" to Nd4j.ones(2).addi(3))
+        val outputs = listOf("y")
+        val graph = createSingleNodeGraph(inputData,"Assign",emptyMap(),outputs,listOf("x"),Nd4j.ones(2).castTo(DataType.FLOAT))
+        runAssertion(graph,inputData,outputs)
+    }
+
+    @Test
     fun testCast() {
         val declarations = OnnxOpDeclarations
 

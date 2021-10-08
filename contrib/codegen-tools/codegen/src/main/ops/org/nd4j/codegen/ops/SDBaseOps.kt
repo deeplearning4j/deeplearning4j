@@ -195,6 +195,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+
+
     Op("dot") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce3"
         javaOpClass = "Dot"
@@ -233,6 +236,23 @@ fun SDBaseOps() =  Namespace("BaseOps"){
             """.trimIndent()
         }
     }
+
+    Op("assign") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "Assign"
+        Input(NUMERIC, "x") { description = "The variable to assign to" }
+        Input(NUMERIC, "y") { description = "The variable to assign" }
+        Output(NUMERIC, "output"){  description = "The newly assigned output" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Assign the contents of y to x.
+               Y must be broadcastable to x or the same shape.
+            """.trimIndent()
+        }
+    }
+
+
 
     Op("dynamicStitch") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"

@@ -239,7 +239,7 @@ public class SDVariable implements Serializable {
      * @param value Value for returned variable
      * @return new variable
      */
-    public SDVariable assign(Number value){
+    public SDVariable assign(Number value) {
         return sameDiff.scalarSet(this, value.doubleValue());
     }
 

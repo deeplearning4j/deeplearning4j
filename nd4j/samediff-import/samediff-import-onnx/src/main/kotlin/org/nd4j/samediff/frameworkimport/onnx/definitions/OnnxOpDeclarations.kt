@@ -383,6 +383,12 @@ val resize = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+val constantOfShape = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ConstantOfShape",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val unsqueeze = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Unsqueeze",
@@ -941,7 +947,8 @@ val transpose = OnnxMappingProcess(
 
 val where = OnnxMappingProcess(
         inputFrameworkOpName = "Where",
-        opName = "where",
+        opName = "Where",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("condition" to "condition","input" to "X","y" to "Y"))),
         opMappingRegistry = onnxOpRegistry
 )
 

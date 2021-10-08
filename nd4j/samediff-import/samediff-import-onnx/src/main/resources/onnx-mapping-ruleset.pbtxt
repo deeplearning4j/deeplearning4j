@@ -1222,8 +1222,32 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "where"
+  opName: "Where"
   inputFrameworkOpName: "Where"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "condition"
+    inputTensorName: "X"
+    inputTensorName: "Y"
+    outputTensorName: "condition"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "condition"
+      value: "condition"
+    }
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "y"
+      value: "Y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Where"
+  }
 }
 mappings {
   frameworkName: "onnx"
@@ -6262,6 +6286,11 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "GRU"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "ConstantOfShape"
 }
 mappings {
   frameworkName: "onnx"

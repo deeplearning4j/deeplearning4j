@@ -291,6 +291,36 @@ public class SDBaseOps {
   }
 
   /**
+   * Assign the contents of y to x.<br>
+   * Y must be broadcastable to x or the same shape.<br>
+   *
+   * @param x The variable to assign to (NUMERIC type)
+   * @param y The variable to assign (NUMERIC type)
+   * @return output The newly assigned output (NUMERIC type)
+   */
+  public SDVariable assign(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("assign", "x", x);
+    SDValidation.validateNumerical("assign", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Assign the contents of y to x.<br>
+   * Y must be broadcastable to x or the same shape.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The variable to assign to (NUMERIC type)
+   * @param y The variable to assign (NUMERIC type)
+   * @return output The newly assigned output (NUMERIC type)
+   */
+  public SDVariable assign(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("assign", "x", x);
+    SDValidation.validateNumerical("assign", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
    * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
    * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>

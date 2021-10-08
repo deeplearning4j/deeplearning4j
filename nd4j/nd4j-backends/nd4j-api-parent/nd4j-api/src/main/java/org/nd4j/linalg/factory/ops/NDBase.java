@@ -157,6 +157,20 @@ public class NDBase {
   }
 
   /**
+   * Assign the contents of y to x.<br>
+   * Y must be broadcastable to x or the same shape.<br>
+   *
+   * @param x The variable to assign to (NUMERIC type)
+   * @param y The variable to assign (NUMERIC type)
+   * @return output The newly assigned output (NUMERIC type)
+   */
+  public INDArray assign(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("assign", "x", x);
+    NDValidation.validateNumerical("assign", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(x, y))[0];
+  }
+
+  /**
    * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
    * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
    * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
