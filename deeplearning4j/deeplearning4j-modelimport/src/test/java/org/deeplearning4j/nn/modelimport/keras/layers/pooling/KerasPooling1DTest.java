@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -38,14 +39,17 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Max Pumperla
@@ -132,6 +136,14 @@ class KerasPooling1DTest extends BaseDL4JTest {
         Layer layer = maxpooling1d.getLayer();
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer subsampling1DLayer = (org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer) layer;
         assertEquals(CNN2DFormat.NHWC,subsampling1DLayer.layerConf().getCnn2dDataFormat());
+    }
+
+    @Test
+    public void test1dWeightInit() throws Exception {
+        File file = Resources.asFile("modelimport/keras/tfkeras/cnn_1d_doublecount.h5.h5");
+        MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(file.getAbsolutePath(), false);
+        INDArray output = multiLayerNetwork.output(Nd4j.ones(1, 6, 1));
+        assertArrayEquals(new long[]{1,2,6},output.shape());
     }
 
 

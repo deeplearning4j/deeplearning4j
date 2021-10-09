@@ -2368,7 +2368,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
 
-                try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                 try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
 
                     INDArray out = null;

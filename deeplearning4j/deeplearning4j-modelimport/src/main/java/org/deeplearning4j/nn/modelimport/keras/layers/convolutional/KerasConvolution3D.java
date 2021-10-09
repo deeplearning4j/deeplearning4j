@@ -101,6 +101,7 @@ public class KerasConvolution3D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 3, conf, kerasMajorVersion))
                 .hasBias(hasBias)
+                .dataFormat(getCNN3DDataFormatFromConfig(layerConfig,conf))
                 .stride(getStrideFromConfig(layerConfig, 3, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 3, conf, kerasMajorVersion);
         if (hasBias)

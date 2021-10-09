@@ -252,12 +252,12 @@ public class TimeSeriesUtils {
      * @param in Input activations to reverse, with shape [minibatch, size, timeSeriesLength]
      * @return Reversed activations
      */
-    public static INDArray reverseTimeSeries(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
+    public static INDArray reverseTimeSeries(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if(in == null){
             return null;
         }
 
-        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)){
+        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)) {
             in = workspaceMgr.dup(arrayType, in, 'f');
         }
 
@@ -265,7 +265,7 @@ public class TimeSeriesUtils {
             throw new ND4JArraySizeException();
         int[] idxs = new int[(int) in.size(2)];
         int j=0;
-        for( int i=idxs.length-1; i>=0; i--){
+        for( int i = idxs.length-1; i >= 0; i--) {
             idxs[j++] = i;
         }
 

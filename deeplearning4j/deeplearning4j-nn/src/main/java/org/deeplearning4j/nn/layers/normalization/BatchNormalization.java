@@ -517,7 +517,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
             }
-            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
+
+            std = Transforms.sqrt(var.add(layerConf().getEps()));
         }
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
@@ -544,9 +545,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else if (x.rank() == 4) {
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
-            xMu = workspaceMgr.createUninitialized(ArrayType.INPUT, x.dataType(), x.shape(), x.ordering());
+            xMu = Nd4j.createUninitialized(x.dataType(), x.shape(), x.ordering());
             xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(x, mean,xMu, chIdx));
-            xHat =  workspaceMgr.createUninitialized(ArrayType.INPUT, x.dataType(), x.shape(), x.ordering());
+            xHat =  Nd4j.createUninitialized(x.dataType(), x.shape(), x.ordering());
             xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, chIdx));
 
             if (layerConf.isLockGammaBeta()) {
