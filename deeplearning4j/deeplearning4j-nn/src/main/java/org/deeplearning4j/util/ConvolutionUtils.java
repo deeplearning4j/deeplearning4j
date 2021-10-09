@@ -62,6 +62,27 @@ public class ConvolutionUtils {
     private ConvolutionUtils() {
     }
 
+
+    /**
+     * Return the configuration for a given value
+     * for values like stride, dilation, kernel size
+     * that require 2 values
+     * If the input is already length 2, return that
+     * if the length is only 1, return the value specified twice
+     * otherwise return the default value duplicated twice
+     *
+     * @param inputValue the input value to return
+     * @param defaultValue the default value if none is present
+     * @return the int value as specified above.
+     */
+    public static int[] getIntConfig(int[] inputValue,int defaultValue) {
+        if(inputValue != null && inputValue.length < 2)
+            return new int[]{ inputValue[0] ,inputValue[0]};
+        else if(inputValue.length == 2)
+            return inputValue;
+        return new int[]{ defaultValue ,defaultValue};
+    }
+
     /**
      * Use {@link #getOutputSize(INDArray, int[], int[], int[], ConvolutionMode, int[], CNN2DFormat)}
      */
@@ -120,7 +141,7 @@ public class ConvolutionUtils {
      * @return Output size: int[2] with output height/width
      */
     public static long[] getDeconvolution3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, int[] dilation,
-                                                   ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
+                                                      ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
 
         long hIn, wIn, dIn;
         if(dataFormat == Convolution3D.DataFormat.NCDHW){
@@ -200,10 +221,10 @@ public class ConvolutionUtils {
      * layer
      */
     public static CNN2DFormat getFormatForLayer(Layer layer) {
-       if(layer instanceof Convolution1DLayer) {
-           Convolution1DLayer convolution1DLayer = (Convolution1DLayer) layer;
-           return convolution1DLayer.getCnn2dDataFormat();
-       } else if(layer instanceof ConvolutionLayer) {
+        if(layer instanceof Convolution1DLayer) {
+            Convolution1DLayer convolution1DLayer = (Convolution1DLayer) layer;
+            return convolution1DLayer.getCnn2dDataFormat();
+        } else if(layer instanceof ConvolutionLayer) {
             ConvolutionLayer convolutionLayer = (ConvolutionLayer) layer;
             return convolutionLayer.getCnn2dDataFormat();
         } else if(layer instanceof SubsamplingLayer) {
@@ -222,18 +243,18 @@ public class ConvolutionUtils {
             ZeroPaddingLayer zeroPaddingLayer = (ZeroPaddingLayer) layer;
             return zeroPaddingLayer.getDataFormat();
         } else if(layer instanceof SeparableConvolution2D) {
-           SeparableConvolution2D separableConvolution2D = (SeparableConvolution2D) layer;
-           return separableConvolution2D.getCnn2dDataFormat();
-       } else if(layer instanceof Deconvolution2D) {
-           Deconvolution2D deconvolution2D = (Deconvolution2D) layer;
-           return deconvolution2D.getCnn2dDataFormat();
-       } else if(layer instanceof DepthwiseConvolution2D) {
-           DepthwiseConvolution2D depthwiseConvolution2D = (DepthwiseConvolution2D) layer;
-           return depthwiseConvolution2D.getCnn2dDataFormat();
-       } else if(layer instanceof Cropping2D) {
-           Cropping2D cropping2D = (Cropping2D) layer;
-           return cropping2D.getDataFormat();
-       }
+            SeparableConvolution2D separableConvolution2D = (SeparableConvolution2D) layer;
+            return separableConvolution2D.getCnn2dDataFormat();
+        } else if(layer instanceof Deconvolution2D) {
+            Deconvolution2D deconvolution2D = (Deconvolution2D) layer;
+            return deconvolution2D.getCnn2dDataFormat();
+        } else if(layer instanceof DepthwiseConvolution2D) {
+            DepthwiseConvolution2D depthwiseConvolution2D = (DepthwiseConvolution2D) layer;
+            return depthwiseConvolution2D.getCnn2dDataFormat();
+        } else if(layer instanceof Cropping2D) {
+            Cropping2D cropping2D = (Cropping2D) layer;
+            return cropping2D.getDataFormat();
+        }
         else throw new IllegalArgumentException("Illegal type given " + layer.getClass().getName());
     }
 
@@ -252,7 +273,7 @@ public class ConvolutionUtils {
             case Same:
                 return PaddingMode.SAME;
             case Causal:
-               return PaddingMode.CAUSAL;
+                return PaddingMode.CAUSAL;
             case Strict:
             case Truncate:
                 return PaddingMode.VALID;
@@ -792,7 +813,7 @@ public class ConvolutionUtils {
         if (inputType instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
             if (conv.getHeight() > Integer.MAX_VALUE || conv.getWidth() > Integer.MAX_VALUE ||
-                conv.getChannels() > Integer.MAX_VALUE){
+                    conv.getChannels() > Integer.MAX_VALUE){
                 throw new ND4JArraySizeException();
             }
             inH = (int) conv.getHeight();
@@ -801,7 +822,7 @@ public class ConvolutionUtils {
         } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
             InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
             if (conv.getHeight() > Integer.MAX_VALUE || conv.getWidth() > Integer.MAX_VALUE ||
-                conv.getDepth() > Integer.MAX_VALUE) {
+                    conv.getDepth() > Integer.MAX_VALUE) {
                 throw new ND4JArraySizeException();
             }
             inH = (int) conv.getHeight();
