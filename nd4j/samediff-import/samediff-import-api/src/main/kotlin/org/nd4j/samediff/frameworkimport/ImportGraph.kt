@@ -436,7 +436,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //from the graph and initialize them if an input name appears before a mention of a constant.
                             //This can happen in certain frameworks. Sometimes frameworks will have auto sorted
                             //DAGS, this may not be true for all situations though.
-                            if(!sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName)) {
+                            //note, we only want variables being auto declared if they are actually inputs or outputs not only nodes
+                            if(!sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName) && irGraph.isInputOrOutput(inName)) {
                                 val otherInputs = nd.inputs().filter { input -> sd.hasVariable(input) }
                                 var dataType = DataType.FLOAT
                                 //guess input from other data types
@@ -598,10 +599,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             for (i in 0 until numOutputs) {
                                 val dt = outputDataTypes[i]
                                 val varName = nd.outputAt(i)
-                                //TODO: handle variadic type in kotlin
-                                /**
-                                 * TODO: handle data type import
-                                 */
+
                                 outSDVars[i] = if(sd.hasVariable(varName)) sd.getVariable(varName) else sd.`var`(varName, VariableType.ARRAY, null, dt)
                                 outNames.add(varName)
                                 outVars[i] = Variable.builder()
@@ -619,7 +617,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                             sd.ops[name]!!.outputsOfOp = outNames
                             println("Imported op: $opName (name=$name)")
-                            opsImported.add(opName + "," + name)
+                            opsImported.add("$opName,$name")
 
                         }
 
@@ -784,10 +782,25 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         FileUtils.writeLines(File("variables-added-new.txt"),variablesAdded)
         println("Ops imported $opsImported")
         FileUtils.writeLines(File("ops-imported-new.txt"),opsImported)
-        println("Ops added$opsAdded")
+        println("Ops added $opsAdded")
         FileUtils.writeLines(File("ops-added-new.txt"),opsAdded)
         println("Ops removed $opsRemoved")
         FileUtils.writeLines(File("ops-removed-new.txt"),opsRemoved)
+
+
+        //see if there are any node names that are just purely outputs and not actual nodes
+        //if so remove those and throw an exception for what's left
+        if(remainingNodes.isNotEmpty()) {
+            val toRemove = HashSet<String>()
+            remainingNodes.keys.forEach {
+                if(!irGraph.hasNode(it)) {
+                    toRemove.add(it)
+                }
+            }
+            toRemove.forEach {
+                remainingNodes.remove(it)
+            }
+        }
 
         Preconditions.checkState(
             remainingNodes.isEmpty(),

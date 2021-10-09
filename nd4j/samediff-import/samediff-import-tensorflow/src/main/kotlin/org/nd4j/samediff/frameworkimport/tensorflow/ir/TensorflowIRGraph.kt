@@ -54,6 +54,7 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
     var outputs = ArrayList<String>()
     val cachedNodeList : List<IRNode<NodeDef, TensorProto, OpDef.AttrDef, AttrValue, DataType>>
     val nodeNames: Set<String>
+    val inputsOutputs = HashSet<String>()
 
     init {
         val graphInputTo = Counter<String>()
@@ -61,6 +62,8 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
         nodeNames = HashSet()
         cachedNodeList.forEach {
             it.inputs().forEach { inputName -> graphInputTo.incrementCount(inputName,1.0) }
+            it.inputs().forEach { input -> inputsOutputs.add(input) }
+            it.outputs().forEach { output -> inputsOutputs.add(output) }
             //all placeholders are considered inputs
             if(it.opName().contains("Placeholder"))
                 inputs.add(it.nodeName())
@@ -259,6 +262,10 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
 
     override fun convertToNDArray(tensorTypeInput: TensorProto): INDArray {
         return TensorflowIRTensor(tensorTypeInput).toNd4jNDArray()
+    }
+
+    override fun isInputOrOutput(name: String): Boolean {
+        return inputsOutputs.contains(name)
     }
 
 

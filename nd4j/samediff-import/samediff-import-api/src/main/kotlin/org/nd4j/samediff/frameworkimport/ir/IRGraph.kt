@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.ir
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.context.MappingContext
@@ -48,6 +49,12 @@ interface IRGraph<
     fun nodeIsPlaceHolder(nodeName: String): Boolean
 
     fun isPlaceHolder(opName: String): Boolean
+
+    /**
+     * Returns true if a given name is an input or an output
+     * to a node.
+     */
+    fun isInputOrOutput(name: String): Boolean
 
     fun isVariable(nodeName: String): Boolean
 
@@ -96,6 +103,8 @@ interface IRGraph<
     fun inputAt(index: Int): String
 
     fun setInputs(inputs: List<String>)
+
+
 
     fun getConstantArrayForName(name: String): INDArray
 

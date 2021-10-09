@@ -19,16 +19,26 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 
-@PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
-class Unsqueeze  : PreImportHook {
+/**
+ * A port of expand.py from onnx tensorflow for samediff:
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/expand.py
+ *
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [],opNames = ["Cast"],frameworkName = "onnx")
+class Cast : PreImportHook  {
     override fun preProcess(
         op: SameDiffOp,
         sd: SameDiff,
@@ -38,41 +48,29 @@ class Unsqueeze  : PreImportHook {
         isFinalOutput: Boolean
     ): HookResult {
         // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
-        val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
-            sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
-        }
-        var ret: SDVariable? = null
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
+
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val dTypeIndex = attributes.get("to") as Long
         val outputVarName: String? = if(isFinalOutput) {
             outputNames[0]
         } else null
 
-        //remove pre existing output variable
         if(outputVarName != null && sd.hasVariable(outputVarName)) {
             sd.variables.remove(outputVarName)
             sd.ops.remove(outputVarName)
-
         }
 
-        val input = sd.getVariable(op.inputsToOp[0])
-
-        if(axes.size != 1) {
-            for(i in axes.indices) {
-                if(i < axes.size - 1)
-                    ret = sd.expandDims(input,axes[i])
-                else {
-                    ret = sd.expandDims(outputVarName,input,axes[i])
-                }
-            }
-        } else {
-            val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputVarName,input,axes[0])
-
-        }
-
-
-
-        return HookResult(outputVariables = mapOf(ret!!.name() to listOf(ret)),
+        val dtype =  Onnx.TensorProto.DataType.values()[dTypeIndex.toInt()]
+        val inputDataType = OnnxIRDataType(dtype)
+        val newDataType = inputDataType.nd4jDataType()
+        val outputVar = sd.castTo(outputVarName,inputVariable,newDataType)
+        return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
             proceedWithInit = false)
+
+
     }
+
+
+
 }

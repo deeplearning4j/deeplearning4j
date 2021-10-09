@@ -190,7 +190,6 @@ val batchNorm = OnnxMappingProcess(
         ))
 //TODO: Binarizer
 //TODO: Bitshift
-//TODO: Cast
 //TODO: CastMap
 //TODO: CategoryMapper
 //TODO: Celu
@@ -372,9 +371,21 @@ val globalMaxPooling = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+val cast = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Cast",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val resize = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Resize",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val constantOfShape = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ConstantOfShape",
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -936,7 +947,8 @@ val transpose = OnnxMappingProcess(
 
 val where = OnnxMappingProcess(
         inputFrameworkOpName = "Where",
-        opName = "where",
+        opName = "Where",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("condition" to "condition","input" to "X","y" to "Y"))),
         opMappingRegistry = onnxOpRegistry
 )
 

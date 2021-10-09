@@ -51,6 +51,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     var variableList = ArrayList<String>()
     var initializerSet = HashSet<String>()
     val nodeNames: Set<String>
+    val inputsOutputs = HashSet<String>()
 
 
     override fun nodeByName(input: String): Onnx.NodeProto {
@@ -69,6 +70,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         nodeNames = HashSet()
         cachedNodeList.forEachIndexed { index,node ->
             if(node.nodeName().isEmpty()) {
+
                 val newNodeBuilder = node.internalValue().toBuilder()
                 if(node.numOutputs() > 1) {
                     println("Found node with no name and > 1 input.  Node was $node. Using first output as name.")
@@ -79,6 +81,8 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
                 indexToNode[index] = newNode
             }
 
+            node.inputs().forEach { inputsOutputs.add(it) }
+            node.outputs().forEach { inputsOutputs.add(it) }
             nodeNames.add(node.nodeName())
         }
 
@@ -149,21 +153,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             }
         }
 
-        outputNodes.forEach { nodeProto ->
-            nodeProto.outputList.forEachIndexed { index, outputName ->
-                val indexOfOutput = if(index < 1) "" else ":$index"
-                if(!ret2.map { node -> node.nodeName() }.contains(outputName)) {
-                    val nodeToAdd = NodeProto {
-                        opType = "Identity"
-                        name = outputName
-                        Input("${nodeProto.name}$indexOfOutput")
-                    }
 
-                    ret2.add(OnnxIRNode(nodeToAdd, identityOp,opMappingRegistry))
-                }
-            }
-
-        }
 
 
 
@@ -305,6 +295,22 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     }
 
     override fun getConstantArrayForName(name: String): INDArray {
+        val check = graphDef.initializerList.map { input ->input.name }
+        if(!check.contains(name)) {
+            //initializer not found, see if there is a constant node
+            if(this.nodeNames.contains(name)) {
+                val constNode = nodeByName(name)
+                if(constNode.opType == "Constant") {
+                    //every constant should have a tensor value
+                    val getValue = constNode.getAttribute(0).t
+                    return OnnxIRTensor(getValue).toNd4jNDArray()
+                } else {
+                    throw IllegalArgumentException("Constant of name $name not found!" )
+
+                }
+
+            }
+        }
         return OnnxIRTensor(graphDef.initializerList.first { input -> input.name == name }).toNd4jNDArray()
     }
 
@@ -334,5 +340,9 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
     override fun convertToNDArray(tensorTypeInput: Onnx.TensorProto): INDArray {
         return OnnxIRTensor(tensorTypeInput).toNd4jNDArray()
+    }
+
+    override fun isInputOrOutput(name: String): Boolean {
+       return inputsOutputs.contains(name)
     }
 }

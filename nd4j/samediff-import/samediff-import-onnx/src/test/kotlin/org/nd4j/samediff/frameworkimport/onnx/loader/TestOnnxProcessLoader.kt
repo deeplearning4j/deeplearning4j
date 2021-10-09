@@ -20,16 +20,19 @@
 
 package org.nd4j.samediff.frameworkimport.onnx.loader
 
-import junit.framework.Assert
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
+import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcessLoader
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 
 class TestOnnxProcessLoader {
+
+    
 
     @Test
     fun testLoader() {

@@ -447,7 +447,7 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
     castBuffer.rewind()
     val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen, 0)
     if(shape.isNotEmpty() && totalLen > 0) {
-        if(rawDataBuffer.length() > 1)
+        if(rawDataBuffer.length() > 0)
             return Nd4j.create(rawDataBuffer).reshape('c',*shape)
         return Nd4j.empty(dtype)
     }

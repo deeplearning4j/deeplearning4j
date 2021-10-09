@@ -460,6 +460,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Unsqueeze"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "equals"
   inputFrameworkOpName: "Equal"
   rule {
@@ -879,6 +884,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Expand"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "softmax"
   inputFrameworkOpName: "Softmax"
   rule {
@@ -1212,6 +1222,35 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "Where"
+  inputFrameworkOpName: "Where"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "condition"
+    inputTensorName: "X"
+    inputTensorName: "Y"
+    outputTensorName: "condition"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "condition"
+      value: "condition"
+    }
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "y"
+      value: "Y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Where"
+  }
+}
+mappings {
+  frameworkName: "onnx"
   opName: "matmul"
   inputFrameworkOpName: "Gemm"
   rule {
@@ -1310,6 +1349,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Gemm"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Cast"
 }
 mappings {
   frameworkName: "onnx"
@@ -4314,6 +4358,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Resize"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "cos"
   inputFrameworkOpName: "Cos"
   rule {
@@ -5876,6 +5925,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Slice"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "randomuniform"
   inputFrameworkOpName: "RandomUniform"
   rule {
@@ -6232,6 +6286,11 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "GRU"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "ConstantOfShape"
 }
 mappings {
   frameworkName: "onnx"
