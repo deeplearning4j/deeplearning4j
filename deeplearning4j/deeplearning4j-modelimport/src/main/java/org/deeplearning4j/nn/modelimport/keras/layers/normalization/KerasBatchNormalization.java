@@ -121,7 +121,7 @@ public class KerasBatchNormalization extends KerasLayer {
         List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
         CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
 
-        if(!inboundNodes.isEmpty()) {
+        if(inboundNodes != null && !inboundNodes.isEmpty()) {
             List<Object> list = (List<Object>) inboundNodes.get(0);
             List<Object> list1 = (List<Object>) list.get(0);
             String inputName = list1.get(0).toString();
