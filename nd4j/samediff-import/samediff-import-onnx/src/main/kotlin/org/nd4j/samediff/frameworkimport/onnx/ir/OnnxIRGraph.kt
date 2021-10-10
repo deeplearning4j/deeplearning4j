@@ -130,13 +130,14 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         //add inputs and outputs for use cases like placeholder detection
         inputList.addAll(graphDef.inputList.map { input -> input.name })
         outputList.addAll(graphDef.outputList.map { input -> input.name })
-
+        val frameworkList =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
         graphDef.nodeList.forEach {
-            val opDefOrNull =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")[it.opType]!!
-            if(opDefOrNull == null) {
+
+            if(!frameworkList.containsKey(it.opType)) {
                 throw IllegalArgumentException("Op def name ${it.opType} not found!")
             }
 
+            val opDefOrNull = frameworkList[it.opType]!!
             ret2.add(OnnxIRNode(it, opDefOrNull!!,opMappingRegistry))
         }
 

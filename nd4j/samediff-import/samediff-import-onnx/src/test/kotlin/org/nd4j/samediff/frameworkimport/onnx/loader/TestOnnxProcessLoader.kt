@@ -31,7 +31,12 @@ import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 
 class TestOnnxProcessLoader {
+    @Test
+    fun testImportTest() {
+        val importer = OnnxFrameworkImporter()
+        val model = importer.runImport("/mnt/c/Users/agibs/Downloads/V9/V9/unet.onnx", emptyMap())
 
+    }
     
 
     @Test

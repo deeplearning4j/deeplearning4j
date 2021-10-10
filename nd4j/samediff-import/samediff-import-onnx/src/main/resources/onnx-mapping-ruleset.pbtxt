@@ -547,33 +547,18 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "data"
+    inputTensorName: "axes"
     outputTensorName: "input"
+    outputTensorName: "a"
+    inputToOutput {
+      key: "a"
+      value: "axes"
+    }
     inputToOutput {
       key: "input"
       value: "data"
     }
     ruleType: "tensor"
-    inputFrameworkOpName: "Squeeze"
-  }
-  rule {
-    ruleName: "convertinputnumberlisttondarray"
-    functionName: "convertinputnumberlisttondarray"
-    inputToOutput {
-      key: "a"
-      value: "axes"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Squeeze"
-  }
-  rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
-    outputIntName: "_a"
-    inputToOutput {
-      key: "_a"
-      value: "axes"
-    }
-    ruleType: "attribute"
     inputFrameworkOpName: "Squeeze"
   }
 }
@@ -637,8 +622,8 @@ mappings {
     inputFrameworkOpName: "ReduceSum"
   }
   rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -842,6 +827,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "ArgMax"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Min"
 }
 mappings {
   frameworkName: "onnx"
@@ -1124,10 +1114,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "split"
     outputTensorName: "a"
+    outputTensorName: "b"
     inputToOutput {
       key: "a"
       value: "input"
+    }
+    inputToOutput {
+      key: "b"
+      value: "split"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Split"
@@ -1156,16 +1152,6 @@ mappings {
         argType: INT64
       }
     }
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "b"
-      value: "split"
-    }
-    ruleType: "attribute"
     inputFrameworkOpName: "Split"
   }
 }
@@ -1525,6 +1511,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "RandomNormal"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Max"
 }
 mappings {
   frameworkName: "onnx"
@@ -5142,8 +5133,8 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "X"
-    inputTensorName: "mean"
-    inputTensorName: "var"
+    inputTensorName: "input_mean"
+    inputTensorName: "input_var"
     inputTensorName: "scale"
     outputTensorName: "input"
     outputTensorName: "mean"
@@ -5159,11 +5150,11 @@ mappings {
     }
     inputToOutput {
       key: "mean"
-      value: "mean"
+      value: "input_mean"
     }
     inputToOutput {
       key: "variance"
-      value: "var"
+      value: "input_var"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BatchNormalization"

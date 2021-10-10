@@ -194,6 +194,36 @@ class TestOnnxIR {
 
 
     @Test
+    fun testMaximum() {
+        val declarations = OnnxOpDeclarations
+        val inputs = mutableMapOf<String,INDArray>()
+        for(i in 0 until 5) {
+            inputs["$i"] = Nd4j.zeros(2).addi(i)
+        }
+
+        val output = listOf("output")
+        val createdGraph = createSingleNodeGraph(inputs,"Max",emptyMap(),output,inputs.keys.toList())
+        runAssertion(createdGraph,inputs,output)
+
+    }
+
+
+    @Test
+    fun testMinimum() {
+        val declarations = OnnxOpDeclarations
+        val inputs = mutableMapOf<String,INDArray>()
+        for(i in 0 until 5) {
+            inputs["$i"] = Nd4j.zeros(2).addi(i)
+        }
+
+        val output = listOf("output")
+        val createdGraph = createSingleNodeGraph(inputs,"Min",emptyMap(),output,inputs.keys.toList())
+        runAssertion(createdGraph,inputs,output)
+
+    }
+
+
+    @Test
     fun testUnsqueeze() {
         val declarations = OnnxOpDeclarations
 
