@@ -218,7 +218,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
     NDArray diagInterval = _m({col1+shift,col1+shift+len, col1+shift,col1+shift+len}, true).diagonal('c');
 
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
     T maxElem;
     if(len == 1)
         maxElem = math::nd4j_abs<T>(diagInterval.template t<T>(0));
@@ -457,12 +457,12 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
 
             T leftShifted, rightShifted;
             if (shift == left) {
-                leftShifted = DataTypeUtils::min<T>();
+                leftShifted = DataTypeUtils::min_positive<T>();
                 rightShifted = (k==curLen-1) ? right : ((right - left) * (T)0.6);
             }
             else {
                 leftShifted = -(right - left) * (T)0.6;
-                rightShifted = -DataTypeUtils::min<T>();
+                rightShifted = -DataTypeUtils::min_positive<T>();
             }
 
             T fLeft  = secularEq(leftShifted,  col0, diag, permut, diagShifted, shift);
@@ -581,7 +581,7 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
 template <typename T>
 void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDArray& V) {
 
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
     auto col0 = _m({col1, col1+size, col1, col1+1}, true);
     auto diag = static_cast<const NDArray&>(_m({col1, col1+size, col1, col1+size}, true).diagonal('c'));
 
@@ -660,7 +660,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     // requires rows = cols + 1;
     const int n = col2 - col1 + 1;
     const int k = n/2;
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
     T alphaK, betaK, r0, lambda, phi, c0, s0;
 
     NDArray l(_u.ordering(), {1, k}, _u.dataType(), _u.getContext());
@@ -814,7 +814,7 @@ void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDAr
 template <typename T>
 void SVD<T>::evalData(const NDArray& matrix) {
 
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
 
     if(matrix.sizeAt(1) < _switchSize) {
 

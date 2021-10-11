@@ -111,9 +111,9 @@ void Schur<T>::evalData(const NDArray& matrix) {
 
     const T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
 
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
 
-    if(scale < DataTypeUtils::min<T>()) {
+    if(scale < DataTypeUtils::min_positive<T>()) {
 
         _T = matrix.ulike();
         _U = matrix.ulike();

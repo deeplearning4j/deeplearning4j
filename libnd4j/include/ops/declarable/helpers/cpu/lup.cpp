@@ -164,7 +164,7 @@ namespace helpers {
                 }
             }
 
-            if( pivotValue > DataTypeUtils::min<T>()) {
+            if( pivotValue > DataTypeUtils::min_positive<T>()) {
                 swapRows(&compoundMatrix, pivot, i);
                 swapRows(&permutationMatrix, pivot, i);
                 if (pivot != i)
@@ -521,7 +521,7 @@ template <typename T>
             // check for symmetric
             for (Nd4jLong r = 0; r < thisMatrix->rows(); r++)
                 for (Nd4jLong c = 0; c < thisMatrix->columns(); c++)
-                    if (sd::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c,r)) > DataTypeUtils::min<T>()) return false;
+                    if (sd::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c,r)) > DataTypeUtils::min_positive<T>()) return false;
 
             NDArray output = NDArrayFactory::create<T>(0., context);
             if (ND4J_STATUS_OK != determinant(context, thisMatrix, &output)) return false;

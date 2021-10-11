@@ -52,6 +52,9 @@ namespace sd {
         // returns the smallest finite value of the given type
         template <typename T>
         FORCEINLINE static _CUDA_HD T min();
+        //returns 0 or higher for certain numerical types, used in certain applications where min can't return negative
+        template <typename T>
+        FORCEINLINE static _CUDA_HD T min_positive();
 
         // returns the largest finite value of the given type
         template <typename T>
@@ -198,22 +201,39 @@ FORCEINLINE size_t DataTypeUtils::sizeOf(const Nd4jLong* shapeInfo) {
 // returns the smallest finite value of the given type
 template<>
 FORCEINLINE _CUDA_HD int DataTypeUtils::min<int>() {
-    return (int) 1;
+    return std::numeric_limits<int>::min();
 }
 
+template<>
+FORCEINLINE _CUDA_HD int DataTypeUtils::min_positive<int>() {
+    return 0;
+}
 
 
 template <>
 FORCEINLINE _CUDA_HD uint8_t DataTypeUtils::min<uint8_t>() {
     return (uint8_t) 0;
 }
+
+template <>
+FORCEINLINE _CUDA_HD uint8_t DataTypeUtils::min_positive<uint8_t>() {
+    return (uint8_t) 0;
+}
+
+
+
 template<>
 FORCEINLINE _CUDA_HD char DataTypeUtils::min<char>() {
-    return (char) 1;
+    return std::numeric_limits<char>::min();
 }
 
 template<>
 FORCEINLINE _CUDA_HD uint16_t DataTypeUtils::min<uint16_t>() {
+    return (uint16_t) 0;
+}
+
+template<>
+FORCEINLINE _CUDA_HD uint16_t DataTypeUtils::min_positive<uint16_t>() {
     return (uint16_t) 0;
 }
 
@@ -223,24 +243,47 @@ FORCEINLINE _CUDA_HD bool DataTypeUtils::min<bool>() {
     return false;
 }
 
+template <>
+FORCEINLINE _CUDA_HD bool DataTypeUtils::min_positive<bool>() {
+    return false;
+}
+
 template<>
 FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min<Nd4jLong>() {
     return (Nd4jLong) 1L;
 }
+
+    template<>
+    FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min_positive<Nd4jLong>() {
+        return (Nd4jLong) 0;
+    }
+
+
 
 template <>
 FORCEINLINE _CUDA_HD int8_t DataTypeUtils::min<int8_t>() {
     return (int8_t) -128;
 }
 
+template <>
+FORCEINLINE _CUDA_HD int8_t DataTypeUtils::min_positive<int8_t>() {
+    return (int8_t) 0;
+}
+
 template<>
 FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::min<uint64_t>() {
-    return (uint64_t) 1L;
+    return (uint64_t) 0L;
+}
+
+
+template<>
+FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::min_positive<uint64_t>() {
+    return (uint64_t) 0L;
 }
 
 template<>
 FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::min<uint32_t>() {
-    return 1;
+    return 0;
 }
 
 template<>
@@ -249,12 +292,27 @@ FORCEINLINE _CUDA_HD int16_t DataTypeUtils::min<int16_t>() {
 }
 
 template<>
+FORCEINLINE _CUDA_HD int16_t DataTypeUtils::min_positive<int16_t>() {
+    return  (int16_t) 0;
+}
+
+template<>
 FORCEINLINE _CUDA_HD float DataTypeUtils::min<float>() {
     return (float) 1.175494e-38;
 }
 
 template<>
+FORCEINLINE _CUDA_HD float DataTypeUtils::min_positive<float>() {
+    return (float) 0;
+}
+
+template<>
 FORCEINLINE _CUDA_HD float16 DataTypeUtils::min<float16>() {
+    return (float16) 6.1035e-05;
+}
+
+template<>
+FORCEINLINE _CUDA_HD float16 DataTypeUtils::min_positive<float16>() {
     return (float16) 6.1035e-05;
 }
 
@@ -264,7 +322,17 @@ FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::min<bfloat16>() {
 }
 
 template<>
+FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::min_positive<bfloat16>() {
+    return 0;
+}
+
+template<>
 FORCEINLINE _CUDA_HD double DataTypeUtils::min<double>() {
+    return (double) 2.2250738585072014e-308;
+}
+
+template<>
+FORCEINLINE _CUDA_HD double DataTypeUtils::min_positive<double>() {
     return (double) 2.2250738585072014e-308;
 }
 
