@@ -28,21 +28,58 @@
 
 namespace sd {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(clipbyvalue, 1, 1, true, 2, 0) {
+        CONFIGURABLE_OP_IMPL(clipbyvalue, -1, 1, true, 2, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            // FIXME: extra args!!!
-            auto left = T_ARG(0);
-            auto right = T_ARG(1);
+            if(block.inputs()->size() > 2) {
+                auto left = INPUT_VARIABLE(1);
+                auto right = INPUT_VARIABLE(2);
 
-            REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
-            //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
-            helpers::clipByValue(block.launchContext(), *input, left, right, *output);
-            //STORE_RESULT(*output);
+
+                switch (input->dataType()) {
+                    case DOUBLE : {
+                        auto leftValueDouble = left->e<double>(0);
+                        auto rightValueDouble = right->e<double>(0);
+                        helpers::clipByValue(block.launchContext(), *input, leftValueDouble, rightValueDouble, *output);
+                        break;
+                    }
+                    case FLOAT32 : {
+                        auto leftValueFloat = left->e<float>(0);
+                        auto rightValueFloat = right->e<float>(0);
+                        helpers::clipByValue(block.launchContext(), *input, leftValueFloat, rightValueFloat, *output);
+                        break;
+                    }
+                    case HALF : {
+                        auto leftValueFloat16 = left->e<float16>(0);
+                        auto rightValueFloat16 = right->e<float16>(0);
+                        helpers::clipByValue(block.launchContext(), *input, leftValueFloat16, rightValueFloat16,
+                                             *output);
+                        break;
+                    }
+                    case BFLOAT16 : {
+                        auto leftValueBFloat16 = left->e<bfloat16>(0);
+                        auto rightValueBFloat16 = right->e<bfloat16>(0);
+                        helpers::clipByValue(block.launchContext(), *input, leftValueBFloat16, rightValueBFloat16,
+                                             *output);
+                        break;
+                    }
+
+                }
+            }else {
+                auto left = T_ARG(0);
+                auto right = T_ARG(1);
+
+                REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
+                //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
+                helpers::clipByValue(block.launchContext(), *input, left, right, *output);
+            }
 
             return Status::OK();
         }
+
+
+
         DECLARE_SYN(ClipByValue, clipbyvalue);
 
         DECLARE_TYPES(clipbyvalue) {

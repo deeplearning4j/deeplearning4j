@@ -31,15 +31,24 @@ namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, 1, 0) {
 
-    auto input  = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
+    if(block.inputs()->size() > 1) {
+        auto input  = INPUT_VARIABLE(0);
+        auto clipNorm = INPUT_VARIABLE(1);
+        auto output = OUTPUT_VARIABLE(0);
+        const bool isInplace = block.isInplace();
+        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), *clipNorm, isInplace, true);
+    } else {
+        auto input  = INPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
 
-    const bool isInplace = block.isInplace();
-    auto clipNorm = NDArrayFactory::create(T_ARG(0), block.launchContext());
+        const bool isInplace = block.isInplace();
+        auto clipNorm = NDArrayFactory::create(T_ARG(0), block.launchContext());
 
-    helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace, true);
+        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace, true);
+    }
+
 
     return Status::OK();
 }
