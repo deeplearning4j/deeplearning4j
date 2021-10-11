@@ -33,7 +33,7 @@ import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxDataType
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["Cast"],frameworkName = "onnx")
+@PreHookRule(nodeNames = [],opNames = ["Clip"],frameworkName = "onnx")
 class Clip : PreImportHook  {
     override fun preProcess(
         op: SameDiffOp,
