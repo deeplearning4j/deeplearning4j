@@ -69,6 +69,10 @@ public class ClipByValue extends DynamicCustomOp {
         addTArgument(clipValueMin, clipValueMax);
     }
 
+    public ClipByValue(INDArray x, INDArray clipValueMin, INDArray clipValueMax) {
+        super(null,new INDArray[]{x,clipValueMin,clipValueMax},null);
+    }
+
     @Override
     public String opName() {
         return "ClipByValue";

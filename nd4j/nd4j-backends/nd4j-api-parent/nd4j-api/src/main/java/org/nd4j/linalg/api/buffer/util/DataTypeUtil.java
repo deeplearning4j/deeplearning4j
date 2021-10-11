@@ -78,7 +78,7 @@ public class DataTypeUtil {
     }
 
     /**
-     * Gets the name of the alocation mode
+     * Gets the name of the allocation mode
      * @param allocationMode
      * @return
      */

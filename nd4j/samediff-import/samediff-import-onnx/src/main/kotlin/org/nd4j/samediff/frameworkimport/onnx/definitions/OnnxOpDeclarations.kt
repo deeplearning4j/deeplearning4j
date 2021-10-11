@@ -313,7 +313,6 @@ val softmax = OnnxMappingProcess(
 
 //TODO: DynamicQuantizeLinear
 //TODO: Einsum
-//TODO: Expand
 //TODO: EyeLike
 //TODO: FeatureVectorizer
 val gru = OnnxMappingProcess(
@@ -349,7 +348,11 @@ val gatherNd = OnnxMappingProcess(
 )
 
 
-
+val clip = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Clip",
+        opMappingRegistry = onnxOpRegistry
+)
 
 val gemm = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,

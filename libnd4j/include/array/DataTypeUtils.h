@@ -198,13 +198,25 @@ FORCEINLINE size_t DataTypeUtils::sizeOf(const Nd4jLong* shapeInfo) {
 // returns the smallest finite value of the given type
 template<>
 FORCEINLINE _CUDA_HD int DataTypeUtils::min<int>() {
-    return 1;
+    return (int) 1;
+}
+
+
+
+template <>
+FORCEINLINE _CUDA_HD uint8_t DataTypeUtils::min<uint8_t>() {
+    return (uint8_t) 0;
+}
+template<>
+FORCEINLINE _CUDA_HD char DataTypeUtils::min<char>() {
+    return (char) 1;
 }
 
 template<>
-FORCEINLINE _CUDA_HD char DataTypeUtils::min<char>() {
-    return 1;
+FORCEINLINE _CUDA_HD uint16_t DataTypeUtils::min<uint16_t>() {
+    return (uint16_t) 0;
 }
+
 
 template <>
 FORCEINLINE _CUDA_HD bool DataTypeUtils::min<bool>() {
@@ -213,12 +225,17 @@ FORCEINLINE _CUDA_HD bool DataTypeUtils::min<bool>() {
 
 template<>
 FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min<Nd4jLong>() {
-    return 1L;
+    return (Nd4jLong) 1L;
+}
+
+template <>
+FORCEINLINE _CUDA_HD int8_t DataTypeUtils::min<int8_t>() {
+    return (int8_t) -128;
 }
 
 template<>
 FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::min<uint64_t>() {
-    return 1L;
+    return (uint64_t) 1L;
 }
 
 template<>
@@ -227,8 +244,13 @@ FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::min<uint32_t>() {
 }
 
 template<>
+FORCEINLINE _CUDA_HD int16_t DataTypeUtils::min<int16_t>() {
+    return  (int16_t) -32768;
+}
+
+template<>
 FORCEINLINE _CUDA_HD float DataTypeUtils::min<float>() {
-    return 1.175494e-38;
+    return (float) 1.175494e-38;
 }
 
 template<>
@@ -243,14 +265,14 @@ FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::min<bfloat16>() {
 
 template<>
 FORCEINLINE _CUDA_HD double DataTypeUtils::min<double>() {
-    return 2.2250738585072014e-308;
+    return (double) 2.2250738585072014e-308;
 }
 
 ///////////////////////////////////////////////////////////////////
 // returns the largest finite value of the given type
 template <>
 FORCEINLINE _CUDA_HD int DataTypeUtils::max<int>() {
-    return 2147483647;
+    return (int) 2147483647;
 }
 
 template <>
@@ -265,7 +287,7 @@ FORCEINLINE _CUDA_HD int8_t DataTypeUtils::max<int8_t>() {
 
 template <>
 FORCEINLINE _CUDA_HD uint8_t DataTypeUtils::max<uint8_t>() {
-    return 255;
+    return (uint8_t) 255;
 }
 
 template <>
@@ -422,6 +444,9 @@ FORCEINLINE _CUDA_HD T DataTypeUtils::eps() {
 
         return result;
     }
+
+
+
 
     FORCEINLINE _CUDA_HD size_t DataTypeUtils::sizeOfElement(sd::DataType type) {
         switch (type) {

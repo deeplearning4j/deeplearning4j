@@ -469,6 +469,68 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+    Op("clipByValue") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.clip"
+        javaOpClass = "ClipByValue"
+        Input(NUMERIC, "x") { description = "Input variable to cip" }
+        Arg(NUMERIC, "clipValueMin") { description = "The value min for clipping" }
+        Arg(NUMERIC, "clipValueMax") { description = "The max value to clip to" }
+        Output(NUMERIC, "output"){ description = "The clipped value" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Return the clipped ndarray containing values no smaller or larger than the given min and max.
+            """.trimIndent()
+        }
+    }
+
+    Op("clipByValue") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.clip"
+        javaOpClass = "ClipByValue"
+        Input(NUMERIC, "x") { description = "Input variable to cip" }
+        Input(NUMERIC, "clipValueMin") { description = "The value min for clipping" }
+        Input(NUMERIC, "clipValueMax") { description = "The max value to clip to" }
+        Output(NUMERIC, "output"){ description = "The clipped value" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Return the clipped ndarray containing values no smaller or larger than the given min and max.
+            """.trimIndent()
+        }
+    }
+
+    Op("clipByNorm") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.clip"
+        javaOpClass = "ClipByNorm"
+        Input(NUMERIC, "x") { description = "Input variable to clip" }
+        Arg(NUMERIC, "clipValue") { description = "The value max for clipping" }
+        Output(NUMERIC, "output"){ description = "The clipped value" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Returns a clipped ndarray such that the input is normalized so that its L2 norm 
+               is <= the specified value.
+            """.trimIndent()
+        }
+    }
+
+    Op("clipByNorm") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.clip"
+        javaOpClass = "ClipByNorm"
+        Input(NUMERIC, "x") { description = "Input variable to clip" }
+        Input(NUMERIC, "clipValue") { description = "The value max value for clipping" }
+        Input(NUMERIC, "dimensions") { description = "The dimensions to clip" }
+        Output(NUMERIC, "output"){ description = "The clipped value" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                 Returns a clipped ndarray such that the input is normalized so that its L2 norm 
+               is <= the specified value.
+            """.trimIndent()
+        }
+    }
+
     Op("linspace") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Arg(DATA_TYPE, "dataType") { description = "Data type of the output array" }
@@ -1805,6 +1867,21 @@ fun SDBaseOps() =  Namespace("BaseOps"){
             """.trimIndent()
         }
     }
+
+
+    Op("minMax"){
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.dtype"
+        javaOpClass = "MinMaxDataType"
+        Arg(INT, "datatype"){ description = "The input target data type represented as an int"}
+        Arg(INT, "minOrMax"){ description = "The min or max (0 or 1) value to return"}
+        Output(NDARRAY, "output"){ description = "Output array (after casting)"}
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Return a scalar array reflecting the min or max value for a given data type.
+            """.trimIndent()
+        }
+    }
+
 
     Op("castTo"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.dtype"

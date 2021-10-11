@@ -77,7 +77,6 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
     public final static String ARG_DECLARATION_WITH_VARIABLE = "(\\w+\\s)+\\w+\\s*=\\s*[A-Z]+_[A-Z]+\\([\\d\\w\\+-*\\/]+);";
     public final static String ARRAY_ASSIGNMENT = "\\w+\\[[\\w\\d]\\]\\s*=\\s*[A-Z]+_[A-Z]+\\s*\\([\\w\\d\\+\\-\\*\\/\\s]+\\);";
 
-    @Builder.Default
     @Getter
     private Map<String, OpNamespace.OpDescriptor.OpDeclarationType> opTypes = new HashMap<>();
 

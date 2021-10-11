@@ -493,8 +493,20 @@ val clipByValue = TensorflowMappingProcess(
                 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0])
 )
 
+val clipByNorm = TensorflowMappingProcess(
+        opName = "clipbynorm",
+        opMappingRegistry = tensorflowOpRegistry,
+        inputFrameworkOpName = "ClipByNorm",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "t"))),
+        attributeMappingRules = listOf(
+                convertNDArrayInputToNumericalAttr(mutableMapOf("clipValue" to "clip_value")),
+                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0])
+)
 
-//TODO: our compare and bit pack operation seems to do something different than TFs?
+
+
+
+
 val compareAndBitPack = TensorflowMappingProcess(
         opName = "compare_and_bitpack",
         opMappingRegistry = tensorflowOpRegistry,
