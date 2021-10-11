@@ -958,7 +958,7 @@ val transpose = OnnxMappingProcess(
         opName = "transpose",
         inputFrameworkOpName = "Transpose",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToListNumber(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
+        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
         opMappingRegistry = onnxOpRegistry
 )
 

@@ -66,6 +66,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -531,6 +532,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -624,6 +626,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -777,9 +780,8 @@ mappings {
     inputFrameworkOpName: "Transpose"
   }
   rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
-    outputIntName: "permuteDims"
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
     inputToOutput {
       key: "permuteDims"
       value: "perm"
@@ -820,6 +822,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -864,6 +867,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1198,6 +1202,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1550,6 +1555,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Clip"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "reduce_norm1"
   inputFrameworkOpName: "ReduceL1"
   rule {
@@ -1579,6 +1589,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1649,6 +1660,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1720,6 +1732,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -5294,6 +5307,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -5696,6 +5710,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -5772,6 +5787,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5782,6 +5798,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5792,6 +5809,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -5928,6 +5946,8 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "high"
@@ -6194,6 +6214,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"

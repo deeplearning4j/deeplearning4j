@@ -192,6 +192,16 @@ class TestOnnxIR {
     }
 
 
+    @Test
+    fun testClip() {
+        val declarations = OnnxOpDeclarations
+        val inputs = mutableMapOf("input" to Nd4j.linspace(1,4,4).castTo(DataType.DOUBLE),
+            "min" to Nd4j.scalar(1.0).castTo(DataType.DOUBLE), "max" to Nd4j.scalar(2.0).castTo(DataType.DOUBLE))
+        val output = listOf("output")
+        val createdGraph = createSingleNodeGraph(inputs,"Clip",emptyMap(),output,inputs.keys.toList())
+        runAssertion(createdGraph,inputs,output)
+
+    }
 
     @Test
     fun testMaximum() {

@@ -73,6 +73,12 @@ public class ClipByValue extends DynamicCustomOp {
         super(null,new INDArray[]{x,clipValueMin,clipValueMax},null);
     }
 
+    public ClipByValue(SameDiff sd, SDVariable x, SDVariable clipValueMin, SDVariable clipValueMax) {
+        super(sd,new SDVariable[]{x,clipValueMin,clipValueMax});
+    }
+
+
+
     @Override
     public String opName() {
         return "ClipByValue";

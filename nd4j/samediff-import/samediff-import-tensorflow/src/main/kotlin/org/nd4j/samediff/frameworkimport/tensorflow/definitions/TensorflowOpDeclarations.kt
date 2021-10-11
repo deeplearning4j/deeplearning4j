@@ -493,19 +493,6 @@ val clipByValue = TensorflowMappingProcess(
                 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0])
 )
 
-val clipByNorm = TensorflowMappingProcess(
-        opName = "clipbynorm",
-        opMappingRegistry = tensorflowOpRegistry,
-        inputFrameworkOpName = "ClipByNorm",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "t"))),
-        attributeMappingRules = listOf(
-                convertNDArrayInputToNumericalAttr(mutableMapOf("clipValue" to "clip_value")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0])
-)
-
-
-
-
 
 val compareAndBitPack = TensorflowMappingProcess(
         opName = "compare_and_bitpack",
