@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+            <artifactId>nd4j-parameter-server-node_2.12</artifactId>
             <version>${nd4j.version}</version>
             <exclusions>
                 <exclusion>
@@ -75,7 +75,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
+            <artifactId>spark-core_2.12</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
