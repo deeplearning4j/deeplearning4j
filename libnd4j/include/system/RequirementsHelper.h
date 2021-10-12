@@ -62,24 +62,47 @@ ND4J_LOCAL std::ostream& operator<<(std::ostream& o, const std::initializer_list
 template<typename T>
 using remove_cvref_t = typename std::remove_cv< typename std::remove_reference<T>::type >::type;
 
-template <class F>
-struct Check_callable
-{
-  template <class... Args>
-  static std::false_type try_call(Args&&...);
- 
-  template <class... Args>
-  static auto try_call( F&& f, Args&&... args)
-    -> decltype((void)f(std::forward<Args>(args)...),
-                std::true_type{});
+
+//https://stackoverflow.com/questions/15393938/find-out-whether-a-c-object-is-callable
+
+template<typename T>
+using remove_cvref_t = typename std::remove_cv< typename std::remove_reference<T>::type >::type;
+
+template<typename T>
+using remove_ref_t = typename std::remove_reference<T>::type;
+
+template<typename T>
+using remove_refptr_t = typename std::remove_pointer<remove_ref_t<T>>::type;
+
+template<typename T>
+using is_function_t = typename std::is_function<remove_refptr_t<T>>::type;
+
+template<bool isObject, typename T>
+struct is_callable_impl : public is_function_t<T> {};
+
+template<typename T>
+struct is_callable_impl<true, T> {
+private:
+    struct Fallback { void operator()(); };
+    struct Derived : T, Fallback { };
+
+    template<typename U, U> struct Check;
+
+    template<typename>
+    static std::true_type test(...);
+
+    template<typename C>
+    static std::false_type test(Check<void (Fallback::*)(), &C::operator()>*);
+
+public:
+    typedef decltype(test<Derived>(nullptr)) type;
 };
- 
-template <class F, class... Args>
-using is_callable = decltype
-  (
-    Check_callable<F>::try_call(std::declval<F>(),
-          std::forward<Args>(std::declval<Args>())...)
-  );
+
+template<typename T>
+using is_callable = 
+    typename is_callable_impl<std::is_class<remove_ref_t<T>>::value,
+                              remove_ref_t<T> >::type;
+
 
 template<typename S, typename T>
 class is_streamable
@@ -214,7 +237,7 @@ getStreamValue(const T& x){
  * @brief Requirements helper is used to replace plain checks for making them output informative messages
  * @see https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/Helpers.md
  */
-ND4J_LOCAL class Requirements{
+class Requirements{
     public:
 
     Requirements(const char *prefix_msg=""):prefix(prefix_msg), ok(true){
@@ -350,7 +373,7 @@ ND4J_LOCAL class Requirements{
 
 //Generic wrapper where variable and info can be lazy evaluated using the lambda
 template<typename T1, typename T2>
-ND4J_LOCAL struct InfoVariable{ 
+struct InfoVariable{ 
 
     T1 value_or_op;
     T2 message_or_op;
@@ -387,7 +410,7 @@ ND4J_LOCAL InfoVariable<T1, T2> makeInfoVariable( T1&& v1,  T2&& v2){
 }
 
 template<typename T>
-ND4J_LOCAL struct ShapeInfoVariable{ 
+struct ShapeInfoVariable{ 
 
     explicit ShapeInfoVariable(const T& val, const char *msg=""):value(val), message(msg){}  
     const T& value;
@@ -404,7 +427,7 @@ ND4J_LOCAL struct ShapeInfoVariable{
 };
 
 template<typename T>
-ND4J_LOCAL ShapeInfoVariable<T> makeShapeInfoVariable( T&& v, const char *msg){
+ShapeInfoVariable<T> makeShapeInfoVariable( T&& v, const char *msg){
     return ShapeInfoVariable<T>(std::forward<T>(v), msg);
 }
 
