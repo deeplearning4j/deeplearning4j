@@ -264,4 +264,22 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", arabicQuestionMark);
         assertEquals(expected, tokenizer.getTokens());
     }
+
+    @Test
+    public void testBertWordPieceTokenizerHandlesMorePunctuations() throws Exception {
+        String toTokenizePrefix = "I saw a girl with a telescope";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
+
+        char[] punctuations = {'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';',
+                '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '{', '|', '}', '~'
+        };
+
+        for (char p: punctuations) {
+            String toTokenize = toTokenizePrefix + p;
+            Tokenizer tokenizer = t.create(toTokenize);
+
+            final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", String.valueOf(p));
+            assertEquals(expected, tokenizer.getTokens());
+        }
+    }
 }
