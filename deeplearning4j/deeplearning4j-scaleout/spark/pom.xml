@@ -39,7 +39,6 @@
     <modules>
         <module>dl4j-spark</module>
         <module>dl4j-spark-parameterserver</module>
-        <module>dl4j-spark-nlp-java8</module>
     </modules>
 
     <properties>
