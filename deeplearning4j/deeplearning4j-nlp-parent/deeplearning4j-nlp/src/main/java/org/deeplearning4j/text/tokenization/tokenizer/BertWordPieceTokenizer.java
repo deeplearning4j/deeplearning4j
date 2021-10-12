@@ -29,7 +29,18 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class BertWordPieceTokenizer implements Tokenizer {
-    public static final Pattern splitPattern = Pattern.compile("\\p{javaWhitespace}+|((?<=\\p{Punct})+|(?=\\p{Punct}+))");
+    // We treat all non-letter/number ASCII as punctuation.
+    // Characters such as "^", "$", and "`" are not in the Unicode
+    // Punctuation class but we treat them as punctuation anyways, for
+    // consistency.
+    public static final Pattern splitPattern = Pattern.compile(
+            "\\p{javaWhitespace}+" +
+                    "|((?<=\\p{Punct})+|(?=\\p{Punct}+))" +
+                    "|((?<=[\\x21-\\x2F])+|(?=[\\x21-\\x2F]+))" +
+                    "|((?<=[\\x3A-\\x40])+|(?=[\\x3A-\\x40]+))" +
+                    "|((?<=[\\x5B-\\x60])+|(?=[\\x5B-\\x60]+))" +
+                    "|((?<=[\\x7B-\\x7E])+|(?=[\\x7B-\\x7E]+))",
+            Pattern.UNICODE_CHARACTER_CLASS);
 
     private final List<String> tokens;
     private final TokenPreProcess preTokenizePreProcessor;
