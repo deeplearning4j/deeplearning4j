@@ -354,6 +354,14 @@ val clip = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+
+val nonZero = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "NonZero",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
 val gemm = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "Gemm",

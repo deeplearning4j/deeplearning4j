@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx
 
 
 import onnx.Onnx
+import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.nd4j.common.util.ArrayUtil
@@ -202,6 +203,19 @@ class TestOnnxIR {
         runAssertion(createdGraph,inputs,output)
 
     }
+
+    @Test
+    @Ignore("Onnxruntime does not have NonZero")
+    fun testNonZero() {
+        val declarations = OnnxOpDeclarations
+        val inputs = mutableMapOf("input" to Nd4j.linspace(1,4,4).castTo(DataType.DOUBLE))
+
+        val output = listOf("output")
+        val createdGraph = createSingleNodeGraph(inputs,"NonZero",emptyMap(),output,inputs.keys.toList(),templateTensor = Nd4j.ones(DataType.INT64))
+        runAssertion(createdGraph,inputs,output)
+
+    }
+
 
     @Test
     fun testMaximum() {
