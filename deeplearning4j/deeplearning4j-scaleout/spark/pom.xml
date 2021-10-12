@@ -172,6 +172,8 @@
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
                         <arg>-nobootcp</arg>
+                        <!-- See: https://stackoverflow.com/questions/13250248/build-failure-for-scala-maven-and-java-integration -->
+                        <arg>-Yresolve-term-conflict:object</arg>
                     </args>
                     <jvmArgs>
                         <jvmArg>-Xms128m</jvmArg>
