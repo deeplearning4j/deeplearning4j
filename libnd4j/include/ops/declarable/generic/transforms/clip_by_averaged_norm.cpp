@@ -31,7 +31,7 @@ namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, -2, 0) {
 
     if(block.inputs()->size() > 1) {
         auto input  = INPUT_VARIABLE(0);
@@ -60,16 +60,20 @@ DECLARE_TYPES(clipbyavgnorm) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(clipbyavgnorm_bp, 2, 1, false, 1, 0) {
+CUSTOM_OP_IMPL(clipbyavgnorm_bp, -2, 1, false, -1, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
 
     auto gradI = OUTPUT_VARIABLE(0);
+    if(block.inputs()->size() > 2) {
+        const auto clipNorm = INPUT_VARIABLE(2);
+        helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), *clipNorm, true);
+    } else {
+        const auto clipNorm = NDArrayFactory::create(gradI->dataType(), T_ARG(0), block.launchContext());
+        helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm, true);
+    }
 
-    const auto clipNorm = NDArrayFactory::create(gradI->dataType(), T_ARG(0), block.launchContext());
-
-    helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm, true);
 
     return Status::OK();
 }

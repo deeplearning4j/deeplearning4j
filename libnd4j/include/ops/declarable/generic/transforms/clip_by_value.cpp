@@ -18,6 +18,7 @@
 
 //
 //  @author raver119@gmail.com
+//  @author Adam Gibson
 //
 
 #include <system/op_boilerplate.h>
@@ -28,11 +29,20 @@
 
 namespace sd {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(clipbyvalue, -1, 1, true, 2, 0) {
+        CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            if(block.inputs()->size() > 2) {
+            if(block.getTArguments()->size() > 0) {
+                auto left = T_ARG(0);
+                auto right = T_ARG(1);
+
+                REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
+                //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
+                helpers::clipByValue(block.launchContext(), *input, left, right, *output);
+
+
+            } else {
                 auto left = INPUT_VARIABLE(1);
                 auto right = INPUT_VARIABLE(2);
 
@@ -66,13 +76,6 @@ namespace sd {
                     }
 
                 }
-            }else {
-                auto left = T_ARG(0);
-                auto right = T_ARG(1);
-
-                REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
-                //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
-                helpers::clipByValue(block.launchContext(), *input, left, right, *output);
             }
 
             return Status::OK();

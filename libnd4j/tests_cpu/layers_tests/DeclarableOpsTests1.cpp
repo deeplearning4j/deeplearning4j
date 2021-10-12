@@ -889,6 +889,30 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
     delete block;
 }
 
+
+TEST_F(DeclarableOpsTests1, ClipByValue2) {
+
+    auto x = NDArrayFactory::create_<float>('c', { 5, 5 });
+    auto output = NDArrayFactory::create_<float>('c', { 5, 5 });
+    auto left = NDArrayFactory::create_<float>('c',{1,1});
+    left->assign(0.0);
+    auto right = NDArrayFactory::create_<float>('c',{1,1});
+    right->assign(3.0);
+    auto exp = NDArrayFactory::create<float>('c', { 5, 5 });
+    x->assign(4);
+    x->p(0, -1);
+    x->p(1, 2);
+    exp.assign(3);
+    exp.p(0, 0);
+    exp.p(1, 2);
+
+
+    sd::ops::clipbyvalue clip;
+
+    clip.execute({x,left,right},{ x });
+    ASSERT_TRUE(x->equalsTo(&exp));
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MergeAvgTest1) {
 
@@ -1785,11 +1809,11 @@ TEST_F(DeclarableOpsTests1, Test_Min_Max_1) {
                     }
                     break;
                 case sd::DataType::INT64:
-                       if(minMax == 0) {
-                           ASSERT_EQ(firstOutput->e<Nd4jLong>(0),DataTypeUtils::min<Nd4jLong>());
-                       } else {
-                           ASSERT_EQ(firstOutput->e<Nd4jLong>(0),DataTypeUtils::max<Nd4jLong>());
-                       }
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<Nd4jLong>(0),DataTypeUtils::min<Nd4jLong>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<Nd4jLong>(0),DataTypeUtils::max<Nd4jLong>());
+                    }
                     break;
                 case sd::DataType::DOUBLE:
                     if(minMax == 0) {
