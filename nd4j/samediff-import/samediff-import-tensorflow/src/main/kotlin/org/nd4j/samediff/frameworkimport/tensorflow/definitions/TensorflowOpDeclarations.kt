@@ -494,7 +494,6 @@ val clipByValue = TensorflowMappingProcess(
 )
 
 
-//TODO: our compare and bit pack operation seems to do something different than TFs?
 val compareAndBitPack = TensorflowMappingProcess(
         opName = "compare_and_bitpack",
         opMappingRegistry = tensorflowOpRegistry,

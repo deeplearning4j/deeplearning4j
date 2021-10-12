@@ -66,6 +66,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -531,6 +532,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -547,33 +549,18 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "data"
+    inputTensorName: "axes"
     outputTensorName: "input"
+    outputTensorName: "a"
+    inputToOutput {
+      key: "a"
+      value: "axes"
+    }
     inputToOutput {
       key: "input"
       value: "data"
     }
     ruleType: "tensor"
-    inputFrameworkOpName: "Squeeze"
-  }
-  rule {
-    ruleName: "convertinputnumberlisttondarray"
-    functionName: "convertinputnumberlisttondarray"
-    inputToOutput {
-      key: "a"
-      value: "axes"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Squeeze"
-  }
-  rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
-    outputIntName: "_a"
-    inputToOutput {
-      key: "_a"
-      value: "axes"
-    }
-    ruleType: "attribute"
     inputFrameworkOpName: "Squeeze"
   }
 }
@@ -637,8 +624,9 @@ mappings {
     inputFrameworkOpName: "ReduceSum"
   }
   rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -792,9 +780,8 @@ mappings {
     inputFrameworkOpName: "Transpose"
   }
   rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
-    outputIntName: "permuteDims"
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
     inputToOutput {
       key: "permuteDims"
       value: "perm"
@@ -835,6 +822,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -842,6 +830,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "ArgMax"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Min"
 }
 mappings {
   frameworkName: "onnx"
@@ -874,6 +867,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1124,10 +1118,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "split"
     outputTensorName: "a"
+    outputTensorName: "b"
     inputToOutput {
       key: "a"
       value: "input"
+    }
+    inputToOutput {
+      key: "b"
+      value: "split"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Split"
@@ -1156,16 +1156,6 @@ mappings {
         argType: INT64
       }
     }
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "b"
-      value: "split"
-    }
-    ruleType: "attribute"
     inputFrameworkOpName: "Split"
   }
 }
@@ -1212,6 +1202,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1528,6 +1519,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Max"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "hard_sigmoid"
   inputFrameworkOpName: "HardSigmoid"
   rule {
@@ -1556,6 +1552,11 @@ mappings {
     }
     inputFrameworkOpName: "HardSigmoid"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Clip"
 }
 mappings {
   frameworkName: "onnx"
@@ -1588,6 +1589,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1658,6 +1660,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1729,6 +1732,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -5142,8 +5146,8 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "X"
-    inputTensorName: "mean"
-    inputTensorName: "var"
+    inputTensorName: "input_mean"
+    inputTensorName: "input_var"
     inputTensorName: "scale"
     outputTensorName: "input"
     outputTensorName: "mean"
@@ -5159,11 +5163,11 @@ mappings {
     }
     inputToOutput {
       key: "mean"
-      value: "mean"
+      value: "input_mean"
     }
     inputToOutput {
       key: "variance"
-      value: "var"
+      value: "input_var"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BatchNormalization"
@@ -5303,6 +5307,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -5705,6 +5710,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -5781,6 +5787,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5791,6 +5798,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5801,6 +5809,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -5937,6 +5946,8 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "high"
@@ -6203,6 +6214,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"

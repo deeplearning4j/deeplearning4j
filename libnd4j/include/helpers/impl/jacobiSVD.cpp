@@ -145,7 +145,7 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
 
     T n = math::nd4j_sqrt<T,T>(block.t<T>(p, p) * block.t<T>(p, p)  + block.t<T>(q, p)*block.t<T>(q, p));
 
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
     const T precision = DataTypeUtils::eps<T>();
 
     if(n == (T)0.f) {
@@ -178,7 +178,7 @@ bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDAr
 
     T denom = (T)(2.f)* math::nd4j_abs<T>(y);
 
-    if(denom < DataTypeUtils::min<T>()) {
+    if(denom < DataTypeUtils::min_positive<T>()) {
 
         rotation.r<T>(0,0) = rotation.r<T>(1,1) = (T)1.f;
         rotation.r<T>(0,1) = rotation.r<T>(1,0) = (T)0.f;
@@ -291,7 +291,7 @@ template <typename T>
 void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
     const T precision  = (T)2.f * DataTypeUtils::eps<T>();
-    const T almostZero = DataTypeUtils::min<T>();
+    const T almostZero = DataTypeUtils::min_positive<T>();
 
     T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
     if(scale== (T)0.f)

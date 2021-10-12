@@ -225,6 +225,63 @@ public class NDBase {
   }
 
   /**
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max for clipping
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByNorm(INDArray x, double clipValue) {
+    NDValidation.validateNumerical("clipByNorm", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue))[0];
+  }
+
+  /**
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max value for clipping (NUMERIC type)
+   * @param dimensions The dimensions to clip (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByNorm(INDArray x, INDArray clipValue, INDArray dimensions) {
+    NDValidation.validateNumerical("clipByNorm", "x", x);
+    NDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
+    NDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue, dimensions))[0];
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping
+   * @param clipValueMax The max value to clip to
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByValue(INDArray x, double clipValueMin, double clipValueMax) {
+    NDValidation.validateNumerical("clipByValue", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax))[0];
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping (NUMERIC type)
+   * @param clipValueMax The max value to clip to (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByValue(INDArray x, INDArray clipValueMin, INDArray clipValueMax) {
+    NDValidation.validateNumerical("clipByValue", "x", x);
+    NDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
+    NDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax))[0];
+  }
+
+  /**
    * Concatenate a set of inputs along the specified dimension.<br>
    * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.<br>
    * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]<br>
@@ -942,6 +999,17 @@ public class NDBase {
     NDValidation.validateNumerical("min", "first", first);
     NDValidation.validateNumerical("min", "second", second);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(first, second))[0];
+  }
+
+  /**
+   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   *
+   * @param datatype The input target data type represented as an int
+   * @param minOrMax The min or max (0 or 1) value to return
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public INDArray minMax(int datatype, int minOrMax) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(datatype, minOrMax))[0];
   }
 
   /**

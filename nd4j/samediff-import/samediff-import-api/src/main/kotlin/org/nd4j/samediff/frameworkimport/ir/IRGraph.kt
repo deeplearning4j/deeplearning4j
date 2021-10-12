@@ -19,7 +19,6 @@
  */
 package org.nd4j.samediff.frameworkimport.ir
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.context.MappingContext

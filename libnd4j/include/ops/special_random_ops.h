@@ -696,7 +696,7 @@ namespace randomOps {
                         z[e] = step(rng, mean, stddev, e, middle, z[e]);
 
                         if (z[e] > mean + ds || z[e] < mean - ds)
-                            z[e] = mean + sd::DataTypeUtils::min<T>();
+                            z[e] = mean + sd::DataTypeUtils::min_positive<T>();
                     }
                 }
             };

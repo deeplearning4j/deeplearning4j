@@ -88,7 +88,7 @@ class Resize : PreImportHook  {
             outputNames[0]
         } else null
 
-        val outputSize = outputSize(sd,op,inputVariable,scales,sizes)
+        val outputSize = outputSize(sd, op, inputVariable, scales, sizes,inputShape)
         outputSize!!.setShape(2)
 
         //switch to NWHC (tensorflow format) and then back to NCHW (onnx format)
@@ -169,16 +169,24 @@ class Resize : PreImportHook  {
         }
     }
 
-    fun outputSize(sd: SameDiff,op: SameDiffOp,input: SDVariable,scales: SDVariable,sizes: SDVariable): SDVariable?  {
+    fun outputSize(
+        sd: SameDiff,
+        op: SameDiffOp,
+        input: SDVariable,
+        scales: SDVariable,
+        sizes: SDVariable,
+        inputVariableShape: SDVariable
+    ): SDVariable?  {
         var ret: SDVariable? = null
         ret = if(op.inputsToOp.size == 3) {
-            val heightWidthScale = sd.constant(scales.arr.get(NDArrayIndex.interval(2,scales.arr.length())))
-            val heightWidthShape = sd.castTo(sd.constant(Nd4j.create(input.shape.asList().subList(2,input.shape.size))),heightWidthScale.dataType())
+            val heightWidthScale = scales.get(SDIndex.interval(2,-1))
+            val subGet = inputVariableShape.get(SDIndex.interval(2,-1))
+            val heightWidthShape = sd.castTo(subGet,heightWidthScale.dataType())
             val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
             scaled
         } else {
-            sizes.setShape(*input.shape)
-            sd.castTo(sizes.get(SDIndex.interval(2, ArrayUtil.prod(*sizes.shape))),DataType.INT32)
+            sizes.setShape(*inputVariableShape.shape)
+            sd.castTo(sizes.get(SDIndex.interval(2, -1)),DataType.INT32)
         }
         return ret.castTo(DataType.INT32)
     }

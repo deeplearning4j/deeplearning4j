@@ -97,6 +97,8 @@ val less = OnnxMappingProcess(
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)
 
+
+
 val greaterEqual = OnnxMappingProcess(
         inputFrameworkOpName = "GreaterOrEqual",
         opName = "greater_equal",
@@ -180,7 +182,9 @@ val batchNorm = OnnxMappingProcess(
         opName = "batchnorm",
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "BatchNormalization",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X","mean" to "mean","variance" to "var","gamma" to "scale"))),
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf(
+                "input" to "X","mean" to "input_mean",
+                "variance" to "input_var","gamma" to "scale"))),
         attributeMappingRules = listOf(valueMappings(mapOf("epsilon" to "epsilon")),
                 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0],
                 booleanConstant(inputName = "applyGamma",constantValue = false,argumentIndex = 1)[0],
@@ -309,7 +313,6 @@ val softmax = OnnxMappingProcess(
 
 //TODO: DynamicQuantizeLinear
 //TODO: Einsum
-//TODO: Expand
 //TODO: EyeLike
 //TODO: FeatureVectorizer
 val gru = OnnxMappingProcess(
@@ -345,6 +348,18 @@ val gatherNd = OnnxMappingProcess(
 )
 
 
+val clip = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Clip",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
+val nonZero = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "NonZero",
+        opMappingRegistry = onnxOpRegistry
+)
 
 
 val gemm = OnnxMappingProcess(
@@ -405,6 +420,18 @@ val expand = OnnxMappingProcess(
         inputFrameworkOpName = "Expand",
         opMappingRegistry = onnxOpRegistry
 )
+
+
+val min = OnnxMappingProcess(
+        inputFrameworkOpName = "Min",
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry)
+
+val max = OnnxMappingProcess(
+        inputFrameworkOpName = "Max",
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry)
+
 
 
 //TODO: Gradient
@@ -779,7 +806,7 @@ val reduceSum = OnnxMappingProcess(
         opName = "reduce_sum",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
         attributeMappingRules = listOf(invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+                ndarrayToIntList(mutableMapOf( "dimensions" to "axes"))),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -882,10 +909,9 @@ val split = OnnxMappingProcess(
         opName = "split",
         inputFrameworkOpName = "Split",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("a" to "input"))),
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("a" to "input","b" to "split"))),
         attributeMappingRules = listOf(valueMappings(mapOf("dimensions" to "axis")),
-                intConstant(inputName = "numSplit",constantValue = 0,argumentIndex = 0)[0],
-                listNumberToNDarray(outputAttributeValue = "b" ,inputAttributeValue = "split"))
+                intConstant(inputName = "numSplit",constantValue = 0,argumentIndex = 0)[0])
 )
 
 val sqrt = OnnxMappingProcess(
@@ -909,9 +935,8 @@ val squeeze = OnnxMappingProcess(
         opName = "squeeze",
         inputFrameworkOpName = "Squeeze",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(convertNumericalListToNDArray(outputAttributeValue = "a" ,inputAttributeValue =  "axes"),
-                listNumberToListNumber(outputAttributeValue = "_a",inputAttributeValue = "axes"))
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","a" to "axes"))),
+        attributeMappingRules = listOf()
 )
 
 //TODO: StringNormalizer
@@ -941,7 +966,7 @@ val transpose = OnnxMappingProcess(
         opName = "transpose",
         inputFrameworkOpName = "Transpose",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToListNumber(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
+        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
         opMappingRegistry = onnxOpRegistry
 )
 

@@ -435,6 +435,131 @@ public class SDBaseOps {
   }
 
   /**
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max for clipping
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(SDVariable x, double clipValue) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue).outputVariable();
+  }
+
+  /**
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max for clipping
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(String name, SDVariable x, double clipValue) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max value for clipping (NUMERIC type)
+   * @param dimensions The dimensions to clip (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(SDVariable x, SDVariable clipValue, SDVariable dimensions) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    SDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
+    SDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue, dimensions).outputVariable();
+  }
+
+  /**
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max value for clipping (NUMERIC type)
+   * @param dimensions The dimensions to clip (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(String name, SDVariable x, SDVariable clipValue,
+      SDVariable dimensions) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    SDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
+    SDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue, dimensions).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping
+   * @param clipValueMax The max value to clip to
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(SDVariable x, double clipValueMin, double clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping
+   * @param clipValueMax The max value to clip to
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(String name, SDVariable x, double clipValueMin,
+      double clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping (NUMERIC type)
+   * @param clipValueMax The max value to clip to (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(SDVariable x, SDVariable clipValueMin, SDVariable clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    SDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
+    SDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping (NUMERIC type)
+   * @param clipValueMax The max value to clip to (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(String name, SDVariable x, SDVariable clipValueMin,
+      SDVariable clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    SDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
+    SDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Concatenate a set of inputs along the specified dimension.<br>
    * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.<br>
    * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]<br>
@@ -1965,6 +2090,30 @@ public class SDBaseOps {
     SDValidation.validateNumerical("min", "first", first);
     SDValidation.validateNumerical("min", "second", second);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(sd,first, second).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   *
+   * @param datatype The input target data type represented as an int
+   * @param minOrMax The min or max (0 or 1) value to return
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public SDVariable minMax(int datatype, int minOrMax) {
+    return new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(sd,datatype, minOrMax).outputVariable();
+  }
+
+  /**
+   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param datatype The input target data type represented as an int
+   * @param minOrMax The min or max (0 or 1) value to return
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public SDVariable minMax(String name, int datatype, int minOrMax) {
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(sd,datatype, minOrMax).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

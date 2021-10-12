@@ -1219,7 +1219,7 @@ namespace simdOps {
 
         op_def static X op(X d1, X *params) {
             if (d1 <= static_cast<X>(0))
-            	return static_cast<X>(sd::DataTypeUtils::min<float16>());
+            	return static_cast<X>(sd::DataTypeUtils::min_positive<float16>());
             else return d1;
         }
     };
@@ -1232,7 +1232,7 @@ namespace simdOps {
 
         op_def static X op(X d1, X *params) {
             if (d1 <= static_cast<X>(0))
-            	return sd::DataTypeUtils::min<X>();
+            	return sd::DataTypeUtils::min_positive<X>();
             else return d1;
         }
     };
