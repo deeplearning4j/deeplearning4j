@@ -3822,6 +3822,9 @@ public class SameDiff extends SDBaseOps {
             List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
             if (fnInputs != null) {
                 for (String var : fnInputs) {
+                    if(variables != null && !variables.containsKey(var)) {
+                        throw new IllegalArgumentException("Op name " + function.getOwnName() + " did not have output variable " + var);
+                    }
                     inputDataTypes.add(variables.get(var).getVariable().dataType());
                 }
             }
@@ -5961,22 +5964,19 @@ public class SameDiff extends SDBaseOps {
 
         final Set<String> declared = Sets.newHashSet(this.variableMap().keySet());
 
-        this.addArgumentInterceptor(new ArgumentInterceptor() {
-            @Override
-            public SDVariable intercept(SDVariable argument) {
+        this.addArgumentInterceptor(argument -> {
 
-                // if its declared in the if, we don't care acout it
-                if(!declared.contains(argument.name()))
-                    return argument;
+            // if its declared in the if, we don't care acout it
+            if(!declared.contains(argument.name()))
+                return argument;
 
-                // if we've already added a switch, move on
-                if(switches.containsKey(argument.name()))
-                    return switches.get(argument.name())[1];
+            // if we've already added a switch, move on
+            if(switches.containsKey(argument.name()))
+                return switches.get(argument.name())[1];
 
-                SDVariable[] s = switchOp(argument, pred);
-                switches.put(argument.name(), s);
-                return s[1];
-            }
+            SDVariable[] s = switchOp(argument, pred);
+            switches.put(argument.name(), s);
+            return s[1];
         });
         NameScope trueScope = this.withNameScope("trueBody");
         SDVariable trueOut = trueBody.define(this);
@@ -5991,22 +5991,19 @@ public class SameDiff extends SDBaseOps {
         trueScope.close();
 
         final Set<String> declared2 = Sets.newHashSet(variableMap().keySet());
-        sd.addArgumentInterceptor(new ArgumentInterceptor() {
-            @Override
-            public SDVariable intercept(SDVariable argument) {
+        sd.addArgumentInterceptor(argument -> {
 
-                // if its declared in the if, we don't care acout it
-                if(!declared2.contains(argument.name()))
-                    return argument;
+            // if its declared in the if, we don't care acout it
+            if(!declared2.contains(argument.name()))
+                return argument;
 
-                // if we've already added a switch, move on
-                if(switches.containsKey(argument.name()))
-                    return switches.get(argument.name())[0];
+            // if we've already added a switch, move on
+            if(switches.containsKey(argument.name()))
+                return switches.get(argument.name())[0];
 
-                SDVariable[] s = switchOp(argument, pred);
-                switches.put(argument.name(), s);
-                return s[0];
-            }
+            SDVariable[] s = switchOp(argument, pred);
+            switches.put(argument.name(), s);
+            return s[0];
         });
         NameScope falseScope = this.withNameScope("falseBody");
         SDVariable falseOut = falseBody.define(this);

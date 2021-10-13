@@ -23,9 +23,13 @@ import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
  * A port of maximum.py from onnx tensorflow for samediff:
@@ -41,7 +45,9 @@ class Maximum : PreImportHook  {
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
+        isFinalOutput: Boolean,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): HookResult {
 
         val outputVarName: String? = if(isFinalOutput) {

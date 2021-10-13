@@ -94,8 +94,6 @@ val elementWiseTransformOps = mapOf(
 
 
 val reduceOps = mapOf(
-        "All" to "all",
-        "Any" to "any",
         "Mean" to "reduce_mean",
         "Prod" to "reduce_prod",
         "Sum" to "reduce_sum",
@@ -2274,7 +2272,7 @@ val topkV2 = multipleNameMapping(inputFrameworkOpNames = listOf("TopKV2"),opName
 val transpose = mapTensorNamesWithOp(
         inputFrameworkOpName = "Transpose",
         opName = "transpose",
-        tensorNames = mutableMapOf("input" to "x","permutationVector" to "perm"),
+        tensorNames = mutableMapOf("input" to "x","permuteDims" to "perm"),
         attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -2362,6 +2360,24 @@ val zeta = mapTensorNamesWithOp(inputFrameworkOpName = "Zeta",opName = "zeta",
         tensorflowOpRegistry = tensorflowOpRegistry)
 
 
+val all = TensorflowMappingProcess(
+        opName = "all",
+        inputFrameworkOpName = "All",
+        opMappingRegistry = tensorflowOpRegistry,
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "reduction_indices"))),
+        attributeMappingRules = listOf()
+)
+
+val any = TensorflowMappingProcess(
+        opName = "any",
+        inputFrameworkOpName = "Any",
+        opMappingRegistry = tensorflowOpRegistry,
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "reduction_indices"))),
+        attributeMappingRules = listOf()
+)
+
+
+
 object TensorflowOpDeclarations {
         init {
                 val tensorflowOps = OpDescriptorLoaderHolder.listForFramework<OpDef>("tensorflow")
@@ -2380,7 +2396,7 @@ object TensorflowOpDeclarations {
                         tensorflowOpRegistry.registerNd4jOpDef(it.name,it)
                 }
 
-                reduceOps.forEach { tensorflowOpName, nd4jOpName ->
+                reduceOps.forEach { (tensorflowOpName, nd4jOpName) ->
                         defineSingularReduce(inputFrameworkOpName = tensorflowOpName,inputOpName = nd4jOpName,
                                 tensorflowOpRegistry = tensorflowOpRegistry)
                 }

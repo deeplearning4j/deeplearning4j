@@ -205,17 +205,59 @@ class TestOnnxIR {
     }
 
     @Test
-    @Ignore("Onnxruntime does not have NonZero")
     fun testNonZero() {
         val declarations = OnnxOpDeclarations
         val inputs = mutableMapOf("input" to Nd4j.linspace(1,4,4).castTo(DataType.DOUBLE))
+        val onnxOpRegistry = registry()
 
         val output = listOf("output")
         val createdGraph = createSingleNodeGraph(inputs,"NonZero",emptyMap(),output,inputs.keys.toList(),templateTensor = Nd4j.ones(DataType.INT64))
-        runAssertion(createdGraph,inputs,output)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val onnxIRGraph = OnnxIRGraph(createdGraph,onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(inputs),onnxOpRegistry)
+        val result = importedGraph.output(inputs,output)
+
+        //runAssertion(createdGraph,inputs,output)
 
     }
 
+
+    @Test
+    fun testIf() {
+        val thenOut = convertToOnnxTensor(Nd4j.ones(DataType.FLOAT,5),"then_out")
+        val elseOut = convertToOnnxTensor(Nd4j.ones(DataType.FLOAT,5),"else_out")
+        val x = Nd4j.linspace(1,5,5).castTo(DataType.FLOAT)
+        val y = Nd4j.create(floatArrayOf(5.0f,4.0f,3.0f,2.0f,1.0f))
+        val elseGraph = createSingleNodeGraph(emptyMap(),"Constant",mapOf("value" to elseOut),listOf("else_out"),listOf(),x)
+        val thenGraph = createSingleNodeGraph(emptyMap(),"Constant",mapOf("value" to thenOut),listOf("then_out"),listOf(),x)
+        val thenGraphAttr = AttributeProto {
+            name = "then_branch"
+            g = thenGraph
+            type = Onnx.AttributeProto.AttributeType.GRAPH
+        }
+        val elseAttr = AttributeProto {
+            name = "else_branch"
+            g = elseGraph
+            type = Onnx.AttributeProto.AttributeType.GRAPH
+        }
+        val ifNode = NodeProto {
+            opType = "If"
+            name = "ifNode"
+            Input("cond")
+            Output("res")
+            Attribute(thenGraphAttr)
+            Attribute(elseAttr)
+        }
+
+        val graph = GraphProto {
+            name = "ifGraph"
+            Input(createValueInfoFromTensor(Nd4j.ones(1).castTo(DataType.BOOL),"cond",true))
+            Node(ifNode)
+            Output(createValueInfoFromTensor(y,"res",true))
+        }
+
+        runAssertion(graph,mapOf("cond" to (Nd4j.ones(1).castTo(DataType.BOOL))),listOf("res"))
+    }
 
     @Test
     fun testMaximum() {
@@ -369,6 +411,10 @@ class TestOnnxIR {
                 }
                 val toBuilder = attr.toBuilder()
                 when(u.javaClass.name) {
+                    "onnx.Onnx\$TensorProto" -> {
+                        toBuilder.t = (u as Onnx.TensorProto)
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.TENSOR
+                    }
                     "java.lang.Double" -> {
                         toBuilder.f = (u as Double).toFloat()
                         toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
@@ -399,6 +445,7 @@ class TestOnnxIR {
 
         val graphRet = GraphProto {
             Node(op)
+            name = op.opType.toLowerCase()
             inputs.forEach { (t, u) ->
                 if(!t.isEmpty())
                     Input(createValueInfoFromTensor(u,t,false))

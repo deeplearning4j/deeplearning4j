@@ -103,8 +103,6 @@ interface IRGraph<
 
     fun setInputs(inputs: List<String>)
 
-
-
     fun getConstantArrayForName(name: String): INDArray
 
     fun hasConstantInitializer(name: String): Boolean

@@ -1161,6 +1161,16 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "If"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "NonZero"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "reduce_logsumexp"
   inputFrameworkOpName: "ReduceLogSumExp"
   rule {

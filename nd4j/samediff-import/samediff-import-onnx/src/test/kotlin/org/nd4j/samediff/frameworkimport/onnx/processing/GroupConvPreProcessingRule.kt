@@ -27,9 +27,13 @@ import org.nd4j.enums.DataFormat
 import org.nd4j.enums.WeightsFormat
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.lang.IllegalArgumentException
 
 @PreHookRule(nodeNames = ["conv2_1"],opNames = [],frameworkName = "onnx")
@@ -40,7 +44,9 @@ class GroupConvPreProcessingRule: PreImportHook {
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
+        isFinalOutput: Boolean,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): HookResult {
         if(op.op.opName() != "conv2d") {
             throw IllegalArgumentException("Illegal op being processed of type ${op.op.opName()} with node name ${op.op.ownName}")

@@ -31,5 +31,7 @@ enum class AttributeValueType {
     TENSOR,
     LIST_TENSOR,
     DATA_TYPE,
-    INVALID
+    INVALID,
+    GRAPH,
+    LIST_GRAPH
 }

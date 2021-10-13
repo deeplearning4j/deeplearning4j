@@ -19,28 +19,28 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
-import org.nd4j.autodiff.samediff.SDVariable
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
-import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
  * A port of expand.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/expand.py
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/if.py
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["ConstantOfShape"],frameworkName = "onnx")
-class ConstantOfShape : PreImportHook  {
+@PreHookRule(nodeNames = [],opNames = ["If"],frameworkName = "onnx")
+class If : PreImportHook  {
     override fun preProcess(
         op: SameDiffOp,
         sd: SameDiff,
@@ -52,9 +52,27 @@ class ConstantOfShape : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): HookResult {
         // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#non
 
-        var inputShape = sd.getVariable(op.inputsToOp[0])
+        val registryCast = mappingRegistry as OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>
+        val importGraphCast = importGraph as ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val wrappedThenBranch = attributes["then_branch"] as OnnxIRGraph
+        val wrappedElseBranch = attributes["else_branch"] as OnnxIRGraph
+        val thenBranchSubGraph = importGraphCast.importGraph(
+            wrappedThenBranch,
+            null,
+            null, mutableMapOf(),
+            registryCast)
+
+        sd.putSubFunction("${op.name}_then_branch",thenBranchSubGraph)
+        val elseBranchSubGraph = importGraphCast.importGraph(
+            wrappedElseBranch,
+            null,
+            null, mutableMapOf(),
+            registryCast)
+        sd.putSubFunction("${op.name}_else_branch",elseBranchSubGraph)
+
         val outputVarName: String? = if(isFinalOutput) {
             outputNames[0]
         } else null
@@ -64,20 +82,16 @@ class ConstantOfShape : PreImportHook  {
             sd.ops.remove(outputVarName)
         }
 
-        var outputVar: SDVariable? = null
-        if(!attributes.containsKey("value")) {
-            //zeros float 32 as according to onnx spec
-            outputVar = sd.create(outputVarName,inputShape, DataType.FLOAT,"c",true)
-        } else {
-            val firstVal = attributes["value"] as INDArray
-            outputVar = sd.create(inputShape,firstVal.dataType(),"c",false)
-            val firstValue = firstVal.getDouble(0)
-            outputVar = sd.assign(outputVarName,outputVar,sd.constant(firstValue))
 
-        }
+        val outputVar = sd.ifCond(outputVarName,null,SameDiffNoArgSingleLambda {
+            sd.getVariable(op.inputsToOp[0])
+        }, SameDiffNoArgSingleLambda {
+            sd.invokeFunctionOn("${op.name}_then_branch",sd)
+        }, SameDiffNoArgSingleLambda {
+            sd.invokeFunctionOn("${op.name}_else_branch",sd)
+        })
 
-
-        return HookResult(outputVariables = mapOf(outputVar!!.name() to listOf(outputVar)),
+        return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
             proceedWithInit = false)
 
 

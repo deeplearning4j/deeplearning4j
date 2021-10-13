@@ -348,6 +348,12 @@ val gatherNd = OnnxMappingProcess(
 )
 
 
+val ifOp = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "If",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val clip = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Clip",
