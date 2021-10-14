@@ -389,6 +389,7 @@ val gemm = OnnxMappingProcess(
                 invertBooleanNumber(mutableMapOf("transX" to "transA","transY" to "transB")))
 )
 //note: no ops are mostly just stubs for ops implemented as pre processors
+//These are implemented using the PreImportHook found: https://github.com/eclipse/deeplearning4j/tree/master/nd4j/samediff-import/samediff-import-onnx/src/main/kotlin/org/nd4j/samediff/frameworkimport/onnx/definitions/implementations
 val globalAveragePooling = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GlobalAveragePool",
