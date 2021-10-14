@@ -32,7 +32,7 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of expand.py from onnx tensorflow for samediff:
+ * A port of clip.py from onnx tensorflow for samediff:
  * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/clip.py
  *
  * @author Adam Gibson
