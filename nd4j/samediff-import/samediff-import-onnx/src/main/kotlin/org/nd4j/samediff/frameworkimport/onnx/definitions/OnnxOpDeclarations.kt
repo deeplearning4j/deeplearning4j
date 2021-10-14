@@ -361,6 +361,15 @@ val clip = OnnxMappingProcess(
 )
 
 
+
+val roiAlign = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RoiAlign",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
+
 val nonZero = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "NonZero",
