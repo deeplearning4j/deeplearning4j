@@ -39,26 +39,14 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  */
 @PreHookRule(nodeNames = [],opNames = ["Max"],frameworkName = "onnx")
 class Maximum : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean,
+        op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult {
-
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        //remove pre existing output variable
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
+    ): Map<String, List<SDVariable>> {
 
         var onGoingOutput: SDVariable? = null
         op.inputsToOp.forEachIndexed { index,input ->
@@ -69,19 +57,14 @@ class Maximum : PreImportHook  {
                 if(index < op.inputsToOp.size - 1)
                     onGoingOutput = sd.max(onGoingOutput,currVariable)
                 else {
-                    onGoingOutput = sd.max(outputVarName,onGoingOutput,currVariable)
+                    onGoingOutput = sd.max(outputNames[0],onGoingOutput,currVariable)
                 }
             }
         }
 
 
-
-        return HookResult(outputVariables = mapOf(onGoingOutput!!.name() to listOf(onGoingOutput!!)),
-            proceedWithInit = false)
-
-
+        return mapOf(outputNames[0] to listOf(onGoingOutput!!))
     }
-
 
 
 }

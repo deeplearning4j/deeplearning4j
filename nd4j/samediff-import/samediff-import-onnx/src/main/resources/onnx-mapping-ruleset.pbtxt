@@ -549,18 +549,23 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "data"
-    inputTensorName: "axes"
     outputTensorName: "input"
-    outputTensorName: "a"
-    inputToOutput {
-      key: "a"
-      value: "axes"
-    }
     inputToOutput {
       key: "input"
       value: "data"
     }
     ruleType: "tensor"
+    inputFrameworkOpName: "Squeeze"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "_a"
+    inputToOutput {
+      key: "_a"
+      value: "axes"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "Squeeze"
   }
 }
@@ -1112,52 +1117,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "split"
+  opName: "noop"
   inputFrameworkOpName: "Split"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    inputTensorName: "split"
-    outputTensorName: "a"
-    outputTensorName: "b"
-    inputToOutput {
-      key: "a"
-      value: "input"
-    }
-    inputToOutput {
-      key: "b"
-      value: "split"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "axis"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "numSplit"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "numSplit"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "Split"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -1750,6 +1711,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "ArgMin"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "RoiAlign"
 }
 mappings {
   frameworkName: "onnx"

@@ -44,16 +44,15 @@ import java.lang.IllegalArgumentException
  */
 @PreHookRule(nodeNames = [],opNames = ["Resize"],frameworkName = "onnx")
 class Resize : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean,
+        op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult {
+    ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#resize
         var inputVariable = sd.getVariable(op.inputsToOp[0])
@@ -88,10 +87,7 @@ class Resize : PreImportHook  {
          */
         val mode = attributes.getOrDefault("mode","nearest") as String
 
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
+        val outputVarName = outputNames[0]
         val outputSize = outputSize(sd, op, inputVariable, scales, sizes,inputShape)
         outputSize!!.setShape(2)
 
@@ -137,17 +133,8 @@ class Resize : PreImportHook  {
             }
         }
 
-        //remove pre existing output variable
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
         val finalOutput = sd.permute(outputVarName,result,0,3,1,2)
-
-        return HookResult(outputVariables = mapOf(finalOutput.name() to listOf(finalOutput)),
-            proceedWithInit = false)
-
-
+        return mapOf(outputNames[0] to listOf(finalOutput))
     }
 
     fun invokeResize(
@@ -189,7 +176,7 @@ class Resize : PreImportHook  {
             val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
             scaled
         } else {
-            sizes.setShape(*inputVariableShape.shape)
+            sd.setShape(sizes,input.shape())
             sd.castTo(sizes.get(SDIndex.interval(2, -1)),DataType.INT32)
         }
         return ret.castTo(DataType.INT32)

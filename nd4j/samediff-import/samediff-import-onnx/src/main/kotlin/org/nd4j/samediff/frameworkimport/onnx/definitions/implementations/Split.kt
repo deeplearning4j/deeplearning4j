@@ -20,28 +20,29 @@
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
 import onnx.Onnx
+import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
-import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
-import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of if.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/if.py
+ * A port of split.py from onnx tensorflow for samediff:
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/split.py
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["If"],frameworkName = "onnx")
-class If : PreImportHook  {
+@PreHookRule(nodeNames = [],opNames = ["Split"],frameworkName = "onnx")
+class Split : PreImportHook  {
 
     override fun doImport(
         sd: SameDiff,
@@ -51,38 +52,28 @@ class If : PreImportHook  {
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#non
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val splitDim = if(attributes.containsKey("axis")) {
+            attributes["axis"] as Long
+        } else {
+            0 as Long
+        }
 
-        val registryCast = mappingRegistry as OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>
-        val importGraphCast = importGraph as ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>
-        val wrappedThenBranch = attributes["then_branch"] as OnnxIRGraph
-        val wrappedElseBranch = attributes["else_branch"] as OnnxIRGraph
-        val thenBranchSubGraph = importGraphCast.importGraph(
-            wrappedThenBranch,
-            null,
-            null, mutableMapOf(),
-            registryCast)
-
-        sd.putSubFunction("${op.name}_then_branch",thenBranchSubGraph)
-        val elseBranchSubGraph = importGraphCast.importGraph(
-            wrappedElseBranch,
-            null,
-            null, mutableMapOf(),
-            registryCast)
-        sd.putSubFunction("${op.name}_else_branch",elseBranchSubGraph)
-
-        val outputVarName = outputNames[0]
-
-        val outputVar = sd.ifCond(outputVarName,null,SameDiffNoArgSingleLambda {
-            sd.getVariable(op.inputsToOp[0])
-        }, SameDiffNoArgSingleLambda {
-            sd.invokeFunctionOn("${op.name}_then_branch",sd)
-        }, SameDiffNoArgSingleLambda {
-            sd.invokeFunctionOn("${op.name}_else_branch",sd)
-        })
-
-        return mapOf(outputVarName to listOf(outputVar))
+        if(op.inputsToOp.size > 1) {
+            val split = sd.getVariable(op.inputsToOp[1])
+            val splitOutput = sd.split(inputVariable,split,splitDim.toInt())
+            return mapOf(splitOutput[0].name() to splitOutput.toList())
+        } else if(attributes.containsKey("split")) {
+            val numSplits = attributes["split"] as List<Long>
+            val splitOutput = sd.split(inputVariable,numSplits[0].toInt(),splitDim.toInt())
+            return mapOf(splitOutput[0].name() to splitOutput.toList())
+        } else {
+            val inputShape = sd.shape(inputVariable)
+            val numSplits = inputShape.get(SDIndex.point(splitDim.toLong())).div(outputNames.size.toDouble()).castTo(
+                DataType.INT64)
+            val splitOutput = sd.split(inputVariable,numSplits,splitDim.toInt())
+            return mapOf(splitOutput[0].name() to splitOutput.toList())
+        }
     }
 
 

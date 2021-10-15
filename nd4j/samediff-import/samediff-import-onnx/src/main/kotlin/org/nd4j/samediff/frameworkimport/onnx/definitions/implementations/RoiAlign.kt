@@ -44,28 +44,16 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  */
 @PreHookRule(nodeNames = [],opNames = ["RoiAlign"],frameworkName = "onnx")
 class RoiAlign : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean,
+        op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
-
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
-
+    ): Map<String, List<SDVariable>> {
         var features = sd.getVariable(op.inputsToOp[0])
         val boxes = sd.getVariable(op.inputsToOp[1])
         val indx = sd.getVariable(op.inputsToOp[2])
@@ -100,13 +88,9 @@ class RoiAlign : PreImportHook  {
                 .sW(samplingRatio)
                 .pH(1).pW(1).isNHWC(true)
                 .isSameMode(true).build())
-        val outputVar = sd.permute(outputVarName,pooled,0,3,1,2)
-        return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
-            proceedWithInit = false)
-
-
+        val outputVar = sd.permute(outputNames[0],pooled,0,3,1,2)
+        return mapOf(outputNames[0] to listOf(outputVar))
     }
-
 
 
     private fun cropAndResize(sd: SameDiff, image: SDVariable, boxes: SDVariable, boxesInd: SDVariable, cropSize: IntArray,

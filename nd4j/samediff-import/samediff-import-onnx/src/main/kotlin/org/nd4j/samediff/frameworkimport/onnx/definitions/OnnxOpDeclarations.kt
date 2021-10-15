@@ -920,15 +920,19 @@ val spaceToDepth = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-//TODO: don't know a good default value for num_splits, look at TF and implementation in libnd4j to figure out best value
 val split = OnnxMappingProcess(
-        opName = "split",
+        opName = "noop",
         inputFrameworkOpName = "Split",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("a" to "input","b" to "split"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("dimensions" to "axis")),
-                intConstant(inputName = "numSplit",constantValue = 0,argumentIndex = 0)[0])
 )
+
+val transpose = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Transpose",
+
+        opMappingRegistry = onnxOpRegistry
+)
+
 
 val sqrt = OnnxMappingProcess(
         opName = "sqrt",
@@ -951,8 +955,8 @@ val squeeze = OnnxMappingProcess(
         opName = "squeeze",
         inputFrameworkOpName = "Squeeze",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","a" to "axes"))),
-        attributeMappingRules = listOf()
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
+        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf( "_a" to  "axes")))
 )
 
 //TODO: StringNormalizer
@@ -978,13 +982,6 @@ val topK = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-val transpose = OnnxMappingProcess(
-        opName = "transpose",
-        inputFrameworkOpName = "Transpose",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
-        opMappingRegistry = onnxOpRegistry
-)
 
 val where = OnnxMappingProcess(
         inputFrameworkOpName = "Where",

@@ -671,7 +671,7 @@ public class SameDiff extends SDBaseOps {
         for (int i = 0; i < inputs.length; i++) {
             vars[i] = getVariable(inputs[i]);
             if (vars[i] == null) {
-                throw new ND4JIllegalStateException("Found null variable at index " + i);
+                throw new ND4JIllegalStateException("Function " + function.getOwnName() +  " of type " + function.opName() +   "had  null variable at index " + i);
             }
         }
 
@@ -2903,7 +2903,7 @@ public class SameDiff extends SDBaseOps {
         if (variables.containsKey(v.name()) && variables.get(v.name()).getVariable().getArr() != null)
             return variables.get(v.name()).getVariable();
 
-        if (v.name() == null || v.name().length() < 1)
+        if (v.name() == null)
             throw new IllegalArgumentException("Name for variable must be defined");
 
         VariableType vt = v.getVariableType();

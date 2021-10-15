@@ -22,26 +22,26 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
-import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
-import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of if.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/if.py
+ * A port of cast.py from onnx tensorflow for samediff:
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/cast.py
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["If"],frameworkName = "onnx")
-class If : PreImportHook  {
+@PreHookRule(nodeNames = [],opNames = ["Transpose"],frameworkName = "onnx")
+class Transpose : PreImportHook  {
 
     override fun doImport(
         sd: SameDiff,
@@ -52,37 +52,13 @@ class If : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#non
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
 
-        val registryCast = mappingRegistry as OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>
-        val importGraphCast = importGraph as ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>
-        val wrappedThenBranch = attributes["then_branch"] as OnnxIRGraph
-        val wrappedElseBranch = attributes["else_branch"] as OnnxIRGraph
-        val thenBranchSubGraph = importGraphCast.importGraph(
-            wrappedThenBranch,
-            null,
-            null, mutableMapOf(),
-            registryCast)
-
-        sd.putSubFunction("${op.name}_then_branch",thenBranchSubGraph)
-        val elseBranchSubGraph = importGraphCast.importGraph(
-            wrappedElseBranch,
-            null,
-            null, mutableMapOf(),
-            registryCast)
-        sd.putSubFunction("${op.name}_else_branch",elseBranchSubGraph)
-
-        val outputVarName = outputNames[0]
-
-        val outputVar = sd.ifCond(outputVarName,null,SameDiffNoArgSingleLambda {
-            sd.getVariable(op.inputsToOp[0])
-        }, SameDiffNoArgSingleLambda {
-            sd.invokeFunctionOn("${op.name}_then_branch",sd)
-        }, SameDiffNoArgSingleLambda {
-            sd.invokeFunctionOn("${op.name}_else_branch",sd)
-        })
-
-        return mapOf(outputVarName to listOf(outputVar))
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val perm = attributes["perm"] as List<Long>
+        val permInput = sd.constant(Nd4j.create(Nd4j.createBuffer(perm.toLongArray())))
+        val outputVar = sd.permute(outputNames[0],inputVariable,permInput)
+        return mapOf(outputNames[0] to listOf(outputVar))
     }
 
 

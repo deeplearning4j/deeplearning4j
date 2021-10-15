@@ -133,12 +133,15 @@ public class SDVariable implements Serializable {
      *
      * @return the {@link INDArray} associated with this variable.
      */
-    public INDArray getArr(boolean enforceExistence){
+    public INDArray getArr(boolean enforceExistence) {
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
-        if(variableType == VariableType.ARRAY){
+        if(variableType == VariableType.ARRAY && enforceExistence) {
             throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
+        } else if(variableType == VariableType.ARRAY) {
+            return null;
         }
+
         INDArray ret = sameDiff.getArrForVarName(getVarName());
         if(enforceExistence && ret == null){
             throw new IllegalStateException("No array exists for variable \"" + name() + "\"");

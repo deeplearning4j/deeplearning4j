@@ -240,8 +240,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("assign") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "Assign"
-        Input(NUMERIC, "x") { description = "The variable to assign to" }
-        Input(NUMERIC, "y") { description = "The variable to assign" }
+        Input(NDARRAY, "x") { description = "The variable to assign to" }
+        Input(NDARRAY, "y") { description = "The variable to assign" }
         Output(NUMERIC, "output"){  description = "The newly assigned output" }
 
         Doc(Language.ANY, DocScope.ALL){
@@ -287,8 +287,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("eq") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "EqualTo"
-        Input(NUMERIC, "x") { description = "Input 1" }
-        Input(NUMERIC, "y") { description = "Input 2" }
+        Input(NDARRAY, "x") { description = "Input 1" }
+        Input(NDARRAY, "y") { description = "Input 2" }
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -375,7 +375,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarGreaterThan"
         legacy = true
-        Input(NUMERIC, "x") { description = "Input array" }
+        Input(NDARRAY, "x") { description = "Input array" }
         Arg(NUMERIC, "y") { description = "Double value argument to use in operation" }
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
@@ -389,8 +389,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("gt") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "GreaterThan"
-        Input(NUMERIC, "x") { description = "Input 1" }
-        Input(NUMERIC, "y") { description = "Input 2" }
+        Input(NDARRAY, "x") { description = "Input 1" }
+        Input(NDARRAY, "y") { description = "Input 2" }
         Output(NUMERIC, "output"){ description = "Output Boolean array out, with values true/false based on where the condition is satisfied" }
 
         Doc(Language.ANY, DocScope.ALL){
@@ -407,7 +407,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarGreaterThanOrEqual"
         legacy = true
-        Input(NUMERIC, "x") { description = "Input array" }
+        Input(NDARRAY, "x") { description = "Input array" }
         Arg(NUMERIC, "y") {  description = "Double value argument to use in operation" }
         Output(NUMERIC, "output"){ description = "Output Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
@@ -421,9 +421,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("gte") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "GreaterThanOrEqual"
-        Input(NUMERIC, "x") { description = "Input 1" }
-        Input(NUMERIC, "y") { description = "Input 2" }
-        Output(NUMERIC, "output"){ description = "" }
+        Input(NDARRAY, "x") { description = "Input 1" }
+        Input(NDARRAY, "y") { description = "Input 2" }
+        Output(NDARRAY, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Greater than or equal to operation: elementwise x >= y
@@ -436,8 +436,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("identity") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.same"
-        Input(NUMERIC, "input") { description = "Input variable" }
-        Output(NUMERIC, "output"){ description = "Output variable" }
+        Input(NDARRAY, "input") { description = "Input variable" }
+        Output(NDARRAY, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Elementwise identity operation: out = x
@@ -599,7 +599,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarLessThan"
         legacy = true
-        Input(NUMERIC, "x") { description = "Input array" }
+        Input(NDARRAY, "x") { description = "Input array" }
         Arg(NUMERIC, "y") { description = "Double value argument to use in operation" }
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
@@ -613,9 +613,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("lt") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "LessThan"
-        Input(NUMERIC, "x") {description = "Input 1" }
-        Input(NUMERIC, "y") {description = "Input 2" }
-        Output(NUMERIC, "output"){ description = "Output Boolean array out, with values true/false based on where the condition is satisfied" }
+        Input(NDARRAY, "x") {description = "Input 1" }
+        Input(NDARRAY, "y") {description = "Input 2" }
+        Output(NDARRAY, "output"){ description = "Output Boolean array out, with values true/false based on where the condition is satisfied" }
 
         Doc(Language.ANY, DocScope.ALL){
             """ 
@@ -631,7 +631,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarLessThanOrEqual"
         legacy = true
-        Input(NUMERIC, "x") { description = "Input array" }
+        Input(NDARRAY, "x") { description = "Input array" }
         Arg(NUMERIC, "y") { description = "Double value argument to use in operation" }
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
@@ -706,8 +706,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("whereNumpy") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
         javaOpClass = "WhereNumpy"
-        Input(NUMERIC, "x") { description = "The first array" }
-        Input(NUMERIC, "y") { description = "The second array" }
+        Input(NDARRAY, "x") { description = "The first array" }
+        Input(NDARRAY, "y") { description = "The second array" }
         Input(NUMERIC, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
         Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
         Doc(Language.ANY, DocScope.ALL){
@@ -721,8 +721,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("where") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow"
         javaOpClass = "Where"
-        Input(NUMERIC, "x") { description = "The first array" }
-        Input(NUMERIC, "y") { description = "The second array" }
+        Input(NDARRAY, "x") { description = "The first array" }
+        Input(NDARRAY, "y") { description = "The second array" }
         Input(BOOL, "condition") { description = "Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y" }
         Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
         Doc(Language.ANY, DocScope.ALL){
@@ -806,9 +806,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("merge") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow.compat"
-        Input(NUMERIC, "x") { description = "Input variable" }
-        Input(NUMERIC, "y") { description = "Input variable" }
-        Output(NUMERIC, "output"){ description = "Output" }
+        Input(NDARRAY, "x") { description = "Input variable" }
+        Input(NDARRAY, "y") { description = "Input variable" }
+        Output(NDARRAY, "output"){ description = "Output" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 The merge operation is a control operation that forwards the either of the inputs to the output, when
@@ -867,7 +867,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.scalar.comparison"
         javaOpClass = "ScalarNotEquals"
         legacy = true
-        Input(NUMERIC, "x") {  description = "Input array" }
+        Input(NDARRAY, "x") {  description = "Input array" }
         Arg(NUMERIC, "y") {  description = "Double value argument to use in operation" }
         Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
@@ -881,9 +881,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("neq") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "NotEqualTo"
-        Input(NUMERIC, "x") { description = "Input 1" }
-        Input(NUMERIC, "y") { description = "Input 2" }
-        Output(NUMERIC, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
+        Input(NDARRAY, "x") { description = "Input 1" }
+        Input(NDARRAY, "y") { description = "Input 2" }
+        Output(NDARRAY, "output"){ description = "Boolean array out, with values true/false based on where the condition is satisfied" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Not equal to operation: elementwise x != y
@@ -947,8 +947,35 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("split")  {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         javaOpClass = "Split"
-        Input(NUMERIC,"input") {description = "Input to split"}
+        Input(NDARRAY,"input") {description = "Input to split"}
         Arg(INT, "numSplit") { description = "Number of splits" }
+        Arg(INT, "splitDim") { description = "The dimension to split on" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Split a value in to a list of ndarrays.
+            """.trimIndent()
+        }
+    }
+
+
+    Op("setShape")  {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "SetShape"
+        Input(NUMERIC,"input") {description = "The input to set the shape of" }
+        Input(NUMERIC, "shape") { description = "The shape to set the input to" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+              Sets an inplace shape on the passed in input.
+            """.trimIndent()
+        }
+    }
+
+
+    Op("split")  {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "Split"
+        Input(NUMERIC,"input") {description = "Input to split"}
+        Input(NUMERIC, "numSplit") { description = "Number of splits" }
         Arg(INT, "splitDim") { description = "The dimension to split on" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1012,7 +1039,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("onesLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "input") { description = "Input INDArray " }
+        Input(NDARRAY, "input") { description = "Input INDArray " }
         Output(NUMERIC, "output"){ description = "A new INDArray  with the same (dynamic) shape as the input" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1024,7 +1051,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("onesLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "input") { description = "" }
+        Input(NDARRAY, "input") { description = "" }
         Arg(DATA_TYPE, "dataType") { description = "" }
         Output(NUMERIC, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
@@ -1036,7 +1063,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("permute") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(NDARRAY, "x") { description = "Input variable" }
         Input(INT, "dimensions") { description = "Permute dimensions" }
         Output(NUMERIC, "output"){ description = "Output variable (permuted input)" }
         Doc(Language.ANY, DocScope.ALL){
@@ -1049,7 +1076,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("permute") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(NDARRAY, "x") { description = "Input variable" }
         Arg(INT, "dimensions") { count = AtLeast(0); description = "" }
         Output(NUMERIC, "output"){ description = "Output variable (permuted input)" }
         Doc(Language.ANY, DocScope.ALL){
@@ -1111,7 +1138,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("rank") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "in") { description = "Input variable" }
+        Input(NDARRAY, "in") { description = "Input variable" }
         Output(NUMERIC, "output"){ description = "(scalar) output variable with value equal to the rank of the input variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1170,7 +1197,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("reshape") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(NDARRAY, "x") { description = "Input variable" }
         Input(NUMERIC, "shape") { description = "New shape for variable" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
@@ -1184,7 +1211,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("reshape") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(NDARRAY, "x") { description = "Input variable" }
         Arg(LONG, "shape") { count=AtLeast(0); description = "New shape for variable" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
@@ -1198,7 +1225,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("reverse") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(NDARRAY, "x") { description = "Input variable" }
         Arg(INT, "dimensions") { count = AtLeast(0); description = "Input variable" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
@@ -1220,7 +1247,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("reverseSequence") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(NDARRAY, "x") { description = "Input variable" }
         Input(INT, "seq_lengths") { description = "Length of the sequences" }
         Arg(INT, "seqDim") { description = "Sequence dimension"; defaultValue=-1}
         Arg(INT, "batchDim") { description = "Batch dimension"; defaultValue=0 }
@@ -1484,7 +1511,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("slice") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "input") { description = "input Variable to get subset of" }
+        Input(NDARRAY, "input") { description = "input Variable to get subset of" }
         Arg(INT, "begin") { count = AtLeast(1); description = "Beginning index. Must be same length as rank of input array" }
         Arg(INT, "size") { count = AtLeast(1); description = "Size of the output array. Must be same length as rank of input array" }
         Output(NUMERIC, "output"){ description = "Subset of the input" }
@@ -1504,7 +1531,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("slice") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "input") { description = "input Variable to get subset of" }
+        Input(NDARRAY, "input") { description = "input Variable to get subset of" }
         Input(INT, "begin") { description = "Beginning index. Must be same length as rank of input array" }
         Input(INT, "size") { description = "Size of the output array. Must be same length as rank of input array" }
         Output(NUMERIC, "output"){ description = "Subset of the input" }
@@ -1587,7 +1614,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("stridedSlice") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "in") { description = "Variable to get subset of" }
+        Input(NDARRAY, "in") { description = "Variable to get subset of" }
         Arg(LONG, "begin") { count = AtLeast(1); description = "Beginning index" }
         Arg(LONG, "end") { count = AtLeast(1); description = "End index" }
         Arg(LONG, "strides") { count = AtLeast(1); description = "Stride (\"step size\") for each dimension. For example, stride of 2 means take every second element." }
@@ -1614,7 +1641,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("stridedSlice") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "in") { description = "Variable to get subset of" }
+        Input(NDARRAY, "in") { description = "Variable to get subset of" }
         Input(NUMERIC, "begin") { description = "The beginning indices for the slice" }
         Input(NUMERIC, "end") { description = "The ending indicesof the slice" }
         Input(NUMERIC, "strides") { description = "The strides for each dimension" }
@@ -1831,7 +1858,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("zerosLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "input") { description = "Input " }
+        Input(NDARRAY, "input") { description = "Input " }
         Output(NUMERIC, "output"){ description = "A new Variable with the same (dynamic) shape as the input" }
 
         Doc(Language.ANY, DocScope.ALL){

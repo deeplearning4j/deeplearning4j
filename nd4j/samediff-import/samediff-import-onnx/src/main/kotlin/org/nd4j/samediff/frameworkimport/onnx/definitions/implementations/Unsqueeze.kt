@@ -33,32 +33,20 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 @PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
 class Unsqueeze  : PreImportHook {
-    override fun preProcess(
-        op: SameDiffOp,
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean,
+        op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult {
+    ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#unsqueeze
         val axes = if(op.inputsToOp.size < 2) attributes["axes"] as List<Int> else {
             sd.getVariable(op.inputsToOp[1]).arr.toIntVector().toList()
         }
         var ret: SDVariable? = null
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        //remove pre existing output variable
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-
-        }
 
         val input = sd.getVariable(op.inputsToOp[0])
 
@@ -67,18 +55,15 @@ class Unsqueeze  : PreImportHook {
                 if(i < axes.size - 1)
                     ret = sd.expandDims(input,axes[i])
                 else {
-                    ret = sd.expandDims(outputVarName,input,axes[i])
+                    ret = sd.expandDims(outputNames[0],input,axes[i])
                 }
             }
         } else {
             val input = sd.getVariable(op.inputsToOp[0])
-            ret = sd.expandDims(outputVarName,input,axes[0])
+            ret = sd.expandDims(outputNames[0],input,axes[0])
 
         }
 
-
-
-        return HookResult(outputVariables = mapOf(ret!!.name() to listOf(ret)),
-            proceedWithInit = false)
+        return mapOf(outputNames[0] to listOf(ret!!))
     }
 }

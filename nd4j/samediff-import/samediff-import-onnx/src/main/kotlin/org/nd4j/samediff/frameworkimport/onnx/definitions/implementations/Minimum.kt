@@ -43,26 +43,15 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  */
 @PreHookRule(nodeNames = [],opNames = ["Min"],frameworkName = "onnx")
 class Minimum : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean,
+        op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult {
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        //remove pre existing output variable
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
-
+    ): Map<String, List<SDVariable>> {
         var onGoingOutput: SDVariable? = null
         op.inputsToOp.forEachIndexed { index,input ->
             val currVariable = sd.getVariable(input)
@@ -72,73 +61,13 @@ class Minimum : PreImportHook  {
                 if(index < op.inputsToOp.size - 1)
                     onGoingOutput = sd.min(onGoingOutput,currVariable)
                 else {
-                    onGoingOutput = sd.min(outputVarName,onGoingOutput,currVariable)
+                    onGoingOutput = sd.min(outputNames[0],onGoingOutput,currVariable)
                 }
             }
         }
 
-
-
-        return HookResult(outputVariables = mapOf(onGoingOutput!!.name() to listOf(onGoingOutput!!)),
-            proceedWithInit = false)
-
+        return mapOf(outputNames[0] to listOf(onGoingOutput!!))
     }
 
-    fun invokeResize(
-        type: String,
-        sd: SameDiff,
-        input: SDVariable,
-        size: SDVariable,
-        alignCorners: Boolean,
-        halfPixelCenters: Boolean
-    ): SDVariable? {
-        return when (type) {
-            "linear" -> {
-                val height = size.arr.getInt(0)
-                val width = size.arr.getInt(1)
-                sd.image().resizeBiLinear(input,height,width, alignCorners, halfPixelCenters)
-            }
-            "cubic" -> {
-                sd.image().resizeBiCubic(input,size,alignCorners,halfPixelCenters)
-            }
-            else -> {
-                sd.image().imageResize(input,size,true,true,ImageResizeMethod.ResizeNearest)
-            }
-        }
-    }
-
-    fun outputSize(
-        sd: SameDiff,
-        op: SameDiffOp,
-        input: SDVariable,
-        scales: SDVariable,
-        sizes: SDVariable,
-        inputVariableShape: SDVariable
-    ): SDVariable?  {
-        var ret: SDVariable? = null
-        ret = if(op.inputsToOp.size == 3) {
-            val heightWidthScale = scales.get(SDIndex.interval(2,-1))
-            val subGet = inputVariableShape.get(SDIndex.interval(2,-1))
-            val heightWidthShape = sd.castTo(subGet,heightWidthScale.dataType())
-            val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
-            scaled
-        } else {
-            sizes.setShape(*inputVariableShape.shape)
-            sd.castTo(sizes.get(SDIndex.interval(2, -1)),DataType.INT32)
-        }
-        return ret.castTo(DataType.INT32)
-    }
-
-    fun alignCornersFor(coordTransformationMode: String): Boolean {
-        //note this includes the coordTransformationMode == "asymmetric"
-        return coordTransformationMode == "align_corners"
-    }
-
-    fun sizes(sd: SameDiff,op: SameDiffOp): SDVariable {
-        if(op.inputsToOp.size == 4)
-            return sd.getVariable(op.inputsToOp[3])
-        else
-            return sd.constant(Nd4j.empty())
-    }
 
 }

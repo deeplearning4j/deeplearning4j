@@ -38,16 +38,15 @@ import java.lang.IllegalArgumentException
 
 @PreHookRule(nodeNames = ["conv2_1"],opNames = [],frameworkName = "onnx")
 class GroupConvPreProcessingRule: PreImportHook {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean,
+        op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult {
+    ): Map<String, List<SDVariable>> {
         if(op.op.opName() != "conv2d") {
             throw IllegalArgumentException("Illegal op being processed of type ${op.op.opName()} with node name ${op.op.ownName}")
         }
@@ -55,9 +54,10 @@ class GroupConvPreProcessingRule: PreImportHook {
         val numSizeSplits = attributes.getOrDefault("group",1) as Long
         if(numSizeSplits.toInt() == 1) {
             //no need to split, just perform 1 convolution op
-            return HookResult()
+            return emptyMap()
         }
 
+        val descriptor = mappingRegistry.nd4jOpDefs[op.op]!!
         val intArgs = descriptor.argDescriptorList.filter { input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INT64 }.sortedBy { input -> input.argIndex }
         val config = Conv2DConfig.builder()
             .sH(intArgs[2].int64Value)
@@ -100,9 +100,6 @@ class GroupConvPreProcessingRule: PreImportHook {
             outputVars.add(outputVariable)
         }
 
-        sd.ops.remove(op.name)
-        sd.variables.remove(op.name)
-
         /**
          * TODO: Fix output names and potentially look for other inputs
          * in graph where we need to redirect the input/output names
@@ -110,7 +107,6 @@ class GroupConvPreProcessingRule: PreImportHook {
         val toTypedArray = outputVars.toTypedArray()
         val concat = sd.concat(op.name,0,*toTypedArray)
         resultMap[op.name] = listOf(concat)
-
-        return HookResult(outputVariables = resultMap,listOfFunctions,proceedWithInit = false)
+        return resultMap
     }
 }

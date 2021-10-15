@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.hooks
 
+import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
@@ -47,6 +48,39 @@ interface PreImportHook {
         isFinalOutput: Boolean,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
-    ): HookResult
+    ): HookResult {
+        // Parameter docs below are from the onnx operator docs:
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
+        return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph),
+            proceedWithInit = false)
+    }
+
+    fun handleOutputs(
+        outputNames: List<String>,
+        sd: SameDiff,
+        op: SameDiffOp,
+        attributes: Map<String, Any>,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String,List<SDVariable>> {
+        outputNames.forEach { outputVarName ->
+            if(outputVarName != null && sd.hasVariable(outputVarName)) {
+                sd.variables.remove(outputVarName)
+                sd.ops.remove(outputVarName)
+            }
+        }
+
+        return doImport(sd, attributes, outputNames, op,mappingRegistry,importGraph)
+    }
+
+    fun doImport(
+        sd: SameDiff,
+        attributes: Map<String, Any>,
+        outputNames: List<String>,
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String,List<SDVariable>>
+
 
 }
