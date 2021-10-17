@@ -209,14 +209,7 @@ val concat = OnnxMappingProcess(
 
 )
 //TODO: ConcatFromSequence
-val constantFill = OnnxMappingProcess(
-        opName = "fill",
-        inputFrameworkOpName = "ConstantOfShape",
-        opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("shape" to "input"))),
-        attributeMappingRules = listOf(ndarrayAttributeToScalarAttribute(outputAttributeValue = "value",inputAttributeValue = "value"),
-                intConstant(inputName = "outputDataType",constantValue = 0,argumentIndex = 0)[0])
-)
+
 
 //TODO: ConvInteger
 //TODO: ConvTranspose

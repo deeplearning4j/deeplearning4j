@@ -70,6 +70,8 @@ interface PreImportHook {
             }
         }
 
+        op.outputsOfOp = outputNames
+
         return doImport(sd, attributes, outputNames, op,mappingRegistry,importGraph)
     }
 

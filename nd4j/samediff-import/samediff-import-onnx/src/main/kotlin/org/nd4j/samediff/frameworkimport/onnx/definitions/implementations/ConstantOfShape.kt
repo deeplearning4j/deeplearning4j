@@ -59,7 +59,7 @@ class ConstantOfShape : PreImportHook  {
             val firstVal = attributes["value"] as INDArray
             outputVar = sd.create(inputShape,firstVal.dataType(),"c",false)
             val firstValue = firstVal.getDouble(0)
-            outputVar = sd.assign(outputVarName,outputVar,sd.constant(firstValue))
+            outputVar = sd.assign(outputVar,sd.constant(firstValue)).castTo(outputVarName,firstVal.dataType())
 
         }
 

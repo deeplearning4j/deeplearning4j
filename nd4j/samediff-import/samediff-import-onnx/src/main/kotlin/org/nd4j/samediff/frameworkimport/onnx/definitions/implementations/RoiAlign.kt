@@ -67,7 +67,7 @@ class RoiAlign : PreImportHook  {
             adaptiveRatio = true
         }
 
-        val dataFormat = ImportUtils.getDataFormat(features.arr.rank())
+        val dataFormat = if(features.arr != null)  { ImportUtils.getDataFormat(features.arr.rank()) } else { Pair("NCHW","NCHW") }
         val needsTrans = dataFormat.first.startsWith("NC")
         if(needsTrans) {
             val computeFormat = "N${dataFormat.first.substring(2)}C"

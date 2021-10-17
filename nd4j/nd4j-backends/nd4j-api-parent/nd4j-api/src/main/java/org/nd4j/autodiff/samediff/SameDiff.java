@@ -501,7 +501,7 @@ public class SameDiff extends SDBaseOps {
         for (val var : variables()) {
             SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
-            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
+            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null && !var.getArr().isEmpty()) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
 
@@ -532,8 +532,29 @@ public class SameDiff extends SDBaseOps {
             newFunctions.put(function.getOwnName(), clone);
 
             val argsForFunction = function.args();
-            val outputsForFunction = function.outputVariables();
+            for(SDVariable arg : argsForFunction) {
+                if(!sameDiff.variables.containsKey(arg.name())) {
+                    SDVariable clone2 = arg.clone(this);
+                    clone2.setSameDiff(sameDiff);
+                    sameDiff.addVariable(clone2);
+                    if (clone2.getVariableType() != VariableType.ARRAY && clone2.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
+                        sameDiff.associateArrayWithVariable(clone2.getArr(), clone2);
+                    }
 
+                }
+            }
+            val outputsForFunction = function.outputVariables();
+            for(SDVariable arg : outputsForFunction) {
+                if(!sameDiff.variables.containsKey(arg.name())) {
+                    SDVariable clone2 = arg.clone(this);
+                    clone2.setSameDiff(sameDiff);
+                    sameDiff.addVariable(clone2);
+                    if (clone2.getVariableType() != VariableType.ARRAY && clone2.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
+                        sameDiff.associateArrayWithVariable(clone2.getArr(), clone2);
+                    }
+
+                }
+            }
             //note that these have the same variable names
             sameDiff.addArgsFor(argsForFunction, clone);
             sameDiff.addOutgoingFor(outputsForFunction, function);
@@ -965,7 +986,8 @@ public class SameDiff extends SDBaseOps {
 
 
         if (ops.get(function.getOwnName()).getOutputsOfOp() != null && !ops.get(function.getOwnName()).getOutputsOfOp().isEmpty()) {
-            throw new ND4JIllegalStateException("Outgoing arguments already declared for " + function);
+            log.warn("Outgoing arguments already declared for " + function);
+            return;
         }
 
         if (varNames == null)
@@ -1083,7 +1105,8 @@ public class SameDiff extends SDBaseOps {
         if (interceptor != null) {
             pauseArgumentInterceptor(interceptor);
             for (int i = 0; i < variables.length; i++) {
-                variables[i] = interceptor.intercept(getVariable(variables[i])).name();
+                if(this.variables.containsKey(variables[i]))
+                    variables[i] = interceptor.intercept(getVariable(variables[i])).name();
             }
             unpauseArgumentInterceptor(interceptor);
         }
@@ -5966,8 +5989,10 @@ public class SameDiff extends SDBaseOps {
 
         this.addArgumentInterceptor(argument -> {
 
-            // if its declared in the if, we don't care acout it
-            if(!declared.contains(argument.name()))
+            if(argument == null)
+                return null;
+            // if its declared in the if, we don't care about it
+            if(declared == null || !declared.contains(argument.name()))
                 return argument;
 
             // if we've already added a switch, move on
@@ -5993,7 +6018,7 @@ public class SameDiff extends SDBaseOps {
         final Set<String> declared2 = Sets.newHashSet(variableMap().keySet());
         sd.addArgumentInterceptor(argument -> {
 
-            // if its declared in the if, we don't care acout it
+            // if its declared in the if, we don't care about it
             if(!declared2.contains(argument.name()))
                 return argument;
 
@@ -6105,23 +6130,22 @@ public class SameDiff extends SDBaseOps {
         final Map<String, SDVariable> done = new HashMap<>();
 
         final SameDiff sd = this;
-        this.addArgumentInterceptor(new ArgumentInterceptor() {
-            @Override
-            public SDVariable intercept(SDVariable argument) {
+        this.addArgumentInterceptor(argument -> {
+            if(argument == null)
+                return null;
 
-                if(!declared.contains(argument.name()))
-                    return argument;
+            if(!declared.contains(argument.name()))
+                return argument;
 
-                if(alreadyEntered.contains(argument.name()))
-                    return argument;
+            if(alreadyEntered.contains(argument.name()))
+                return argument;
 
-                if(done.containsKey(argument.name()))
-                    return done.get(argument.name());
+            if(done.containsKey(argument.name()))
+                return done.get(argument.name());
 
-                SDVariable e = new Enter(sd, frameName, argument, true).outputVariable();
-                done.put(argument.name(), e);
-                return e;
-            }
+            SDVariable e = new Enter(sd, frameName, argument, true).outputVariable();
+            done.put(argument.name(), e);
+            return e;
         });
 
         NameScope bodyScope = this.withNameScope("body");

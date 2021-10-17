@@ -77,9 +77,12 @@ class If : PreImportHook  {
         val outputVar = sd.ifCond(outputVarName,null,SameDiffNoArgSingleLambda {
             sd.getVariable(op.inputsToOp[0])
         }, SameDiffNoArgSingleLambda {
-            sd.invokeFunctionOn("${op.name}_then_branch",sd)
+            val definedFunction = sd.getFunction("${op.name}_then_branch")
+            definedFunction.invokeGraphOn(sd)
         }, SameDiffNoArgSingleLambda {
-            sd.invokeFunctionOn("${op.name}_else_branch",sd)
+            val definedFunction = sd.getFunction("${op.name}_else_branch")
+            definedFunction.invokeGraphOn(sd)
+
         })
 
         return mapOf(outputVarName to listOf(outputVar))
