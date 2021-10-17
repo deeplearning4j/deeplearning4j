@@ -132,6 +132,11 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
                 println()
             }
         }
+
+        if(!registeredOps.containsKey(inputFrameworkOpName)) {
+            throw IllegalArgumentException("No input framework op name with name $inputFrameworkOpName found!")
+        }
+
         return registeredOps[inputFrameworkOpName]!!.first()
     }
 

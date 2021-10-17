@@ -17,21 +17,29 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.samediff.frameworkimport.rule.attribute
+package org.nd4j.samediff.frameworkimport
 
-enum class AttributeValueType {
-    FLOAT,
-    LIST_FLOAT,
-    INT,
-    LIST_INT,
-    BOOL,
-    LIST_BOOL,
-    STRING,
-    LIST_STRING,
-    TENSOR,
-    LIST_TENSOR,
-    DATA_TYPE,
-    INVALID,
-    GRAPH,
-    LIST_GRAPH
+import org.apache.commons.lang3.StringUtils
+
+object ImportUtils {
+
+    fun getDataFormat(inputRank: Int): Pair<String,String>  {
+        val spDimNames = listOf("D","H","W")
+        val spDimNamesReversed = spDimNames.reversed()
+        val spDimsList = mutableListOf<String>()
+        for(i in 0 until inputRank - 2) {
+            spDimsList.add(spDimNamesReversed[i])
+        }
+
+        val spDimString = StringUtils.join(spDimsList.reversed(),' ').replace(" ","")
+        val storageFormat = "NC$spDimString"
+        val computeFormat = "N${spDimString}C"
+        return Pair(storageFormat,computeFormat)
+    }
+
+
+    fun getPermFromFormats(from: String,to: String): IntArray {
+        return to.map { x -> from.indexOf(x) }.toIntArray()
+    }
+
 }

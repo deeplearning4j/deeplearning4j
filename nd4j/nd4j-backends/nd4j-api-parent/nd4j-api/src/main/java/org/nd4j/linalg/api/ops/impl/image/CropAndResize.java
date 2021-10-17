@@ -50,7 +50,7 @@ public class CropAndResize extends DynamicCustomOp {
 
     public CropAndResize(@NonNull SameDiff sameDiff, SDVariable image, SDVariable cropBoxes, SDVariable boxIndices,
                          SDVariable cropOutSize, double extrapolationValue) {
-        this(sameDiff, image, cropBoxes, boxIndices, cropOutSize, null, extrapolationValue);
+        this(sameDiff, image, cropBoxes, boxIndices, cropOutSize, Method.BILINEAR, extrapolationValue);
     }
 
     public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
@@ -68,7 +68,7 @@ public class CropAndResize extends DynamicCustomOp {
     }
 
     public CropAndResize(INDArray image, INDArray cropBoxes, INDArray boxIndices, INDArray cropOutSize, double extrapolationValue ) {
-        this(image, cropBoxes, boxIndices, cropOutSize, null, extrapolationValue, null);
+        this(image, cropBoxes, boxIndices, cropOutSize, Method.BILINEAR, extrapolationValue, null);
     }
 
     @Override

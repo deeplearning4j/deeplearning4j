@@ -23,54 +23,39 @@ import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.ir.OpNamespace
-import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
-import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of expand.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/expand.py
+ * A port of cast.py from onnx tensorflow for samediff:
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/cast.py
  *
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["Cast"],frameworkName = "onnx")
 class Cast : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
-
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String, List<SDVariable>> {
         var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val dTypeIndex = attributes.get("to") as Long
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
-
+        val dTypeIndex = attributes["to"] as Long
         val dtype =  Onnx.TensorProto.DataType.values()[dTypeIndex.toInt()]
         val inputDataType = OnnxIRDataType(dtype)
         val newDataType = inputDataType.nd4jDataType()
-        val outputVar = sd.castTo(outputVarName,inputVariable,newDataType)
-        return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
-            proceedWithInit = false)
-
-
+        val outputVar = sd.castTo(outputNames[0],inputVariable,newDataType)
+        return mapOf(outputNames[0] to listOf(outputVar))
     }
-
 
 
 }

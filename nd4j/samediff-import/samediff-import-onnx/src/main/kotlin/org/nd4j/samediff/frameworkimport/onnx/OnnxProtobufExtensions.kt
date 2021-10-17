@@ -30,7 +30,7 @@ fun NodeProto(block: Onnx.NodeProto.Builder.() -> Unit): Onnx.NodeProto {
 }
 
 fun AttributeProto(block: Onnx.AttributeProto.Builder.() -> Unit) : Onnx.AttributeProto {
-    return Onnx.AttributeProto.newBuilder().apply { block }.build()
+    return Onnx.AttributeProto.newBuilder().apply(block).build()
 }
 
 fun Onnx.AttributeProto.Builder.TensorValue(inputValue: Onnx.TensorProto) {

@@ -209,14 +209,7 @@ val concat = OnnxMappingProcess(
 
 )
 //TODO: ConcatFromSequence
-val constantFill = OnnxMappingProcess(
-        opName = "fill",
-        inputFrameworkOpName = "ConstantOfShape",
-        opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("shape" to "input"))),
-        attributeMappingRules = listOf(ndarrayAttributeToScalarAttribute(outputAttributeValue = "value",inputAttributeValue = "value"),
-                intConstant(inputName = "outputDataType",constantValue = 0,argumentIndex = 0)[0])
-)
+
 
 //TODO: ConvInteger
 //TODO: ConvTranspose
@@ -348,11 +341,26 @@ val gatherNd = OnnxMappingProcess(
 )
 
 
+val ifOp = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "If",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val clip = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Clip",
         opMappingRegistry = onnxOpRegistry
 )
+
+
+
+val roiAlign = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RoiAlign",
+        opMappingRegistry = onnxOpRegistry
+)
+
 
 
 val nonZero = OnnxMappingProcess(
@@ -374,6 +382,7 @@ val gemm = OnnxMappingProcess(
                 invertBooleanNumber(mutableMapOf("transX" to "transA","transY" to "transB")))
 )
 //note: no ops are mostly just stubs for ops implemented as pre processors
+//These are implemented using the PreImportHook found: https://github.com/eclipse/deeplearning4j/tree/master/nd4j/samediff-import/samediff-import-onnx/src/main/kotlin/org/nd4j/samediff/frameworkimport/onnx/definitions/implementations
 val globalAveragePooling = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GlobalAveragePool",
@@ -904,15 +913,19 @@ val spaceToDepth = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-//TODO: don't know a good default value for num_splits, look at TF and implementation in libnd4j to figure out best value
 val split = OnnxMappingProcess(
-        opName = "split",
+        opName = "noop",
         inputFrameworkOpName = "Split",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("a" to "input","b" to "split"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("dimensions" to "axis")),
-                intConstant(inputName = "numSplit",constantValue = 0,argumentIndex = 0)[0])
 )
+
+val transpose = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Transpose",
+
+        opMappingRegistry = onnxOpRegistry
+)
+
 
 val sqrt = OnnxMappingProcess(
         opName = "sqrt",
@@ -935,8 +948,8 @@ val squeeze = OnnxMappingProcess(
         opName = "squeeze",
         inputFrameworkOpName = "Squeeze",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","a" to "axes"))),
-        attributeMappingRules = listOf()
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
+        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf( "_a" to  "axes")))
 )
 
 //TODO: StringNormalizer
@@ -962,13 +975,6 @@ val topK = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-val transpose = OnnxMappingProcess(
-        opName = "transpose",
-        inputFrameworkOpName = "Transpose",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
-        opMappingRegistry = onnxOpRegistry
-)
 
 val where = OnnxMappingProcess(
         inputFrameworkOpName = "Where",

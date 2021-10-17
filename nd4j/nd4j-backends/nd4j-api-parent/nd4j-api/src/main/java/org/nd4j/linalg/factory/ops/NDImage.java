@@ -26,6 +26,7 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.ImageResizeMethod;
+import org.nd4j.enums.Mode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -197,6 +198,21 @@ public class NDImage {
     NDValidation.validateNumerical("nonMaxSuppression", "boxes", boxes);
     NDValidation.validateNumerical("nonMaxSuppression", "scores", scores);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression(boxes, scores, maxOutSize, iouThreshold, scoreThreshold))[0];
+  }
+
+  /**
+   * Pads an image according to the given padding type<br>
+   *
+   * @param input input array (NUMERIC type)
+   * @param padding padding input (NUMERIC type)
+   * @param Mode padding mode: CONSTANT, REFLECT, SYMMETRIC
+   * @param padValue The value to pad with
+   * @return output the padded array (NUMERIC type)
+   */
+  public INDArray pad(INDArray input, INDArray padding, Mode Mode, double padValue) {
+    NDValidation.validateNumerical("pad", "input", input);
+    NDValidation.validateNumerical("pad", "padding", padding);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, Mode, padValue))[0];
   }
 
   /**

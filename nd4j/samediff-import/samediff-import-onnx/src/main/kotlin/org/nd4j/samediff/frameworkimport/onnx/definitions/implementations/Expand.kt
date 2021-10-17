@@ -22,12 +22,13 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
-import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
  * A port of expand.py from onnx tensorflow for samediff:
@@ -37,28 +38,19 @@ import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
  */
 @PreHookRule(nodeNames = [],opNames = ["Expand"],frameworkName = "onnx")
 class Expand : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
-
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String, List<SDVariable>> {
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val newShape = sd.getVariable(op.inputsToOp[1])
-        val inputTensorShape = sd.shape(inputVariable)
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
+        val outputVarName = outputNames[0]
 
         var outputVar: SDVariable = if(inputVariable.dataType() == DataType.BOOL) {
             val ones = sd.create(newShape,DataType.INT8)
@@ -71,12 +63,8 @@ class Expand : PreImportHook  {
             assignedOnes.mul(outputVarName,inputVariable)
         }
 
-        return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
-            proceedWithInit = false)
-
-
+        return mapOf(outputVarName to listOf(outputVar))
     }
-
 
 
 }

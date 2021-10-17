@@ -52,7 +52,18 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
-
+/**
+ * Core import class for running model import for any framework.
+ * This should be paired with an [OpMappingRegistry]
+ * and a set of classes implemented in protobuf that extend [GeneratedMessageV3]
+ * and [ProtocolMessageEnum] respectively.
+ *
+ * The end result with these abstractions is direct interop with a file format's schema
+ * convertable to primitives like Nd4j's [INDArray] and [SameDiff]
+ *
+ * @author Adam Gibson
+ *
+ */
 open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         NODE_TYPE : GeneratedMessageV3,
         OP_DEF_TYPE : GeneratedMessageV3,
@@ -545,7 +556,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 attributes,
                                 importInfo[name]!!.second,
                                 nd.outputs(),
-                                availableToAdd.isEmpty()
+                                availableToAdd.isEmpty(),
+                                opMappingRegistry as OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+                                this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
                             ).proceedWithInit
                         }
 

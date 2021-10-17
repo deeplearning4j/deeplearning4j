@@ -205,17 +205,204 @@ class TestOnnxIR {
     }
 
     @Test
-    @Ignore("Onnxruntime does not have NonZero")
     fun testNonZero() {
         val declarations = OnnxOpDeclarations
         val inputs = mutableMapOf("input" to Nd4j.linspace(1,4,4).castTo(DataType.DOUBLE))
+        val onnxOpRegistry = registry()
 
         val output = listOf("output")
         val createdGraph = createSingleNodeGraph(inputs,"NonZero",emptyMap(),output,inputs.keys.toList(),templateTensor = Nd4j.ones(DataType.INT64))
-        runAssertion(createdGraph,inputs,output)
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val onnxIRGraph = OnnxIRGraph(createdGraph,onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(inputs),onnxOpRegistry)
+        val result = importedGraph.output(inputs,output)
+
+        //runAssertion(createdGraph,inputs,output)
 
     }
 
+
+    @Test
+    fun testIf() {
+        val thenOut = convertToOnnxTensor(Nd4j.ones(DataType.FLOAT,5),"then_out")
+        val elseOut = convertToOnnxTensor(Nd4j.ones(DataType.FLOAT,5),"else_out")
+        val x = Nd4j.linspace(1,5,5).castTo(DataType.FLOAT)
+        val y = Nd4j.create(floatArrayOf(5.0f,4.0f,3.0f,2.0f,1.0f))
+        val elseGraph = createSingleNodeGraph(emptyMap(),"Constant",mapOf("value" to elseOut),listOf("else_out"),listOf(),x)
+        val thenGraph = createSingleNodeGraph(emptyMap(),"Constant",mapOf("value" to thenOut),listOf("then_out"),listOf(),x)
+        val thenGraphAttr = AttributeProto {
+            name = "then_branch"
+            g = thenGraph
+            type = Onnx.AttributeProto.AttributeType.GRAPH
+        }
+        val elseAttr = AttributeProto {
+            name = "else_branch"
+            g = elseGraph
+            type = Onnx.AttributeProto.AttributeType.GRAPH
+        }
+        val ifNode = NodeProto {
+            opType = "If"
+            name = "ifNode"
+            Input("cond")
+            Output("res")
+            Attribute(thenGraphAttr)
+            Attribute(elseAttr)
+        }
+
+        val graph = GraphProto {
+            name = "ifGraph"
+            Input(createValueInfoFromTensor(Nd4j.ones(1).castTo(DataType.BOOL),"cond",true))
+            Node(ifNode)
+            Output(createValueInfoFromTensor(y,"res",true))
+        }
+
+        runAssertion(graph,mapOf("cond" to (Nd4j.ones(1).castTo(DataType.BOOL))),listOf("res"))
+    }
+
+
+
+    @Test
+    fun testRoiAligned() {
+        val xArr =   arrayOf(
+            doubleArrayOf(
+                0.2764,
+                0.7150,
+                0.1958,
+                0.3416,
+                0.4638,
+                0.0259,
+                0.2963,
+                0.6518,
+                0.4856,
+                0.7250,
+            ),
+            doubleArrayOf(
+                0.9637,
+                0.0895,
+                0.2919,
+                0.6753,
+                0.0234,
+                0.6132,
+                0.8085,
+                0.5324,
+                0.8992,
+                0.4467,
+            ),
+            doubleArrayOf(
+                0.3265,
+                0.8479,
+                0.9698,
+                0.2471,
+                0.9336,
+                0.1878,
+                0.4766,
+                0.4308,
+                0.3400,
+                0.2162,
+            ),
+            doubleArrayOf(
+                0.0206,
+                0.1720,
+                0.2155,
+                0.4394,
+                0.0653,
+                0.3406,
+                0.7724,
+                0.3921,
+                0.2541,
+                0.5799,
+            ),
+            doubleArrayOf(
+                0.4062,
+                0.2194,
+                0.4473,
+                0.4687,
+                0.7109,
+                0.9327,
+                0.9815,
+                0.6320,
+                0.1728,
+                0.6119,
+            ),
+            doubleArrayOf(
+                0.3097,
+                0.1283,
+                0.4984,
+                0.5068,
+                0.4279,
+                0.0173,
+                0.4388,
+                0.0430,
+                0.4671,
+                0.7119,
+            ),
+            doubleArrayOf(
+                0.1011,
+                0.8477,
+                0.4726,
+                0.1777,
+                0.9923,
+                0.4042,
+                0.1869,
+                0.7795,
+                0.9946,
+                0.9689,
+            ),
+            doubleArrayOf(
+                0.1366,
+                0.3671,
+                0.7011,
+                0.6234,
+                0.9867,
+                0.5585,
+                0.6985,
+                0.5609,
+                0.8788,
+                0.9928,
+            ),
+            doubleArrayOf(
+                0.5697,
+                0.8511,
+                0.6711,
+                0.9406,
+                0.8751,
+                0.7496,
+                0.1650,
+                0.1049,
+                0.1559,
+                0.2514,
+            ),
+            doubleArrayOf(
+                0.7012,
+                0.4056,
+                0.7879,
+                0.3461,
+                0.0415,
+                0.2998,
+                0.5094,
+                0.3727,
+                0.5482,
+                0.0502,
+            ))
+        val roiX = Nd4j.create(xArr).reshape(1,1,10,10).castTo(DataType.FLOAT)
+        val rois = Nd4j.create(Nd4j.createBuffer(longArrayOf(0,0,9,9,0,5,4,9,5,5,9,9))).reshape(3,4).castTo(DataType.FLOAT)
+        val batchIndices = Nd4j.create(Nd4j.createBuffer(longArrayOf(0,0,0))).reshape(3)
+        val y = Nd4j.create(Nd4j.createBuffer(doubleArrayOf(0.4664,0.4466,0.3405,0.5688,0.6068,0.3714,0.4296,0.3835,0.5562,0.351
+            ,0.2768,0.4883,0.5222,0.5528,0.4171,0.4713,0.4844,0.6904,0.492,0.8774
+            ,0.6239,0.7125,0.6289,0.3355,0.3495,0.3022,0.4305,0.4696,0.3978,0.5423
+            ,0.3656,0.705,0.5165,0.3172,0.7015,0.2912,0.5059,0.6476,0.6235,0.8299
+            ,0.5916,0.7389,0.7048,0.8372,0.8893,0.6227,0.6153,0.7097,0.6154,0.4585
+            ,0.2384,0.3379,0.3717,0.61,0.7601,0.3767,0.3785,0.7147,0.9243,0.9727
+            ,0.5749,0.5826,0.5709,0.7619,0.877,0.5355,0.2566,0.2141,0.2796,0.36
+            ,0.4365,0.3504,0.2887,0.3661,0.2349))).reshape(3,1,5,5)
+
+        val outputs = listOf("y")
+        val inputs = mapOf("X" to roiX,"rois" to rois,"batch_indices" to batchIndices)
+        val attributes = mapOf("spatial_scale" to 1.0f,"output_height" to 5,"output_width" to 5,"sampling_ratio" to 2)
+        val createdGraph = createSingleNodeGraph(inputs,"RoiAlign",attributes,outputs,inputs.keys.toList())
+        runAssertion(createdGraph,inputs,outputs)
+
+    }
 
     @Test
     fun testMaximum() {
@@ -369,6 +556,10 @@ class TestOnnxIR {
                 }
                 val toBuilder = attr.toBuilder()
                 when(u.javaClass.name) {
+                    "onnx.Onnx\$TensorProto" -> {
+                        toBuilder.t = (u as Onnx.TensorProto)
+                        toBuilder.type = Onnx.AttributeProto.AttributeType.TENSOR
+                    }
                     "java.lang.Double" -> {
                         toBuilder.f = (u as Double).toFloat()
                         toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
@@ -399,6 +590,7 @@ class TestOnnxIR {
 
         val graphRet = GraphProto {
             Node(op)
+            name = op.opType.toLowerCase()
             inputs.forEach { (t, u) ->
                 if(!t.isEmpty())
                     Input(createValueInfoFromTensor(u,t,false))

@@ -1706,6 +1706,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -1951,6 +1952,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -2084,6 +2086,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -4823,6 +4826,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -6815,6 +6819,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -7065,6 +7070,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "start"
     outputDoubleName: "stop"
     inputToOutput {
       key: "start"
@@ -7227,6 +7233,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -8935,6 +8942,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "maxOutputSize"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -9014,6 +9022,9 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "depth"
+    outputDoubleName: "on"
+    outputDoubleName: "off"
     inputToOutput {
       key: "depth"
       value: "depth"
@@ -9058,13 +9069,13 @@ mappings {
     inputTensorName: "x"
     inputTensorName: "perm"
     outputTensorName: "input"
-    outputTensorName: "permutationVector"
+    outputTensorName: "permuteDims"
     inputToOutput {
       key: "input"
       value: "x"
     }
     inputToOutput {
-      key: "permutationVector"
+      key: "permuteDims"
       value: "perm"
     }
     ruleType: "tensor"
@@ -9226,6 +9237,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -9698,6 +9710,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "maxOutputSize"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -9923,6 +9936,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -10163,6 +10177,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -10358,6 +10373,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "maxval"
@@ -11787,38 +11804,16 @@ mappings {
     inputTensorName: "input"
     inputTensorName: "reduction_indices"
     outputTensorName: "input"
-    outputTensorName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
-    }
+    outputTensorName: "y"
     inputToOutput {
       key: "input"
       value: "input"
     }
-    ruleType: "tensor"
-    inputFrameworkOpName: "All"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputBooleanName: "keep_dims"
-    outputBooleanName: "keepDims"
     inputToOutput {
-      key: "keepDims"
-      value: "keep_dims"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "All"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    inputToOutput {
-      key: "dimensions"
+      key: "y"
       value: "reduction_indices"
     }
-    ruleType: "attribute"
+    ruleType: "tensor"
     inputFrameworkOpName: "All"
   }
 }
@@ -12509,6 +12504,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "concat_dim"
@@ -13240,6 +13236,9 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "from"
+    outputIntName: "to"
+    outputIntName: "step"
     inputToOutput {
       key: "from"
       value: "start"
@@ -14404,6 +14403,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -14607,6 +14607,7 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "maxOutputSize"
     outputDoubleName: "overlapThreshold"
+    outputDoubleName: "scoreThreshold"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -14636,6 +14637,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -14718,38 +14720,16 @@ mappings {
     inputTensorName: "input"
     inputTensorName: "reduction_indices"
     outputTensorName: "input"
-    outputTensorName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
-    }
+    outputTensorName: "y"
     inputToOutput {
       key: "input"
       value: "input"
     }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Any"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputBooleanName: "keep_dims"
-    outputBooleanName: "keepDims"
     inputToOutput {
-      key: "keepDims"
-      value: "keep_dims"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Any"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    inputToOutput {
-      key: "dimensions"
+      key: "y"
       value: "reduction_indices"
     }
-    ruleType: "attribute"
+    ruleType: "tensor"
     inputFrameworkOpName: "Any"
   }
 }

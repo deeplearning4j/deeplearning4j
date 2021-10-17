@@ -56,7 +56,36 @@ namespace sd {
                     ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS});
         }
+
+
+        CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
+            auto x = INPUT_VARIABLE(0);
+            auto shape = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
+            REQUIRE_TRUE(shape->isVector() || shape->isScalar(),0,"Shape must be either a scalar or a vector");
+            auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(),x->ordering(),shape->asVectorT<Nd4jLong>());
+            z->setShapeInfo(newShapeInfo);
+            //if x and z aren't the same reference ensure the elements are the same.
+            //this op should almost always be used in place and in very specific circumstances.
+            if(x != z) {
+                z->assign(x,true);
+            }
+            return Status::OK();
+        };
+
+        DECLARE_SHAPE_FN(set_shape) {
+            auto inShape = INPUT_VARIABLE(1);
+            return SHAPELIST(inShape->shapeInfo());
+        };
+
+        DECLARE_TYPES(set_shape) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0,sd::DataType::ANY)
+                    ->setAllowedInputTypes(1,sd::DataType::INT64)
+                    ->setAllowedOutputTypes({sd::DataType::ANY});
+        }
     }
 }
+
 
 #endif

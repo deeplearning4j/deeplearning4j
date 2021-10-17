@@ -17,21 +17,17 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.samediff.frameworkimport.rule.attribute
 
-enum class AttributeValueType {
-    FLOAT,
-    LIST_FLOAT,
-    INT,
-    LIST_INT,
-    BOOL,
-    LIST_BOOL,
-    STRING,
-    LIST_STRING,
-    TENSOR,
-    LIST_TENSOR,
-    DATA_TYPE,
-    INVALID,
-    GRAPH,
-    LIST_GRAPH
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
+
+package org.nd4j.enums;
+
+/**
+ * padding mode: CONSTANT, REFLECT, SYMMETRIC */
+public enum Mode {
+  CONSTANT,
+
+  REFLECT,
+
+  SYMMETRIC
 }

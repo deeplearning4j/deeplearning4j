@@ -25,9 +25,13 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
  * A port of slice.py from onnx tensorflow for samediff:
@@ -37,21 +41,23 @@ import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
  */
 @PreHookRule(nodeNames = [],opNames = ["Slice"],frameworkName = "onnx")
 class Slice : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult {
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val inputTensorShape = sd.shape(inputVariable)
-        val starts = sd.getVariable(op.inputsToOp[1])
-        val ends = sd.getVariable(op.inputsToOp[2])
+        //these should always be indices
+        val starts = sd.getVariable(op.inputsToOp[1]).castTo(DataType.INT64)
+        val ends = sd.getVariable(op.inputsToOp[2]).castTo(DataType.INT64)
         val axes = if(op.inputsToOp.size < 4) sd.range(sd.constant(0),sd.shape(starts),sd.constant(1),starts.dataType())
         else sd.getVariable(op.inputsToOp[3])
         val inputRank = sd.rank(inputVariable)
@@ -72,35 +78,21 @@ class Slice : PreImportHook  {
 
         val denseEnds = sd.sparseToDense(sparseIndices,outputShape,endsFinal,sd.constant(Nd4j.create(
             floatArrayOf(-1.0f)).castTo(denseBegins.dataType())))
-       val denseEnds2 = sd.where(inputTensorShape,denseEnds,sd.eq(denseEnds,sd.constant(-1).castTo(denseBegins.dataType())))
+        val denseEnds2 = sd.where(inputTensorShape,denseEnds,sd.eq(denseEnds,sd.constant(-1).castTo(denseBegins.dataType())))
 
         val denseSteps: SDVariable = if(op.inputsToOp.size >= 5) {
             val inputVar = sd.getVariable(op.inputsToOp[4])
             sd.sparseToDense(sparseIndices,
                 outputShape,inputVar,
-               sd.constant(Nd4j.create(floatArrayOf(1.0f))
-                   .castTo(inputVar.dataType())))
+                sd.constant(Nd4j.create(floatArrayOf(1.0f))
+                    .castTo(inputVar.dataType())))
         } else {
             sd.onesLike(inputVariable.shape())
         }
 
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
-
-        val finalVal = sd.stridedSlice(outputVarName,inputVariable,denseBegins,denseEnds2,denseSteps,0,0,0,0,0)
-
-        return HookResult(outputVariables = mapOf(finalVal.name() to listOf(finalVal)),
-            proceedWithInit = false)
-
-
+        val finalVal = sd.stridedSlice(outputNames[0],inputVariable,denseBegins,denseEnds2,denseSteps,0,0,0,0,0)
+        return mapOf(outputNames[0] to listOf(finalVal))
     }
-
 
 
 }

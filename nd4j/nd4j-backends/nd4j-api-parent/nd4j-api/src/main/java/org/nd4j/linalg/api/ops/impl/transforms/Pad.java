@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.Mode;
 import org.nd4j.enums.PadMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,12 +41,34 @@ import java.util.Map;
 
 public class Pad extends DynamicCustomOp {
 
+
+
+    public Pad(SameDiff sd, SDVariable input, SDVariable padding, org.nd4j.enums.Mode mode, double padValue) {
+        this(sd,input,padding,adaptCodeGenMode(mode),padValue);
+    }
+
+    public Pad(INDArray input, INDArray padding, org.nd4j.enums.Mode mode, double padValue) {
+        this(input,padding,null,adaptCodeGenMode(mode),padValue);
+    }
+
     public enum Mode {CONSTANT, REFLECT, SYMMETRIC}
 
     private Mode mode;
     private double constant;
 
     public Pad(){ }
+
+    private static Mode adaptCodeGenMode(org.nd4j.enums.Mode mode) {
+        switch(mode) {
+            case REFLECT:
+              return Mode.REFLECT;
+            case CONSTANT:
+                return Mode.CONSTANT;
+            case SYMMETRIC:
+               return Mode.SYMMETRIC;
+            default:throw new IllegalArgumentException("Invalid mode specified " + mode);
+        }
+    }
 
     private static Mode adaptMode(PadMode mode) {
         Mode legacyMode = Mode.CONSTANT;
@@ -131,7 +154,7 @@ public class Pad extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() >= 1 && inputDataTypes.size() <= 3),
                 "Expected 1-3 input datatypes for %s, got %s", getClass(), inputDataTypes);     //input, padding, pad value
         return Collections.singletonList(inputDataTypes.get(0));

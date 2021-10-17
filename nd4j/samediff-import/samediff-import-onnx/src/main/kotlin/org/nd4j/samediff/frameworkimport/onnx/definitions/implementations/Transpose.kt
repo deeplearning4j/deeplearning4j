@@ -19,27 +19,29 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
+import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of constant_of_shape.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/constant_of_shape.py
+ * A port of cast.py from onnx tensorflow for samediff:
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/cast.py
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["ConstantOfShape"],frameworkName = "onnx")
-class ConstantOfShape : PreImportHook  {
-
+@PreHookRule(nodeNames = [],opNames = ["Transpose"],frameworkName = "onnx")
+class Transpose : PreImportHook  {
 
     override fun doImport(
         sd: SameDiff,
@@ -49,21 +51,14 @@ class ConstantOfShape : PreImportHook  {
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
-        val outputVarName = outputNames[0]
-        var outputVar: SDVariable? = null
-        var inputShape = sd.getVariable(op.inputsToOp[0])
-        if(!attributes.containsKey("value")) {
-            //zeros float 32 as according to onnx spec
-            outputVar = sd.create(outputVarName,inputShape, DataType.FLOAT,"c",true)
-        } else {
-            val firstVal = attributes["value"] as INDArray
-            outputVar = sd.create(inputShape,firstVal.dataType(),"c",false)
-            val firstValue = firstVal.getDouble(0)
-            outputVar = sd.assign(outputVar,sd.constant(firstValue)).castTo(outputVarName,firstVal.dataType())
+        // Parameter docs below are from the onnx operator docs:
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
 
-        }
-
-        return mapOf(outputVarName to listOf(outputVar))
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val perm = attributes["perm"] as List<Long>
+        val permInput = sd.constant(Nd4j.create(Nd4j.createBuffer(perm.toLongArray())))
+        val outputVar = sd.permute(outputNames[0],inputVariable,permInput)
+        return mapOf(outputNames[0] to listOf(outputVar))
     }
 
 

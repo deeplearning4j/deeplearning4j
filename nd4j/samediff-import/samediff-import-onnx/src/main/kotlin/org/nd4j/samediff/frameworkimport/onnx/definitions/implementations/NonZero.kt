@@ -19,52 +19,45 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of expand.py from onnx tensorflow for samediff:
+ * A port of non_zero.py from onnx tensorflow for samediff:
  * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/non_zero.py
  *
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["NonZero"],frameworkName = "onnx")
 class NonZero : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult {
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#non
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
         val condition = sd.neq(inputVariable,sd.zerosLike(inputVariable))
         val nonZeroIndices = sd.where(condition)
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
 
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
-
-
-        val outputVar = sd.permute(outputVarName,nonZeroIndices)
-        return HookResult(outputVariables = mapOf(outputVar.name() to listOf(outputVar)),
-            proceedWithInit = false)
-
-
+        val outputVar = sd.permute(outputNames[0],nonZeroIndices)
+        return mapOf(outputNames[0] to listOf(outputVar))
     }
-
 
 
 }
