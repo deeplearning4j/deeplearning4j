@@ -61,9 +61,9 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         if (maskArray != null) {
             if(ncw){
-                delta = Broadcast.mul(delta, maskArray, delta, 0, 2);
+                delta = Broadcast.mul(delta.castTo(z.dataType()), maskArray.castTo(z.dataType()), delta.castTo(z.dataType()), 0, 2);
             } else {
-                delta = Broadcast.mul(delta, maskArray, delta, 0, 1);
+                delta = Broadcast.mul(delta.castTo(z.dataType()), maskArray.castTo(z.dataType()), delta.castTo(z.dataType()), 0, 1);
             }
         }
 
