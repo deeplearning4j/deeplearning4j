@@ -37,7 +37,7 @@ namespace sd {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), variance_, (input, output, dimensions, biasCorrected), LIBND4J_TYPES, FLOAT_TYPES);
             }
             
-            ND4J_LOCAL void  standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+             void  standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), standardDeviation_, (input, output, dimensions, biasCorrected), LIBND4J_TYPES, FLOAT_TYPES);
             }
 

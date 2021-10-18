@@ -29,7 +29,7 @@ namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
-ND4J_LOCAL void crossBatched(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
+ void crossBatched(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
     auto _a = a->reshape(a->ordering(), {-1, 3});
     auto _b = b->reshape(b->ordering(), {-1, 3});
     auto _o = o->reshape(o->ordering(), {-1, 3}, false);

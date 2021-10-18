@@ -35,7 +35,7 @@ namespace sd {
                 in.applyLambda<T>(lambda, out);
             }
 
-            ND4J_LOCAL void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out) {
+             void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out) {
                 BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
             }
         }

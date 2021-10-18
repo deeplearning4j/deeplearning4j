@@ -41,7 +41,7 @@ static void diGamma_(const NDArray& x, NDArray& z) {
 	samediff::Threads::parallel_for(func, 0, x.lengthOf());
 }
 
-ND4J_LOCAL void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
+ void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
 
 	BUILD_SINGLE_SELECTOR(x.dataType(), diGamma_, (x, z), FLOAT_TYPES);
 }

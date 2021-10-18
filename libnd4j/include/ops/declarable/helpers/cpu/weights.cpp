@@ -39,7 +39,7 @@ namespace helpers {
             }
     }
 
-    ND4J_LOCAL void adjustWeights(sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+     void adjustWeights(sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
         BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (input, weights, output, minLength, maxLength), LIBND4J_TYPES);
     }
 
