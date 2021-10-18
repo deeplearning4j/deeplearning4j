@@ -64,6 +64,6 @@ class Unsqueeze  : PreImportHook {
 
         }
 
-        return mapOf(outputNames[0] to listOf(ret!!))
+        return mapOf(ret!!.name() to listOf(ret!!))
     }
 }

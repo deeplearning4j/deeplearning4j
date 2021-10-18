@@ -4849,7 +4849,7 @@ public class SameDiff extends SDBaseOps {
                 }
                 String[] outNames = df.outputVariablesNames();
                 outputNum = ArrayUtils.indexOf(outNames, varName);
-                Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs: %s", varName, outNames);
+                Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs for function named %s of type %s: %s", varName, df.getOwnName(),df.opName(),outNames);
             } else {
                 varIdx = idCounter.incrementAndGet();
                 outputNum = 0;

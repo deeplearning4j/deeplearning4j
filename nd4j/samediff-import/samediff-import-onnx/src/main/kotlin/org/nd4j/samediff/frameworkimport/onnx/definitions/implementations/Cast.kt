@@ -54,7 +54,7 @@ class Cast : PreImportHook  {
         val inputDataType = OnnxIRDataType(dtype)
         val newDataType = inputDataType.nd4jDataType()
         val outputVar = sd.castTo(outputNames[0],inputVariable,newDataType)
-        return mapOf(outputNames[0] to listOf(outputVar))
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 
 

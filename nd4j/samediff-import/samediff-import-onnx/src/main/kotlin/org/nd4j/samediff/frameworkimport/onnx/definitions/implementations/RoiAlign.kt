@@ -89,7 +89,7 @@ class RoiAlign : PreImportHook  {
                 .pH(1).pW(1).isNHWC(true)
                 .isSameMode(true).build())
         val outputVar = sd.permute(outputNames[0],pooled,0,3,1,2)
-        return mapOf(outputNames[0] to listOf(outputVar))
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 
 

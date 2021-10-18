@@ -72,7 +72,9 @@ class Split : PreImportHook  {
             val numSplits = inputShape.get(SDIndex.point(splitDim.toLong())).div(outputNames.size.toDouble()).castTo(
                 DataType.INT64)
             val splitOutput = sd.split(inputVariable,numSplits,splitDim.toInt())
-            return mapOf(splitOutput[0].name() to splitOutput.toList())
+            val retMap = mutableMapOf<String,List<SDVariable>>()
+            splitOutput.toList().forEach { retMap[it.name()] = listOf(it) }
+            return retMap
         }
     }
 

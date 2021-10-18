@@ -63,7 +63,7 @@ class ConstantOfShape : PreImportHook  {
 
         }
 
-        return mapOf(outputVarName to listOf(outputVar))
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 
 

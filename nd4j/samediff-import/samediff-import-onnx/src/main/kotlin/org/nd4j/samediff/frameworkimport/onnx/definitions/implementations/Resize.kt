@@ -134,7 +134,7 @@ class Resize : PreImportHook  {
         }
 
         val finalOutput = sd.permute(outputVarName,result,0,3,1,2)
-        return mapOf(outputNames[0] to listOf(finalOutput))
+        return mapOf(finalOutput.name() to listOf(finalOutput))
     }
 
     fun invokeResize(

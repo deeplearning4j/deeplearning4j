@@ -63,7 +63,7 @@ class Expand : PreImportHook  {
             assignedOnes.mul(outputVarName,inputVariable)
         }
 
-        return mapOf(outputVarName to listOf(outputVar))
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 
 

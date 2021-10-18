@@ -56,7 +56,7 @@ class NonZero : PreImportHook  {
         val nonZeroIndices = sd.where(condition)
 
         val outputVar = sd.permute(outputNames[0],nonZeroIndices)
-        return mapOf(outputNames[0] to listOf(outputVar))
+        return mapOf(outputVar.name() to listOf(outputVar))
     }
 
 

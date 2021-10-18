@@ -91,7 +91,7 @@ class Slice : PreImportHook  {
         }
 
         val finalVal = sd.stridedSlice(outputNames[0],inputVariable,denseBegins,denseEnds2,denseSteps,0,0,0,0,0)
-        return mapOf(outputNames[0] to listOf(finalVal))
+        return mapOf(finalVal.name() to listOf(finalVal))
     }
 
 
