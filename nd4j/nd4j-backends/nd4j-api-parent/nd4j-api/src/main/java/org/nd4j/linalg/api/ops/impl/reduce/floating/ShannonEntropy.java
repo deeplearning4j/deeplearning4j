@@ -73,9 +73,7 @@ public class ShannonEntropy extends BaseReduceFloatOp {
         super(x, null, z, dimensions);
     }
 
-    public ShannonEntropy(INDArray x, int[] dimensions, INDArray in, INDArray indArray, boolean keepDims) {
-        super(x, dimensions);
-    }
+
 
     public ShannonEntropy(INDArray in, boolean keepDims, int[] dimensions) {
         super(in,keepDims,dimensions);

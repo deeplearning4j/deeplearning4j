@@ -567,7 +567,6 @@ public class SameDiff extends SDBaseOps {
                 output.setSameDiff(sameDiff);
             }
 
-            sameDiff.ops.put(function.getOwnName(), op);
         }
 
         return sameDiff.variables().get(sameDiff.variables().size() - 1);

@@ -37,6 +37,8 @@ import java.util.List;
  * This value is returned as a scalar.
  */
 public class MinMaxDataType extends DynamicCustomOp {
+    public MinMaxDataType() {
+    }
 
     public MinMaxDataType(SameDiff sd, int datatype, int minOrMax) {
         super(sd,null,false);

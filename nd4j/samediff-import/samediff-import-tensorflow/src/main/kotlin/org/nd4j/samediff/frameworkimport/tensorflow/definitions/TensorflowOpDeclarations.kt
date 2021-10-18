@@ -1777,7 +1777,7 @@ val resizeBiCubic = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBi
         tensorNames = mutableMapOf("image" to "images","size" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeBiLinear = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBilinear"),opName = "resize_bilinear",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenters" to "half_pixel_centers"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenter" to "half_pixel_centers"))),
         tensorNames = mutableMapOf("image" to "images","newImageSize" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeNearestNeighbor = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeNearestNeighbor"),opName = "resize_nearest_neighbor",
@@ -2272,7 +2272,7 @@ val topkV2 = multipleNameMapping(inputFrameworkOpNames = listOf("TopKV2"),opName
 val transpose = mapTensorNamesWithOp(
         inputFrameworkOpName = "Transpose",
         opName = "transpose",
-        tensorNames = mutableMapOf("input" to "x","permuteDims" to "perm"),
+        tensorNames = mutableMapOf("input" to "x","permutationVector" to "perm"),
         attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
