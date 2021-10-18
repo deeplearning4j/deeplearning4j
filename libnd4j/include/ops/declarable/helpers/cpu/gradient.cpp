@@ -35,7 +35,7 @@ static void applyGradientDescent_(NDArray* input, NDArray* step, double weight, 
     input->applyPairwiseLambda<T>(*step, lambda, *output);
 }
 
-ND4J_LOCAL void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
+ void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
     BUILD_SINGLE_SELECTOR(input->dataType(), applyGradientDescent_, (input, step, weight, output), FLOAT_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void applyGradientDescent_, (NDArray* input, NDArray* step, double weight, NDArray* output), FLOAT_TYPES);

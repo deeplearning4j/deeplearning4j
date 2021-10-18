@@ -36,7 +36,7 @@ namespace sd
 
 
             template <bool IsLogPStrided = false, bool IsLblStrided = false, typename Type, typename IndexType>
-            ND4J_LOCAL Type forward(Type *alphaPtr, const Nd4jLong &incA, const Type *logP, const Nd4jLong &incP, const IndexType *lbl, const Nd4jLong &lenSB, const Nd4jLong &lenT, const int &blankIndex, int elwiseP = 1, int elwiseS = 1)
+             Type forward(Type *alphaPtr, const Nd4jLong &incA, const Type *logP, const Nd4jLong &incP, const IndexType *lbl, const Nd4jLong &lenSB, const Nd4jLong &lenT, const int &blankIndex, int elwiseP = 1, int elwiseS = 1)
             {
                 Type negInf = negative_infinity<Type>();
                 //initialize alphas at t=0
@@ -303,7 +303,7 @@ namespace sd
  * @param blankIndex index of the blank label in logit class
 */
             template <bool IsLogPStrided = true, bool IsLblStrided = true, bool IsGradStrided = true, typename Type, typename IndexType>
-            ND4J_LOCAL Type unitLossAndGrad(const Type *logP, int incP, Type *gradPtr, int incG,const IndexType *lbl, int lenT, int lenK, int lenS, int blankIndex,
+             Type unitLossAndGrad(const Type *logP, int incP, Type *gradPtr, int incG,const IndexType *lbl, int lenT, int lenK, int lenS, int blankIndex,
                                  int elwiseP = 1, int elwiseS = 1, int elwiseG = 1)
             {
 
@@ -358,7 +358,7 @@ namespace sd
 
             template <typename Type, typename IndexType>
             void
-            ND4J_LOCAL ctc_loss_(const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex)
+             ctc_loss_(const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex)
             {
                 // lenT  - input length of T
                 // lenS  - lenght of sequence
@@ -464,7 +464,7 @@ namespace sd
                 samediff::Threads::parallel_for(func, 0, lenBatch, 1);
             }
 
-           ND4J_LOCAL void ctcLoss(graph::Context& block, const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex){
+            void ctcLoss(graph::Context& block, const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex){
 
                 BUILD_DOUBLE_SELECTOR(logits.dataType(), targetLabels.dataType(), ctc_loss_, (logits, targetLabels, logitsLengths, targetLabelLengths, logLosses, gradients, blankIndex), FLOAT_TYPES, INDEXING_TYPES);
             }

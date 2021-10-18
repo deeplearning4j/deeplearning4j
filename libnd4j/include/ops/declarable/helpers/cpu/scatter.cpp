@@ -32,7 +32,7 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 // x - indices, z - input/output
 template<typename T>
-ND4J_LOCAL Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int axis) {
+ Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int axis) {
 
     std::atomic<int64_t> numOfBadIndx{0};
 
@@ -66,13 +66,13 @@ ND4J_LOCAL Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output,
 }
 
 ///////////////////////////////////////////////////////////////////
-ND4J_LOCAL Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
+ Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
 
     BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), INDEXING_TYPES);
 }
 
 ///////////////////////////////////////////////////////////////////
-ND4J_LOCAL void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+ void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const int outRank = output.rankOf();
     const int indRank = indices.rankOf();
@@ -114,7 +114,7 @@ ND4J_LOCAL void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDA
 }
 
 ///////////////////////////////////////////////////////////////////
-ND4J_LOCAL void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+ void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const Nd4jLong indLen = indices.lengthOf();
     const int outRank = output.rankOf();
@@ -160,7 +160,7 @@ ND4J_LOCAL void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const N
     }
 }
 
-ND4J_LOCAL void scatterForLoss(sd::LaunchContext  *context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
+ void scatterForLoss(sd::LaunchContext  *context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
 
     // shapes of indices and output must be the same
     // shape of indices should be the same as updates shape with last dimension excluded

@@ -45,7 +45,7 @@ namespace helpers {
         samediff::Threads::parallel_for(func, 0, lLen);
     }
 
-    ND4J_LOCAL void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+     void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = output->dataType(); // weights can be null
 
         BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), NUMERIC_TYPES);

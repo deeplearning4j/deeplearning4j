@@ -783,7 +783,7 @@ namespace sd {
 			}
 
 			template<typename X, typename Z, typename ReductionOp>
-			ND4J_LOCAL void  argIndex_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			 void  argIndex_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				char input_order = input.ordering();
 				bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
 				const Nd4jLong* input_shapeInfo = input.shapeInfo();
@@ -879,17 +879,17 @@ namespace sd {
 			
 			//////////////////////////////////////////////////////////////////////////
 			template<typename X, typename Z>
-			ND4J_LOCAL void  argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			 void  argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexMax<X, Z>>(input, output, dimensions);
 			}
 
 			template<typename X, typename Z>
-			ND4J_LOCAL void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			 void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexMin<X, Z>>(input, output, dimensions);
 			}
 
 			template<typename X, typename Z>
-			ND4J_LOCAL void  argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+			 void  argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
 				return argIndex_<X, Z, IndexAbsMax<X, Z>>(input, output, dimensions);
 			}
 

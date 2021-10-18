@@ -81,7 +81,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
     template <typename T>
-    ND4J_LOCAL void logSoftMaxForVector_(void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo) {
+     void logSoftMaxForVector_(void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo) {
         auto inBuff  = reinterpret_cast<T const*>(input);
         auto outBuff = reinterpret_cast<T *>(output);
 
