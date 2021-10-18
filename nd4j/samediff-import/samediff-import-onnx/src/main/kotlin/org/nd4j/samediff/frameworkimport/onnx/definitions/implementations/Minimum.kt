@@ -66,7 +66,7 @@ class Minimum : PreImportHook  {
             }
         }
 
-        return mapOf(outputNames[0] to listOf(onGoingOutput!!))
+        return mapOf(onGoingOutput!!.name() to listOf(onGoingOutput!!))
     }
 
 

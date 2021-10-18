@@ -759,9 +759,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
+    outputIntName: "flattenDimension"
     inputToOutput {
-      key: "dimensions"
+      key: "flattenDimension"
       value: "axis"
     }
     ruleType: "attribute"
@@ -770,30 +770,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "transpose"
+  opName: "noop"
   inputFrameworkOpName: "Transpose"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Transpose"
-  }
-  rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "permuteDims"
-      value: "perm"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Transpose"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -1162,9 +1140,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "keepdims"
-    outputBooleanName: "keepDim"
+    outputDoubleName: "keepDims"
     inputToOutput {
-      key: "keepDim"
+      key: "keepDims"
       value: "keepdims"
     }
     ruleType: "attribute"
@@ -5763,7 +5741,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "from"
+    outputDoubleName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5774,7 +5752,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "to"
+    outputDoubleName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5785,7 +5763,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "step"
+    outputDoubleName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -6174,8 +6152,8 @@ mappings {
     functionName: "valuemapping"
     inputIntName: "exclusive"
     inputIntName: "reverse"
-    outputBooleanName: "exclusive"
-    outputBooleanName: "reverse"
+    outputIntName: "exclusive"
+    outputIntName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -6279,49 +6257,6 @@ mappings {
   frameworkName: "onnx"
   opName: "noop"
   inputFrameworkOpName: "ConstantOfShape"
-}
-mappings {
-  frameworkName: "onnx"
-  opName: "fill"
-  inputFrameworkOpName: "ConstantOfShape"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "shape"
-    inputToOutput {
-      key: "shape"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-  rule {
-    ruleName: "attributendarraytoscalarattribute"
-    functionName: "attributendarraytoscalarattribute"
-    outputDoubleName: "value"
-    inputTensorName: "value"
-    inputToOutput {
-      key: "value"
-      value: "value"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "outputDataType"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "outputDataType"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "ConstantOfShape"
-  }
 }
 mappings {
   frameworkName: "onnx"

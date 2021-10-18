@@ -96,7 +96,7 @@ public class SDVariable implements Serializable {
     }
 
     /**
-     * Returns true if this variable is a place holder
+     * Returns true if this variable is a placeholder
      * @return
      */
     public boolean isPlaceHolder() {

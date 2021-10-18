@@ -44,7 +44,7 @@ class GlobalAveragePooling: PreImportHook {
         val rankOf = sd.rank(inputVariable)
         val range = sd.range(sd.constant(2),rankOf,sd.constant(1),DataType.INT64)
         val output = sd.math.mean(outputNames[0],inputVariable,range,true)
-        return mapOf(outputNames[0] to listOf(output))
+        return mapOf(output.name() to listOf(output))
     }
 
 

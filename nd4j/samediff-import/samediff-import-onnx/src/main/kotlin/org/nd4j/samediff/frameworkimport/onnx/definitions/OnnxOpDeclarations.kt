@@ -770,7 +770,7 @@ val reduceLogSumExp = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
         attributeMappingRules = listOf(
                 invertBooleanNumber(mutableMapOf("keepDims" to "keepdims")),
-                valueMappings(mutableMapOf("keepDim" to "keepdims")),
+                valueMappings(mutableMapOf("keepDims" to "keepdims")),
                 listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
         opMappingRegistry = onnxOpRegistry
 )
@@ -824,7 +824,7 @@ val flatten = OnnxMappingProcess(
         inputFrameworkOpName = "Flatten",
         opName = "flatten_2d",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimensions" to "axis"))),
+        attributeMappingRules = listOf(valueMappings(mutableMapOf("flattenDimension" to "axis"))),
         opMappingRegistry = onnxOpRegistry
 )
 

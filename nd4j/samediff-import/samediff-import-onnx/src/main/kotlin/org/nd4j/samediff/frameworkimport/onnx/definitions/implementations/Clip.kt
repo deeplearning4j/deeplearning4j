@@ -62,7 +62,7 @@ class Clip : PreImportHook  {
 
         val clipped = sd.clipByValue(inputVariable,min,max)
         val outputVar = sd.castTo(outputNames[0],clipped,inputVariable.dataType())
-        return mapOf(outputNames[0] to listOf(outputVar))
+        return mapOf(outputVar.name() to listOf(outputVar))
 
     }
 
