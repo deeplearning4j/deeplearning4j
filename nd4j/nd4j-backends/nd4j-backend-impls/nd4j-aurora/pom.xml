@@ -141,17 +141,6 @@
             <artifactId>nd4j-native-api</artifactId>
             <version>${project.version}</version>
           </dependency>
-          <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.platform}</classifier>
-          </dependency>
         </dependencies>
         <configuration>
           <properties>${javacpp.platform.properties}</properties>
