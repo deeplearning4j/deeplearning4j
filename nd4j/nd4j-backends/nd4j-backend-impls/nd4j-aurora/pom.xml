@@ -65,7 +65,7 @@
             <configuration>
               <excludes>
                 <exclude>
-                  org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                  org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/*
                 </exclude>
                 <exclude>lib/**</exclude>
                 <exclude>*.dll</exclude>
@@ -86,7 +86,10 @@
               <skipIfEmpty>true</skipIfEmpty>
               <includes>
                 <include>
-                  org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                  org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/lib/*
+                </include>
+                <include>
+                  org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/**
                 </include>
                 <include>lib/**</include>
                 <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
@@ -299,7 +302,7 @@
               <artifactId>${project.artifactId}</artifactId>
               <groupId>${project.groupId}</groupId>
               <version>${project.version}</version>
-              <sources>${project.build.directory}/nd4j-native-${project.version}.jar</sources>
+              <sources>${project.build.directory}/nd4j-aurora-${project.version}.jar</sources>
             </configuration>
           </execution>
 
@@ -312,7 +315,7 @@
               <groupId>${project.groupId}</groupId>
               <version>${project.version}</version>
               <classifier>${javacpp.platform}</classifier>
-              <sources>${project.build.directory}/nd4j-native-${project.version}-${javacpp.platform}.jar</sources>
+              <sources>${project.build.directory}/nd4j-aurora-${project.version}-${javacpp.platform}.jar</sources>
             </configuration>
           </execution>
         </executions>
