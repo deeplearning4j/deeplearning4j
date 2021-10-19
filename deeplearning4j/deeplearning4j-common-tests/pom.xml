@@ -51,7 +51,7 @@
             <version>${junit.version}</version>
             <scope>provided</scope>
         </dependency>
-        
+
 
         <dependency>
             <groupId>org.nd4j</groupId>
