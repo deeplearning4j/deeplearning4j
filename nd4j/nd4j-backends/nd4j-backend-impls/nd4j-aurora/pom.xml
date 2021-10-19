@@ -86,6 +86,9 @@
               <skipIfEmpty>true</skipIfEmpty>
               <includes>
                 <include>
+                  org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                </include>
+                <include>
                   org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/lib/*
                 </include>
                 <include>
