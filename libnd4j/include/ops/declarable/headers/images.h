@@ -246,19 +246,22 @@ namespace ops {
     *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
     *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
     *
+    * optional float args:
+    *    0 -bicubicCoefficient - only effective for the bicubic method
     * optional int args:
     *    0 - algorithm - bilinear by default
+    *    1 - nearestMode - only effective for the nearest_neighbor method
     * optional bool args:
     *    0 - preserve_aspect_ratio - default False
     *    1 - antialias - default False
-    *
+    * 
     * output array:
     *   the 4D-Tensor with resized by given algorithm image (shape is {batch, newWidth, newHeight, channels})
     *
     */
 
     #if NOT_EXCLUDED(OP_image_resize)
-    DECLARE_CUSTOM_OP(image_resize, 2, 1, false, 0, 0);
+    DECLARE_CUSTOM_OP(image_resize, 2, 1, false, -2, -2);
     #endif
 
 }

@@ -48,12 +48,13 @@ namespace sd {
                 width = newImageSize->e<int>(1);
             }
             else {
-                REQUIRE_TRUE(block.numI() == 2, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
+                REQUIRE_TRUE(block.numI() >= 2, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
                 height = INT_ARG(0);
                 width = INT_ARG(1);
             }
             if (block.numB() > 0)
                 alignCorners = B_ARG(0);
+
             bool halfPixelCenter = false;
 
             if (block.numB() > 1)
@@ -68,7 +69,13 @@ namespace sd {
             auto source = inRank == 4?*image:image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
             auto target = inRank == 4 ? *output : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
 
-            return helpers::resizeNeighborFunctor(block.launchContext(), inRank==4?image:&source, width, height, alignCorners, halfPixelCenter, inRank == 4 ? output : &target);
+            helpers::NearestMode nearestMode = helpers::NearestMode::FLOOR;
+            if(alignCorners){
+                nearestMode = helpers::NearestMode::ROUND_PREFER_CEIL;
+            }
+            helpers::CoordinateTransformationMode coorMode = halfPixelCenter ? helpers::CoordinateTransformationMode::HALF_PIXEL_NN : helpers::CoordinateTransformationMode::ASYMMETRIC;
+
+            return helpers::resizeNeighborFunctor(block.launchContext(), inRank==4?image:&source, width, height, coorMode, nearestMode, alignCorners, inRank == 4 ? output : &target);
         }
 
         DECLARE_SHAPE_FN(resize_nearest_neighbor) {

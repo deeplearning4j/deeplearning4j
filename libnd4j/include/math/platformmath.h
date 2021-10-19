@@ -409,6 +409,72 @@ namespace sd {
             return value;
         }
 
+        template <typename T>
+        math_def FORCEINLINE T p_round_prefer_ceil(T value) {
+            return value;
+        }
+
+        template <>
+        math_def FORCEINLINE float p_round_prefer_ceil(float value) {
+            return roundf(value);
+        }
+
+        template <>
+        math_def FORCEINLINE float16 p_round_prefer_ceil(float16 val) {
+            return static_cast<float16>(roundf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_round_prefer_ceil(bfloat16 value) {
+            return static_cast<bfloat16>(roundf((float)value));
+        }
+
+
+        template <>
+        math_def FORCEINLINE double p_round_prefer_ceil(double value) {
+            return round(value);
+        }
+
+        template <typename T>
+        math_def FORCEINLINE T p_round_prefer_floor(T value) {
+            return value;
+        }
+
+        template <>
+        math_def FORCEINLINE float p_round_prefer_floor(float value) {
+            if (value == static_cast<int64_t>(value) + 0.5f) {
+              return floorf(value);
+            }
+            return roundf(value);
+        }
+
+        template <>
+        math_def FORCEINLINE float16 p_round_prefer_floor(float16 val) {
+            float float_val = static_cast<float>(val);
+            if (float_val == static_cast<int64_t>(float_val) + 0.5f) {
+              return static_cast<float16>(floorf(float_val));
+            }
+            return static_cast<float16>(roundf(float_val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_round_prefer_floor(bfloat16 val) {
+            float float_val = static_cast<float>(val);
+            if (float_val == static_cast<int64_t>(float_val) + 0.5f) {
+              return static_cast<bfloat16>(floorf(float_val));
+            }
+            return static_cast<bfloat16>(roundf(float_val));
+        }
+
+
+        template <>
+        math_def FORCEINLINE double p_round_prefer_floor(double value) {
+            if (value == static_cast<int64_t>(value) + 0.5) {
+              return floor(value);
+            }
+            return round(value);
+        }
+
 /////////
 
         template <>

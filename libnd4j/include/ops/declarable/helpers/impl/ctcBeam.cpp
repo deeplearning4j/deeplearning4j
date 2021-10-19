@@ -159,7 +159,7 @@ struct SequenceNode
  *
  */
 template <typename T>
-ND4J_LOCAL class SequenceContainer
+class SequenceContainer
 {
 public:
     SequenceContainer() : count_(1)

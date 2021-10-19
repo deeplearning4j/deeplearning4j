@@ -22,13 +22,12 @@
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_image_resize)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 namespace sd {
     namespace ops {
-        CUSTOM_OP_IMPL(image_resize, 2, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(image_resize, 2, 1, false, -2, -2) {
 
             auto image = INPUT_VARIABLE(0);
             auto size = INPUT_VARIABLE(1);
@@ -41,13 +40,33 @@ namespace sd {
             REQUIRE_TRUE(size->lengthOf() == 2, 0, "image_resize: Resize params is a pair of values, not %lld.", size->lengthOf());
             width = size->e<int>(1);
             height = size->e<int>(0);
-            if (block.numB() == 2) {
+            if (block.numB() >= 2) {
                 antialias = B_ARG(1);
             }
-
+            bool exclude_outside = true;
+            double bicubicCoefficient = helpers::KeysCubicKernelFunc<double>::KEYS_CUBIC_COEF;
             auto method = helpers::ImageResizeMethods::kResizeBilinear;
-            if (block.numI() == 1) {
+            helpers::CoordinateTransformationMode coorMode = helpers::CoordinateTransformationMode::HALF_PIXEL;
+
+            if (block.numB() >= 3) {
+                exclude_outside = B_ARG(2);
+            }
+            if(block.numT()> 0){
+                bicubicCoefficient = T_ARG(0);
+            }
+            if (block.numI() >= 1) {
                 method = (helpers::ImageResizeMethods)INT_ARG(0);
+            }
+            if(block.numI()>=2){
+                coorMode= static_cast<helpers::CoordinateTransformationMode>(INT_ARG(1));
+            }else if(method == helpers::ImageResizeMethods::kResizeNearest){
+                //retain old behavour
+                coorMode = helpers::CoordinateTransformationMode::HALF_PIXEL_NN;
+            }
+            helpers::NearestMode nearestMode = helpers::NearestMode::FLOOR;
+            if(method == helpers::ImageResizeMethods::kResizeNearest && block.numI() == 3){
+                nearestMode = static_cast<helpers::NearestMode>(INT_ARG(2));
+                REQUIRE_TRUE(nearestMode >= helpers::NearestMode::FLOOR && nearestMode <= helpers::NearestMode::CEIL, 0, "image_resize: nearest Mode should be between %i and %i, but %i was given.", (int)helpers::NearestMode::FLOOR, (int)helpers::NearestMode::CEIL, (int)nearestMode);
             }
             REQUIRE_TRUE(method == helpers::ImageResizeMethods::kResizeNearest || output->dataType() == DataType::FLOAT32, 0, "image_resize: Output data type should be FLOAT32 for this method %i", (int)method );
             REQUIRE_TRUE(method >= helpers::ImageResizeMethods::kResizeFirst && method <= helpers::ImageResizeMethods::kResizeLast, 0, "image_resize: Resize method should be between %i and %i, but %i was given.", (int)helpers::ImageResizeMethods::kResizeFirst, (int)helpers::ImageResizeMethods::kResizeLast, (int)method);
@@ -56,7 +75,20 @@ namespace sd {
             auto source = inRank == 4?image->reshape(image->ordering(), {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2), image->sizeAt(3)}):image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
             auto target = inRank == 4?output->reshape(output->ordering(), {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}, false) : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
 
-            return helpers::resizeFunctor(block.launchContext(), image, width, height, method, antialias, output);
+            //inform the user about the current state of the implementation
+            if(antialias && method != helpers::ImageResizeMethods::kResizeNearest){
+                REQUIRE_TRUE(coorMode == helpers::CoordinateTransformationMode::HALF_PIXEL && exclude_outside, 0,
+                "antialiasing is effective only with HALF_PIXEL and exclude_outside being set true"
+                );
+            }
+            //
+            if((method!=helpers::ImageResizeMethods::kResizeBicubic && method!=helpers::ImageResizeMethods::kResizeNearest)){
+                REQUIRE_TRUE(coorMode == helpers::CoordinateTransformationMode::HALF_PIXEL && exclude_outside, 0,
+                "this method supports only HALF_PIXEL and exclude_outside being set true"
+                );
+            }
+
+            return helpers::resizeFunctor(block.launchContext(), image, width, height, method, coorMode, exclude_outside, nearestMode, bicubicCoefficient, antialias, output);
         }
 
         DECLARE_SHAPE_FN(image_resize) {
@@ -64,7 +96,7 @@ namespace sd {
 
             Nd4jLong* outputShape;
             auto method = helpers::ImageResizeMethods::kResizeBilinear;
-            if (block.numI() == 1) {
+            if (block.numI() >= 1) {
                 method = (helpers::ImageResizeMethods)INT_ARG(0);
             }
 
@@ -73,7 +105,7 @@ namespace sd {
             double ratio = shape::sizeAt(in, 1) / (0.0 + shape::sizeAt(in, 2));
             auto newImageSize = INPUT_VARIABLE(1);
             REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-            REQUIRE_TRUE(block.numI() <= 1, 0, "resize_bilinear: Resize params already given by the second param. Int params are expensive.");
+            //if(method != helpers::ImageResizeMethods::kResizeNearest) REQUIRE_TRUE(block.numI() <= 1, 0, "resize_bilinear: Resize params already given by the second param. Int params are expensive.");
             width = newImageSize->e<int>(1);
             height = newImageSize->e<int>(0);
             if (block.numB() > 0) {

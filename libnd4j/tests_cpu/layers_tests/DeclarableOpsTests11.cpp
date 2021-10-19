@@ -625,7 +625,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results.status());
     NDArray* result = results.at(0);
 
-//    result.printBuffer("Resized to 30x30");
+//    result->printBuffer("Resized to 30x30");
 //    expected.printBuffer("Expect for 30x30");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
@@ -699,7 +699,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test2) {
 
     NDArray* result = results.at(0);
 
-//    result.printBuffer("Resized to 10x8");
+//    result->printBuffer("Resized to 10x8");
 //    expected.printBuffer("Expect for 10x8");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
@@ -1240,7 +1240,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test5) {
 
     NDArray* result = results.at(0);
 
-//    result.printBuffer("Area Resized to 6x6");
+//    result->printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));

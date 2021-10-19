@@ -44,44 +44,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    struct BilinearInterpolationData {
-        Nd4jLong bottomIndex;  // Lower source index used in the interpolation
-        Nd4jLong topIndex;  // Upper source index used in the interpolation
-        // 1-D linear iterpolation scale (see:
-        // https://en.wikipedia.org/wiki/Bilinear_interpolation)
-        double interpolarValue;
-    };
 
-// Older incorrect scaling method that causes all resizes to have a slight
-// translation leading to inconsistent results. For example, a flip then a
-// resize gives different results then a resize then a flip.
-    struct LegacyScaler {
-        _CUDA_HD LegacyScaler(){};
-        inline _CUDA_HD float operator()(const int x, const float scale) const {
-            return static_cast<float>(x) * scale;
-        }
-    };
-
-// Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
-// floating point coordinates of the top,left pixel is 0.5,0.5.
-    struct HalfPixelScaler {
-        _CUDA_HD HalfPixelScaler(){};
-        inline _CUDA_HD float operator()(const int x, const float scale) const {
-            // Note that we subtract 0.5 from the return value, as the existing bilinear
-            // sampling code etc assumes pixels are in the old coordinate system.
-            return (static_cast<float>(x) + 0.5f) * scale - 0.5f;
-        }
-    };
-
-
-    // Utility functions
-    // calculateResizeScale determines the float scaling factor.
-    inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
-                                      bool alignCorners) {
-        return (alignCorners && outSize > 1)
-               ? (inSize - 1) / static_cast<float>(outSize - 1)
-               : inSize / static_cast<float>(outSize);
-    }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // computeInterpolationWeights kernel
@@ -207,8 +170,8 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
-        float heightScale = calculateResizeScale(inHeight, outHeight, alignCorners);
-        float widthScale = calculateResizeScale(inWidth, outWidth, alignCorners);
+        float heightScale = ImageResizerState::calculateResizeScale(inHeight, outHeight, alignCorners);
+        float widthScale = ImageResizerState::calculateResizeScale(inWidth, outWidth, alignCorners);
 
         BilinearInterpolationData* xs_;// = xs.data();
         BilinearInterpolationData* ys_;// = xs.data();
@@ -236,7 +199,7 @@ namespace helpers {
             computeInterpolationWeights <
             LegacyScaler ><<<256, 512, 512, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
         }
-        printf("Input is %dx%d, Output is %dx%d\n", inHeight, inWidth, outHeight, outWidth);
+
         NDArray::prepareSpecialUse({output}, {images});
         resizeImage_<T,F>(context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output);
         err = cudaStreamSynchronize(*stream);
@@ -255,30 +218,62 @@ namespace helpers {
         return Status::OK();
     }
 
+
+    typedef float (*MODE_FUNC) (float);
+
+    __device__ MODE_FUNC mode_functions[4] = { sd::math::p_floor<float>, 
+                                               sd::math::p_round_prefer_floor<float>,
+                                               sd::math::p_round_prefer_ceil<float>,
+                                               sd::math::p_ceil<float> };
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resize by interpolation nearest neighbor algorithm kernel
 //
-    template <typename T>
+    template <typename T, typename Scaler>
     static __global__ void resizeNeighborKernel(T const* input, Nd4jLong const* inputShape, T* output, Nd4jLong const* outputShape,
-            Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, bool alignCorners, bool halfPixelCenters) {
+            Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, NearestMode nearestMode) {
 
+                constexpr bool halfPixelCenter = std::is_same<Scaler, HalfPixelScaler>::value || std::is_same<Scaler, HalfPixelScalerNN>::value;
+        MODE_FUNC modeFunc;
+        switch (nearestMode)
+        {
+            case NearestMode::FLOOR :
+                modeFunc = mode_functions[0];
+                break;
+            case NearestMode::ROUND_PREFER_FLOOR :
+                modeFunc = mode_functions[1];
+                break;
+            case NearestMode::ROUND_PREFER_CEIL :
+                modeFunc = mode_functions[2];
+                break;
+            case NearestMode::CEIL :
+                modeFunc = mode_functions[3];
+                break;
+            default:
+                modeFunc = mode_functions[0] ;
+        }
+        Scaler scaler;
+        // if(threadIdx.x==0){
+        
+        
+        
+            
+        // }
         //for (int b = blockIdx.x; b < batchSize; b += gridDim.x)
         if (blockIdx.x < batchSize)
         {
             auto b = blockIdx.x;
             for (int y = threadIdx.x; y < outHeight; y += blockDim.x) {
-                auto posY = alignCorners ? static_cast<Nd4jLong>(sd::math::p_round<float>(halfPixelCenters?((float)y + 0.5f) * heightScale:(float)y * heightScale)) : static_cast<Nd4jLong>(sd::math::p_floor<float>(
-                        halfPixelCenters?((float)y + 0.5f) * heightScale:(float)y * heightScale));
+                auto posY = static_cast<Nd4jLong>(modeFunc(scaler(y, heightScale)));
                 Nd4jLong inY = sd::math::nd4j_min(posY, inHeight - 1);
-                if (halfPixelCenters) {
+                if (halfPixelCenter) {
                     inY = sd::math::nd4j_max(0LL, inY);
                 }
 
                 for (int x = threadIdx.y; x < outWidth; x += blockDim.y) {
-                    auto posX = alignCorners ? static_cast<Nd4jLong>(sd::math::p_round<float>(halfPixelCenters?((float)x + 0.5f) * widthScale:(float)x * widthScale)) : static_cast<Nd4jLong>(sd::math::p_floor<float>(
-                            halfPixelCenters?((float)x + 0.5f) * widthScale:(float)x * widthScale));
+                    auto posX = static_cast<Nd4jLong>(modeFunc(scaler(x, widthScale)));
                     Nd4jLong inX = sd::math::nd4j_min(posX, inWidth - 1);
-                    if (halfPixelCenters) {
+                    if (halfPixelCenter) {
                         inX = sd::math::nd4j_max(0LL, inX);
                     }
 
@@ -301,9 +296,8 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resizeNeighborFunctor - main algorithm by nearest neighbor
 //
-    template <typename T>
-    int resizeNeighborFunctor_(sd::LaunchContext* context, NDArray const* images, int const width, int const height,
-            bool const alignCorners, bool const halfPixelCenters, NDArray* output) {
+    template<typename T>
+    ND4J_LOCAL int resizeNeighborFunctor_(sd::LaunchContext* context, NDArray const *images, int const width, int const height, CoordinateTransformationMode coorMode, NearestMode nearestMode, bool alignCorner, NDArray *output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight = images->sizeAt(1);
         const Nd4jLong inWidth = images->sizeAt(2);
@@ -318,24 +312,34 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
-//        if ((alignCorners && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (alignCorners && outHeight < 2) ||
-//            (alignCorners && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
-//            // wrong input data
-//            nd4j_printf("image.resize_nearest_neighbor: Wrong input or output size to resize\n", "");
-//            return ND4J_STATUS_BAD_ARGUMENTS;
-//        }
-//        float heightScale = alignCorners ? (inHeight - 1.f) / float(outHeight - 1.f) : (inHeight / float(outHeight));
-//        float widthScale = alignCorners ? (inWidth - 1.f) / float(outWidth - 1.f) : (inWidth / float(outWidth));
-        float heightScale = calculateResizeScale(inHeight, outHeight, alignCorners);
-        float widthScale = calculateResizeScale(inWidth, outWidth, alignCorners);
+        float heightScale = ImageResizerState::calculateResizeScale(inHeight, outHeight, alignCorner);
+        float widthScale = ImageResizerState::calculateResizeScale(inWidth, outWidth, alignCorner);
 
         auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();//reinterpret_cast<T const*>(images->specialBuffer());
         auto outputBuffer = output->dataBuffer()->specialAsT<T>();//reinterpret_cast<T*>(output->specialBuffer());
         auto stream = context->getCudaStream();
 
         NDArray::prepareSpecialUse({output}, {images});
-        resizeNeighborKernel<T><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(),
-                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, alignCorners, halfPixelCenters);
+        switch (coorMode)
+        {
+        case ASYMMETRIC:
+            resizeNeighborKernel<T, LegacyScaler><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(),
+                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+            break;
+        case HALF_PIXEL:
+            resizeNeighborKernel<T, HalfPixelScaler><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(),
+                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+            break;
+        case HALF_PIXEL_NN:
+            resizeNeighborKernel<T, HalfPixelScalerNN><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(),
+                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+            break;
+        default:
+            resizeNeighborKernel<T, HalfPixelScaler><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(),
+                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
+            break;
+        };
+
         NDArray::registerSpecialUse({output}, {images});
 
         return Status::OK();
@@ -367,140 +371,31 @@ namespace helpers {
 //            bool const halfPixelCenter, NDArray* output), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int resizeNeighborFunctor(sd::LaunchContext* context, NDArray const* images, int const width, int const height,
-            bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
-                (context, images, width, height, alignCorners, halfPixelCenter, output), LIBND4J_TYPES);
-    }
+ND4J_LOCAL int resizeNeighborFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
+    CoordinateTransformationMode coorMode, NearestMode nearestMode, bool alignCorner, NDArray *output) {
+    BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (context, images, width, height, coorMode, nearestMode, alignCorner, output), LIBND4J_TYPES);
+}
 //    BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (sd::LaunchContext* context, NDArray const* images,
 //            int width, int height, bool const alignCorners, bool const halfPixelCenter, NDArray* output), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bicubic interpolation
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct ImageResizerState {
-        explicit ImageResizerState(bool alignCorners, bool halfPixelCenters)
-                : _alignCorners(alignCorners),
-                  _halfPixelCenters(halfPixelCenters) {}
-
-        // ValidateAndCalculateOutputSize checks the bounds on the input tensors
-        // and requested size, sets up some of the resizing state such as the
-        // heightScale and widthScale, and calculates the output size.
-        // If any of these operations fails, it sets an error status in
-        // the context, which the caller must check.
-        int validateAndCalculateOutputSize(NDArray const* input, int const width, int const height) {
-            //
-            batchSize = input->sizeAt(0);//.dim_size(0);
-            outHeight = height;
-            outWidth = width; //internal::SubtleMustCopy(Svec(1));
-            inHeight = static_cast<int32_t>(input->sizeAt(1));
-            inWidth = static_cast<int32_t>(input->sizeAt(2));
-            channels = input->sizeAt(3); //.dim_size(3);
-            heightScale = calculateResizeScale(inHeight, outHeight, _alignCorners);
-            widthScale = calculateResizeScale(inWidth, outWidth, _alignCorners);
-
-            // Guard against overflows
-            if (ceilf((outHeight - 1) * heightScale) > static_cast<float>(DataTypeUtils::max<int>())) {
-                nd4j_printf("resize_bicubic: Upper overflow occurs for resize height (%f)\n", ceilf((outHeight - 1) * heightScale));
-                return Status::CODE(ND4J_STATUS_BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize height");
-            }
-            if (ceilf((outWidth - 1) * heightScale) > static_cast<float>(DataTypeUtils::max<int>())) {
-                nd4j_printf("resize_bicubic: Upper overflow occurs for resize height (%f)\n", ceilf((outHeight - 1) * heightScale));
-                return Status::CODE(ND4J_STATUS_BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize width");
-            }
-
-            return Status::OK();
-        }
-
-        // Calculates all the required variables, and allocates the output.
-        int validateAndCreateOutput(NDArray const* input, int const width, int const height) {
-            return validateAndCalculateOutputSize(input, width, height);
-        }
-
-        Nd4jLong batchSize;
-        Nd4jLong outHeight;
-        Nd4jLong outWidth;
-        Nd4jLong inHeight;
-        Nd4jLong inWidth;
-        Nd4jLong channels;
-        float heightScale;
-        float widthScale;
-        NDArray* output = nullptr;
-        cudaStream_t* stream;
-    private:
-        bool _alignCorners;
-        bool _halfPixelCenters;
-    };
-
-    struct WeightsAndIndices {
-        float _weight0;
-        float _weight1;
-        float _weight2;
-        float _weight3;
-        Nd4jLong _index0;
-        Nd4jLong _index1;
-        Nd4jLong _index2;
-        Nd4jLong _index3;
-
-        int _advance;  // advance value.
-    };
-
-    class CachedInterpolationCalculator {
-    public:
-        _CUDA_HD CachedInterpolationCalculator() : _indexes{-1, -1, -1, -1} {}
-
-        // Advances iteration. Returns the number of values that should be copied from
-        // the current point to the next point. The copying should always be done by
-        // copying the last <retval> values from the old point to the first <retval>
-        // values of the new point.
-        inline _CUDA_HD int Advance(const Nd4jLong x0, const Nd4jLong x1, const Nd4jLong x2,
-                           const Nd4jLong x3) {
-            // We use 2 hands and walk through, copying from one to another where
-            // we already have values.
-            // Invariant, new_indicies_hand <= cached_values_hand
-            const Nd4jLong new_x_indices[4] = {x0, x1, x2, x3};
-            int cachedValuesHand = 0;
-            int newIndiciesHand = 0;
-            while (cachedValuesHand < 4) {
-                if (_indexes[cachedValuesHand] == new_x_indices[newIndiciesHand]) {
-                    if (newIndiciesHand < cachedValuesHand) {
-                        _indexes[newIndiciesHand] = _indexes[cachedValuesHand];
-                    }
-                    newIndiciesHand++;
-                }
-                cachedValuesHand++;
-            }
-            switch (newIndiciesHand) {
-                case 0:
-                    _indexes[0] = x0;
-                case 1:
-                    _indexes[1] = x1;
-                case 2:
-                    _indexes[2] = x2;
-                case 3:
-                    _indexes[3] = x3;
-                    break;
-            }
-            return newIndiciesHand;
-        }
-
-    private:
-        Nd4jLong _indexes[4];
-    };
 
 
-    static __global__ void initCoefTableKernel(const double a, float* table, Nd4jLong tableSize) {
+    static __global__ void initCoefTableKernel(const float a, float* table, Nd4jLong tableSize) {
+        KeysCubicKernelFunc<float> kernel(a);
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
         for (int i = start; i <= tableSize; i += step) {
             float x = i * 1.0 / tableSize;
-            table[i * 2] = ((a + 2) * x - (a + 3)) * x * x + 1;
+            table[i * 2] = kernel.calc_less1pt0(x);
             x += 1.0;
-            table[i * 2 + 1] = ((a * x - 5 * a) * x + 8 * a) * x - 4 * a;
+            table[i * 2 + 1] = kernel.calc_less2pt0(x);
         }
     }
 
-    static const Nd4jLong kTableSize = (1 << 10);
+
     float* initCoeffsTable(const double a, cudaStream_t* stream) {
         // Allocate and initialize coefficients table using Bicubic
         // convolution algorithm.
@@ -512,13 +407,13 @@ namespace helpers {
         }
 
 
-        initCoefTableKernel<<<128,128,128, *stream>>>(a, coeffs_table, kTableSize);
+        initCoefTableKernel<<<128,128,128, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
         err = cudaStreamSynchronize(*stream);
         if (err != 0) {
             throw cuda_exception::build("helpers::initCoeffsTable: Cannot syncronize kernel", err);
         }
 
-            return coeffs_table;
+        return coeffs_table;
     }
 //    _CUDA_HD const  float* getCoeffsTable(const bool use_keys_cubic) {
 //            // Static so that we initialize it on first use
@@ -535,76 +430,6 @@ namespace helpers {
 //            }
 //        }
 
-    inline _CUDA_HD Nd4jLong bound(Nd4jLong val, Nd4jLong limit) {
-        return math::nd4j_min(limit - 1ll, math::nd4j_max(Nd4jLong{0}, val));
-    }
-
-
-    template <typename T>
-    inline _CUDA_HD float interpolate1D(const float weight0, const float weight1, const float weight2, const float weight3,
-                               const T value0, const T value1, const T value2, const T value3) {
-        return static_cast<float>(value0) * weight0 +
-               static_cast<float>(value1) * weight1 +
-               static_cast<float>(value2) * weight2 +
-               static_cast<float>(value3) * weight3;
-    }
-
-// Compute the 1D interpolation for a given X index using the y_weights
-    static _CUDA_HD float compute(float values[4], const float xW0, const float xW1, const float xW2, const float xW3) {
-        return interpolate1D(xW0, xW1, xW2, xW3, values[0], values[1],values[2], values[3]);
-    }
-
-
-
-    template <typename Scaler, bool use_keys_cubic>
-    inline _CUDA_HD void getWeightsAndIndices(float const* coeffs_table, const float scale, const Nd4jLong out_loc, const Nd4jLong limit, WeightsAndIndices* out) {
-        const Scaler scaler;
-        const float in_loc_f = scaler(out_loc, scale);
-        const Nd4jLong in_loc = math::nd4j_floor<float, Nd4jLong>(in_loc_f);
-        const float delta = in_loc_f - in_loc;
-        const Nd4jLong offset = math::nd4j_round<float, Nd4jLong>(delta * kTableSize);
-        //const float* coeffs_table = getCoeffsTable(use_keys_cubic);
-        if (use_keys_cubic) {
-            // The legacy code placed more weight on the edge pixels, since bounding
-            // the set of inputs to sample could cause an edge pixel to be repeated.
-            // Here we change the behavior at borders to match that used by the
-            // scale_and_translate_op, where sampling locations outside the image have
-            // their weight set to 0, and the weights are renormalized so that their sum
-            // is 1.0.
-            out->_index0 = bound(in_loc - 1, limit);
-            out->_weight0 =
-                    (out->_index0 == in_loc - 1 ? coeffs_table[offset * 2 + 1] : 0.0f);
-            out->_index1 = bound(in_loc, limit);
-            out->_weight1 = (out->_index1 == in_loc ? coeffs_table[offset * 2] : 0.0f);
-            out->_index2 = bound(in_loc + 1, limit);
-            out->_weight2 =
-                    (out->_index2 == in_loc + 1 ? coeffs_table[(kTableSize - offset) * 2]
-                                                : 0.0f);
-            out->_index3 = bound(in_loc + 2, limit);
-            out->_weight3 = (out->_index3 == in_loc + 2
-                             ? coeffs_table[(kTableSize - offset) * 2 + 1]
-                             : 0.0f);
-
-            const float weight_sum =
-                    out->_weight0 + out->_weight1 + out->_weight2 + out->_weight3;
-            if (math::nd4j_abs(weight_sum) >= 1000.0f * DataTypeUtils::min<float>()) {
-                const float one_over_weight_sum = 1.0f / weight_sum;
-                out->_weight0 *= one_over_weight_sum;
-                out->_weight1 *= one_over_weight_sum;
-                out->_weight2 *= one_over_weight_sum;
-                out->_weight3 *= one_over_weight_sum;
-            }
-        } else {
-            out->_weight0 = coeffs_table[offset * 2 + 1];
-            out->_weight1 = coeffs_table[offset * 2];
-            out->_weight2 = coeffs_table[(kTableSize - offset) * 2];
-            out->_weight3 = coeffs_table[(kTableSize - offset) * 2 + 1];
-            out->_index0 = bound(in_loc - 1, limit);
-            out->_index1 = bound(in_loc, limit);
-            out->_index2 = bound(in_loc + 1, limit);
-            out->_index3 = bound(in_loc + 2, limit);
-        }
-    }
 
     static __global__ void accumulateChannelsKernel(WeightsAndIndices* pXWais, Nd4jLong outWidth, Nd4jLong channels) {
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -618,23 +443,29 @@ namespace helpers {
         }
     }
 
-    static __global__ void advaceWeightsAndIndicesKernel(float const* cacheTable, CachedInterpolationCalculator* calc, WeightsAndIndices* pXWais, Nd4jLong inWidth, float widthScale,
-            Nd4jLong outWidth, Nd4jLong channels, bool halfPixelCenters) {
+    template<typename Scaler>
+    static __global__ void advanceWeightsAndIndicesKernel(float const* cacheTable, CachedInterpolationCalculator* calc, WeightsAndIndices* pXWais, Nd4jLong inWidth, float widthScale,
+            Nd4jLong outWidth, Nd4jLong channels, bool exclude_outside) {
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
 
         for (auto x = start; x < outWidth; x += step) {
-            if (halfPixelCenters)
-                getWeightsAndIndices<HalfPixelScaler, true>(cacheTable, widthScale, x, inWidth, &pXWais[x]);
-            else
-                getWeightsAndIndices<LegacyScaler, false>(cacheTable, widthScale, x, inWidth, &pXWais[x]);
-            pXWais[x]._advance = calc->Advance(pXWais[x]._index0, pXWais[x]._index1, pXWais[x]._index2, pXWais[x]._index3);
+            getWeightsAndIndices<Scaler>(cacheTable, widthScale, x, inWidth, pXWais + x, exclude_outside);
         }
+        __syncthreads();
+        if(start == 0){
+            //update only in one thread
+            for (auto i = 0; i < outWidth; i++) {
+                pXWais[i]._advance = calc->Advance(pXWais[i]._index0, pXWais[i]._index1, pXWais[i]._index2,
+                    pXWais[i]._index3);
+            }
+        }
+ 
     }
     // resizerState and xWais are device allocated
+    template<typename Scaler>
     static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResizerState& resizerState,
-                                          const bool halfPixelCenters,
-                                          WeightsAndIndices* pXWais) {
+                                          WeightsAndIndices* pXWais, bool exclude_outside) {
 
         auto stream = resizerState.stream;
         auto outWidth = resizerState.outWidth;
@@ -649,7 +480,7 @@ namespace helpers {
             cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator", err);
         }
 
-        advaceWeightsAndIndicesKernel<<<128, 128, 128, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth, resizerState.widthScale, outWidth, resizerState.channels, halfPixelCenters);
+        advanceWeightsAndIndicesKernel<Scaler><<<128, 128, 128, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth, resizerState.widthScale, outWidth, resizerState.channels, exclude_outside);
         err = cudaFree(pCalcD);
         if (err != 0) {
             cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot deallocated device memory for interpolate calculator", err);
@@ -659,7 +490,7 @@ namespace helpers {
             cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot synchronize stream after advance weights and indicers", err);
         }
         // Scale the values so they can be used as offsets into buffers.
-        accumulateChannelsKernel<<<128, 128, 512, *stream>>>(pXWais, outWidth, resizerState.channels);
+        accumulateChannelsKernel<<<128, 128, 512, *stream>>>(pXWais, outWidth, resizerState.wStride);
         err = cudaStreamSynchronize(*stream);
         if (err != 0) {
             cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot synchronize stream after accumulate channels", err);
@@ -667,38 +498,16 @@ namespace helpers {
 
     }
 
-    template <typename T>
-    static _CUDA_HD FORCEINLINE float computeYInterpolation(
-            int which, int channelNum, const WeightsAndIndices& yWai,
-            const T* pY0, const T* pY1, const T* pY2, const T* pY3,
-            const WeightsAndIndices& xWai) {
-        int xIndex;
-        switch (which) {
-            case 0:
-                xIndex = xWai._index0;
-                break;
-            case 1:
-                xIndex = xWai._index1;
-                break;
-            case 2:
-                xIndex = xWai._index2;
-                break;
-            default:
-                xIndex = xWai._index3;
-                break;
-        }
-        const Nd4jLong pt_index = xIndex + channelNum;
-        return interpolate1D<T>(yWai._weight0, yWai._weight1, yWai._weight2,
-                                yWai._weight3, pY0[pt_index], pY1[pt_index],
-                                pY2[pt_index], pY3[pt_index]);
-    }
 
-    template <typename T>
-    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, float* outputPtr) {
+    template <typename T, typename Scaler>
+    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool exclude_outside, float* outputPtr) {
 //        auto numChannels = pResizerState->channels;
-
+        const auto batchStride = pResizerState->bStride;
+        const auto hStride = pResizerState->hStride;
+        const auto cStride = pResizerState->cStride;
         for (Nd4jLong b = blockIdx.x; b < pResizerState->batchSize; b += gridDim.x) {
-            auto pInput = inputPtr + b * inBatchWidth;
+            auto pInput = inputPtr + b * batchStride;
+
             float* cachedValue;
             for (Nd4jLong y = threadIdx.x; y < pResizerState->outHeight; y += blockDim.x) {
                 if (threadIdx.x == 0) {
@@ -708,18 +517,16 @@ namespace helpers {
                 auto pos = (b * pResizerState->outHeight + y) * pResizerState->outWidth * pResizerState->channels;
                 auto pOutput = &outputPtr[pos];
                 struct WeightsAndIndices yWai;
-                if (halfPixelCenters) {
-                    getWeightsAndIndices<HalfPixelScaler, true>(cachedTable, pResizerState->heightScale, y, pResizerState->inHeight, &yWai);
-                } else {
-                    getWeightsAndIndices<LegacyScaler, false>(cachedTable, pResizerState->heightScale, y, pResizerState->inHeight, &yWai);
-                }
-                // Make pointers represent offsets of data in inputBPtr.
-                const T* y_ptr_0 = pInput + yWai._index0 * inRowWidth;
-                const T* y_ptr_1 = pInput + yWai._index1 * inRowWidth;
-                const T* y_ptr_2 = pInput + yWai._index2 * inRowWidth;
-                const T* y_ptr_3 = pInput + yWai._index3 * inRowWidth;
 
-                if (pResizerState->channels == 3) {
+                getWeightsAndIndices<Scaler>(cachedTable, pResizerState->heightScale, y, pResizerState->inHeight, &yWai, exclude_outside);
+
+                // Make pointers represent offsets of data in inputBPtr.
+                const T* y_ptr_0 = pInput + yWai._index0 * hStride;
+                const T* y_ptr_1 = pInput + yWai._index1 * hStride;
+                const T* y_ptr_2 = pInput + yWai._index2 * hStride;
+                const T* y_ptr_3 = pInput + yWai._index3 * hStride;
+
+                if (pResizerState->channels == 100) {
                     // Manually unroll case of 3 channels.
                     float cached_value_0[4] = {0};
                     float cached_value_1[4] = {0};
@@ -758,21 +565,21 @@ namespace helpers {
                         // Set the remaining '4-_advance' values by computing.
                         switch (xWai._advance) {
                             case 0:
-                                cached_value_0[0] = computeYInterpolation(0, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_1[0] = computeYInterpolation(0, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_2[0] = computeYInterpolation(0, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_0[0] = computeYInterpolation(0,          0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_1[0] = computeYInterpolation(0,    cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_2[0] = computeYInterpolation(0, 2 *cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                             case 1:
-                                cached_value_0[1] = computeYInterpolation(1, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_1[1] = computeYInterpolation(1, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_2[1] = computeYInterpolation(1, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_0[1] = computeYInterpolation(1,          0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_1[1] = computeYInterpolation(1,    cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_2[1] = computeYInterpolation(1, 2 *cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                             case 2:
-                                cached_value_0[2] = computeYInterpolation(2, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_1[2] = computeYInterpolation(2, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_2[2] = computeYInterpolation(2, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_0[2] = computeYInterpolation(2,          0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_1[2] = computeYInterpolation(2,    cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_2[2] = computeYInterpolation(2, 2 *cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                             case 3:
-                                cached_value_0[3] = computeYInterpolation(3, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_1[3] = computeYInterpolation(3, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
-                                cached_value_2[3] = computeYInterpolation(3, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_0[3] = computeYInterpolation(3,          0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_1[3] = computeYInterpolation(3,    cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                cached_value_2[3] = computeYInterpolation(3, 2 *cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                         //        break;
                         }
                         pOutput[x * pResizerState->channels + 0] = compute(cached_value_0, xWai._weight0, xWai._weight1,
@@ -812,24 +619,26 @@ namespace helpers {
                         switch (xWai._advance) {
                             case 0:
                                 for (Nd4jLong c = 0; c < pResizerState->channels; ++c) {
-                                    cachedValue[4 * c + 0] = computeYInterpolation(0, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cachedValue[4 * c + 0] = computeYInterpolation(0, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                                 }
                             case 1:
                                 for (Nd4jLong c = 0; c < pResizerState->channels; ++c) {
-                                    cachedValue[4 * c + 1] = computeYInterpolation(1, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cachedValue[4 * c + 1] = computeYInterpolation(1, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                                 }
                             case 2:
                                 for (Nd4jLong c = 0; c < pResizerState->channels; ++c) {
-                                    cachedValue[4 * c + 2] = computeYInterpolation(2, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cachedValue[4 * c + 2] = computeYInterpolation(2, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                                 }
                             case 3:
                                 for (Nd4jLong c = 0; c < pResizerState->channels; ++c) {
-                                    cachedValue[4 * c + 3] = computeYInterpolation(3, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cachedValue[4 * c + 3] = computeYInterpolation(3, c * cStride, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
                                 }
                                // break;
                         }
                         for (Nd4jLong c = 0; c < pResizerState->channels; ++c) {
-                            pOutput[x * pResizerState->channels + c] = compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
+                            auto res= compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1, xWai._weight2, xWai._weight3);
+                            pOutput[x * pResizerState->channels + c] =res;
+                            
                         }
                     }
                 }
@@ -839,13 +648,10 @@ namespace helpers {
     }
 
 
-    template <typename T>
+    template <typename T, typename Scaler>
     static void
-    bicubicInterpolateWithCaching(NDArray const* image, ImageResizerState const& resizerState, bool const halfPixelCenters, NDArray* output) {
+    bicubicInterpolateWithCaching(NDArray const* image, const ImageResizerState& resizerState, const double coefficient, bool exclude_outside, NDArray* output){
         const auto numChannels = resizerState.channels;
-        const Nd4jLong inRowWidth = resizerState.inWidth * numChannels;
-        const Nd4jLong inBatchWidth = resizerState.inHeight * inRowWidth;
-
         auto stream = resizerState.stream; //output->getContext()->getCudaStream();
         ImageResizerState* resizerStateD;
         auto err = cudaMalloc(&resizerStateD, sizeof(ImageResizerState));
@@ -878,19 +684,20 @@ namespace helpers {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for weights and indices", err);
         }
 
-        auto coeffsTable = halfPixelCenters?initCoeffsTable(-0.5, stream): initCoeffsTable(-0.75, stream);
+        auto coeffsTable = initCoeffsTable(coefficient, stream); //halfPixelCenters?initCoeffsTable(-0.5, stream): initCoeffsTable(-0.75, stream);
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error", err);
         }
-        computeXWeightsAndIndices(coeffsTable, resizerState, halfPixelCenters, xWais);
+        computeXWeightsAndIndices<Scaler>(coeffsTable, resizerState, xWais, exclude_outside);
         err = cudaStreamQuery(*stream);
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error", err);
         }
+
         const T* pInput = image->getDataBuffer()->specialAsT<T>();
         float* pOutput = output->dataBuffer()->specialAsT<float>(); //_data.data();
-        bicubicInterpolateWithCachingKernel<T><<<128, 1, 512, *stream>>>(coeffsTable, pInput,
-                resizerStateD, xWais, halfPixelCenters, inBatchWidth, inRowWidth, pOutput);
+        bicubicInterpolateWithCachingKernel<T, Scaler><<<128, 1, 512, *stream>>>(coeffsTable, pInput,
+                resizerStateD, xWais, exclude_outside, pOutput);
         err = cudaStreamSynchronize(*stream);
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Kernels finished with error", err);
@@ -932,13 +739,6 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int resizeBicubicFunctor_, (sd::LaunchContext * context, NDArray const* image, int width, int height,
             bool preserveAspectRatio, bool antialias, NDArray* output), NUMERIC_TYPES);
 // ------------------------------------------------------------------------------------------------------------------ //
-    struct CachedInterpolation {
-        Nd4jLong start;
-        Nd4jLong end;
-        float startScale;
-        float endMinusOneScale;
-        bool needsBounding;
-    };
 
     static __global__ void fillInterpolationCache(CachedInterpolation* xCached, Nd4jLong cacheLen, Nd4jLong inWidth, float widthScale) {
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -960,102 +760,6 @@ namespace helpers {
     }
 
 // ------------------------------------------------------------------------------------------------------------------ //
-    template <typename T>
-    struct ScaleCache {
-        float yScale;
-        T const* yPtr;
-    };
-
-    // Computes the sum of all x values defined by <x_interp> taken across
-    // the y offsets and scales defined by y_ptrs and y_scales, for channel c.
-    //
-    // Note that <NeedsXBounding> is a template parameter to avoid a performance
-    // penalty from dynamically checking it.
-    template <typename T>
-    static __device__ void computePatchSumOf3Channels(float scale,
-                                           const ImageResizerState& st,
-                                           ScaleCache<T> const* yScaleCache,
-                                           Nd4jLong ptrsLen,
-                                           const CachedInterpolation& xCache,
-                                           float* outputPtr) {
-
-        bool const needsXBounding = xCache.needsBounding;
-
-        auto boundIfNeeded = [needsXBounding](Nd4jLong x, Nd4jLong y) -> Nd4jLong {
-            return (needsXBounding ? bound(x, y) : (x));
-        };
-
-        float sum_0 = 0;
-        float sum_1 = 0;
-        float sum_2 = 0;
-        for (int i = 0; i < ptrsLen; ++i) {
-            const T* ptr = yScaleCache[i].yPtr;
-            float scaleX = xCache.startScale;
-            Nd4jLong offset = 3 * boundIfNeeded(xCache.start, st.inWidth);
-            float sum_y_0 = static_cast<float>(ptr[offset + 0]) * scaleX;
-            float sum_y_1 = static_cast<float>(ptr[offset + 1]) * scaleX;
-            float sum_y_2 = static_cast<float>(ptr[offset + 2]) * scaleX;
-
-            if (xCache.start + 1 != xCache.end) {
-                for (Nd4jLong x = xCache.start + 1; x < xCache.end - 1; ++x) {
-                    Nd4jLong offset = 3 * boundIfNeeded(x, st.inWidth);
-                    sum_y_0 += static_cast<float>(ptr[offset + 0]);
-                    sum_y_1 += static_cast<float>(ptr[offset + 1]);
-                    sum_y_2 += static_cast<float>(ptr[offset + 2]);
-                }
-                scaleX = xCache.endMinusOneScale;
-                offset = st.channels * boundIfNeeded(xCache.end - 1, st.inWidth);
-                sum_y_0 += static_cast<float>(ptr[offset + 0]) * scaleX;
-                sum_y_1 += static_cast<float>(ptr[offset + 1]) * scaleX;
-                sum_y_2 += static_cast<float>(ptr[offset + 2]) * scaleX;
-            }
-            sum_0 += sum_y_0 * yScaleCache[i].yScale;
-            sum_1 += sum_y_1 * yScaleCache[i].yScale;
-            sum_2 += sum_y_2 * yScaleCache[i].yScale;
-        }
-
-        outputPtr[0] = sum_0 * scale;
-        outputPtr[1] = sum_1 * scale;
-        outputPtr[2] = sum_2 * scale;
-    }
-
-    // Computes the sum of all x values defined by <x_interp> taken across
-    // the y offsets and scales defined by y_ptrs and y_scales, for channel c.
-    //
-    // Note that <NeedsXBounding> is a template parameter to avoid a performance
-    // penalty from dynamically checking it.
-    template <typename T>
-    static __device__ void computePatchSum(float scale, const ImageResizerState& st,
-                                ScaleCache<T> const* yScaleCache, Nd4jLong ptrsLen,
-                                const CachedInterpolation& xCache,
-                                float* outputPtr) {
-
-        bool const needsXBounding = xCache.needsBounding;
-
-        auto boundIfNeeded = [needsXBounding](Nd4jLong x, Nd4jLong y) -> Nd4jLong {
-            return (needsXBounding ? bound(x, y) : (x));
-        };
-
-        const auto numChannels = st.channels;
-        for (Nd4jLong c = 0; c < numChannels; ++c) {
-            float sum = 0;
-            for (int i = 0; i < ptrsLen; ++i) {
-                T const* ptr = yScaleCache[i].yPtr;
-                float scaleX = xCache.startScale;
-                float sumY = static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.start, st.inWidth) + c]) * scaleX;
-                if (xCache.start + 1 != xCache.end) {
-                    for (Nd4jLong x = xCache.start + 1; x < xCache.end - 1; ++x) {
-                        sumY += static_cast<float>(
-                                ptr[numChannels * boundIfNeeded(x, st.inWidth) + c]);
-                    }
-                    scaleX = xCache.endMinusOneScale;
-                    sumY += static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.end - 1, st.inWidth) + c]) * scaleX;
-                }
-                sum += sumY * yScaleCache[i].yScale;
-            }
-            outputPtr[c] = sum * scale;
-        }
-    }
 
     template <typename T>
     static __global__ void resizeAreaKernel(ImageResizerState const* pSt, CachedInterpolation const* caches, float scale,
@@ -1086,7 +790,7 @@ namespace helpers {
                         scaleY = (i + 1 > inY1 ? inY1 - i : 1.0);
                     }
                     yScaleCache[k].yScale = scaleY;
-                    yScaleCache[k].yPtr = inputPtr + (batch * pSt->inHeight * pSt->inWidth * pSt->channels + bound(i, pSt->inHeight) * pSt->inWidth * pSt->channels);
+                    yScaleCache[k].yPtr = inputPtr + (batch * pSt->bStride + bound(i, pSt->inHeight) * pSt->hStride);
                 }
 
                 if (pSt->channels == 3) {
@@ -1186,43 +890,50 @@ namespace helpers {
 // simplified bicubic resize without antialiasing
 //
     template <typename T>
-    ND4J_LOCAL int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int width, int height,
-                               bool const alignCorners, bool const halfPixelCenters, NDArray* output) {
-
-            ImageResizerState st(alignCorners, halfPixelCenters); // align_corners, half_pixel_align
-            st.stream = context->getCudaStream();
-            NDArray::prepareSpecialUse({output}, {image});
-            int res = st.validateAndCreateOutput(image, width, height);
-            if (res == Status::OK())
-                bicubicInterpolateWithCaching<T>(image, st, halfPixelCenters, output);
-            NDArray::registerSpecialUse({output}, {image});
-            return res;
+    ND4J_LOCAL int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+                            bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient, NDArray* output) {
+        ImageResizerState st(alignCorners, coorMode == HALF_PIXEL, context->getCudaStream()); // align_corners, half_pixel_align
+        NDArray::prepareSpecialUse({output}, {image});
+        int res = st.validateAndCreateOutput(image, width, height);
+        if (res == Status::OK()){
+            switch (coorMode)
+            {
+            case ASYMMETRIC:
+                bicubicInterpolateWithCaching<T, LegacyScaler>(image, st, coefficient, exclude_outside, output);
+                break;
+            case HALF_PIXEL:
+                bicubicInterpolateWithCaching<T, HalfPixelScaler>(image, st, coefficient, exclude_outside, output);
+                break;
+            case HALF_PIXEL_NN:
+                bicubicInterpolateWithCaching<T, HalfPixelScalerNN>(image, st, coefficient, exclude_outside, output);
+                break;
+            default:
+                break;
+            }
+        }
+        NDArray::registerSpecialUse({output}, {image});
+        return res;
     }
-
-    ND4J_LOCAL int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int width, int height,
-                              bool const alignCorners, bool const halfPixelCenters, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context,
-                image, width, height, alignCorners, halfPixelCenters, output), NUMERIC_TYPES);
+    ND4J_LOCAL int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+                            bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context, image, width, height, alignCorners, coorMode, exclude_outside, coefficient, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int resizeBicubicFunctorA_, (sd::LaunchContext * context,
-            NDArray const* image, int width, int height, bool const alignCorners, bool const halfPixelCenters, NDArray* output), NUMERIC_TYPES);
-
-
 // ------------------------------------------------------------------------------------------------------------------ //
     ND4J_LOCAL int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
-                            ImageResizeMethods method, bool alignCorners, NDArray* output) {
+        ImageResizeMethods method, bool alignCorners, NDArray* output) {
         switch (method) {
-            case kResizeBilinear:
-                return resizeBilinearFunctor(context, image, width, height, alignCorners, false, output);
-            case kResizeNearest:
-                return resizeNeighborFunctor(context, image, width, height, alignCorners, false, output);
-            case kResizeBicubic:
-                return resizeBicubicFunctor(context, image, width, height, alignCorners, false, output);
-            case kResizeArea:
-                return resizeAreaFunctor(context, image, width, height, alignCorners, output);
-            default:
-                throw std::runtime_error("helper::resizeImagesFunctor: Wrong resize method.");
-        }
+        case kResizeBilinear:
+            return resizeBilinearFunctor(context, image, width, height, alignCorners, false, output);
+        case kResizeNearest:
+            return resizeNeighborFunctor(context, image, width, height, CoordinateTransformationMode::ASYMMETRIC, 
+            alignCorners ? NearestMode::ROUND_PREFER_CEIL : NearestMode::FLOOR, alignCorners, output);
+        case kResizeBicubic:
+            return resizeBicubicFunctor(context, image, width, height, alignCorners, false, output);
+        case kResizeArea:
+            return resizeAreaFunctor(context, image, width, height, alignCorners, output);
+        default:
+            throw std::runtime_error("helper::resizeImagesFunctor: Wrong resize method.");
+    }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

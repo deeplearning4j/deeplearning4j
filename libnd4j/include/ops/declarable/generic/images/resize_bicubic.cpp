@@ -68,7 +68,11 @@ namespace sd {
             auto source = inRank == 4?image->reshape(image->ordering(), {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2), image->sizeAt(3)}):image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
             auto target = inRank == 4?output->reshape(output->ordering(), {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}, false) : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
 
-            return helpers::resizeBicubicFunctorA(block.launchContext(), &source, width, height, alignCorners, halfPixelAlign, &target);
+            //retain old behaviour
+            helpers::CoordinateTransformationMode coorMode = halfPixelAlign ? helpers::CoordinateTransformationMode::HALF_PIXEL : helpers::CoordinateTransformationMode::ASYMMETRIC;
+            bool exclude_outside = halfPixelAlign;
+            double coef = halfPixelAlign ? helpers::KeysCubicKernelFunc<double>::KEYS_CUBIC_COEF : helpers::KeysCubicKernelFunc<double>::ORDINARY_COEF ;
+            return helpers::resizeBicubicFunctorA(block.launchContext(), &source, width, height, alignCorners, coorMode, exclude_outside, coef, &target);
         }
 
         DECLARE_SHAPE_FN(resize_bicubic) {
