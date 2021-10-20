@@ -1412,6 +1412,19 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
         return customOps;
     }
 
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
+        OpaqueConstantShapeBuffer dbf = loop.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
+        val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
+
+        loop.deleteConstantShapeBuffer(dbf);
+
+        return result;
+    }
+
 
     private PointerPointer getPointerPointerFrom(ThreadLocal<Map<Integer,PointerPointer>> map,int numArguments) {
         if(map.get() == null) {
