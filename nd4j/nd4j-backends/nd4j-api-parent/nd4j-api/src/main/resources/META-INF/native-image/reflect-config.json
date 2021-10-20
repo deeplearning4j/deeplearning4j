@@ -1,5 +1,29 @@
 [
   {
+    "name":"org.nd4j.imports.converters.DifferentialFunctionClassHolder",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
+    "name":"org.nd4j.autodiff.functions.DifferentialFunction",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
+    "name":"org.nd4j.linalg.api.ops.CustomOp",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
+  },
+  {
     "name":"org.nd4j.linalg.learning.config.IUpdater",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,

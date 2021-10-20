@@ -296,7 +296,7 @@ public class DifferentialFunctionClassHolder {
             long h = e.getValue().getHash();
             if (multiClassHashes.contains(h)) {
                 if (!customOpHashToClasses.containsKey(h)) {
-                    customOpHashToClasses.put(h, new HashMap<String, Class<?>>());
+                    customOpHashToClasses.put(h, new HashMap<>());
                 }
                 Map<String, Class<?>> m = customOpHashToClasses.get(h);
                 String name = e.getKey();
