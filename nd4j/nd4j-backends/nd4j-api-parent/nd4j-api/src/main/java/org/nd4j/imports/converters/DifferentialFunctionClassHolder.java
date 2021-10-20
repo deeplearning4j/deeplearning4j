@@ -383,6 +383,8 @@ public class DifferentialFunctionClassHolder {
                     return customOpHashToClasses.get(customOpHash).get(name);
                 } else if(customOpHashToClass.containsKey(customOpHash)){
                     return customOpHashToClass.get(customOpHash);
+                } else if(ImportClassMapping.getOpNameMapping().containsKey(name)) {
+                    return ImportClassMapping.getOpNameMapping().get(name).getClass();
                 } else {
                     throw new IllegalStateException("No op known for hash: " + customOpHash + " and name " + name);
                 }
