@@ -19,8 +19,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <javacpp.platform.compiler>ncc</javacpp.platform.compiler>
-    <javacpp.platform.compiler.default></javacpp.platform.compiler.default>
   </properties>
 
   <dependencies>
