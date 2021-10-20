@@ -201,7 +201,7 @@ public class Nd4jAuroraOps implements NativeOps {
                     }
                     try {
                         Pointer[] array;
-                        if (p instanceof PointerPointer && (array = (Pointer[])pointerArrayField.get((PointerPointer)p)) != null) {
+                        if (p instanceof PointerPointer && (array = (Pointer[])pointerArrayField.get(p)) != null) {
                             for (int j = 0; j < array.length; j++) {
                                 Pointer p2 = array[j];
                                 LongPointer addr2 = new LongPointer(1);

@@ -384,7 +384,7 @@ public class DifferentialFunctionClassHolder {
                 } else if(customOpHashToClass.containsKey(customOpHash)){
                     return customOpHashToClass.get(customOpHash);
                 } else {
-                    throw new IllegalStateException("No op known for hash: " + customOpHash);
+                    throw new IllegalStateException("No op known for hash: " + customOpHash + " and name " + name);
                 }
         }
 
