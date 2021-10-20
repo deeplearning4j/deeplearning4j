@@ -54,7 +54,7 @@ public class Nd4jAuroraOps implements NativeOps {
             if (s != null) {
                 deviceId = Integer.parseInt(s);
             }
-            File f = Loader.cacheResource(Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libnd4jaurora.so" : "/aurora"));
+            File f = Loader.cacheResource("org/nd4j/aurora/" + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libnd4jaurora.so" : "/aurora"));
             f.setExecutable(true);
             veobin = f.getAbsolutePath();
             setDevice(deviceId);
