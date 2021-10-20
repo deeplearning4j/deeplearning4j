@@ -189,6 +189,7 @@
             <buildResource>/${javacpp.platform.library.path}/</buildResource>
             <buildResource>/lib/</buildResource>
             <buildResource>/</buildResource>
+            <buildResource>libnd4jaurora.so</buildResource>
           </buildResources>
           <includeResources>
             <includeResource>/${javacpp.platform.library.path}/include/
