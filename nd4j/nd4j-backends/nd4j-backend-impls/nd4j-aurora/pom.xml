@@ -185,6 +185,7 @@
             <linkPath>${libnd4jhome}/blasbuild/aurora/blas</linkPath>
           </linkPaths>
           <resourcePath>${libnd4jhome}/blasbuild/aurora/blas</resourcePath>
+          <copyResources>true</copyResources>
           <buildResources>
             <buildResource>/${javacpp.platform.library.path}/</buildResource>
             <buildResource>/lib/</buildResource>
