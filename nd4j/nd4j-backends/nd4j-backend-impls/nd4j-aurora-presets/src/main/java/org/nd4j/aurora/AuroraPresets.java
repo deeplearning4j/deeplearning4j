@@ -34,11 +34,11 @@ import org.bytedeco.javacpp.tools.*;
                 @Platform(
                         value = "linux-x86_64",
                         cinclude = "ve_offload.h",
-                        link = {"veo@.0","nd4jaurora"},
+                        link = {"veo@.0"},
                         includepath = "/opt/nec/ve/veos/include/",
                         linkpath = "/opt/nec/ve/veos/lib64/",
                         library = "jnind4jaurora",
-                        resource = {"aurora", "libaurora.so"}
+                        resource = {"nd4jaurora", "libnd4jaurora.so"}
                         ,preload = "libnd4jaurora"
                 )
         },
