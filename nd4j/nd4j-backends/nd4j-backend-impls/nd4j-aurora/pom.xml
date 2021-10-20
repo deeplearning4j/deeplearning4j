@@ -20,6 +20,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <javacpp.platform.compiler>ncc</javacpp.platform.compiler>
+    <javacpp.platform.compiler.default></javacpp.platform.compiler.default>
   </properties>
 
   <dependencies>
@@ -161,6 +162,10 @@
             <property>
               <name>platform.extension</name>
               <value>${javacpp.platform.extension}</value>
+            </property>
+            <property>
+              <name>platform.compiler.default</name>
+              <value>${javacpp.platform.compiler.default}</value>
             </property>
           </propertyKeysAndValues>
           <classPaths>
