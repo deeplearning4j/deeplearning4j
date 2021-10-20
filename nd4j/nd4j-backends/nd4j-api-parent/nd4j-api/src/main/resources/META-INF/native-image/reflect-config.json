@@ -103,7 +103,6 @@
     "allDeclaredClasses" : true,
     "allPublicClasses" : true
   },
-  "C:\Program Files\AdoptOpenJDK\jdk-8.0.292.10-hotspot\bin\java.exe" -Dvisualvm.id=330374601112500 -javaagent:C:\Users\agibs\AppData\Local\JetBrains\Toolbox\apps\IDEA-U\ch-0\212.5457.46\lib\idea_rt.jar=55412:C:\Users\agibs\AppData\Local\JetBrains\Toolbox\apps\IDEA-U\ch-0\212.5457.46\bin -Dfile.encoding=UTF-8 -classpath C:\Users\agibs\AppData\Local\JetBrains\Toolbox\apps\IDEA-U\ch-0\212.5457.46\lib\idea_rt.jar com.intellij.rt.execution.CommandLineWrapper C:\Users\agibs\AppData\Local\Temp\idea_classpath459686599 ai.konduit.pipelinegenerator.main.GraalVmPrint --pattern=org.nd4j.linalg -c -g
   {
     "name":"org.nd4j.linalg.indexing.functions.StableNumber$Type"
   },
