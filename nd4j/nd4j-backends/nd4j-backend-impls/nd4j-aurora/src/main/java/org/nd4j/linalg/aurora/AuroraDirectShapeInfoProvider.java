@@ -31,6 +31,7 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +53,21 @@ public class AuroraDirectShapeInfoProvider extends BaseShapeInfoProvider {
         long extras = 0;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         return createShapeInformation(shape, stride, elementWiseStride, order, extras);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataType dataType) {
+        return createShapeInformation(shape,'c',dataType);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataType dataType) {
+      return createShapeInformation(shape,Nd4j.getStrides(shape),1,'c',dataType);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
+        return super.createShapeInformation(shape, stride, elementWiseStride, order, dataType, empty);
     }
 
     @Override
