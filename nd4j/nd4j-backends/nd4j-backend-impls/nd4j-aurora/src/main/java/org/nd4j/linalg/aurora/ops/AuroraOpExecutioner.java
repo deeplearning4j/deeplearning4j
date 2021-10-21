@@ -1423,7 +1423,6 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
-        Pointer constantShapeBufferPrimary = loop.getConstantShapeBufferPrimary(dbf);
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
         loop.deleteConstantShapeBuffer(dbf);
 
