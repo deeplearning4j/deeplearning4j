@@ -4223,6 +4223,7 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 outer.invokeGraphOn(sameDiff);
+                outer.putSubFunction(GRAD_FN_KEY,sameDiff);
                 if (debugMode) {
                     //Expect incoming args and outgoing args to be the same
                     Preconditions.checkState(sameDiff.ops.keySet().equals(ops.keySet()), "ops keysets not equal");
@@ -4246,7 +4247,7 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 List<SDVariable> finalOutputs = new ArrayList<>(lossVariables.size());
-                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0f));
+                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0f));
                 for (String s : lossVariables) {
                     Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
                             " Use SameDiff.setLossVariables with non-null array names to fix");
@@ -4254,11 +4255,13 @@ public class SameDiff extends SDBaseOps {
                     SDVariable v = variables.get(s).getVariable();
                     Preconditions.checkState(v.dataType().isFPType(), "Specified loss function variable \"%s\" is not a floating" +
                             "point variable (datatype: %s). Only floating point variables may be used as loss function variable", s, v.dataType());
-                    v = v.sum();    //If output is not a scalar: we'll use loss = v.sum(), same as adding loss for multiple outputs. We don't always know for sure if output is scalar at this point
+
+
                     if (v.dataType() == initialGrad.dataType()) {
                         sameDiff.setGradientForVariableName(v.name(), initialGrad);
                     } else {
-                        sameDiff.setGradientForVariableName(v.name(), initialGrad.castTo(v.dataType()));
+                        initialGrad = initialGrad.castTo(v.dataType());
+                        sameDiff.setGradientForVariableName(v.name(), initialGrad);
                     }
                     if (finalOutputs.contains(v)) {
                         log.warn("Loss function variable \"{}\" appears multiple times in list of loss variables - using only first instance", s);
@@ -4397,7 +4400,7 @@ public class SameDiff extends SDBaseOps {
                 // a variable is fully available
                 //For example, if we have  X -> op -> Y, and Y -> (A,B) we need gradient contribution from BOTH
                 // Y->A and Y->B connections before we can do differentiation of op "op"
-                final HashMap<String, List<String>> prerequisites = new HashMap<>();    //Key: variable name. Value: list of op names
+                final Map<String, List<String>> prerequisites = new HashMap<>();    //Key: variable name. Value: list of op names
                 for (String var : minimalSubgraphVars) {
                     Variable variable = variables.get(var);
                     // Copy the collection, as the original one will be modified during backprop

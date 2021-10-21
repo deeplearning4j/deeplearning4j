@@ -46,7 +46,7 @@ public class LossFunctions {
      */
     public enum LossFunction {
         MSE, L1, XENT, MCXENT, SPARSE_MCXENT, SQUARED_LOSS, RECONSTRUCTION_CROSSENTROPY, NEGATIVELOGLIKELIHOOD, COSINE_PROXIMITY, HINGE,
-        SQUARED_HINGE, KL_DIVERGENCE, MEAN_ABSOLUTE_ERROR, L2, MEAN_ABSOLUTE_PERCENTAGE_ERROR, MEAN_SQUARED_LOGARITHMIC_ERROR, POISSON, WASSERSTEIN;
+        SQUARED_HINGE, KL_DIVERGENCE, MEAN_ABSOLUTE_ERROR, L2, MEAN_ABSOLUTE_PERCENTAGE_ERROR, MEAN_SQUARED_LOGARITHMIC_ERROR, POISSON, WASSERSTEIN,HUBER;
 
         public ILossFunction getILossFunction() {
             switch (this) {
@@ -84,6 +84,7 @@ public class LossFunctions {
                     return new LossPoisson();
                 case WASSERSTEIN:
                     return new LossWasserstein();
+
                 default:
                     //Custom, RMSE_XENT
                     throw new UnsupportedOperationException("Unknown or not supported loss function: " + this);
