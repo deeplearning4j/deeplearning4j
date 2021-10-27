@@ -71,10 +71,7 @@ public abstract class BaseLoss extends DynamicCustomOp {
 
     public abstract String opName();
 
-    @Override
-    public int getNumOutputs() {
-        return 1;
-    }
+ 
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
