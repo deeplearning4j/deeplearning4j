@@ -37,7 +37,7 @@ namespace helpers {
 template <typename T>
 static T continuedFraction(const T a, const T b, const T x) {
 
-	const T min = DataTypeUtils::min<T>() / DataTypeUtils::eps<T>();
+	const T min = DataTypeUtils::min_positive<T>() / DataTypeUtils::eps<T>();
     const T aPlusb = a + b;
     T val, aPlus2i;
 

@@ -66,6 +66,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>${junit.platform.launcher.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <!-- Version set by deeplearning4j-parent dependency management -->
@@ -85,7 +91,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kryo_2.11</artifactId>
+            <artifactId>nd4j-kryo_2.12</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>

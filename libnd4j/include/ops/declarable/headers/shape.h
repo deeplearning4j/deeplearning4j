@@ -43,9 +43,17 @@ namespace sd {
         DECLARE_CUSTOM_OP(shape_of, 1, 1, false, 0, 0);
         #endif
 
+
+
+
         #if NOT_EXCLUDED(OP_shapes_of)
         DECLARE_CUSTOM_OP(shapes_of, -1, -1, false, 0, 0);
         #endif
+
+       #if NOT_EXCLUDED(OP_set_shape)
+        DECLARE_CUSTOM_OP(set_shape, 2, 1, true, 0, 0);
+        #endif
+
 
         #if NOT_EXCLUDED(OP_squeeze)
         DECLARE_CUSTOM_OP(squeeze, 1, 1, false, 0, -2);

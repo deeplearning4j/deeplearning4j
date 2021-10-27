@@ -118,11 +118,15 @@ def create_node_from_schema(schema):
 
 nodes = [create_node_from_schema(schema) for schema
          in sorted(schemas, key=lambda s: s.name)]
-
+graph_proto = GraphProto()
+graph_proto.node.extend(nodes)
+text_proto = text_format.MessageToString(graph_proto)
 with open('onnx-op-defs.pb', 'wb') as f:
-    graph_proto = GraphProto()
-    graph_proto.node.extend(nodes)
     f.write(graph_proto.SerializeToString())
+
+with open('onnx-op-def.pbtxt','w+') as f:
+    f.write(text_proto)
+
     # for node in nodes:
     #     message_to_string = text_format.MessageToString(node, as_utf8=True)
     #     node_2 = load_node(message_to_string)

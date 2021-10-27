@@ -67,6 +67,7 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Optional;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.nativeblas.*;
 
 import java.util.*;
 

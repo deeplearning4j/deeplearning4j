@@ -186,7 +186,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 }
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
     // batchnorm2_ is still slower ?
     BUILD_SINGLE_SELECTOR(input->dataType(), batchnorm_, (input, mean, variance, gamma, beta, output, axes, epsilon), FLOAT_TYPES);

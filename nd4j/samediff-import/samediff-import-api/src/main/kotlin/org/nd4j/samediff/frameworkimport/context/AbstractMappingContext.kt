@@ -26,6 +26,7 @@ import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.reflect.ImportReflectionCache
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeValueType
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
@@ -79,14 +80,21 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
 
     override fun nodeAttributesAsMap(): Map<String, Any> {
         val ret = HashMap<String,Any>()
-        irNode().attributeMap().forEach { name, attribute ->
+        irNode().attributeMap().forEach { (name, attribute) ->
             when(attribute.attributeValueType()) {
                 AttributeValueType.LIST_INT -> {
                     ret[name] = attribute.listIntValue()
                 }
+                AttributeValueType.GRAPH -> {
+                    ret[name] = attribute.graphValue(graph.opMappingRegistry() as OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>)
+                }
+
+                AttributeValueType.LIST_GRAPH -> {
+
+                }
 
                 AttributeValueType.LIST_TENSOR -> {
-                   ret[name] = attribute.listTensorValue().map { input -> input.toNd4jNDArray() }
+                    ret[name] = attribute.listTensorValue().map { input -> input.toNd4jNDArray() }
                 }
                 AttributeValueType.TENSOR -> {
                     ret[name] = attribute.tensorValue().toNd4jNDArray()

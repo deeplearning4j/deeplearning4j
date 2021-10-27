@@ -23,15 +23,17 @@ import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.common.util.ArrayUtil
 import org.nd4j.enums.ImageResizeMethod
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.linalg.indexing.NDArrayIndex
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.lang.IllegalArgumentException
 
 /**
@@ -42,14 +44,15 @@ import java.lang.IllegalArgumentException
  */
 @PreHookRule(nodeNames = [],opNames = ["Resize"],frameworkName = "onnx")
 class Resize : PreImportHook  {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult {
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#resize
         var inputVariable = sd.getVariable(op.inputsToOp[0])
@@ -84,11 +87,8 @@ class Resize : PreImportHook  {
          */
         val mode = attributes.getOrDefault("mode","nearest") as String
 
-        val outputVarName: String? = if(isFinalOutput) {
-            outputNames[0]
-        } else null
-
-        val outputSize = outputSize(sd,op,inputVariable,scales,sizes)
+        val outputVarName = outputNames[0]
+        val outputSize = outputSize(sd, op, inputVariable, scales, sizes,inputShape)
         outputSize!!.setShape(2)
 
         //switch to NWHC (tensorflow format) and then back to NCHW (onnx format)
@@ -133,17 +133,8 @@ class Resize : PreImportHook  {
             }
         }
 
-        //remove pre existing output variable
-        if(outputVarName != null && sd.hasVariable(outputVarName)) {
-            sd.variables.remove(outputVarName)
-            sd.ops.remove(outputVarName)
-        }
         val finalOutput = sd.permute(outputVarName,result,0,3,1,2)
-
-        return HookResult(outputVariables = mapOf(finalOutput.name() to listOf(finalOutput)),
-            proceedWithInit = false)
-
-
+        return mapOf(finalOutput.name() to listOf(finalOutput))
     }
 
     fun invokeResize(
@@ -169,16 +160,24 @@ class Resize : PreImportHook  {
         }
     }
 
-    fun outputSize(sd: SameDiff,op: SameDiffOp,input: SDVariable,scales: SDVariable,sizes: SDVariable): SDVariable?  {
+    fun outputSize(
+        sd: SameDiff,
+        op: SameDiffOp,
+        input: SDVariable,
+        scales: SDVariable,
+        sizes: SDVariable,
+        inputVariableShape: SDVariable
+    ): SDVariable?  {
         var ret: SDVariable? = null
         ret = if(op.inputsToOp.size == 3) {
-            val heightWidthScale = sd.constant(scales.arr.get(NDArrayIndex.interval(2,scales.arr.length())))
-            val heightWidthShape = sd.castTo(sd.constant(Nd4j.create(input.shape.asList().subList(2,input.shape.size))),heightWidthScale.dataType())
+            val heightWidthScale = scales.get(SDIndex.interval(2,-1))
+            val subGet = inputVariableShape.get(SDIndex.interval(2,-1))
+            val heightWidthShape = sd.castTo(subGet,heightWidthScale.dataType())
             val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
             scaled
         } else {
-            sizes.setShape(*input.shape)
-            sd.castTo(sizes.get(SDIndex.interval(2, ArrayUtil.prod(*sizes.shape))),DataType.INT32)
+            sd.setShape(sizes,input.shape())
+            sd.castTo(sizes.get(SDIndex.interval(2, -1)),DataType.INT32)
         }
         return ret.castTo(DataType.INT32)
     }

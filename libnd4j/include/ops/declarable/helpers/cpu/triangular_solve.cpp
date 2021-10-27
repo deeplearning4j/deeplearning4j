@@ -97,7 +97,7 @@ namespace helpers {
     /// \param output - output vector (x on equation Tx = b)
     ///
     template <typename T>
-    ND4J_LOCAL void triangularSolve2D(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output) {
+     void triangularSolve2D(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output) {
         if (lower) {
             lowerTriangularSolve<T>(context, &leftInput, &rightInput, unitsOnDiag, &output);
         }
@@ -155,11 +155,11 @@ namespace helpers {
         samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
     }
 
-    ND4J_LOCAL int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
+     int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
         BUILD_SINGLE_SELECTOR(leftInput->dataType(), return triangularSolveFunctor_, (context, leftInput, rightInput, lower, adjoint, output), FLOAT_NATIVE);
     }
 
-    ND4J_LOCAL void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+     void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), FLOAT_NATIVE);
     }
 }

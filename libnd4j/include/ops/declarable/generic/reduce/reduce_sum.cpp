@@ -29,7 +29,7 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_sum)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_sum, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
@@ -91,7 +91,7 @@ DECLARE_TYPES(reduce_sum) {
 
 #if NOT_EXCLUDED(OP_reduce_sum_bp)
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);

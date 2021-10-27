@@ -94,8 +94,6 @@ val elementWiseTransformOps = mapOf(
 
 
 val reduceOps = mapOf(
-        "All" to "all",
-        "Any" to "any",
         "Mean" to "reduce_mean",
         "Prod" to "reduce_prod",
         "Sum" to "reduce_sum",
@@ -494,7 +492,6 @@ val clipByValue = TensorflowMappingProcess(
 )
 
 
-//TODO: our compare and bit pack operation seems to do something different than TFs?
 val compareAndBitPack = TensorflowMappingProcess(
         opName = "compare_and_bitpack",
         opMappingRegistry = tensorflowOpRegistry,
@@ -1780,7 +1777,7 @@ val resizeBiCubic = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBi
         tensorNames = mutableMapOf("image" to "images","size" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeBiLinear = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBilinear"),opName = "resize_bilinear",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenters" to "half_pixel_centers"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenter" to "half_pixel_centers"))),
         tensorNames = mutableMapOf("image" to "images","newImageSize" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeNearestNeighbor = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeNearestNeighbor"),opName = "resize_nearest_neighbor",
@@ -2363,6 +2360,24 @@ val zeta = mapTensorNamesWithOp(inputFrameworkOpName = "Zeta",opName = "zeta",
         tensorflowOpRegistry = tensorflowOpRegistry)
 
 
+val all = TensorflowMappingProcess(
+        opName = "all",
+        inputFrameworkOpName = "All",
+        opMappingRegistry = tensorflowOpRegistry,
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "reduction_indices"))),
+        attributeMappingRules = listOf()
+)
+
+val any = TensorflowMappingProcess(
+        opName = "any",
+        inputFrameworkOpName = "Any",
+        opMappingRegistry = tensorflowOpRegistry,
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "reduction_indices"))),
+        attributeMappingRules = listOf()
+)
+
+
+
 object TensorflowOpDeclarations {
         init {
                 val tensorflowOps = OpDescriptorLoaderHolder.listForFramework<OpDef>("tensorflow")
@@ -2381,7 +2396,7 @@ object TensorflowOpDeclarations {
                         tensorflowOpRegistry.registerNd4jOpDef(it.name,it)
                 }
 
-                reduceOps.forEach { tensorflowOpName, nd4jOpName ->
+                reduceOps.forEach { (tensorflowOpName, nd4jOpName) ->
                         defineSingularReduce(inputFrameworkOpName = tensorflowOpName,inputOpName = nd4jOpName,
                                 tensorflowOpRegistry = tensorflowOpRegistry)
                 }

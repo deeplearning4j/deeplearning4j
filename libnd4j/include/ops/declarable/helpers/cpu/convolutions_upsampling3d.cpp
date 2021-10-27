@@ -83,7 +83,7 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
             samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
         }
 
-       ND4J_LOCAL void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+        void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
             BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), FLOAT_TYPES);
         }
 

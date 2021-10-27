@@ -94,7 +94,7 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
 }
 
 
-ND4J_LOCAL void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
+ void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), adjustHue_, (input, deltaScalarArr, output, dimC), FLOAT_TYPES);
 }
 

@@ -27,21 +27,26 @@ import org.nd4j.enums.DataFormat
 import org.nd4j.enums.WeightsFormat
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.lang.IllegalArgumentException
 
 @PreHookRule(nodeNames = ["conv2_1"],opNames = [],frameworkName = "onnx")
 class GroupConvPreProcessingRule: PreImportHook {
-    override fun preProcess(
-        op: SameDiffOp,
+
+    override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
-        descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult {
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String, List<SDVariable>> {
         if(op.op.opName() != "conv2d") {
             throw IllegalArgumentException("Illegal op being processed of type ${op.op.opName()} with node name ${op.op.ownName}")
         }
@@ -49,9 +54,10 @@ class GroupConvPreProcessingRule: PreImportHook {
         val numSizeSplits = attributes.getOrDefault("group",1) as Long
         if(numSizeSplits.toInt() == 1) {
             //no need to split, just perform 1 convolution op
-            return HookResult()
+            return emptyMap()
         }
 
+        val descriptor = mappingRegistry.nd4jOpDefs[op.op]!!
         val intArgs = descriptor.argDescriptorList.filter { input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INT64 }.sortedBy { input -> input.argIndex }
         val config = Conv2DConfig.builder()
             .sH(intArgs[2].int64Value)
@@ -94,9 +100,6 @@ class GroupConvPreProcessingRule: PreImportHook {
             outputVars.add(outputVariable)
         }
 
-        sd.ops.remove(op.name)
-        sd.variables.remove(op.name)
-
         /**
          * TODO: Fix output names and potentially look for other inputs
          * in graph where we need to redirect the input/output names
@@ -104,7 +107,6 @@ class GroupConvPreProcessingRule: PreImportHook {
         val toTypedArray = outputVars.toTypedArray()
         val concat = sd.concat(op.name,0,*toTypedArray)
         resultMap[op.name] = listOf(concat)
-
-        return HookResult(outputVariables = resultMap,listOfFunctions,proceedWithInit = false)
+        return resultMap
     }
 }

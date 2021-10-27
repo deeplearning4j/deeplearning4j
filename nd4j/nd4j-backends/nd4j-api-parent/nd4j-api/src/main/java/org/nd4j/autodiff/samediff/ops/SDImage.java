@@ -29,6 +29,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.ImageResizeMethod;
+import org.nd4j.enums.Mode;
 
 public class SDImage extends SDOps {
   public SDImage(SameDiff sameDiff) {
@@ -384,6 +385,39 @@ public class SDImage extends SDOps {
     SDValidation.validateNumerical("nonMaxSuppression", "boxes", boxes);
     SDValidation.validateNumerical("nonMaxSuppression", "scores", scores);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression(sd,boxes, scores, maxOutSize, iouThreshold, scoreThreshold).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pads an image according to the given padding type<br>
+   *
+   * @param input input array (NUMERIC type)
+   * @param padding padding input (NUMERIC type)
+   * @param Mode padding mode: CONSTANT, REFLECT, SYMMETRIC
+   * @param padValue The value to pad with
+   * @return output the padded array (NUMERIC type)
+   */
+  public SDVariable pad(SDVariable input, SDVariable padding, Mode Mode, double padValue) {
+    SDValidation.validateNumerical("pad", "input", input);
+    SDValidation.validateNumerical("pad", "padding", padding);
+    return new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, Mode, padValue).outputVariable();
+  }
+
+  /**
+   * Pads an image according to the given padding type<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input input array (NUMERIC type)
+   * @param padding padding input (NUMERIC type)
+   * @param Mode padding mode: CONSTANT, REFLECT, SYMMETRIC
+   * @param padValue The value to pad with
+   * @return output the padded array (NUMERIC type)
+   */
+  public SDVariable pad(String name, SDVariable input, SDVariable padding, Mode Mode,
+      double padValue) {
+    SDValidation.validateNumerical("pad", "input", input);
+    SDValidation.validateNumerical("pad", "padding", padding);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, Mode, padValue).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

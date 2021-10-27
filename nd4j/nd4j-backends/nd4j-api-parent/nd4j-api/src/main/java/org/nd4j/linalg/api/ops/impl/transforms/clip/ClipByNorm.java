@@ -59,6 +59,14 @@ public class ClipByNorm extends DynamicCustomOp {
         super(null, new INDArray[]{in}, wrapOrNull(out), Collections.singletonList(clipValue), dimensions);
     }
 
+    public ClipByNorm(SameDiff sd, SDVariable x, SDVariable clipValue, SDVariable dimensions) {
+        super(null,sd,new SDVariable[]{x,clipValue,dimensions});
+    }
+
+    public ClipByNorm(INDArray x, INDArray clipValue, INDArray dimensions) {
+        super(null,new INDArray[]{x,clipValue,dimensions},null);
+    }
+
     @Override
     public String opName() {
         return "clipbynorm";

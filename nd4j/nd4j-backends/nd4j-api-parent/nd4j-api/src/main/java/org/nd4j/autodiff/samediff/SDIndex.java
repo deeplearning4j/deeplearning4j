@@ -83,7 +83,7 @@ public class SDIndex {
         return sdIndex;
     }
 
-    public static SDIndex interval(Long begin, Long strides, Long end){
+    public static SDIndex interval(Long begin, Long strides, Long end) {
         if(strides == 0){
             throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
         }

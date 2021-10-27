@@ -701,7 +701,7 @@ namespace helpers {
                 tempWeights.push_back(weight);
             }
             maxSpanSize = std::max(maxSpanSize, spanSize);
-            if (math::nd4j_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) { //
+            if (math::nd4j_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min_positive<float>()) { //
                 auto totalWeightSumInverted = 1.0f / totalWeightSum;
                 auto outIndex = spans._spanSize * x;
                 for (auto weight : tempWeights) {

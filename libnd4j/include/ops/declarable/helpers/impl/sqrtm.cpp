@@ -54,7 +54,7 @@ static void sqrtm_(const NDArray* x, NDArray* z) {
 
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void sqrtm(sd::LaunchContext* context, const NDArray* x, NDArray* z) {
+ void sqrtm(sd::LaunchContext* context, const NDArray* x, NDArray* z) {
 
     x->syncToHost();
     BUILD_SINGLE_SELECTOR(z->dataType(), sqrtm_, (x, z), FLOAT_TYPES);

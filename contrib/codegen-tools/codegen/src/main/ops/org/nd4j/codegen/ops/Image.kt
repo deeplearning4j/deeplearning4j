@@ -131,6 +131,25 @@ fun SDImage() =  Namespace("Image"){
         }
     }
 
+
+    Op("pad") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms"
+        javaOpClass = "Pad"
+        Input(NUMERIC, "input") { description = "input array" }
+        Input(NUMERIC, "padding") { description = "padding input" }
+        Arg(ENUM,"Mode") {possibleValues = listOf("CONSTANT", "REFLECT", "SYMMETRIC"); description = "padding mode: CONSTANT, REFLECT, SYMMETRIC"}
+        Arg(NUMERIC, "padValue") { description = "The value to pad with" }
+
+        Output(NUMERIC, "output"){ description = "the padded array" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Pads an image according to the given padding type
+            """.trimIndent()
+        }
+    }
+
+
     Op("randomCrop") {
         javaPackage = namespaceJavaPackage
         javaOpClass = "RandomCrop"

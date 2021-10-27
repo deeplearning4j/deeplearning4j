@@ -19,10 +19,16 @@
  */
 package org.nd4j.samediff.frameworkimport.ir
 
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeValueType
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
+/**
+ * Neutral attribute conversion class for handling interop between different frameworks.
+ *
+ * @author Adam Gibson
+ */
 interface IRAttribute<ATTRIBUTE_TYPE : GeneratedMessageV3,
         ATTRIBUTE_VALUE_TYPE : GeneratedMessageV3,
         TENSOR_TYPE : GeneratedMessageV3, DATA_TYPE : ProtocolMessageEnum> {
@@ -55,6 +61,10 @@ interface IRAttribute<ATTRIBUTE_TYPE : GeneratedMessageV3,
 
     fun internalAttributeDef(): ATTRIBUTE_TYPE
 
+    /**
+     * Returns the graph value. This value, when used should be cast to the proper type.
+     */
+    fun graphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): IRGraph<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>
 
     fun internalAttributeValue(): ATTRIBUTE_VALUE_TYPE
 }

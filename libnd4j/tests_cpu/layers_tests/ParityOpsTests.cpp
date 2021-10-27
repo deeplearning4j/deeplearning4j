@@ -439,6 +439,23 @@ TEST_F(ParityOpsTests, Test_Shape_1) {
 
 }
 
+TEST_F(ParityOpsTests, Test_Set_Shape) {
+    auto x = NDArrayFactory::create<float>('c', {1,4},{2,2,3,3});
+    auto shape = NDArrayFactory::create<Nd4jLong>('c',{2},{2,2});
+    auto exp = NDArrayFactory::create<float>('c', {2,2}, {2,2,3,3});
+
+    sd::ops::set_shape op;
+    auto result = op.evaluate({&x,&shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+
+}
+
 
 TEST_F(ParityOpsTests, Test_Equals_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});

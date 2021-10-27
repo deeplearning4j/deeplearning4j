@@ -45,7 +45,7 @@ namespace helpers {
         return count;
     }
 
-    ND4J_LOCAL Nd4jLong uniqueCount(sd::LaunchContext * context, NDArray* input) {
+     Nd4jLong uniqueCount(sd::LaunchContext * context, NDArray* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), LIBND4J_TYPES);
     }
 
@@ -88,7 +88,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    ND4J_LOCAL Nd4jStatus uniqueFunctor(sd::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+     Nd4jStatus uniqueFunctor(sd::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
         input->syncToHost();
         values->syncToHost();
         indices->syncToHost();

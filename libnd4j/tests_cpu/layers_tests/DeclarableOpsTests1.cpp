@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
- //
- // @author raver119@gmail.com
- //
+//
+// @author raver119@gmail.com
+//
 
 #include "testlayers.h"
 #include <graph/Context.h>
@@ -889,6 +889,30 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
     delete block;
 }
 
+
+TEST_F(DeclarableOpsTests1, ClipByValue2) {
+
+    auto x = NDArrayFactory::create_<float>('c', { 5, 5 });
+    auto output = NDArrayFactory::create_<float>('c', { 5, 5 });
+    auto left = NDArrayFactory::create_<float>('c',{1,1});
+    left->assign(0.0);
+    auto right = NDArrayFactory::create_<float>('c',{1,1});
+    right->assign(3.0);
+    auto exp = NDArrayFactory::create<float>('c', { 5, 5 });
+    x->assign(4);
+    x->p(0, -1);
+    x->p(1, 2);
+    exp.assign(3);
+    exp.p(0, 0);
+    exp.p(1, 2);
+
+
+    sd::ops::clipbyvalue clip;
+
+    clip.execute({x,left,right},{ x });
+    ASSERT_TRUE(x->equalsTo(&exp));
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MergeAvgTest1) {
 
@@ -1693,6 +1717,116 @@ TEST_F(DeclarableOpsTests1, Test_Cast_1) {
     ASSERT_TRUE(yExp.equalsTo(z));
 
 
+}
+
+
+TEST_F(DeclarableOpsTests1, Test_Min_Max_1) {
+    auto cases = {11,7,1,17,3,8,12,9,13,5,14,10,6};
+    auto minAndMax = {0,1};
+    for(auto dataType : cases) {
+        auto dTypeToTest = DataTypeUtils::fromInt(dataType);
+        for(auto minMax : minAndMax) {
+            sd::ops::min_max_datatype op;
+            auto result = op.evaluate({  }, {}, { dataType,minMax });
+            ASSERT_EQ(ND4J_STATUS_OK, result.status());
+            auto firstOutput = result.at(0);
+            switch(dTypeToTest) {
+                case sd::DataType::UINT8:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<uint8_t>(0),DataTypeUtils::min<uint8_t>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<uint8_t>(0),DataTypeUtils::max<uint8_t>());
+                    }
+                    break;
+                case sd::DataType::INT8:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<int8_t>(0),DataTypeUtils::min<int8_t>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<int8_t>(0),DataTypeUtils::max<int8_t>());
+                    }
+                    break;
+                case sd::DataType::BOOL:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<bool>(0),DataTypeUtils::min<bool>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<bool>(0),DataTypeUtils::max<bool>());
+                    }
+                    break;
+                case sd::DataType::BFLOAT16:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<bfloat16>(0),DataTypeUtils::min<bfloat16>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<bfloat16>(0),DataTypeUtils::max<bfloat16>());
+                    }
+                    break;
+                case sd::DataType::HALF:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<float16>(0),DataTypeUtils::min<float16>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<float16>(0),DataTypeUtils::max<float16>());
+                    }
+                    break;
+                case sd::DataType::INT16:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<int16_t>(0),DataTypeUtils::min<int16_t>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<int16_t>(0),DataTypeUtils::max<int16_t>());
+                    }
+                    break;
+                case sd::DataType::UINT16:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<uint16_t>(0),DataTypeUtils::min<uint16_t>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<uint16_t>(0),DataTypeUtils::max<uint16_t>());
+                    }
+                    break;
+                case sd::DataType::INT32:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<int>(0),DataTypeUtils::min<int>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<int>(0),DataTypeUtils::max<int>());
+                    }
+                    break;
+                case sd::DataType::UINT32:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<uint32_t>(0),DataTypeUtils::min<uint32_t>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<uint32_t>(0),DataTypeUtils::max<uint32_t>());
+                    }
+                    break;
+                case sd::DataType::FLOAT32:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<float>(0),DataTypeUtils::min<float>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<float>(0),DataTypeUtils::max<float>());
+                    }
+                    break;
+                case sd::DataType::UINT64:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<uint64_t>(0),DataTypeUtils::min<uint64_t>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<uint64_t>(0),DataTypeUtils::max<uint64_t>());
+                    }
+                    break;
+                case sd::DataType::INT64:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<Nd4jLong>(0),DataTypeUtils::min<Nd4jLong>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<Nd4jLong>(0),DataTypeUtils::max<Nd4jLong>());
+                    }
+                    break;
+                case sd::DataType::DOUBLE:
+                    if(minMax == 0) {
+                        ASSERT_EQ(firstOutput->e<double>(0),DataTypeUtils::min<double>());
+                    } else {
+                        ASSERT_EQ(firstOutput->e<double>(0),DataTypeUtils::max<double>());
+                    }
+                    break;
+
+            }
+        }
+
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3235,8 +3369,8 @@ TEST_F(DeclarableOpsTests1, Reverse_11) {
 
     auto input = NDArrayFactory::create<float>('c', { 2,3,4 });
     auto expected = NDArrayFactory::create<float>('c', { 2,3,4 }, { 24.f, 23.f, 22.f, 21.f, 20.f, 19.f, 18.f, 17.f, 16.f,
-                                                                 15.f, 14.f, 13.f, 12.f, 11.f, 10.f,  9.f,  8.f,  7.f,
-                                                                  6.f,  5.f,  4.f,  3.f,  2.f,  1.f });
+                                                                    15.f, 14.f, 13.f, 12.f, 11.f, 10.f,  9.f,  8.f,  7.f,
+                                                                    6.f,  5.f,  4.f,  3.f,  2.f,  1.f });
 
     input.linspace(1);
     sd::ops::reverse op;

@@ -33,6 +33,16 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 interface MappingContext<GRAPH_TYPE: GeneratedMessageV3,NODE_TYPE: GeneratedMessageV3,OP_DEF_TYPE: GeneratedMessageV3,TENSOR_TYPE: GeneratedMessageV3,ATTRIBUTE_TYPE: GeneratedMessageV3, ATTRIBUTE_VALUE_TYPE: GeneratedMessageV3,DATA_TYPE: ProtocolMessageEnum> {
 
+
+    /**
+     * Returns true if the current node has the op definition name.
+     * Note this is according to the op definition within the node, not the
+     * actual real node name. This is meant to check for when optional inputs are missing and can
+     * be excluded from processing.
+     *
+     */
+    fun hasInput(name: String): Boolean
+
     /**
      * Prehook rules for this context
      */

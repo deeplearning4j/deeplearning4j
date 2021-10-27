@@ -501,7 +501,7 @@ public class SameDiff extends SDBaseOps {
         for (val var : variables()) {
             SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
-            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
+            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null && !var.getArr().isEmpty()) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
 
@@ -532,8 +532,29 @@ public class SameDiff extends SDBaseOps {
             newFunctions.put(function.getOwnName(), clone);
 
             val argsForFunction = function.args();
-            val outputsForFunction = function.outputVariables();
+            for(SDVariable arg : argsForFunction) {
+                if(!sameDiff.variables.containsKey(arg.name())) {
+                    SDVariable clone2 = arg.clone(this);
+                    clone2.setSameDiff(sameDiff);
+                    sameDiff.addVariable(clone2);
+                    if (clone2.getVariableType() != VariableType.ARRAY && clone2.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
+                        sameDiff.associateArrayWithVariable(clone2.getArr(), clone2);
+                    }
 
+                }
+            }
+            val outputsForFunction = function.outputVariables();
+            for(SDVariable arg : outputsForFunction) {
+                if(!sameDiff.variables.containsKey(arg.name())) {
+                    SDVariable clone2 = arg.clone(this);
+                    clone2.setSameDiff(sameDiff);
+                    sameDiff.addVariable(clone2);
+                    if (clone2.getVariableType() != VariableType.ARRAY && clone2.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
+                        sameDiff.associateArrayWithVariable(clone2.getArr(), clone2);
+                    }
+
+                }
+            }
             //note that these have the same variable names
             sameDiff.addArgsFor(argsForFunction, clone);
             sameDiff.addOutgoingFor(outputsForFunction, function);
@@ -546,7 +567,6 @@ public class SameDiff extends SDBaseOps {
                 output.setSameDiff(sameDiff);
             }
 
-            sameDiff.ops.put(function.getOwnName(), op);
         }
 
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
@@ -671,7 +691,7 @@ public class SameDiff extends SDBaseOps {
         for (int i = 0; i < inputs.length; i++) {
             vars[i] = getVariable(inputs[i]);
             if (vars[i] == null) {
-                throw new ND4JIllegalStateException("Found null variable at index " + i);
+                throw new ND4JIllegalStateException("Function " + function.getOwnName() +  " of type " + function.opName() +   "had  null variable at index " + i);
             }
         }
 
@@ -965,7 +985,8 @@ public class SameDiff extends SDBaseOps {
 
 
         if (ops.get(function.getOwnName()).getOutputsOfOp() != null && !ops.get(function.getOwnName()).getOutputsOfOp().isEmpty()) {
-            throw new ND4JIllegalStateException("Outgoing arguments already declared for " + function);
+            log.warn("Outgoing arguments already declared for " + function);
+            return;
         }
 
         if (varNames == null)
@@ -1083,7 +1104,8 @@ public class SameDiff extends SDBaseOps {
         if (interceptor != null) {
             pauseArgumentInterceptor(interceptor);
             for (int i = 0; i < variables.length; i++) {
-                variables[i] = interceptor.intercept(getVariable(variables[i])).name();
+                if(this.variables.containsKey(variables[i]))
+                    variables[i] = interceptor.intercept(getVariable(variables[i])).name();
             }
             unpauseArgumentInterceptor(interceptor);
         }
@@ -2903,7 +2925,7 @@ public class SameDiff extends SDBaseOps {
         if (variables.containsKey(v.name()) && variables.get(v.name()).getVariable().getArr() != null)
             return variables.get(v.name()).getVariable();
 
-        if (v.name() == null || v.name().length() < 1)
+        if (v.name() == null)
             throw new IllegalArgumentException("Name for variable must be defined");
 
         VariableType vt = v.getVariableType();
@@ -3822,6 +3844,9 @@ public class SameDiff extends SDBaseOps {
             List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
             if (fnInputs != null) {
                 for (String var : fnInputs) {
+                    if(variables != null && !variables.containsKey(var)) {
+                        throw new IllegalArgumentException("Op name " + function.getOwnName() + " did not have output variable " + var);
+                    }
                     inputDataTypes.add(variables.get(var).getVariable().dataType());
                 }
             }
@@ -4823,7 +4848,7 @@ public class SameDiff extends SDBaseOps {
                 }
                 String[] outNames = df.outputVariablesNames();
                 outputNum = ArrayUtils.indexOf(outNames, varName);
-                Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs: %s", varName, outNames);
+                Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs for function named %s of type %s: %s", varName, df.getOwnName(),df.opName(),outNames);
             } else {
                 varIdx = idCounter.incrementAndGet();
                 outputNum = 0;
@@ -5961,22 +5986,21 @@ public class SameDiff extends SDBaseOps {
 
         final Set<String> declared = Sets.newHashSet(this.variableMap().keySet());
 
-        this.addArgumentInterceptor(new ArgumentInterceptor() {
-            @Override
-            public SDVariable intercept(SDVariable argument) {
+        this.addArgumentInterceptor(argument -> {
 
-                // if its declared in the if, we don't care acout it
-                if(!declared.contains(argument.name()))
-                    return argument;
+            if(argument == null)
+                return null;
+            // if its declared in the if, we don't care about it
+            if(declared == null || !declared.contains(argument.name()))
+                return argument;
 
-                // if we've already added a switch, move on
-                if(switches.containsKey(argument.name()))
-                    return switches.get(argument.name())[1];
+            // if we've already added a switch, move on
+            if(switches.containsKey(argument.name()))
+                return switches.get(argument.name())[1];
 
-                SDVariable[] s = switchOp(argument, pred);
-                switches.put(argument.name(), s);
-                return s[1];
-            }
+            SDVariable[] s = switchOp(argument, pred);
+            switches.put(argument.name(), s);
+            return s[1];
         });
         NameScope trueScope = this.withNameScope("trueBody");
         SDVariable trueOut = trueBody.define(this);
@@ -5991,22 +6015,19 @@ public class SameDiff extends SDBaseOps {
         trueScope.close();
 
         final Set<String> declared2 = Sets.newHashSet(variableMap().keySet());
-        sd.addArgumentInterceptor(new ArgumentInterceptor() {
-            @Override
-            public SDVariable intercept(SDVariable argument) {
+        sd.addArgumentInterceptor(argument -> {
 
-                // if its declared in the if, we don't care acout it
-                if(!declared2.contains(argument.name()))
-                    return argument;
+            // if its declared in the if, we don't care about it
+            if(!declared2.contains(argument.name()))
+                return argument;
 
-                // if we've already added a switch, move on
-                if(switches.containsKey(argument.name()))
-                    return switches.get(argument.name())[0];
+            // if we've already added a switch, move on
+            if(switches.containsKey(argument.name()))
+                return switches.get(argument.name())[0];
 
-                SDVariable[] s = switchOp(argument, pred);
-                switches.put(argument.name(), s);
-                return s[0];
-            }
+            SDVariable[] s = switchOp(argument, pred);
+            switches.put(argument.name(), s);
+            return s[0];
         });
         NameScope falseScope = this.withNameScope("falseBody");
         SDVariable falseOut = falseBody.define(this);
@@ -6108,23 +6129,22 @@ public class SameDiff extends SDBaseOps {
         final Map<String, SDVariable> done = new HashMap<>();
 
         final SameDiff sd = this;
-        this.addArgumentInterceptor(new ArgumentInterceptor() {
-            @Override
-            public SDVariable intercept(SDVariable argument) {
+        this.addArgumentInterceptor(argument -> {
+            if(argument == null)
+                return null;
 
-                if(!declared.contains(argument.name()))
-                    return argument;
+            if(!declared.contains(argument.name()))
+                return argument;
 
-                if(alreadyEntered.contains(argument.name()))
-                    return argument;
+            if(alreadyEntered.contains(argument.name()))
+                return argument;
 
-                if(done.containsKey(argument.name()))
-                    return done.get(argument.name());
+            if(done.containsKey(argument.name()))
+                return done.get(argument.name());
 
-                SDVariable e = new Enter(sd, frameName, argument, true).outputVariable();
-                done.put(argument.name(), e);
-                return e;
-            }
+            SDVariable e = new Enter(sd, frameName, argument, true).outputVariable();
+            done.put(argument.name(), e);
+            return e;
         });
 
         NameScope bodyScope = this.withNameScope("body");

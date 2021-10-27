@@ -97,7 +97,7 @@ namespace helpers {
 
     }
     template <typename T>
-    ND4J_LOCAL void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+     void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
 
             auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
                 return _x >= _y ? _e : (T) 0.;

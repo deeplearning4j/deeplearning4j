@@ -90,7 +90,7 @@ namespace helpers {
         return output;
     }
 
-    ND4J_LOCAL sd::NDArray* processCondition(sd::LaunchContext * context, int mode,sd::NDArray *arg, sd::NDArray *comp, sd::NDArray *output, sd::NDArray *numResult, sd::NDArray& compScalar) {
+     sd::NDArray* processCondition(sd::LaunchContext * context, int mode,sd::NDArray *arg, sd::NDArray *comp, sd::NDArray *output, sd::NDArray *numResult, sd::NDArray& compScalar) {
         arg->syncToHost();
 
         if (comp != nullptr)
@@ -123,7 +123,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL NDArray* processCondition_, (int mode,sd::NDArray *arg, sd::NDArray *comp, sd::NDArray *output, sd::NDArray *numResult, sd::NDArray& compScalar), FLOAT_TYPES);
 
     template <typename T>
-    ND4J_LOCAL T processElementCondition(int mode,T d1,T d2) {
+     T processElementCondition(int mode,T d1,T d2) {
         T modePointer = (T ) mode;
         T input[3] = {d2, (T) EPS, (T) mode};
         T res = simdOps::MatchCondition<T,T>::op(d1, input);
@@ -131,7 +131,7 @@ namespace helpers {
 
     }
 
-    ND4J_LOCAL void chooseFunctorArray(sd::LaunchContext * context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults) {
+     void chooseFunctorArray(sd::LaunchContext * context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults) {
         if(arg->isScalar() || comp->isScalar()) {
             if(arg->isScalar()) {
                 processCondition(context, mode,comp,nullptr,result,numResults, *arg);
@@ -146,7 +146,7 @@ namespace helpers {
         }
     }
 
-    ND4J_LOCAL void chooseFunctorScalar(sd::LaunchContext * context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults) {
+     void chooseFunctorScalar(sd::LaunchContext * context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults) {
         auto scalarA = NDArrayFactory::create(scalar);
         processCondition(context, mode, arg, nullptr,result, numResults, scalarA);
     }

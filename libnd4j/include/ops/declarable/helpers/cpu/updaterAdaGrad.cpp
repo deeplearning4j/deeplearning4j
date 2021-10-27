@@ -85,7 +85,7 @@ static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, N
     return;
 }
 
-ND4J_LOCAL void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateH,
+ void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateH,
                        const double dLr, const double dEpsilon) {
     BUILD_SINGLE_SELECTOR(gradient.dataType(), adaGradUpdater_, (gradient, initState, update, stateH, dLr, dEpsilon), FLOAT_TYPES);
 }

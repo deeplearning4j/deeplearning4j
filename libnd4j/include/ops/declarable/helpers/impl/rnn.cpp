@@ -32,7 +32,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void rnnCell(sd::LaunchContext * context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* hPrev, NDArray* ht) {
+ void rnnCell(sd::LaunchContext * context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* hPrev, NDArray* ht) {
 
     // xt    input [bS x iS]
     // Wx    input-to-hidden weights, [iS  x nU]
@@ -48,7 +48,7 @@ ND4J_LOCAL void rnnCell(sd::LaunchContext * context, const NDArray* xt, const ND
 }
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void rnnTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
+ void rnnTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
 
     // x   input [time x bS x iS]
 	// Wx  input-to-hidden  weights, [iS  x nU]

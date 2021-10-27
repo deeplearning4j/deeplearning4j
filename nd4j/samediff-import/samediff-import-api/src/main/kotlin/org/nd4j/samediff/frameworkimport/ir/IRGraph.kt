@@ -19,7 +19,6 @@
  */
 package org.nd4j.samediff.frameworkimport.ir
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.context.MappingContext
@@ -103,8 +102,6 @@ interface IRGraph<
     fun inputAt(index: Int): String
 
     fun setInputs(inputs: List<String>)
-
-
 
     fun getConstantArrayForName(name: String): INDArray
 

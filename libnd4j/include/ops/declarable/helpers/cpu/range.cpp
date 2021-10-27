@@ -47,11 +47,11 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     samediff::Threads::parallel_for(func, 0, len);
 }
 
-    ND4J_LOCAL void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+     void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
     }
 
-BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template  void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
 
 
 }

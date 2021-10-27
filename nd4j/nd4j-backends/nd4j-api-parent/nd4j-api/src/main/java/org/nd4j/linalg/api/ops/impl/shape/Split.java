@@ -61,6 +61,18 @@ public class Split extends DynamicCustomOp {
     public Split(INDArray input, int numSplit, int splitDim) {
         super(null,input,null,Collections.emptyList(),new int[0]);
         addIArgument(numSplit,splitDim);
+        this.numSplit = numSplit;
+        this.splitDim = splitDim;
+    }
+
+    public Split(SameDiff sd, SDVariable input, SDVariable numSplit, int splitDim) {
+        super(sd,new SDVariable[]{input,numSplit});
+        addIArgument(splitDim);
+    }
+
+    public Split(INDArray input, INDArray numSplit, int splitDim) {
+        super(new INDArray[]{input,numSplit},null);
+        addIArgument(splitDim);
     }
 
 
