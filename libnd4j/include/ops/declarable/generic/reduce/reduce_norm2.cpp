@@ -29,7 +29,7 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm2)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_norm2, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_norm2, -1, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -92,7 +92,7 @@ DECLARE_TYPES(reduce_norm2) {
 #if NOT_EXCLUDED(OP_reduce_norm2_bp)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_norm2_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_norm2_bp, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);

@@ -30,6 +30,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -269,6 +270,27 @@ public class Conv2D extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         List<SDVariable> inputs = new ArrayList<>(Arrays.asList(args()));
         inputs.add(f1.get(0));
+        if(config == null) {
+            if(!iArguments.isEmpty()) {
+                if(iArguments.size() < 11) {
+                    throw new IllegalArgumentException("Unable to instantiate configuration, int arguments are incomplete. Please either specify a configuration or populate all fields in the int arguments.");
+                }
+
+                config = Conv2DConfig.builder()
+                        .kH(iArguments.get(0))
+                        .kW(iArguments.get(1))
+                        .sH(iArguments.get(2))
+                        .sW(iArguments.get(3))
+                        .pH(iArguments.get(4))
+                        .pW(iArguments.get(5))
+                        .dH(iArguments.get(6))
+                        .dW(iArguments.get(7))
+                        .isSameMode(iArguments.get(8) > 0)
+                        .dataFormat(iArguments.get(9) > 0 ? "NHWC" : "NCHW")
+                        .weightsFormat(WeightsFormat.values()[iArguments.get(10).intValue()])
+                        .build();
+            }
+        }
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
                 .sameDiff(sameDiff)
                 .config(config)

@@ -1407,7 +1407,7 @@ public class NDMath {
   public INDArray mean(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("mean", "in", in);
     NDValidation.validateNumerical("mean", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1420,7 +1420,7 @@ public class NDMath {
   public INDArray mean(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("mean", "in", in);
     NDValidation.validateNumerical("mean", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Mean(in, dimensions, false))[0];
   }
 
   /**
@@ -1598,7 +1598,7 @@ public class NDMath {
   public INDArray norm1(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("norm1", "in", in);
     NDValidation.validateNumerical("norm1", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1611,7 +1611,7 @@ public class NDMath {
   public INDArray norm1(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("norm1", "in", in);
     NDValidation.validateNumerical("norm1", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm1(in, dimensions, false))[0];
   }
 
   /**
@@ -1652,7 +1652,7 @@ public class NDMath {
   public INDArray norm2(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("norm2", "in", in);
     NDValidation.validateNumerical("norm2", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1665,7 +1665,7 @@ public class NDMath {
   public INDArray norm2(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("norm2", "in", in);
     NDValidation.validateNumerical("norm2", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.Norm2(in, dimensions, false))[0];
   }
 
   /**
@@ -1706,7 +1706,7 @@ public class NDMath {
   public INDArray normMax(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("normMax", "in", in);
     NDValidation.validateNumerical("normMax", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -1719,7 +1719,7 @@ public class NDMath {
   public INDArray normMax(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("normMax", "in", in);
     NDValidation.validateNumerical("normMax", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.NormMax(in, dimensions, false))[0];
   }
 
   /**
@@ -1989,7 +1989,7 @@ public class NDMath {
   public INDArray reduceAmean(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
     NDValidation.validateNumerical("reduceAmean", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -2002,7 +2002,7 @@ public class NDMath {
   public INDArray reduceAmean(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
     NDValidation.validateNumerical("reduceAmean", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.AMean(in, dimensions, false))[0];
   }
 
   /**
@@ -2278,7 +2278,7 @@ public class NDMath {
   public INDArray shannonEntropy(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
     NDValidation.validateNumerical("shannonEntropy", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -2291,7 +2291,7 @@ public class NDMath {
   public INDArray shannonEntropy(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
     NDValidation.validateNumerical("shannonEntropy", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.ShannonEntropy(in, dimensions, false))[0];
   }
 
   /**
@@ -2407,7 +2407,7 @@ public class NDMath {
   public INDArray squaredNorm(INDArray in, INDArray dimensions, boolean keepDims) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
     NDValidation.validateNumerical("squaredNorm", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(in, dimensions, keepDims));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(in, dimensions, keepDims))[0];
   }
 
   /**
@@ -2420,7 +2420,7 @@ public class NDMath {
   public INDArray squaredNorm(INDArray in, INDArray dimensions) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
     NDValidation.validateNumerical("squaredNorm", "dimensions", dimensions);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(in, dimensions, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.custom.SquaredNorm(in, dimensions, false))[0];
   }
 
   /**

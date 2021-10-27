@@ -107,6 +107,7 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
 
     protected void addArgs(){
         addTArgument(keepDims ? 1 : 0);
+        addBArgument(keepDims);
         if(dimensions != null && dimensions.length > 0){
             if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE ){
                 //Integer.MAX_VALUE means "full array" but here no dimension args == full array
@@ -117,11 +118,6 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
 
     public abstract String opName();
 
-
-    @Override
-    public int getNumOutputs() {
-        return 1;
-    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {

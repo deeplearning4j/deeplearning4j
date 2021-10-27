@@ -2824,9 +2824,15 @@ namespace sd {
 
         if(checkTargetShape) {
             const Nd4jLong* newShapeInfo = nullptr;
-            if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
-                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-            if(!shape::equalsTypesAndShapesSoft(target.shapeInfo(), newShapeInfo))
+            if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace())) {    // the rank of target array must be equal to max->rankOf)()
+                auto thisShapeVector = this->getShapeAsVector();
+                auto str1 =   std::string(thisShapeVector.begin(), thisShapeVector.end());
+                auto otherVector = other.getShapeAsVector();
+                auto str21 =   std::string(otherVector.begin(), otherVector.end());
+                nd4j_debug("Array shapes were %s %s \n",str1.c_str(), str21.c_str());
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !\n");
+            }
+              if(!shape::equalsTypesAndShapesSoft(target.shapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
         }
 

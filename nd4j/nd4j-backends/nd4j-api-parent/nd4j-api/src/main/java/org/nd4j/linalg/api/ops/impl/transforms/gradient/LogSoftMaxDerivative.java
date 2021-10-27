@@ -77,7 +77,7 @@ public class LogSoftMaxDerivative extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException("Differentation of op not supported: " + getClass().getName());
+        throw new UnsupportedOperationException("Differentiation of op not supported: " + getClass().getName());
     }
 
     @Override

@@ -97,6 +97,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.nd4j.autodiff.util.SameDiffUtils.stackOutputs;
 import static org.nd4j.imports.VariableUtils.stripVarSuffix;
@@ -2934,9 +2935,10 @@ public class SameDiff extends SDBaseOps {
             case VARIABLE:
                 SDVariable r = new SDVariable(v.name(), v.getVariableType(), this, v.getShape(), v.dataType());
                 addVariable(r);
-                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-                    variablesArrays.setArray(v.name(), v.getArr().dup());
-                }
+                if(v.getArr() != null)
+                    try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                        variablesArrays.setArray(v.name(), v.getArr().dup());
+                    }
                 return r;
             case ARRAY:
                 SDVariable ret = new SDVariable(v.name(), v.getVariableType(), this, v.getShape(), v.dataType());
@@ -4247,7 +4249,7 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 List<SDVariable> finalOutputs = new ArrayList<>(lossVariables.size());
-                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0f));
+                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0f));
                 for (String s : lossVariables) {
                     Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
                             " Use SameDiff.setLossVariables with non-null array names to fix");
@@ -4278,14 +4280,16 @@ public class SameDiff extends SDBaseOps {
 
 
                 //----- Step 1: Determine FP variables connected to loss -----
-                // Find all FP variables that are connected to loss by an floating point (FP16/32/64) path
-                Set<String> allFpVarsConnectedToLoss = new HashSet<>();
+                // Find all FP variables that are connected to loss by a floating point (FP16/32/64) path
+                Set<String> allFpVarsConnectedToLoss = new LinkedHashSet<>();
                 Queue<String> toProcess = new LinkedList<>();
                 for (String s : lossVariables) {
                     if (!toProcess.contains(s)) {
                         toProcess.add(s);
                     }
                 }
+
+                Set<SameDiffOp> processedOps = new LinkedHashSet<>();
                 while (!toProcess.isEmpty()) {
                     String next = toProcess.remove();
                     if (!allFpVarsConnectedToLoss.contains(next)) {
@@ -4296,6 +4300,7 @@ public class SameDiff extends SDBaseOps {
                             if (v.getOutputOfOp() != null) {
                                 String opName = v.getOutputOfOp();
                                 SameDiffOp op = ops.get(opName);
+                                processedOps.add(op);
                                 List<String> opInputs = op.getInputsToOp();
                                 if (opInputs != null) {
                                     for (String s : opInputs) {
@@ -4313,7 +4318,7 @@ public class SameDiff extends SDBaseOps {
 
                 //----- Step 2: Determine minimal set of FP variables actually required -----
                 // Keep removing leaf nodes until only Variable type SDVariables remain
-                Set<String> minimalSubgraphVars = new HashSet<>(allFpVarsConnectedToLoss);
+                Set<String> minimalSubgraphVars = new LinkedHashSet<>(allFpVarsConnectedToLoss);
                 Queue<String> leafFPVars = new LinkedList<>();
                 for (String s : allFpVarsConnectedToLoss) {
                     //First: determine if is a FP leaf (Array type SDVariable)
@@ -4357,7 +4362,7 @@ public class SameDiff extends SDBaseOps {
                     List<String> inputsTo = v.getInputsForOp();
                     if (inputsTo != null && !inputsTo.isEmpty()) {
                         for (String opName : inputsTo) {
-                            SameDiffOp op = ops.get(opName);
+                            SameDiffOp op = sameDiff.ops.get(opName);
                             List<String> inputsToOp = op.getInputsToOp();
                             boolean anyPresent = false;
                             for (String s : inputsToOp) {
@@ -4366,6 +4371,7 @@ public class SameDiff extends SDBaseOps {
                                     anyPresent = true;
                                     break;
                                 }
+
                             }
                             if (!anyPresent) {
                                 //All inputs to op X are not in subgraph. Therefore outputs of op must be new leaves
@@ -4411,8 +4417,12 @@ public class SameDiff extends SDBaseOps {
                             //Need to filter ops here
                             //For example, if we have: var -> Op1, and var -> Op2
                             //we might not need to differentiate Op2 if output of Op2 doesn't impact loss function
-                            SameDiffOp o = ops.get(opName);
+                            SameDiffOp o = sameDiff.ops.get(opName);
+                            if(o == null) {
+                                continue;
+                            }
                             List<String> opOutputs = o.getOutputsOfOp();
+
                             boolean anyOpOutputsRequired = false;
                             if (opOutputs != null) {
                                 for (String s : opOutputs) {
@@ -4433,6 +4443,7 @@ public class SameDiff extends SDBaseOps {
                 Set<String> differentiatedOps = new HashSet<>();
                 while (!availableForDiff.isEmpty()) {
                     String dfName = availableForDiff.remove();
+                    System.out.println("Differentiating " + dfName);
                     DifferentialFunction df = sameDiff.ops.get(dfName).getOp();
 
                     //Get the inputs and outputs of the op
@@ -4465,8 +4476,15 @@ public class SameDiff extends SDBaseOps {
                                 grads.add(null);
                             } else {
                                 //See "Step 3: Differentiate ops in minimal subgraph" above for explanation on why this should be zerosLike here...
-                                SDVariable gTemp = sameDiff.zerosLike(v);
-                                grads.add(gTemp);
+                                if(sameDiff.hasVariable(s + "-grad")) {
+                                    SDVariable gTemp = sameDiff.getVariable(s + "-grad");
+                                    grads.add(gTemp);
+                                } else {
+                                    SDVariable gTemp = sameDiff.zerosLike(s + "-grad",v);
+                                    grads.add(gTemp);
+                                    sameDiff.setGradientForVariableName(s,v);
+                                }
+
                             }
                         } else {
                             grads.add(g);
@@ -4525,31 +4543,47 @@ public class SameDiff extends SDBaseOps {
 
                         boolean allAvailable = true;
                         SameDiffOp o = sameDiff.ops.get(opName);
-                        for (String opOutput : o.getOutputsOfOp()) {
+                         for (String opOutput : o.getOutputsOfOp()) {
                             Variable outVar = variables.get(opOutput);
                             if (outVar.getVariable().dataType().isFPType()) {
-                                if (minimalSubgraphVars.contains(outVar.getName())) {
-                                    //Need gradient for this variable to be available before we can differentiate
-                                    if (outVar.getVariable().gradient() == null) {
-                                        allAvailable = false;
-                                        break;
+                                allAvailable = shouldAddAutoDiffCandidate(minimalSubgraphVars,outVar,prerequisites,differentiatedOps);
+                                if(!allAvailable) {
+                                    //ensure we get pre requisites queued up for autodiff
+                                    for(String input : o.getInputsToOp()) {
+                                        SameDiffOp opWithoutput = opWithOutput(input,ops.values());
+                                        if(opWithoutput != null && !availableForDiff.contains(o.getOp().getOwnName())) {
+                                            availableForDiff.add(opWithoutput.getOp().getOwnName());
+                                            // re enqueue for auto diff if an input is found
+                                            if(!availableForDiff.contains(opName)) {
+                                                availableForDiff.add(opName);
+                                            }
+                                        }
                                     }
-                                    //However, when a variable is used multiple times, we need ALL gradient contributions available:
-                                    List<String> prereqs = prerequisites.get(outVar.getName());
-                                    if (prereqs != null) {
-                                        allAvailable &= differentiatedOps.containsAll(prereqs);
-                                        if (!allAvailable)
-                                            break;
-                                    }
+
                                 }
-                                //If in't not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
+
+                                //If isn't not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
                             }
                         }
 
                         if (allAvailable && !availableForDiff.contains(o.getOp().getOwnName())) {
                             availableForDiff.add(o.getOp().getOwnName());
+                        }  else if (availableForDiff.isEmpty()) {
+                            for (Map.Entry<String, SameDiffOp> sameDiffOpEntry : sameDiff.ops.entrySet()) {
+                                for (String opOutput : sameDiffOpEntry.getValue().getOutputsOfOp()) {
+                                    Variable outVar = variables.get(opOutput);
+                                    if (shouldAddAutoDiffCandidate(minimalSubgraphVars, outVar, prerequisites, differentiatedOps)) {
+                                        availableForDiff.add(sameDiffOpEntry.getValue().getOp().getOwnName());
+                                    }
+                                }
+                            }
                         }
                     }
+
+
+                    //discover other potential additions
+
+
                 }
 
                 //Let's validate we actually differentiated everything correctly:
@@ -4571,6 +4605,39 @@ public class SameDiff extends SDBaseOps {
         associateSameDiffWithOpsAndVariables();
     }
 
+
+    private SameDiffOp opWithOutput(String opNameOutput,Collection<SameDiffOp> ops) {
+        for(SameDiffOp op : ops) {
+            if(op.getOutputsOfOp() != null) {
+                if(op.getOutputsOfOp().contains(opNameOutput)) {
+                    return op;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    private boolean shouldAddAutoDiffCandidate(Set<String> minimalSubgraphVars, Variable outVar, Map<String, List<String>> prerequisites,Set<String> differentiatedOps) {
+        if(outVar == null) {
+            return false;
+        }
+
+        if (minimalSubgraphVars.contains(outVar.getName())) {
+            //Need gradient for this variable to be available before we can differentiate
+            if (outVar.getVariable().gradient() == null) {
+                return false;
+            }
+            //However, when a variable is used multiple times, we need ALL gradient contributions available:
+            List<String> prereqs = prerequisites.get(outVar.getName());
+            if (prereqs != null) {
+                return differentiatedOps.containsAll(prereqs);
+            }
+        }
+
+        return true;
+    }
 
     /**
      * Try to infer the loss variable/s (usually loss variables). Note that this is not reliable in general.
@@ -5601,6 +5668,58 @@ public class SameDiff extends SDBaseOps {
 
 
         return sb.toString();
+    }
+
+
+    /**
+     * All constants are converted to variables, also called unfreezing a graph.
+     * Frozen graphs are graphs where all differentiable variables are converted to
+     *  constants.
+     * This is used when unfreezing a graph for training.
+     * A graph is usually frozen when importing a model.
+     *
+     */
+    public void convertConstantsToVariables() {
+        for(Map.Entry<String,Variable> varEntry : variables.entrySet()) {
+            Variable varMetaData = varEntry.getValue();
+            SDVariable currVar = varMetaData.getVariable();
+            if(currVar.isConstant()) {
+                String output = varMetaData.getOutputOfOp();
+                //arrays are outputs of ops
+                if(output != null)
+                    currVar.setVariableType(VariableType.ARRAY);
+                //only need to convert floating point types as trainable, ints are not
+                else if(varMetaData.getInputsForOp() != null && !varMetaData.getInputsForOp().isEmpty() && currVar.dataType().isFPType()) {
+                    currVar.setVariableType(VariableType.VARIABLE);
+                    if(constantArrays.hasArray(currVar.name())) {
+                        currVar.setArray(constantArrays.getArray(currVar.name()));
+                    }
+                }
+            }
+
+
+        }
+    }
+
+    /**
+     * Returns the constants in this graph
+     * @return a set of constants in this graph
+     */
+    public Set<SDVariable> constants() {
+        return variableMap().entrySet().stream().filter(input -> input.getValue().isConstant())
+                .map(input -> input.getValue())
+                .collect(Collectors.toSet());
+    }
+
+
+    /**
+     * Returns the placeholders in this graph
+     * @return the set of placeholders in this graph
+     */
+    public Set<SDVariable> placeHolders() {
+        return variableMap().entrySet().stream().filter(input -> input.getValue().isPlaceHolder())
+                .map(input -> input.getValue())
+                .collect(Collectors.toSet());
     }
 
     /**

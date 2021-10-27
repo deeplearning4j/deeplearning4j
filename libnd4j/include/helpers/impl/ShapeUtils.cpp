@@ -231,7 +231,6 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
     int dimSize = dimsToExclude.size();
 
     if(keepDims) {
-
         ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
         newShapeInfo[0] = rank;
         for(int i = 0; i < rank; ++i)

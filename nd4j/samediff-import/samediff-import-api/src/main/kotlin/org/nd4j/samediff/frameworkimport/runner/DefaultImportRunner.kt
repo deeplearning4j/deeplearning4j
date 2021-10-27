@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.VariableType
 import org.nd4j.common.io.ReflectionUtils
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.CustomOp
 import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.Op
 import org.nd4j.linalg.factory.Nd4j
@@ -37,6 +38,11 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.lang.IllegalArgumentException
 import java.lang.reflect.Modifier
 
+/**
+ * The default implementation of [ImportRunner].
+ *
+ * @author Adam Gibson
+ */
 class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
         NODE_TYPE : GeneratedMessageV3,
         OP_DEF_TYPE : GeneratedMessageV3,
@@ -150,6 +156,9 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                     setNameForFunctionFromDescriptors(listOfArgsSortedByIndex, df)
                 }
 
+                val customOp = df as CustomOp
+                //important to call this as we may not have configured all fields
+                customOp.configureFromArguments()
 
             }
             Op.Type.SCALAR -> {

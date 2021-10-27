@@ -387,7 +387,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTrainingEvalVarNotReqForLoss(){
+    public void testTrainingEvalVarNotReqForLoss() {
         //If a variable is not required for the loss - normally it won't be calculated
         //But we want to make sure it IS calculated here - so we can perform evaluation on it
 
@@ -397,7 +397,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
         SDVariable z = in.mmul(w);
         SDVariable out = sd.nn.softmax("softmax", z);
-        SDVariable loss = sd.loss.logLoss("loss", label, out);
+        SDVariable loss = sd.loss.softmaxCrossEntropy("loss", label, out,null);
         SDVariable notRequiredForLoss = sd.nn.softmax("notRequiredForLoss", z);
 
         sd.setTrainingConfig(TrainingConfig.builder()
@@ -407,6 +407,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
                 .trainEvaluation("notRequiredForLoss", 0, new Evaluation())
                 .build());
 
+        System.out.println(sd.summary());
 //        sd.setListeners(new ScoreListener(1));
 
         DataSet ds = new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), Nd4j.createFromArray(new float[][]{{1,0,0}, {0,1,0}, {0,0,1}}));

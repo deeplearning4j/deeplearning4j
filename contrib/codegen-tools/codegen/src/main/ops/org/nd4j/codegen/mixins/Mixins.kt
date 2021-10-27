@@ -114,7 +114,7 @@ val reduceFloating = Mixin("reduceFloating"){
 val reduceFloatingVariable = Mixin("reduceFloatingVariable"){
     useMixin(reduceVariableDimensions)
     legacy = true
-    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
+    javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
 }
 
 

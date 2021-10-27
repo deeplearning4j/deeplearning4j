@@ -155,7 +155,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             exec(rngOp, opContext, Nd4j.getRandom());
         }
 
-        return op.z();
+        INDArray z = op.z();
+        if(z == null) {
+            z = opContext.getOutputArray(0);
+        }
+
+        return z;
     }
 
 

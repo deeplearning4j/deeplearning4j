@@ -29,7 +29,7 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm1)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_norm1, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_norm1, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
@@ -91,7 +91,7 @@ DECLARE_TYPES(reduce_norm1) {
 #if NOT_EXCLUDED(OP_reduce_norm1_bp)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_norm1_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_norm1_bp, -1, 1, false, 0, 0) {
     // L = Sum abs(x_i) for all i = 1 to N
     // dL/dx_i = 1 if x_i >= 0 and -1 when x_i < 0
     // out_i = epsilon_i if x_i > 0 and -epsilon_i when x_i < 0

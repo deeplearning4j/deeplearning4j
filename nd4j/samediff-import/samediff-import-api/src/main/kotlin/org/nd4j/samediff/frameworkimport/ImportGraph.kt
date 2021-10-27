@@ -27,7 +27,6 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.VariableType
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.autodiff.samediff.internal.Variable
-
 import org.nd4j.common.base.Preconditions
 import org.nd4j.common.io.ReflectionUtils
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder
@@ -35,6 +34,7 @@ import org.nd4j.imports.graphmapper.OpImportFilter
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.DynamicCustomOp
+import org.nd4j.linalg.api.ops.NoOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -46,11 +46,7 @@ import org.nd4j.samediff.frameworkimport.runner.ImportRunner
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.io.File
-import java.lang.IllegalArgumentException
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 
 /**
  * Core import class for running model import for any framework.
@@ -479,10 +475,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                             if (v != null && !isControlDep && (v!!.inputsForOp == null || !v.inputsForOp.contains(name))) {
                                 //May already be present - for example, add(x,x)
-                                if (v.inputsForOp == null) v.inputsForOp = java.util.ArrayList()
+                                if (v.inputsForOp == null) v.inputsForOp = ArrayList()
                                 v.inputsForOp.add(name)
                             } else if (v != null && isControlDep) {
-                                if (v!!.controlDepsForOp == null) v.controlDepsForOp = java.util.ArrayList()
+                                if (v!!.controlDepsForOp == null) v.controlDepsForOp = ArrayList()
                                 if (!v.controlDepsForOp.contains(name)) {
                                     v.controlDepsForOp.add(name)
                                 }
@@ -679,7 +675,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     println("Importing op $opName using override $importOverride")
 
                     //First, get inputs:
-                    val inputs: MutableList<SDVariable> = java.util.ArrayList()
+                    val inputs: MutableList<SDVariable> = ArrayList()
                     var controlDeps: MutableList<SDVariable?>? = null
                     val nd4jOpName = opMappingRegistry.lookupOpMappingProcess(opName).opName()
                     val opDescriptor = opMappingRegistry.lookupNd4jOpDef(nd4jOpName)
@@ -692,7 +688,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         val controlDep = isControlDep(inName)
                         val v = sd.getVariable(name)
                         if (controlDep) {
-                            if (controlDeps == null) controlDeps = java.util.ArrayList()
+                            if (controlDeps == null) controlDeps = ArrayList()
                             controlDeps.add(v)
                         } else {
                             inputs.add(v)
@@ -773,7 +769,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             for (s in cdOpNames) {
                 val sdo = sd.ops[s]
                 if(sd.ops.containsKey(s)) {
-                    if (sdo!!.controlDepFor == null) sdo.controlDepFor = java.util.ArrayList()
+                    if (sdo!!.controlDepFor == null) sdo.controlDepFor = ArrayList()
                     val l = sdo.controlDepFor
                     if (!l.contains(s)) l.add(varName)
                 }
@@ -784,7 +780,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         for ((key, value) in mergeOpsPostProcess) {
             val v = sd.variables[value]
             if(v != null) {
-                if ( v!!.inputsForOp == null) v.inputsForOp = java.util.ArrayList()
+                if ( v!!.inputsForOp == null) v.inputsForOp = ArrayList()
                 v.inputsForOp.add(key)
             }
 
@@ -821,6 +817,15 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             remainingNodes.size,
             remainingNodes.keys
         )
+
+        //purge presence of no ops
+        val noOpNames = sd.ops.filter { input -> input.value.op is NoOp }.keys
+        sd.ops.keys.removeAll(noOpNames)
+        sd.ops.forEach { (name, op) ->
+            val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
+            op.inputsToOp.removeAll(noOpNamesForInputs)
+        }
+
         return sd
     }
 }

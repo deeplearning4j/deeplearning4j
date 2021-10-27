@@ -124,6 +124,10 @@
             <artifactId>junit-jupiter-params</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
             <version>${kotlin.version}</version>
@@ -290,6 +294,11 @@
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-native</artifactId>
                     <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>openblas-platform</artifactId>
+                    <version>${openblas.version}-${javacpp-presets.version}</version>
                 </dependency>
             </dependencies>
             <build>

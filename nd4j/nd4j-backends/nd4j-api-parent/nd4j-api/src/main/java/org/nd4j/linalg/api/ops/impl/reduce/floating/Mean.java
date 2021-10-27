@@ -49,16 +49,13 @@ public class Mean extends BaseReduceFloatOp {
         super(sameDiff, i_v, keepDims, dimensions);
     }
 
-    public Mean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, SDVariable dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
-    }
 
     public Mean(SameDiff sameDiff, SDVariable input, SDVariable dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
     public Mean(SameDiff sameDiff, SDVariable input, SDVariable dimensions) {
-        super(sameDiff, input, dimensions);
+        this(sameDiff, input, dimensions,false);
     }
 
     public Mean() {

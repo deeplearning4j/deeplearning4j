@@ -147,7 +147,8 @@ public class Mmul extends DynamicCustomOp {
         mt = MMulTranspose.builder().transposeA(transposeX).transposeB(transposeY).transposeResult(transposeZ).build();
     }
 
-    public Mmul() {}
+    public Mmul() {
+    }
 
     @Override
     public Object getValue(Field property) {
@@ -163,6 +164,15 @@ public class Mmul extends DynamicCustomOp {
         if(mt == null)
             return Collections.emptyMap();
         return mt.toProperties();
+    }
+
+    @Override
+    public void configureFromArguments() {
+        this.mt = MMulTranspose.builder()
+                .transposeA(numIArguments() > 0 && getIArgument(0) > 0)
+                .transposeB(numIArguments() > 1 && getIArgument(1) > 0)
+                .transposeResult(numIArguments() > 2 && getIArgument(2) > 0)
+                .build();
     }
 
     @Override

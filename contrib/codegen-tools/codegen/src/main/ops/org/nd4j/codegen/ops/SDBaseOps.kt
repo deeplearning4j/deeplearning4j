@@ -790,8 +790,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     }
 
     Op("mean") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
-        legacy = true
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
         Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
@@ -803,6 +802,21 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
         useMixin(keepDimsDoc)
     }
+
+    Op("mean") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
+        Input(NUMERIC, "x") { description = "Input variable" }
+        Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
+        Input(INT, "dimensions") {  description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Output(NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Mean (average) array reduction operation, optionally along specified dimensions
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
 
     Op("merge") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.controlflow.compat"
@@ -943,6 +957,23 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
         useMixin(keepDimsDoc)
     }
+
+
+    Op("splitV")  {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "SplitV"
+        Input(NDARRAY,"input") {description = "Input to split"}
+        Input(NDARRAY,"sizes") {description = "The sizes to split by"}
+        Arg(INT, "numSplit") { description = "Number of splits" }
+        Arg(INT, "splitDim") { description = "The dimension to split on" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Split a value in to a list of ndarrays with varying sizes 
+               according to the sizes parameter.
+            """.trimIndent()
+        }
+    }
+
 
     Op("split")  {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
@@ -1093,6 +1124,21 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
         Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Output(NUMERIC, "output"){ description = "" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Product array reduction operation, optionally along specified dimensions
+            """.trimIndent()
+        }
+        useMixin(keepDimsDoc)
+    }
+
+    Op("prod") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.same"
+        legacy = true
+        Input(NUMERIC, "x") { description = "Input variable" }
+        Input(INT, "dimensions") {  description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
         Output(NUMERIC, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
