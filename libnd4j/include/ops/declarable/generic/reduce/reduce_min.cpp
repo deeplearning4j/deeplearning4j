@@ -31,7 +31,7 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_min)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_min, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_min, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
@@ -97,7 +97,7 @@ DECLARE_TYPES(reduce_min) {
 #if NOT_EXCLUDED(OP_reduce_min_bp)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
