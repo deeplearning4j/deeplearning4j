@@ -34,6 +34,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -144,6 +145,20 @@ public class Pooling2D extends DynamicCustomOp {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
+       if(!iArguments.isEmpty() && config == null) {
+           config = Pooling2DConfig.builder()
+                   .kH(iArguments.get(0))
+                   .kW(iArguments.get(1))
+                   .sH(iArguments.get(2))
+                   .sW(iArguments.get(3))
+                   .pH(iArguments.get(4))
+                   .pW(iArguments.get(5))
+                   .dH(iArguments.get(6))
+                   .dW(iArguments.get(7))
+                   .isSameMode(iArguments.get(8) > 0)
+                   .type(Pooling2DType.AVG)
+                   .build();
+       }
         Pooling2DDerivative pooling2DDerivative = Pooling2DDerivative.derivativeBuilder()
                 .inputs(inputs.toArray(new SDVariable[inputs.size()]))
                 .sameDiff(sameDiff)

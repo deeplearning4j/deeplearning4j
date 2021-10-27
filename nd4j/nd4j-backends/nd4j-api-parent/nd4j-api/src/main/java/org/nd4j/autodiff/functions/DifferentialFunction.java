@@ -275,6 +275,26 @@ public abstract class DifferentialFunction {
                     value = (char)((Integer)value).intValue();
                 }
 
+                if(target.getType() == char.class && value instanceof Long){
+                    value = (char)((Long)value).intValue();
+                }
+
+                if(target.getType() == int.class && value instanceof  Long) {
+                    Long value2 = (Long) value;
+                    value = value2.intValue();
+                }
+
+                if(target.getType().equals(Integer.class) && value instanceof Long) {
+                    Long value2 = (Long) value;
+                    value = value2.intValue();
+                }
+
+                if(target.getType().equals(Long.class) && value instanceof Integer) {
+                    Integer value2 = (Integer) value;
+                    value = value2.longValue();
+                }
+
+
                 target.set(this,value);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException("Error setting property for function " + getClass().getName(), e);
@@ -596,9 +616,13 @@ public abstract class DifferentialFunction {
                 sameDiff.setGradientForVariableName(var.name(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);
+                if(sameDiff.hasVariable(var.name() + "-grad")) {
+                    sameDiff.getVariable(var.name() + "-grad").add(gradVar);
+                } else {
+                    sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
+                    sameDiff.setGradientForVariableName(var.name(), gradVar);
+                }
 
-                sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
-                sameDiff.setGradientForVariableName(var.name(), gradVar);
 
             }
         }

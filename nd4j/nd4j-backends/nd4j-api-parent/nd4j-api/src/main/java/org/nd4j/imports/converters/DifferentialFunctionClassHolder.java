@@ -296,7 +296,7 @@ public class DifferentialFunctionClassHolder {
             long h = e.getValue().getHash();
             if (multiClassHashes.contains(h)) {
                 if (!customOpHashToClasses.containsKey(h)) {
-                    customOpHashToClasses.put(h, new HashMap<String, Class<?>>());
+                    customOpHashToClasses.put(h, new HashMap<>());
                 }
                 Map<String, Class<?>> m = customOpHashToClasses.get(h);
                 String name = e.getKey();
@@ -383,8 +383,10 @@ public class DifferentialFunctionClassHolder {
                     return customOpHashToClasses.get(customOpHash).get(name);
                 } else if(customOpHashToClass.containsKey(customOpHash)){
                     return customOpHashToClass.get(customOpHash);
+                } else if(ImportClassMapping.getOpNameMapping().containsKey(name)) {
+                    return ImportClassMapping.getOpNameMapping().get(name).getClass();
                 } else {
-                    throw new IllegalStateException("No op known for hash: " + customOpHash);
+                    throw new IllegalStateException("No op known for hash: " + customOpHash + " and name " + name);
                 }
         }
 
