@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -272,10 +273,7 @@ public class Conv2D extends DynamicCustomOp {
         inputs.add(f1.get(0));
         if(config == null) {
             if(!iArguments.isEmpty()) {
-                if(iArguments.size() < 11) {
-                    throw new IllegalArgumentException("Unable to instantiate configuration, int arguments are incomplete. Please either specify a configuration or populate all fields in the int arguments.");
-                }
-
+                LinAlgExceptions.assertAllConfigured(this,11);
                 config = Conv2DConfig.builder()
                         .kH(iArguments.get(0))
                         .kW(iArguments.get(1))
@@ -291,6 +289,7 @@ public class Conv2D extends DynamicCustomOp {
                         .build();
             }
         }
+
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
                 .sameDiff(sameDiff)
                 .config(config)

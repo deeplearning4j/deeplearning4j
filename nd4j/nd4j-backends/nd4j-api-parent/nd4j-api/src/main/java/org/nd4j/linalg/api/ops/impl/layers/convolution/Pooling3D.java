@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -92,7 +93,40 @@ public abstract class Pooling3D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(config == null && numIArguments() > 0) {
+            LinAlgExceptions.assertAllConfigured(this,15);
+            createConfigFromArgs();
+        }
         return config.toProperties();
+    }
+
+
+    protected Pooling3DType getDefaultType() {
+        return null;
+    }
+
+    protected void createConfigFromArgs(Pooling3DType type) {
+        config = Pooling3DConfig.builder()
+                .kD(getIArgument(0))
+                .kW(getIArgument(1))
+                .kH(getIArgument(2))
+                .sD(getIArgument(3))
+                .sW(getIArgument(4))
+                .sH(getIArgument(5))
+                .pD(getIArgument(6))
+                .pW(getIArgument(7))
+                .pH(getIArgument(8))
+                .dD(getIArgument(9))
+                .dW(getIArgument(10))
+                .dH(getIArgument(11))
+                .isSameMode(getIArgument(12) > 0)
+                .type(type)
+                .isNCDHW(getIArgument(14) > 0)
+                .build();
+    }
+
+    private void createConfigFromArgs() {
+       createConfigFromArgs(null);
     }
 
     protected void addArgs() {
@@ -122,6 +156,11 @@ public abstract class Pooling3D extends DynamicCustomOp {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
+        if(config == null && numIArguments() > 0) {
+            LinAlgExceptions.assertAllConfigured(this,15);
+            createConfigFromArgs(getDefaultType());
+        }
+
         Pooling3DDerivative pooling3DDerivative = Pooling3DDerivative.derivativeBuilder()
                 .inPlace(inPlace)
                 .sameDiff(sameDiff)

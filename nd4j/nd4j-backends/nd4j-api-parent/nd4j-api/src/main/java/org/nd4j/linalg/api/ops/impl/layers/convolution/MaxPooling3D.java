@@ -30,6 +30,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.util.Collections;
 import java.util.List;
@@ -68,11 +69,17 @@ public class MaxPooling3D extends Pooling3D {
         return "config";
     }
 
+    @Override
+    protected Pooling3DType getDefaultType() {
+        return Pooling3DType.MAX;
+    }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config != null)
-            return config.toProperties();
+        if(config == null && numIArguments() > 0) {
+            LinAlgExceptions.assertAllConfigured(this,15);
+            createConfigFromArgs(Pooling3DType.MAX);
+        }
         return Collections.emptyMap();
     }
 

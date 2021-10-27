@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -146,23 +147,28 @@ public class AvgPooling2D extends DynamicCustomOp {
     public Map<String, Object> propertiesForFunction() {
         if(config == null && iArguments.size() > 0) {
             //Perhaps loaded from FlatBuffers - hence we have IArgs but not Config object
-            config = Pooling2DConfig.builder()
-                    .kH(iArguments.get(0))
-                    .kW(iArguments.get(1))
-                    .sH(iArguments.get(2))
-                    .sW(iArguments.get(3))
-                    .pH(iArguments.get(4))
-                    .pW(iArguments.get(5))
-                    .dH(iArguments.get(6))
-                    .dW(iArguments.get(7))
-                    .isSameMode(iArguments.get(8) == 1)
-                    .extra(iArguments.get(9))
-                    .isNHWC(iArguments.get(10) == 1)
-                    .type(Pooling2D.Pooling2DType.AVG)
-                    .build();
+            LinAlgExceptions.assertAllConfigured(this,11);
+            initConfigFromArgs();
         }
 
         return config.toProperties();
+    }
+
+    private void initConfigFromArgs() {
+        config = Pooling2DConfig.builder()
+                .kH(iArguments.get(0))
+                .kW(iArguments.get(1))
+                .sH(iArguments.get(2))
+                .sW(iArguments.get(3))
+                .pH(iArguments.get(4))
+                .pW(iArguments.get(5))
+                .dH(iArguments.get(6))
+                .dW(iArguments.get(7))
+                .isSameMode(iArguments.get(8) == 1)
+                .extra(iArguments.get(9))
+                .isNHWC(iArguments.get(10) == 1)
+                .type(Pooling2D.Pooling2DType.AVG)
+                .build();
     }
 
     private void addArgs() {

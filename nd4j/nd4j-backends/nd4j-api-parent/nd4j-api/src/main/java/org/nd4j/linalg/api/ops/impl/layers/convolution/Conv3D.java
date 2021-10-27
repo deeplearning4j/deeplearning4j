@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -122,25 +123,30 @@ public class Conv3D extends DynamicCustomOp {
     @Override
     public Object getValue(Field property) {
         if (config == null && !iArguments.isEmpty()) {
-            config = Conv3DConfig.builder()
-                    .kD(iArguments.get(0))
-                    .kH(iArguments.get(1))
-                    .kW(iArguments.get(2))
-                    .sD(iArguments.get(3))
-                    .sH(iArguments.get(4))
-                    .sW(iArguments.get(5))
-                    .pD(iArguments.get(6))
-                    .pH(iArguments.get(7))
-                    .pW(iArguments.get(8))
-                    .dD(iArguments.get(9))
-                    .dH(iArguments.get(10))
-                    .dW(iArguments.get(11))
-                    .isSameMode(iArguments.get(12) == 1)
-                    .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                    .build();
+            LinAlgExceptions.assertAllConfigured(this,12);
+            createConfigFromArgs();
         }
 
         return config.getValue(property);
+    }
+
+    public void createConfigFromArgs() {
+        config = Conv3DConfig.builder()
+                .kD(iArguments.get(0))
+                .kH(iArguments.get(1))
+                .kW(iArguments.get(2))
+                .sD(iArguments.get(3))
+                .sH(iArguments.get(4))
+                .sW(iArguments.get(5))
+                .pD(iArguments.get(6))
+                .pH(iArguments.get(7))
+                .pW(iArguments.get(8))
+                .dD(iArguments.get(9))
+                .dH(iArguments.get(10))
+                .dW(iArguments.get(11))
+                .isSameMode(iArguments.get(12) == 1)
+                .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                .build();
     }
 
     @Override
@@ -275,22 +281,8 @@ public class Conv3D extends DynamicCustomOp {
         inputs.add(f1.get(0));
 
         if (config == null && !iArguments.isEmpty()) {
-            config = Conv3DConfig.builder()
-                    .kD(iArguments.get(0))
-                    .kH(iArguments.get(1))
-                    .kW(iArguments.get(2))
-                    .sD(iArguments.get(3))
-                    .sH(iArguments.get(4))
-                    .sW(iArguments.get(5))
-                    .pD(iArguments.get(6))
-                    .pH(iArguments.get(7))
-                    .pW(iArguments.get(8))
-                    .dD(iArguments.get(9))
-                    .dH(iArguments.get(10))
-                    .dW(iArguments.get(11))
-                    .isSameMode(iArguments.get(12) == 1)
-                    .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                    .build();
+            LinAlgExceptions.assertAllConfigured(this,12);
+            createConfigFromArgs();
         }
 
 
