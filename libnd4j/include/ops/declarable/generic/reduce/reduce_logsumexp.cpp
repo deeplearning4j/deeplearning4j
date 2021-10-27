@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_logsumexp)
 
-    CUSTOM_OP_IMPL(reduce_logsumexp, 1, 1, false, 0, 0) {
+    CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -1) {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
         std::vector<int> axes;// = *block.getIArguments();

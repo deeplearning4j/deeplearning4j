@@ -29,7 +29,7 @@ namespace sd    {
 namespace ops     {
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_variance, -1, 1, false, 0, 0) {
     auto input   = INPUT_VARIABLE(0);
     auto output  = OUTPUT_VARIABLE(0);
 
@@ -96,7 +96,7 @@ DECLARE_TYPES(reduce_variance) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto gradO  = INPUT_VARIABLE(1);
 
