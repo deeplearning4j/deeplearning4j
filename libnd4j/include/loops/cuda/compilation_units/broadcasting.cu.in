@@ -19,13 +19,12 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <loops/cuda/broadcasting.chpp>
-#cmakedefine PAIRWISE_TYPE_GEN
-#if defined(PAIRWISE_TYPE_GEN) && defined(PAIRWISE_TYPES_@FL_TYPE_INDEX@)
+#cmakedefine SD_PAIRWISE_TYPES_GEN
+#if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_LOCAL Broadcast, , PAIRWISE_TYPES_@FL_TYPE_INDEX@);
+        BUILD_PAIRWISE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
 #endif

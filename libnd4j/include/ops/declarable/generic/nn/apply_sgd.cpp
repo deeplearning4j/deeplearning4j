@@ -27,38 +27,37 @@
 #include <ops/declarable/helpers/gradient.h>
 
 namespace sd {
-    namespace ops {
-        CONFIGURABLE_OP_IMPL(apply_sgd, 2, 1, true, -2, 0) {
-            auto parameters = INPUT_VARIABLE(0);
-            auto gradients = INPUT_VARIABLE(1);
+namespace ops {
+CONFIGURABLE_OP_IMPL(apply_sgd, 2, 1, true, -2, 0) {
+  auto parameters = INPUT_VARIABLE(0);
+  auto gradients = INPUT_VARIABLE(1);
 
-            double lr = 0.0;
+  double lr = 0.0;
 
-            REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: parameters and gradients should have the same shape, but got parameters = %s and gradients = %s !", ShapeUtils::shapeAsString(parameters).c_str(), ShapeUtils::shapeAsString(gradients).c_str());
+  REQUIRE_TRUE(
+      parameters->isSameShape(gradients), 0,
+      "ApplySGD: parameters and gradients should have the same shape, but got parameters = %s and gradients = %s !",
+      ShapeUtils::shapeAsString(parameters).c_str(), ShapeUtils::shapeAsString(gradients).c_str());
 
-            if (block.width() == 3) {
-                auto tarr = INPUT_VARIABLE(2);
-                lr = tarr->e<double>(0);
-            } else if (block.getTArguments()->size() == 1) {
-                lr = T_ARG(0);
-            } else {
-                REQUIRE_TRUE(false, 0, "ApplyGradients op should have LR announced either es T argument or additional NDArray!");
-            }
+  if (block.width() == 3) {
+    auto tarr = INPUT_VARIABLE(2);
+    lr = tarr->e<double>(0);
+  } else if (block.getTArguments()->size() == 1) {
+    lr = T_ARG(0);
+  } else {
+    REQUIRE_TRUE(false, 0, "ApplyGradients op should have LR announced either es T argument or additional NDArray!");
+  }
 
-            auto Z = OUTPUT_VARIABLE(0);
+  auto Z = OUTPUT_VARIABLE(0);
 
-            helpers::applyGradientDescent(block.launchContext(), parameters, gradients, lr, Z);
+  helpers::applyGradientDescent(block.launchContext(), parameters, gradients, lr, Z);
 
-            return Status::OK();
-        }
-        DECLARE_SYN(ApplyGradientDescent, apply_sgd);
-    }
-
-    DECLARE_TYPES(apply_sgd) {
-        getOpDescriptor()
-                ->setAllowedInputTypes({ALL_FLOATS})
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(ApplyGradientDescent, apply_sgd);
+}  // namespace ops
+
+DECLARE_TYPES(apply_sgd) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
+}  // namespace sd
 
 #endif

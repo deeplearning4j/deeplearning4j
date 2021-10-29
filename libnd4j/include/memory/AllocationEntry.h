@@ -23,30 +23,30 @@
 #ifndef DEV_TESTS_ALLOCATIONENTRY_H
 #define DEV_TESTS_ALLOCATIONENTRY_H
 
-#include <system/pointercast.h>
-#include <string>
 #include <memory/MemoryType.h>
+#include <system/common.h>
+
+#include <string>
 
 namespace sd {
-    namespace memory {
-        class AllocationEntry {
-        private:
-            MemoryType _memoryType;
-            Nd4jLong _pointer;
-            Nd4jLong _numBytes;
-            std::string _stack;
-        public:
-            AllocationEntry() = default;
-            AllocationEntry(MemoryType type, Nd4jLong ptr, Nd4jLong numBytes, std::string &stack);
-            ~AllocationEntry() = default;
+namespace memory {
+class AllocationEntry {
+ private:
+  MemoryType _memoryType;
+  sd::LongType _pointer;
+  sd::LongType _numBytes;
+  std::string _stack;
 
+ public:
+  AllocationEntry() = default;
+  AllocationEntry(MemoryType type, sd::LongType ptr, sd::LongType numBytes, std::string &stack);
+  ~AllocationEntry() = default;
 
-            Nd4jLong numBytes();
-            std::string stackTrace();
-            MemoryType memoryType();
-        };
-    }
-}
+  sd::LongType numBytes();
+  std::string stackTrace();
+  MemoryType memoryType();
+};
+}  // namespace memory
+}  // namespace sd
 
-
-#endif //DEV_TESTS_ALLOCATIONENTRY_H
+#endif  // DEV_TESTS_ALLOCATIONENTRY_H

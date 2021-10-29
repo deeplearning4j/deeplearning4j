@@ -22,19 +22,19 @@
 
 #ifndef LIBND4J_MATRIXSETDIAG_H
 #define LIBND4J_MATRIXSETDIAG_H
-
 #include <ops/declarable/helpers/helpers.h>
+
 #include "array/NDArray.h"
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad);
+SD_LIB_HIDDEN void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal,
+                                 NDArray& output, const bool zeroPad);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 
-
-#endif //LIBND4J_MATRIXSETDIAG_H
+#endif  // LIBND4J_MATRIXSETDIAG_H

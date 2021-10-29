@@ -22,35 +22,33 @@
 
 #ifndef SAMEDIFF_COMPAT_H
 #define SAMEDIFF_COMPAT_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace sd {
-    namespace ops {
-        /**
-         * This operation splits input string into pieces separated by delimiter
-         * PLEASE NOTE: This implementation is compatible with TF 1.x
-         *
-         * Input[0] - string to split
-         * Input[1] - delimiter
-         *
-         * Returns:
-         * Output[0] - indices tensor
-         * Output[1] - values tensor
-         */
-    #if NOT_EXCLUDED(OP_compat_string_split)
-        DECLARE_CUSTOM_OP(compat_string_split, 2, 2, false, 0, 0);
-    #endif
+namespace ops {
+/**
+ * This operation splits input string into pieces separated by delimiter
+ * PLEASE NOTE: This implementation is compatible with TF 1.x
+ *
+ * Input[0] - string to split
+ * Input[1] - delimiter
+ *
+ * Returns:
+ * Output[0] - indices tensor
+ * Output[1] - values tensor
+ */
+#if NOT_EXCLUDED(OP_compat_string_split)
+DECLARE_CUSTOM_OP(compat_string_split, 2, 2, false, 0, 0);
+#endif
 
-        /**
-         * This operation converts TF sparse array representation to dense NDArray
-         */
-    #if NOT_EXCLUDED(OP_compat_sparse_to_dense)
-        DECLARE_CUSTOM_OP(compat_sparse_to_dense, 4, 1, false, 0, 0);
-    #endif
+/**
+ * This operation converts TF sparse array representation to dense NDArray
+ */
+#if NOT_EXCLUDED(OP_compat_sparse_to_dense)
+DECLARE_CUSTOM_OP(compat_sparse_to_dense, 4, 1, false, 0, 0);
+#endif
 
-    }
-}
+}  // namespace ops
+}  // namespace sd
 
-
-#endif //SAMEDIFF_COMPAT_H
+#endif  // SAMEDIFF_COMPAT_H

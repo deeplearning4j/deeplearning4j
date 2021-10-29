@@ -22,16 +22,16 @@
 //
 #ifndef __COMPRESSION_H_HELPERS__
 #define __COMPRESSION_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output);
-    Nd4jLong encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold);
-}
-}
-}
+SD_LIB_HIDDEN void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output);
+SD_LIB_HIDDEN sd::LongType encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

@@ -24,39 +24,34 @@
 #if NOT_EXCLUDED(OP_scatter_update)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-    namespace ops {
-        /**
-         * scatter update operation
-         *
-         * IArgs map:
-         * IArgs[0] - update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv; 6 - assign
-         * IArgs[1] - number of dimensions
-         * IArgs[...] - dimensions
-         * IArgs[...] - number of indices
-         * IArgs[...] - indices
-         *
-         * @tparam T
-         */
-        CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
+namespace ops {
+/**
+ * scatter update operation
+ *
+ * IArgs map:
+ * IArgs[0] - update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv; 6 - assign
+ * IArgs[1] - number of dimensions
+ * IArgs[...] - dimensions
+ * IArgs[...] - number of indices
+ * IArgs[...] - indices
+ *
+ * @tparam T
+ */
+CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
+  auto operand = INPUT_VARIABLE(0);
+  auto updates = INPUT_VARIABLE(1);
 
-            auto operand = INPUT_VARIABLE(0);
-            auto updates = INPUT_VARIABLE(1);
+  helpers::scatterUpdate(block.launchContext(), *operand, *updates, block.getIArguments());
 
-            helpers::scatterUpdate(block.launchContext(), *operand, *updates, block.getIArguments());
-
-            return Status::OK();
-        }
-        DECLARE_SYN(scatterupdate, scatter_update);
-
-        DECLARE_TYPES(scatter_update) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(scatterupdate, scatter_update);
+
+DECLARE_TYPES(scatter_update) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

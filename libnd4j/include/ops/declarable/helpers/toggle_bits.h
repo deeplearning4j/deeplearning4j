@@ -19,21 +19,20 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <ops/declarable/helpers/helpers.h>
 
 #ifndef DEV_TESTS_TOGGLE_BITS_H
 #define DEV_TESTS_TOGGLE_BITS_H
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            template <typename T>
-            static void toggle_bits__(sd::LaunchContext * context, NDArray& in, NDArray& out);
+namespace ops {
+namespace helpers {
+template <typename T>
+static void toggle_bits__(sd::LaunchContext* context, NDArray& in, NDArray& out);
 
-            void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out);
-        }
-    }
-}
+SD_LIB_HIDDEN void __toggle_bits(sd::LaunchContext* context, NDArray& in, NDArray& out);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-#endif //DEV_TESTS_TOGGLE_BITS_H
+#endif  // DEV_TESTS_TOGGLE_BITS_H

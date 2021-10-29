@@ -24,47 +24,48 @@
 #if NOT_EXCLUDED(OP_)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/flatten.h>
+#include <ops/declarable/helpers/flatten.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(flatten, -1, 1, false, 0, 1) {
-            auto output = OUTPUT_VARIABLE(0);
-            auto zType = output->dataType();
-            auto xType = INPUT_VARIABLE(0)->dataType();
+namespace ops {
+CUSTOM_OP_IMPL(flatten, -1, 1, false, 0, 1) {
+  auto output = OUTPUT_VARIABLE(0);
+  auto zType = output->dataType();
+  auto xType = INPUT_VARIABLE(0)->dataType();
 
-            REQUIRE_TRUE(xType == zType, 0, "Flatten: output array must have same data type as input arrays");
-            std::vector<NDArray*> arrays(block.width());
-            for (int e = 0; e < block.width(); e++) {
-                auto input = INPUT_VARIABLE(e);
+  REQUIRE_TRUE(xType == zType, 0, "Flatten: output array must have same data type as input arrays");
+  std::vector<NDArray*> arrays(block.width());
+  for (int e = 0; e < block.width(); e++) {
+    auto input = INPUT_VARIABLE(e);
 
-                REQUIRE_TRUE(xType == input->dataType(), 0, "Flatten: all input arrays must have the same data type");
+    REQUIRE_TRUE(xType == input->dataType(), 0, "Flatten: all input arrays must have the same data type");
 
-                arrays[e] = input;
-            }
+    arrays[e] = input;
+  }
 
-            char order = (char) INT_ARG(0);
-            helpers::flatten(block.launchContext(), arrays, output, order);
+  char order = (char)INT_ARG(0);
+  helpers::flatten(block.launchContext(), arrays, output, order);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(flatten) {
-            getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS, sd::DataType::BOOL});
-            getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS, sd::DataType::BOOL});
-        }
-
-        DECLARE_SHAPE_FN(flatten) {
-            Nd4jLong length = 0;
-            sd::DataType dtype = ArrayOptions::dataType(inputShape->at(0));
-            for (int e = 0; e < inputShape->size(); e++) {
-                length += shape::length(inputShape->at(e));
-                REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(e)), 0, "Flatten: all input arrays must have the same datatype");
-            }
-
-            return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(length, dtype));
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(flatten) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS, sd::DataType::BOOL});
+  getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS, sd::DataType::BOOL});
+}
+
+DECLARE_SHAPE_FN(flatten) {
+  sd::LongType length = 0;
+  sd::DataType dtype = ArrayOptions::dataType(inputShape->at(0));
+  for (int e = 0; e < inputShape->size(); e++) {
+    length += shape::length(inputShape->at(e));
+    REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(e)), 0,
+                 "Flatten: all input arrays must have the same datatype");
+  }
+
+  return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(length, dtype));
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

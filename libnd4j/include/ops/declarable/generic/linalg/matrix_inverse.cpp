@@ -26,23 +26,22 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
 namespace sd {
-    namespace ops {
-        OP_IMPL(matrix_inverse, 1, 1, true) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+OP_IMPL(matrix_inverse, 1, 1, true) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->rankOf() >=2, 0, "matrix_inverse: The rank of input array should not less than 2, but %i is given", input->rankOf());
-            REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "matrix_inverse: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
+  REQUIRE_TRUE(input->rankOf() >= 2, 0,
+               "matrix_inverse: The rank of input array should not less than 2, but %i is given", input->rankOf());
+  REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
+               "matrix_inverse: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1),
+               input->sizeAt(-2));
 
-            return helpers::inverse(block.launchContext(), input, output);
-        }
-
-        DECLARE_TYPES(matrix_inverse) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return helpers::inverse(block.launchContext(), input, output);
 }
+
+DECLARE_TYPES(matrix_inverse) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

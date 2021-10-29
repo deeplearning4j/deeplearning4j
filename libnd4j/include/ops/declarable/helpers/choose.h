@@ -21,17 +21,19 @@
 //
 #ifndef __CHOOSE_H_HELPERS__
 #define __CHOOSE_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    void chooseFunctorArray(sd::LaunchContext * context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults);
-    void chooseFunctorScalar(sd::LaunchContext * context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults);
+SD_LIB_HIDDEN void chooseFunctorArray(sd::LaunchContext* context, NDArray* arg, NDArray* comp, int mode,
+                                      NDArray* result, NDArray* numResults);
+SD_LIB_HIDDEN void chooseFunctorScalar(sd::LaunchContext* context, NDArray* arg, double scalar, int mode,
+                                       NDArray* result, NDArray* numResults);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

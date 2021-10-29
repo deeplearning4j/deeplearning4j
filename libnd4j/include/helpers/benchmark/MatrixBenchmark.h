@@ -19,108 +19,105 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <helpers/OpBenchmark.h>
 #include <helpers/MmulHelper.h>
+#include <helpers/OpBenchmark.h>
 
 #ifndef DEV_TESTS_MATRIXBENCHMARK_H
 #define DEV_TESTS_MATRIXBENCHMARK_H
 
 namespace sd {
-    class ND4J_EXPORT MatrixBenchmark : public OpBenchmark {
-    private:
-        float _alpha = 1.0f;
-        float _beta = 0.0f;
-        bool _tA;
-        bool _tB;
-    public:
-        MatrixBenchmark() : OpBenchmark() {
-            //
-        }
+class SD_LIB_EXPORT MatrixBenchmark : public OpBenchmark {
+ private:
+  float _alpha = 1.0f;
+  float _beta = 0.0f;
+  bool _tA;
+  bool _tB;
 
-        MatrixBenchmark(float alpha, float beta, std::string testName, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(testName, x, y, z) {
-            _alpha = alpha;
-            _beta = beta;
-            _tA = false;
-            _tB = false;
-        }
+ public:
+  MatrixBenchmark() : OpBenchmark() {
+    //
+  }
 
-        MatrixBenchmark(float alpha, float beta, bool tA, bool tB, std::string name) : OpBenchmark() {
-            _testName = name;
-            _alpha = alpha;
-            _beta = beta;
-            _tA = tA;
-            _tB = tB;
-        }
+  MatrixBenchmark(float alpha, float beta, std::string testName, NDArray *x, NDArray *y, NDArray *z)
+      : OpBenchmark(testName, x, y, z) {
+    _alpha = alpha;
+    _beta = beta;
+    _tA = false;
+    _tB = false;
+  }
 
-        ~MatrixBenchmark(){
-            if (_x != _y && _x != _z && _y != _z) {
-                delete _x;
-                delete _y;
-                delete _z;
-            } else if (_x == _y && _x == _z) {
-                delete _x;
-            } else if (_x == _z) {
-                delete _x;
-                delete _y;
-            } else if (_y == _z) {
-                delete _x;
-                delete _y;
-            }
-        }
+  MatrixBenchmark(float alpha, float beta, bool tA, bool tB, std::string name) : OpBenchmark() {
+    _testName = name;
+    _alpha = alpha;
+    _beta = beta;
+    _tA = tA;
+    _tB = tB;
+  }
 
-        void executeOnce() override {
-            auto xT = (_tA ? _x->transpose() : *_x);
-            auto yT = (_tB ? _y->transpose() : *_y);
+  ~MatrixBenchmark() {
+    if (_x != _y && _x != _z && _y != _z) {
+      delete _x;
+      delete _y;
+      delete _z;
+    } else if (_x == _y && _x == _z) {
+      delete _x;
+    } else if (_x == _z) {
+      delete _x;
+      delete _y;
+    } else if (_y == _z) {
+      delete _x;
+      delete _y;
+    }
+  }
 
-            MmulHelper::mmul(&xT, &yT, _z, _alpha, _beta);
-        }
+  void executeOnce() override {
+    auto xT = (_tA ? _x->transpose() : *_x);
+    auto yT = (_tB ? _y->transpose() : *_y);
 
-        std::string axis() override {
-            return "N/A";
-        }
+    MmulHelper::mmul(&xT, &yT, _z, _alpha, _beta);
+  }
 
-        std::string inplace() override {
-            return "N/A";
-        }
+  std::string axis() override { return "N/A"; }
 
-        std::string orders() override {
-            std::string result;
-            result += _x->ordering();
-            result += "/";
-            result += _y->ordering();
-            result += "/";
-            result += _z == nullptr ? _x->ordering() : _z->ordering();
-            return result;
-        }
+  std::string inplace() override { return "N/A"; }
 
-        std::string strides() override {
-            std::string result;
-            result += ShapeUtils::strideAsString(_x);
-            result += "/";
-            result += ShapeUtils::strideAsString(_y);
-            result += "/";
-            result += _z == nullptr ? ShapeUtils::strideAsString(_x) : ShapeUtils::strideAsString(_z);
-            return result;
-        }
+  std::string orders() override {
+    std::string result;
+    result += _x->ordering();
+    result += "/";
+    result += _y->ordering();
+    result += "/";
+    result += _z == nullptr ? _x->ordering() : _z->ordering();
+    return result;
+  }
 
-        std::string shape() override {
-            std::string result;
-            result += ShapeUtils::shapeAsString(_x);
-            result += "x";
-            result += ShapeUtils::shapeAsString(_y);
-            result += "=";
-            result += _z == nullptr ? "" : ShapeUtils::shapeAsString(_z);
-            return result;
-        }
+  std::string strides() override {
+    std::string result;
+    result += ShapeUtils::strideAsString(_x);
+    result += "/";
+    result += ShapeUtils::strideAsString(_y);
+    result += "/";
+    result += _z == nullptr ? ShapeUtils::strideAsString(_x) : ShapeUtils::strideAsString(_z);
+    return result;
+  }
 
-        OpBenchmark* clone() override  {
-            MatrixBenchmark* mb = new MatrixBenchmark(_alpha, _beta, _testName, _x, _y, _z);
-            mb->_tA = _tA;
-            mb->_tB = _tB;
-            return mb;
-        }
-    };
-}
+  std::string shape() override {
+    std::string result;
+    result += ShapeUtils::shapeAsString(_x);
+    result += "x";
+    result += ShapeUtils::shapeAsString(_y);
+    result += "=";
+    result += _z == nullptr ? "" : ShapeUtils::shapeAsString(_z);
+    return result;
+  }
 
-#endif //DEV_TESTS_SCALARBENCHMARK_H
+  OpBenchmark *clone() override {
+    MatrixBenchmark *mb = new MatrixBenchmark(_alpha, _beta, _testName, _x, _y, _z);
+    mb->_tA = _tA;
+    mb->_tB = _tB;
+    return mb;
+  }
+};
+}  // namespace sd
+
+#endif  // DEV_TESTS_SCALARBENCHMARK_H

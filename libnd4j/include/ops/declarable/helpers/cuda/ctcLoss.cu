@@ -16,29 +16,26 @@
 //
 // @author AbdelRauf
 //
-#include <type_traits>
-#include <cmath>
-#include <stdexcept>
-#include <memory>
-#include <execution/Threads.h>
 #include <execution/ThreadPool.h>
+#include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/ctc.h>
 
-namespace sd
-{
-    namespace ops
-    {
-        namespace helpers
-        {
+#include <cmath>
+#include <memory>
+#include <stdexcept>
+#include <type_traits>
 
+namespace sd {
+namespace ops {
+namespace helpers {
 
-            ND4J_LOCAL void ctcLoss(graph::Context& block, const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex){
-                  //not imeplemented
-                  throw std::runtime_error("ctcLoss:: Not implemented yet");
-			}
+void ctcLoss(graph::Context &block, const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths,
+             const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
+  // not imeplemented
+  throw std::runtime_error("ctcLoss:: Not implemented yet");
+}
 
-
-        } // namespace helpers
-    }     // namespace ops
-} // namespace sd
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

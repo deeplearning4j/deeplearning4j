@@ -27,42 +27,37 @@
 #include <ops/declarable/helpers/diag.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
-////////////////////////////////////////////////////////////////////////// 
+//////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
-    auto input  = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
-    
-    // input validation
-    REQUIRE_TRUE(input->rankOf() <= 3, 0, "CUSTOM_OP diag: rank of input array must be <= 3 !, but got %i instead", input->rankOf());
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    // TODO: still not sure if we really want this
-    output->assign(0);
+  // input validation
+  REQUIRE_TRUE(input->rankOf() <= 3, 0, "CUSTOM_OP diag: rank of input array must be <= 3 !, but got %i instead",
+               input->rankOf());
 
-    helpers::diagFunctor(block.launchContext(), input, output);
-    
-    return Status::OK();
+  // TODO: still not sure if we really want this
+  output->assign(0);
+
+  helpers::diagFunctor(block.launchContext(), input, output);
+
+  return sd::Status::OK;
 }
 
 DECLARE_SYN(MatrixDiag, diag);
 
+DECLARE_TYPES(diag) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
 
-        DECLARE_TYPES(diag) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-
-////////////////////////////////////////////////////////////////////////// 
+//////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(diag) {
-    const Nd4jLong* inputShapeInfo = inputShape->at(0);
+  const sd::LongType* inputShapeInfo = inputShape->at(0);
 
-    return SHAPELIST(ShapeUtils::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
+  return SHAPELIST(ShapeUtils::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
 }
 
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

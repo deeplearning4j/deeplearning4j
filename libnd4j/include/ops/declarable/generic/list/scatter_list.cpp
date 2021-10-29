@@ -23,56 +23,56 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_scatter_list)
 
-#include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        LIST_OP_IMPL(scatter_list, 1, 1, 0, -2) {
-            NDArrayList *list = nullptr;
-            NDArray *array = nullptr;
-            NDArray *indices = nullptr;
+namespace ops {
+LIST_OP_IMPL(scatter_list, 1, 1, 0, -2) {
+  NDArrayList *list = nullptr;
+  NDArray *array = nullptr;
+  NDArray *indices = nullptr;
 
-            bool hasList = false;
-            auto w = block.width();
+  bool hasList = false;
+  auto w = block.width();
 
-            if (w >= 3){
-                list = INPUT_LIST(0);
-                indices = INPUT_VARIABLE(1);
-                array = INPUT_VARIABLE(2);
-                hasList = true;
-            } else {
-                array = INPUT_VARIABLE(1);
-                indices = INPUT_VARIABLE(2);
-                list = new NDArrayList(indices->lengthOf(), false);
-                block.trackList(list);
-            }
+  if (w >= 3) {
+    list = INPUT_LIST(0);
+    indices = INPUT_VARIABLE(1);
+    array = INPUT_VARIABLE(2);
+    hasList = true;
+  } else {
+    array = INPUT_VARIABLE(1);
+    indices = INPUT_VARIABLE(2);
+    list = new NDArrayList(indices->lengthOf(), false);
+    block.trackList(list);
+  }
 
-            REQUIRE_TRUE(indices->isVector() || indices->rankOf() == 1, 0, "ScatterList: Indices for Scatter should be a vector")
-            REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
+  REQUIRE_TRUE(indices->isVector() || indices->rankOf() == 1, 0, "ScatterList: Indices for Scatter should be a vector")
+  REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0,
+               "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead",
+               indices->lengthOf());
 
-            std::vector<int> axis = ShapeUtils::evalDimsToExclude(array->rankOf(), {0});
-            auto tads = array->allTensorsAlongDimension( axis);
-            for (int e = 0; e < tads.size(); e++) {
-                auto idx = indices->e<int>(e);
-                if (idx >= tads.size())
-                    return ND4J_STATUS_BAD_ARGUMENTS;
+  std::vector<int> axis = ShapeUtils::evalDimsToExclude(array->rankOf(), {0});
+  auto tads = array->allTensorsAlongDimension(axis);
+  for (int e = 0; e < tads.size(); e++) {
+    auto idx = indices->e<int>(e);
+    if (idx >= tads.size()) return sd::Status::BAD_ARGUMENTS;
 
-                auto arr = new NDArray(tads.at(e)->dup(array->ordering()));
-                auto res = list->write(idx, arr);
-                if (res != ND4J_STATUS_OK)
-                    return res;
-            }
+    auto arr = new NDArray(tads.at(e)->dup(array->ordering()));
+    auto res = list->write(idx, arr);
+    if (res != sd::Status::OK) return res;
+  }
 
-            if (!hasList)
-                //OVERWRITE_RESULT(list);
-                setupResultList(list, block);
+  if (!hasList)
+    // OVERWRITE_RESULT(list);
+    setupResultList(list, block);
 
-            return Status::OK();
-        }
-        DECLARE_SYN(TensorArrayScatterV3, scatter_list);
-        DECLARE_SYN(tensorarrayscatterv3, scatter_list);
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(TensorArrayScatterV3, scatter_list);
+DECLARE_SYN(tensorarrayscatterv3, scatter_list);
+}  // namespace ops
+}  // namespace sd
 
 #endif

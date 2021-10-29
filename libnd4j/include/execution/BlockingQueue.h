@@ -22,33 +22,33 @@
 
 #ifndef SAMEDIFF_BLOCKINGQUEUE_H
 #define SAMEDIFF_BLOCKINGQUEUE_H
-
-#include <functional>
-#include <queue>
-#include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <queue>
 
 namespace samediff {
-    template <typename T>
-    class BlockingQueue {
-    private:
-        std::queue<T> _queue;
-        std::mutex _lock;
-        std::atomic<int> _size;
-        std::atomic<bool> _available;
+template <typename T>
+class BlockingQueue {
+ private:
+  std::queue<T> _queue;
+  std::mutex _lock;
+  std::atomic<int> _size;
+  std::atomic<bool> _available;
 
-        std::condition_variable _condition;
-    public:
-        BlockingQueue(int queueSize);
-        ~BlockingQueue() = default;
-        T poll();
-        void put(const T &t);
+  std::condition_variable _condition;
 
-        bool available();
-        void markAvailable();
-        void markUnavailable();
-    };
-}
+ public:
+  BlockingQueue(int queueSize);
+  ~BlockingQueue() = default;
+  T poll();
+  void put(const T &t);
 
-#endif //DEV_TESTS_BLOCKINGQUEUE_H
+  bool available();
+  void markAvailable();
+  void markUnavailable();
+};
+}  // namespace samediff
+
+#endif  // DEV_TESTS_BLOCKINGQUEUE_H

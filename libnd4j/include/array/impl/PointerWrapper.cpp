@@ -21,21 +21,18 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <array/PointerWrapper.h>
 
 namespace sd {
-PointerWrapper::PointerWrapper(void *ptr, const std::shared_ptr<PointerDeallocator> &deallocator): _pointer(ptr), _deallocator(deallocator) {
- //
+PointerWrapper::PointerWrapper(void *ptr, const std::shared_ptr<PointerDeallocator> &deallocator)
+    : _pointer(ptr), _deallocator(deallocator) {
+  //
 }
 
 PointerWrapper::~PointerWrapper() {
-  if (_deallocator.get() != nullptr)
-    _deallocator->release(_pointer);
+  if (_deallocator.get() != nullptr) _deallocator->release(_pointer);
 }
 
-void *PointerWrapper::pointer() const {
-  return _pointer;
-}
+void *PointerWrapper::pointer() const { return _pointer; }
 
-} // namespace sd
+}  // namespace sd

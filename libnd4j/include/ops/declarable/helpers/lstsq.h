@@ -23,16 +23,17 @@
 //
 #ifndef __LST_SQ_SOLVE__H_HELPERS__
 #define __LST_SQ_SOLVE__H_HELPERS__
-
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int leastSquaresSolveFunctor(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput, double const l2Regularizer, bool const fast, NDArray* output);
+SD_LIB_HIDDEN sd::Status leastSquaresSolveFunctor(sd::LaunchContext* context, NDArray const* leftInput,
+                                                  NDArray const* rightInput, double const l2Regularizer,
+                                                  bool const fast, NDArray* output);
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

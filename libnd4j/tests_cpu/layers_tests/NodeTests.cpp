@@ -19,57 +19,55 @@
 //
 // Created by raver119 on 21.02.18.
 //
+#include <array/NDArray.h>
+#include <flatbuffers/flatbuffers.h>
+#include <graph/Variable.h>
+#include <ops/declarable/headers/broadcastable.h>
 
 #include "testlayers.h"
-#include <array/NDArray.h>
-#include <graph/Variable.h>
-#include <flatbuffers/flatbuffers.h>
-#include <ops/declarable/headers/broadcastable.h>
 
 using namespace sd;
 using namespace sd::graph;
 
 class NodeTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(NodeTests, Test_Dtype_Conversion_1) {
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+  auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
 
-    auto nd = nodeA->asT<double>();
-    auto nf = nd->asT<float>();
+  auto nd = nodeA->asT<double>();
+  auto nf = nd->asT<float>();
 
-    ASSERT_EQ(nodeA->id(), nf->id());
-    ASSERT_EQ(*nodeA->name(), *nf->name());
-    ASSERT_EQ(nodeA->getOpClass(), nf->getOpClass());
-    ASSERT_EQ(nodeA->opType(), nf->opType());
-    ASSERT_EQ(nodeA->opNum(), nf->opNum());
+  ASSERT_EQ(nodeA->id(), nf->id());
+  ASSERT_EQ(*nodeA->name(), *nf->name());
+  ASSERT_EQ(nodeA->getOpClass(), nf->getOpClass());
+  ASSERT_EQ(nodeA->opType(), nf->opType());
+  ASSERT_EQ(nodeA->opNum(), nf->opNum());
 
-    delete nodeA;
-    delete nd;
-    delete nf;
+  delete nodeA;
+  delete nd;
+  delete nf;
 }
 
-
 TEST_F(NodeTests, Test_Dtype_Conversion_2) {
-    sd::ops::add opA;
+  sd::ops::add opA;
 
-    //auto nodeA = new Node(OpType_CUSTOM, 0, 1, {-1}, {2});
-    auto nodeA = new Node(&opA, 1, {-1}, {2});
-    //nodeA->setCustomOp(&op);
+  // auto nodeA = new Node(OpType_CUSTOM, 0, 1, {-1}, {2});
+  auto nodeA = new Node(&opA, 1, {-1}, {2});
+  // nodeA->setCustomOp(&op);
 
-    auto nd = nodeA->asT<double>();
-    auto nf = nd->asT<float>();
+  auto nd = nodeA->asT<double>();
+  auto nf = nd->asT<float>();
 
-    ASSERT_EQ(nodeA->id(), nf->id());
-    ASSERT_EQ(*nodeA->name(), *nf->name());
-//    ASSERT_EQ(nodeA->getOpClass(), nf->getOpClass());
-    ASSERT_EQ(nodeA->opType(), nf->opType());
-    ASSERT_EQ(nodeA->opNum(), nf->opNum());
-    ASSERT_EQ(nodeA->getCustomOp()->getOpHash(), nf->getCustomOp()->getOpHash());
+  ASSERT_EQ(nodeA->id(), nf->id());
+  ASSERT_EQ(*nodeA->name(), *nf->name());
+  //    ASSERT_EQ(nodeA->getOpClass(), nf->getOpClass());
+  ASSERT_EQ(nodeA->opType(), nf->opType());
+  ASSERT_EQ(nodeA->opNum(), nf->opNum());
+  ASSERT_EQ(nodeA->getCustomOp()->getOpHash(), nf->getCustomOp()->getOpHash());
 
-    delete nodeA;
-    delete nd;
-    delete nf;
+  delete nodeA;
+  delete nd;
+  delete nf;
 }

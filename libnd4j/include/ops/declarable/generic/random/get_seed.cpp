@@ -26,28 +26,26 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(get_seed, -2, 1, false, 0, 0) {
-//            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
-            auto rng = block.getRng();
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(get_seed, -2, 1, false, 0, 0) {
+  //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
+  auto rng = block.getRng();
+  auto z = OUTPUT_VARIABLE(0);
 
-            z->p(Nd4jLong(0), rng.rootState());
+  z->p(sd::LongType(0), rng.rootState());
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(get_seed) {
-            auto newshape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64);
-            return SHAPELIST(newshape);
-        }
-
-        DECLARE_TYPES(get_seed) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(get_seed) {
+  auto newshape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64);
+  return SHAPELIST(newshape);
+}
+
+DECLARE_TYPES(get_seed) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(DataType::INT64);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

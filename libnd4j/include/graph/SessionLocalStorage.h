@@ -22,46 +22,47 @@
 
 #ifndef LIBND4J_SESSIONLOCALSTORAGE_H
 #define LIBND4J_SESSIONLOCALSTORAGE_H
-
-#include <thread>
-#include <unordered_map>
-#include <map>
-#include "VariableSpace.h"
-#include "Context.h"
-#include "Stash.h"
 #include <memory/Workspace.h>
 
-namespace sd{
-    namespace graph {
-        class ND4J_EXPORT SessionLocalStorage {
-        protected:
-            std::atomic<Nd4jLong> _sessionCounter;
-            MAP_IMPL<Nd4jLong, Nd4jLong> _threadSession;
-            MAP_IMPL<Nd4jLong, VariableSpace*> _threadVariableSpace;
+#include <map>
+#include <thread>
+#include <unordered_map>
 
-            VariableSpace* _variableSpace;
-            Stash* _stash;
+#include "Context.h"
+#include "Stash.h"
+#include "VariableSpace.h"
 
-            std::mutex _mutex;
+namespace sd {
+namespace graph {
+class SD_LIB_EXPORT SessionLocalStorage {
+ protected:
+  std::atomic<sd::LongType> _sessionCounter;
+  SD_MAP_IMPL<sd::LongType, sd::LongType> _threadSession;
+  SD_MAP_IMPL<sd::LongType, VariableSpace*> _threadVariableSpace;
 
-            Nd4jLong getSessionId();
-            Nd4jLong getThreadId();
-        public:
-            SessionLocalStorage(VariableSpace* variableSpace = nullptr, Stash* stash = nullptr);
+  VariableSpace* _variableSpace;
+  Stash* _stash;
 
-            ~SessionLocalStorage();
+  std::mutex _mutex;
 
-            VariableSpace* localVariableSpace();
-            VariableSpace* localVariableSpace(Nd4jLong sessionId);
+  sd::LongType getSessionId();
+  sd::LongType getThreadId();
 
+ public:
+  SessionLocalStorage(VariableSpace* variableSpace = nullptr, Stash* stash = nullptr);
 
-            Nd4jLong startSession();
-            void endSession(Nd4jLong sessionId);
-            void endSession();
+  ~SessionLocalStorage();
 
-            int numberOfSessions();
-        };
-    }
-}
+  VariableSpace* localVariableSpace();
+  VariableSpace* localVariableSpace(sd::LongType sessionId);
 
-#endif //LIBND4J_SESSIONLOCALSTORAGE_H
+  sd::LongType startSession();
+  void endSession(sd::LongType sessionId);
+  void endSession();
+
+  int numberOfSessions();
+};
+}  // namespace graph
+}  // namespace sd
+
+#endif  // LIBND4J_SESSIONLOCALSTORAGE_H

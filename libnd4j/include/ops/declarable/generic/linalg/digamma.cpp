@@ -29,25 +29,20 @@
 #include <ops/declarable/helpers/gammaMathFunc.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CONFIGURABLE_OP_IMPL(digamma, 1, 1, false, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-    auto x = INPUT_VARIABLE(0);
-    auto z = OUTPUT_VARIABLE(0);
+  helpers::diGamma(block.launchContext(), *x, *z);
 
-    helpers::diGamma(block.launchContext(), *x, *z);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-DECLARE_TYPES(digamma) {
-    getOpDescriptor()
-            ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
-            ->setSameMode(true);
-}
+DECLARE_TYPES(digamma) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setSameMode(true); }
 
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

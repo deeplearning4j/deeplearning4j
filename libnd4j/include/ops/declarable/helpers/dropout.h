@@ -21,20 +21,26 @@
 //
 #ifndef __DROP_OUT_HELPERS__
 #define __DROP_OUT_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
 #include <graph/Context.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);
-    int dropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape, int seed, double probValue);
-    int alphaDropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
-    int alphaDropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
+SD_LIB_HIDDEN sd::Status dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape,
+                                        int seed, double probValue);
+SD_LIB_HIDDEN sd::Status dropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
+                                          NDArray* reduceShape, int seed, double probValue);
+SD_LIB_HIDDEN sd::Status alphaDropOutFunctor(graph::Context& context, NDArray* input, NDArray* output,
+                                             NDArray* reduceShape, int seed, double probValue, double alpha,
+                                             double alpha1, double beta);
+SD_LIB_HIDDEN sd::Status alphaDropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut,
+                                               NDArray* output, NDArray* reduceShape, int seed, double probValue,
+                                               double alpha, double alpha1, double beta);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

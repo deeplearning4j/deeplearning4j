@@ -26,19 +26,19 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        LIST_OP_IMPL(clone_list, 1, 1, 0, 0) {
-            auto list = INPUT_LIST(0);
+namespace ops {
+LIST_OP_IMPL(clone_list, 1, 1, 0, 0) {
+  auto list = INPUT_LIST(0);
 
-            auto newList = list->clone();
+  auto newList = list->clone();
 
-            //OVERWRITE_RESULT(newList);
-            setupResultList(newList, block);
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(TensorArrayIdentityV3, clone_list);
-        DECLARE_SYN(tensorarrayidentityv3, clone_list);
-    }
+  // OVERWRITE_RESULT(newList);
+  setupResultList(newList, block);
+  return sd::Status::OK;
 }
+DECLARE_SYN(TensorArrayIdentityV3, clone_list);
+DECLARE_SYN(tensorarrayidentityv3, clone_list);
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -26,31 +26,30 @@
 #include <ops/declarable/headers/shape.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(order, 1, 1, false, 0, 1) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(order, 1, 1, false, 0, 1) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            output->assign(input);
+  output->assign(input);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(order) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_INTS});
-        }
-
-        DECLARE_SHAPE_FN(order) {
-            auto input = inputShape->at(0);
-
-            auto isFOrder = INT_ARG(0) == 1;
-
-            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input));
-            return SHAPELIST(newShape);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(order) {
+  getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
+}
+
+DECLARE_SHAPE_FN(order) {
+  auto input = inputShape->at(0);
+
+  auto isFOrder = INT_ARG(0) == 1;
+
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(
+      ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input));
+  return SHAPELIST(newShape);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -26,35 +26,30 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        CUSTOM_OP_IMPL(create, 1, 1, false, 0, 1) {
-            auto init = block.numB() > 0 ? B_ARG(0) : true;
+CUSTOM_OP_IMPL(create, 1, 1, false, 0, 1) {
+  auto init = block.numB() > 0 ? B_ARG(0) : true;
 
-            if (init)
-                OUTPUT_VARIABLE(0)->nullify();
+  if (init) OUTPUT_VARIABLE(0)->nullify();
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(create) {
-            auto shapeInput = INPUT_VARIABLE(0);
-            auto order = (char) INT_ARG(0);
-            auto dtype = DataTypeUtils::fromInt(INT_ARG(1));
-
-            REQUIRE_TRUE(order == 'c' || order == 'f', 0, "create: order must be either c or f");
-
-            auto shape = shapeInput->getBufferAsVector<Nd4jLong>();
-
-            return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
-        }
-
-        DECLARE_TYPES(create) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_INTS})
-                    ->setAllowedOutputTypes(sd::DataType::ANY);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(create) {
+  auto shapeInput = INPUT_VARIABLE(0);
+  auto order = (char)INT_ARG(0);
+  auto dtype = DataTypeUtils::fromInt(INT_ARG(1));
+
+  REQUIRE_TRUE(order == 'c' || order == 'f', 0, "create: order must be either c or f");
+
+  auto shape = shapeInput->getBufferAsVector<sd::LongType>();
+
+  return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
+}
+
+DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(sd::DataType::ANY); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

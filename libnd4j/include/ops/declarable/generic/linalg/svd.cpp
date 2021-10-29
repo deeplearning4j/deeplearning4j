@@ -27,95 +27,89 @@
 #include <ops/declarable/helpers/svd.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
-    auto x = INPUT_VARIABLE(0);
+  auto x = INPUT_VARIABLE(0);
 
-    const int rank =  x->rankOf();
-    REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
+  const int rank = x->rankOf();
+  REQUIRE_TRUE(rank >= 2, 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
-          bool fullUV = (bool)INT_ARG(0);
-    const bool calcUV = (bool)INT_ARG(1);
+  bool fullUV = (bool)INT_ARG(0);
+  const bool calcUV = (bool)INT_ARG(1);
 
-    if(calcUV == false)
-        fullUV = false;
+  if (calcUV == false) fullUV = false;
 
-    const int switchNum = INT_ARG(2);
+  const int switchNum = INT_ARG(2);
 
-    // #ifndef __CUDABLAS__
-    helpers::svd(block.launchContext(), x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
-    // #endif
+  // #ifndef __CUDABLAS__
+  helpers::svd(block.launchContext(), x,
+               {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr},
+               fullUV, calcUV, switchNum);
+  // #endif
 
-    return Status::OK();;
+  return sd::Status::OK;
+  ;
 }
 
-
-    DECLARE_TYPES(svd) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                ->setSameMode(true);
-    }
+DECLARE_TYPES(svd) {
+  getOpDescriptor()->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})->setSameMode(true);
+}
 
 DECLARE_SHAPE_FN(svd) {
+  auto inShapeInfo = inputShape->at(0);
+  bool fullUV = (bool)INT_ARG(0);
+  bool calcUV = (bool)INT_ARG(1);
 
-    auto inShapeInfo = inputShape->at(0);
-    bool fullUV = (bool)INT_ARG(0);
-    bool calcUV = (bool)INT_ARG(1);
+  const int rank = inShapeInfo[0];
+  REQUIRE_TRUE(rank >= 2, 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
-    const int rank = inShapeInfo[0];
-    REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
+  const int diagSize = inShapeInfo[rank] < inShapeInfo[rank - 1] ? inShapeInfo[rank] : inShapeInfo[rank - 1];
 
-    const int diagSize = inShapeInfo[rank] < inShapeInfo[rank-1] ? inShapeInfo[rank] : inShapeInfo[rank-1];
+  sd::LongType* sShapeInfo(nullptr);
+  if (rank == 2) {
+    ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), sd::LongType);
+    sShapeInfo[0] = 1;
+    sShapeInfo[1] = diagSize;
+  } else {
+    ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank - 1), sd::LongType);
+    sShapeInfo[0] = rank - 1;
+    for (int i = 1; i <= rank - 2; ++i) sShapeInfo[i] = inShapeInfo[i];
+    sShapeInfo[rank - 1] = diagSize;
+  }
 
-    Nd4jLong* sShapeInfo(nullptr);
-    if(rank == 2) {
-        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-        sShapeInfo[0] = 1;
-        sShapeInfo[1] = diagSize;
-    }
-    else {
-        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank-1), Nd4jLong);
-        sShapeInfo[0] = rank - 1;
-        for(int i=1; i <= rank-2; ++i)
-            sShapeInfo[i] = inShapeInfo[i];
-        sShapeInfo[rank-1] = diagSize;
-    }
+  ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
 
-    ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
+  if (calcUV) {
+    sd::LongType *uShapeInfo(nullptr), *vShapeInfo(nullptr);
+    COPY_SHAPE(inShapeInfo, uShapeInfo);
+    COPY_SHAPE(inShapeInfo, vShapeInfo);
 
-    if(calcUV){
-
-        Nd4jLong *uShapeInfo(nullptr), *vShapeInfo(nullptr);
-        COPY_SHAPE(inShapeInfo, uShapeInfo);
-        COPY_SHAPE(inShapeInfo, vShapeInfo);
-
-        if(fullUV) {
-            uShapeInfo[rank]   = uShapeInfo[rank-1];
-            vShapeInfo[rank-1] = vShapeInfo[rank];
-        }
-        else {
-            uShapeInfo[rank] = diagSize;
-            vShapeInfo[rank-1] = vShapeInfo[rank];
-            vShapeInfo[rank] = diagSize;
-        }
-
-        shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
-        shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
-
-        auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(sShapeInfo)), ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(uShapeInfo)), ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(vShapeInfo)));
-        RELEASE(sShapeInfo, block.workspace());
-        RELEASE(uShapeInfo, block.workspace());
-        RELEASE(vShapeInfo, block.workspace());
-        return result;
+    if (fullUV) {
+      uShapeInfo[rank] = uShapeInfo[rank - 1];
+      vShapeInfo[rank - 1] = vShapeInfo[rank];
+    } else {
+      uShapeInfo[rank] = diagSize;
+      vShapeInfo[rank - 1] = vShapeInfo[rank];
+      vShapeInfo[rank] = diagSize;
     }
 
-    return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(sShapeInfo, block.workspace()));
+    shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
+    shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
+
+    auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(sShapeInfo)),
+                            ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(uShapeInfo)),
+                            ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(vShapeInfo)));
+    RELEASE(sShapeInfo, block.workspace());
+    RELEASE(uShapeInfo, block.workspace());
+    RELEASE(vShapeInfo, block.workspace());
+    return result;
+  }
+
+  return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(sShapeInfo, block.workspace()));
 }
 
-
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

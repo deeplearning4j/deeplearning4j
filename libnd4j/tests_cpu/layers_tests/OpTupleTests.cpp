@@ -19,43 +19,39 @@
 //
 // Created by raver119 on 11.10.2017.
 //
-
-#include "testlayers.h"
 #include <array/NDArray.h>
 #include <ops/declarable/OpTuple.h>
+
+#include "testlayers.h"
 
 using namespace sd;
 using namespace sd::ops;
 
 class OpTupleTests : public testing::Test {
-    public:
+ public:
 };
 
 TEST_F(OpTupleTests, DirectConstructorTest1) {
-    auto alpha = NDArrayFactory::create_<float>('c', {1, 2});
-    auto beta = NDArrayFactory::create_<float>('c', {1, 2});
-    OpTuple tuple("dummy", {alpha, beta}, {12.0f}, {1,2, 3});
+  auto alpha = NDArrayFactory::create_<float>('c', {1, 2});
+  auto beta = NDArrayFactory::create_<float>('c', {1, 2});
+  OpTuple tuple("dummy", {alpha, beta}, {12.0f}, {1, 2, 3});
 
-    ASSERT_EQ("dummy", tuple._opName);
-    ASSERT_EQ(2, tuple._inputs.size());
-    ASSERT_EQ(0, tuple._outputs.size());
-    ASSERT_EQ(1, tuple._tArgs.size());
-    ASSERT_EQ(3, tuple._iArgs.size());
+  ASSERT_EQ("dummy", tuple._opName);
+  ASSERT_EQ(2, tuple._inputs.size());
+  ASSERT_EQ(0, tuple._outputs.size());
+  ASSERT_EQ(1, tuple._tArgs.size());
+  ASSERT_EQ(3, tuple._iArgs.size());
 }
 
 TEST_F(OpTupleTests, BuilderTest1) {
-    auto alpha = NDArrayFactory::create_<float>('c', {1, 2});
-    auto beta = NDArrayFactory::create_<float>('c', {1, 2});
-    OpTuple tuple("dummy");
-    tuple.addInput(alpha)
-            ->addInput(beta)
-            ->setTArgs({12.0f})
-            ->setIArgs({1, 2, 3});
+  auto alpha = NDArrayFactory::create_<float>('c', {1, 2});
+  auto beta = NDArrayFactory::create_<float>('c', {1, 2});
+  OpTuple tuple("dummy");
+  tuple.addInput(alpha)->addInput(beta)->setTArgs({12.0f})->setIArgs({1, 2, 3});
 
-
-    ASSERT_EQ("dummy", tuple._opName);
-    ASSERT_EQ(2, tuple._inputs.size());
-    ASSERT_EQ(0, tuple._outputs.size());
-    ASSERT_EQ(1, tuple._tArgs.size());
-    ASSERT_EQ(3, tuple._iArgs.size());
+  ASSERT_EQ("dummy", tuple._opName);
+  ASSERT_EQ(2, tuple._inputs.size());
+  ASSERT_EQ(0, tuple._outputs.size());
+  ASSERT_EQ(1, tuple._tArgs.size());
+  ASSERT_EQ(3, tuple._iArgs.size());
 }

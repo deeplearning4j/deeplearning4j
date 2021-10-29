@@ -24,139 +24,138 @@
 #if NOT_EXCLUDED(OP_im2col)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
-#include <ops/declarable/helpers/col2im.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_NULLIFIED(0);
+namespace ops {
+CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_NULLIFIED(0);
 
-            REQUIRE_TRUE(x->rankOf() == 4, 0, "im2col input should be 4D, but got %i instead", x->rankOf());
-            REQUIRE_TRUE(z->rankOf() == 6, 0, "im2col output should be 6D, but got %i instead", z->rankOf());
+  REQUIRE_TRUE(x->rankOf() == 4, 0, "im2col input should be 4D, but got %i instead", x->rankOf());
+  REQUIRE_TRUE(z->rankOf() == 6, 0, "im2col output should be 6D, but got %i instead", z->rankOf());
 
-            int kernelHeight = INT_ARG(0);
-            int kernelWidth = INT_ARG(1);
-            int strideY = INT_ARG(2);
-            int strideX = INT_ARG(3);
-            int padHeight = INT_ARG(4);
-            int padWidth = INT_ARG(5);
-            int dY = INT_ARG(6);			//Dilation, height/y dimension
-            int dX = INT_ARG(7);			//Dilation, width/x dimension
-            bool isSameMode = INT_ARG(8) > 0;
-            double zeroPadVal = 0.0;
-            if (block.getTArguments()->size() > 0)
-                zeroPadVal = T_ARG(0);
+  int kernelHeight = INT_ARG(0);
+  int kernelWidth = INT_ARG(1);
+  int strideY = INT_ARG(2);
+  int strideX = INT_ARG(3);
+  int padHeight = INT_ARG(4);
+  int padWidth = INT_ARG(5);
+  int dY = INT_ARG(6);  // Dilation, height/y dimension
+  int dX = INT_ARG(7);  // Dilation, width/x dimension
+  bool isSameMode = INT_ARG(8) > 0;
+  double zeroPadVal = 0.0;
+  if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
 
-            // FIXME: zeropad value is void
-            LaunchContext* ctx = block.launchContext();
-            sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.launchContext()));
+  // FIXME: zeropad value is void
+  LaunchContext* ctx = block.launchContext();
+  sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX,
+                           NDArrayFactory::create(zeroPadVal, block.launchContext()));
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(im2col) {
-            auto inShape = inputShape->at(0);
-
-            int bS = shape::shapeOf(inShape)[0];
-            int iD = shape::shapeOf(inShape)[1];
-            int inY = shape::shapeOf(inShape)[2];
-            int inX = shape::shapeOf(inShape)[3];
-
-            int kY = INT_ARG(0);
-            int kX = INT_ARG(1);
-            int sY = INT_ARG(2);
-            int sX = INT_ARG(3);
-            int pY = INT_ARG(4);
-            int pX = INT_ARG(5);
-            int dY = INT_ARG(6);			//Dilation, height/y dimension
-            int dX = INT_ARG(7);			//Dilation, width/x dimension
-            bool isSameMode = INT_ARG(8) > 0;
-
-            // output is always 6d for im2col
-            Nd4jLong* zShape;
-            ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), Nd4jLong);
-
-            int oY = 0;
-            int oX = 0;
-
-            ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
-
-            if (isSameMode)
-                ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
-
-            zShape[0] = 6;
-            zShape[1] = bS;
-            zShape[2] = iD;
-            zShape[3] = kY;
-            zShape[4] = kX;
-            zShape[5] = oY;
-            zShape[6] = oX;
-
-            zShape[shape::shapeInfoLength(zShape) - 2] = 1;
-            zShape[shape::shapeInfoLength(zShape) - 1] = 99;
-
-            ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
-
-            return SHAPELIST(CONSTANT(zShape));
-        }
-
-		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
-            auto input = INPUT_VARIABLE(0);
-			auto gradAtOutput = INPUT_VARIABLE(1);
-            auto z = OUTPUT_NULLIFIED(0);
-
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "im2col_bp input should be 4D, but got %i instead", input->rankOf());
-			REQUIRE_TRUE(gradAtOutput->rankOf() == 6, 0, "im2col_bp gradient at output (input idx 1) should be 6D, but got %i instead", gradAtOutput->rankOf());
-            REQUIRE_TRUE(z->rankOf() == 4, 0, "im2col_bp output (grad at input) should be 4D, but got %i instead", z->rankOf());
-
-            int kernelHeight = INT_ARG(0);
-            int kernelWidth = INT_ARG(1);
-            int strideY = INT_ARG(2);
-            int strideX = INT_ARG(3);
-            int pH = INT_ARG(4);
-            int pW = INT_ARG(5);
-            int dY = INT_ARG(6);			//Dilation, height/y dimension
-            int dX = INT_ARG(7);			//Dilation, width/x dimension
-            bool isSameMode = INT_ARG(8) > 0;
-            double zeroPadVal = 0.0;
-            if (block.getTArguments()->size() > 0)
-                zeroPadVal = T_ARG(0);
-
-			//Assuming NCHW format here
-			int imgH = input->sizeAt(2);
-			int imgW = input->sizeAt(3);
-			
-            LaunchContext* ctx = block.launchContext();
-            // FIXME:: all helpers should accept NDArray
-			ops::helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
-
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(im2col) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::INHERIT)
-                    ->setSameMode(true);
-        }
-
-        DECLARE_TYPES(im2col_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::INHERIT)
-                    ->setSameMode(true);
-        }
-		
-		DECLARE_SHAPE_FN(im2col_bp) {
-            Nd4jLong *inShape;
-            COPY_SHAPE(inputShape->at(0), inShape);
-
-			return SHAPELIST(CONSTANT(inShape));
-		}
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(im2col) {
+  auto inShape = inputShape->at(0);
+
+  int bS = shape::shapeOf(inShape)[0];
+  int iD = shape::shapeOf(inShape)[1];
+  int inY = shape::shapeOf(inShape)[2];
+  int inX = shape::shapeOf(inShape)[3];
+
+  int kY = INT_ARG(0);
+  int kX = INT_ARG(1);
+  int sY = INT_ARG(2);
+  int sX = INT_ARG(3);
+  int pY = INT_ARG(4);
+  int pX = INT_ARG(5);
+  int dY = INT_ARG(6);  // Dilation, height/y dimension
+  int dX = INT_ARG(7);  // Dilation, width/x dimension
+  bool isSameMode = INT_ARG(8) > 0;
+
+  // output is always 6d for im2col
+  sd::LongType* zShape;
+  ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), sd::LongType);
+
+  int oY = 0;
+  int oX = 0;
+
+  ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+  if (isSameMode) ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+
+  zShape[0] = 6;
+  zShape[1] = bS;
+  zShape[2] = iD;
+  zShape[3] = kY;
+  zShape[4] = kX;
+  zShape[5] = oY;
+  zShape[6] = oX;
+
+  zShape[shape::shapeInfoLength(zShape) - 2] = 1;
+  zShape[shape::shapeInfoLength(zShape) - 1] = 99;
+
+  ShapeUtils::updateStridesAndType(zShape, inShape, 'c');
+
+  return SHAPELIST(CONSTANT(zShape));
+}
+
+CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
+  auto input = INPUT_VARIABLE(0);
+  auto gradAtOutput = INPUT_VARIABLE(1);
+  auto z = OUTPUT_NULLIFIED(0);
+
+  REQUIRE_TRUE(input->rankOf() == 4, 0, "im2col_bp input should be 4D, but got %i instead", input->rankOf());
+  REQUIRE_TRUE(gradAtOutput->rankOf() == 6, 0,
+               "im2col_bp gradient at output (input idx 1) should be 6D, but got %i instead", gradAtOutput->rankOf());
+  REQUIRE_TRUE(z->rankOf() == 4, 0, "im2col_bp output (grad at input) should be 4D, but got %i instead", z->rankOf());
+
+  int kernelHeight = INT_ARG(0);
+  int kernelWidth = INT_ARG(1);
+  int strideY = INT_ARG(2);
+  int strideX = INT_ARG(3);
+  int pH = INT_ARG(4);
+  int pW = INT_ARG(5);
+  int dY = INT_ARG(6);  // Dilation, height/y dimension
+  int dX = INT_ARG(7);  // Dilation, width/x dimension
+  bool isSameMode = INT_ARG(8) > 0;
+  double zeroPadVal = 0.0;
+  if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
+
+  // Assuming NCHW format here
+  int imgH = input->sizeAt(2);
+  int imgW = input->sizeAt(3);
+
+  LaunchContext* ctx = block.launchContext();
+  // FIXME:: all helpers should accept NDArray
+  ops::helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+
+  return sd::Status::OK;
+}
+
+DECLARE_TYPES(im2col) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setSameMode(true);
+}
+
+DECLARE_TYPES(im2col_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setSameMode(true);
+}
+
+DECLARE_SHAPE_FN(im2col_bp) {
+  sd::LongType* inShape;
+  COPY_SHAPE(inputShape->at(0), inShape);
+
+  return SHAPELIST(CONSTANT(inShape));
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

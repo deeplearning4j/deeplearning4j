@@ -19,12 +19,8 @@
 //
 // Created by raver119 on 21.11.17.
 //
-
 #include <array/ByteOrderUtils.h>
 
-
 namespace sd {
-    ByteOrder ByteOrderUtils::fromFlatByteOrder(sd::graph::ByteOrder order) {
-        return (ByteOrder) order;
-    }
-}
+ByteOrder ByteOrderUtils::fromFlatByteOrder(sd::graph::ByteOrder order) { return (ByteOrder)order; }
+}  // namespace sd

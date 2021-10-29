@@ -32,7 +32,6 @@ enum CBLAS_UPLO  {CblasUpper=121, CblasLower=122};
 enum CBLAS_DIAG  {CblasNonUnit=131, CblasUnit=132};
 enum CBLAS_SIDE  {CblasLeft=141, CblasRight=142};
 */
-#include <system/dll.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,5 +79,4 @@ CBLAS_SIDE convertSide(int from);
 }
 #endif
 
-
-#endif //NATIVEOPERATIONS_CBLAS_ENUM_CONVERSION_H_H
+#endif  // NATIVEOPERATIONS_CBLAS_ENUM_CONVERSION_H_H

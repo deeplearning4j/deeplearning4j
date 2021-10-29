@@ -23,60 +23,57 @@
 #ifndef LIBND4J_DEBUGHELPER_H
 #define LIBND4J_DEBUGHELPER_H
 
-#include <system/pointercast.h>
-#include <system/op_boilerplate.h>
-#include <system/Environment.h>
 #include <helpers/StringUtils.h>
+#include <system/Environment.h>
+#include <system/op_boilerplate.h>
+
 #include <string>
 
-
 #ifdef __CUDACC__
-
 #include <cuda.h>
-#include <driver_types.h>
 #include <cuda_runtime_api.h>
+#include <driver_types.h>
 
 #endif
 #include <helpers/DebugInfo.h>
 namespace sd {
-    class NDArray;
-    class ND4J_EXPORT DebugHelper {
-    public:
-
-    // cuda-specific debug functions
+class NDArray;
+class SD_LIB_EXPORT DebugHelper {
+ public:
+  // cuda-specific debug functions
 #ifdef __CUDACC__
-        static FORCEINLINE void checkErrorCode(cudaStream_t *stream, int opNum = 0) {
-            if (Environment::getInstance().isDebug()) {
-                cudaError_t res = cudaStreamSynchronize(*stream);
+  static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opNum = 0) {
+    if (Environment::getInstance().isDebug()) {
+      cudaError_t res = cudaStreamSynchronize(*stream);
 
-                if (res != 0) {
-                    //PRINT_FIRST("Kernel OpNum failed: [%i]\n", opNum);
-                    std::string op = "Kernel OpNum failed: [";
-                    op += StringUtils::valueToString<int>(opNum);
-                    op += "]";
+      if (res != 0) {
+        // PRINT_FIRST("Kernel OpNum failed: [%i]\n", opNum);
+        std::string op = "Kernel OpNum failed: [";
+        op += StringUtils::valueToString<int>(opNum);
+        op += "]";
 
-                    throw std::runtime_error(op);
-                }
-            }
-        }
+        throw std::runtime_error(op);
+      }
+    }
+  }
 
-        static FORCEINLINE void checkErrorCode(cudaStream_t *stream, const char *failMessage = nullptr) {
-            cudaError_t res = cudaStreamSynchronize(*stream);
-            if (res != 0) {
-                if (failMessage == nullptr) {
-                    std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
-                    throw std::runtime_error(op);
-                } else {
-                    std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) + std::string("]");
-                    throw std::runtime_error(op);
-                }
-            }
-        }
+  static SD_INLINE void checkErrorCode(cudaStream_t* stream, const char* failMessage = nullptr) {
+    cudaError_t res = cudaStreamSynchronize(*stream);
+    if (res != 0) {
+      if (failMessage == nullptr) {
+        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
+        throw std::runtime_error(op);
+      } else {
+        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) +
+                         std::string("]");
+        throw std::runtime_error(op);
+      }
+    }
+  }
 #endif
-        static DebugInfo debugStatistics(NDArray const* input);
-        static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
-    };
-}
+  static DebugInfo debugStatistics(NDArray const* input);
+  static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
+};
+}  // namespace sd
 
-
-#endif //LIBND4J_DEBUGHELPER_H
+#endif  // LIBND4J_DEBUGHELPER_H

@@ -35,13 +35,12 @@ limitations under the License.
 //
 //  @author sgazeos@gmail.com
 //
-
-#include <ops/declarable/helpers/crop_and_resize.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/crop_and_resize.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
 // ------------------------------------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -55,12 +54,14 @@ namespace sd {
 // \@param extrapolationVal - radix to increase/decrease image
 // \@param crops - output image batch (4D with given type)
 //
-             void
-            cropAndResizeFunctor(sd::LaunchContext * context, NDArray const *images, NDArray const *boxes,
-                                 NDArray const *indices, NDArray const *cropSize,
-                                 int method, double extrapolationVal, NDArray *crops) {
-                BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_, (images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);
-            }
-        }
-    }
+
+void cropAndResizeFunctor(sd::LaunchContext *context, NDArray const *images, NDArray const *boxes,
+                          NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal,
+                          NDArray *crops) {
+  BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
+                        (images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
+                        SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 }
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

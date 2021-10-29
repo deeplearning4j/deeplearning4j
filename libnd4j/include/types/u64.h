@@ -21,46 +21,42 @@
 //
 #ifndef LIBND4J_U64_H
 #define LIBND4J_U64_H
-
-#include <cstdint>
-#include <system/pointercast.h>
 #include <types/float16.h>
 
+#include <cstdint>
 
 namespace sd {
-    typedef struct {
-        int16_t _v0;
-        int16_t _v1;
-        int16_t _v2;
-        int16_t _v3;
-    } di16;
+typedef struct {
+  int16_t _v0;
+  int16_t _v1;
+  int16_t _v2;
+  int16_t _v3;
+} di16;
 
-    typedef struct {
-        int _v0;
-        int _v1;
-    } di32;
+typedef struct {
+  int _v0;
+  int _v1;
+} di32;
 
-    typedef struct {
-        uint32_t _v0;
-        uint32_t _v1;
-    } du32;
+typedef struct {
+  uint32_t _v0;
+  uint32_t _v1;
+} du32;
 
-    union u64 {
-        bool _bool;
-        int8_t _char;
-        int16_t _short;
-        int32_t _int;
-        //float16 _half = 0.0f;
-        float _float;
-        double _double;
-        Nd4jLong _long;
-        uint64_t _ulong;
-        di32 _di32;
-        du32 _du32;
-        u64() {
-            _long = 0;
-        }
-    };
-}
+union u64 {
+  bool _bool;
+  int8_t _char;
+  int16_t _short;
+  int32_t _int;
+  // float16 _half = 0.0f;
+  float _float;
+  double _double;
+  sd::LongType _long;
+  uint64_t _ulong;
+  di32 _di32;
+  du32 _du32;
+  u64() { _long = 0; }
+};
+}  // namespace sd
 
 #endif

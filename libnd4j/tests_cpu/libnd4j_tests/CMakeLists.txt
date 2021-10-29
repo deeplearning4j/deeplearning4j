@@ -124,9 +124,9 @@ endif()
 if (APPLE)
     set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -D__APPLE_OS__=true -DSD_APPLE_BUILD=true")
 elseif(WIN32)
-	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -Wa,-mbig-obj")
-	endif()
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -Wa,-mbig-obj")
+    endif()
 else()
     set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -ffast-math -DFFAST_MATH=true -DLINUX_BUILD=true")
 
@@ -158,8 +158,8 @@ endif()
 
 if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
     message("Experimental mode ENABLED")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
 endif()
 
 # tests are always compiled with all ops included
@@ -179,7 +179,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fmax-errors=2")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${INFORMATIVE_FLAGS}")
 endif()
 
 

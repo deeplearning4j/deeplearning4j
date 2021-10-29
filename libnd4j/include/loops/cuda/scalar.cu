@@ -19,16 +19,14 @@
 //
 // @author raver119@gmail.com
 //
-
-#include "loops/scalar.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <system/op_boilerplate.h>
 #include <helpers/TAD.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
 
-namespace functions {
-    namespace scalar {
+#include "loops/scalar.h"
 
-    }
-}
+namespace functions {
+namespace scalar {}
+}  // namespace functions

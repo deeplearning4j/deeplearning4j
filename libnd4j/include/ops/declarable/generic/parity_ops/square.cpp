@@ -26,23 +26,19 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        OP_IMPL(square, 1, 1, true) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+OP_IMPL(square, 1, 1, true) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            int extras = 2;
-            input->applyScalar(scalar::Pow, extras, *output);
+  int extras = 2;
+  input->applyScalar(scalar::Pow, extras, *output);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(square) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(square) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -22,23 +22,23 @@
 
 #ifndef LIBND4J_DECLARABLE_REDUCTION_OP_H
 #define LIBND4J_DECLARABLE_REDUCTION_OP_H
-
 #include <ops/declarable/DeclarableOp.h>
 
 namespace sd {
-    namespace ops {
-        class ND4J_EXPORT DeclarableReductionOp : public sd::ops::DeclarableOp {
-        protected:
-            /**
-             * This method executes this Op
-             */
-            Nd4jStatus validateAndExecute(Context& block) override = 0;
-        public:
-            DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
+namespace ops {
+class SD_LIB_EXPORT DeclarableReductionOp : public sd::ops::DeclarableOp {
+ protected:
+  /**
+   * This method executes this Op
+   */
+  sd::Status validateAndExecute(Context& block) override = 0;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
-        };
-    }
-}
+ public:
+  DeclarableReductionOp(int numInputs, int numOutputs, const char* opName, bool allowsInplace, int tArgs, int iArgs);
 
-#endif //LIBND4J_DECLARABLE_REDUCTION_OP_H
+  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+};
+}  // namespace ops
+}  // namespace sd
+
+#endif  // LIBND4J_DECLARABLE_REDUCTION_OP_H

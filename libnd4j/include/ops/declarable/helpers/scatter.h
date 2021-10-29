@@ -22,21 +22,24 @@
 
 #ifndef DEV_TESTS_SCATTER_H
 #define DEV_TESTS_SCATTER_H
-
 #include <array/NDArray.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
+namespace ops {
+namespace helpers {
+SD_LIB_HIDDEN void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates,
+                           NDArray& output, const bool lock);
 
-            void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
+SD_LIB_HIDDEN void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices,
+                             const NDArray& updates, NDArray& output, const bool lock);
 
-            void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad);
+SD_LIB_HIDDEN void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output,
+                                  const bool calcGrad);
 
-            Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis = -1);
-        }
-    }
-}
+SD_LIB_HIDDEN sd::LongType checkIndices(sd::LaunchContext* context, const NDArray& indices, const NDArray& output,
+                                        const int axis = -1);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-#endif //DEV_TESTS_SCATTER_H
+#endif  // DEV_TESTS_SCATTER_H

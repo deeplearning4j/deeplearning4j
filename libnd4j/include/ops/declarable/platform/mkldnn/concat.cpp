@@ -19,183 +19,180 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <ops/declarable/PlatformHelper.h>
+#include <helpers/MKLDNNStream.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 
-#include <helpers/MKLDNNStream.h>
-#include "mkldnnUtils.h"
 #include <numeric>
 
+#include "mkldnnUtils.h"
 
-namespace sd      {
-namespace ops       {
+namespace sd {
+namespace ops {
 namespace platforms {
-
 
 //////////////////////////////////////////////////////////////////////////
 static void concatMKLDNN(const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+  // data type
+  dnnl::memory::data_type type;
+  if (output.dataType() == DataType::FLOAT32)
+    type = dnnl::memory::data_type::f32;
+  else if (output.dataType() == DataType::HALF)
+    type = dnnl::memory::data_type::f16;
+  else if (output.dataType() == DataType::BFLOAT16)
+    type = dnnl::memory::data_type::bf16;
+  else if (output.dataType() == DataType::UINT8)
+    type = dnnl::memory::data_type::u8;
+  else
+    type = dnnl::memory::data_type::s8;
 
-    // data type
-    dnnl::memory::data_type type;
-    if(output.dataType() == DataType::FLOAT32)
-        type = dnnl::memory::data_type::f32;
-    else if(output.dataType() == DataType::HALF)
-        type = dnnl::memory::data_type::f16;
-    else if(output.dataType() == DataType::BFLOAT16)
-        type = dnnl::memory::data_type::bf16;
-    else if(output.dataType() == DataType::UINT8)
-        type = dnnl::memory::data_type::u8;
-    else
-        type = dnnl::memory::data_type::s8;
+  std::vector<dnnl::memory::desc> x_user_md(inArrs.size()), x_mkl_md(inArrs.size());
 
-    std::vector<dnnl::memory::desc> x_user_md(inArrs.size()), x_mkl_md(inArrs.size());
+  // inputs
+  for (int i = 0; i < inArrs.size(); ++i) {
+    dnnl::memory::dims dims = inArrs[i]->getShapeAsFlatVector();
+    x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, onednnUtils::getFormat(*inArrs[i]));
+    onednnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
+  }
 
-    // inputs
-    for (int i = 0; i < inArrs.size(); ++i) {
+  // output
+  dnnl::memory::dims dims = output.getShapeAsFlatVector();
+  dnnl::memory::desc z_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
+  dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
+  onednnUtils::setBlockStrides(output, z_user_md);
 
-        dnnl::memory::dims dims = inArrs[i]->getShapeAsFlatVector();
-        x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, onednnUtils::getFormat(*inArrs[i]));
-        onednnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
-    }
+  std::unordered_map<int, dnnl::memory> args;
 
-    // output
-    dnnl::memory::dims dims = output.getShapeAsFlatVector();
-    dnnl::memory::desc z_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
-    dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
-    onednnUtils::setBlockStrides(output, z_user_md);
+  auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-    std::unordered_map<int, dnnl::memory> args;
+  dnnl::concat::primitive_desc op_prim_desc(axis, x_mkl_md, engine);
 
-    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
+  dnnl::stream stream(engine);
 
-    dnnl::concat::primitive_desc op_prim_desc(axis, x_mkl_md, engine);
+  // inputs
+  for (int i = 0; i < inArrs.size(); ++i)
+    onednnUtils::loadDataToMklStream(*inArrs[i], engine, stream, x_user_md[i], op_prim_desc.src_desc(i),
+                                     args[DNNL_ARG_MULTIPLE_SRC + i]);
 
-    dnnl::stream stream(engine);
+  // outputs
+  auto z_user_mem =
+      onednnUtils::loadDataToMklStream(output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
-    // inputs
-    for (int i = 0; i < inArrs.size(); ++i)
-        onednnUtils::loadDataToMklStream(*inArrs[i], engine, stream, x_user_md[i], op_prim_desc.src_desc(i), args[DNNL_ARG_MULTIPLE_SRC + i]);
+  // primitive execution
+  dnnl::concat(op_prim_desc).execute(stream, args);
 
-    // outputs
-    auto z_user_mem = onednnUtils::loadDataToMklStream(output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+  // reorder output if necessary
+  if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
+    dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
-    // primitive execution
-    dnnl::concat(op_prim_desc).execute(stream, args);
-
-    // reorder output if necessary
-    if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
-        dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
-
-    stream.wait();
+  stream.wait();
 }
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(concat, ENGINE_CPU) {
+  REQUIRE_TRUE(block.width() > 0, 0, "CONCAT MKLDNN op: No input arrays were provided");
 
-    REQUIRE_TRUE(block.width() > 0, 0, "CONCAT MKLDNN op: No input arrays were provided");
+  const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
 
-    const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
+  const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
 
-    const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
+  // first of all take into account possible presence of empty arrays
+  // also if scalar is present -> copy its value to vector with length=1
+  std::vector<const NDArray*> nonEmptyArrs;
+  std::vector<int> arrsToDelete;
+  int index = 0;
+  bool allOfSameType = true;
+  auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
+  auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
 
-    // first of all take into account possible presence of empty arrays
-    // also if scalar is present -> copy its value to vector with length=1
-    std::vector<const NDArray*> nonEmptyArrs;
-    std::vector<int> arrsToDelete;
-    int index = 0;
-    bool allOfSameType = true;
-    auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
-    auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
+  for (int i = 0; i < numOfInArrs; ++i) {
+    auto input = INPUT_VARIABLE(i);
+    auto currentRank = input->rankOf();
 
-    for(int i = 0; i < numOfInArrs; ++i) {
-        auto input = INPUT_VARIABLE(i);
-        auto currentRank = input->rankOf();
+    if (!input->isEmpty()) {
+      allOfSameType &= (typeOfFirstArr == input->dataType());
 
-        if(!input->isEmpty()) {
-
-            allOfSameType &= (typeOfFirstArr == input->dataType());
-
-            if(input->rankOf() == 0) {
-                auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());
-                vec->assign(input);
-                nonEmptyArrs.push_back(vec);
-                arrsToDelete.push_back(index);
-            }
-            else{
-                nonEmptyArrs.push_back(input);
-            }
-            ++index;
-        }
+      if (input->rankOf() == 0) {
+        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());
+        vec->assign(input);
+        nonEmptyArrs.push_back(vec);
+        arrsToDelete.push_back(index);
+      } else {
+        nonEmptyArrs.push_back(input);
+      }
+      ++index;
     }
+  }
 
-    const int numOfNonEmptyArrs = nonEmptyArrs.size();
+  const int numOfNonEmptyArrs = nonEmptyArrs.size();
 
-    if(numOfNonEmptyArrs == 0){
-        //All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
-        REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "CONCAT MKLDNN op: If all input variables are empty, output must be empty");
-        return Status::OK();
-    }
+  if (numOfNonEmptyArrs == 0) {
+    // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
+    REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0,
+                 "CONCAT MKLDNN op: If all input variables are empty, output must be empty");
+    return sd::Status::OK;
+  }
 
-    const int rank = nonEmptyArrs[0]->rankOf();                     //  look up to first non-empty array
-    int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
-    if(axis < 0){
-        axis += rank;
-    }
+  const int rank = nonEmptyArrs[0]->rankOf();  //  look up to first non-empty array
+  int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
+  if (axis < 0) {
+    axis += rank;
+  }
 
-    // ******** input validation ******** //
-    REQUIRE_TRUE(allOfSameType, 0, "CONCAT MKLDNN op: all of input arrays must have same type !");
-    REQUIRE_TRUE(nonEmptyArrs[0]->dataType() == OUTPUT_VARIABLE(0)->dataType(), 0, "CONCAT MKLDNN op: output array should have the same type as inputs arrays !");
-    REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT MKLDNN op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
+  // ******** input validation ******** //
+  REQUIRE_TRUE(allOfSameType, 0, "CONCAT MKLDNN op: all of input arrays must have same type !");
+  REQUIRE_TRUE(nonEmptyArrs[0]->dataType() == OUTPUT_VARIABLE(0)->dataType(), 0,
+               "CONCAT MKLDNN op: output array should have the same type as inputs arrays !");
+  REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0,
+               "CONCAT MKLDNN op: input axis must be in range [0, %i], but got %i instead!", rank - 1, axis);
 
-    for(int i = 1; i < numOfNonEmptyArrs; ++i)
-        REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT MKLDNN op: all input arrays must have the same rank !");
+  for (int i = 1; i < numOfNonEmptyArrs; ++i)
+    REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT MKLDNN op: all input arrays must have the same rank !");
 
-    for(int i = 1; i < numOfNonEmptyArrs; ++i) {
-        for(int dim = 0; dim < rank; ++dim)
-            if(dim != axis)
-                REQUIRE_TRUE(nonEmptyArrs[i]->sizeAt(dim) == nonEmptyArrs[0]->sizeAt(dim), 0, "CONCAT MKLDNN op: all input arrays must have the same dimensions (except those on input axis) !");
-    }
-    // ******** end of input validation ******** //
+  for (int i = 1; i < numOfNonEmptyArrs; ++i) {
+    for (int dim = 0; dim < rank; ++dim)
+      if (dim != axis)
+        REQUIRE_TRUE(nonEmptyArrs[i]->sizeAt(dim) == nonEmptyArrs[0]->sizeAt(dim), 0,
+                     "CONCAT MKLDNN op: all input arrays must have the same dimensions (except those on input axis) !");
+  }
+  // ******** end of input validation ******** //
 
-    auto output = OUTPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    if(numOfNonEmptyArrs == 1)
-        output->assign(nonEmptyArrs[0]);
-    else
-        concatMKLDNN(nonEmptyArrs, *output, axis);
+  if (numOfNonEmptyArrs == 1)
+    output->assign(nonEmptyArrs[0]);
+  else
+    concatMKLDNN(nonEmptyArrs, *output, axis);
 
-    // delete dynamically allocated vectors with length=1
-    for(int index : arrsToDelete)
-        delete nonEmptyArrs[index];
+  // delete dynamically allocated vectors with length=1
+  for (int index : arrsToDelete) delete nonEmptyArrs[index];
 
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(concat, ENGINE_CPU) {
+  auto z = OUTPUT_VARIABLE(0);
 
-    auto z = OUTPUT_VARIABLE(0);
-
-    const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
-    const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
-    Requirements req("ONEDNN CONCAT OP");
-    req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
-    req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
-    req.expectLessEq(makeInfoVariable(numOfInArrs, "numOfinArrs"), 3072) &&
-    req.expectTrue(
-        makeInfoVariable(
-            [z]{
-                const auto zType = z->dataType();
-                return (zType==DataType::FLOAT32 || zType==DataType::HALF || zType==DataType::BFLOAT16 || zType==DataType::UINT8 || zType==DataType::INT8);
-            }, TYPECHECK_MSG),
-        NO_MSG
-    );
-    req.logTheSuccess();
-    return req;
+  const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
+  const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
+  Requirements req("ONEDNN CONCAT OP");
+  req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
+      req.expectLess(makeInfoVariable(z->rankOf(), RANK_MSG_OUTPUT), 7) &&
+      req.expectLessEq(makeInfoVariable(numOfInArrs, "numOfinArrs"), 3072) &&
+      req.expectTrue(makeInfoVariable(
+                         [z] {
+                           const auto zType = z->dataType();
+                           return (zType == DataType::FLOAT32 || zType == DataType::HALF ||
+                                   zType == DataType::BFLOAT16 || zType == DataType::UINT8 || zType == DataType::INT8);
+                         },
+                         TYPECHECK_MSG),
+                     NO_MSG);
+  req.logTheSuccess();
+  return req;
 }
 
-}
-}
-}
+}  // namespace platforms
+}  // namespace ops
+}  // namespace sd

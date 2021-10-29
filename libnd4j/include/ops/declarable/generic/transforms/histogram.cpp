@@ -24,37 +24,34 @@
 #if NOT_EXCLUDED(OP_histogram)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/histogram.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(histogram, 1, 1, false, 0, 1) {
-            auto input = INPUT_VARIABLE(0);
-            auto numBins = INT_ARG(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(histogram, 1, 1, false, 0, 1) {
+  auto input = INPUT_VARIABLE(0);
+  auto numBins = INT_ARG(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(numBins == output->lengthOf(), 0, "Histogram: numBins must match output length")
+  REQUIRE_TRUE(numBins == output->lengthOf(), 0, "Histogram: numBins must match output length")
 
-            output->nullify();
-            helpers::histogramHelper(block.launchContext(), *input, *output);
+  output->nullify();
+  helpers::histogramHelper(block.launchContext(), *input, *output);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(histogram) {
-            auto numBins = INT_ARG(0);
-
-            return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(numBins, sd::DataType::INT64));
-        }
-
-
-        DECLARE_TYPES(histogram) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-                    ->setAllowedOutputTypes({ALL_INTS});
-        };
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(histogram) {
+  auto numBins = INT_ARG(0);
+
+  return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(numBins, sd::DataType::INT64));
+}
+
+DECLARE_TYPES(histogram) {
+  getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_INTS});
+};
+}  // namespace ops
+}  // namespace sd
 
 #endif

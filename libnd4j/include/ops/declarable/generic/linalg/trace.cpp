@@ -24,48 +24,48 @@
 #if NOT_EXCLUDED(OP_trace)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
-    
-    auto input  = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
-    
-    REQUIRE_TRUE(input->rankOf() >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", input->rankOf());
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    helpers::trace(block.launchContext(), *input, *output);
+  REQUIRE_TRUE(input->rankOf() >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!",
+               input->rankOf());
 
-    return Status::OK();
+  helpers::trace(block.launchContext(), *input, *output);
+
+  return sd::Status::OK;
 }
 
-    DECLARE_TYPES(trace) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
-                ->setAllowedOutputTypes(0, {ALL_FLOATS});
-    }
+DECLARE_TYPES(trace) {
+  getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
 
 DECLARE_SHAPE_FN(trace) {
-    auto inShapeInfo = inputShape->at(0);
+  auto inShapeInfo = inputShape->at(0);
 
-    REQUIRE_TRUE(inShapeInfo[0] >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", inShapeInfo[0]);    
-    const int rank = inShapeInfo[0] - 2;
+  REQUIRE_TRUE(inShapeInfo[0] >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!",
+               inShapeInfo[0]);
+  const int rank = inShapeInfo[0] - 2;
 
-    Nd4jLong* outShapeInfo(nullptr);
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
+  sd::LongType* outShapeInfo(nullptr);
+  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
-    outShapeInfo[0] = rank;
-    for(int i=1; i <= rank; ++i)
-        outShapeInfo[i] = inShapeInfo[i];
+  outShapeInfo[0] = rank;
+  for (int i = 1; i <= rank; ++i) outShapeInfo[i] = inShapeInfo[i];
 
-    shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-    auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo)));
-    RELEASE(outShapeInfo, block.getWorkspace());
-    return SHAPELIST(result);
+  shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
+  auto result = ConstantShapeHelper::getInstance().createShapeInfo(
+      ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo)));
+  RELEASE(outShapeInfo, block.getWorkspace());
+  return SHAPELIST(result);
 }
 
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

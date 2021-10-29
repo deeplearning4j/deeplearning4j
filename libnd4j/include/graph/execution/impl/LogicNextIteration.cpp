@@ -19,34 +19,32 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <graph/execution/LogicNextIteration.h>
 
-
 namespace sd {
-    namespace graph {
-        Nd4jStatus LogicNextIeration::processNode(Graph *graph, Node *node) {
-            auto __variableSpace = graph->getVariableSpace();
-            auto __flowPath = __variableSpace->flowPath();
+namespace graph {
+sd::Status LogicNextIeration::processNode(Graph *graph, Node *node) {
+  auto __variableSpace = graph->getVariableSpace();
+  auto __flowPath = __variableSpace->flowPath();
 
-            auto inputAddr = node->input()->at(0);
+  auto inputAddr = node->input()->at(0);
 
-            auto var = __variableSpace->getVariable(inputAddr);
+  auto var = __variableSpace->getVariable(inputAddr);
 
-            Variable *lvar = nullptr;
-            if (__variableSpace->hasVariable(node->id(), 0))
-                lvar = __variableSpace->getVariable(node->id(), 0);
-            else
-                lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
+  Variable *lvar = nullptr;
+  if (__variableSpace->hasVariable(node->id(), 0))
+    lvar = __variableSpace->getVariable(node->id(), 0);
+  else
+    lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
-//            if (lvar->hasNDArray())
-//                delete lvar->getNDArray();
+  //            if (lvar->hasNDArray())
+  //                delete lvar->getNDArray();
 
-            auto array = var->getNDArray();
-            lvar->setNDArray(array);
-            lvar->markReadOnly(true);
+  auto array = var->getNDArray();
+  lvar->setNDArray(array);
+  lvar->markReadOnly(true);
 
-            return ND4J_STATUS_OK;
-        }
-    }
+  return sd::Status::OK;
 }
+}  // namespace graph
+}  // namespace sd

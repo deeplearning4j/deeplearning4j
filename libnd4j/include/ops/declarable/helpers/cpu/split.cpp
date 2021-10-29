@@ -18,118 +18,111 @@
  *  *****************************************************************************
  */
 
- //
- //  @author Oleh Semeniv (oleg.semeniv@gmail.com)
- //
-
-#include <ops/declarable/helpers/transforms.h>
+//
+//  @author Oleh Semeniv (oleg.semeniv@gmail.com)
+//
 #include <helpers/Loops.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis) {
+  sd::Unsigned numSplits = outArrs.size();
 
-            //////////////////////////////////////////////////////////////////////////
-            template <typename T>
-            static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis) {
-                uint numSplits = outArrs.size();
+  const auto sizeofT = input.sizeOfT();
 
-                const auto sizeofT = input.sizeOfT();
+  auto xBuff = input.bufferAsT<T>();
 
-                auto xBuff = input.bufferAsT<T>();
+  bool luckCase1 =
+      ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) &&
+      input.ews() == 1;
 
-                bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) && input.ews() == 1;
+  if (luckCase1) {
+    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+      luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
+      if (!luckCase1) break;
+    }
+  }
 
-                if (luckCase1) {
-                    for (uint i = 0; i < numSplits; ++i) {
-                        luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
-                        if (!luckCase1)
-                            break;
-                    }
-                }
+  if (luckCase1) {
+    T* x = const_cast<T*>(xBuff);
+    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+      const auto memAmountToCopy = outArrs[i]->lengthOf();
+      memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
+      x += memAmountToCopy;
+    }
+    return;
+  }
 
-                if (luckCase1) {
+  const bool isXcontin = input.strideAt(axis) == 1 && input.ordering() == 'c';
+  bool areOutsContin = true;
+  bool allSameOrder = true;
 
-                    T* x = const_cast<T*>(xBuff);
-                    for (uint i = 0; i < numSplits; ++i) {
-                        const auto memAmountToCopy = outArrs[i]->lengthOf();
-                        memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
-                        x += memAmountToCopy;
-                    }
-                    return;
-                }
+  if (isXcontin) {
+    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+      areOutsContin &= outArrs[i]->strideAt(axis) == 1;
+      allSameOrder &= outArrs[i]->ordering() == input.ordering();
+      if (!areOutsContin || !allSameOrder) break;
+    }
+  }
 
-                const bool isXcontin = input.strideAt(axis) == 1 && input.ordering() == 'c';
-                bool areOutsContin = true;
-                bool allSameOrder = true;
+  const bool luckCase2 = isXcontin && areOutsContin && allSameOrder;
 
-                if (isXcontin) {
-                    for (uint i = 0; i < numSplits; ++i) {
-                        areOutsContin &= outArrs[i]->strideAt(axis) == 1;
-                        allSameOrder &= outArrs[i]->ordering() == input.ordering();
-                        if (!areOutsContin || !allSameOrder)
-                            break;
-                    }
-                }
+  if (luckCase2) {
+    const auto xDim = input.sizeAt(axis);
 
-                const bool luckCase2 = isXcontin && areOutsContin && allSameOrder;
+    for (sd::LongType i = 0; i < input.lengthOf() / xDim; ++i) {
+      auto x = xBuff + xDim * i;
 
-                if (luckCase2) {
-
-                    const auto xDim = input.sizeAt(axis);
-
-                    for (Nd4jLong i = 0; i < input.lengthOf() / xDim; ++i) {
-
-                        auto x = xBuff + xDim * i;
-
-                        for (uint j = 0; j < numSplits; ++j) {
-                            const auto zDim = outArrs[j]->sizeAt(axis);
-                            T* z = outArrs[j]->bufferAsT<T>() + zDim * i;
-                            memcpy(z, x, zDim * sizeofT);
-                            z += zDim;
-                            x += zDim;
-                        }
-                    }
-
-                    return;
-                }
-
-                uint zDim = outArrs[0]->sizeAt(axis);
-                // general case
-
-                auto func = PRAGMA_THREADS_FOR{
-
-                    int coords[MAX_RANK], temp;
-
-                    for (auto i = start; i < stop; i += increment) {
-
-                        shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
-                        const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
-
-                        uint outArrIdx = 0;
-
-                        temp = coords[axis];
-
-                        while (coords[axis] >= zDim) {
-                            coords[axis] -= zDim;
-                            ++outArrIdx;
-                        }
-
-                        T* z = outArrs[outArrIdx]->bufferAsT<T>();
-                        const auto zOffset = shape::getOffset(outArrs[outArrIdx]->shapeInfo(), coords);
-                        z[zOffset] = xBuff[xOffset];
-
-                        coords[axis] = temp;
-                    }
-                };
-
-                samediff::Threads::parallel_for(func, 0, input.lengthOf());
-            }
-
-            ND4J_LOCAL void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
-                BUILD_SINGLE_SELECTOR(input.dataType(), split_, (input, outArrs, axis), LIBND4J_TYPES);
-            }
+      for (sd::Unsigned j = 0; j < numSplits; ++j) {
+        const auto zDim = outArrs[j]->sizeAt(axis);
+        T* z = outArrs[j]->bufferAsT<T>() + zDim * i;
+        memcpy(z, x, zDim * sizeofT);
+        z += zDim;
+        x += zDim;
       }
     }
+
+    return;
+  }
+
+  sd::Unsigned zDim = outArrs[0]->sizeAt(axis);
+  // general case
+
+  auto func = PRAGMA_THREADS_FOR {
+    int coords[SD_MAX_RANK], temp;
+
+    for (auto i = start; i < stop; i += increment) {
+      shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
+      const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
+
+      sd::Unsigned outArrIdx = 0;
+
+      temp = coords[axis];
+
+      while (coords[axis] >= zDim) {
+        coords[axis] -= zDim;
+        ++outArrIdx;
+      }
+
+      T* z = outArrs[outArrIdx]->bufferAsT<T>();
+      const auto zOffset = shape::getOffset(outArrs[outArrIdx]->shapeInfo(), coords);
+      z[zOffset] = xBuff[xOffset];
+
+      coords[axis] = temp;
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, input.lengthOf());
 }
+
+void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
+  BUILD_SINGLE_SELECTOR(input.dataType(), split_, (input, outArrs, axis), SD_COMMON_TYPES);
+}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

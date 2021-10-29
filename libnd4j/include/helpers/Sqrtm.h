@@ -22,7 +22,6 @@
 
 #ifndef LIBND4J_SQRTM_H
 #define LIBND4J_SQRTM_H
-
 #include <array/NDArray.h>
 
 namespace sd {
@@ -31,17 +30,12 @@ namespace helpers {
 
 template <typename T>
 class Sqrtm {
-
-
-    public:
-
-        static void calc(const NDArray& in, NDArray& out);
+ public:
+  static void calc(const NDArray& in, NDArray& out);
 };
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-}
-}
-}
-
-
-#endif //LIBND4J_SQRTM_H
+#endif  // LIBND4J_SQRTM_H

@@ -23,67 +23,69 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_split_list)
 
-#include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
-            NDArrayList *list = nullptr;
-            NDArray *array = nullptr;
-            NDArray *sizes = nullptr;
+namespace ops {
+LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
+  NDArrayList *list = nullptr;
+  NDArray *array = nullptr;
+  NDArray *sizes = nullptr;
 
-            bool hasList = false;
+  bool hasList = false;
 
-            if (block.width() >= 3){
-                list = INPUT_LIST(0);
-                array = INPUT_VARIABLE(1);
-                sizes = INPUT_VARIABLE(2);
-                hasList = true;
-            } else {
-                array = INPUT_VARIABLE(0);
-                sizes = INPUT_VARIABLE(1);
-                list = new NDArrayList(sizes->lengthOf(), false);
-                block.trackList(list);
-            }
+  if (block.width() >= 3) {
+    list = INPUT_LIST(0);
+    array = INPUT_VARIABLE(1);
+    sizes = INPUT_VARIABLE(2);
+    hasList = true;
+  } else {
+    array = INPUT_VARIABLE(0);
+    sizes = INPUT_VARIABLE(1);
+    list = new NDArrayList(sizes->lengthOf(), false);
+    block.trackList(list);
+  }
 
-            REQUIRE_TRUE(sizes->isZ(), 0, "split_list: sizes array must have one of integer types");
-            REQUIRE_TRUE(sizes->rankOf() == 1, 0, "split_list: sizes array must be 1D")
+  REQUIRE_TRUE(sizes->isZ(), 0, "split_list: sizes array must have one of integer types");
+  REQUIRE_TRUE(sizes->rankOf() == 1, 0, "split_list: sizes array must be 1D")
 
-            list->shape() = array->getShapeAsVector();
+  list->shape() = array->getShapeAsVector();
 
-            // now let's build subarrays
-            int cnt = 0;
-            std::vector<Nd4jLong> indices(2 * array->rankOf(), 0);
-            for (Nd4jLong e = 0; e < sizes->lengthOf(); e++) {
-                int c_size = sizes->e<int>(e);
+  // now let's build subarrays
+  int cnt = 0;
+  std::vector<sd::LongType> indices(2 * array->rankOf(), 0);
+  for (sd::LongType e = 0; e < sizes->lengthOf(); e++) {
+    int c_size = sizes->e<int>(e);
 
-                REQUIRE_TRUE(c_size > 0, 0, "Slice size should have postive value, but got %i instead", c_size);
-                REQUIRE_TRUE(cnt < array->sizeAt(0) && cnt + c_size <= array->sizeAt(0), 0, "Slices size should NOT be higher then number of TADs of source array. Source size: [%i]; Slice start: [%i]; Slice size: [%i]", array->sizeAt(0), cnt, c_size);
+    REQUIRE_TRUE(c_size > 0, 0, "Slice size should have postive value, but got %i instead", c_size);
+    REQUIRE_TRUE(cnt < array->sizeAt(0) && cnt + c_size <= array->sizeAt(0), 0,
+                 "Slices size should NOT be higher then number of TADs of source array. Source size: [%i]; Slice "
+                 "start: [%i]; Slice size: [%i]",
+                 array->sizeAt(0), cnt, c_size);
 
-                // we're adding our interval along zeroth dimension
-                indices[0] = cnt;
-                indices[1] = cnt + c_size;
-                cnt += c_size;
+    // we're adding our interval along zeroth dimension
+    indices[0] = cnt;
+    indices[1] = cnt + c_size;
+    cnt += c_size;
 
-                auto subarray = (*array)(indices);
+    auto subarray = (*array)(indices);
 
-                auto status = list->write(e, new NDArray(subarray.dup(array->ordering())));
+    auto status = list->write(e, new NDArray(subarray.dup(array->ordering())));
 
-                if (status != ND4J_STATUS_OK)
-                    return status;
-            }
+    if (status != sd::Status::OK) return status;
+  }
 
-            if (!hasList) {
-                //OVERWRITE_RESULT(list);
-                setupResultList(list, block);
-            }
+  if (!hasList) {
+    // OVERWRITE_RESULT(list);
+    setupResultList(list, block);
+  }
 
-            return Status::OK();
-        }
-        DECLARE_SYN(TensorArraySplitV3, split_list);
-        DECLARE_SYN(tensorarraysplitv3, split_list);
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(TensorArraySplitV3, split_list);
+DECLARE_SYN(tensorarraysplitv3, split_list);
+}  // namespace ops
+}  // namespace sd
 
 #endif

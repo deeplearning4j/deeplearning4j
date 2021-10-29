@@ -21,159 +21,148 @@
 //
 #ifndef __MIN_I_MAX_H_HELPERS__
 #define __MIN_I_MAX_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
 #include <helpers/ShapeUtils.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+template <typename T>
+static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; };
 
-            auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
-                return _x <= _y ? _e : (T) 0.;
-            };
+  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; };
 
-            auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
-                return _x >= _y ? _e : (T) 0.;
-            };
+  if (x->isSameShape(y)) {
+    // PWT case case
 
+    // X gradient
+    epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaX, *gradX);
 
-            if (x->isSameShape(y)) {
-                // PWT case case
+    // Y gradient
+    epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaY, *gradY);
 
-                // X gradient
-                epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaX, *gradX);
+  } else if (y->isScalar()) {
+    T s = y->e<T>(0);
+    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x <= s ? _e : (T)0.; };
 
-                // Y gradient
-                epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaY, *gradY);
+    // scalar case
+    auto tmp = epsNext->reduceNumber(reduce::Sum);
+    if (x <= y)
+      gradY->assign(tmp);
+    else
+      gradY->assign(0.0f);
 
-            } else if (y->isScalar()) {
-                T s = y->e<T>(0);
-                auto lambdaS = LAMBDA_TT(_e, _x, s) {
-                    return _x <= s ? _e : (T) 0.;
-                };
+    epsNext->applyPairwiseLambda<T>(*x, lambdaS, *gradX);
+  } else {
+    // broadcast case
 
-                // scalar case
-                auto tmp = epsNext->reduceNumber(reduce::Sum);
-                if (x <= y)
-                    gradY->assign(tmp);
-                else
-                    gradY->assign(0.0f);
+    // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same
+    // shape)
+    auto preX = x->dup();
+    auto preY = y->dup();
 
-                epsNext->applyPairwiseLambda<T>(*x, lambdaS, *gradX);
-            } else {
-                // broadcast case
+    auto targetShape = epsNext->getShapeAsVector();
 
-                // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same shape)
-                auto preX = x->dup();
-                auto preY = y->dup();
+    preX.tileToShape(targetShape, preX);
+    preY.tileToShape(targetShape, preY);
 
-                auto targetShape = epsNext->getShapeAsVector();
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
 
-                preX.tileToShape(targetShape, preX);
-                preY.tileToShape(targetShape, preY);
+    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
-                epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
-                epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
+    if (axisX.size() > 0) {
+      auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
+      gradX->assign(sum);
+    } else
+      gradX->assign(preX);
 
-                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
-
-                if (axisX.size() > 0) {
-                    auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
-                    gradX->assign(sum);
-                } else
-                    gradX->assign(preX);
-
-                if (axisY.size() > 0) {
-                    auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
-                    gradY->assign(sum);
-                } else
-                    gradY->assign(preY);
-            }
-
-    }
-    template <typename T>
-     void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
-
-            auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
-                return _x >= _y ? _e : (T) 0.;
-            };
-
-            auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
-                return _x <= _y ? _e : (T) 0.;
-            };
-
-
-            if (x->isSameShape(y)) {
-                // PWT case case
-
-                // X gradient
-                epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaX, *gradX);
-
-                // Y gradient
-                epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaY, *gradY);
-
-            } else if (y->isScalar()) {
-                T s = y->e<T>(0);
-                auto lambdaS = LAMBDA_TT(_e, _x, s) {
-                    return _x >= s ? _e : (T) 0.;
-                };
-
-                // scalar case
-                auto tmp = epsNext->reduceNumber(reduce::Sum);
-                if (x <= y)
-                    gradY->assign(tmp);
-                else
-                    gradY->assign(0.0f);
-
-                epsNext->applyPairwiseLambda<T>(*x, lambdaS, *gradX);
-            } else {
-                // broadcast case
-
-                // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same shape)
-                auto preX = x->dup();
-                auto preY = y->dup();
-
-                auto targetShape = epsNext->getShapeAsVector();
-
-                preX.tileToShape(targetShape, preX);
-                preY.tileToShape(targetShape, preY);
-
-                epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
-                epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
-
-                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
-
-                if (axisX.size() > 0) {
-                    auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
-                    gradX->assign(sum);
-                } else
-                    gradX->assign(preX);
-
-                if (axisY.size() > 0) {
-                    auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
-                    gradY->assign(sum);
-                } else
-                    gradY->assign(preY);
-            }
-    }
-
-    ND4J_LOCAL void minimumBPFunctor(sd::LaunchContext * context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
-        BUILD_SINGLE_SELECTOR(x->dataType(), minimumBPFunctor_, (x, y, epsNext, gradX, gradY), NUMERIC_TYPES);
-    }
-
-    ND4J_LOCAL void maximumBPFunctor(sd::LaunchContext * context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
-        BUILD_SINGLE_SELECTOR(x->dataType(), maximumBPFunctor_, (x, y, epsNext, gradX, gradY), NUMERIC_TYPES);
-    }
-    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void minimumBPFunctor_, (NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), NUMERIC_TYPES);
-    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void maximumBPFunctor_, (NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), NUMERIC_TYPES);
-
+    if (axisY.size() > 0) {
+      auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
+      gradY->assign(sum);
+    } else
+      gradY->assign(preY);
+  }
 }
+template <typename T>
+void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; };
+
+  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; };
+
+  if (x->isSameShape(y)) {
+    // PWT case case
+
+    // X gradient
+    epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaX, *gradX);
+
+    // Y gradient
+    epsNext->applyTriplewiseLambda<T>(*x, *y, lambdaY, *gradY);
+
+  } else if (y->isScalar()) {
+    T s = y->e<T>(0);
+    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x >= s ? _e : (T)0.; };
+
+    // scalar case
+    auto tmp = epsNext->reduceNumber(reduce::Sum);
+    if (x <= y)
+      gradY->assign(tmp);
+    else
+      gradY->assign(0.0f);
+
+    epsNext->applyPairwiseLambda<T>(*x, lambdaS, *gradX);
+  } else {
+    // broadcast case
+
+    // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same
+    // shape)
+    auto preX = x->dup();
+    auto preY = y->dup();
+
+    auto targetShape = epsNext->getShapeAsVector();
+
+    preX.tileToShape(targetShape, preX);
+    preY.tileToShape(targetShape, preY);
+
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaX, preX);
+    epsNext->applyTriplewiseLambda<T>(preX, preY, lambdaY, preY);
+
+    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+
+    if (axisX.size() > 0) {
+      auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
+      gradX->assign(sum);
+    } else
+      gradX->assign(preX);
+
+    if (axisY.size() > 0) {
+      auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
+      gradY->assign(sum);
+    } else
+      gradY->assign(preY);
+  }
 }
+
+void minimumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
+                      NDArray* gradY) {
+  BUILD_SINGLE_SELECTOR(x->dataType(), minimumBPFunctor_, (x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
 }
+
+void maximumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
+                      NDArray* gradY) {
+  BUILD_SINGLE_SELECTOR(x->dataType(), maximumBPFunctor_, (x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
+}
+BUILD_SINGLE_TEMPLATE(template void minimumBPFunctor_,
+                      (NDArray * x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
+BUILD_SINGLE_TEMPLATE(template void maximumBPFunctor_,
+                      (NDArray * x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

@@ -19,26 +19,25 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <ops/declarable/helpers/toggle_bits.h>
 #include <helpers/BitwiseUtils.h>
+#include <ops/declarable/helpers/toggle_bits.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            template<typename T>
-            ND4J_LOCAL void toggle_bits__(NDArray &in, NDArray &out) {
-                auto lambda = LAMBDA_T(_x) {
-                    return ~_x;//eUtils::flip_bits(_x);
-                };
+namespace ops {
+namespace helpers {
+template <typename T>
+void toggle_bits__(NDArray &in, NDArray &out) {
+  auto lambda = LAMBDA_T(_x) {
+    return ~_x;  // eUtils::flip_bits(_x);
+  };
 
-                in.applyLambda(lambda, out);
-            }
-            BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void toggle_bits__, (NDArray &in, NDArray &out), INTEGER_TYPES);
-
-            ND4J_LOCAL void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out) {
-                BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
-            }
-        }
-    }
+  in.applyLambda(lambda, out);
 }
+BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray & in, NDArray &out), SD_INTEGER_TYPES);
+
+void __toggle_bits(sd::LaunchContext *context, NDArray &in, NDArray &out) {
+  BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), SD_INTEGER_TYPES);
+}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

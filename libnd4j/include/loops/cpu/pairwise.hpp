@@ -19,211 +19,166 @@
 //
 // Created by remote on 2018-09-20.
 //
-
-#include <ops/ops.h>
-#include <loops/pairwise_transform.h>
-#include <types/types.h>
-#include <helpers/LoopKind.h>
-#include <math/templatemath.h>
-#include <helpers/shape.h>
-#include <system/op_boilerplate.h>
-#include <helpers/OmpLaunchHelper.h>
 #include <execution/Threads.h>
+#include <helpers/LoopKind.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <helpers/shape.h>
+#include <loops/pairwise_transform.h>
+#include <math/templatemath.h>
+#include <ops/ops.h>
+#include <system/op_boilerplate.h>
+#include <types/types.h>
 
 using namespace simdOps;
 
 namespace functions {
-    namespace pairwise_transforms {
+namespace pairwise_transforms {
 
-        template <typename X, typename Y, typename Z>
-        void PairWiseTransform<X, Y, Z>::exec(const int opNum,
-                                              const void *x, Nd4jLong xEws,
-                                              const void *y, Nd4jLong yEws,
-                                              void *z, Nd4jLong zEws,
-                                              void *extraParams,
-                                              Nd4jLong n,
-                                              const uint64_t start,const uint64_t stop) {
-            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
-                                               xEws,
-                                               y,
-                                               yEws,
-                                               z,
-                                               zEws,
-                                               extraParams,
-                                               n, start, stop), PAIRWISE_TRANSFORM_OPS);
-        };
+template <typename X, typename Y, typename Z>
+void PairWiseTransform<X, Y, Z>::exec(const int opNum, const void *x, sd::LongType xEws, const void *y,
+                                      sd::LongType yEws, void *z, sd::LongType zEws, void *extraParams, sd::LongType n,
+                                      const uint64_t start, const uint64_t stop) {
+  DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_TRANSFORM_OPS);
+};
 
+template <typename X, typename Y, typename Z>
+template <typename OpType>
+void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
+                                      sd::LongType zEws, void *vextraParams, const sd::LongType n, const uint64_t start,
+                                      const uint64_t stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto y = reinterpret_cast<const Y *>(vy);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-
-        template <typename X, typename Y, typename Z>
-        template <typename OpType>
-        void PairWiseTransform<X, Y, Z>::exec(const void *vx, Nd4jLong xEws,
-                                              const void *vy, Nd4jLong yEws,
-                                              void *vz, Nd4jLong zEws,
-                                              void *vextraParams,
-                                              const Nd4jLong n,
-                                              const uint64_t start,
-                                              const uint64_t stop) {
-
-            auto x = reinterpret_cast<const X *>(vx);
-            auto y = reinterpret_cast<const Y *>(vy);
-            auto z = reinterpret_cast<Z *>(vz);
-            auto extraParams = reinterpret_cast<Z *>(vextraParams);
-
-            if (xEws == 1 && yEws == 1 && zEws == 1) {
-                PRAGMA_OMP_SIMD
-                for (auto i = start; i < stop; i++)
-                        z[i] = OpType::op(x[i], y[i], extraParams);
-            }
-            else {
-                PRAGMA_OMP_SIMD
-                for (auto i = start; i < stop; i++)
-                    z[i*zEws] = OpType::op(x[i*xEws], y[i*yEws], extraParams);
-            }
-        }
-
-        template <typename X, typename Y, typename Z>
-        void PairWiseTransform<X, Y, Z>::exec(const int opNum,
-                                              const void *x, const Nd4jLong *xShapeInfo,
-                                              const void *y, const Nd4jLong *yShapeInfo,
-                                              void *z, const Nd4jLong *zShapeInfo,
-                                              void *extraParams,
-                                              const uint64_t start, const uint64_t stop) {
-            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
-                                              xShapeInfo,
-                                              y,
-                                              yShapeInfo,
-                                              z,
-                                              zShapeInfo,
-                                              extraParams, start, stop),
-                                 PAIRWISE_TRANSFORM_OPS);
-        };
-
-
-        template <typename X, typename Y, typename Z>
-        template <typename OpType>
-        void PairWiseTransform<X, Y, Z>::exec(const void *vx, const Nd4jLong* xShapeInfo,
-                                              const void *vy, const Nd4jLong* yShapeInfo,
-                                              void *vz, const Nd4jLong* zShapeInfo,
-                                              void *vextraParams,
-                                              const uint64_t start, const uint64_t stop) {
-
-            auto x = reinterpret_cast<const X *>(vx);
-            auto y = reinterpret_cast<const Y *>(vy);
-            auto z = reinterpret_cast<Z *>(vz);
-            auto extraParams = reinterpret_cast<Z *>(vextraParams);
-
-            auto n = shape::length(xShapeInfo);
-            auto xEws = shape::elementWiseStride(xShapeInfo);
-            auto yEws = shape::elementWiseStride(yShapeInfo);
-            auto zEws = shape::elementWiseStride(zShapeInfo);
-
-
-            if (shape::isScalar(yShapeInfo)) {
-
-                uint xShapeInfoCast[MAX_RANK];
-                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-                if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-                    PRAGMA_OMP_SIMD
-                    for(auto i = start; i < stop; i++)  {
-                        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        z[offset] = OpType::op(x[offset], y[0], extraParams);
-                    };
-                }
-                else {
-                    uint zShapeInfoCast[MAX_RANK];
-                    const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                    PRAGMA_OMP_SIMD
-                    for(auto i = start; i < stop; i++)  {
-                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
-                    };
-                }
-                return;
-            }
-
-
-
-            const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
-            const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
-
-            if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
-                exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
-            }
-            else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && !sameShapesXY) { //not same shape
-                exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
-            }
-            else {
-
-                if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-                    uint xShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        z[offset] = OpType::op(x[offset], y[offset], extraParams);
-                    }
-                }
-                else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-                    uint xShapeInfoCast[MAX_RANK];
-                    uint zShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
-                    };
-                }
-                else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-                    uint xShapeInfoCast[MAX_RANK];
-                    uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-                        z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
-                    };
-                }
-                else if(shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
-                    uint xShapeInfoCast[MAX_RANK];
-                    uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto offset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-                        z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
-                    };
-                }
-                else {
-                    uint xShapeInfoCast[MAX_RANK];
-                    uint yShapeInfoCast[MAX_RANK];
-                    uint zShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
-                    };
-                }
-            }
-        }
-    }
+  if (xEws == 1 && yEws == 1 && zEws == 1) {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
+  } else {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
+  }
 }
+
+template <typename X, typename Y, typename Z>
+void PairWiseTransform<X, Y, Z>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+                                      const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
+                                      void *extraParams, const uint64_t start, const uint64_t stop) {
+  DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, start, stop),
+                        PAIRWISE_TRANSFORM_OPS);
+};
+
+template <typename X, typename Y, typename Z>
+template <typename OpType>
+void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
+                                      const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                                      void *vextraParams, const uint64_t start, const uint64_t stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto y = reinterpret_cast<const Y *>(vy);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
+
+  auto n = shape::length(xShapeInfo);
+  auto xEws = shape::elementWiseStride(xShapeInfo);
+  auto yEws = shape::elementWiseStride(yShapeInfo);
+  auto zEws = shape::elementWiseStride(zShapeInfo);
+
+  if (shape::isScalar(yShapeInfo)) {
+    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
+    if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        z[offset] = OpType::op(x[offset], y[0], extraParams);
+      };
+    } else {
+      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
+      };
+    }
+    return;
+  }
+
+  const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
+  const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
+
+  if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
+    exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
+  } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
+             !sameShapesXY) {  // not same shape
+    exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
+  } else {
+    if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
+        shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        z[offset] = OpType::op(x[offset], y[offset], extraParams);
+      }
+    } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+      bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
+      };
+    } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+      bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+      bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+        z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
+      };
+    } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
+      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+      bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+      bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto offset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+        z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
+      };
+    } else {
+      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+      bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+      bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+      };
+    }
+  }
+}
+}  // namespace pairwise_transforms
+}  // namespace functions

@@ -16,27 +16,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 //
 //  @author sgazeos@gmail.com
 //
 
 #ifndef SD_CROP_AND_RESIZE_H
 #define SD_CROP_AND_RESIZE_H
-
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
-
+#include <system/op_boilerplate.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            template<typename T, typename F, typename I>
-            void cropAndResizeFunctor_(NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops);
+namespace ops {
+namespace helpers {
+template <typename T, typename F, typename I>
+SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray const* images, NDArray const* boxes, NDArray const* indices,
+                                         NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
 
-            void cropAndResizeFunctor(sd::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
-        }
-    }
-}
+SD_LIB_HIDDEN void cropAndResizeFunctor(sd::LaunchContext* context, NDArray const* images, NDArray const* boxes,
+                                        NDArray const* indices, NDArray const* cropSize, int method,
+                                        double extrapolationVal, NDArray* crops);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-#endif //SD_CROP_AND_RESIZE_H
+#endif  // SD_CROP_AND_RESIZE_H

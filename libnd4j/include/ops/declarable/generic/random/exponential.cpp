@@ -23,37 +23,34 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_random_exponential)
 
-#include <ops/declarable/headers/random.h>
 #include <helpers/RandomLauncher.h>
+#include <ops/declarable/headers/random.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(random_exponential, 1, 1, true, 1, 0) {
-            // random generator for distribution
-            auto rng = block.randomGenerator();
-            auto z = OUTPUT_VARIABLE(0);
-            auto lambda = T_ARG(0);
+namespace ops {
+CUSTOM_OP_IMPL(random_exponential, 1, 1, true, 1, 0) {
+  // random generator for distribution
+  auto rng = block.randomGenerator();
+  auto z = OUTPUT_VARIABLE(0);
+  auto lambda = T_ARG(0);
 
-            RandomLauncher::fillExponential(block.launchContext(), rng, z, lambda);
+  RandomLauncher::fillExponential(block.launchContext(), rng, z, lambda);
 
-            return Status::OK();
-        }
-
-
-        DECLARE_SHAPE_FN(random_exponential) {
-            auto in = INPUT_VARIABLE(0);
-            auto shape = in->template asVectorT<Nd4jLong>();
-
-            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
-            return SHAPELIST(newShape);
-        }
-
-        DECLARE_TYPES(random_exponential) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(random_exponential) {
+  auto in = INPUT_VARIABLE(0);
+  auto shape = in->template asVectorT<sd::LongType>();
+
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
+  return SHAPELIST(newShape);
+}
+
+DECLARE_TYPES(random_exponential) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -19,20 +19,15 @@
 //
 // Created by raver119 on 24.01.18.
 //
-
 #include <types/pair.h>
 
 namespace sd {
-    Pair::Pair(int first, int second) {
-        _first = first;
-        _second = second;
-    }
-
-    int Pair::first() const {
-        return _first;
-    }
-
-    int Pair::second() const {
-        return _second;
-    };
+Pair::Pair(int first, int second) {
+  _first = first;
+  _second = second;
 }
+
+int Pair::first() const { return _first; }
+
+int Pair::second() const { return _second; };
+}  // namespace sd

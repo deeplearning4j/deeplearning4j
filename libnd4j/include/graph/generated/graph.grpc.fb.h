@@ -3,10 +3,8 @@
 // source: graph
 #ifndef GRPC_graph__INCLUDED
 #define GRPC_graph__INCLUDED
-
 #include "graph_generated.h"
 #include "flatbuffers/grpc.h"
-
 #include <grpc++/impl/codegen/async_stream.h>
 #include <grpc++/impl/codegen/async_unary_call.h>
 #include <grpc++/impl/codegen/method_handler_impl.h>

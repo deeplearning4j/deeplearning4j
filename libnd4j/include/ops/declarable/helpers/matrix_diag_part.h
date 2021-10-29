@@ -21,16 +21,16 @@
 //
 #ifndef __MATRIX_DIAG_PART_HELPERS__
 #define __MATRIX_DIAG_PART_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int matrixDiagPart(sd::LaunchContext * context, NDArray const* input, NDArray* output);
+SD_LIB_HIDDEN sd::Status matrixDiagPart(sd::LaunchContext* context, NDArray const* input, NDArray* output);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

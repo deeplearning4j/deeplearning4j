@@ -16,30 +16,31 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
- //
- // @author AbdelRauf    (rauf@konduit.ai)
- //
+//
+// @author AbdelRauf    (rauf@konduit.ai)
+//
 
 #ifndef LIBND4J_HELPERS_REDUCTIONS_H
 #define LIBND4J_HELPERS_REDUCTIONS_H
-
-#include <system/op_boilerplate.h>
-#include <math/templatemath.h>
 #include <array/NDArray.h>
+#include <math/templatemath.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
-            void argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-            void argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-            void argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-            void argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-            void variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected);
-            void standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected);
+SD_LIB_HIDDEN void argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+SD_LIB_HIDDEN void argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+SD_LIB_HIDDEN void argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+SD_LIB_HIDDEN void argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+SD_LIB_HIDDEN void variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+                            bool biasCorrected);
+SD_LIB_HIDDEN void standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+                                     bool biasCorrected);
 
-        }
-    }
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
 #endif

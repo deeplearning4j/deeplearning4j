@@ -22,21 +22,27 @@
 
 #ifndef __DYNAMIC_H_HELPERS__
 #define __DYNAMIC_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
-            void dynamicPartitionFunctor(sd::LaunchContext * context, NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
+SD_LIB_HIDDEN void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray const* input, NDArray const* indices,
+                                           std::vector<NDArray*>& outputList);
 
-            int dynamicStitchFunctor(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
+SD_LIB_HIDDEN sd::Status dynamicStitchFunctor(sd::LaunchContext* context, std::vector<NDArray*> const& inputs,
+                                              std::vector<NDArray*> const& indices, NDArray* output);
 
-            void dynamicPartitionFunctorBP(sd::LaunchContext * context, NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& gradientInputList, std::vector<NDArray*>& outputList);
+SD_LIB_HIDDEN void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray const* input, NDArray const* indices,
+                                             std::vector<NDArray*> const& gradientInputList,
+                                             std::vector<NDArray*>& outputList);
 
-            int dynamicStitchFunctorBP(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradientInput, std::vector<NDArray*>& outputList);
-        }
-    }
-}
+SD_LIB_HIDDEN sd::Status dynamicStitchFunctorBP(sd::LaunchContext* context, std::vector<NDArray*> const& inputs,
+                                                std::vector<NDArray*> const& indices, NDArray const* gradientInput,
+                                                std::vector<NDArray*>& outputList);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

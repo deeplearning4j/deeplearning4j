@@ -25,36 +25,37 @@
 
 #include <array/ConstantOffsetsBuffer.h>
 #include <array/ConstantShapeBuffer.h>
+#include <system/common.h>
 
 namespace sd {
-    class ND4J_EXPORT TadPack {
-    private:
-        ConstantShapeBuffer _tadShape;
-        ConstantOffsetsBuffer _tadOffsets;
-        Nd4jLong _numTads = 0 ;
-        int _shapeInfoLength = 0;
-    public:
-        explicit TadPack(const ConstantShapeBuffer &shapes, const ConstantOffsetsBuffer &offets, Nd4jLong numTads);
-        TadPack() = default;
-        ~TadPack() = default;
+class SD_LIB_EXPORT TadPack {
+ private:
+  ConstantShapeBuffer _tadShape;
+  ConstantOffsetsBuffer _tadOffsets;
+  sd::LongType _numTads = 0;
+  int _shapeInfoLength = 0;
 
-        const Nd4jLong* primaryShapeInfo() const;
-        const Nd4jLong* primaryOffsets() const;
+ public:
+  explicit TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer& offets, sd::LongType numTads);
+  TadPack() = default;
+  ~TadPack() = default;
 
-        const Nd4jLong* specialShapeInfo() const;
-        const Nd4jLong* specialOffsets() const;
+  const sd::LongType* primaryShapeInfo() const;
+  const sd::LongType* primaryOffsets() const;
 
-        Nd4jLong numberOfTads() const;
-        int shapeInfoLength() const;
+  const sd::LongType* specialShapeInfo() const;
+  const sd::LongType* specialOffsets() const;
 
-        /**
-         * These methods return either primary or special pointers depending on platform binaries were compiled for
-         * @return
-         */
-        const Nd4jLong *platformShapeInfo() const;
-        const Nd4jLong *platformOffsets() const;
-    };
-}
+  sd::LongType numberOfTads() const;
+  int shapeInfoLength() const;
 
+  /**
+   * These methods return either primary or special pointers depending on platform binaries were compiled for
+   * @return
+   */
+  const sd::LongType* platformShapeInfo() const;
+  const sd::LongType* platformOffsets() const;
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_TADPACK_H
+#endif  // DEV_TESTS_TADPACK_H

@@ -20,40 +20,36 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 27.08.2018
 //
 
-
-#include <ops/declarable/helpers/range.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/range.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 //////////////////////////////////////////////////////////////////////////
 // be careful: outVector must have c-order and ews = 1 !!!
 template <typename T>
 static void _range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
-        
-    const Nd4jLong len = outVector.lengthOf();
+  const sd::LongType len = outVector.lengthOf();
 
-    auto buff = reinterpret_cast<T *>(outVector.buffer());
-    auto s = start.e<T>(0);
-    auto d = delta.e<T>(0);
+  auto buff = reinterpret_cast<T*>(outVector.buffer());
+  auto s = start.e<T>(0);
+  auto d = delta.e<T>(0);
 
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++)
-            buff[i] = s + i * d;
-    };
-    samediff::Threads::parallel_for(func, 0, len);
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) buff[i] = s + i * d;
+  };
+  samediff::Threads::parallel_for(func, 0, len);
 }
 
-     void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
-        BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
-    }
-
-BUILD_SINGLE_TEMPLATE(template  void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
-
-
+void range(sd::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+  BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), SD_COMMON_TYPES);
 }
-}
-}
+
+BUILD_SINGLE_TEMPLATE(template void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector),
+                      SD_COMMON_TYPES);
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

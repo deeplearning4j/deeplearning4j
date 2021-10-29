@@ -22,24 +22,25 @@
 
 #ifndef LIBND4J_INDICESLIST_H
 #define LIBND4J_INDICESLIST_H
-
 #include <initializer_list>
+
 #include "NDIndex.h"
 
 namespace sd {
-    class ND4J_EXPORT IndicesList {
-    protected:
-        std::vector<NDIndex *> _indices;
-    public:
-        explicit IndicesList() = default;
-        explicit IndicesList(std::initializer_list<NDIndex *> list);
+class SD_LIB_EXPORT IndicesList {
+ protected:
+  std::vector<NDIndex*> _indices;
 
-        int size();
-        NDIndex* at(int idx);
-        void push_back(NDIndex* idx);
-        bool isScalar();
+ public:
+  explicit IndicesList() = default;
+  explicit IndicesList(std::initializer_list<NDIndex*> list);
 
-        ~IndicesList();
-    };
-}
-#endif //LIBND4J_INDICESLIST_H
+  int size();
+  NDIndex* at(int idx);
+  void push_back(NDIndex* idx);
+  bool isScalar();
+
+  ~IndicesList();
+};
+}  // namespace sd
+#endif  // LIBND4J_INDICESLIST_H

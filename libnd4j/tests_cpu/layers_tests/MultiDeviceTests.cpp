@@ -21,52 +21,51 @@
 //
 // @author raver119@gmail.com
 //
-
-#include "testlayers.h"
 #include <array/ArrayOptions.h>
-#include <execution/AffinityManager.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
-#include <ops/declarable/headers/broadcastable.h>
+#include <execution/AffinityManager.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/headers/broadcastable.h>
+
 #include <thread>
 
+#include "testlayers.h"
 
 using namespace sd;
 
 class MultiDeviceTests : public testing::Test {
-public:
-
+ public:
 };
 
-void createArrays(int limit, std::vector<NDArray*> &arrays) {
-    auto deviceId = AffinityManager::currentDeviceId();
-    auto numDevices = AffinityManager::numberOfDevices();
+void createArrays(int limit, std::vector<NDArray *> &arrays) {
+  auto deviceId = AffinityManager::currentDeviceId();
+  auto numDevices = AffinityManager::numberOfDevices();
 
-    for (int e = 0; e < limit; e++) {
-        auto value = deviceId * limit + e;
-        arrays[value] = NDArrayFactory::create_<float>('c', {10});
-        arrays[value]->assign(value);
-        //nd4j_printf("device_%i; value: [%i]; mean: [%f]\n", deviceId, value, arrays[value]->meanNumber().e<float>(0));
-    }
+  for (int e = 0; e < limit; e++) {
+    auto value = deviceId * limit + e;
+    arrays[value] = NDArrayFactory::create_<float>('c', {10});
+    arrays[value]->assign(value);
+    // sd_printf("device_%i; value: [%i]; mean: [%f]\n", deviceId, value, arrays[value]->meanNumber().e<float>(0));
+  }
 }
 
 TEST_F(MultiDeviceTests, test_multi_device_migration_1) {
-    auto deviceId = AffinityManager::currentDeviceId();
-    auto numDevices = AffinityManager::numberOfDevices();
-    auto numArrays = 10;
-    std::vector<NDArray*> arrays(numDevices * numArrays);
+  auto deviceId = AffinityManager::currentDeviceId();
+  auto numDevices = AffinityManager::numberOfDevices();
+  auto numArrays = 10;
+  std::vector<NDArray *> arrays(numDevices * numArrays);
 
-    // filling list of arrays on multiple threads
-    for (int e = 0; e < numDevices; e++) {
-        std::thread t1(createArrays, numArrays, std::ref(arrays));
+  // filling list of arrays on multiple threads
+  for (int e = 0; e < numDevices; e++) {
+    std::thread t1(createArrays, numArrays, std::ref(arrays));
 
-        t1.join();
-    }
+    t1.join();
+  }
 
-    // at this moment all arrays are build, so we can test migration
-    for (int e = 0; e < arrays.size(); e++) {
-        ASSERT_NEAR((float) e, arrays[e]->meanNumber().e<float>(0), 1e-5f);
-        delete arrays[e];
-    }
+  // at this moment all arrays are build, so we can test migration
+  for (int e = 0; e < arrays.size(); e++) {
+    ASSERT_NEAR((float)e, arrays[e]->meanNumber().e<float>(0), 1e-5f);
+    delete arrays[e];
+  }
 }

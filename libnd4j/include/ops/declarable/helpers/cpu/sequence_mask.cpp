@@ -19,31 +19,31 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-
-#include <ops/declarable/helpers/sequence_mask.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/sequence_mask.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    template <typename I, typename B>
-    static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
-        auto func = PRAGMA_THREADS_FOR_2D {
-            for (auto i = start_x; i < stop_x; i += inc_x)
-                for (auto k = start_y; k < stop_y; k += inc_y)
-                    if (i < input->t<I>(k))
-                        output->r<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
-        };
+template <typename I, typename B>
+static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
+  auto func = PRAGMA_THREADS_FOR_2D {
+    for (auto i = start_x; i < stop_x; i += inc_x)
+      for (auto k = start_y; k < stop_y; k += inc_y)
+        if (i < input->t<I>(k)) output->r<B>(k * maxIndex + i) = B(true);  //,  T(1.0f));
+  };
 
-        samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
-    }
+  samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
+}
 
-    ND4J_LOCAL void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
-        BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (input, output, maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
-    }
+void sequenceMask(sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
+  BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (input, output, maxIndex),
+                        SD_INTEGER_TYPES, SD_COMMON_TYPES_EXTENDED);
+}
 
-    BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void sequenceMask_, (NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
-}
-}
-}
+BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (NDArray * input, NDArray* output, int maxIndex), SD_INTEGER_TYPES,
+                      SD_COMMON_TYPES_EXTENDED);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

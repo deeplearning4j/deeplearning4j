@@ -21,13 +21,10 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <array/PrimaryPointerDeallocator.h>
 
 namespace sd {
 
-void PrimaryPointerDeallocator::release(void *ptr) {
-  delete[] reinterpret_cast<int8_t*>(ptr);
-}
+void PrimaryPointerDeallocator::release(void *ptr) { delete[] reinterpret_cast<int8_t *>(ptr); }
 
-} // namespace sd
+}  // namespace sd

@@ -19,41 +19,35 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <helpers/ArrayUtils.h>
 
 namespace sd {
-    namespace ArrayUtils {
-        void toIntPtr(std::initializer_list<int> list, int* target) {
-            std::vector<int> vec(list);
-            toIntPtr(vec, target);
-        }
-
-        void toIntPtr(std::vector<int>& list, int* target) {
-            memcpy(target, list.data(), list.size() * sizeof(int));
-        }
-
-        void toLongPtr(std::initializer_list<Nd4jLong> list, Nd4jLong* target) {
-            std::vector<Nd4jLong> vec(list);
-            toLongPtr(vec, target);
-        }
-
-        void toLongPtr(std::vector<Nd4jLong>& list, Nd4jLong* target) {
-            memcpy(target, list.data(), list.size() * sizeof(Nd4jLong));
-        }
-
-        std::vector<Nd4jLong> toLongVector(std::vector<int> vec) {
-            std::vector<Nd4jLong> result(vec.size());
-            Nd4jLong vecSize = vec.size();
-
-            for (Nd4jLong e = 0; e < vecSize; e++)
-                result[e] = vec[e];
-
-            return result;
-        }
-
-        std::vector<Nd4jLong> toLongVector(std::vector<Nd4jLong> vec) {
-            return vec;
-        }
-    }
+namespace ArrayUtils {
+void toIntPtr(std::initializer_list<int> list, int* target) {
+  std::vector<int> vec(list);
+  toIntPtr(vec, target);
 }
+
+void toIntPtr(std::vector<int>& list, int* target) { memcpy(target, list.data(), list.size() * sizeof(int)); }
+
+void toLongPtr(std::initializer_list<sd::LongType> list, sd::LongType* target) {
+  std::vector<sd::LongType> vec(list);
+  toLongPtr(vec, target);
+}
+
+void toLongPtr(std::vector<sd::LongType>& list, sd::LongType* target) {
+  memcpy(target, list.data(), list.size() * sizeof(sd::LongType));
+}
+
+std::vector<sd::LongType> toLongVector(std::vector<int> vec) {
+  std::vector<sd::LongType> result(vec.size());
+  sd::LongType vecSize = vec.size();
+
+  for (sd::LongType e = 0; e < vecSize; e++) result[e] = vec[e];
+
+  return result;
+}
+
+std::vector<sd::LongType> toLongVector(std::vector<sd::LongType> vec) { return vec; }
+}  // namespace ArrayUtils
+}  // namespace sd

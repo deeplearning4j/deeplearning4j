@@ -26,39 +26,36 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
+namespace ops {
+CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
+  // just for lulz
+  if (!block.isInplace()) {
+    for (sd::LongType i = 0; i < block.width(); ++i) {
+      auto x = INPUT_VARIABLE(i);
+      auto z = OUTPUT_VARIABLE(i);
 
-            // just for lulz
-            if (!block.isInplace()) {
-                for (Nd4jLong i = 0; i < block.width(); ++i) {
-                    auto x = INPUT_VARIABLE(i);
-                    auto z = OUTPUT_VARIABLE(i);
-
-                    x->applyTransform(transform::Identity, *z);
-                }
-            }
-
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(identity_n) {
-            auto shapes = SHAPELIST();
-            for (size_t i = 0; i < inputShape->size(); ++i) {
-                Nd4jLong* shape;
-                COPY_SHAPE_EX(inputShape->at(i), shape, block.getWorkspace());
-                shapes->push_back(CONSTANT(shape));
-            }
-            return shapes;
-        }
-
-        DECLARE_TYPES(identity_n) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(sd::DataType::ANY);
-        }
-
+      x->applyTransform(transform::Identity, *z);
     }
+  }
+
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(identity_n) {
+  auto shapes = SHAPELIST();
+  for (size_t i = 0; i < inputShape->size(); ++i) {
+    sd::LongType* shape;
+    COPY_SHAPE_EX(inputShape->at(i), shape, block.getWorkspace());
+    shapes->push_back(CONSTANT(shape));
+  }
+  return shapes;
+}
+
+DECLARE_TYPES(identity_n) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+}
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -41,22 +41,22 @@ namespace functions {
                                                 const int opNumA, 
                                                 const int opTypeB, 
                                                 const int opNumB, 
-                                                Nd4jLong N, 
+                                                sd::LongType N, 
                                                 void *dx, 
-                                                Nd4jLong *xShapeInfo, 
+                                                sd::LongType *xShapeInfo, 
                                                 void *dy, 
-                                                Nd4jLong *yShapeInfo, 
+                                                sd::LongType *yShapeInfo, 
                                                 void *dz, 
-                                                Nd4jLong *zShapeInfo, 
+                                                sd::LongType *zShapeInfo, 
                                                 void *extraA, 
                                                 void *extraB, 
                                                 double scalarA, 
                                                 double scalarB);
 
             template<typename OpType>
-            static __device__ void transformCuda(void *dx, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *result, Nd4jLong *resultShapeBuffer, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+            static __device__ void transformCuda(void *dx, sd::LongType *xShapeBuffer, void *y, sd::LongType *yShapeBuffer, void *result, sd::LongType *resultShapeBuffer, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, sd::LongType *tadOnlyShapeInfo);
 
-            static __device__ void transformCuda(int opTypeA, int opNumA, int opTypeB, int opNumB,  void *dx, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *result, Nd4jLong *resultShapeBuffer, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+            static __device__ void transformCuda(int opTypeA, int opNumA, int opTypeB, int opNumB,  void *dx, sd::LongType *xShapeBuffer, void *y, sd::LongType *yShapeBuffer, void *result, sd::LongType *resultShapeBuffer, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, sd::LongType *tadOnlyShapeInfo);
         };
     }
 }

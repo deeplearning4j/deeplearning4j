@@ -20,28 +20,25 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 
-
-#include <ops/declarable/helpers/transforms.h>
 #include <helpers/Loops.h>
+#include <ops/declarable/helpers/transforms.h>
 
-namespace sd 	  {
-namespace ops 	  {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void eye(sd::LaunchContext * context, NDArray& output) {
+void eye(sd::LaunchContext* context, NDArray& output) {
+  const int rank = output.rankOf();
+  auto arrs = output.allTensorsAlongDimension({rank - 2, rank - 1});
 
-    const int rank = output.rankOf();
-    auto arrs = output.allTensorsAlongDimension({rank-2, rank-1});
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) arrs.at(i)->setIdentity();
+  };
 
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++)
-            arrs.at(i)->setIdentity();
-    };
-
-    samediff::Threads::parallel_tad(func, 0, arrs.size());
+  samediff::Threads::parallel_tad(func, 0, arrs.size());
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

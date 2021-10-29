@@ -24,15 +24,7 @@
 #define DEV_TESTS_REDUCETYPE_H
 
 namespace functions {
-    enum ReduceType {
-        SUM,
-        PRODUCT,
-        MAX,
-        MIN,
-        ASUM,
-        AMAX,
-        AMIN
-    };
+enum ReduceType { SUM, PRODUCT, MAX, MIN, ASUM, AMAX, AMIN };
 }
 
-#endif //DEV_TESTS_REDUCETYPE_H
+#endif  // DEV_TESTS_REDUCETYPE_H

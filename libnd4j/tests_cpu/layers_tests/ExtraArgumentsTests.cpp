@@ -19,50 +19,47 @@
 //
 // @author raver119@gmail.com
 //
+#include <array/ExtraArguments.h>
+
+#include <array>
 
 #include "testlayers.h"
-#include <array/ExtraArguments.h>
-#include <array>
 
 using namespace sd;
 
 class ExtraArgumentsTests : public testing::Test {
-public:
-
-    ExtraArgumentsTests() {
-        printf("\n");
-        fflush(stdout);
-    }
+ public:
+  ExtraArgumentsTests() {
+    printf("\n");
+    fflush(stdout);
+  }
 };
 
 TEST_F(ExtraArgumentsTests, Basic_Test_1) {
-    if (!Environment::getInstance().isCPU())
-        return;
+  if (!Environment::getInstance().isCPU()) return;
 
-    ExtraArguments args({1.0, 2.0, 3.0});
+  ExtraArguments args({1.0, 2.0, 3.0});
 
-    float ef[] = {1.f, 2.f, 3.f};
-    double ed[] = {1., 2., 3.};
+  float ef[] = {1.f, 2.f, 3.f};
+  double ed[] = {1., 2., 3.};
 
-    auto ptrFloat = reinterpret_cast<float *>(args.argumentsAsT<float>());
-    auto ptrDouble = reinterpret_cast<double *>(args.argumentsAsT<double>());
-    ASSERT_TRUE(ptrFloat != nullptr);
-    ASSERT_TRUE(ptrDouble != nullptr);
+  auto ptrFloat = reinterpret_cast<float *>(args.argumentsAsT<float>());
+  auto ptrDouble = reinterpret_cast<double *>(args.argumentsAsT<double>());
+  ASSERT_TRUE(ptrFloat != nullptr);
+  ASSERT_TRUE(ptrDouble != nullptr);
 
-    for (int e = 0; e < 3; e++) {
-        ASSERT_NEAR(ef[e], ptrFloat[e], 1e-5f);
-    }
+  for (int e = 0; e < 3; e++) {
+    ASSERT_NEAR(ef[e], ptrFloat[e], 1e-5f);
+  }
 
-    for (int e = 0; e < 3; e++) {
-        ASSERT_NEAR(ed[e], ptrDouble[e], 1e-5);
-    }
+  for (int e = 0; e < 3; e++) {
+    ASSERT_NEAR(ed[e], ptrDouble[e], 1e-5);
+  }
 }
-
 
 TEST_F(ExtraArgumentsTests, Basic_Test_2) {
-    ExtraArguments args;
+  ExtraArguments args;
 
-    auto ptrInt = args.argumentsAsT<int>();
-    ASSERT_TRUE(ptrInt == nullptr);
+  auto ptrInt = args.argumentsAsT<int>();
+  ASSERT_TRUE(ptrInt == nullptr);
 }
-

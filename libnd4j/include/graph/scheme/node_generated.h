@@ -3,9 +3,7 @@
 
 #ifndef FLATBUFFERS_GENERATED_NODE_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_NODE_SD_GRAPH_H_
-
 #include "flatbuffers/flatbuffers.h"
-
 #include "array_generated.h"
 #include "properties_generated.h"
 #include "utils_generated.h"

@@ -22,39 +22,38 @@
 
 #ifndef LIBND4J_LEGACYOP_H
 #define LIBND4J_LEGACYOP_H
-
-#include <ops/declarable/DeclarableOp.h>
 #include <helpers/PointersManager.h>
+#include <ops/declarable/DeclarableOp.h>
 
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        /**
-        * This class is root abstraction for legacy XYZ ops wrappers.
-        * All wrappers for specific op groups (i.e. LegacyTransformOp for Transform ops) are inheriting this class.
-        *
-        *
-        */
-        class ND4J_EXPORT LegacyOp : public DeclarableOp {
-        protected:
-            // this field is mainly for debugging
-            // it defines, which legacy op should be invoked on a given data
-            int _opNum = -1;
-            int _numInputs = 0;
+/**
+ * This class is root abstraction for legacy XYZ ops wrappers.
+ * All wrappers for specific op groups (i.e. LegacyTransformOp for Transform ops) are inheriting this class.
+ *
+ *
+ */
+class SD_LIB_EXPORT LegacyOp : public DeclarableOp {
+ protected:
+  // this field is mainly for debugging
+  // it defines, which legacy op should be invoked on a given data
+  int _opNum = -1;
+  int _numInputs = 0;
 
-            // All Op classes provide own specific implementation for this method
-            Nd4jStatus validateAndExecute(Context& block) override = 0;
-        public:
-            LegacyOp(int numInputs);
-            LegacyOp(int numInputs, int opNum);
-            ~LegacyOp() = default;
+  // All Op classes provide own specific implementation for this method
+  sd::Status validateAndExecute(Context& block) override = 0;
 
-            // All Op classes provide own specific implementation for this method
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override = 0;
-            virtual LegacyOp* clone() = 0;
-        };
-    }
-}
+ public:
+  LegacyOp(int numInputs);
+  LegacyOp(int numInputs, int opNum);
+  ~LegacyOp() = default;
 
+  // All Op classes provide own specific implementation for this method
+  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override = 0;
+  virtual LegacyOp* clone() = 0;
+};
+}  // namespace ops
+}  // namespace sd
 
-#endif //LIBND4J_LEGACYOP_H
+#endif  // LIBND4J_LEGACYOP_H

@@ -19,39 +19,38 @@
 //
 // Created by raver on 5/13/2018.
 //
-
-#include "testlayers.h"
-#include <ops/declarable/CustomOperations.h>
 #include <array/NDArray.h>
 #include <legacy/NativeOps.h>
+#include <ops/declarable/CustomOperations.h>
+
 #include <fstream>
+
+#include "testlayers.h"
 
 using namespace sd;
 using namespace sd::graph;
 
 class MmapTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(MmapTests, Test_Basic_Mmap_1) {
-    // FIXME: we must adopt this for CUDA as well
-    if (!Environment::getInstance().isCPU())
-        return;
+  // FIXME: we must adopt this for CUDA as well
+  if (!Environment::getInstance().isCPU()) return;
 
-    // just 10GB
-    Nd4jLong size = 100000L;
+  // just 10GB
+  sd::LongType size = 100000L;
 
-    std::ofstream ofs("file", std::ios::binary | std::ios::out);
-    ofs.seekp(size + 1024L);
-    ofs.write("", 1);
-    ofs.close();
+  std::ofstream ofs("file", std::ios::binary | std::ios::out);
+  ofs.seekp(size + 1024L);
+  ofs.write("", 1);
+  ofs.close();
 
-    auto result = mmapFile(nullptr, "file", size);
+  auto result = mmapFile(nullptr, "file", size);
 
-    ASSERT_FALSE(result == nullptr);
+  ASSERT_FALSE(result == nullptr);
 
-    munmapFile(nullptr, result, size);
+  munmapFile(nullptr, result, size);
 
-    remove("file");
+  remove("file");
 }

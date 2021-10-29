@@ -19,33 +19,34 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <graph/exceptions/unresolved_output_exception.h>
 #include <helpers/StringUtils.h>
+
 #include <utility>
 
 namespace sd {
-    namespace graph {
-        unresolved_output_exception::unresolved_output_exception(std::string message) : std::runtime_error(message) {
-            //
-        }
-
-        unresolved_output_exception unresolved_output_exception::build(std::string message, std::pair<int, int> &varIndex) {
-            auto nodeId = StringUtils::valueToString<int>(varIndex.first);
-            auto outputIdx = StringUtils::valueToString<int>(varIndex.second);
-            message += "; Variable: [" + nodeId + ":" +  outputIdx + "]";
-            return unresolved_output_exception(message);
-        }
-
-        unresolved_output_exception unresolved_output_exception::build(std::string message, int nodeId, int outputIndex) {
-            std::pair<int, int> p(nodeId, outputIndex);
-            return build(message, p);
-        }
-
-        unresolved_output_exception unresolved_output_exception::build(std::string message, std::string &varName, int outputIndex) {
-            auto outputIdx = StringUtils::valueToString<int>(outputIndex);
-            message += "; Variable: [" + varName + ":" + outputIdx + "]";
-            return unresolved_output_exception(message);
-        }
-    }
+namespace graph {
+unresolved_output_exception::unresolved_output_exception(std::string message) : std::runtime_error(message) {
+  //
 }
+
+unresolved_output_exception unresolved_output_exception::build(std::string message, std::pair<int, int> &varIndex) {
+  auto nodeId = StringUtils::valueToString<int>(varIndex.first);
+  auto outputIdx = StringUtils::valueToString<int>(varIndex.second);
+  message += "; Variable: [" + nodeId + ":" + outputIdx + "]";
+  return unresolved_output_exception(message);
+}
+
+unresolved_output_exception unresolved_output_exception::build(std::string message, int nodeId, int outputIndex) {
+  std::pair<int, int> p(nodeId, outputIndex);
+  return build(message, p);
+}
+
+unresolved_output_exception unresolved_output_exception::build(std::string message, std::string &varName,
+                                                               int outputIndex) {
+  auto outputIdx = StringUtils::valueToString<int>(outputIndex);
+  message += "; Variable: [" + varName + ":" + outputIdx + "]";
+  return unresolved_output_exception(message);
+}
+}  // namespace graph
+}  // namespace sd

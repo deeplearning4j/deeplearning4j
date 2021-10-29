@@ -24,71 +24,61 @@
 #if NOT_EXCLUDED(OP_mergeavg)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 OP_IMPL(mergeavg, -1, 1, false) {
-    
-    REQUIRE_OK(this->validateInputDimensionsMatch(block));
-        
-    auto output = OUTPUT_VARIABLE(0);
+  REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-    std::vector<const NDArray*> inArrs(block.width());
-    
-    for(int i = 0; i < block.width(); ++i)
-        inArrs[i] = INPUT_VARIABLE(i);
+  auto output = OUTPUT_VARIABLE(0);
 
-    helpers::mergeAvg(block.launchContext(), inArrs, *output);
+  std::vector<const NDArray*> inArrs(block.width());
 
-    return Status::OK();
+  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+
+  helpers::mergeAvg(block.launchContext(), inArrs, *output);
+
+  return sd::Status::OK;
 }
 
-    DECLARE_TYPES(mergeavg) {
-        getOpDescriptor()
-                ->setAllowedInputTypes({ALL_FLOATS})
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
+DECLARE_TYPES(mergeavg) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
 
+CUSTOM_OP_IMPL(mergeavg_bp, 2, 1, false, 0, 0) {
+  auto inSize = block.width() - 1;
 
-    CUSTOM_OP_IMPL(mergeavg_bp, 2, 1, false, 0, 0) {
+  REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-        auto inSize = block.width() - 1;
+  std::vector<NDArray*> outArrs(inSize);
 
-        REQUIRE_OK(this->validateInputDimensionsMatch(block));
+  const auto gradient = INPUT_VARIABLE(inSize);
 
-        std::vector<NDArray*> outArrs(inSize);
-
-        const auto gradient = INPUT_VARIABLE(inSize);
-        
-        for (int i = 0; i < inSize; ++i) {
-            outArrs[i] = OUTPUT_VARIABLE(i);
-        }
-        helpers::mergeAvgBp(block.launchContext(), *gradient, outArrs);
-        return Status::OK();
-    }
-
-    DECLARE_TYPES(mergeavg_bp) {
-        getOpDescriptor()
-            ->setAllowedInputTypes(sd::DataType::ANY)
-            ->setAllowedOutputTypes(sd::DataType::ANY);
-    }
-    DECLARE_SHAPE_FN(mergeavg_bp) {
-
-        const int numOfInArrs = block.width() - 1;
-
-        auto shapeList = SHAPELIST();
-
-        for (int e = 0; e < numOfInArrs; e++) {
-            auto inShape = inputShape->at(e);
-            shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
-        }
-
-        return shapeList;
-    }
-
+  for (int i = 0; i < inSize; ++i) {
+    outArrs[i] = OUTPUT_VARIABLE(i);
+  }
+  helpers::mergeAvgBp(block.launchContext(), *gradient, outArrs);
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(mergeavg_bp) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
 }
+DECLARE_SHAPE_FN(mergeavg_bp) {
+  const int numOfInArrs = block.width() - 1;
+
+  auto shapeList = SHAPELIST();
+
+  for (int e = 0; e < numOfInArrs; e++) {
+    auto inShape = inputShape->at(e);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
+        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
+  }
+
+  return shapeList;
+}
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

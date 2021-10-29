@@ -27,45 +27,47 @@
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {
-namespace ops  {
-		
-    CUSTOM_OP_IMPL(barnes_edge_forces, 4, 1, false, 0, 1) {
-        auto rowP  = INPUT_VARIABLE(0);
-        auto colP  = INPUT_VARIABLE(1);
-        auto valP  = INPUT_VARIABLE(2);
-        auto dataP  = INPUT_VARIABLE(3);
-        auto N = INT_ARG(0);
+namespace ops {
 
-        auto output = OUTPUT_NULLIFIED(0);
+CUSTOM_OP_IMPL(barnes_edge_forces, 4, 1, false, 0, 1) {
+  auto rowP = INPUT_VARIABLE(0);
+  auto colP = INPUT_VARIABLE(1);
+  auto valP = INPUT_VARIABLE(2);
+  auto dataP = INPUT_VARIABLE(3);
+  auto N = INT_ARG(0);
 
-        REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
-        REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force: col input must be a vector, but its rank is %i instead !", colP->rankOf());
-        REQUIRE_TRUE(dataP->dataType() == output->dataType() && dataP->dataType() == valP->dataType(), 0, "barnes_edge_force: data type of dataP, valP and output must be the same");
+  auto output = OUTPUT_NULLIFIED(0);
 
-        helpers::barnes_edge_forces(rowP, colP, valP, N, output, *dataP);
+  REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force: row input must be a vector, but its rank is %i instead !",
+               rowP->rankOf());
+  REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force: col input must be a vector, but its rank is %i instead !",
+               colP->rankOf());
+  REQUIRE_TRUE(dataP->dataType() == output->dataType() && dataP->dataType() == valP->dataType(), 0,
+               "barnes_edge_force: data type of dataP, valP and output must be the same");
 
-        return Status::OK();
-    }
+  helpers::barnes_edge_forces(rowP, colP, valP, N, output, *dataP);
 
-    DECLARE_TYPES(barnes_edge_forces) {
-        getOpDescriptor()
-        ->setAllowedInputTypes(0, {ALL_INTS})
-        ->setAllowedInputTypes(1, {ALL_INTS})
-        ->setAllowedInputTypes(2, {ALL_FLOATS})
-        ->setAllowedInputTypes(3, {ALL_FLOATS})
-        ->setAllowedOutputTypes(0, {ALL_FLOATS})
-        ->setSameMode(false);
-    }
-
-    DECLARE_SHAPE_FN(barnes_edge_forces) {
-        Nd4jLong* bufShape;
-        Nd4jLong* outShapeInfo;
-        outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
-        return SHAPELIST(CONSTANT(outShapeInfo));
-    }
-
-
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(barnes_edge_forces) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS})
+      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedInputTypes(2, {ALL_FLOATS})
+      ->setAllowedInputTypes(3, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS})
+      ->setSameMode(false);
 }
+
+DECLARE_SHAPE_FN(barnes_edge_forces) {
+  sd::LongType* bufShape;
+  sd::LongType* outShapeInfo;
+  outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
+  return SHAPELIST(CONSTANT(outShapeInfo));
+}
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

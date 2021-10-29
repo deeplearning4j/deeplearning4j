@@ -20,38 +20,35 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma, created on 15.11.2018
 //
-
 #include <loops/special_kernels.h>
 
 namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
-    template<typename T>
-    __device__ void concatKernelScalar(int numArrays, Nd4jPointer *data, void *vz) {
+template <typename T>
+SD_DEVICE void concatKernelScalar(int numArrays, sd::Pointer *data, void *vz) {
+  auto z = static_cast<T *>(vz);
+  sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+  auto input = reinterpret_cast<T **>(data);
 
-        auto z = static_cast<T *>(vz);
-        Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
-        auto input = reinterpret_cast<T **>(data);
-
-        for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x)
-            z[i] = input[i][0];
-    }
-
-///////////////////////////////////////////////////////////////////////
-    template<typename T>
-    __global__ void execConcatKernelScalar(int numArrays, Nd4jPointer *data, void *vz) {
-
-        concatKernelScalar<T>(numArrays, data, vz);
-    }
-
-///////////////////////////////////////////////////////////////////////
-    template<typename T>
-    __host__ void
-    concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, void *vz) {
-
-        execConcatKernelScalar<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, vz);
-        sd::DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL concatKernelScalarGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, void * vz), LIBND4J_TYPES);
+  for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) z[i] = input[i][0];
 }
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+SD_KERNEL void execConcatKernelScalar(int numArrays, sd::Pointer *data, void *vz) {
+  concatKernelScalar<T>(numArrays, data, vz);
+}
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+SD_HOST void concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data,
+                                       void *vz) {
+  execConcatKernelScalar<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, vz);
+  sd::DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
+}
+
+BUILD_SINGLE_TEMPLATE(template void concatKernelScalarGeneric,
+                      (dim3 & launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data, void *vz),
+                      SD_COMMON_TYPES);
+}  // namespace sd

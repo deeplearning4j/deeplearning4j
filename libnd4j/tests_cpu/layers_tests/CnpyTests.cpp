@@ -19,49 +19,40 @@
 //
 // Created by agibsonccc on 3/30/17.
 //
-
-#include "testinclude.h"
-#include <string>
 #include <legacy/NativeOps.h>
 
-class FileTest : public testing::Test {
+#include <string>
 
-};
+#include "testinclude.h"
 
-class LoadFromStringTest :  public testing::Test {
+class FileTest : public testing::Test {};
 
-};
+class LoadFromStringTest : public testing::Test {};
 
-class HeaderTest :  public testing::Test {
-
-};
+class HeaderTest : public testing::Test {};
 
 TEST_F(HeaderTest, test_dataTypes_1) {
-    std::string header("0NUMPY6789{'descr': '>f4");
+  std::string header("0NUMPY6789{'descr': '>f4");
 
-
-    ASSERT_EQ(sd::DataType::FLOAT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+  ASSERT_EQ(sd::DataType::FLOAT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_2) {
-    std::string header("0NUMPY6789{'descr': '>f8");
+  std::string header("0NUMPY6789{'descr': '>f8");
 
-
-    ASSERT_EQ(sd::DataType::DOUBLE, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+  ASSERT_EQ(sd::DataType::DOUBLE, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_3) {
-    std::string header("0NUMPY6789{'descr': '<i4");
+  std::string header("0NUMPY6789{'descr': '<i4");
 
-
-    ASSERT_EQ(sd::DataType::INT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+  ASSERT_EQ(sd::DataType::INT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_4) {
-    std::string header("0NUMPY6789{'descr': '>u2");
+  std::string header("0NUMPY6789{'descr': '>u2");
 
-
-    ASSERT_EQ(sd::DataType::UINT16, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+  ASSERT_EQ(sd::DataType::UINT16, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 /*
@@ -84,9 +75,9 @@ TEST_F(LoadFromStringTest,PathTest) {
     ASSERT_EQ(2.0,data[1]);
     ASSERT_EQ(3.0,data[2]);
     ASSERT_EQ(4.0,data[3]);
-    Nd4jPointer  pointer = reinterpret_cast<Nd4jPointer >(&loadedArr);
+    sd::Pointer  pointer = reinterpret_cast<sd::Pointer >(&loadedArr);
     int *shapeBuffer = shape::shapeBufferOfNpy(loadedArr);
-    Nd4jPointer  pointer1 = dataPointForNumpy(loaded);
+    sd::Pointer  pointer1 = dataPointForNumpy(loaded);
     delete[] shapeBuffer;
 
     double *data2 = reinterpret_cast<double *>(pointer1);

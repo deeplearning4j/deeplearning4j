@@ -25,17 +25,13 @@
 
 #ifndef PAIRWISE_TRANSFORM_H_
 #define PAIRWISE_TRANSFORM_H_
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
-#include <system/dll.h>
-#include <stdio.h>
+#include <helpers/DebugHelper.h>
+#include <loops/legacy_ops.h>
 #include <ops/ops.h>
+#include <stdio.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include "legacy_ops.h"
-#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -43,68 +39,44 @@
 #include <types/float16.h>
 #endif
 
-
 namespace functions {
-    namespace pairwise_transforms {
+namespace pairwise_transforms {
 
 /**
  * Transforms involving 2 arrays
  */
-        template<typename X, typename Y, typename Z>
-        class PairWiseTransform {
-        public:
-
+template <typename X, typename Y, typename Z>
+class PairWiseTransform {
+ public:
 #ifdef __CUDABLAS__
 
-            template <typename OpType>            
-            static __host__ void intermediateShaped(dim3& launchDims, cudaStream_t *stream,
-                                                    const void *vx, const Nd4jLong *xShapeInfo,
-                                                    const void *vy, const Nd4jLong *yShapeInfo,
-                                                    void *vz, const Nd4jLong *zShapeInfo,
-                                                    void *vextraParams);
+  template <typename OpType>
+  static SD_HOST void intermediateShaped(dim3 &launchDims, cudaStream_t *stream, const void *vx,
+                                         const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
+                                         void *vz, const sd::LongType *zShapeInfo, void *vextraParams);
 
-            static __host__ void executeCudaShaped(dim3& launchDims, cudaStream_t *stream,
-                                                   int opNum,
-                                                   const void *x, const Nd4jLong *xShapeInfo,
-                                                   const void *y, const Nd4jLong *yShapeInfo,
-                                                   void *z, const Nd4jLong *zShapeInfo,
-                                                   void *extraParams);
+  static SD_HOST void executeCudaShaped(dim3 &launchDims, cudaStream_t *stream, int opNum, const void *x,
+                                        const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
+                                        void *z, const sd::LongType *zShapeInfo, void *extraParams);
 
 #endif
-        public:
+ public:
+  static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+                   const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams,
+                   uint64_t start, uint64_t stop);
 
-            static void exec(int opNum,
-                             const void *x, const Nd4jLong *xShapeInfo,
-                             const void *y, const Nd4jLong *yShapeInfo,
-                             void *z, const Nd4jLong *zShapeInfo,
-                             void *extraParams,
-                             uint64_t start, uint64_t stop);
+  static void exec(int opNum, const void *x, sd::LongType xStride, const void *y, sd::LongType yStride, void *z,
+                   sd::LongType resultStride, void *extraParams, sd::LongType len, uint64_t start, uint64_t stop);
 
-			static void exec(int opNum,
-                             const void *x, Nd4jLong xStride,
-                             const void *y, Nd4jLong yStride,
-                             void *z, Nd4jLong resultStride,
-                             void *extraParams,
-                             Nd4jLong len,
-                             uint64_t start, uint64_t stop);
+  template <typename OpType>
+  static void exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
+                   void *vresult, const sd::LongType *zShapeInfo, void *vextraParams, uint64_t start, uint64_t stop);
 
-
-			template<typename OpType>
-			static void exec(const void *vx, const Nd4jLong* xShapeInfo,
-                             const void *vy, const Nd4jLong* yShapeInfo,
-                             void *vresult, const Nd4jLong* zShapeInfo,
-                             void *vextraParams,
-                             uint64_t start, uint64_t stop);
-
-            template<typename OpType>
-            static void exec(const void *vx, Nd4jLong xStride,
-                             const void *vy, Nd4jLong yStride,
-                             void *vresult, Nd4jLong resultStride,
-                             void *vextraParams,
-                             Nd4jLong len,
-                             uint64_t start, uint64_t stop);
-        };
-    }
-}
+  template <typename OpType>
+  static void exec(const void *vx, sd::LongType xStride, const void *vy, sd::LongType yStride, void *vresult,
+                   sd::LongType resultStride, void *vextraParams, sd::LongType len, uint64_t start, uint64_t stop);
+};
+}  // namespace pairwise_transforms
+}  // namespace functions
 
 #endif /* PAIRWISE_TRANSFORM_H_ */
