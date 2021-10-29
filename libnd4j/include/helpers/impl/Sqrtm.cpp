@@ -253,18 +253,18 @@ void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
 
     ops::helpers::Schur<T> schur(in);
 
-    const NDArray& t1 = schur._T;
-    const NDArray& t2 = schur._U;
+    const NDArray& t1 = schur.t;
+    const NDArray& t2 = schur.u;
 
     NDArray sqrtT = in.ulike();
     sqrtT.nullify();
 
-    sqrtmQuasiTrianDiag<T>(schur._T, sqrtT);
-    sqrtmQuasiTrianOffDiag<T>(schur._T, sqrtT);
+    sqrtmQuasiTrianDiag<T>(schur.t, sqrtT);
+    sqrtmQuasiTrianOffDiag<T>(schur.t, sqrtT);
 
     // out = U * sqrtT * U^T;
-    NDArray temp = mmul(sqrtT, schur._U.transpose());
-    MmulHelper::mmul(&schur._U, &temp, &out);
+    NDArray temp = mmul(sqrtT, schur.u.transpose());
+    MmulHelper::mmul(&schur.u, &temp, &out);
 }
 
 BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Sqrtm, ,FLOAT_TYPES);

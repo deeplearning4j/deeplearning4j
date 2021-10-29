@@ -214,6 +214,23 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>): SameDiff {
 
 
+        val newNodeList =  ArrayList<IRNode<NODE_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>>()
+        irGraph.nodeList().forEach { node ->
+            node.inputs().forEachIndexed { index,nodeInput ->
+                if(nodeInput.endsWith(":0")) {
+                    node.setInputAt(index,nodeInput.replace(":0",""))
+                }
+            }
+
+            if(node.nodeName().contains(":0")) {
+                node.setNodeName(node.nodeName().replace(":0",""))
+            }
+
+            newNodeList.add(node)
+        }
+
+        irGraph.updateNodeCacheWith(newNodeList)
+
         /*
         First, build an in-memory representation of the graph that allows us to build the graph incrementally
         If we can build the graph incrementally, we can make sure that the added variables are set up with the correct
@@ -463,6 +480,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             } else if(!sd.hasVariable(inName) && irGraph.hasConstantInitializer(inName)) {
                                 val const = irGraph.getConstantArrayForName(inName)
                                 sd.constant(inName,const)
+                            } else if(!sd.hasVariable(inName)){
+                                throw IllegalStateException("Input variable at index ${i} named ${inName} of node $name was not assigned to any variable")
                             }
 
                             val v = sd.variables[inName]

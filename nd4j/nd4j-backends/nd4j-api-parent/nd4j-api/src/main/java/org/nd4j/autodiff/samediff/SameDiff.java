@@ -692,7 +692,7 @@ public class SameDiff extends SDBaseOps {
         for (int i = 0; i < inputs.length; i++) {
             vars[i] = getVariable(inputs[i]);
             if (vars[i] == null) {
-                throw new ND4JIllegalStateException("Function " + function.getOwnName() +  " of type " + function.opName() +   "had  null variable at index " + i);
+                throw new ND4JIllegalStateException("Function " + function.getOwnName() +  " of type " + function.opName() +   " had  null variable at index " + i);
             }
         }
 
@@ -2743,7 +2743,6 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable placeholder
      */
     public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-        Preconditions.checkState(!variables.containsKey(name), "Variable already exists with name %s", name);
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
@@ -3355,6 +3354,10 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(SameDiffOp opToReName,String from, String to) {
+       if(!variables.containsKey(from)) {
+           log.debug("Failed to rename variable {} to {}, no variable found",from,to);
+           return;
+       }
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
 
@@ -3541,9 +3544,15 @@ public class SameDiff extends SDBaseOps {
      * Get the variable based on the opName
      *
      * @param name the opName of the variable
-     * @return the variabel instance if there is one
+     * @return the variable instance if there is one
      */
     public SDVariable getVariable(String name) {
+        if(name.endsWith(":0") && !variables.containsKey(name) && variables.containsKey(name.replaceAll(":0",""))) {
+            return variables.get(name.replace(":0","")).getVariable();
+        } else if(!name.endsWith(":0") && variables.containsKey(name + ":0")) {
+            return variables.get(name + ":0").getVariable();
+        }
+
         Variable v = variables.get(name);
         return v == null ? null : v.getVariable();
     }
@@ -4543,7 +4552,7 @@ public class SameDiff extends SDBaseOps {
 
                         boolean allAvailable = true;
                         SameDiffOp o = sameDiff.ops.get(opName);
-                         for (String opOutput : o.getOutputsOfOp()) {
+                        for (String opOutput : o.getOutputsOfOp()) {
                             Variable outVar = variables.get(opOutput);
                             if (outVar.getVariable().dataType().isFPType()) {
                                 allAvailable = shouldAddAutoDiffCandidate(minimalSubgraphVars,outVar,prerequisites,differentiatedOps);
@@ -5671,6 +5680,36 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+
+
+
+    /**
+     * Freezes the model. Optionally, can be done in place.
+     * Returns either a copy or this instance of the model with frozen variables.
+     * A frozen model is not trainable with variables converted to constants.
+     * @return
+     */
+    public SameDiff freeze(boolean inPlace) {
+        SameDiff clone = inPlace ? this : dup();
+        for(Map.Entry<String,Variable> varEntry : clone.variables.entrySet()) {
+            Variable varMetaData = varEntry.getValue();
+            SDVariable currVar = varMetaData.getVariable();
+            switch(currVar.getVariableType()) {
+                case VARIABLE:
+                    currVar.setVariableType(VariableType.CONSTANT);
+                    break;
+                case CONSTANT:
+                case ARRAY:
+                case PLACEHOLDER:
+                    break;
+            }
+        }
+
+
+        return clone;
+    }
+
+
     /**
      * All constants are converted to variables, also called unfreezing a graph.
      * Frozen graphs are graphs where all differentiable variables are converted to
@@ -5688,7 +5727,7 @@ public class SameDiff extends SDBaseOps {
                 //arrays are outputs of ops
                 if(output != null)
                     currVar.setVariableType(VariableType.ARRAY);
-                //only need to convert floating point types as trainable, ints are not
+                    //only need to convert floating point types as trainable, ints are not
                 else if(varMetaData.getInputsForOp() != null && !varMetaData.getInputsForOp().isEmpty() && currVar.dataType().isFPType()) {
                     currVar.setVariableType(VariableType.VARIABLE);
                     if(constantArrays.hasArray(currVar.name())) {
@@ -5696,8 +5735,6 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
             }
-
-
         }
     }
 

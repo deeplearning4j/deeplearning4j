@@ -59,6 +59,7 @@ public class Reshape extends DynamicCustomOp {
 
     public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
+        addIArgument(-99);
     }
 
     public Reshape(INDArray in, long... shape) {
@@ -75,10 +76,13 @@ public class Reshape extends DynamicCustomOp {
 
     public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out) {
         super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Integer>)null);
+        addIArgument(-99);
     }
 
     public Reshape(INDArray in, INDArray shape){
         this(in, shape, null);
+        addIArgument(-99);
+
     }
 
 

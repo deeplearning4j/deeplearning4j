@@ -74,10 +74,27 @@ interface IRNode<NODE_TYPE : GeneratedMessageV3,
     fun nodeName(): String
 
     /**
+     * Sets this node's name to  be the new name
+     */
+    fun setNodeName(name: String)
+
+    /**
      * Dynamically add an input to the node
 
      */
     fun addInput(inputName: String)
+
+
+    /**
+     * Sets the input at a particular index
+     */
+    fun setInputAt(index: Int,name: String)
+
+
+    /**
+     * Sets the output name at a particular index
+     */
+    fun setOutputAt(index: Int,name: String)
 
     /**
      * List of input names
@@ -94,10 +111,20 @@ interface IRNode<NODE_TYPE : GeneratedMessageV3,
      * @return the name at the particular index
      */
     fun inputAt(index: Int): String
+
+    /**
+     * The output at a particular index
+     */
     fun outputAt(index: Int): String
 
+    /**
+     * The number of inputs for this node
+     */
     fun numInputs(): Int
 
+    /**
+     * The number of outputs for this node
+     */
     fun numOutputs(): Int
 
     fun attributeMap(): Map<String, IRAttribute<ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>>

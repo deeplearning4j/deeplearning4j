@@ -82,7 +82,7 @@ class OnnxIRNode(inputNode: Onnx.NodeProto, inputOpDef: Onnx.NodeProto,opMapping
 
     override fun outputAt(index: Int): String {
         //Identity's output is just its node name and has no output
-        if(nodeDef.opType == "Identity" && index == 0) {
+        if(nodeDef.opType == "Identity"  || nodeDef.opType == "Placeholder" || nodeDef.opType == "Constant" && index == 0) {
             return nodeDef.name
         } else if(nodeDef.opType == "Identity" && index > 0) {
             throw IllegalArgumentException("Invalid index for Identity op. Only 0 is valid, received $index")
@@ -161,6 +161,24 @@ class OnnxIRNode(inputNode: Onnx.NodeProto, inputOpDef: Onnx.NodeProto,opMapping
         val nodeBuilder = nodeDef.toBuilder()
         nodeBuilder.addInput(inputName)
         this.nodeDef = nodeBuilder.build()
+    }
+
+    override fun setInputAt(index: Int, name: String) {
+        val nodeBuilder = nodeDef.toBuilder()
+        nodeBuilder.setInput(index,name)
+        this.nodeDef = nodeBuilder.build()
+    }
+
+    override fun setOutputAt(index: Int, name: String) {
+        val nodeBuilder = nodeDef.toBuilder()
+        nodeBuilder.setOutput(index,name)
+        this.nodeDef = nodeBuilder.build()
+    }
+
+    override fun setNodeName(name: String) {
+        val nodeBuilder = nodeDef.toBuilder()
+        nodeBuilder.name = name
+        this.nodeDef= nodeBuilder.build()
     }
 
 }

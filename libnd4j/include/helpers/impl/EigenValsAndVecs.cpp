@@ -40,8 +40,8 @@ EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
 
     Schur<T> schur(matrix);
 
-    NDArray& schurMatrixU = schur._U;
-    NDArray& schurMatrixT = schur._T;
+    NDArray& schurMatrixU = schur.u;
+    NDArray& schurMatrixT = schur.u;
 
     _Vecs = NDArray(matrix.ordering(), {schurMatrixU.sizeAt(1), schurMatrixU.sizeAt(1), 2}, matrix.dataType(), matrix.getContext());
     _Vals = NDArray(matrix.ordering(), {matrix.sizeAt(1), 2}, matrix.dataType(), matrix.getContext());
@@ -308,8 +308,8 @@ void eig_(const NDArray& input, NDArray& vals,  NDArray& vecs ){
     assert(vecs.rankOf()==3 && vecs.sizeAt(0)==input.sizeAt(0) && vecs.sizeAt(1)==input.sizeAt(0) && vecs.sizeAt(2)==2 && "incorrect shape for the eigenvector results vecs");
 
     Schur<T> schur(input);
-    NDArray& schurMatrixU = schur._U;
-    NDArray& schurMatrixT = schur._T;
+    NDArray& schurMatrixU = schur.u;
+    NDArray& schurMatrixT = schur.t;
     calcEigenVals_<T>(schurMatrixT, vals);
     calcPseudoEigenVecs_<T>(schurMatrixT, schurMatrixU, vals);  
     calcEigenVecs_<T>(schurMatrixU, vals, vecs);

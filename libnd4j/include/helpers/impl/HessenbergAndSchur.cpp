@@ -115,11 +115,11 @@ void Schur<T>::evalData(const NDArray& matrix) {
 
     if(scale < DataTypeUtils::min_positive<T>()) {
 
-        _T = matrix.ulike();
-        _U = matrix.ulike();
+        t = matrix.ulike();
+        u = matrix.ulike();
 
-        _T.nullify();
-        _U.setIdentity();
+        t.nullify();
+        u.setIdentity();
 
         return;
     }
@@ -127,51 +127,51 @@ void Schur<T>::evalData(const NDArray& matrix) {
     // perform Hessenberg decomposition
     Hessenberg<T> hess(matrix / scale);
 
-    _T = std::move(hess._H);
-    _U = std::move(hess._Q);
+    t = std::move(hess._H);
+    u = std::move(hess._Q);
 
     calcFromHessenberg();
 
-    _T *= scale;
+    t *= scale;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 void Schur<T>::splitTwoRows(const int ind, const T shift) {
 
-    const int numCols = _T.sizeAt(1);
+    const int numCols = t.sizeAt(1);
 
-    T p = (T)0.5 * (_T.t<T>(ind-1, ind-1) - _T.t<T>(ind, ind));
+    T p = (T)0.5 * (t.t<T>(ind-1, ind-1) - t.t<T>(ind, ind));
 
-    T q = p*p + _T.t<T>(ind, ind-1) * _T.t<T>(ind-1, ind);
+    T q = p*p + t.t<T>(ind, ind-1) * t.t<T>(ind-1, ind);
 
-    _T.r<T>(ind, ind) += shift;
-    _T.r<T>(ind-1, ind-1) += shift;
+    t.r<T>(ind, ind) += shift;
+    t.r<T>(ind-1, ind-1) += shift;
 
     if (q >= (T)0) {
 
         T z = math::nd4j_sqrt<T,T>(math::nd4j_abs<T>(q));
 
-        NDArray rotation(_T.ordering(), {2, 2}, _T.dataType(), _T.getContext());
+        NDArray rotation(t.ordering(), {2, 2}, t.dataType(), t.getContext());
 
         if (p >= (T)0)
-            JacobiSVD<T>::createJacobiRotationGivens(p+z, _T.t<T>(ind, ind-1), rotation);
+            JacobiSVD<T>::createJacobiRotationGivens(p+z, t.t<T>(ind, ind-1), rotation);
         else
-            JacobiSVD<T>::createJacobiRotationGivens(p-z, _T.t<T>(ind, ind-1), rotation);
+            JacobiSVD<T>::createJacobiRotationGivens(p-z, t.t<T>(ind, ind-1), rotation);
 
-        NDArray rightCols = _T({0,0, ind-1,-1});
+        NDArray rightCols = t({0,0, ind-1,-1});
         JacobiSVD<T>::mulRotationOnLeft(ind-1, ind, rightCols, rotation.transpose());
 
-        NDArray topRows = _T({0,ind+1, 0,0});
+        NDArray topRows = t({0,ind+1, 0,0});
         JacobiSVD<T>::mulRotationOnRight(ind-1, ind, topRows, rotation);
 
-        JacobiSVD<T>::mulRotationOnRight(ind-1, ind, _U, rotation);
+        JacobiSVD<T>::mulRotationOnRight(ind-1, ind, u, rotation);
 
-        _T.r<T>(ind, ind-1) = (T)0;
+        t.r<T>(ind, ind-1) = (T)0;
     }
 
     if (ind > 1)
-        _T.r<T>(ind-1, ind-2) = (T)0;
+        t.r<T>(ind-1, ind-2) = (T)0;
 }
 
 
@@ -181,17 +181,17 @@ void Schur<T>::calcShift(const int ind, const int iter, T& shift, NDArray& shift
 
     // shiftVec has length = 3
 
-    shiftVec.r<T>(0) = _T.t<T>(ind, ind);
-    shiftVec.r<T>(1) = _T.t<T>(ind-1, ind-1);
-    shiftVec.r<T>(2) = _T.t<T>(ind, ind-1) * _T.t<T>(ind-1, ind);
+    shiftVec.r<T>(0) = t.t<T>(ind, ind);
+    shiftVec.r<T>(1) = t.t<T>(ind-1, ind-1);
+    shiftVec.r<T>(2) = t.t<T>(ind, ind-1) * t.t<T>(ind-1, ind);
 
     if (iter == 10) {
         shift += shiftVec.t<T>(0);
 
         for (int i = 0; i <= ind; ++i)
-            _T.r<T>(i,i) -= shiftVec.t<T>(0);
+            t.r<T>(i,i) -= shiftVec.t<T>(0);
 
-        T s = math::nd4j_abs<T>(_T.t<T>(ind, ind-1)) + math::nd4j_abs<T>(_T.t<T>(ind-1, ind-2));
+        T s = math::nd4j_abs<T>(t.t<T>(ind, ind-1)) + math::nd4j_abs<T>(t.t<T>(ind-1, ind-2));
 
         shiftVec.r<T>(0) = T(0.75) * s;
         shiftVec.r<T>(1) = T(0.75) * s;
@@ -215,7 +215,7 @@ void Schur<T>::calcShift(const int ind, const int iter, T& shift, NDArray& shift
             shift += s;
 
             for (int i = 0; i <= ind; ++i)
-                _T.r<T>(i,i) -= s;
+                t.r<T>(i,i) -= s;
 
             shiftVec = T(0.964);
         }
@@ -230,19 +230,19 @@ void Schur<T>::initFrancisQR(const int ind1,  const int ind2, const NDArray& shi
 
   for (ind3 = ind2-2; ind3 >= ind1; --ind3) {
 
-        const T mm = _T.t<T>(ind3, ind3);
+        const T mm = t.t<T>(ind3, ind3);
         const T r = shiftVec.t<T>(0) - mm;
         const T s = shiftVec.t<T>(1) - mm;
 
-        householderVec.r<T>(0) = (r * s - shiftVec.t<T>(2)) / _T.t<T>(ind3+1, ind3) + _T.t<T>(ind3, ind3+1);
-        householderVec.r<T>(1) = _T.t<T>(ind3+1, ind3+1) - mm - r - s;
-        householderVec.r<T>(2) = _T.t<T>(ind3+2, ind3+1);
+        householderVec.r<T>(0) = (r * s - shiftVec.t<T>(2)) / t.t<T>(ind3+1, ind3) + t.t<T>(ind3, ind3+1);
+        householderVec.r<T>(1) = t.t<T>(ind3+1, ind3+1) - mm - r - s;
+        householderVec.r<T>(2) = t.t<T>(ind3+2, ind3+1);
 
         if (ind3 == ind1)
           break;
 
-        const T lhs = _T.t<T>(ind3,ind3-1) * (math::nd4j_abs<T>(householderVec.t<T>(1)) + math::nd4j_abs<T>(householderVec.t<T>(2)));
-        const T rhs = householderVec.t<T>(0) * (math::nd4j_abs<T>(_T.t<T>(ind3-1, ind3-1)) + math::nd4j_abs<T>(mm) + math::nd4j_abs<T>(_T.t<T>(ind3+1, ind3+1)));
+        const T lhs = t.t<T>(ind3,ind3-1) * (math::nd4j_abs<T>(householderVec.t<T>(1)) + math::nd4j_abs<T>(householderVec.t<T>(2)));
+        const T rhs = householderVec.t<T>(0) * (math::nd4j_abs<T>(t.t<T>(ind3-1, ind3-1)) + math::nd4j_abs<T>(mm) + math::nd4j_abs<T>(t.t<T>(ind3+1, ind3+1)));
 
         if(math::nd4j_abs<T>(lhs) < DataTypeUtils::eps<T>() * rhs)
             break;
@@ -258,56 +258,56 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const
     if(!(ind2 <= ind3-2))
         throw std::runtime_error("ops::helpers::Schur:doFrancisQR: wrong input indexes, condition iind2 <= ind3-2 must be true !");
 
-    const int numCols = _T.sizeAt(1);
+    const int numCols = t.sizeAt(1);
 
     for (int k = ind2; k <= ind3-2; ++k) {
 
         const bool firstIter = (k == ind2);
 
         T coeff, normX;
-        NDArray tail(_T.ordering(), {2, 1}, _T.dataType(), _T.getContext());
-        Householder<T>::evalHHmatrixData(firstIter ? householderVec : _T({k,k+3, k-1,k}), tail, coeff, normX);
+        NDArray tail(t.ordering(), {2, 1}, t.dataType(), t.getContext());
+        Householder<T>::evalHHmatrixData(firstIter ? householderVec : t({k,k+3, k-1,k}), tail, coeff, normX);
 
         if (normX != T(0)) {
 
             if (firstIter && k > ind1)
-                _T.r<T>(k, k-1) = -_T.t<T>(k, k-1);
+                t.r<T>(k, k-1) = -t.t<T>(k, k-1);
             else if (!firstIter)
-                _T.r<T>(k, k-1) = normX;
+                t.r<T>(k, k-1) = normX;
 
-            NDArray block1 = _T({k,k+3, k,numCols}, true);
+            NDArray block1 = t({k,k+3, k,numCols}, true);
             Householder<T>::mulLeft(block1, tail, coeff);
 
-            NDArray block2 = _T({0,math::nd4j_min<int>(ind3,k+3)+1, k,k+3}, true);
+            NDArray block2 = t({0,math::nd4j_min<int>(ind3,k+3)+1, k,k+3}, true);
             Householder<T>::mulRight(block2, tail, coeff);
 
-            NDArray block3 = _U({0,numCols, k,k+3}, true);
+            NDArray block3 = u({0,numCols, k,k+3}, true);
             Householder<T>::mulRight(block3, tail, coeff);
         }
     }
 
     T coeff, normX;
-    NDArray tail(_T.ordering(), {1, 1}, _T.dataType(), _T.getContext());
-    Householder<T>::evalHHmatrixData(_T({ind3-1,ind3+1, ind3-2,ind3-1}), tail, coeff, normX);
+    NDArray tail(t.ordering(), {1, 1}, t.dataType(), t.getContext());
+    Householder<T>::evalHHmatrixData(t({ind3-1,ind3+1, ind3-2,ind3-1}), tail, coeff, normX);
 
     if (normX != T(0)) {
 
-        _T.r<T>(ind3-1, ind3-2) = normX;
+        t.r<T>(ind3-1, ind3-2) = normX;
 
-        NDArray block1 = _T({ind3-1,ind3+1, ind3-1,numCols}, true);
+        NDArray block1 = t({ind3-1,ind3+1, ind3-1,numCols}, true);
         Householder<T>::mulLeft(block1, tail, coeff);
 
-        NDArray block2 = _T({0,ind3+1, ind3-1,ind3+1}, true);
+        NDArray block2 = t({0,ind3+1, ind3-1,ind3+1}, true);
         Householder<T>::mulRight(block2, tail, coeff);
 
-        NDArray block3 = _U({0,numCols, ind3-1,ind3+1}, true);
+        NDArray block3 = u({0,numCols, ind3-1,ind3+1}, true);
         Householder<T>::mulRight(block3, tail, coeff);
     }
 
     for (int i = ind2+2; i <= ind3; ++i) {
-        _T.r<T>(i, i-2) = T(0);
+        t.r<T>(i, i-2) = T(0);
         if (i > ind2+2)
-            _T.r<T>(i, i-3) = T(0);
+            t.r<T>(i, i-3) = T(0);
     }
 }
 
@@ -315,9 +315,9 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const
 template<typename T>
 void Schur<T>::calcFromHessenberg() {
 
-    const int maxIters = _maxItersPerRow * _T.sizeAt(0);
+    const int maxIters = _maxItersPerRow * t.sizeAt(0);
 
-    const int numCols = _T.sizeAt(1);
+    const int numCols = t.sizeAt(1);
     int iu = numCols - 1;
     int iter = 0;
     int totalIter = 0;
@@ -326,7 +326,7 @@ void Schur<T>::calcFromHessenberg() {
 
     T norm = 0;
     for (int j = 0; j < numCols; ++j)
-        norm += _T({0,math::nd4j_min<int>(numCols,j+2), j,j+1}).reduceNumber(reduce::ASum).template t<T>(0);
+        norm += t({0,math::nd4j_min<int>(numCols,j+2), j,j+1}).reduceNumber(reduce::ASum).template t<T>(0);
 
     if(norm != T(0)) {
 
@@ -336,9 +336,9 @@ void Schur<T>::calcFromHessenberg() {
 
             if (il == iu) {
 
-                _T.r<T>(iu,iu) = _T.t<T>(iu,iu) + shift;
+                t.r<T>(iu,iu) = t.t<T>(iu,iu) + shift;
                 if (iu > 0)
-                    _T.r<T>(iu, iu-1) = T(0);
+                    t.r<T>(iu, iu-1) = T(0);
                 iu--;
                 iter = 0;
 
@@ -351,8 +351,8 @@ void Schur<T>::calcFromHessenberg() {
             }
             else  {
 
-                NDArray householderVec(_T.ordering(), {3}, _T.dataType(), _T.getContext());
-                NDArray shiftVec      (_T.ordering(), {3}, _T.dataType(), _T.getContext());
+                NDArray householderVec(t.ordering(), {3}, t.dataType(), t.getContext());
+                NDArray shiftVec      (t.ordering(), {3}, t.dataType(), t.getContext());
 
                 calcShift(iu, iter, shift, shiftVec);
 
@@ -370,8 +370,9 @@ void Schur<T>::calcFromHessenberg() {
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Hessenberg,,FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Schur,,FLOAT_TYPES);
+
+    BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Hessenberg,,FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Schur,,FLOAT_TYPES);
 
 }
 }

@@ -35,6 +35,7 @@ import org.nd4j.samediff.frameworkimport.ndarrayFromNameSpaceTensor
 import org.nd4j.samediff.frameworkimport.setNameForFunctionFromDescriptors
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import org.nd4j.weightinit.impl.ZeroInitScheme
 import java.lang.IllegalArgumentException
 import java.lang.reflect.Modifier
 
@@ -80,6 +81,21 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                     when (argType) {
                         OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> {
                             if(df.opType() != Op.Type.LOGIC) {
+                                val opInputs = sd.ops[dynamicCustomOp.ownName]
+                                for(input in opInputs!!.inputsToOp) {
+                                    val name = if(mappingContext.graph().hasConstantInitializer(input)) {
+                                        input
+                                    } else {
+                                        "${input}:0"
+                                    }
+                                    //removes the suffix
+                                    if(!sd.hasVariable(input)) {
+                                        if(mappingContext.graph().hasConstantInitializer("${input}:0") || sd.hasVariable(name)) {
+                                            sd.renameVariable(name,input)
+                                        }
+                                    }
+
+                                }
                                 val args = dynamicCustomOp.args()
                                 val arraysToAdd = ArrayList<INDArray>()
                                 listOfArgsSortedByIndex.forEachIndexed { index, argDescriptor ->

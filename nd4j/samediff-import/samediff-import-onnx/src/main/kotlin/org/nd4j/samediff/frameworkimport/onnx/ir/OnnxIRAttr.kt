@@ -98,7 +98,7 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
     }
 
     override fun tensorValue(): IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
-        return OnnxIRTensor(attributeValue.t)
+        return OnnxIRTensor(attributeValue.tensorsList[0])
     }
 
     override fun stringValue(): String {
@@ -110,7 +110,7 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
     }
 
     override fun dataTataTypeValue(): IRDataType<Onnx.TensorProto.DataType> {
-        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[attributeDef.t.dataType.ordinal])
+        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[attributeDef.tensorsList[0].dataType.ordinal])
     }
 
     override fun graphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum> {

@@ -20,23 +20,39 @@
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
 import org.junit.Test
+import org.nd4j.autodiff.samediff.TrainingConfig
 import org.nd4j.common.io.ClassPathResource
+import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.learning.config.Adam
 import java.io.File
 import java.util.*
 
 class TestOnnxFrameworkImporter {
 
     @Test
-    fun testAgeRace() {
+    fun testLenet() {
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
         val importer = OnnxFrameworkImporter()
-        val file = ClassPathResource("agerace_v2.onnx").file
+        val file = ClassPathResource("lenet.onnx").file
         val result  = importer.runImport(file.absolutePath, emptyMap())
-        val arr = Nd4j.ones(1, 3, 224, 224)
-        result.batchOutput().inputs(Collections.singletonMap("input", arr))
-            .output("output").output()
-        println(result.summary())
-        result.asFlatFile(File("agerace-samediff.fb"))
+        val labelsVar = result.placeHolder("label", DataType.FLOAT,1,10)
+        val output = result.getVariable("raw_output___13")!!
+        result.loss().softmaxCrossEntropy("loss",labelsVar,output,null)
+        val arr = Nd4j.ones(1,1,28,28)
+        val labels = Nd4j.ones(1,10,5,1)
+        result.convertConstantsToVariables()
+        val trainingConfig = TrainingConfig.builder()
+        trainingConfig.updater(Adam())
+        trainingConfig.dataSetFeatureMapping("import/Placeholder")
+        trainingConfig.dataSetLabelMapping("label")
+        trainingConfig.minimize("loss")
+        result.trainingConfig = trainingConfig.build()
+
+        val inputData = DataSet(arr,labels)
+        result.fit(inputData)
     }
 
 
