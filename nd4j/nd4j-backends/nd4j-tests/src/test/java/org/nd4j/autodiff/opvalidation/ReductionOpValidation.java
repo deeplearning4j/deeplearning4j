@@ -188,7 +188,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 10;
-            SDVariable input = sd.var("in", minibatch, nOut);
+            SDVariable input = sd.var("in",DataType.DOUBLE, minibatch, nOut);
             INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100).castTo(DataType.DOUBLE);
             long length = nOut * minibatch;
 
@@ -208,9 +208,9 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.sum());
                     break;
                 case 2:
-                    loss = sd.standardDeviation("loss", input, false);
+                    loss = sd.standardDeviation("loss", input, true);
                     name = "stdev";
-                    tc.expectedOutput("loss", inputArr.std(false));
+                    tc.expectedOutput("loss", inputArr.std(true));
                     break;
                 case 3:
                     loss = sd.min("loss", input);
@@ -223,7 +223,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.max());
                     break;
                 case 5:
-                    loss = sd.variance("loss", input, false);
+                    loss = sd.variance("loss", input, true);
                     name = "variance";
                     tc.expectedOutput("loss", inputArr.var());
                     break;

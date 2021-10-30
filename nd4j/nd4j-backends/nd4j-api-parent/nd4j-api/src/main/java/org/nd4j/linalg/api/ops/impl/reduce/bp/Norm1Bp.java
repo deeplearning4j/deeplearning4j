@@ -31,8 +31,28 @@ public class Norm1Bp extends BaseReductionBp {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
     }
 
+    public Norm1Bp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+        super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
+    }
+
     public Norm1Bp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
         super(origInput, gradAtOutput, output, keepDims, dimensions);
+    }
+
+    public Norm1Bp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
+        super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
+    }
+
+    public Norm1Bp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions) {
+        super(origInput1, origInput2, gradAtOutput, output1, output2, keepDims, dimensions);
+    }
+
+    public Norm1Bp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions) {
+        super(origInput, gradAtOutput, output, keepDims, dimensions);
+    }
+
+    public Norm1Bp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
     }
 
     public Norm1Bp(){}
