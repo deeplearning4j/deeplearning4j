@@ -105,11 +105,23 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         addArgs();
     }
 
-    protected void addArgs(){
+    public BaseReductionBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions) {
+        super(null,new INDArray[]{origInput,gradAtOutput,dimensions},new INDArray[]{output});
+        this.keepDims = keepDims;
+        addArgs();
+    }
+
+    public BaseReductionBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions) {
+        super(null,sameDiff,new SDVariable[]{origInput,gradAtOutput,dimensions},false);
+        this.keepDims = keepDims;
+        addArgs();
+    }
+
+    protected void addArgs() {
         addTArgument(keepDims ? 1 : 0);
         addBArgument(keepDims);
-        if(dimensions != null && dimensions.length > 0){
-            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE ){
+        if(dimensions != null && dimensions.length > 0) {
+            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE) {
                 //Integer.MAX_VALUE means "full array" but here no dimension args == full array
                 addIArgument(dimensions);
             }

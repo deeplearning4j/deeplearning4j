@@ -208,9 +208,9 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.sum());
                     break;
                 case 2:
-                    loss = sd.standardDeviation("loss", input, true);
+                    loss = sd.standardDeviation("loss", input, false);
                     name = "stdev";
-                    tc.expectedOutput("loss", inputArr.std(true));
+                    tc.expectedOutput("loss", inputArr.std(false));
                     break;
                 case 3:
                     loss = sd.min("loss", input);
@@ -223,7 +223,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.max());
                     break;
                 case 5:
-                    loss = sd.variance("loss", input, true);
+                    loss = sd.variance("loss", input, false);
                     name = "variance";
                     tc.expectedOutput("loss", inputArr.var());
                     break;

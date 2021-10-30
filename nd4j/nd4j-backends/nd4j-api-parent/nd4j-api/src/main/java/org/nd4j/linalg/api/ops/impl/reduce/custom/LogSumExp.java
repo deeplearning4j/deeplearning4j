@@ -83,10 +83,28 @@ public class LogSumExp extends DynamicCustomOp {
         //dL/dx = dL/dz * dz/ds * ds/dx
         //dz/ds = 1/s
         SDVariable exp = sameDiff.math.exp(arg());
-        SDVariable sumExp = exp.sum(dimensions);
+        SDVariable sumExp =  null;
+        if(dimensions == null) {
+            if(args().length < 2) {
+                dimensions = new int[]{Integer.MAX_VALUE};
+                sumExp = exp.sum(dimensions);
+            } else {
+                sumExp = sameDiff.math().sum(exp,arg(1));
+            }
+        }
+
         SDVariable gradProd = f1.get(0).div(sumExp);
-        SDVariable dSumExpdx = new SumBp(sameDiff, arg(), gradProd, keepDims, dimensions).outputVariable().mul(exp);
-        return Collections.singletonList(dSumExpdx);
+        if(dimensions == null && args().length > 1) {
+            SDVariable dSumExpdx = new SumBp(sameDiff, arg(), gradProd, keepDims, arg(1)).outputVariable().mul(exp);
+            return Collections.singletonList(dSumExpdx);
+
+
+        } else {
+            SDVariable dSumExpdx = new SumBp(sameDiff, arg(), gradProd, keepDims, dimensions).outputVariable().mul(exp);
+            return Collections.singletonList(dSumExpdx);
+        }
+
+
     }
 
     @Override

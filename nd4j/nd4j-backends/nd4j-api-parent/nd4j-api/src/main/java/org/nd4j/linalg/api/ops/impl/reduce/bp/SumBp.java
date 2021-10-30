@@ -31,11 +31,25 @@ public class SumBp extends BaseReductionBp {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
     }
 
-    public SumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
+    public SumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions){
         super(origInput, gradAtOutput, output, keepDims, dimensions);
     }
 
+
+    public SumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
+    }
+
+
     public SumBp(){}
+
+    public SumBp(INDArray preReduceInput, INDArray dLdOut, INDArray dLdIn, boolean keepDims) {
+        super(null,preReduceInput,dLdIn,dLdOut,keepDims);
+    }
+
+    public SumBp(INDArray preReduceInput, INDArray dLdOut_0, INDArray dLdIn, boolean keepDims, int...dimensions) {
+        super(null,preReduceInput,dLdOut_0,dLdIn,keepDims,dimensions);
+    }
 
     @Override
     public String opName() {
