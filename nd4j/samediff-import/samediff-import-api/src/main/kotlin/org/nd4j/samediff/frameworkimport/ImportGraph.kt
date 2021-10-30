@@ -214,22 +214,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>): SameDiff {
 
 
-        val newNodeList =  ArrayList<IRNode<NODE_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>>()
-        irGraph.nodeList().forEach { node ->
-            node.inputs().forEachIndexed { index,nodeInput ->
-                if(nodeInput.endsWith(":0")) {
-                    node.setInputAt(index,nodeInput.replace(":0",""))
-                }
-            }
-
-            if(node.nodeName().contains(":0")) {
-                node.setNodeName(node.nodeName().replace(":0",""))
-            }
-
-            newNodeList.add(node)
-        }
-
-        irGraph.updateNodeCacheWith(newNodeList)
+      
 
         /*
         First, build an in-memory representation of the graph that allows us to build the graph incrementally
@@ -259,6 +244,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     sd.`var`(name,converted)
             }
         }
+
+
         val defaultRunner =
             DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
 

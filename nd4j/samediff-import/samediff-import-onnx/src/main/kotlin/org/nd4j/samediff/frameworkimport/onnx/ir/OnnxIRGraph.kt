@@ -67,37 +67,8 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val opTypes = HashMap<String,String>()
 
         nodeNames = HashSet()
+        preProcessZeroSuffixes()
 
-        val graphDefBuilder = graphDef.toBuilder()
-        val initializerList = ArrayList<Onnx.TensorProto>()
-        //ensure we prune all :0 suffixes which may come from tf onnx
-        for(i in 0 until graphDefBuilder.initializerCount) {
-            val currInitializer = graphDefBuilder.initializerList[0]
-            val builder = currInitializer.toBuilder()
-            builder.name = currInitializer.name.replace(":0","")
-            initializerList.add(builder.build())
-            graphDefBuilder.removeInitializer(0)
-        }
-
-
-        graphDefBuilder.nodeBuilderList.forEach {
-            it.name = it.name.replace(":0","")
-            val inputList = it.inputList.toMutableList()
-            val outputList = it.outputList.toMutableList()
-            for(i in 0 until it.inputCount) {
-                it.clearInput()
-            }
-            for(i in 0 until it.outputCount) {
-                it.clearOutput()
-            }
-
-            it.addAllInput(inputList.map { input -> input.replace(":0","") })
-            it.addAllOutput(outputList.map { input -> input.replace(":0","") })
-
-        }
-
-        initializerList.forEach { graphDefBuilder.addInitializer(it) }
-        this.graphDef = graphDefBuilder.build()
         cachedNodeList = nodeList()
 
 
@@ -133,6 +104,45 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         outputList.addAll(this.graphDef.outputList.map { input -> input.name.replace(":0","") })
     }
 
+    /**
+     * Handle zero suffixes such that the suffixes are removed.
+     * This is for when you import a tensorflow model or import a model
+     * from tf onnx and need to handle the :0 edge case which is pretty common
+     * when interacting with anything that came from tensorflow.
+     */
+    fun preProcessZeroSuffixes() {
+        val graphDefBuilder = graphDef.toBuilder()
+        val initializerList = ArrayList<Onnx.TensorProto>()
+        //ensure we prune all :0 suffixes which may come from tf onnx
+        for(i in 0 until graphDefBuilder.initializerCount) {
+            val currInitializer = graphDefBuilder.initializerList[0]
+            val builder = currInitializer.toBuilder()
+            builder.name = currInitializer.name.replace(":0","")
+            initializerList.add(builder.build())
+            graphDefBuilder.removeInitializer(0)
+        }
+
+
+        graphDefBuilder.nodeBuilderList.forEach {
+            it.name = it.name.replace(":0","")
+            val inputList = it.inputList.toMutableList()
+            val outputList = it.outputList.toMutableList()
+            for(i in 0 until it.inputCount) {
+                it.clearInput()
+            }
+            for(i in 0 until it.outputCount) {
+                it.clearOutput()
+            }
+
+            it.addAllInput(inputList.map { input -> input.replace(":0","") })
+            it.addAllOutput(outputList.map { input -> input.replace(":0","") })
+
+        }
+
+        initializerList.forEach { graphDefBuilder.addInitializer(it) }
+        this.graphDef = graphDefBuilder.build()
+    }
+
 
     override fun nodeList(): List<IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>> {
         if(cachedNodeList != null) {
@@ -150,7 +160,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         graphDef.inputList.filter { input -> !initializerListNames.contains(input.name.replace(":0","")) }.forEach { input ->
             //note: this is not a real op name in onnx, this is purely for flagging for import to grab the node from the initializer
             //add dummy values for placeholders
-           val tensorBuilder = Onnx.TensorProto.newBuilder()
+            val tensorBuilder = Onnx.TensorProto.newBuilder()
             tensorBuilder.name = input.name
             tensorBuilder.dataType = input.type.tensorType.elemType
             input.type.tensorType.shape.dimList.forEach {
