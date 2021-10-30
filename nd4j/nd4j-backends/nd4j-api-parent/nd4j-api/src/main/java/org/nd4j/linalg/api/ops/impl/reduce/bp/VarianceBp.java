@@ -79,8 +79,10 @@ public class VarianceBp extends BaseReductionBp {
         addArgs();
     }
 
+    @Override
     protected void addArgs() {
         addBArgument(biasCorrected);
+        super.addArgs();
     }
 
     public VarianceBp(boolean biasCorrected) {

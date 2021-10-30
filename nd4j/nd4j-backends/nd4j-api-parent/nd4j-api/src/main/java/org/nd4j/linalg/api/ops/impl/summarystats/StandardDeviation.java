@@ -36,7 +36,8 @@ import java.util.List;
 
 public class StandardDeviation extends Variance {
     public StandardDeviation(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
-        super(sameDiff, i_v, biasCorrected, keepDims, dimensions );
+        super(sameDiff, i_v, biasCorrected, keepDims, dimensions);
+        this.keepDims = keepDims;
     }
 
     public StandardDeviation(INDArray x, boolean biasCorrected, boolean keepDims, int... dimension) {
