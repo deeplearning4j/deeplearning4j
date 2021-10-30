@@ -221,7 +221,7 @@ public abstract class DifferentialFunction {
             value = ensureProperType(target, value);
         }
 
-        if(isConfigProperties()){
+        if(isConfigProperties()) {
             String propertyName = configFieldName();
             if(propertyName == null)
                 propertyName = "config";
@@ -267,7 +267,7 @@ public abstract class DifferentialFunction {
         } else {
             try {
                 //Edge case: we store float fields as doubles, rather than introduce an extra property
-                if(target.getType() == float.class && value instanceof Double){
+                if(target.getType() == float.class && value instanceof Double) {
                     value = ((Double) value).floatValue();
                 }
                 //Edge case: we store char fields as integers, rather than introduce an extra property
@@ -294,6 +294,10 @@ public abstract class DifferentialFunction {
                     value = value2.longValue();
                 }
 
+                if(target.getType().equals(Boolean.class) || target.getType().equals(boolean.class) && value instanceof Double) {
+                    Double value2 = (Double) value;
+                    value = value2.doubleValue() > 0;
+                }
 
                 target.set(this,value);
             } catch (IllegalAccessException e) {

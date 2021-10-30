@@ -189,7 +189,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             int nOut = 4;
             int minibatch = 10;
             SDVariable input = sd.var("in", minibatch, nOut);
-            INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
+            INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100).castTo(DataType.DOUBLE);
             long length = nOut * minibatch;
 
             SDVariable loss;
@@ -332,7 +332,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             }
 
             tc.testName(msg);
-            if(!gradCheck){
+            if(!gradCheck) {
                 tc.gradientCheck(false);
             }
 
