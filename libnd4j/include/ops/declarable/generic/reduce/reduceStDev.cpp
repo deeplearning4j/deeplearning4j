@@ -29,7 +29,7 @@ namespace sd    {
 namespace ops     {
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_stdev, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
     auto input   = INPUT_VARIABLE(0);
     auto output  = OUTPUT_VARIABLE(0);
 
@@ -99,7 +99,7 @@ DECLARE_TYPES(reduce_stdev) {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto gradO  = INPUT_VARIABLE(1);
 
