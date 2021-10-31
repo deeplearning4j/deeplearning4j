@@ -481,7 +481,7 @@ public class Variance extends BaseReduceOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         //Variance and stdev reduction: Always FP out, but if FP in is float/double/half then it's float/double/half out
         //If not FP in, then return default FP type out

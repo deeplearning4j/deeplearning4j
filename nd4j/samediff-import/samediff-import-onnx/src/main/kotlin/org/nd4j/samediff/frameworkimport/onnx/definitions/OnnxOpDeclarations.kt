@@ -832,12 +832,11 @@ val reshape = OnnxMappingProcess(
         inputFrameworkOpName = "Reshape",
         opName = "reshape",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","shape" to "shape"))),
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("shapeArr" to "shape"))),
+        attributeMappingRules = listOf(intConstant(inputName = "shapeArr",constantValue = -99,argumentIndex = 0)[0]),
         opMappingRegistry = onnxOpRegistry
 )
 
 //TODO: ReduceSumSquare
-//TODO: Resize PRIORITIZE
 //for mapping indices see: https://github.com/eclipse/deeplearning4j/blob/228f6cda30e27999f0fea74badc8d98ee8fb0647/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/enums/ImageResizeMethod.java#L29
 
 //TODO: ReverseSequence
@@ -1036,8 +1035,20 @@ val conv2d = OnnxMappingProcess(
                         argIndex = 7
                         argType = OpNamespace.ArgDescriptor.ArgType.INT64
                 }),
-                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4),
-                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 1,argumentIndex = 5),
+                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4,
+                        defaultValueIfNotFound = ArgDescriptor {
+                                int64Value = 1
+                                name = "padding"
+                                argIndex = 4
+                                argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        }),
+                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 1,argumentIndex = 5,
+                        defaultValueIfNotFound = ArgDescriptor {
+                                int64Value = 0
+                                name = "padding"
+                                argIndex = 5
+                                argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        }),
                 listAttributeValueLookup(outputAttributeValue = "sH",inputAttributeValue = "strides",indexValue = 0,argumentIndex = 2,
                         defaultValueIfNotFound = ArgDescriptor {
                                 int64Value = 1

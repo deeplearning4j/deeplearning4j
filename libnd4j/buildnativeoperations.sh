@@ -206,6 +206,7 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     HOST="windows"
     KERNEL="windows-x86_64"
+    # NOTE when running windows, do NOT use the gcc compiler in usr/ always use the one in mingw/bin
     echo "Running windows"
 elif [ "$(uname -m)" == "ppc64le" ]; then
     if [ -z "$ARCH" ]; then
@@ -399,10 +400,14 @@ case "$OS" in
         PARALLEL="true"
         VERBOSE_ARG="-v"
       else
+        # NOTE when running windows, do NOT use the gcc compiler in usr/ always use the one in mingw/bin
+        # Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
+        # prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
+        # may show up
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
-        export CC=/mingw64/bin/gcc
-        export CXX=/mingw64/bin/g++
+        export CC=gcc
+        export CXX=g++
         PARALLEL="true"
       fi
 

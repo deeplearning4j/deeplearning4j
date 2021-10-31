@@ -3195,11 +3195,12 @@ public class SDMath extends SDOps {
    *
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep dimensions during reduction or not. 
    */
-  public SDVariable[] moments(SDVariable input, int... axes) {
+  public SDVariable[] moments(SDVariable input, int[] axes, boolean keepDims) {
     SDValidation.validateNumerical("moments", "input", input);
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes, keepDims).outputVariables();
   }
 
   /**
@@ -3208,11 +3209,40 @@ public class SDMath extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep dimensions during reduction or not. 
    */
-  public SDVariable[] moments(String[] names, SDVariable input, int... axes) {
+  public SDVariable[] moments(String[] names, SDVariable input, int[] axes, boolean keepDims) {
     SDValidation.validateNumerical("moments", "input", input);
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes, keepDims).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   *
+   * @param input Input to calculate moments for (NUMERIC type)
+   * @param axes Dimensions to perform calculation over (NUMERIC type)
+   * @param keepDims Whether to keep dimensions during reduction or not. 
+   */
+  public SDVariable[] moments(SDVariable input, SDVariable axes, boolean keepDims) {
+    SDValidation.validateNumerical("moments", "input", input);
+    SDValidation.validateNumerical("moments", "axes", axes);
+    return new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes, keepDims).outputVariables();
+  }
+
+  /**
+   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input to calculate moments for (NUMERIC type)
+   * @param axes Dimensions to perform calculation over (NUMERIC type)
+   * @param keepDims Whether to keep dimensions during reduction or not. 
+   */
+  public SDVariable[] moments(String[] names, SDVariable input, SDVariable axes, boolean keepDims) {
+    SDValidation.validateNumerical("moments", "input", input);
+    SDValidation.validateNumerical("moments", "axes", axes);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes, keepDims).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

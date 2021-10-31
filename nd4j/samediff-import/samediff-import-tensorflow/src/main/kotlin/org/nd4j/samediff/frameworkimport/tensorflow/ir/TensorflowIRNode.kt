@@ -210,4 +210,20 @@ class TensorflowIRNode(inputNode: NodeDef, inputOpDef: OpDef,tensorflowOpMapping
 
     }
 
+    override fun setInputAt(index: Int, name: String) {
+        val newNode = nodeDef.toBuilder()
+        newNode.setInput(index,name)
+        this.nodeDef = newNode.build()
+    }
+
+    override fun setOutputAt(index: Int, name: String) {
+       throw UnsupportedOperationException("Tensorflow does not specify outputs on nodes. Unable to set output.")
+    }
+
+    override fun setNodeName(name: String) {
+        val nodeBuilder = nodeDef.toBuilder()
+        nodeBuilder.name = name
+        this.nodeDef = nodeBuilder.build()
+    }
+
 }

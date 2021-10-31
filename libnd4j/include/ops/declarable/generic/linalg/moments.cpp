@@ -34,24 +34,25 @@ namespace sd {
             auto variances = OUTPUT_VARIABLE(1);
 
             std::vector<int> axis = *block.getIArguments();
-            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+            const bool keepDims = block.getBArguments()->size() > 0 ? (bool)B_ARG(0) : false;
+            sd::ops::reduce_variance varianceOp;
 
             // axis might be dynamic (i.e. tf mode)
-            if (block.width() > 1 && axis.size() == 0) {
+            if (block.width() > 1) {
                 auto axisVector = INPUT_VARIABLE(1);
                 helpers::adjustAxis(input->rankOf(), axisVector, axis);
-//                for (int e = 0; e < axisVector->lengthOf(); e++) {
-//                    int ca = (int) axisVector->e(e);
-//                    if (ca < 0)
-//                        ca += input->rankOf();
-//
-//                    axis.emplace_back(ca);
-//                }
-
+                varianceOp.execute({input,axisVector},{variances},{},{},{keepDims},{},false);
+            } else {
+                std::vector<int>& dims = axis;
+                std::vector<Nd4jLong> axes;
+                for(int i = 0; i < dims.size(); i++) {
+                    axes.push_back(dims[i]);
+                }
+                
+                varianceOp.execute({input},{variances},{},axes,{keepDims},{},false);
             }
 
-            std::vector<int>& dims = axis;
-            input->varianceAlongDimension(variance::SummaryStatsVariance, *variances, false, axis);
+
             input->reduceAlongDimension(reduce::Mean, *means, axis, keepDims);
 
             return Status::OK();

@@ -26,6 +26,11 @@ import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
+/**
+ * The import runner configures a function based on the resolve op descriptor
+ * This includes configuring what fields it can via reflection based on automatic type mapping
+ * @author Adam Gibson
+ */
 interface ImportRunner<GRAPH_TYPE: GeneratedMessageV3,
         NODE_TYPE : GeneratedMessageV3,
         OP_DEF_TYPE : GeneratedMessageV3,

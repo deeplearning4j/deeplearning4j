@@ -8,7 +8,10 @@ message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-
+if (WIN32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_WINDOWS_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_WINDOWS_BUILD=true")
+endif()
 option(SD_NATIVE "Optimize for build machine (might not work on others)" OFF)
 option(SD_CHECK_VECTORIZATION "checks for vectorization" OFF)
 option(SD_BUILD_TESTS "Build tests" OFF)

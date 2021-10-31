@@ -64,7 +64,8 @@ public class SDVariable implements Serializable {
 
 
     public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType){
-        Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
+        if(varType != VariableType.PLACEHOLDER)
+            Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
         varName = sameDiff.generateNewVarName(varName, 0, true);
 
@@ -184,9 +185,10 @@ public class SDVariable implements Serializable {
      */
     public long[] getShape() {
         if (variableType == VariableType.PLACEHOLDER ) {
-                return shape;
-        } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT){
-            return getArr().shape();
+            return shape;
+        } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
+            if(getArr() != null)
+                return getArr().shape();
         }
 
         return null;

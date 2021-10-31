@@ -34,13 +34,64 @@ public class VarianceBp extends BaseReductionBp {
     public VarianceBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean biasCorrected, boolean keepDims, int... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
-        addTArgument(biasCorrected ? 1.0 : 0.0);
+        addArgs();
+
+    }
+
+    public VarianceBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, boolean biasCorrected, int... dimensions) {
+        super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
+        this.biasCorrected = biasCorrected;
+        addArgs();
+
     }
 
     public VarianceBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean biasCorrected, boolean keepDims, int... dimensions){
         super(origInput, gradAtOutput, output, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
-        addTArgument(biasCorrected ? 1.0 : 0.0);
+        addArgs();
+
+    }
+
+    public VarianceBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean biasCorrected, int... dimensions) {
+        super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
+        this.biasCorrected = biasCorrected;
+        addArgs();
+
+    }
+
+    public VarianceBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, boolean biasCorrected, int... dimensions) {
+        super(origInput1, origInput2, gradAtOutput, output1, output2, keepDims, dimensions);
+        this.biasCorrected = biasCorrected;
+        addArgs();
+
+    }
+
+    public VarianceBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions, boolean biasCorrected) {
+        super(origInput, gradAtOutput, output, keepDims, dimensions);
+        this.biasCorrected = biasCorrected;
+        addArgs();
+
+    }
+
+    public VarianceBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions, boolean biasCorrected) {
+        super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
+        this.biasCorrected = biasCorrected;
+        addArgs();
+    }
+
+    public VarianceBp(SameDiff sameDiff, SDVariable arg, SDVariable dLdVar, boolean keepDims, boolean biasCorrected, SDVariable dimensions) {
+        super(sameDiff,arg,dLdVar,keepDims,dimensions);
+        addBArgument(biasCorrected);
+    }
+
+    @Override
+    protected void addArgs() {
+        super.addArgs();
+        addBArgument(biasCorrected);
+    }
+
+    public VarianceBp(boolean biasCorrected) {
+        this.biasCorrected = biasCorrected;
     }
 
     @Override

@@ -146,7 +146,6 @@ namespace sd    {
 
             Nd4jLong* gradIshapeInfo(nullptr);
             COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
-
             return SHAPELIST(CONSTANT(gradIshapeInfo));
         }
 
@@ -155,6 +154,7 @@ namespace sd    {
             getOpDescriptor()
                     ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
+
         }
 
 

@@ -63,10 +63,11 @@ DECLARE_TYPES(reshape) {
 
 
 bool handleOptionalOrder(std::vector<int> &reshapeArgs, char &ordering){
-    if(reshapeArgs.size()>0){
+    if(reshapeArgs.size() > 0) {
         //check if any optional negative ordering value is passed
-        auto optional = reshapeArgs[0]; 
-        if(optional < 0){
+        auto optional = reshapeArgs[0];
+        nd4j_debug("Reshape: Optional reshape arg was %d\n",optional);
+        if(optional < 0) {
             optional = abs(optional);
             //check if passed option is allowed. (-1 -> dynamic shape)
             // in that case we will return back
@@ -101,7 +102,7 @@ DECLARE_SHAPE_FN(reshape) {
    */
   if (block.width() == 1) {
     reshapeArgs = *block.getIArguments();
-    if(!handleOptionalOrder(reshapeArgs, orderNew)){
+    if(!handleOptionalOrder(reshapeArgs, orderNew)) {
         throw std::runtime_error(
             "reshape:: Value passed in must be -99 or -102 for the ordering if "
             "an int array is present. -99 represents c ordering and -102 "
@@ -117,14 +118,16 @@ DECLARE_SHAPE_FN(reshape) {
       // differntiate between a 99 or 102 shaped array and
       // the ordering. You can't have a -99 or -102 shaped array.
       char potentialOrdering = (char)reshapeArgs[0];
-      if (potentialOrdering != 'c' && potentialOrdering != 'f') {
-        throw std::runtime_error(
-            "reshape:: Value passed in must be -99 or -102 for the ordering if "
-            "an int array is present. -99 represents c ordering and -102 "
-            "represents f ordering.");
-      }
+      if(!handleOptionalOrder(reshapeArgs, orderNew)) {
+            throw std::runtime_error(
+                    "reshape:: Value passed in must be -99 or -102 for the ordering if "
+                    "an int array is present. -99 represents c ordering and -102 "
+                    "represents f ordering. This number is negative for the long array "
+                    "case to flag the difference between an ordering and a dimension "
+                    "being specified.");
+        };
 
-      orderNew = potentialOrdering;
+        orderNew = potentialOrdering;
     } else
       orderNew = 'c';
   }

@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.bp;
 
-import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -31,20 +30,44 @@ import java.util.Arrays;
 import java.util.List;
 
 
-@NoArgsConstructor
 public class DotBp extends BaseReductionBp {
+    public DotBp() {
+    }
+
+    public DotBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+        super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
+        addArgs();
+    }
 
     public DotBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
         super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
+        addArgs();
+    }
+
+    public DotBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
+        super(origInput, gradAtOutput, output, keepDims, dimensions);
+        addArgs();
     }
 
     public DotBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
+        addArgs();
     }
 
     public DotBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput,
                  INDArray outputX, INDArray outputY, boolean keepDims, int... dimensions) {
         super(origInput1, origInput2, gradAtOutput, outputX, outputY, keepDims, dimensions);
+        addArgs();
+    }
+
+    public DotBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions) {
+        super(origInput, gradAtOutput, output, keepDims, dimensions);
+        addArgs();
+    }
+
+    public DotBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions) {
+        super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
+        addArgs();
     }
 
     @Override

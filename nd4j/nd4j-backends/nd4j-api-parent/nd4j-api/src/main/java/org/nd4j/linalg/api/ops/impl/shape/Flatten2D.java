@@ -106,7 +106,7 @@ public class Flatten2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Arrays.asList(new Flatten2D(sameDiff,i_v.get(0),flattenDimension).outputVariables());
+        return Arrays.asList(i_v.get(0).reshape(arg(0).shape()));
     }
 
     @Override

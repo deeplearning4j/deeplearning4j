@@ -50,6 +50,8 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
 
     @Override
     public INDArray getArray(@NonNull String name) {
+        if(!map.containsKey(name))
+            return null;
         return map.get(name).get();
     }
 

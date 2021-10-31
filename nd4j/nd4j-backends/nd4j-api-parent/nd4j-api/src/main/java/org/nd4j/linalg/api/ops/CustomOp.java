@@ -28,6 +28,13 @@ import java.util.List;
 
 public interface CustomOp {
     /**
+     * This allows a custom op to configure relevant fields from its arguments.
+     * This is needed when ops are created via reflection for things like model import.
+     *
+     */
+   void configureFromArguments();
+
+    /**
      * This method returns op opName as string
      * @return
      */

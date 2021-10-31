@@ -1044,6 +1044,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        //default no op
+    }
+
+    @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         return super.mappingsForFunction();
     }
@@ -1060,7 +1065,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public void setValueFor(Field target, Object value) {
-
+        super.setValueFor(target, value);
     }
 
 

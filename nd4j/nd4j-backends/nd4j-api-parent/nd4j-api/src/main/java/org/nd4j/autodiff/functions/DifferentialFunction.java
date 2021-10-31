@@ -221,7 +221,7 @@ public abstract class DifferentialFunction {
             value = ensureProperType(target, value);
         }
 
-        if(isConfigProperties()){
+        if(isConfigProperties()) {
             String propertyName = configFieldName();
             if(propertyName == null)
                 propertyName = "config";
@@ -267,12 +267,36 @@ public abstract class DifferentialFunction {
         } else {
             try {
                 //Edge case: we store float fields as doubles, rather than introduce an extra property
-                if(target.getType() == float.class && value instanceof Double){
+                if(target.getType() == float.class && value instanceof Double) {
                     value = ((Double) value).floatValue();
                 }
                 //Edge case: we store char fields as integers, rather than introduce an extra property
                 if(target.getType() == char.class && value instanceof Integer){
                     value = (char)((Integer)value).intValue();
+                }
+
+                if(target.getType() == char.class && value instanceof Long){
+                    value = (char)((Long)value).intValue();
+                }
+
+                if(target.getType() == int.class && value instanceof  Long) {
+                    Long value2 = (Long) value;
+                    value = value2.intValue();
+                }
+
+                if(target.getType().equals(Integer.class) && value instanceof Long) {
+                    Long value2 = (Long) value;
+                    value = value2.intValue();
+                }
+
+                if(target.getType().equals(Long.class) && value instanceof Integer) {
+                    Integer value2 = (Integer) value;
+                    value = value2.longValue();
+                }
+
+                if(target.getType().equals(Boolean.class) || target.getType().equals(boolean.class) && value instanceof Double) {
+                    Double value2 = (Double) value;
+                    value = value2.doubleValue() > 0;
                 }
 
                 target.set(this,value);
@@ -596,9 +620,13 @@ public abstract class DifferentialFunction {
                 sameDiff.setGradientForVariableName(var.name(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);
+                if(sameDiff.hasVariable(var.name() + "-grad")) {
+                    sameDiff.getVariable(var.name() + "-grad").add(gradVar);
+                } else {
+                    sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
+                    sameDiff.setGradientForVariableName(var.name(), gradVar);
+                }
 
-                sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
-                sameDiff.setGradientForVariableName(var.name(), gradVar);
 
             }
         }

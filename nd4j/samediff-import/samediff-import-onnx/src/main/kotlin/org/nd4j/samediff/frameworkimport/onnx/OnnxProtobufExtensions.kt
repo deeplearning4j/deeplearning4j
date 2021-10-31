@@ -151,7 +151,6 @@ fun Onnx.TensorProto.Builder.OnnxRawData(byteArray: ByteArray) {
 }
 
 fun Onnx.TensorProto.Builder.Shape(shape: List<Long>) {
-    this.dimsList.clear()
     this.dimsList.addAll(shape)
 }
 

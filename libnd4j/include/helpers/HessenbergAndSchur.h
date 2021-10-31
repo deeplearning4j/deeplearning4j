@@ -60,8 +60,8 @@ class Schur {
 
     public:
 
-        NDArray _T;     // {N,N}
-        NDArray _U;     // {N,N}
+        NDArray t;     // {N,N}
+        NDArray u;     // {N,N}
 
         explicit Schur(const NDArray& matrix);
 
@@ -86,8 +86,8 @@ class Schur {
 
 			int outInd = inInd;
 			while (outInd > 0) {
-		    	T factor = math::nd4j_abs<T>(_T.t<T>(outInd-1, outInd-1)) + math::nd4j_abs<T>(_T.t<T>(outInd, outInd));
-		    	if (math::nd4j_abs<T>(_T.t<T>(outInd, outInd-1)) <= DataTypeUtils::eps<T>() * factor)
+		    	T factor = math::nd4j_abs<T>(t.t<T>(outInd-1, outInd-1)) + math::nd4j_abs<T>(t.t<T>(outInd, outInd));
+		    	if (math::nd4j_abs<T>(t.t<T>(outInd, outInd-1)) <= DataTypeUtils::eps<T>() * factor)
 		      		break;
 				outInd--;
 		  	}

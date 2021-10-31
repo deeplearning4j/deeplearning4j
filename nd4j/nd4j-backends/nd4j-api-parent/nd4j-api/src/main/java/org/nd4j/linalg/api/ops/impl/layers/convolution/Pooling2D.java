@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -144,6 +145,11 @@ public class Pooling2D extends DynamicCustomOp {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
+       if(!iArguments.isEmpty() && config == null) {
+           LinAlgExceptions.assertAllConfigured(this,9);
+           createConfigFromArgs();
+       }
+
         Pooling2DDerivative pooling2DDerivative = Pooling2DDerivative.derivativeBuilder()
                 .inputs(inputs.toArray(new SDVariable[inputs.size()]))
                 .sameDiff(sameDiff)
@@ -153,6 +159,20 @@ public class Pooling2D extends DynamicCustomOp {
         return ret;
     }
 
+    private void createConfigFromArgs() {
+        config = Pooling2DConfig.builder()
+                .kH(iArguments.get(0))
+                .kW(iArguments.get(1))
+                .sH(iArguments.get(2))
+                .sW(iArguments.get(3))
+                .pH(iArguments.get(4))
+                .pW(iArguments.get(5))
+                .dH(iArguments.get(6))
+                .dW(iArguments.get(7))
+                .isSameMode(iArguments.get(8) > 0)
+                .type(null)
+                .build();
+    }
 
 
     @Override

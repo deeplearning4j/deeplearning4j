@@ -23,6 +23,7 @@ package org.nd4j.imports.converters;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ops.impl.shape.SetShape;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -101,6 +102,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.image.ResizeBilinear.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeBicubic.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor.class,
+            org.nd4j.linalg.api.ops.impl.shape.SetShape.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeArea.class,
             org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex.class,
             org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex.class,
@@ -661,7 +663,7 @@ public class ImportClassMapping {
     );
 
     static {
-        for(Class<?> c : fnClasses){
+        for(Class<?> c : fnClasses) {
             try{
                 DifferentialFunction df = (DifferentialFunction) c.newInstance();
 
@@ -699,6 +701,7 @@ public class ImportClassMapping {
             }
         }
     }
+
 
     public static List<Class<?>> getOpClasses(){
         return fnClasses;

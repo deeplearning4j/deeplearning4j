@@ -21,10 +21,12 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -39,6 +41,23 @@ public class SplitV extends DynamicCustomOp {
 
     private int numSplit;
     private int splitDim;
+
+    public SplitV() {
+    }
+
+    public SplitV(SameDiff sd, SDVariable input, SDVariable sizes, int numSplit, int splitDim) {
+        super(null,sd,new SDVariable[]{input,sizes},false);
+        this.splitDim = splitDim;
+        this.numSplit = numSplit;
+        addIArgument(splitDim,numSplit);
+    }
+
+    public SplitV(INDArray input, INDArray sizes, int numSplit, int splitDim) {
+        super(null,new INDArray[]{input,sizes},null);
+        this.numSplit = numSplit;
+        this.splitDim = splitDim;
+        addIArgument(splitDim,numSplit);
+    }
 
     @Override
     public String opName() {
@@ -94,7 +113,7 @@ public class SplitV extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Output types are same as first input type - just numSplits of them...
         List<DataType> out = new ArrayList<>(numSplit);
         for( int i = 0; i < numSplit; i++) {

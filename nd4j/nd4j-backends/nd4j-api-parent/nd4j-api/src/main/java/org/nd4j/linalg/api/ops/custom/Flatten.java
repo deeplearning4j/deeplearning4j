@@ -65,6 +65,12 @@ public class Flatten extends DynamicCustomOp {
     }
 
     @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        return Arrays.asList(i_v.get(0).reshape(arg(0).shape()));
+    }
+
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);

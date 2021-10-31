@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce;
 
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -32,46 +31,74 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.VarianceBp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-@NoArgsConstructor
 public class Moments extends DynamicCustomOp {
 
-    private int[] axes;
+    private boolean keepDims;
 
-    public Moments(@NonNull INDArray input, int... axes){
+    public Moments() {
+    }
+
+    public Moments(@NonNull INDArray input, boolean keepDims, int... dimensions) {
         super(new INDArray[]{input}, null);
-        this.axes = axes;
+        this.dimensions = dimensions;
+        this.keepDims = keepDims;
+        addArgs();
+    }
+
+    public Moments(@NonNull INDArray input, int... dimensions) {
+        super(new INDArray[]{input}, null);
+        this.dimensions = dimensions;
         addArgs();
     }
 
     public Moments(SameDiff sameDiff, SDVariable input) {
         this(sameDiff, input, null);
+        addArgs();
     }
 
     public Moments(SameDiff sameDiff, SDVariable input, int[] axes) {
         super(null, sameDiff, new SDVariable[] {input}, false);
-        this.axes = axes;
+        this.dimensions = axes;
         addArgs();
     }
 
-    public Moments(INDArray in, INDArray outMean, INDArray outStd, int... axes){
+    public Moments(INDArray in, INDArray outMean, INDArray outStd, int... axes) {
         super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd}, null, axes);
+        this.dimensions = axes;
+        addArgs();
     }
 
-    private void addArgs() {
-        if(axes != null) {
-            for (int axis : axes) {
-                addIArgument(axis);
-            }
-        }
+    public Moments(INDArray input, int[] axes, boolean keepDims) {
+        super(null,new INDArray[]{input},null);
+        this.keepDims = keepDims;
+        this.dimensions = axes;
+        addArgs();
+    }
+
+    public Moments(INDArray input, INDArray axes, boolean keepDims) {
+        super(null,new INDArray[]{input,axes},null);
+        this.keepDims = keepDims;
+        addArgs();
+    }
+
+    public Moments(SameDiff sd, SDVariable input, int[] axes, boolean keepDims) {
+        super(null,sd,new SDVariable[]{input},false);
+        this.keepDims = keepDims;
+        this.dimensions = axes;
+        addArgs();
+    }
+
+    public Moments(SameDiff sd, SDVariable input, SDVariable axes, boolean keepDims) {
+        super(null,sd,new SDVariable[]{input,axes},false);
+        this.keepDims = keepDims;
+        addArgs();
     }
 
     @Override
@@ -89,16 +116,52 @@ public class Moments extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         SDVariable dLdMean = grad.get(0);
         SDVariable dLdVar = grad.get(1);        //Note: non-bias-corrected variance
-        SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, false, axes).outputVariable();
-        SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, false, axes).outputVariable();
-        return Collections.singletonList(meanBp.add(varBp));
+        if(dimensions != null) {
+            SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, keepDims, dimensions).outputVariable();
+            SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, keepDims, dimensions).outputVariable();
+            return Collections.singletonList(meanBp.add(varBp));
+
+        } else if(numIArguments() > 0) {
+            int[] newDimensions = Ints.toArray(this.iArguments);
+            this.dimensions = newDimensions;
+            SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, keepDims, newDimensions).outputVariable();
+            SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, keepDims,newDimensions).outputVariable();
+            return Collections.singletonList(meanBp.add(varBp));
+
+        } else if(numInputArguments() > 1) {
+            SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, keepDims, arg(1)).outputVariable();
+            SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, keepDims, arg(1)).outputVariable();
+            return Collections.singletonList(meanBp.add(varBp));
+        } else {
+            SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, keepDims, dimensions).outputVariable();
+            SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, keepDims, dimensions).outputVariable();
+            return Collections.singletonList(meanBp.add(varBp));
+        }
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected 1 datatype for %s, got %s", getClass(), dataTypes);
         if(dataTypes.get(0).isFPType())
             return Arrays.asList(dataTypes.get(0), dataTypes.get(0));
         return Arrays.asList(Nd4j.defaultFloatingPointType(), Nd4j.defaultFloatingPointType());
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> properties = new HashMap<>();
+        properties.put("keepDims",keepDims);
+        properties.put("dimensions",dimensions);
+        return properties;
+    }
+
+    protected void addArgs() {
+        addBArgument(keepDims);
+        if(dimensions != null && dimensions.length > 0) {
+            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE) {
+                //Integer.MAX_VALUE means "full array" but here no dimension args == full array
+                addIArgument(dimensions);
+            }
+        }
     }
 }

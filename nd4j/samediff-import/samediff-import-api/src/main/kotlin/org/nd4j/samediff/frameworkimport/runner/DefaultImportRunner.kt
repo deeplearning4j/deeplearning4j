@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.VariableType
 import org.nd4j.common.io.ReflectionUtils
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.CustomOp
 import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.Op
 import org.nd4j.linalg.factory.Nd4j
@@ -34,9 +35,15 @@ import org.nd4j.samediff.frameworkimport.ndarrayFromNameSpaceTensor
 import org.nd4j.samediff.frameworkimport.setNameForFunctionFromDescriptors
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import org.nd4j.weightinit.impl.ZeroInitScheme
 import java.lang.IllegalArgumentException
 import java.lang.reflect.Modifier
 
+/**
+ * The default implementation of [ImportRunner].
+ *
+ * @author Adam Gibson
+ */
 class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
         NODE_TYPE : GeneratedMessageV3,
         OP_DEF_TYPE : GeneratedMessageV3,
@@ -74,6 +81,21 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                     when (argType) {
                         OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> {
                             if(df.opType() != Op.Type.LOGIC) {
+                                val opInputs = sd.ops[dynamicCustomOp.ownName]
+                                for(input in opInputs!!.inputsToOp) {
+                                    val name = if(mappingContext.graph().hasConstantInitializer(input)) {
+                                        input
+                                    } else {
+                                        "${input}:0"
+                                    }
+                                    //removes the suffix
+                                    if(!sd.hasVariable(input)) {
+                                        if(mappingContext.graph().hasConstantInitializer("${input}:0") || sd.hasVariable(name)) {
+                                            sd.renameVariable(name,input)
+                                        }
+                                    }
+
+                                }
                                 val args = dynamicCustomOp.args()
                                 val arraysToAdd = ArrayList<INDArray>()
                                 listOfArgsSortedByIndex.forEachIndexed { index, argDescriptor ->
@@ -150,6 +172,9 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                     setNameForFunctionFromDescriptors(listOfArgsSortedByIndex, df)
                 }
 
+                val customOp = df as CustomOp
+                //important to call this as we may not have configured all fields
+                customOp.configureFromArguments()
 
             }
             Op.Type.SCALAR -> {

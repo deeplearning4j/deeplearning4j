@@ -4777,6 +4777,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "padding"
     outputIntName: "pH"
     inputFloatName: "pads"
     inputToOutput {
@@ -4790,12 +4791,32 @@ mappings {
         name: "pads"
         argIndex: 4
       }
+      transformerArgs {
+        name: "padding"
+        int64Value: 1
+        argType: INT64
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "padding"
+        int64Value: 1
+        argType: INT64
+        argIndex: 4
+      }
     }
     inputFrameworkOpName: "Conv"
   }
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "padding"
     outputIntName: "pW"
     inputFloatName: "pads"
     inputToOutput {
@@ -4808,6 +4829,24 @@ mappings {
       transformerArgs {
         name: "pads"
         int64Value: 1
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "padding"
+        argType: INT64
+        argIndex: 5
+      }
+    }
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 1
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "padding"
+        argType: INT64
         argIndex: 5
       }
     }
@@ -5875,14 +5914,18 @@ mappings {
     inputFrameworkOpName: "Reshape"
   }
   rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "shapeArr"
-    inputToOutput {
-      key: "shapeArr"
-      value: "shape"
-    }
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "shapeArr"
     ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "shapeArr"
+        int64Value: -99
+        argType: INT64
+      }
+    }
     inputFrameworkOpName: "Reshape"
   }
 }
