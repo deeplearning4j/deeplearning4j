@@ -55,12 +55,6 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     }
 
 
-
-
-
-
-
-
     protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, SDVariable dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }

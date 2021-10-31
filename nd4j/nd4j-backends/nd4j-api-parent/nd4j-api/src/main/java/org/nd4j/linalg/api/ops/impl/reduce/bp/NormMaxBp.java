@@ -29,18 +29,26 @@ public class NormMaxBp extends BaseReductionBp {
 
     public NormMaxBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
+        addArgs();
+
     }
 
     public NormMaxBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
         super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
+        addArgs();
+
     }
 
     public NormMaxBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
         super(origInput, gradAtOutput, output, keepDims, dimensions);
+        addArgs();
+
     }
 
     public NormMaxBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
+        addArgs();
+
     }
 
     public NormMaxBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions) {
@@ -49,10 +57,14 @@ public class NormMaxBp extends BaseReductionBp {
 
     public NormMaxBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions) {
         super(origInput, gradAtOutput, output, keepDims, dimensions);
+        addArgs();
+
     }
 
     public NormMaxBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
+        addArgs();
+
     }
 
     public NormMaxBp(){}

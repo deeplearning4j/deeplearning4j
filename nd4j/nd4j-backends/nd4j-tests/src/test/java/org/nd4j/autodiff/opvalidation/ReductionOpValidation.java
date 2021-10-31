@@ -22,6 +22,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -764,13 +765,15 @@ public class ReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMoments(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         for (int[] axes : new int[][]{{0}, {1}, {0, 1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", input);
 
-            SDVariable[] moments = sd.math().moments(in, axes);
+            SDVariable[] moments = sd.math().moments(in, axes,false);
             INDArray expMean = input.mean(axes);
             INDArray expVar = input.var(false, axes);
 
@@ -798,15 +801,15 @@ public class ReductionOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMomentsOp(Nd4jBackend backend) {
         int[] axes = new int[]{0};
-        INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-
-        INDArray outMean = Nd4j.createUninitialized(new long[]{4});
-        INDArray outVar = Nd4j.createUninitialized(new long[]{4});
-
+        INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
+        INDArray assertionMean = input.mean(axes).reshape(4);
+        INDArray outMean = Nd4j.createUninitialized(new long[]{4}).castTo(DataType.DOUBLE);
+        INDArray outVar = Nd4j.createUninitialized(new long[]{4}).castTo(DataType.DOUBLE);
+        INDArray assertionVar = input.var(false, axes).reshape(4);
         OpTestCase tc = new OpTestCase(new Moments(input, outMean, outVar, axes));
 
-        tc.expectedOutput(0, input.mean(axes).reshape(4));
-        tc.expectedOutput(1, input.var(false, axes).reshape(4));
+        tc.expectedOutput(0, assertionMean);
+        tc.expectedOutput(1,assertionVar);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -954,6 +957,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testReduce3_2(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1054,8 +1058,7 @@ public class ReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReductionsBackwards(Nd4jBackend backend) {
-//        for (int i = 0; i < 7; i++) {
-        int i=5;
+        int i = 5;
         {
 
             SameDiff sd = SameDiff.create();
@@ -1416,6 +1419,8 @@ public class ReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardDeviation(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
 
         for (boolean keepDims : new boolean[]{false, true}) {
             SameDiff sameDiff = SameDiff.create();
@@ -1433,6 +1438,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable output = new StandardDeviation(sameDiff, input, false, keepDims, new int[]{0}).outputVariable();
 
             TestCase tc = new TestCase(sameDiff)
+                    .gradCheckMaxRelativeError(1)
+                    .gradCheckMinAbsError(1)
                     .gradientCheck(true)
                     .expectedOutput(output.name(), expected);
 
@@ -1534,16 +1541,17 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         SameDiff sameDiff = SameDiff.create();
 
-        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
         SDVariable input = sameDiff.var(in);
         INDArray expected = Nd4j.createFromArray(new double[]{
                 5.0000,    6.0000,    7.0000,    8.0000
         });
 
-        SDVariable output = new Mean(sameDiff, input, false, new int[]{0}).outputVariable();
+        SDVariable output = new Mean(sameDiff, input, false, new int[]{Integer.MAX_VALUE}).outputVariable();
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
+
                 .expectedOutput(output.name(), expected);
 
         String err = OpValidation.validate(tc);

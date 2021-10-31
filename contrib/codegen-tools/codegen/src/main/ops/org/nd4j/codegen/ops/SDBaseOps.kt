@@ -898,7 +898,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
-        Arg(BOOL, "kemathepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
+        Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
         Arg(INT, "dimensions") { count = AtLeast(0);  description = "dimensions to reduce over" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){

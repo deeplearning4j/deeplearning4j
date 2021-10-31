@@ -114,12 +114,22 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         gradI->assign(gradO->e(0) / input->lengthOf());
     }
     else {
-
         gradI->assign((gradO->lengthOf() + 0.) / input->lengthOf());
-
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
-            *gradI *= gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+            auto newShape = ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims);
+            auto gradIShape = gradI->getShapeAsVector();
+            nd4j_debug("Old shape is %d",0);
+            for(int i = 0; i < newShape.size(); i++) {
+                nd4j_debug("%d",newShape[i]);
+            }
+            nd4j_debug("\n",0);
+            nd4j_debug("New shape is %d",0);
+            for(int i = 0; i < newShape.size(); i++) {
+                nd4j_debug("%d",newShape[i]);
+            }
+            nd4j_debug("\n",0);
+            *gradI *= gradO->reshape(gradO->ordering(), newShape);  // for example could be something like [a,b] -> [1,a,1,b]
         }
         else
             *gradI *= *gradO;

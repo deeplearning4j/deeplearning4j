@@ -71,14 +71,14 @@ public class StandardDeviationBp extends BaseReductionBp {
         addArgs();
     }
 
-    @Override
-    protected void addArgs() {
-        addBArgument(biasCorrected);
-        super.addArgs();
-    }
 
     public StandardDeviationBp(){}
 
+    @Override
+    protected void addArgs() {
+        super.addArgs();
+        addBArgument(biasCorrected);
+    }
 
     @Override
     public String opName() {

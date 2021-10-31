@@ -1131,7 +1131,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         SDVariable sdInput = sd.var("input", input);
 
-        SDVariable[] moments = sd.math().moments(sdInput, 0, 1);
+        SDVariable[] moments = sd.math().moments(sdInput, new int[]{0, 1},false);
         SDVariable mean = moments[0];
         SDVariable variance = moments[1];
 

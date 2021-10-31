@@ -79,10 +79,15 @@ public class VarianceBp extends BaseReductionBp {
         addArgs();
     }
 
+    public VarianceBp(SameDiff sameDiff, SDVariable arg, SDVariable dLdVar, boolean keepDims, boolean biasCorrected, SDVariable dimensions) {
+        super(sameDiff,arg,dLdVar,keepDims,dimensions);
+        addBArgument(biasCorrected);
+    }
+
     @Override
     protected void addArgs() {
-        addBArgument(biasCorrected);
         super.addArgs();
+        addBArgument(biasCorrected);
     }
 
     public VarianceBp(boolean biasCorrected) {

@@ -734,6 +734,27 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
     
 }
 
+TEST_F(DeclarableOpsTests12, reduceMeanBp_7) {
+
+    NDArray x('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    NDArray gradO('c', {3}, sd::DataType::DOUBLE);
+    NDArray exp('c', {3,4}, sd::DataType::DOUBLE);
+
+    gradO = 1.;
+    exp = 0.333333;
+
+    sd::ops::reduce_mean_bp op;
+    auto result = op.evaluate({&x, &gradO}, {}, {1});
+    auto output = result.at(0);
+
+    // output->printShapeInfo();
+    // output->printIndexedBuffer();
+    ASSERT_TRUE(exp.isSameShape(output));
+    //ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, reduceMeanBp_5) {
 
