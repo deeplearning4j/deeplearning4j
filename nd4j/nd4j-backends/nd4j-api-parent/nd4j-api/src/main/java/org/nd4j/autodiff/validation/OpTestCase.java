@@ -53,7 +53,17 @@ public class OpTestCase {
      * @param expected  Expected INDArray
      */
     public OpTestCase expectedOutput(int outputNum, INDArray expected) {
-        testFns.put(outputNum, new EqualityFn(expected));
+        return expectedOutput(outputNum,expected,1e-3);
+    }
+
+    /**
+     * Validate the op output using INDArray.equals(INDArray)
+     *
+     * @param outputNum Number of the output
+     * @param expected  Expected INDArray
+     */
+    public OpTestCase expectedOutput(int outputNum, INDArray expected,double eps) {
+        testFns.put(outputNum, new EqualityFn(expected,eps));
         expShapes.put(outputNum, expected.shapeDescriptor());
         return this;
     }
