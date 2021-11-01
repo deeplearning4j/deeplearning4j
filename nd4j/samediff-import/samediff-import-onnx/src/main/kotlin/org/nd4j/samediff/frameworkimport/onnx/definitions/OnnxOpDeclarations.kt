@@ -378,8 +378,7 @@ val gemm = OnnxMappingProcess(
         attributeMappingRules = listOf(valueMappings(mapOf("alpha" to "alpha","beta" to "beta",
                 "transposeX" to "transA", "transposeY" to "transB")),
                 booleanConstant(inputName = "transZ",constantValue = false,argumentIndex = 2)[0],
-                booleanConstant(inputName = "transposeZ",constantValue = false,argumentIndex = 2)[0],
-                invertBooleanNumber(mutableMapOf("transX" to "transA","transY" to "transB")))
+                booleanConstant(inputName = "transposeZ",constantValue = false,argumentIndex = 2)[0])
 )
 //note: no ops are mostly just stubs for ops implemented as pre processors
 //These are implemented using the PreImportHook found: https://github.com/eclipse/deeplearning4j/tree/master/nd4j/samediff-import/samediff-import-onnx/src/main/kotlin/org/nd4j/samediff/frameworkimport/onnx/definitions/implementations

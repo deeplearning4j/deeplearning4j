@@ -1271,24 +1271,6 @@ mappings {
     }
     inputFrameworkOpName: "Gemm"
   }
-  rule {
-    ruleName: "invertbooleannumber"
-    functionName: "invertbooleannumber"
-    inputIntName: "transA"
-    inputIntName: "transB"
-    outputIntName: "transX"
-    outputIntName: "transY"
-    inputToOutput {
-      key: "transX"
-      value: "transA"
-    }
-    inputToOutput {
-      key: "transY"
-      value: "transB"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Gemm"
-  }
 }
 mappings {
   frameworkName: "onnx"
