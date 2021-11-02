@@ -20,176 +20,180 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 
-
-#include<ops/declarable/helpers/transforms.h>
-#include <array/ResultSet.h>
-#include <helpers/ShapeUtils.h>
-#include <numeric>
 #include <array/NDArrayFactory.h>
-#include <helpers/TAD.h>
+#include <array/ResultSet.h>
 #include <exceptions/cuda_exception.h>
-#include <helpers/PointersManager.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <ops/declarable/helpers/transforms.h>
 
-namespace sd    {
-namespace ops     {
+#include <numeric>
+
+namespace sd {
+namespace ops {
 namespace helpers {
 
-
 ///////////////////////////////////////////////////////////////////
-template<typename T>
-__global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int axis) {
+template <typename T>
+SD_KERNEL static void concatCuda(void* pVx, void* pxShapeInfo, void* vz, const sd::LongType* zShapeInfo,
+                                 const int axis) {
+  T* z = reinterpret_cast<T*>(vz);
+  __shared__ sd::LongType zLen, totalThreads;
+  __shared__ int rank;
 
-    T* z = reinterpret_cast<T*>(vz);
-    __shared__ Nd4jLong zLen, totalThreads;
-    __shared__ int rank;
+  if (threadIdx.x == 0) {
+    zLen = shape::length(zShapeInfo);
+    rank = shape::rank(zShapeInfo);
+    totalThreads = gridDim.x * blockDim.x;
+  }
+  __syncthreads();
 
-    if (threadIdx.x == 0) {
-        zLen = shape::length(zShapeInfo);
-        rank = shape::rank(zShapeInfo);
-        totalThreads = gridDim.x * blockDim.x;
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  int coords[SD_MAX_RANK];
+
+  for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+    shape::index2coords(i, zShapeInfo, coords);
+
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+
+    int inArrIdx = 0;
+    sd::LongType* xShapeInfo = reinterpret_cast<sd::LongType**>(pxShapeInfo)[inArrIdx];
+
+    while (coords[axis] >= xShapeInfo[axis + 1]) {
+      coords[axis] -= xShapeInfo[axis + 1];
+      xShapeInfo = reinterpret_cast<sd::LongType**>(pxShapeInfo)[++inArrIdx];
     }
-    __syncthreads();
 
-    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[inArrIdx]);
+    const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
-    int coords[MAX_RANK];
-
-    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
-        shape::index2coords(i, zShapeInfo, coords);
-
-        const auto zOffset = shape::getOffset(zShapeInfo, coords);
-
-        int inArrIdx = 0;
-        Nd4jLong *xShapeInfo = reinterpret_cast<Nd4jLong **>(pxShapeInfo)[inArrIdx];
-
-        while (coords[axis] >= xShapeInfo[axis + 1]) {
-            coords[axis] -= xShapeInfo[axis + 1];
-            xShapeInfo = reinterpret_cast<Nd4jLong **>(pxShapeInfo)[++inArrIdx];
-        }
-
-        const auto *x = reinterpret_cast<T *>(reinterpret_cast<void **>(pVx)[inArrIdx]);
-        const auto xOffset = shape::getOffset(xShapeInfo, coords);
-
-        z[zOffset] = x[xOffset];
-    }
+    z[zOffset] = x[xOffset];
+  }
 }
 
 ///////////////////////////////////////////////////////////////////
-template<typename T>
-__host__ static void concatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
-                                        void* pVx, void* pxShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int axis) {
-
-    concatCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, pxShapeInfo, vz, zShapeInfo, axis);
+template <typename T>
+SD_HOST static void concatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                                       const cudaStream_t* stream, void* pVx, void* pxShapeInfo, void* vz,
+                                       const sd::LongType* zShapeInfo, const int axis) {
+  concatCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, pxShapeInfo, vz, zShapeInfo, axis);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+  const int numOfInArrs = inArrs.size();
+  const auto sizeofT = output.sizeOfT();
 
-    const int numOfInArrs = inArrs.size();
-    const auto sizeofT    = output.sizeOfT();
+  NDArray::prepareSpecialUse({&output}, inArrs);
 
-    NDArray::prepareSpecialUse({&output}, inArrs);
+  bool luckCase1 =
+      ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) &&
+      output.ews() == 1;
 
-    bool luckCase1 = ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) && output.ews() == 1;
+  if (luckCase1) {
+    for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
+      luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
+      if (!luckCase1) break;
+    }
+  }
 
-    if(luckCase1) {
-        for (uint i = 0; i < numOfInArrs; ++i) {
-            luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
-            if(!luckCase1)
-                break;
-        }
+  if (luckCase1) {  // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6}
+                    // order f
+
+    void* z = static_cast<int8_t*>(output.specialBuffer());
+
+    for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
+      const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
+      cudaMemcpyAsync(z, reinterpret_cast<const int8_t*>(inArrs[i]->specialBuffer()), memAmountToCopy,
+                      cudaMemcpyDeviceToDevice, *context->getCudaStream());
+      z = static_cast<int8_t*>(z) + memAmountToCopy;
     }
 
-    if(luckCase1) {     // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6} order f
+    if (cudaStreamSynchronize(*context->getCudaStream()) != 0)
+      throw std::runtime_error("concat cuda: luckCase1 failed!");
 
-        void* z = static_cast<int8_t*>(output.specialBuffer());
+    for (int i = 0; i < numOfInArrs; ++i) inArrs[i]->tickReadDevice();
+    output.tickWriteDevice();
 
-        for (uint i = 0; i < numOfInArrs; ++i) {
-            const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
-            cudaMemcpyAsync(z, reinterpret_cast<const int8_t*>(inArrs[i]->specialBuffer()), memAmountToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-            z = static_cast<int8_t*>(z) + memAmountToCopy;
-        }
+    return;
+  }
 
-        if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
-            throw std::runtime_error("concat cuda: luckCase1 failed!");
+  // const bool isZcontin = output.strideAt(axis) == 1;
+  // bool areInputsContin = true;
+  // bool allSameOrder    = true;
+  // std::vector<sd::LongType> strideOfContigStride(numOfInArrs);
 
-        for(int i = 0; i < numOfInArrs; ++i)
-            inArrs[i]->tickReadDevice();
-        output.tickWriteDevice();
+  // if(isZcontin) {
 
-        return;
-    }
+  //     for (sd::Unsigned i = 0; i < inArrs.size(); ++i) {
 
-    // const bool isZcontin = output.strideAt(axis) == 1;
-    // bool areInputsContin = true;
-    // bool allSameOrder    = true;
-    // std::vector<Nd4jLong> strideOfContigStride(numOfInArrs);
+  //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
+  //         allSameOrder    &= output.ordering() == inArrs[i]->ordering();
+  //         if(!areInputsContin || !allSameOrder)
+  //             break;
 
-    // if(isZcontin) {
+  //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->shapeInfo());
+  //     }
+  // }
 
-    //     for (uint i = 0; i < inArrs.size(); ++i) {
+  // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
 
-    //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
-    //         allSameOrder    &= output.ordering() == inArrs[i]->ordering();
-    //         if(!areInputsContin || !allSameOrder)
-    //             break;
+  // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for
+  // all inputs arrays and output array
 
-    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->shapeInfo());
-    //     }
-    // }
+  //     const auto zStep = shape::strideOverContigAxis(axis, output.shapeInfo());
 
-    // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
+  //     for (sd::Unsigned i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
 
-    // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
+  //         const auto iShift = i * sizeofT;
+  //         void* z = static_cast<int8_t*>(output.specialBuffer()) + zStep * iShift;
 
-    //     const auto zStep = shape::strideOverContigAxis(axis, output.shapeInfo());
+  //         for (sd::Unsigned j = 0; j < numOfInArrs; ++j) {
+  //             const auto xDim = inArrs[j]->sizeAt(axis);
+  //             void* x = static_cast<int8_t*>(inArrs[j]->specialBuffer()) + strideOfContigStride[j] * iShift;
+  //             const auto memSizeToCopy = xDim * sizeofT;
+  //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+  //             z = static_cast<int8_t*>(z) + memSizeToCopy;
+  //         }
+  //     }
 
-    //     for (uint i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
+  //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
+  //         throw std::runtime_error("concat cuda: luckCase2 failed!");
+  // }
+  // else {      // general (slower) case
 
-    //         const auto iShift = i * sizeofT;
-    //         void* z = static_cast<int8_t*>(output.specialBuffer()) + zStep * iShift;
+  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+  const int sharedMem = 256;
 
-    //         for (uint j = 0; j < numOfInArrs; ++j) {
-    //             const auto xDim = inArrs[j]->sizeAt(axis);
-    //             void* x = static_cast<int8_t*>(inArrs[j]->specialBuffer()) + strideOfContigStride[j] * iShift;
-    //             const auto memSizeToCopy = xDim * sizeofT;
-    //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-    //             z = static_cast<int8_t*>(z) + memSizeToCopy;
-    //         }
-    //     }
+  // prepare arrays of pointers on buffers and shapes
+  std::vector<const void*> hInBuffers(numOfInArrs);
+  std::vector<const sd::LongType*> hInShapeInfo(numOfInArrs);
 
-    //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
-    //         throw std::runtime_error("concat cuda: luckCase2 failed!");
-    // }
-    // else {      // general (slower) case
+  for (int i = 0; i < numOfInArrs; ++i) {
+    hInBuffers[i] = inArrs[i]->specialBuffer();
+    hInShapeInfo[i] = inArrs[i]->specialShapeInfo();
+  }
 
-        const int threadsPerBlock = MAX_NUM_THREADS / 2;
-        const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = 256;
+  PointersManager manager(context, "helpers::concat");
 
-        // prepare arrays of pointers on buffers and shapes
-        std::vector<const void*> hInBuffers(numOfInArrs);
-        std::vector<const Nd4jLong*> hInShapeInfo(numOfInArrs);
+  void* dInBuffers = manager.replicatePointer(hInBuffers.data(), hInBuffers.size() * sizeof(void*));
+  void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(), hInShapeInfo.size() * sizeof(sd::LongType*));
 
-        for(int i = 0; i < numOfInArrs; ++i) {
-            hInBuffers[i]   = inArrs[i]->specialBuffer();
-            hInShapeInfo[i] = inArrs[i]->specialShapeInfo();
-        }
+  BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher,
+                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo,
+                         output.specialBuffer(), output.specialShapeInfo(), axis),
+                        SD_COMMON_TYPES);
 
-        PointersManager manager(context, "helpers::concat");
+  manager.synchronize();
+  // }
 
-        void* dInBuffers   = manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
-        void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
-
-        BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo, output.specialBuffer(), output.specialShapeInfo(), axis), LIBND4J_TYPES);
-
-        manager.synchronize();
-    // }
-
-    NDArray::registerSpecialUse({&output}, inArrs);
+  NDArray::registerSpecialUse({&output}, inArrs);
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

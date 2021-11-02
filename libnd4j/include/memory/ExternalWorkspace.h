@@ -22,32 +22,31 @@
 
 #ifndef LIBND4J_EXTERNALWORKSPACE_H
 #define LIBND4J_EXTERNALWORKSPACE_H
-
-#include <system/pointercast.h>
-#include <system/dll.h>
+#include <system/common.h>
 
 namespace sd {
-    namespace memory {
-        class ND4J_EXPORT ExternalWorkspace {
-        private:
-            void *_ptrH = nullptr;
-            void *_ptrD = nullptr;
+namespace memory {
+class SD_LIB_EXPORT ExternalWorkspace {
+ private:
+  void *_ptrH = nullptr;
+  void *_ptrD = nullptr;
 
-            Nd4jLong _sizeH = 0L;
-            Nd4jLong _sizeD = 0L;
-        public:
-            ExternalWorkspace() = default;
-            ~ExternalWorkspace() = default;
+  sd::LongType _sizeH = 0L;
+  sd::LongType _sizeD = 0L;
 
-            ExternalWorkspace(Nd4jPointer ptrH, Nd4jLong sizeH, Nd4jPointer ptrD, Nd4jLong sizeD);
-            
-            void *pointerHost();
-            void *pointerDevice();
+ public:
+  ExternalWorkspace() = default;
+  ~ExternalWorkspace() = default;
 
-            Nd4jLong sizeHost();
-            Nd4jLong sizeDevice();
-        };
-    }
-}
+  ExternalWorkspace(sd::Pointer ptrH, sd::LongType sizeH, sd::Pointer ptrD, sd::LongType sizeD);
+
+  void *pointerHost();
+  void *pointerDevice();
+
+  sd::LongType sizeHost();
+  sd::LongType sizeDevice();
+};
+}  // namespace memory
+}  // namespace sd
 
 #endif

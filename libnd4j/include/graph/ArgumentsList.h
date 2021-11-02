@@ -23,40 +23,41 @@
 #ifndef LIBND4J_INPUTLIST_H
 #define LIBND4J_INPUTLIST_H
 
+#include <system/common.h>
 #include <system/op_boilerplate.h>
-#include <system/pointercast.h>
-#include <system/dll.h>
-#include <vector>
 #include <types/pair.h>
+
+#include <vector>
 
 namespace sd {
 namespace graph {
-    class ND4J_EXPORT ArgumentsList {
-    protected:
-        std::vector<Pair> _arguments;
-    public:
-        explicit ArgumentsList() = default;
-        ArgumentsList(std::initializer_list<Pair> arguments);
-        ArgumentsList(std::initializer_list<int> arguments);
+class SD_LIB_EXPORT ArgumentsList {
+ protected:
+  std::vector<Pair> _arguments;
 
-        ~ArgumentsList() = default;
+ public:
+  explicit ArgumentsList() = default;
+  ArgumentsList(std::initializer_list<Pair> arguments);
+  ArgumentsList(std::initializer_list<int> arguments);
 
-        /**
-         * This method returns number of argument pairs available
-         *
-         * @return
-         */
-        int size();
+  ~ArgumentsList() = default;
 
-        /**
-         * This method returns Pair at specified index
-         *
-         * @param index
-         * @return
-         */
-        Pair &at(int index);
-    };
-}
-}
+  /**
+   * This method returns number of argument pairs available
+   *
+   * @return
+   */
+  int size();
 
-#endif //LIBND4J_INPUTLIST_H
+  /**
+   * This method returns Pair at specified index
+   *
+   * @param index
+   * @return
+   */
+  Pair &at(int index);
+};
+}  // namespace graph
+}  // namespace sd
+
+#endif  // LIBND4J_INPUTLIST_H

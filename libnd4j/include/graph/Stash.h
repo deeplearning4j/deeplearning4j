@@ -25,72 +25,68 @@
 
 //#include <graph/Block.h>
 #include <array/NDArray.h>
-#include <map>
-#include <vector>
-#include <string>
+
 #include <atomic>
 #include <functional>
-#include <system/pointercast.h>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT KeyPair {
-            int _node;
-            std::string _name;
-        public:
-            KeyPair(int node = 0, const char *name = nullptr);
+namespace graph {
+class SD_LIB_EXPORT KeyPair {
+  int _node;
+  std::string _name;
 
-            bool operator<(const KeyPair &other) const;
+ public:
+  KeyPair(int node = 0, const char *name = nullptr);
 
-            bool operator==(const KeyPair &other) const {
-                return _node == other._node;
-            }
+  bool operator<(const KeyPair &other) const;
 
-            int key() const { return _node; }
-            std::string name() const { return _name; }
-        };
-    }
-}
+  bool operator==(const KeyPair &other) const { return _node == other._node; }
+
+  int key() const { return _node; }
+  std::string name() const { return _name; }
+};
+}  // namespace graph
+}  // namespace sd
 
 #ifndef __JAVACPP_HACK__
 
 namespace std {
-    template <>
-    class ND4J_EXPORT hash<sd::graph::KeyPair> {
-    public:
-        size_t operator()(const sd::graph::KeyPair& k) const;
-    };
+template <>
+class SD_LIB_EXPORT hash<sd::graph::KeyPair> {
+ public:
+  size_t operator()(const sd::graph::KeyPair &k) const;
 };
+};  // namespace std
 
 #endif
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT Stash {
-        protected:
-            std::map<sd::graph::KeyPair, sd::NDArray*> _stash;
-            std::vector<sd::NDArray*> _handles;
+namespace graph {
+class SD_LIB_EXPORT Stash {
+ protected:
+  std::map<sd::graph::KeyPair, sd::NDArray *> _stash;
+  std::vector<sd::NDArray *> _handles;
 
-        public:
-            Stash();
-            ~Stash();
+ public:
+  Stash();
+  ~Stash();
 
-            //void storeArray(sd::graph::Block<T>& block, const char *name, sd::NDArray<T> *array);
-            void storeArray(int nodeId, const char *name, sd::NDArray *array);
+  // void storeArray(sd::graph::Block<T>& block, const char *name, sd::NDArray<T> *array);
+  void storeArray(int nodeId, const char *name, sd::NDArray *array);
 
-            //bool checkStash(sd::graph::Block<T>& block, const char *name);
-            bool checkStash(int nodeId, const char *name);
+  // bool checkStash(sd::graph::Block<T>& block, const char *name);
+  bool checkStash(int nodeId, const char *name);
 
-            //sd::NDArray<T>* extractArray(sd::graph::Block<T>& block, const char *name);
-            sd::NDArray* extractArray(int nodeId, const char *name);
+  // sd::NDArray<T>* extractArray(sd::graph::Block<T>& block, const char *name);
+  sd::NDArray *extractArray(int nodeId, const char *name);
 
-            void clear();
-        };
-    }
+  void clear();
+};
+}  // namespace graph
 
-}
+}  // namespace sd
 
-
-
-
-#endif //LIBND4J_STASH_H
+#endif  // LIBND4J_STASH_H

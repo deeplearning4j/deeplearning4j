@@ -22,73 +22,74 @@
 
 #ifndef DEV_TESTS_CALLABLEWITHARGUMENTS_H
 #define DEV_TESTS_CALLABLEWITHARGUMENTS_H
-
-#include <functional>
-#include <vector>
-#include <atomic>
-#include <condition_variable>
 #include <system/op_boilerplate.h>
 
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include <vector>
+
 namespace samediff {
-    class CallableWithArguments {
-        FUNC_DO _function_do;
-        FUNC_1D _function_1d;
-        FUNC_2D _function_2d;
-        FUNC_3D _function_3d;
+class CallableWithArguments {
+  FUNC_DO _function_do;
+  FUNC_1D _function_1d;
+  FUNC_2D _function_2d;
+  FUNC_3D _function_3d;
 
-        std::vector<int64_t> _arguments;
+  std::vector<int64_t> _arguments;
 
-        std::atomic<bool> _finished;
+  std::atomic<bool> _finished;
 
-        std::condition_variable _condition;
+  std::condition_variable _condition;
 
-        std::mutex _lock;
+  std::mutex _lock;
 
-        int _dimensions = 0;
+  int _dimensions = 0;
 
-        uint64_t _threadId;
-        uint64_t _numThreads;
-    public:
-        CallableWithArguments(FUNC_DO func, uint64_t thread_id, uint64_t numThreads);
-        CallableWithArguments(FUNC_1D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x);
-        CallableWithArguments(FUNC_2D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x, int64_t start_y, int64_t stop_y, int64_t increment_y);
-        CallableWithArguments(FUNC_3D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x, int64_t start_y, int64_t stop_y, int64_t increment_y, int64_t start_z, int64_t stop_z, int64_t increment_z);
+  uint64_t _threadId;
+  uint64_t _numThreads;
 
+ public:
+  CallableWithArguments(FUNC_DO func, uint64_t thread_id, uint64_t numThreads);
+  CallableWithArguments(FUNC_1D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x);
+  CallableWithArguments(FUNC_2D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x,
+                        int64_t start_y, int64_t stop_y, int64_t increment_y);
+  CallableWithArguments(FUNC_3D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x,
+                        int64_t start_y, int64_t stop_y, int64_t increment_y, int64_t start_z, int64_t stop_z,
+                        int64_t increment_z);
 
-        /**
-         * This method returns number of dimensions
-         * @return
-         */
-        int dimensions();
+  /**
+   * This method returns number of dimensions
+   * @return
+   */
+  int dimensions();
 
-        /**
-         * This method checks if this callable is finished
-         * @return
-         */
-        bool finished();
+  /**
+   * This method checks if this callable is finished
+   * @return
+   */
+  bool finished();
 
-        /**
-         * this method marks this Callable as finished
-         */
-        void finish();
+  /**
+   * this method marks this Callable as finished
+   */
+  void finish();
 
-        /**
-         * This method blocks until callable is finished
-         */
-        void waitUntilFinished();
+  /**
+   * This method blocks until callable is finished
+   */
+  void waitUntilFinished();
 
-        std::vector<int64_t>& arguments();
-        FUNC_DO function_do();
-        FUNC_1D function_1d();
-        FUNC_2D function_2d();
-        FUNC_3D function_3d();
+  std::vector<int64_t> &arguments();
+  FUNC_DO function_do();
+  FUNC_1D function_1d();
+  FUNC_2D function_2d();
+  FUNC_3D function_3d();
 
+  uint64_t threadId();
 
-        uint64_t threadId();
+  uint64_t numThreads();
+};
+}  // namespace samediff
 
-        uint64_t numThreads();
-    };
-}
-
-
-#endif //DEV_TESTS_CALLABLEWITHARGUMENTS_H
+#endif  // DEV_TESTS_CALLABLEWITHARGUMENTS_H

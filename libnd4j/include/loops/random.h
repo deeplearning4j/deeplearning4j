@@ -23,81 +23,67 @@
 #ifndef LIBND4J_RANDOM_H
 #define LIBND4J_RANDOM_H
 
-
-
-#include <helpers/shape.h>
 #include <helpers/helper_random.h>
+#include <helpers/shape.h>
+#include <loops/legacy_ops.h>
 #include <ops/random_ops.h>
 #include <ops/special_random_ops.h>
 
-#include <loops/legacy_ops.h>
-
-
 namespace functions {
-    namespace random {
+namespace random {
 
-        template<typename X>
-        class RandomFunction {
-        public:
-
+template <typename X>
+class RandomFunction {
+ public:
 #ifdef __CUDABLAS__
-            template<typename OpClass>
-            static _CUDA_D void execTransformCuda(Nd4jPointer state,
-                                                  const void *x, const Nd4jLong *xShapeBuffer,
-                                                  const void *y, const Nd4jLong *yShapeBuffer,
-                                                  void *z, const Nd4jLong *zShapeBuffer,
-                                                  void *extraArguments);
+  template <typename OpClass>
+  static SD_DEVICE void execTransformCuda(sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer,
+                                          const void *y, const sd::LongType *yShapeBuffer, void *z,
+                                          const sd::LongType *zShapeBuffer, void *extraArguments);
 
-            template<typename OpClass>
-            static _CUDA_D void execTransformCuda(Nd4jPointer state,
-                                                  const void *x, const Nd4jLong *xShapeBuffer,
-                                                  void *z, const Nd4jLong *zShapeBuffer,
-                                                  void *extraArguments);
+  template <typename OpClass>
+  static SD_DEVICE void execTransformCuda(sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer, void *z,
+                                          const sd::LongType *zShapeBuffer, void *extraArguments);
 
-            template<typename OpClass>
-            static _CUDA_D void execTransformCuda(Nd4jPointer state, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
+  template <typename OpClass>
+  static SD_DEVICE void execTransformCuda(sd::Pointer state, void *z, const sd::LongType *zShapeBuffer,
+                                          void *extraArguments);
 
+  static SD_HOST void executeCudaSingle(dim3 &launchDims, cudaStream_t *stream, int opNum, sd::Pointer stateHost,
+                                        void *z, const sd::LongType *zShapeBuffer, void *extraArguments);
 
-            static _CUDA_H void executeCudaSingle(dim3& launchDims, cudaStream_t* stream,
-                                                  int opNum,
-                                                  Nd4jPointer stateHost,
-                                                  void *z, const Nd4jLong *zShapeBuffer,
-                                                  void *extraArguments);
+  static SD_HOST void executeCudaDouble(dim3 &launchDims, cudaStream_t *stream, int opNum, sd::Pointer stateHost,
+                                        const void *x, const sd::LongType *xShapeBuffer, void *z,
+                                        const sd::LongType *zShapeBuffer, void *extraArguments);
 
-
-            static _CUDA_H void executeCudaDouble(dim3& launchDims, cudaStream_t* stream,
-                                                  int opNum,
-                                                  Nd4jPointer stateHost,
-                                                  const void *x, const Nd4jLong *xShapeBuffer,
-                                                  void *z, const Nd4jLong *zShapeBuffer,
-                                                  void *extraArguments);
-
-
-            static _CUDA_H void executeCudaTriple(dim3& launchDims, cudaStream_t* stream,
-                                                  int opNum,
-                                                  Nd4jPointer stateHost,
-                                                  const void *x, const Nd4jLong *xShapeBuffer,
-                                                  const void *y, const Nd4jLong *yShapeBuffer,
-                                                  void *z, const Nd4jLong* zShapeBuffer,
-                                                  void *extraArguments);
+  static SD_HOST void executeCudaTriple(dim3 &launchDims, cudaStream_t *stream, int opNum, sd::Pointer stateHost,
+                                        const void *x, const sd::LongType *xShapeBuffer, const void *y,
+                                        const sd::LongType *yShapeBuffer, void *z, const sd::LongType *zShapeBuffer,
+                                        void *extraArguments);
 #else
 
-            template<typename OpClass>
-            static void execTransform(Nd4jPointer state, const void *x, const Nd4jLong *xShapeBuffer, const void *y, const Nd4jLong *yShapeBuffer, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
+  template <typename OpClass>
+  static void execTransform(sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer, const void *y,
+                            const sd::LongType *yShapeBuffer, void *z, const sd::LongType *zShapeBuffer,
+                            void *extraArguments);
 
-            template<typename OpClass>
-            static void execTransform(Nd4jPointer state, const void *x, const Nd4jLong *xShapeBuffer, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
+  template <typename OpClass>
+  static void execTransform(sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer, void *z,
+                            const sd::LongType *zShapeBuffer, void *extraArguments);
 
-            template<typename OpClass>
-            static void execTransform(Nd4jPointer state, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
+  template <typename OpClass>
+  static void execTransform(sd::Pointer state, void *z, const sd::LongType *zShapeBuffer, void *extraArguments);
 
-            static void execTransform(int opNum, Nd4jPointer state, const void *x, const Nd4jLong *xShapeBuffer, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
-            static void execTransform(int opNum, Nd4jPointer state, const void *x, const Nd4jLong *xShapeBuffer, const void *y, const Nd4jLong *yShapeBuffer, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
-            static void execTransform(int opNum, Nd4jPointer state, void *z, const Nd4jLong *zShapeBuffer, void *extraArguments);
+  static void execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer, void *z,
+                            const sd::LongType *zShapeBuffer, void *extraArguments);
+  static void execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeBuffer,
+                            const void *y, const sd::LongType *yShapeBuffer, void *z, const sd::LongType *zShapeBuffer,
+                            void *extraArguments);
+  static void execTransform(int opNum, sd::Pointer state, void *z, const sd::LongType *zShapeBuffer,
+                            void *extraArguments);
 #endif
-        };
-    }
-}
+};
+}  // namespace random
+}  // namespace functions
 
-
-#endif //LIBND4J_RANDOM_H
+#endif  // LIBND4J_RANDOM_H

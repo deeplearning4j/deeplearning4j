@@ -19,50 +19,47 @@
 //
 // @author raver110@gmail.com
 //
-
-#include "testlayers.h"
 #include <graph/Graph.h>
-#include <chrono>
 #include <graph/Node.h>
-#include <ops/declarable/CustomOperations.h>
 #include <graph/profiling/GraphProfilingHelper.h>
-#include <loops/type_conversions.h>
-#include <helpers/threshold.h>
-#include <helpers/MmulHelper.h>
-#include <ops/ops.h>
-#include <helpers/OmpLaunchHelper.h>
-#include <helpers/GradCheck.h>
-#include <ops/declarable/helpers/im2col.h>
-#include <helpers/Loops.h>
-#include <helpers/RandomLauncher.h>
-#include <ops/declarable/helpers/convolutions.h>
-
 #include <helpers/BenchmarkHelper.h>
-#include <ops/declarable/helpers/scatter.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
-#include <array>
-#include <random>
-#include <ops/declarable/helpers/legacy_helpers.h>
+#include <helpers/GradCheck.h>
+#include <helpers/Loops.h>
+#include <helpers/LoopsCoordsHelper.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <helpers/RandomLauncher.h>
+#include <helpers/threshold.h>
+#include <loops/type_conversions.h>
+#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/helpers/convolutions.h>
+#include <ops/declarable/helpers/im2col.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/reductions.h>
-#include <helpers/LoopsCoordsHelper.h>
+#include <ops/declarable/helpers/scatter.h>
+#include <ops/ops.h>
+
+#include <array>
+#include <chrono>
+#include <random>
+
+#include "testlayers.h"
 
 using namespace sd;
 using namespace sd::graph;
 
 class PrimitivesTests : public testing::Test {
  public:
-
-  PrimitivesTests() {
-  }
+  PrimitivesTests() {}
 };
 
 TEST_F(PrimitivesTests, test_mod_1) {
   int ix = 7;
   int iy = 3;
-
 
   auto v = simdOps::Mod<int, int, int>::op(ix, iy);
 
@@ -73,8 +70,7 @@ TEST_F(PrimitivesTests, test_mod_2) {
   float ix = 7.f;
   float iy = 3.f;
 
-
-  auto e = sd::math::nd4j_fmod<float, float, float>(ix, iy);
+  auto e = sd::math::sd_fmod<float, float, float>(ix, iy);
   auto v = simdOps::Mod<float, float, float>::op(ix, iy);
 
   ASSERT_NEAR(e, v, 1e-5f);
@@ -84,8 +80,7 @@ TEST_F(PrimitivesTests, test_mod_3) {
   float ix = 7.f;
   float iy = 0.f;
 
-
-  auto e = sd::math::nd4j_fmod<float, float, float>(ix, iy);
+  auto e = sd::math::sd_fmod<float, float, float>(ix, iy);
   auto v = simdOps::Mod<float, float, float>::op(ix, iy);
 
   // absence of SIGFPE will be a good enough

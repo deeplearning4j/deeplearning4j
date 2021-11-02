@@ -20,27 +20,34 @@
 // @author raver119@gmail.com
 //
 
-
-#include <grpc++/grpc++.h>
 #include <array/NDArray.h>
 #include <graph/Graph.h>
+#include <graph/generated/graph.grpc.fb.h>
+#include <grpc++/grpc++.h>
 #include <ops/declarable/CustomOperations.h>
 
-#include <graph/generated/graph.grpc.fb.h>
-
 namespace sd {
-    namespace graph {
-        class GraphInferenceServerImpl final : public GraphInferenceServer::Service {
-        private:
-            flatbuffers::grpc::MessageBuilder mb_;
-        public:
-            virtual grpc::Status RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg);
+namespace graph {
+class GraphInferenceServerImpl final : public GraphInferenceServer::Service {
+ private:
+  flatbuffers::grpc::MessageBuilder mb_;
 
-            virtual grpc::Status ForgetGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatDropRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg);
+ public:
+  virtual grpc::Status RegisterGraph(grpc::ServerContext *context,
+                                     const flatbuffers::grpc::Message<FlatGraph> *request_msg,
+                                     flatbuffers::grpc::Message<FlatResponse> *response_msg);
 
-            virtual grpc::Status ReplaceGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg);
+  virtual grpc::Status ForgetGraph(grpc::ServerContext *context,
+                                   const flatbuffers::grpc::Message<FlatDropRequest> *request_msg,
+                                   flatbuffers::grpc::Message<FlatResponse> *response_msg);
 
-            virtual grpc::Status InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResult> *response_msg);
-        };
-    }
-}
+  virtual grpc::Status ReplaceGraph(grpc::ServerContext *context,
+                                    const flatbuffers::grpc::Message<FlatGraph> *request_msg,
+                                    flatbuffers::grpc::Message<FlatResponse> *response_msg);
+
+  virtual grpc::Status InferenceRequest(grpc::ServerContext *context,
+                                        const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg,
+                                        flatbuffers::grpc::Message<FlatResult> *response_msg);
+};
+}  // namespace graph
+}  // namespace sd

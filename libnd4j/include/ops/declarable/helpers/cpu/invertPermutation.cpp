@@ -20,34 +20,32 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 
-
-#include <ops/declarable/helpers/transforms.h>
 #include <helpers/Loops.h>
+#include <ops/declarable/helpers/transforms.h>
 
-namespace sd 	  {
-namespace ops 	  {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
- void invertPermutation(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
+void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+  std::set<int> uniqueElems;
+  const int length = input.lengthOf();
 
-    std::set<int> uniqueElems;
-    const int length = input.lengthOf();
+  for (int i = 0; i < length; ++i) {
+    int elem = input.e<int>(i);
 
-    for(int i = 0; i < length; ++i) {
+    if (!uniqueElems.insert(elem).second)  // this operation forbids us to use #pragma omp
+      throw std::runtime_error("helpers::invertPermutation function: input array contains duplicates !");
 
-        int elem = input.e<int>(i);
+    if (elem < 0 || elem > length - 1)
+      throw std::runtime_error(
+          "helpers::invertPermutation function: element of input array is out of range (0, length-1) !");
 
-        if(!uniqueElems.insert(elem).second)        // this operation forbids us to use #pragma omp
-            throw std::runtime_error("helpers::invertPermutation function: input array contains duplicates !");
-
-        if(elem < 0 || elem > length - 1)
-            throw  std::runtime_error("helpers::invertPermutation function: element of input array is out of range (0, length-1) !");
-
-        output.p<int>(elem, i);
-    }
+    output.p<int>(elem, i);
+  }
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

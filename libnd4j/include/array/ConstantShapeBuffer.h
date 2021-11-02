@@ -25,14 +25,14 @@
 #ifndef SD_ARRAY_CONSTANTSHAPEBUFFER_H_
 #define SD_ARRAY_CONSTANTSHAPEBUFFER_H_
 
-#include <system/dll.h>
-#include <system/pointercast.h>
 #include <array/PointerWrapper.h>
+#include <system/common.h>
+
 #include <memory>
 
 namespace sd {
 
-class ND4J_EXPORT ConstantShapeBuffer {
+class SD_LIB_EXPORT ConstantShapeBuffer {
  private:
   std::shared_ptr<PointerWrapper> _primaryShapeInfo;
   std::shared_ptr<PointerWrapper> _specialShapeInfo;
@@ -43,11 +43,11 @@ class ND4J_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer() = default;
   ~ConstantShapeBuffer() = default;
 
-  const Nd4jLong* primary() const;
-  const Nd4jLong* special() const;
-  const Nd4jLong* platform() const;
+  const sd::LongType *primary() const;
+  const sd::LongType *special() const;
+  const sd::LongType *platform() const;
 };
 
-} // namespace sd
+}  // namespace sd
 
-#endif //SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+#endif  // SD_ARRAY_CONSTANTSHAPEBUFFER_H_

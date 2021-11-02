@@ -26,35 +26,35 @@
 #if NOT_EXCLUDED(OP_bits_hamming_distance)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/hamming.h>
+#include <ops/declarable/helpers/helpers.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(bits_hamming_distance, 2, 1, true, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto output = OUTPUT_NULLIFIED(0);
+namespace ops {
+CUSTOM_OP_IMPL(bits_hamming_distance, 2, 1, true, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto output = OUTPUT_NULLIFIED(0);
 
-            REQUIRE_TRUE(x->lengthOf() == y->lengthOf(), 0, "bits_hamming_distance: both arguments must have the same length");
-            REQUIRE_TRUE(x->dataType() == y->dataType(), 0, "bits_hamming_distance: both arguments must have the same data type");
+  REQUIRE_TRUE(x->lengthOf() == y->lengthOf(), 0, "bits_hamming_distance: both arguments must have the same length");
+  REQUIRE_TRUE(x->dataType() == y->dataType(), 0, "bits_hamming_distance: both arguments must have the same data type");
 
-            helpers::hamming(block.launchContext(), *x, *y, *output);
+  helpers::hamming(block.launchContext(), *x, *y, *output);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(bits_hamming_distance) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
-        }
-
-        DECLARE_TYPES(bits_hamming_distance) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS})
-                    ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setAllowedOutputTypes(0, {ALL_INDICES});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(bits_hamming_distance) {
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
+}
+
+DECLARE_TYPES(bits_hamming_distance) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS})
+      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedOutputTypes(0, {ALL_INDICES});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

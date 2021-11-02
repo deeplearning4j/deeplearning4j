@@ -19,34 +19,22 @@
 //
 // Created by raver119 on 15/11/17.
 //
-
 #include <graph/VariablesSet.h>
 
 namespace sd {
-    namespace graph {
-        Nd4jStatus VariablesSet::status() {
-            return _status;
-        }
+namespace graph {
+sd::Status VariablesSet::status() { return _status; }
 
-        int VariablesSet::size() {
-            return _holder.size();
-        }
+int VariablesSet::size() { return _holder.size(); }
 
-        void VariablesSet::push_back(Variable *variable) {
-            _holder.push_back(variable);
-        }
+void VariablesSet::push_back(Variable *variable) { _holder.push_back(variable); }
 
-        Variable *VariablesSet::at(int index) {
-            return _holder.at(index);
-        }
+Variable *VariablesSet::at(int index) { return _holder.at(index); }
 
-        VariablesSet::VariablesSet(Nd4jStatus status) {
-            _status = status;
-        }
+VariablesSet::VariablesSet(sd::Status status) { _status = status; }
 
-        VariablesSet::~VariablesSet() {
-            for (auto v: _holder)
-                delete v;
-        }
-    }
+VariablesSet::~VariablesSet() {
+  for (auto v : _holder) delete v;
 }
+}  // namespace graph
+}  // namespace sd

@@ -21,13 +21,12 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <loops/cpu/reduce/reduce_float.hpp>
-#cmakedefine FLOAT_TYPE_GEN
-#if defined(FLOAT_TYPE_GEN) && defined(FLOAT_TYPES_@FL_TYPE_INDEX@)
+#cmakedefine SD_FLOAT_TYPES_GEN
+#if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace reduce {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES_@FL_TYPE_INDEX@);
+        BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN ReduceFloatFunction, , SD_COMMON_TYPES, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
     }
 }
 #endif

@@ -20,74 +20,62 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 
-
-#include <ops/declarable/helpers/transforms.h>
-#include <helpers/ShapeUtils.h>
 #include <helpers/Loops.h>
+#include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/transforms.h>
 
-namespace sd 	  {
-namespace ops 	  {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps) {
+  T* gradIBuff = reinterpret_cast<T*>(gradI.buffer());
+  auto gradOBuff = reinterpret_cast<T const*>(gradO.buffer());
+  const sd::LongType gradILen = gradI.lengthOf();
+  const sd::LongType gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
+  const sd::LongType gradIEWS = sd::math::sd_abs<sd::LongType>(gradI.ews());
+  const sd::LongType gradOEWS = gradO.ews();
 
-    T* gradIBuff      = reinterpret_cast<T*>(gradI.buffer());
-    auto gradOBuff      = reinterpret_cast<T const*>(gradO.buffer());
-    const Nd4jLong gradILen = gradI.lengthOf();
-    const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
-    const Nd4jLong gradIEWS = sd::math::nd4j_abs<Nd4jLong>(gradI.ews());
-    const Nd4jLong gradOEWS = gradO.ews();
+  // initial zeroing of gradI content
+  if (gradIEWS == 1)
+    memset(gradIBuff, 0, gradILen * sizeof(T));
+  else {
+    // PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (sd::LongType i = 0; i < gradILen * gradIEWS; i += gradIEWS) gradIBuff[i] = static_cast<T>(0.f);
+  }
 
-    // initial zeroing of gradI content
-    if(gradIEWS == 1)
-        memset(gradIBuff, 0, gradILen * sizeof(T));
-    else {
-        //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
-            gradIBuff[i] = static_cast<T>(0.f);
+  if (gradO.ordering() == 'c' && gradOEWS == 1) {
+    // PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (sd::LongType i = 0; i < gradOLen; ++i) {
+      auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
+      gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
     }
-
-
-    if(gradO.ordering() == 'c' && gradOEWS == 1) {
-
-        //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i=0;  i<gradOLen; ++i) {
-            auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-            gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
-        }
+  } else if (gradO.ordering() == 'c' && gradOEWS > 1) {
+    // PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (sd::LongType i = 0; i < gradOLen; ++i) {
+      auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
+      gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
     }
-    else if(gradO.ordering() == 'c' && gradOEWS > 1) {
-
-        //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i=0;  i<gradOLen; ++i) {
-            auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-            gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
-        }
+  } else {
+    // PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (sd::LongType i = 0; i < gradOLen; ++i) {
+      auto fidx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
+      gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.shapeInfo())]);
     }
-    else {
-
-        //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i=0;  i<gradOLen; ++i) {
-
-            auto fidx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.shapeInfo())]);
-        }
-    }
+  }
 }
 
- void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
-    BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), FLOAT_TYPES);
+void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
+            const std::vector<sd::LongType> reps) {
+  BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), SD_FLOAT_TYPES);
 }
 
+BUILD_SINGLE_TEMPLATE(template void tileBP_,
+                      (const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps),
+                      SD_FLOAT_TYPES);
 
-BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void tileBP_, (const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
-
-
-
-
-
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

@@ -22,18 +22,17 @@
 
 #ifndef SD_THRESHOLD_H
 #define SD_THRESHOLD_H
-
 #include <ops/declarable/helpers/helpers.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            int32_t thresholdEstimate(const NDArray &updates, float threshold);
+namespace ops {
+namespace helpers {
+SD_LIB_HIDDEN int32_t thresholdEstimate(const NDArray &updates, float threshold);
 
-            void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold);
-            void thresholdDecode(const NDArray &encoded, NDArray &updates);
-        }
-    }
-}
+SD_LIB_HIDDEN void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold);
+SD_LIB_HIDDEN void thresholdDecode(const NDArray &encoded, NDArray &updates);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-#endif //SD_THRESHOLD_H
+#endif  // SD_THRESHOLD_H

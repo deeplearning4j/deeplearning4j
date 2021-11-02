@@ -21,13 +21,10 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <array/CudaPointerDeallocator.h>
 
 namespace sd {
 
-void CudaPointerDeallocator::release(void *ptr) {
-  cudaFree(ptr);
-}
+void CudaPointerDeallocator::release(void *ptr) { cudaFree(ptr); }
 
-} // namespace sd
+}  // namespace sd

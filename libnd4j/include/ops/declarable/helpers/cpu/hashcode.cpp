@@ -19,89 +19,85 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <ops/declarable/helpers/hashcode.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/hashcode.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            template <typename T>
-            static void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
-                Nd4jLong blockSize = 32;
-                auto length = array.lengthOf();
-                int numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
-                auto tempA = NDArrayFactory::create<Nd4jLong>('c', {numBlocks}, context);
-                auto tempB = NDArrayFactory::create<Nd4jLong>('c', { numBlocks / blockSize + 1}, context);
+namespace ops {
+namespace helpers {
+template <typename T>
+static void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
+  sd::LongType blockSize = 32;
+  auto length = array.lengthOf();
+  int numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
+  auto tempA = NDArrayFactory::create<sd::LongType>('c', {numBlocks}, context);
+  auto tempB = NDArrayFactory::create<sd::LongType>('c', {numBlocks / blockSize + 1}, context);
 
-                auto buffer = array.bufferAsT<T>();
-                auto tempBufferA = tempA.bufferAsT<Nd4jLong>();
-                auto tempBufferB = tempB.bufferAsT<Nd4jLong>();
+  auto buffer = array.bufferAsT<T>();
+  auto tempBufferA = tempA.bufferAsT<sd::LongType>();
+  auto tempBufferB = tempB.bufferAsT<sd::LongType>();
 
-                // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)
-                auto tempBuffer = tempBufferA;
-                auto tempResult = tempBufferB;
+  // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)
+  auto tempBuffer = tempBufferA;
+  auto tempResult = tempBufferB;
 
-                // we divide array into 32 element chunks, and store intermediate results once
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto b = start; b < stop; b++) {
-                        auto blockBuffer = buffer + b * numBlocks;
+  // we divide array into 32 element chunks, and store intermediate results once
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto b = start; b < stop; b++) {
+      auto blockBuffer = buffer + b * numBlocks;
 
-                        Nd4jLong r = 1;
-                        for (Nd4jLong e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
-                            auto v = longBytes<T>(blockBuffer[e]);
-                            r = 31 * r + v;
-                        }
+      sd::LongType r = 1;
+      for (sd::LongType e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
+        auto v = longBytes<T>(blockBuffer[e]);
+        r = 31 * r + v;
+      }
 
-                        tempBuffer[b] = r;
-                    }
-                };
-                samediff::Threads::parallel_tad(func, 0, numBlocks);
-
-                // we replace pointer with intermediate one, and repeat only one chunk left
-                int iterationCount = 0;
-                while (numBlocks > 1) {
-                    int lastLength = numBlocks;
-                    numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
-
-
-                    auto func2 = PRAGMA_THREADS_FOR {
-                        for (auto b = start; b < stop; b++) {
-                            auto blockBuffer = tempBuffer + b * numBlocks;
-
-                            Nd4jLong r = 1;
-                            for (Nd4jLong e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
-                                auto v = longBytes<T>(blockBuffer[e]);
-                                r = 31 * r + v;
-                            }
-
-                            tempResult[b] = r;
-                        }
-                    };
-                    samediff::Threads::parallel_tad(func2, 0, numBlocks);
-
-
-                    iterationCount++;
-                    // swapping buffers
-                    if (iterationCount % 2 == 0) {
-                        tempBuffer = tempBufferA;
-                        tempResult = tempBufferB;
-                    } else {
-                        tempBuffer = tempBufferB;
-                        tempResult = tempBufferA;
-                    }
-                }
-
-                if (length <= blockSize)
-                    result.p(0, tempBufferA[0]);
-                else
-                    result.p(0, tempResult[0]);
-            }
-
-
-            ND4J_LOCAL void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
-                BUILD_SINGLE_SELECTOR(array.dataType(), hashCode_, (context, array, result), LIBND4J_TYPES);
-            }
-        }
+      tempBuffer[b] = r;
     }
+  };
+  samediff::Threads::parallel_tad(func, 0, numBlocks);
+
+  // we replace pointer with intermediate one, and repeat only one chunk left
+  int iterationCount = 0;
+  while (numBlocks > 1) {
+    int lastLength = numBlocks;
+    numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
+
+    auto func2 = PRAGMA_THREADS_FOR {
+      for (auto b = start; b < stop; b++) {
+        auto blockBuffer = tempBuffer + b * numBlocks;
+
+        sd::LongType r = 1;
+        for (sd::LongType e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
+          auto v = longBytes<T>(blockBuffer[e]);
+          r = 31 * r + v;
+        }
+
+        tempResult[b] = r;
+      }
+    };
+    samediff::Threads::parallel_tad(func2, 0, numBlocks);
+
+    iterationCount++;
+    // swapping buffers
+    if (iterationCount % 2 == 0) {
+      tempBuffer = tempBufferA;
+      tempResult = tempBufferB;
+    } else {
+      tempBuffer = tempBufferB;
+      tempResult = tempBufferA;
+    }
+  }
+
+  if (length <= blockSize)
+    result.p(0, tempBufferA[0]);
+  else
+    result.p(0, tempResult[0]);
 }
+
+void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
+  BUILD_SINGLE_SELECTOR(array.dataType(), hashCode_, (context, array, result), SD_COMMON_TYPES);
+}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

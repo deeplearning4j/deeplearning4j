@@ -23,24 +23,23 @@
 #ifndef LIBND4J_LOGICWHILE_H
 #define LIBND4J_LOGICWHILE_H
 
-#include <system/pointercast.h>
-#include <graph/Node.h>
 #include <graph/Graph.h>
+#include <graph/Node.h>
 
 namespace sd {
-    namespace graph {
-        /**
-         * This class is responsible for execution logic of While logical abstraction
-         *
-         * Basic idea is simple: we take 2 scopes, one for condition and other one for body. and we re-execute body as long, as condition scope evaluates to TRUE
-         * @tparam T
-         */
-        class LogicWhile {
-        public:
-            static Nd4jStatus processNode(Graph* graph, Node* node);
-        };
-    }
-}
+namespace graph {
+/**
+ * This class is responsible for execution logic of While logical abstraction
+ *
+ * Basic idea is simple: we take 2 scopes, one for condition and other one for body. and we re-execute body as long, as
+ * condition scope evaluates to TRUE
+ * @tparam T
+ */
+class LogicWhile {
+ public:
+  static sd::Status processNode(Graph* graph, Node* node);
+};
+}  // namespace graph
+}  // namespace sd
 
-
-#endif //LIBND4J_LOGICWHILE_H
+#endif  // LIBND4J_LOGICWHILE_H

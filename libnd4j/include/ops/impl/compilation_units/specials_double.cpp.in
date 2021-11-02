@@ -21,13 +21,12 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <ops/impl/specials_double.hpp>
-#cmakedefine LIBND4J_TYPE_GEN
-#if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
+#cmakedefine SD_COMMON_TYPES_GEN
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
-    BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , LIBND4J_TYPES, LIBND4J_TYPES_@FL_TYPE_INDEX@);
+    BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , SD_COMMON_TYPES, SD_COMMON_TYPES_@FL_TYPE_INDEX@);
 
-    BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES_@FL_TYPE_INDEX@);
+    BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric, (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES, SD_COMMON_TYPES_@FL_TYPE_INDEX@);
 }
 #endif

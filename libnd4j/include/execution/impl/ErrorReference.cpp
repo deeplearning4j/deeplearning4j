@@ -20,29 +20,20 @@
 // @author raver119@gmail.com
 //
 
-
 #include <execution/ErrorReference.h>
 
 namespace sd {
-    int ErrorReference::errorCode() {
-        return _errorCode;
-    }
+int ErrorReference::errorCode() { return _errorCode; }
 
-    const char* ErrorReference::errorMessage() {
-        // since we're fetching error message - error code will be assumed consumed & nullified
-        _errorCode = 0;
-        return _errorMessage.c_str();
-    }
-
-    void ErrorReference::setErrorCode(int errorCode) {
-        _errorCode = errorCode;
-    }
-
-    void ErrorReference::setErrorMessage(std::string message) {
-        _errorMessage = message;
-    }
-
-    void ErrorReference::setErrorMessage(const char* message) {
-        _errorMessage = std::string(message);
-    }
+const char* ErrorReference::errorMessage() {
+  // since we're fetching error message - error code will be assumed consumed & nullified
+  _errorCode = 0;
+  return _errorMessage.c_str();
 }
+
+void ErrorReference::setErrorCode(int errorCode) { _errorCode = errorCode; }
+
+void ErrorReference::setErrorMessage(std::string message) { _errorMessage = message; }
+
+void ErrorReference::setErrorMessage(const char* message) { _errorMessage = std::string(message); }
+}  // namespace sd

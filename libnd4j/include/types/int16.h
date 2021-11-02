@@ -22,79 +22,64 @@
 
 #ifndef LIBND4J_INT16_H
 #define LIBND4J_INT16_H
-
 #include <stdint.h>
 #include <system/op_boilerplate.h>
 
-
 namespace sd {
 
-    float _CUDA_HD FORCEINLINE cpu_int162float(int16_t data);
-    int16_t _CUDA_HD FORCEINLINE cpu_float2int16(float data);
+float SD_INLINE SD_HOST_DEVICE cpu_int162float(int16_t data);
+int16_t SD_INLINE SD_HOST_DEVICE cpu_float2int16(float data);
 
-    struct int16 {
-        int16_t data;
+struct int16 {
+  int16_t data;
 
-        _CUDA_HD FORCEINLINE int16();
-        _CUDA_HD FORCEINLINE ~int16() = default;
+  SD_INLINE SD_HOST_DEVICE int16();
+  SD_INLINE SD_HOST_DEVICE ~int16() = default;
 
-        template <class T>
-        _CUDA_HD FORCEINLINE int16(const T& rhs);
+  template <class T>
+  SD_INLINE SD_HOST_DEVICE int16(const T& rhs);
 
-        template <class T>
-        _CUDA_HD FORCEINLINE int16& operator=(const T& rhs);
+  template <class T>
+  SD_INLINE SD_HOST_DEVICE int16& operator=(const T& rhs);
 
+  SD_INLINE SD_HOST_DEVICE operator float() const;
 
-        _CUDA_HD FORCEINLINE operator float() const;
+  SD_INLINE SD_HOST_DEVICE void assign(double rhs);
 
-        _CUDA_HD FORCEINLINE void assign(double rhs);
+  SD_INLINE SD_HOST_DEVICE void assign(float rhs);
+};
 
-        _CUDA_HD FORCEINLINE void assign(float rhs);
-    };
+//////////////////////////////
 
+float cpu_int162float(int16_t data) { return (float)((int)data); }
 
-    //////////////////////////////
+int16_t cpu_float2int16(float data) {
+  auto t = static_cast<int>(data);
+  if (t > 32767) t = 32767;
+  if (t < -32768) t = -32768;
 
-    float cpu_int162float(int16_t data) {
-        return (float) ((int) data);
-    }
-
-    int16_t cpu_float2int16(float data) {
-        auto t = static_cast<int>(data);
-        if (t > 32767 ) t = 32767;
-        if (t < -32768) t = -32768;
-
-        return static_cast<int16_t>(t);
-    }
-
-
-    int16::int16() {
-        data = cpu_float2int16(0.0f);
-    }
-
-    template <class T>
-    int16::int16(const T& rhs) {
-        assign(rhs);
-    }
-
-    template <class T>
-    int16& int16::operator=(const T& rhs) {
-        assign(rhs); return *this;
-    }
-
-
-    int16::operator float() const {
-        return cpu_int162float(data);
-    }
-
-    void int16::assign(double rhs) {
-        assign(static_cast<float>(rhs));
-    }
-
-    void int16::assign(float rhs) {
-        data = cpu_float2int16(rhs);
-    }
-
+  return static_cast<int16_t>(t);
 }
 
-#endif //LIBND4J_INT16_H
+int16::int16() { data = cpu_float2int16(0.0f); }
+
+template <class T>
+int16::int16(const T& rhs) {
+  assign(rhs);
+}
+
+template <class T>
+int16& int16::operator=(const T& rhs) {
+  assign(rhs);
+  return *this;
+}
+
+int16::operator float() const { return cpu_int162float(data); }
+
+void int16::assign(double rhs) { assign(static_cast<float>(rhs)); }
+
+void int16::assign(float rhs) { data = cpu_float2int16(rhs); }
+
+}  // namespace sd
+
+#endif  // LIBND4J_INT16_H

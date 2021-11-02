@@ -23,46 +23,45 @@
 //
 #ifndef SD_HEADERS_COMPRESSION_H
 #define SD_HEADERS_COMPRESSION_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace sd {
-    namespace ops {
-        
-        /**
-         * encode_bitmap - reinterpret 3D float tensor into uint8_t vector with length N.
-         *
-         * Input:
-         *      0 - 3D float tensor with shape {height, width, channels}
-         *
-         * Output:
-         *      0 - 1D uint8_t tensor with shape {N}
-         */
-        #if NOT_EXCLUDED(OP_encode_bitmap)
-        DECLARE_CUSTOM_OP(encode_bitmap, 1, 3, true, 1, 0);
-        #endif
+namespace ops {
 
-        /**
-         *  decode_bitmap - reinterpret uint8_t linear tensor as data to float tensor with shape
-         *
-         *  Input:
-         *      0 - uint8_t vector with length N ( shape {N})
-         *
-         *  Output:
-         *      0 - 3D tensor with shape {height, width, channels}
-         *
-         */
-        #if NOT_EXCLUDED(OP_decode_bitmap)
-        DECLARE_CUSTOM_OP(decode_bitmap, 2, 1, true, 0, 0);
-        #endif
+/**
+ * encode_bitmap - reinterpret 3D float tensor into uint8_t vector with length N.
+ *
+ * Input:
+ *      0 - 3D float tensor with shape {height, width, channels}
+ *
+ * Output:
+ *      0 - 1D uint8_t tensor with shape {N}
+ */
+#if NOT_EXCLUDED(OP_encode_bitmap)
+DECLARE_CUSTOM_OP(encode_bitmap, 1, 3, true, 1, 0);
+#endif
 
-       #if NOT_EXCLUDED(OP_encode_threshold)
-        DECLARE_CUSTOM_OP(encode_threshold, 2, 1, true, 1, 0);
-       #endif
-        #if NOT_EXCLUDED(OP_decode_thresold)
-        DECLARE_CUSTOM_OP(decode_threshold, 2, 1, true, 0, 0);
-        #endif
-    }
-}
+/**
+ *  decode_bitmap - reinterpret uint8_t linear tensor as data to float tensor with shape
+ *
+ *  Input:
+ *      0 - uint8_t vector with length N ( shape {N})
+ *
+ *  Output:
+ *      0 - 3D tensor with shape {height, width, channels}
+ *
+ */
+#if NOT_EXCLUDED(OP_decode_bitmap)
+DECLARE_CUSTOM_OP(decode_bitmap, 2, 1, true, 0, 0);
+#endif
 
-#endif // SD_HEADERS_COMPRESSION_H
+#if NOT_EXCLUDED(OP_encode_threshold)
+DECLARE_CUSTOM_OP(encode_threshold, 2, 1, true, 1, 0);
+#endif
+#if NOT_EXCLUDED(OP_decode_thresold)
+DECLARE_CUSTOM_OP(decode_threshold, 2, 1, true, 0, 0);
+#endif
+}  // namespace ops
+}  // namespace sd
+
+#endif  // SD_HEADERS_COMPRESSION_H

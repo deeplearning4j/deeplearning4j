@@ -19,92 +19,91 @@
 //
 // Created by raver119 on 30.11.17.
 //
-
-#include <ops/declarable/helpers/im2col.h>
 #include <helpers/PointersManager.h>
+#include <ops/declarable/helpers/im2col.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 //////////////////////////////////////////////////////////////////////////
 // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 template <typename T>
-__global__ static void im2colCuda(const void *image, void *columns,
-                                  const Nd4jLong *imShapeInfo, const Nd4jLong *colShapeInfo,
-                                  const int sH, const int sW,
-                                  const int pH, const int pW,
-                                  const int dH, const int dW,
-                                  const double zeroPadValD) {
+SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::LongType *imShapeInfo,
+                                 const sd::LongType *colShapeInfo, const int sH, const int sW, const int pH,
+                                 const int pW, const int dH, const int dW, const double zeroPadValD) {
+  T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding. Usually 0 but not always
+  const auto im = reinterpret_cast<const T *>(image);
+  auto col = reinterpret_cast<T *>(columns);
 
-    T zeroPadVal = static_cast<T>(zeroPadValD); //Value to use when value is padding. Usually 0 but not always
-    const auto im  = reinterpret_cast<const T*>(image);
-          auto col = reinterpret_cast<T*>(columns);
+  __shared__ sd::LongType colLen, iH, iW;
+  __shared__ int imRank, colRank, *sharedMem;
 
-    __shared__ Nd4jLong colLen, iH, iW;
-    __shared__ int imRank, colRank, *sharedMem;
+  if (threadIdx.x == 0) {
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<int *>(shmem);
 
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<int*>(shmem);
+    colRank = 6;
+    imRank = 4;
 
-        colRank = 6;
-        imRank  = 4;
+    colLen = shape::length(colShapeInfo);
 
-        colLen = shape::length(colShapeInfo);
+    iH = imShapeInfo[3];
+    iW = imShapeInfo[4];
+  }
+  __syncthreads();
 
-        iH = imShapeInfo[3];
-        iW = imShapeInfo[4];
-    }
-    __syncthreads();
+  const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
 
-    const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
+  if (colInd >= colLen) return;
 
-    if(colInd >= colLen)
-        return;
+  auto coords = sharedMem + threadIdx.x * colRank;
 
-    auto coords = sharedMem + threadIdx.x * colRank;
+  shape::index2coords(colInd, colShapeInfo, coords);
 
-    shape::index2coords(colInd, colShapeInfo, coords);
+  const auto colOffset = shape::getOffset(colShapeInfo, coords);
 
-    const auto colOffset = shape::getOffset(colShapeInfo, coords);
+  coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
+  coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
-    coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;   // imH
-    coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;   // imW
-
-    if (static_cast<unsigned>(coords[2]) >= static_cast<unsigned>(iH) || static_cast<unsigned>(coords[3]) >= static_cast<unsigned>(iW))
-        col[colOffset] = zeroPadVal;
-    else
-        col[colOffset] = im[shape::getOffset(imShapeInfo, coords)];
+  if (static_cast<unsigned>(coords[2]) >= static_cast<unsigned>(iH) ||
+      static_cast<unsigned>(coords[3]) >= static_cast<unsigned>(iW))
+    col[colOffset] = zeroPadVal;
+  else
+    col[colOffset] = im[shape::getOffset(imShapeInfo, coords)];
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, sd::LaunchContext & context, const void *image, void *columns, const Nd4jLong *imShapeInfo, const Nd4jLong *colShapeInfo, int sH, int sW, int pH, int pW, int dH, int dW, double zeroPadVal) {
-    im2colCuda<T><<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(int) * 6 /* rank of columns = 6 */, *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
+static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, sd::LaunchContext &context,
+                               const void *image, void *columns, const sd::LongType *imShapeInfo,
+                               const sd::LongType *colShapeInfo, int sH, int sW, int pH, int pW, int dH, int dW,
+                               double zeroPadVal) {
+  im2colCuda<T>
+      <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(int) * 6 /* rank of columns = 6 */,
+         *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void im2col(sd::LaunchContext& context, const NDArray& image, NDArray& columns, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
+void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, const int kH, const int kW,
+            const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
+            const NDArray &arrZeroPadVal) {
+  PointersManager manager(&context, "im2col");
 
-    PointersManager manager(&context, "im2col");
+  const int threadsPerBlock = 512;
+  const int blocksPerGrid = (columns.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
-    const int threadsPerBlock = 512;
-    const int blocksPerGrid = (columns.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+  NDArray::prepareSpecialUse({&columns}, {&image});
+  BUILD_SINGLE_SELECTOR(
+      columns.dataType(), im2colCudaLauncher,
+      (blocksPerGrid, threadsPerBlock, context, image.specialBuffer(), columns.specialBuffer(),
+       image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
+      SD_FLOAT_TYPES);
+  NDArray::registerSpecialUse({&columns}, {&image});
 
-    NDArray::prepareSpecialUse({&columns}, {&image});
-    BUILD_SINGLE_SELECTOR(columns.dataType(), im2colCudaLauncher, (blocksPerGrid, threadsPerBlock, context, image.specialBuffer(), columns.specialBuffer(), image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
-    NDArray::registerSpecialUse({&columns}, {&image});
-
-    manager.synchronize();
+  manager.synchronize();
 }
 
-
-
-
-
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

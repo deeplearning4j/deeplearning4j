@@ -19,139 +19,128 @@
 //
 // Created by raver on 4/9/2018.
 //
-
-#include <loops/indexreduce.h>
-#include <system/op_boilerplate.h>
-#include <helpers/Loops.h>
-#include <types/types.h>
-#include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <helpers/Loops.h>
+#include <loops/indexreduce.h>
 #include <loops/legacy_ops.h>
+#include <system/op_boilerplate.h>
+#include <types/types.h>
 
 using namespace simdOps;
 
-namespace functions   {
+namespace functions {
 namespace indexreduce {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-Nd4jLong IndexReduce<X,Y>::execScalar( const int opNum, const void *x, const Nd4jLong *xShapeInfo, void *extraParams) {
-    RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
+sd::LongType IndexReduce<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+                                           void *extraParams) {
+  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void IndexReduce<X,Y>::exec(const int opNum,
-                            const void *x, const Nd4jLong *xShapeInfo,
-                            void *extraParams,
-                            void *z, const Nd4jLong *zShapeInfo,
-                            int *dimension, int dimensionLength,
-                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset) {
-    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+void IndexReduce<X, Y>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
+                             const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
+                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
+  DISPATCH_BY_OPNUM_TT(
+      exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset),
+      INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-template<typename OpType>
-Nd4jLong IndexReduce<X, Y>::execScalar(const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams) {
+template <typename OpType>
+sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-    auto x = reinterpret_cast<const X *>(vx);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
+  // T startingVal = OpType::startingValue(x);
+  auto startingIndex = OpType::startingIndexValue(x);
+  auto len = shape::length(xShapeInfo);
+  auto xEws = shape::elementWiseStride(xShapeInfo);
+  sd::OmpLaunchHelper info(len);
 
-    //T startingVal = OpType::startingValue(x);
-    auto startingIndex = OpType::startingIndexValue(x);
-    auto len = shape::length(xShapeInfo);
-    auto xEws = shape::elementWiseStride(xShapeInfo);
-    sd::OmpLaunchHelper info(len);
+  sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  IndexValue<X> intermediatery[64];
+  for (int e = 0; e < maxThreads; e++) intermediatery[e].index = -1;
 
-    uint xShapeInfoCast[MAX_RANK];
-    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
-    IndexValue<X> intermediatery[64];
-    for (int e = 0; e < maxThreads; e++)
-        intermediatery[e].index = -1;
+  if (xEws == 1 && shape::order(xShapeInfo) == 'c') {
+    auto func = PRAGMA_THREADS_FOR {
+      intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-    if (xEws == 1 && shape::order(xShapeInfo) == 'c') {
-        auto func = PRAGMA_THREADS_FOR {
-            intermediatery[thread_id] = OpType::startingIndexValue(x);
+      for (auto i = start; i < stop; i++) {
+        IndexValue<X> curr(x[i], i);
+        intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
+      }
+    };
 
-            for (auto i = start; i < stop; i++) {
-                IndexValue<X> curr(x[i], i);
-                intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
-            }
-        };
+    maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
 
-        maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
+    for (int e = 0; e < maxThreads; e++) startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
 
-        for (int e = 0; e < maxThreads; e++)
-            startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-    } else {
-        auto func = PRAGMA_THREADS_FOR {
-            intermediatery[thread_id] = OpType::startingIndexValue(x);
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        IndexValue<X> curr(x[offset], i);
+        intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
+      }
+    };
 
-            for (auto i = start; i < stop; i++) {
-                auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                IndexValue<X> curr(x[offset], i);
-                intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
-            }
-        };
+    maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
 
-        maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
-
-        for (int e = 0; e < maxThreads; e++)
-            startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
-    }
-    return startingIndex.index;
+    for (int e = 0; e < maxThreads; e++) startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
+  }
+  return startingIndex.index;
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-template<typename OpType>
-void IndexReduce<X, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
-                             void *vextraParams,
-                             void *vz, const Nd4jLong *zShapeInfo,
-                             int *dimension, int dimensionLength,
-                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset) {
+template <typename OpType>
+void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
+                             const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
+                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-    auto x = reinterpret_cast<const X *>(vx);
-    auto z = reinterpret_cast<Z *>(vz);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
+  const sd::LongType zLen = shape::length(zShapeInfo);
 
-    const Nd4jLong zLen = shape::length(zShapeInfo);
+  if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+    if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
+    const auto indexValue = OpType::startingIndexValue(x);
 
-    if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-        if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
-            return;
-        const auto indexValue = OpType::startingIndexValue(x);
+    for (sd::LongType i = 0; i < zLen; i++) z[i] = (Z)indexValue.index;
 
-        for (Nd4jLong i = 0; i < zLen; i++)
-            z[i] = (Z) indexValue.index;
+    return;
+  }
 
-        return;
-    }
+  if (shape::isScalar(zShapeInfo)) {
+    z[0] = (Z)execScalar<OpType>(x, xShapeInfo, extraParams);
+    return;
+  }
 
-    if(shape::isScalar(zShapeInfo)) {
-        z[0] = (Z) execScalar<OpType>(x,xShapeInfo,extraParams);
-        return;
-    }
+  auto tadOnlyShapeInfo = tadShapeInfo;
+  auto tadOffsets = tadOffset;
 
-    auto tadOnlyShapeInfo = tadShapeInfo;
-    auto tadOffsets = tadOffset;
+  if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
+    if (dimensionLength < 1) return;
 
-    if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-        if (dimensionLength < 1)
-            return;
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+    tadOffsets = tadPack.primaryOffsets();
+  }
 
-        tadOnlyShapeInfo = tadPack.primaryShapeInfo();
-        tadOffsets = tadPack.primaryOffsets();
-    }
-
-    sd::IndexReductionLoops<X,Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+  sd::IndexReductionLoops<X, Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadOnlyShapeInfo,
+                                                                  tadOffsets, extraParams);
 }
 
-}
-}
+}  // namespace indexreduce
+}  // namespace functions

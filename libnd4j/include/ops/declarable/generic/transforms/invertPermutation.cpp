@@ -24,32 +24,28 @@
 #if NOT_EXCLUDED(OP_invert_permutation)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(invert_permutation, 1, 1, false, 0, 0) {
-    
-    auto input = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    REQUIRE_TRUE(input->isVector(), 0 , "INVERT_PERMUTATION op: input array must be vector, but got shape %s instead !", ShapeUtils::shapeAsString(input).c_str());
-    
-    helpers::invertPermutation(block.launchContext(), *input, *output);
-    
-    return Status::OK();
+  REQUIRE_TRUE(input->isVector(), 0, "INVERT_PERMUTATION op: input array must be vector, but got shape %s instead !",
+               ShapeUtils::shapeAsString(input).c_str());
+
+  helpers::invertPermutation(block.launchContext(), *input, *output);
+
+  return sd::Status::OK;
 }
-        
+
 DECLARE_SYN(InvertPermutation, invert_permutation);
 
-        DECLARE_TYPES(invert_permutation) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-}
-}
+DECLARE_TYPES(invert_permutation) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

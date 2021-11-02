@@ -22,15 +22,14 @@
 
 #ifndef LIBND4J_HISTOGRAM_H
 #define LIBND4J_HISTOGRAM_H
-
 #include <array/NDArray.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output);
-        }
-    }
+namespace ops {
+namespace helpers {
+SD_LIB_HIDDEN void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output);
 }
+}  // namespace ops
+}  // namespace sd
 
-#endif //DEV_TESTS_HISTOGRAM_H
+#endif  // DEV_TESTS_HISTOGRAM_H

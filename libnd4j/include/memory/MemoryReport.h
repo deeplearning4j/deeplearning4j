@@ -23,36 +23,33 @@
 #ifndef LIBND4J_MEMORYREPORT_H
 #define LIBND4J_MEMORYREPORT_H
 
-#include <system/pointercast.h>
-#include <system/dll.h>
+#include <system/common.h>
 
 namespace sd {
-    namespace memory {
-        class ND4J_EXPORT MemoryReport {
-        private:
-            Nd4jLong _vm = 0;
-            Nd4jLong _rss = 0;
+namespace memory {
+class SD_LIB_EXPORT MemoryReport {
+ private:
+  sd::LongType _vm = 0;
+  sd::LongType _rss = 0;
 
-        public:
-            MemoryReport() = default;
-            ~MemoryReport() = default;
+ public:
+  MemoryReport() = default;
+  ~MemoryReport() = default;
 
-            bool operator < (const MemoryReport& other) const;
-            bool operator <= (const MemoryReport& other) const;
-            bool operator > (const MemoryReport& other) const;
-            bool operator >= (const MemoryReport& other) const;
-            bool operator == (const MemoryReport& other) const;
-            bool operator != (const MemoryReport& other) const;
+  bool operator<(const MemoryReport& other) const;
+  bool operator<=(const MemoryReport& other) const;
+  bool operator>(const MemoryReport& other) const;
+  bool operator>=(const MemoryReport& other) const;
+  bool operator==(const MemoryReport& other) const;
+  bool operator!=(const MemoryReport& other) const;
 
-            Nd4jLong getVM() const;
-            void setVM(Nd4jLong vm);
+  sd::LongType getVM() const;
+  void setVM(sd::LongType vm);
 
-            Nd4jLong getRSS() const;
-            void setRSS(Nd4jLong rss);
-        };
-    }
-}
+  sd::LongType getRSS() const;
+  void setRSS(sd::LongType rss);
+};
+}  // namespace memory
+}  // namespace sd
 
-
-
-#endif //LIBND4J_MEMORYREPORT_H
+#endif  // LIBND4J_MEMORYREPORT_H

@@ -19,27 +19,31 @@
 //
 //  @author sgazeos@gmail.com
 //
-
 #include <ops/declarable/helpers/random_crop.h>
 //#include <NativeOps.h>
-#include <vector>
-#include <memory>
 #include <graph/Context.h>
+
+#include <memory>
+#include <vector>
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    static int _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
-        return Status::OK();
-    }
-
-    ND4J_LOCAL int randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return _randomCropFunctor, (context, input, shape, output, seed), FLOAT_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int _randomCropFunctor, (graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,  int seed), FLOAT_TYPES);
-
+template <typename T>
+static sd::Status _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,
+                                     int seed) {
+  return sd::Status::OK;
 }
+
+sd::Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), return _randomCropFunctor, (context, input, shape, output, seed),
+                        SD_FLOAT_TYPES);
 }
-}
+
+BUILD_SINGLE_TEMPLATE(template sd::Status _randomCropFunctor,
+                      (graph::Context & context, NDArray* input, NDArray* shape, NDArray* output, int seed),
+                      SD_FLOAT_TYPES);
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

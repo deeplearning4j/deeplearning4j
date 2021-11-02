@@ -22,44 +22,43 @@
 
 #ifndef DEV_TESTS_CONSTANTHELPER_H
 #define DEV_TESTS_CONSTANTHELPER_H
-
-#include <system/op_boilerplate.h>
-#include <system/dll.h>
-#include <system/pointercast.h>
+#include <array/ConstantDataBuffer.h>
+#include <array/ConstantDescriptor.h>
+#include <array/ConstantHolder.h>
 #include <memory/Workspace.h>
-#include <vector>
+#include <system/op_boilerplate.h>
+
 #include <map>
 #include <mutex>
-#include <array/ConstantDescriptor.h>
-#include <array/ConstantDataBuffer.h>
-#include <array/ConstantHolder.h>
+#include <vector>
 
 namespace sd {
-    class ND4J_EXPORT ConstantHelper {
-    private:
-        ConstantHelper();
+class SD_LIB_EXPORT ConstantHelper {
+ private:
+  ConstantHelper();
 
-        std::vector<MAP_IMPL<ConstantDescriptor, ConstantHolder*>> _cache;
+  std::vector<SD_MAP_IMPL<ConstantDescriptor, ConstantHolder*>> _cache;
 
-        // tracking of per-device constant memory buffers (CUDA only atm)
-        std::vector<Nd4jPointer> _devicePointers;
-        std::vector<Nd4jLong> _deviceOffsets;
-        std::mutex _mutex;
-        std::mutex _mutexHolder;
+  // tracking of per-device constant memory buffers (CUDA only atm)
+  std::vector<sd::Pointer> _devicePointers;
+  std::vector<sd::LongType> _deviceOffsets;
+  std::mutex _mutex;
+  std::mutex _mutexHolder;
 
-        std::vector<Nd4jLong> _counters;
-    public:
-        ~ConstantHelper();
+  std::vector<sd::LongType> _counters;
 
-        static ConstantHelper& getInstance();
-        static int getCurrentDevice();
-        static int getNumberOfDevices();
-        void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
+ public:
+  ~ConstantHelper();
 
-        ConstantDataBuffer* constantBuffer(const ConstantDescriptor &descriptor, sd::DataType dataType);
+  static ConstantHelper& getInstance();
+  static int getCurrentDevice();
+  static int getNumberOfDevices();
+  void* replicatePointer(void* src, size_t numBytes, memory::Workspace* workspace = nullptr);
 
-        Nd4jLong getCachedAmount(int deviceId);
-    };
-}
+  ConstantDataBuffer* constantBuffer(const ConstantDescriptor& descriptor, sd::DataType dataType);
 
-#endif //DEV_TESTS_CONSTANTHELPER_H
+  sd::LongType getCachedAmount(int deviceId);
+};
+}  // namespace sd
+
+#endif  // DEV_TESTS_CONSTANTHELPER_H

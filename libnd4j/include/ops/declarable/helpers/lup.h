@@ -21,26 +21,26 @@
 //
 #ifndef __LUP_H_HELPERS__
 #define __LUP_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int lup(sd::LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
-    void lu(sd::LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation);
-    int determinant(sd::LaunchContext * context, NDArray* input, NDArray* output);
-    int logAbsDeterminant(sd::LaunchContext * context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN sd::Status lup(sd::LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
+SD_LIB_HIDDEN void lu(sd::LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutation);
+SD_LIB_HIDDEN sd::Status determinant(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN sd::Status logAbsDeterminant(sd::LaunchContext* context, NDArray* input, NDArray* output);
 
-    int inverse(sd::LaunchContext * context, NDArray* input, NDArray* output);
-    int upperInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
-    int lowerInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN sd::Status inverse(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN sd::Status upperInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN sd::Status lowerInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
 
-    bool checkCholeskyInput(sd::LaunchContext * context, NDArray const* input);
-    int cholesky(sd::LaunchContext * context, NDArray* input, NDArray* output, bool inplace = false);
-    int logdetFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output);
-}
-}
-}
+SD_LIB_HIDDEN bool checkCholeskyInput(sd::LaunchContext* context, NDArray const* input);
+SD_LIB_HIDDEN sd::Status cholesky(sd::LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
+SD_LIB_HIDDEN sd::Status logdetFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

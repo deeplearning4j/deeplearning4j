@@ -114,7 +114,6 @@ STDIN_PARSERS = { 'gcc_old' : general_stdin_parser('loop vectorized', 'note: not
 }
 
 
-
 def version_check( version1, version2, op='>='):
     op_list = {"<": (lambda x,y: x<y), "==": (lambda x,y: x==y),
           "<=": (lambda x,y: x<y), "!=": (lambda x,y: x!=y),
@@ -154,7 +153,6 @@ def init_global_options(args):
 class info:
     def __repr__(self):
         return str(self.__dict__) 
-
 
 
 def get_cxx_filt_result(strx):
@@ -224,7 +222,6 @@ class File_Info:
             return v
         else:
             return self.infos[line_pos]            
-               
 
 
     def add_fsave(self, line_pos,success, msg, function ,inline_fns=''):
@@ -269,8 +266,6 @@ class File_Info:
 
     def __repr__(self):
         return str(self.__dict__)                    
-                    
-
 
 
 def process_gzip_json_mp(args):
@@ -312,7 +307,6 @@ def process_gzip_json_new(json_gz_fname,list_Queue):
 
 def consume_processed_mp(args):
     return consume_processed_new(*args)
-
 
 
 def consume_processed_new(list_Queue , c_index):
@@ -365,7 +359,6 @@ def consume_processed_new(list_Queue , c_index):
     except Exception as e:
         print(traceback.format_exc())
 
-            
 
 def obtain_info_from(input_):
     info_ = dict()
@@ -397,7 +390,6 @@ def obtain_info_from(input_):
     return info_
 
 
-           
 def custom_style(fsave):
     st = '''<style>a{color:blue;}
 a:link{text-decoration:none}a:visited{text-decoration:none}a:hover{cursor:pointer;text-decoration:underline}
@@ -443,7 +435,6 @@ def footer():
     return '\n</body></html>'
 
 
-  
 def get_compressed_indices_list(set_a):
     new_list = sorted(list(set_a)) 
     for i in range(len(new_list)-1,0,-1):
@@ -465,9 +456,6 @@ def get_compressed_indices(set_a):
         str_x += ','+str(list_sorted[i]-last)
         last = list_sorted[i]
     return str_x
-
-
-    
 
 
 def get_content(k, v,  unique_id_prefix = '', fsave_format=False):
@@ -607,8 +595,6 @@ def generate_inverted_index(output_name, info_ , function_list ):
     return (output_name+ ".json")
 
 
-    
-
 def generate_report(output_name,info_ ,only_body = False, unique_id_prefix='',fsave_format = False , function_list = None):
     '''
       Generate Auto-Vectorization Report in html format
@@ -657,7 +643,6 @@ def generate_report(output_name,info_ ,only_body = False, unique_id_prefix='',fs
             f.write(footer())  
 
     return (output_name, output_name+".js") if fsave_format ==True else  (output_name)
-
 
 
 def fsave_report_launch(json_gz_list):
@@ -724,8 +709,6 @@ def main():
         # lets check if we got fsave files
         json_gz_list = internal_glob(".","*.json.gz")
         fsave_report_launch(json_gz_list)
-
-
 
 
 if __name__ == '__main__':

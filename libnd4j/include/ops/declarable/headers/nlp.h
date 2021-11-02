@@ -25,16 +25,16 @@
 #include <ops/declarable/headers/common.h>
 
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        #if NOT_EXCLUDED(OP_skipgram)
-        DECLARE_CONFIGURABLE_OP(skipgram, 12, 12, true, 0, 0);
-        #endif
+#if NOT_EXCLUDED(OP_skipgram)
+DECLARE_CONFIGURABLE_OP(skipgram, 12, 12, true, 0, 0);
+#endif
 
-        #if NOT_EXCLUDED(OP_cbow)
-        DECLARE_CONFIGURABLE_OP(cbow, 15, 15, true, 0, 0);
-        #endif
-    }
-}
+#if NOT_EXCLUDED(OP_cbow)
+DECLARE_CONFIGURABLE_OP(cbow, 15, 15, true, 0, 0);
+#endif
+}  // namespace ops
+}  // namespace sd
 
-#endif //DEV_TESTS_NLP_H
+#endif  // DEV_TESTS_NLP_H

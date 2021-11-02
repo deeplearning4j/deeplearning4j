@@ -3,7 +3,6 @@
 
 #ifndef FLATBUFFERS_GENERATED_CONFIG_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_CONFIG_SD_GRAPH_H_
-
 #include "flatbuffers/flatbuffers.h"
 
 namespace sd {

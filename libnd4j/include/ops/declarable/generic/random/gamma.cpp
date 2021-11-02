@@ -27,61 +27,63 @@
 #include <ops/declarable/helpers/random.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(random_gamma, 2, 1, false, 0, 0) {
-            // gamma distribution
-            auto rng = block.randomGenerator();
-            auto shape = INPUT_VARIABLE(0);
-            auto alpha = INPUT_VARIABLE(1);
-            NDArray* beta = nullptr;
+namespace ops {
+CUSTOM_OP_IMPL(random_gamma, 2, 1, false, 0, 0) {
+  // gamma distribution
+  auto rng = block.randomGenerator();
+  auto shape = INPUT_VARIABLE(0);
+  auto alpha = INPUT_VARIABLE(1);
+  NDArray* beta = nullptr;
 
-            if (block.width() > 2) {
-                beta = INPUT_VARIABLE(2);
-                REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(*alpha, *beta), 0, "random_gamma: alpha and beta shapes should be broadcastable.");
-            }
+  if (block.width() > 2) {
+    beta = INPUT_VARIABLE(2);
+    REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(*alpha, *beta), 0,
+                 "random_gamma: alpha and beta shapes should be broadcastable.");
+  }
 
-            auto output = OUTPUT_VARIABLE(0);
-            auto seed = 0;
+  auto output = OUTPUT_VARIABLE(0);
+  auto seed = 0;
 
-            if (block.getIArguments()->size()) {
-                seed = INT_ARG(0);
-            }
+  if (block.getIArguments()->size()) {
+    seed = INT_ARG(0);
+  }
 
-            rng.setSeed(seed);
+  rng.setSeed(seed);
 
-            helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
+  helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(random_gamma) {
-            auto in = INPUT_VARIABLE(0);
-            auto shape = in->template asVectorT<Nd4jLong>();
-            auto alphaShape = inputShape->at(1);
-            auto additionalShape = alphaShape;
-            if (inputShape->size() > 2) {
-                auto rest = inputShape->at(2); additionalShape = nullptr;
-                REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(alphaShape, rest), 0, "random_gamma: alpha and beta shapes should be broadcastable.");
-                const Nd4jLong* additionalShapeBroadcasted = nullptr;
-                ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShapeBroadcasted, block.workspace());
-                additionalShape = additionalShapeBroadcasted;
-            }
-            auto lastDim = shape::sizeAt(alphaShape, 0);
-            auto dtype = block.numD() > 0? D_ARG(0): ArrayOptions::dataType(alphaShape);
-            for (auto i = 0; i < shape::rank(additionalShape); i++)
-                shape.push_back(shape::sizeAt(additionalShape, i));
-            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
-            return SHAPELIST(newShape);
-        }
-
-        DECLARE_TYPES(random_gamma) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS})
-                    ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedInputTypes(2, {ALL_FLOATS})
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(random_gamma) {
+  auto in = INPUT_VARIABLE(0);
+  auto shape = in->template asVectorT<sd::LongType>();
+  auto alphaShape = inputShape->at(1);
+  auto additionalShape = alphaShape;
+  if (inputShape->size() > 2) {
+    auto rest = inputShape->at(2);
+    additionalShape = nullptr;
+    REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(alphaShape, rest), 0,
+                 "random_gamma: alpha and beta shapes should be broadcastable.");
+    const sd::LongType* additionalShapeBroadcasted = nullptr;
+    ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShapeBroadcasted, block.workspace());
+    additionalShape = additionalShapeBroadcasted;
+  }
+  auto lastDim = shape::sizeAt(alphaShape, 0);
+  auto dtype = block.numD() > 0 ? D_ARG(0) : ArrayOptions::dataType(alphaShape);
+  for (auto i = 0; i < shape::rank(additionalShape); i++) shape.push_back(shape::sizeAt(additionalShape, i));
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
+  return SHAPELIST(newShape);
+}
+
+DECLARE_TYPES(random_gamma) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedInputTypes(2, {ALL_FLOATS})
+      ->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

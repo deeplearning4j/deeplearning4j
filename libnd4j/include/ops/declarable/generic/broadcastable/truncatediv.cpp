@@ -24,30 +24,30 @@
 #include <ops/declarable/headers/broadcastable.h>
 #if NOT_EXCLUDED(OP_truncatediv)
 namespace sd {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(truncatediv, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+BROADCASTABLE_OP_IMPL(truncatediv, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
 
-            BROADCAST_CHECK_EMPTY(x,y,z);
+  BROADCAST_CHECK_EMPTY(x, y, z);
 
-            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(TruncateDiv), x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+  auto tZ = BroadcastHelper::broadcastApply(BROADCAST(TruncateDiv), x, y, z);
+  if (tZ == nullptr)
+    return sd::Status::KERNEL_FAILURE;
+  else if (tZ != z) {
+    OVERWRITE_RESULT(tZ);
+  }
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(truncatediv) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::INHERIT);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(truncatediv) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, DataType::ANY)
+      ->setAllowedOutputTypes(0, DataType::INHERIT);
+}
+}  // namespace ops
+}  // namespace sd
 #endif

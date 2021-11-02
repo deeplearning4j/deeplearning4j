@@ -19,41 +19,38 @@
 //
 // Created by raver119 on 11.10.2017.
 //
-
 #include "ops/declarable/OpTuple.h"
 
-sd::ops::OpTuple::OpTuple(const char *opName) {
-    _opName = opName;
-}
+sd::ops::OpTuple::OpTuple(const char *opName) { _opName = opName; }
 
-sd::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<sd::NDArray *> &&inputs, std::initializer_list<double> &&tArgs, std::initializer_list<Nd4jLong> &&iArgs) {
-    _opName = opName;
-    _inputs = inputs;
-    _iArgs = iArgs;
-    _tArgs = tArgs;
+sd::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<sd::NDArray *> &&inputs,
+                          std::initializer_list<double> &&tArgs, std::initializer_list<sd::LongType> &&iArgs) {
+  _opName = opName;
+  _inputs = inputs;
+  _iArgs = iArgs;
+  _tArgs = tArgs;
 }
 
 sd::ops::OpTuple::~OpTuple() {
-    for (auto v: _inputs)
-        delete v;
+  for (auto v : _inputs) delete v;
 }
 
 sd::ops::OpTuple *sd::ops::OpTuple::addInput(sd::NDArray *array) {
-    _inputs.emplace_back(array);
-    return this;
+  _inputs.emplace_back(array);
+  return this;
 }
 
 sd::ops::OpTuple *sd::ops::OpTuple::addOutput(sd::NDArray *array) {
-    _outputs.emplace_back(array);
-    return this;
+  _outputs.emplace_back(array);
+  return this;
 }
 
 sd::ops::OpTuple *sd::ops::OpTuple::setTArgs(std::initializer_list<double> tArgs) {
-    _tArgs = tArgs;
-    return this;
+  _tArgs = tArgs;
+  return this;
 }
 
-sd::ops::OpTuple *sd::ops::OpTuple::setIArgs(std::initializer_list<Nd4jLong> iArgs) {
-    _iArgs = iArgs;
-    return this;
+sd::ops::OpTuple *sd::ops::OpTuple::setIArgs(std::initializer_list<sd::LongType> iArgs) {
+  _iArgs = iArgs;
+  return this;
 }

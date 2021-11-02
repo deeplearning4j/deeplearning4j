@@ -27,49 +27,50 @@
 #include <ops/declarable/helpers/sparse_to_dense.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(compat_sparse_to_dense, 4, 1, false, 0, 0) {
-            auto indices = INPUT_VARIABLE(0);
-            auto shape = INPUT_VARIABLE(1);
-            auto values = INPUT_VARIABLE(2);
-            NDArray *def = nullptr;
+namespace ops {
+CUSTOM_OP_IMPL(compat_sparse_to_dense, 4, 1, false, 0, 0) {
+  auto indices = INPUT_VARIABLE(0);
+  auto shape = INPUT_VARIABLE(1);
+  auto values = INPUT_VARIABLE(2);
+  NDArray *def = nullptr;
 
-            auto output = OUTPUT_NULLIFIED(0);
+  auto output = OUTPUT_NULLIFIED(0);
 
-            if (block.width() > 3)
-                def = INPUT_VARIABLE(3);
+  if (block.width() > 3) def = INPUT_VARIABLE(3);
 
-            sd::ops::helpers::compat_sparse_to_dense(*values, *indices, def, *output);
+  sd::ops::helpers::compat_sparse_to_dense(*values, *indices, def, *output);
 
-            return Status::OK();
-        };
+  return sd::Status::OK;
+};
 
-        DECLARE_SHAPE_FN(compat_sparse_to_dense) {
-            auto indices = INPUT_VARIABLE(0);
-            auto shape = INPUT_VARIABLE(1);
-            auto values = INPUT_VARIABLE(2);
+DECLARE_SHAPE_FN(compat_sparse_to_dense) {
+  auto indices = INPUT_VARIABLE(0);
+  auto shape = INPUT_VARIABLE(1);
+  auto values = INPUT_VARIABLE(2);
 
-            if (block.width() > 3) {
-                auto def = INPUT_VARIABLE(3);
+  if (block.width() > 3) {
+    auto def = INPUT_VARIABLE(3);
 
-                REQUIRE_TRUE(def->dataType() == values->dataType() && def->isScalar(), 0, "compat_sparse_to_dense: default value must be a scalar of the same data type as actual values")
-            };
+    REQUIRE_TRUE(def->dataType() == values->dataType() && def->isScalar(), 0,
+                 "compat_sparse_to_dense: default value must be a scalar of the same data type as actual values")
+  };
 
-            auto dtype = values->dataType();
+  auto dtype = values->dataType();
 
-            // basically output shape is defined by the type of input, and desired shape input
-            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape->getBufferAsVector<Nd4jLong>()));
-        }
-
-        DECLARE_TYPES(compat_sparse_to_dense) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS}) // indices
-                    ->setAllowedInputTypes(1, {ALL_INTS}) // shape
-                    ->setAllowedInputTypes(2,sd::DataType::ANY) // sparse values
-                    ->setAllowedInputTypes(3,sd::DataType::ANY) // default value
-                    ->setAllowedOutputTypes(sd::DataType::ANY);
-        }
-    }
+  // basically output shape is defined by the type of input, and desired shape input
+  return SHAPELIST(
+      ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape->getBufferAsVector<sd::LongType>()));
 }
+
+DECLARE_TYPES(compat_sparse_to_dense) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS})         // indices
+      ->setAllowedInputTypes(1, {ALL_INTS})         // shape
+      ->setAllowedInputTypes(2, sd::DataType::ANY)  // sparse values
+      ->setAllowedInputTypes(3, sd::DataType::ANY)  // default value
+      ->setAllowedOutputTypes(sd::DataType::ANY);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -22,68 +22,66 @@
 
 #ifndef LIBND4J_FLOWPATH_H
 #define LIBND4J_FLOWPATH_H
-
-#include <system/op_boilerplate.h>
-#include <unordered_map>
-#include <map>
-#include <system/pointercast.h>
-#include <graph/NodeState.h>
 #include <graph/FrameState.h>
+#include <graph/NodeState.h>
 #include <graph/profiling/GraphProfile.h>
-#include <system/dll.h>
+#include <system/op_boilerplate.h>
+
+#include <map>
+#include <unordered_map>
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT FlowPath {
-        private:
-            MAP_IMPL<int, NodeState> _states;
-            MAP_IMPL<Nd4jLong, FrameState> _frames;
+namespace graph {
+class SD_LIB_EXPORT FlowPath {
+ private:
+  SD_MAP_IMPL<int, NodeState> _states;
+  SD_MAP_IMPL<sd::LongType, FrameState> _frames;
 
-            void ensureNode(int nodeId);
-            void ensureFrame(int nodeId);
+  void ensureNode(int nodeId);
+  void ensureFrame(int nodeId);
 
-            GraphProfile _profile;
-        public:
-            FlowPath() = default;
-            ~FlowPath() = default;
+  GraphProfile _profile;
 
-            void setInnerTime(int nodeId, Nd4jLong time);
-            void setOuterTime(int nodeId, Nd4jLong time);
+ public:
+  FlowPath() = default;
+  ~FlowPath() = default;
 
-            Nd4jLong innerTime(int nodeId);
-            Nd4jLong outerTime(int nodeId);
+  void setInnerTime(int nodeId, sd::LongType time);
+  void setOuterTime(int nodeId, sd::LongType time);
 
-            bool isNodeActive(int nodeId);
-            void markNodeActive(int nodeId, bool isActive);
+  sd::LongType innerTime(int nodeId);
+  sd::LongType outerTime(int nodeId);
 
-            bool wasExecuted(int nodeId);
-            void markExecuted(int nodeId, bool wasExecuted);
+  bool isNodeActive(int nodeId);
+  void markNodeActive(int nodeId, bool isActive);
 
-            int branch(int nodeId);
-            void markBranch(int nodeId, int index);
+  bool wasExecuted(int nodeId);
+  void markExecuted(int nodeId, bool wasExecuted);
 
-            // Frame-related methods
+  int branch(int nodeId);
+  void markBranch(int nodeId, int index);
 
-            void registerFrame(Nd4jLong frameId);
-            void forgetFrame(Nd4jLong frameId);
+  // Frame-related methods
 
-            bool isFrameActive(Nd4jLong frameId);
-            void markFrameActive(Nd4jLong frameId, bool isActive);
+  void registerFrame(sd::LongType frameId);
+  void forgetFrame(sd::LongType frameId);
 
-            bool isRewindPlanned(Nd4jLong frameId);
-            void planRewind(Nd4jLong frameId, bool reallyRewind);
+  bool isFrameActive(sd::LongType frameId);
+  void markFrameActive(sd::LongType frameId, bool isActive);
 
-            int getRewindPosition(Nd4jLong frameId);
-            void setRewindPosition(Nd4jLong frameId, int position);
-            void setRewindPositionOnce(Nd4jLong frameId, int position);
+  bool isRewindPlanned(sd::LongType frameId);
+  void planRewind(sd::LongType frameId, bool reallyRewind);
 
-            void incrementNumberOfCycles(Nd4jLong frameId);
-            Nd4jLong getNumberOfCycles(Nd4jLong frameId);
+  int getRewindPosition(sd::LongType frameId);
+  void setRewindPosition(sd::LongType frameId, int position);
+  void setRewindPositionOnce(sd::LongType frameId, int position);
 
-            GraphProfile* profile();
-        };
-    }
-}
+  void incrementNumberOfCycles(sd::LongType frameId);
+  sd::LongType getNumberOfCycles(sd::LongType frameId);
 
+  GraphProfile* profile();
+};
+}  // namespace graph
+}  // namespace sd
 
-#endif //LIBND4J_FLOWPATH_H
+#endif  // LIBND4J_FLOWPATH_H

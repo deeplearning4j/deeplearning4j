@@ -26,68 +26,64 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 // here iArgs is a vector with (optional) negative of order as first element:
 // ({-order, dim1, dim2, dim3, ...})
 CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-    auto x = INPUT_VARIABLE(0);
-    auto z = OUTPUT_VARIABLE(0);
+  // Special case: empty.reshape(<other empty shape>) -> return empty
+  if (x->isEmpty()) {
+    REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
+    return sd::Status::OK;  // No op
+  }
 
-    //Special case: empty.reshape(<other empty shape>) -> return empty
-    if (x->isEmpty()) {
-        REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
-        return Status::OK();    //No op
-    }
+  REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
+               "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(),
+               z->lengthOf());
 
-    REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), z->lengthOf());
+  if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", z->getShapeAsVector());
 
-    if (Environment::getInstance().isDebugAndVerbose())
-        nd4j_printv("Reshape: new shape", z->getShapeAsVector());
+  z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
 
-    z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-
 DECLARE_TYPES(flatten_2d) {
-    getOpDescriptor()
-            ->setAllowedInputTypes(0, sd::DataType::ANY)
-            ->setAllowedInputTypes(1, {ALL_INTS})
-            ->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(flatten_2d) {
+  const auto x = INPUT_VARIABLE(0);
+  const auto shape = x->shapeOf();
+  auto axis = INT_ARG(0);
+  if (axis < 0) {
+    axis += x->rankOf();
+  }
+  std::vector<int> reshapeArgs;
+  std::vector<sd::LongType> shapeNew;
+  auto firstDim = 1;
+  auto lastDim = 1;
+  for (int i = 0; i < axis; i++) {
+    firstDim *= shape[i];
+  }
 
-    const auto x = INPUT_VARIABLE(0);
-    const auto shape = x->shapeOf();
-     auto axis = INT_ARG(0);
-    if(axis < 0) {
-        axis += x->rankOf();
-    }
-    std::vector<int> reshapeArgs;
-    std::vector<Nd4jLong> shapeNew;
-    auto firstDim = 1;
-    auto lastDim = 1;
-    for(int i = 0; i < axis; i++) {
-        firstDim *= shape[i];
-    }
+  for (int i = axis; i < x->rankOf(); i++) {
+    lastDim *= shape[i];
+  }
 
-    for(int i = axis; i < x->rankOf(); i++) {
-        lastDim *= shape[i];
-    }
+  shapeNew.push_back(firstDim);
+  shapeNew.push_back(lastDim);
+  auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
+  REQUIRE_TRUE(x->lengthOf() == len, 0, "Reshape: lengths before and after reshape should match, but got %i vs %i",
+               x->lengthOf(), len);
 
-    shapeNew.push_back(firstDim);
-    shapeNew.push_back(lastDim);
-    auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
-    REQUIRE_TRUE(x->lengthOf() == len, 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
-
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), shapeNew));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), shapeNew));
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

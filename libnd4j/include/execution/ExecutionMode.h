@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 //
 // @author raver119@gmail.com
 //
@@ -25,11 +24,11 @@
 #define SD_EXECUTIONMODE_H
 
 namespace samediff {
-    enum ExecutionMode {
-        MODE_UNDEFINED = 0,
-        MODE_TRAINING = 1,
-        MODE_INFERENCE = 2,
-    };
+enum ExecutionMode {
+  MODE_UNDEFINED = 0,
+  MODE_TRAINING = 1,
+  MODE_INFERENCE = 2,
+};
 }
 
-#endif //SD_EXECUTIONMODE_H
+#endif  // SD_EXECUTIONMODE_H

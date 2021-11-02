@@ -24,11 +24,11 @@
 #define ND4J_SPACE_TYPE_H
 
 namespace sd {
-    enum SpaceType {
-        CONTINUOUS = 1,
-        COMPLEX = 2,
-        QUANTIZED = 3,
-    };
+enum SpaceType {
+  CONTINUOUS = 1,
+  COMPLEX = 2,
+  QUANTIZED = 3,
+};
 }
 
 #endif

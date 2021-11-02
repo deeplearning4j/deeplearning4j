@@ -19,33 +19,24 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <memory/ExternalWorkspace.h>
 
 namespace sd {
-    namespace memory {
-        ExternalWorkspace::ExternalWorkspace(Nd4jPointer ptrH, Nd4jLong sizeH, Nd4jPointer ptrD, Nd4jLong sizeD) {
-            _ptrH = ptrH;
-            _sizeH = sizeH;
+namespace memory {
+ExternalWorkspace::ExternalWorkspace(sd::Pointer ptrH, sd::LongType sizeH, sd::Pointer ptrD, sd::LongType sizeD) {
+  _ptrH = ptrH;
+  _sizeH = sizeH;
 
-            _ptrD = ptrD;
-            _sizeD = sizeD;
-        };
+  _ptrD = ptrD;
+  _sizeD = sizeD;
+};
 
-        void* ExternalWorkspace::pointerHost() {
-            return _ptrH;
-        }
+void* ExternalWorkspace::pointerHost() { return _ptrH; }
 
-        void* ExternalWorkspace::pointerDevice() {
-            return _ptrD;
-        }
+void* ExternalWorkspace::pointerDevice() { return _ptrD; }
 
-        Nd4jLong ExternalWorkspace::sizeHost() {
-            return _sizeH;
-        }
-        
-        Nd4jLong ExternalWorkspace::sizeDevice() {
-            return _sizeD;
-        }
-    }
-}
+sd::LongType ExternalWorkspace::sizeHost() { return _sizeH; }
+
+sd::LongType ExternalWorkspace::sizeDevice() { return _sizeD; }
+}  // namespace memory
+}  // namespace sd

@@ -23,60 +23,58 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tear)
 
-#include <ops/declarable/CustomOperations.h>
-#include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/TAD.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
-            auto input = INPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
+  auto input = INPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(!block.getIArguments()->empty(), 0, "At least 1 dimension should be specified for Tear");
+  REQUIRE_TRUE(!block.getIArguments()->empty(), 0, "At least 1 dimension should be specified for Tear");
 
-            std::vector<int> dims(*block.getIArguments());
+  std::vector<int> dims(*block.getIArguments());
 
-            for (auto &v: dims)
-                REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0, "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
+  for (auto &v : dims)
+    REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0,
+                 "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
 
-            auto tads = input->allTensorsAlongDimension(dims);
-            for (Nd4jLong e = 0; e < tads.size(); e++) {
-                auto outE = OUTPUT_VARIABLE(e);
-                outE->assign(tads.at(e));
+  auto tads = input->allTensorsAlongDimension(dims);
+  for (sd::LongType e = 0; e < tads.size(); e++) {
+    auto outE = OUTPUT_VARIABLE(e);
+    outE->assign(tads.at(e));
 
-                // just for debugging purposes
-                this->storeResult(block, e, *outE);
-            }
+    // just for debugging purposes
+    this->storeResult(block, e, *outE);
+  }
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(tear) {
-            auto inShape = inputShape->at(0);
-
-            std::vector<int> dims(*block.getIArguments());
-
-            if (dims.size() > 1)
-                std::sort(dims.begin(), dims.end());
-
-            auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, dims);
-            auto numTads = tadPack.numberOfTads();
-
-            auto result = SHAPELIST();
-            for (Nd4jLong e = 0; e < numTads; e++) {
-                auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()));
-                result->push_back(newShape);
-            }
-
-            return result;
-        }
-
-        DECLARE_TYPES(tear) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(tear) {
+  auto inShape = inputShape->at(0);
+
+  std::vector<int> dims(*block.getIArguments());
+
+  if (dims.size() > 1) std::sort(dims.begin(), dims.end());
+
+  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, dims);
+  auto numTads = tadPack.numberOfTads();
+
+  auto result = SHAPELIST();
+  for (sd::LongType e = 0; e < numTads; e++) {
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), shape::order(inShape),
+                                                                       shape::rank(tadPack.primaryShapeInfo()),
+                                                                       shape::shapeOf(tadPack.primaryShapeInfo()));
+    result->push_back(newShape);
+  }
+
+  return result;
+}
+
+DECLARE_TYPES(tear) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

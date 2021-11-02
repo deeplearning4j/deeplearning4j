@@ -20,27 +20,24 @@
 // @author raver119@protonmail.com
 //
 // relies on xoroshiro64** and xoroshiro128 implementations
-
-#include <system/op_boilerplate.h>
-#include <system/pointercast.h>
-#include <graph/RandomGenerator.h>
-#include <chrono>
 #include <array/DataTypeUtils.h>
+#include <graph/RandomGenerator.h>
 #include <helpers/logger.h>
+#include <system/op_boilerplate.h>
+
+#include <chrono>
 
 namespace sd {
-    namespace graph {
+namespace graph {
 
+template SD_HOST_DEVICE int RandomGenerator::relativeT(sd::LongType, int, int);
+template SD_HOST_DEVICE float16 RandomGenerator::relativeT(sd::LongType, float16, float16);
+template SD_HOST_DEVICE float RandomGenerator::relativeT(sd::LongType, float, float);
+template SD_HOST_DEVICE double RandomGenerator::relativeT(sd::LongType, double, double);
+template SD_HOST_DEVICE sd::LongType RandomGenerator::relativeT(sd::LongType, sd::LongType, sd::LongType);
 
-
-        template _CUDA_HD int RandomGenerator::relativeT(Nd4jLong, int, int);
-        template _CUDA_HD float16 RandomGenerator::relativeT(Nd4jLong, float16, float16);
-        template _CUDA_HD float RandomGenerator::relativeT(Nd4jLong, float, float);
-        template _CUDA_HD double RandomGenerator::relativeT(Nd4jLong, double, double);
-        template _CUDA_HD Nd4jLong RandomGenerator::relativeT(Nd4jLong, Nd4jLong, Nd4jLong);
-
-        template _CUDA_HD float16 RandomGenerator::relativeT(Nd4jLong);
-        template _CUDA_HD float RandomGenerator::relativeT(Nd4jLong);
-        template _CUDA_HD double RandomGenerator::relativeT(Nd4jLong);
-    }
-}
+template SD_HOST_DEVICE float16 RandomGenerator::relativeT(sd::LongType);
+template SD_HOST_DEVICE float RandomGenerator::relativeT(sd::LongType);
+template SD_HOST_DEVICE double RandomGenerator::relativeT(sd::LongType);
+}  // namespace graph
+}  // namespace sd

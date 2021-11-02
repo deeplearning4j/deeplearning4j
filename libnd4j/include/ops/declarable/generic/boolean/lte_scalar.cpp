@@ -26,26 +26,26 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        BOOLEAN_OP_IMPL(lte_scalar, 2, true) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
+namespace ops {
+BOOLEAN_OP_IMPL(lte_scalar, 2, true) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
 
-            if (x->e<float>(0) <= y->e<float>(0))
-                return ND4J_STATUS_TRUE;
-            else
-                return ND4J_STATUS_FALSE;
-        }
-        DECLARE_SYN(LessOrEquals, lte_scalar);
-        DECLARE_SYN(lessorequals, lte_scalar);
-
-        DECLARE_TYPES(lte_scalar) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::BOOL);
-        }
-    }
+  if (x->e<float>(0) <= y->e<float>(0))
+    return sd::Status::TRUE;
+  else
+    return sd::Status::FALSE;
 }
+DECLARE_SYN(LessOrEquals, lte_scalar);
+DECLARE_SYN(lessorequals, lte_scalar);
+
+DECLARE_TYPES(lte_scalar) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, DataType::ANY)
+      ->setAllowedOutputTypes(0, DataType::BOOL);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

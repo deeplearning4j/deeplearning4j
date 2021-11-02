@@ -21,16 +21,17 @@
 //
 #ifndef __NTH_ELEMENT__H_HELPERS__
 #define __NTH_ELEMENT__H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    void nthElementFunctor(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse);
+SD_LIB_HIDDEN void nthElementFunctor(sd::LaunchContext* context, NDArray* input, sd::LongType n, NDArray* output,
+                                     bool reverse);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

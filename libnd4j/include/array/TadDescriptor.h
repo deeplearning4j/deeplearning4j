@@ -23,62 +23,62 @@
 #ifndef DEV_TESTS_TADDESCRIPTOR_H
 #define DEV_TESTS_TADDESCRIPTOR_H
 
-#include "ShapeDescriptor.h"
-#include <system/dll.h>
+#include <array/ShapeDescriptor.h>
 
 namespace sd {
-        class ND4J_EXPORT TadDescriptor {
-            private:
-            ShapeDescriptor _originalShape;
+class SD_LIB_EXPORT TadDescriptor {
+ private:
+  ShapeDescriptor _originalShape;
 
-            std::vector<int> _axis;
+  std::vector<int> _axis;
 
-            bool _unitiesInShape;
+  bool _unitiesInShape;
 
-            public:
-            explicit TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length, const bool keepUnitiesInShape = false);
-            explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
-            ~TadDescriptor() = default;
+ public:
+  explicit TadDescriptor(const sd::LongType *originalShape, const int *dimensions, const int length,
+                         const bool keepUnitiesInShape = false);
+  explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions,
+                         const bool keepUnitiesInShape = false);
+  ~TadDescriptor() = default;
 
-            // we use default copy assignment operator
+  // we use default copy assignment operator
 #ifndef __NEC__
-           //NCC has issues with copy constructors
-            TadDescriptor& operator=(const TadDescriptor& other) = default;
-            // we use default move assignment operator
-            TadDescriptor& operator=(TadDescriptor&& other) noexcept = default;
-            explicit TadDescriptor(const TadDescriptor &other);
+  // NCC has issues with copy constructors
+  TadDescriptor &operator=(const TadDescriptor &other) = default;
+  // we use default move assignment operator
+  TadDescriptor &operator=(TadDescriptor &&other) noexcept = default;
+  explicit TadDescriptor(const TadDescriptor &other);
 #endif
 
 #ifdef __NEC__
-     TadDescriptor(TadDescriptor &&rhs)  = default;      // move constructor
-    TadDescriptor(const TadDescriptor &rhs)  = default; // copy constructor
-    TadDescriptor& operator=(const TadDescriptor &rhs) = default; // copy assignment operator
+  TadDescriptor(TadDescriptor &&rhs) = default;                  // move constructor
+  TadDescriptor(const TadDescriptor &rhs) = default;             // copy constructor
+  TadDescriptor &operator=(const TadDescriptor &rhs) = default;  // copy assignment operator
 #endif
 
-            // equal to operator
-            bool operator==(const TadDescriptor &other) const;
+  // equal to operator
+  bool operator==(const TadDescriptor &other) const;
 
-            // less than operator
-            bool operator<(const TadDescriptor &other) const;
+  // less than operator
+  bool operator<(const TadDescriptor &other) const;
 
-            std::vector<int>& axis();
-            ShapeDescriptor& originalShape();
-            ShapeDescriptor const& originalShapeConst() const;
-            bool areUnitiesinShape() const;
-        };
-}
+  std::vector<int> &axis();
+  ShapeDescriptor &originalShape();
+  ShapeDescriptor const &originalShapeConst() const;
+  bool areUnitiesinShape() const;
+};
+}  // namespace sd
 
 #ifndef __JAVACPP_HACK__
 
 namespace std {
-        template<>
-        class ND4J_EXPORT hash<sd::TadDescriptor> {
-            public:
-            size_t operator()(const sd::TadDescriptor &k) const;
-        };
-}
+template <>
+class SD_LIB_EXPORT hash<sd::TadDescriptor> {
+ public:
+  size_t operator()(const sd::TadDescriptor &k) const;
+};
+}  // namespace std
 
 #endif
 
-
-#endif //DEV_TESTS_TADDESCRIPTOR_H
+#endif  // DEV_TESTS_TADDESCRIPTOR_H

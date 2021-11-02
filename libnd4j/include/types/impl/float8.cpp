@@ -19,7 +19,6 @@
 //
 // Created by raver119 on 07/11/17.
 //
-
 #include <types/float8.h>
 
 namespace sd {

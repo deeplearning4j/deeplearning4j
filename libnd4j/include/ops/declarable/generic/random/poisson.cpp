@@ -27,43 +27,42 @@
 #include <ops/declarable/helpers/random.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(random_poisson, 2, 1, false, 0, 0) {
-            // gamma distribution
-            auto rng = block.randomGenerator();
-            auto shape = INPUT_VARIABLE(0);
-            auto lambda = INPUT_VARIABLE(1);
-            auto output = OUTPUT_VARIABLE(0);
-            auto seed = 0;
-            if (block.getIArguments()->size()) {
-                seed = INT_ARG(0);
-            }
-            rng.setSeed(seed);
-            helpers::fillRandomPoisson(block.launchContext(), rng, lambda, output);
+namespace ops {
+CUSTOM_OP_IMPL(random_poisson, 2, 1, false, 0, 0) {
+  // gamma distribution
+  auto rng = block.randomGenerator();
+  auto shape = INPUT_VARIABLE(0);
+  auto lambda = INPUT_VARIABLE(1);
+  auto output = OUTPUT_VARIABLE(0);
+  auto seed = 0;
+  if (block.getIArguments()->size()) {
+    seed = INT_ARG(0);
+  }
+  rng.setSeed(seed);
+  helpers::fillRandomPoisson(block.launchContext(), rng, lambda, output);
 
-            return Status::OK();
-        }
-
-
-        DECLARE_SHAPE_FN(random_poisson) {
-            auto in = INPUT_VARIABLE(0);
-            auto shape = in->template asVectorT<Nd4jLong>();
-            auto lambdaShape = inputShape->at(1);
-            auto dtype = block.numD() > 0? D_ARG(0) : ArrayOptions::dataType(lambdaShape);
-            for (auto d = 0; d < shape::rank(lambdaShape); ++d ) {
-                shape.emplace_back(shape::sizeAt(lambdaShape, d));
-            }
-            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
-            return SHAPELIST(newShape);
-        }
-
-        DECLARE_TYPES(random_poisson) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS})
-                    ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(random_poisson) {
+  auto in = INPUT_VARIABLE(0);
+  auto shape = in->template asVectorT<sd::LongType>();
+  auto lambdaShape = inputShape->at(1);
+  auto dtype = block.numD() > 0 ? D_ARG(0) : ArrayOptions::dataType(lambdaShape);
+  for (auto d = 0; d < shape::rank(lambdaShape); ++d) {
+    shape.emplace_back(shape::sizeAt(lambdaShape, d));
+  }
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
+  return SHAPELIST(newShape);
+}
+
+DECLARE_TYPES(random_poisson) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

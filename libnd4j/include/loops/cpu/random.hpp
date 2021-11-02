@@ -20,264 +20,242 @@
 //  @author raver119@gmail.com, created on 15.12.17.
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <types/types.h>
-#include <system/op_boilerplate.h>
-#include <loops/random.h>
 #include <helpers/OmpLaunchHelper.h>
+#include <loops/random.h>
+#include <system/op_boilerplate.h>
+#include <types/types.h>
 
 using namespace randomOps;
 
 namespace functions {
-    namespace random {
+namespace random {
 
+template <typename X>
+template <typename OpClass>
+void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const sd::LongType *xShapeInfo, const void *vy,
+                                      const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                                      void *vextraArguments) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto y = reinterpret_cast<const X *>(vy);
+  auto z = reinterpret_cast<X *>(vz);
+  auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
-        template<typename X>
-        template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state,
-                                              const void *vx, const Nd4jLong *xShapeInfo,
-                                              const void *vy, const Nd4jLong *yShapeInfo,
-                                              void *vz, const Nd4jLong *zShapeInfo,
-                                              void *vextraArguments) {
+  if (OpClass::requiresSpecial) {
+    OpClass::specialOp(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments);
+    return;
+  }
 
-            auto x = reinterpret_cast<const X *>(vx);
-            auto y = reinterpret_cast<const X *>(vy);
-            auto z = reinterpret_cast<X *>(vz);
-            auto extraArguments = reinterpret_cast<X *>(vextraArguments);
+  auto length = shape::length(zShapeInfo);
 
-            if (OpClass::requiresSpecial) {
-                OpClass::specialOp(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments);
-                return;
-            }
+  sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
-            auto length = shape::length(zShapeInfo);
-
-            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
-
-            if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-
-
-                if(shape::elementWiseStride(zShapeInfo) ==  1 && shape::elementWiseStride(xShapeInfo) ==  1 && shape::elementWiseStride(yShapeInfo) ==  1 &&
-                        shape::order(xShapeInfo) == shape::order(zShapeInfo) && shape::order(zShapeInfo) == shape::order(yShapeInfo) ){
-                    
-                    auto func = PRAGMA_THREADS_FOR {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i++)  { 
-                            z[i] = OpClass::op(x[i], y[i], i, length, rng, extraArguments);
-                        }
-                    };
-                    samediff::Threads::parallel_for(func,  0, length, 1);
-                }
-                else{
-                    uint xShapeInfoCast[MAX_RANK];
-                    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-                    auto func = PRAGMA_THREADS_FOR {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i++)  {
-                            auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                            z[offset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
-                        }
-                    };
-
-                    samediff::Threads::parallel_for(func,  0, length, 1);
-                }
-            }
-            else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-
-                uint xShapeInfoCast[MAX_RANK];
-                uint zShapeInfoCast[MAX_RANK];
-                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[zOffset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
-                    }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1);
-            }
-            else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-
-                uint xShapeInfoCast[MAX_RANK];
-                uint yShapeInfoCast[MAX_RANK];
-                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-                        z[offset] = OpClass::op(x[offset], y[yOffset], i, length, rng, extraArguments);
-                    }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1);
-            }
-            else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
-
-                uint xShapeInfoCast[MAX_RANK];
-                uint yShapeInfoCast[MAX_RANK];
-                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto offset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-                        z[offset] = OpClass::op(x[xOffset], y[offset], i, length, rng, extraArguments);
-                    }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1);
-            }
-            else {
-
-                uint xShapeInfoCast[MAX_RANK];
-                uint yShapeInfoCast[MAX_RANK];
-                uint zShapeInfoCast[MAX_RANK];
-                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, rng, extraArguments);
-                    }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1);
-            }
-        };
-
-
-
-        template<typename X>
-        template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state,
-                                              const void *vx, const Nd4jLong *xShapeInfo,
-                                              void *vz, const Nd4jLong *zShapeInfo,
-                                              void *vextraArguments) {
-            auto x = reinterpret_cast<const X *>(vx);
-            auto z = reinterpret_cast<X *>(vz);
-            auto extraArguments = reinterpret_cast<X *>(vextraArguments);
-
-            auto length = shape::length(zShapeInfo);
-
-            uint xShapeInfoCast[MAX_RANK];
-            const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
-
-            if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-
-                if(shape::elementWiseStride(zShapeInfo) ==  1 &&  shape::elementWiseStride(xShapeInfo) ==  1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)){
-                    
-                    auto func = PRAGMA_THREADS_FOR {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i++)  { 
-                            z[i] = OpClass::op(x[i], i, length, rng, extraArguments);
-                        }
-                    };
-                    samediff::Threads::parallel_for(func,  0, length, 1);
-                }
-                else{
-                    auto func = PRAGMA_THREADS_FOR {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i++)  {
-                            auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                            z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
-                        }
-                    };
-
-                    samediff::Threads::parallel_for(func,  0, length, 1);
-                }
-            }
-            else {
-
-                uint zShapeInfoCast[MAX_RANK];
-                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
-                    }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1);
-            }
+  if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
+      shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    if (shape::elementWiseStride(zShapeInfo) == 1 && shape::elementWiseStride(xShapeInfo) == 1 &&
+        shape::elementWiseStride(yShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
+        shape::order(zShapeInfo) == shape::order(yShapeInfo)) {
+      auto func = PRAGMA_THREADS_FOR {
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          z[i] = OpClass::op(x[i], y[i], i, length, rng, extraArguments);
         }
+      };
+      samediff::Threads::parallel_for(func, 0, length, 1);
+    } else {
+      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-
-        template<typename X>
-        template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state, void *vz, const Nd4jLong  *zShapeInfo, void *vextraArguments) {
-
-            auto z = reinterpret_cast<X *>(vz);
-            auto extraArguments = reinterpret_cast<X *>(vextraArguments);
-
-            auto length = shape::length(zShapeInfo);
-
-            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
-
-            if(shape::elementWiseStride(zShapeInfo) ==  1){
-
-                auto func = PRAGMA_THREADS_FOR {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i++)  { 
-                            z[i] = OpClass::op( i, length, rng, extraArguments);
-                        }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1); 
-            }
-            else{
-                sd::OmpLaunchHelper info(length);
-
-                uint zShapeInfoCast[MAX_RANK];
-                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)  {
-                        auto offset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                        z[offset] = OpClass::op(i, length, rng, extraArguments);
-                    }
-                };
-
-                samediff::Threads::parallel_for(func,  0, length, 1);
-            }
+      auto func = PRAGMA_THREADS_FOR {
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          z[offset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
         }
+      };
 
-        template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, const void *x, const Nd4jLong *xShapeInfo, void *z, const Nd4jLong *zShapeInfo, void *extraArguments) {
-            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
-        }
-
-        template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, const void *x, const Nd4jLong *xShapeInfo, const void *y, const Nd4jLong *yShapeInfo, void *z, const Nd4jLong *zShapeInfo, void *extraArguments) {
-            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
-        }
-
-        template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *z, const Nd4jLong *zShapeInfo, void *extraArguments) {
-            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeInfo, extraArguments), RANDOM_OPS)
-        }
-
-
-        //BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL RandomFunction, , FLOAT_TYPES);
+      samediff::Threads::parallel_for(func, 0, length, 1);
     }
+  } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[zOffset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+        z[offset] = OpClass::op(x[offset], y[yOffset], i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
+    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto offset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+        z[offset] = OpClass::op(x[xOffset], y[offset], i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  } else {
+    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+    const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  }
+};
+
+template <typename X>
+template <typename OpClass>
+void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const sd::LongType *xShapeInfo, void *vz,
+                                      const sd::LongType *zShapeInfo, void *vextraArguments) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto z = reinterpret_cast<X *>(vz);
+  auto extraArguments = reinterpret_cast<X *>(vextraArguments);
+
+  auto length = shape::length(zShapeInfo);
+
+  sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
+  sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+
+  if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    if (shape::elementWiseStride(zShapeInfo) == 1 && shape::elementWiseStride(xShapeInfo) == 1 &&
+        shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
+      auto func = PRAGMA_THREADS_FOR {
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          z[i] = OpClass::op(x[i], i, length, rng, extraArguments);
+        }
+      };
+      samediff::Threads::parallel_for(func, 0, length, 1);
+    } else {
+      auto func = PRAGMA_THREADS_FOR {
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
+        }
+      };
+
+      samediff::Threads::parallel_for(func, 0, length, 1);
+    }
+  } else {
+    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  }
 }
+
+template <typename X>
+template <typename OpClass>
+void RandomFunction<X>::execTransform(sd::Pointer state, void *vz, const sd::LongType *zShapeInfo,
+                                      void *vextraArguments) {
+  auto z = reinterpret_cast<X *>(vz);
+  auto extraArguments = reinterpret_cast<X *>(vextraArguments);
+
+  auto length = shape::length(zShapeInfo);
+
+  sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+
+  if (shape::elementWiseStride(zShapeInfo) == 1) {
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        z[i] = OpClass::op(i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  } else {
+    sd::OmpLaunchHelper info(length);
+
+    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+    auto func = PRAGMA_THREADS_FOR {
+      PRAGMA_OMP_SIMD
+      for (auto i = start; i < stop; i++) {
+        auto offset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        z[offset] = OpClass::op(i, length, rng, extraArguments);
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length, 1);
+  }
+}
+
+template <typename X>
+void RandomFunction<X>::execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeInfo,
+                                      void *z, const sd::LongType *zShapeInfo, void *extraArguments) {
+  DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
+}
+
+template <typename X>
+void RandomFunction<X>::execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeInfo,
+                                      const void *y, const sd::LongType *yShapeInfo, void *z,
+                                      const sd::LongType *zShapeInfo, void *extraArguments) {
+  DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments),
+                      RANDOM_OPS)
+}
+
+template <typename X>
+void RandomFunction<X>::execTransform(int opNum, sd::Pointer state, void *z, const sd::LongType *zShapeInfo,
+                                      void *extraArguments) {
+  DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeInfo, extraArguments), RANDOM_OPS)
+}
+
+// BUILD_SINGLE_TEMPLATE(template class SD_LIB_HIDDEN RandomFunction, , SD_FLOAT_TYPES);
+}  // namespace random
+}  // namespace functions

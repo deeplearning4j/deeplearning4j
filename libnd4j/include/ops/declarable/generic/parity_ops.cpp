@@ -25,27 +25,25 @@
 #ifndef LIBND4J_PARITY_OPS_H
 #define LIBND4J_PARITY_OPS_H
 
-#include <climits>
-#include <system/op_boilerplate.h>
-#include <memory>
-#include <helpers/shape.h>
-#include <ops/ops.h>
-#include <loops/random.h>
 #include <array/NDArray.h>
+#include <graph/Context.h>
 #include <graph/Variable.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/shape.h>
+#include <loops/random.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/DeclarableCustomOp.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
-#include <ops/declarable/DeclarableCustomOp.h>
-#include <ops/declarable/CustomOperations.h>
-#include <graph/Context.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <helpers/ShapeUtils.h>
+#include <ops/ops.h>
+#include <system/op_boilerplate.h>
+
+#include <climits>
+#include <memory>
 
 namespace sd {
-    namespace ops {
+namespace ops {}
+}  // namespace sd
 
-    }
-}
-
-#endif //LIBND4J_PARITY_OPS_H
-
+#endif  // LIBND4J_PARITY_OPS_H

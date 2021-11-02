@@ -28,111 +28,106 @@
 
 namespace sd {
 namespace ops {
-    CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
-        auto input = INPUT_VARIABLE(0);
-        auto weights = INPUT_VARIABLE(1);
+CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
+  auto input = INPUT_VARIABLE(0);
+  auto weights = INPUT_VARIABLE(1);
 
-        auto output = OUTPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-        REQUIRE_TRUE(input->rankOf() == 4, 0, "Dilation2D: input should be 4D");
-        REQUIRE_TRUE(weights->rankOf() == 3, 0, "Dilation2D: weights should be 3D");
+  REQUIRE_TRUE(input->rankOf() == 4, 0, "Dilation2D: input should be 4D");
+  REQUIRE_TRUE(weights->rankOf() == 3, 0, "Dilation2D: weights should be 3D");
 
-        const int bS = input->sizeAt(0);
-        const int iC = input->sizeAt(3);
-        const bool isSameShape = INT_ARG(0) == 1;
+  const int bS = input->sizeAt(0);
+  const int iC = input->sizeAt(3);
+  const bool isSameShape = INT_ARG(0) == 1;
 
-        REQUIRE_TRUE(input->sizeAt(3) == weights->sizeAt(2), 0, "Dilation2D: number of input channels doesn't match number of channels in weights: %i vs %i", input->sizeAt(3), weights->sizeAt(2));
+  REQUIRE_TRUE(input->sizeAt(3) == weights->sizeAt(2), 0,
+               "Dilation2D: number of input channels doesn't match number of channels in weights: %i vs %i",
+               input->sizeAt(3), weights->sizeAt(2));
 
-        std::vector<int> strides(4);
-        std::vector<int> rates(4);
+  std::vector<int> strides(4);
+  std::vector<int> rates(4);
 
-        if (block.width() > 2) {
-            REQUIRE_TRUE(block.width() >= 4, 0, "Dilation2D: number of input arrays should be 4 at least");
+  if (block.width() > 2) {
+    REQUIRE_TRUE(block.width() >= 4, 0, "Dilation2D: number of input arrays should be 4 at least");
 
+    auto r = INPUT_VARIABLE(2);
+    auto s = INPUT_VARIABLE(3);
 
-            auto r = INPUT_VARIABLE(2);
-            auto s = INPUT_VARIABLE(3);
+    strides = s->template asVectorT<int>();
+    rates = r->template asVectorT<int>();
+  } else {
+    REQUIRE_TRUE(block.numI() >= 9, 0, "Dilation2D: number of Int arguments should be 9 at least");
 
-            strides = s->template asVectorT<int>();
-            rates = r->template asVectorT<int>();
-        } else {
-            REQUIRE_TRUE(block.numI() >= 9, 0, "Dilation2D: number of Int arguments should be 9 at least");
+    int e = 1;
+    for (int cnt = 0; cnt < 4; cnt++) rates[cnt] = INT_ARG(e++);
 
-            int e = 1;
-            for (int cnt = 0;cnt < 4; cnt++)
-                rates[cnt] = INT_ARG(e++);
+    for (int cnt = 0; cnt < 4; cnt++) strides[cnt] = INT_ARG(e++);
+  }
 
+  int sH = 0, sW = 0;
+  int dH = 0, dW = 0;
+  int pH = 0, pW = 0;
+  int oH = 0, oW = 0;
 
-            for (int cnt = 0; cnt < 4; cnt++)
-                strides[cnt] = INT_ARG(e++);
-        }
+  helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape,
+                       &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
 
+  REQUIRE_TRUE(oH > 0 && oW > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead",
+               oH, oW);
 
-        int sH = 0, sW = 0;
-        int dH = 0, dW = 0;
-        int pH = 0, pW = 0;
-        int oH = 0, oW = 0;
+  helpers::dilation2d(block.launchContext(), input, weights, output, sH, sW, pH, pW, dH, dW);
 
-        helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
-
-
-        REQUIRE_TRUE(oH > 0 && oW > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", oH, oW);
-
-        helpers::dilation2d(block.launchContext(), input, weights, output, sH, sW, pH, pW, dH, dW);
-
-        return Status::OK();
-    }
-
-    DECLARE_TYPES(dilation2d) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
-
-    DECLARE_SHAPE_FN(dilation2d) {
-        auto input = inputShape->at(0);
-        auto weights = inputShape->at(1);
-
-        const int bS = shape::sizeAt(input, 0);
-        const int iC = shape::sizeAt(input, 3);
-        const bool isSameShape = INT_ARG(0) == 1;
-
-        std::vector<int> strides(4);
-        std::vector<int> rates(4);
-
-        if (block.width() > 2) {
-            auto r = INPUT_VARIABLE(2);
-            auto s = INPUT_VARIABLE(3);
-
-
-            strides = s->template asVectorT<int>();
-            rates = r->template asVectorT<int>();
-        } else {
-            if (block.numI() < 9) {
-                auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
-                return SHAPELIST(newShape);
-            }
-
-            int e = 1;
-            for (int cnt = 0;cnt < 4; cnt++)
-                rates[cnt] = INT_ARG(e++);
-
-            for (int cnt = 0; cnt < 4; cnt++)
-                strides[cnt] = INT_ARG(e++);
-        }
-
-        int sH = 0, sW = 0;
-        int dH = 0, dW = 0;
-        int pH = 0, pW = 0;
-        int oH = 0, oW = 0;
-
-        helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
-
-        std::array<Nd4jLong, 4> shape = {{bS, oH, oW, iC}};
-        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
-        return SHAPELIST(newShape);
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(dilation2d) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
+
+DECLARE_SHAPE_FN(dilation2d) {
+  auto input = inputShape->at(0);
+  auto weights = inputShape->at(1);
+
+  const int bS = shape::sizeAt(input, 0);
+  const int iC = shape::sizeAt(input, 3);
+  const bool isSameShape = INT_ARG(0) == 1;
+
+  std::vector<int> strides(4);
+  std::vector<int> rates(4);
+
+  if (block.width() > 2) {
+    auto r = INPUT_VARIABLE(2);
+    auto s = INPUT_VARIABLE(3);
+
+    strides = s->template asVectorT<int>();
+    rates = r->template asVectorT<int>();
+  } else {
+    if (block.numI() < 9) {
+      auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
+      return SHAPELIST(newShape);
+    }
+
+    int e = 1;
+    for (int cnt = 0; cnt < 4; cnt++) rates[cnt] = INT_ARG(e++);
+
+    for (int cnt = 0; cnt < 4; cnt++) strides[cnt] = INT_ARG(e++);
+  }
+
+  int sH = 0, sW = 0;
+  int dH = 0, dW = 0;
+  int pH = 0, pW = 0;
+  int oH = 0, oW = 0;
+
+  helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW,
+                       &oH, &oW);
+
+  std::array<sd::LongType, 4> shape = {{bS, oH, oW, iC}};
+  auto newShape =
+      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
+  return SHAPELIST(newShape);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

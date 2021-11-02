@@ -3,9 +3,7 @@
 
 #ifndef FLATBUFFERS_GENERATED_UIGRAPHSTATIC_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_UIGRAPHSTATIC_SD_GRAPH_H_
-
 #include "flatbuffers/flatbuffers.h"
-
 #include "array_generated.h"
 #include "utils_generated.h"
 #include "variable_generated.h"

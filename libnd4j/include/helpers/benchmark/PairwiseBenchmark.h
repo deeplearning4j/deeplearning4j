@@ -19,7 +19,6 @@
 //
 // @author raver119@gmail.com
 //
-
 #include "../OpBenchmark.h"
 
 #ifndef DEV_TESTS_PAIRWISEBENCHMARK_H
@@ -28,83 +27,83 @@
 using namespace sd::graph;
 
 namespace sd {
-    class ND4J_EXPORT PairwiseBenchmark : public OpBenchmark {
-    public:
-        PairwiseBenchmark() : OpBenchmark() {
-            //
-        }
+class SD_LIB_EXPORT PairwiseBenchmark : public OpBenchmark {
+ public:
+  PairwiseBenchmark() : OpBenchmark() {
+    //
+  }
 
-        PairwiseBenchmark(pairwise::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(testName, x, y, z) {
-            _opNum = (int) op;
-        }
+  PairwiseBenchmark(pairwise::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z)
+      : OpBenchmark(testName, x, y, z) {
+    _opNum = (int)op;
+  }
 
-        PairwiseBenchmark(pairwise::Ops op, std::string name) : OpBenchmark() {
-            _opNum = (int) op;
-            _testName = name;
-        }
+  PairwiseBenchmark(pairwise::Ops op, std::string name) : OpBenchmark() {
+    _opNum = (int)op;
+    _testName = name;
+  }
 
-        ~PairwiseBenchmark(){
-            if (_x != _y && _x != _z && _y != _z) {
-                delete _x;
-                delete _y;
-                delete _z;
-            } else if (_x == _y && _x == _z) {
-                delete _x;
-            } else if (_x == _z) {
-                delete _x;
-                delete _y;
-            } else if (_y == _z) {
-                delete _x;
-                delete _y;
-            }
-        }
+  ~PairwiseBenchmark() {
+    if (_x != _y && _x != _z && _y != _z) {
+      delete _x;
+      delete _y;
+      delete _z;
+    } else if (_x == _y && _x == _z) {
+      delete _x;
+    } else if (_x == _z) {
+      delete _x;
+      delete _y;
+    } else if (_y == _z) {
+      delete _x;
+      delete _y;
+    }
+  }
 
-        void executeOnce() override {
-            PointersManager manager(LaunchContext::defaultContext(), "PairwiseBM");
+  void executeOnce() override {
+    PointersManager manager(LaunchContext::defaultContext(), "PairwiseBM");
 
-            NativeOpExecutioner::execPairwiseTransform(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr);
+    NativeOpExecutioner::execPairwiseTransform(
+        LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(),
+        _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(),
+        _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr);
 
-            manager.synchronize();
-        }
+    manager.synchronize();
+  }
 
-        std::string axis() override {
-            return "N/A";
-        }
+  std::string axis() override { return "N/A"; }
 
-        std::string inplace() override {
-            std::string result;
-            result += (_x == _y ? "x==y" : "x!=y");
-            result += "/";
-            result += (_x == _z ? "x==z" : "x!=z");
-            result += "/";
-            result += (_y == _z ? "y==z" : "y!=z");
-            return result;
-        }
+  std::string inplace() override {
+    std::string result;
+    result += (_x == _y ? "x==y" : "x!=y");
+    result += "/";
+    result += (_x == _z ? "x==z" : "x!=z");
+    result += "/";
+    result += (_y == _z ? "y==z" : "y!=z");
+    return result;
+  }
 
-        std::string orders() override {
-            std::string result;
-            result += _x->ordering();
-            result += "/";
-            result += _y->ordering();
-            result += "/";
-            result += _z == nullptr ? _x->ordering() : _z->ordering();
-            return result;
-        }
+  std::string orders() override {
+    std::string result;
+    result += _x->ordering();
+    result += "/";
+    result += _y->ordering();
+    result += "/";
+    result += _z == nullptr ? _x->ordering() : _z->ordering();
+    return result;
+  }
 
-        std::string strides() override {
-            std::string result;
-            result += ShapeUtils::strideAsString(_x);
-            result += "/";
-            result += ShapeUtils::strideAsString(_y);
-            result += "/";
-            result += _z == nullptr ? ShapeUtils::strideAsString(_x) : ShapeUtils::strideAsString(_z);
-            return result;
-        }
+  std::string strides() override {
+    std::string result;
+    result += ShapeUtils::strideAsString(_x);
+    result += "/";
+    result += ShapeUtils::strideAsString(_y);
+    result += "/";
+    result += _z == nullptr ? ShapeUtils::strideAsString(_x) : ShapeUtils::strideAsString(_z);
+    return result;
+  }
 
-        OpBenchmark* clone() override  {
-            return new PairwiseBenchmark((pairwise::Ops) _opNum, _testName, _x, _y, _z);
-        }
-    };
-}
+  OpBenchmark *clone() override { return new PairwiseBenchmark((pairwise::Ops)_opNum, _testName, _x, _y, _z); }
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_SCALARBENCHMARK_H
+#endif  // DEV_TESTS_SCALARBENCHMARK_H

@@ -21,39 +21,38 @@
 //
 
 #ifndef __CUDABLAS__
-
-#include <helpers/PointersManager.h>
 #include <exceptions/cuda_exception.h>
+#include <helpers/PointersManager.h>
 #include <helpers/logger.h>
 #include <memory/Workspace.h>
 
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(const sd::LaunchContext *context, const std::string& funcName)  {
-    _context  = const_cast<sd::LaunchContext*>(context);
-    _funcName = funcName;
+PointersManager::PointersManager(const sd::LaunchContext* context, const std::string& funcName) {
+  _context = const_cast<sd::LaunchContext*>(context);
+  _funcName = funcName;
 }
 //////////////////////////////////////////////////////////////////////////
-void* PointersManager::allocateDevMem( const size_t sizeInBytes){
-    // no-op
+void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
+  // no-op
 }
 //////////////////////////////////////////////////////////////////////////
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
-    // no-op
-    return const_cast<void *>(src);
+  // no-op
+  return const_cast<void*>(src);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void PointersManager::synchronize() const {
-        // no-op
+  // no-op
 }
 
 //////////////////////////////////////////////////////////////////////////
 PointersManager::~PointersManager() {
-        // no-op
+  // no-op
 }
 
-}
+}  // namespace sd
 
 #endif

@@ -19,33 +19,31 @@
 //
 // Created by raver119 on 13.01.2018.
 //
+#include <ops/declarable/CustomOperations.h>
 
 #include "testlayers.h"
-#include <ops/declarable/CustomOperations.h>
 
 using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
 class BackpropTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(BackpropTests, Test_Add_1) {
+  NDArray x('c', {2, 3, 4}, sd::DataType::FLOAT32);
+  NDArray y('c', {3, 4}, sd::DataType::FLOAT32);
+  NDArray e('c', {2, 3, 4}, sd::DataType::FLOAT32);
 
-    NDArray x('c', {2, 3, 4}, sd::DataType::FLOAT32);
-    NDArray y('c', {3, 4}, sd::DataType::FLOAT32);
-    NDArray e('c', {2, 3, 4}, sd::DataType::FLOAT32);
+  sd::ops::add_bp op;
+  auto result = op.evaluate({&x, &y, &e});
 
-    sd::ops::add_bp op;
-    auto result = op.evaluate({&x, &y, &e});
+  ASSERT_EQ(sd::Status::OK, result.status());
 
-    ASSERT_EQ(Status::OK(), result.status());
+  auto eps = result.at(0);
+  auto grad = result.at(1);
 
-    auto eps = result.at(0);
-    auto grad = result.at(1);
-
-    ASSERT_TRUE(x.isSameShape(eps));
-    ASSERT_TRUE(y.isSameShape(grad));
+  ASSERT_TRUE(x.isSameShape(eps));
+  ASSERT_TRUE(y.isSameShape(grad));
 }

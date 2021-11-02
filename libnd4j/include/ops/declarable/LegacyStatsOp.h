@@ -22,26 +22,25 @@
 
 #ifndef LIBND4J_LEGACYSTATSOP_H
 #define LIBND4J_LEGACYSTATSOP_H
-
 #include <ops/declarable/LegacyOp.h>
 
 namespace sd {
-    namespace ops {
-        /**
-        *   This class provides wrapper for SummaryStats operations: Variance and Standard Deviation
-        */
-        class ND4J_EXPORT LegacyStatsOp : public LegacyOp {
-        protected:
-            Nd4jStatus validateAndExecute(Context &block) override;
-        public:
-            LegacyStatsOp();
-            LegacyStatsOp(int opNum);
+namespace ops {
+/**
+ *   This class provides wrapper for SummaryStats operations: Variance and Standard Deviation
+ */
+class SD_LIB_EXPORT LegacyStatsOp : public LegacyOp {
+ protected:
+  sd::Status validateAndExecute(Context& block) override;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context &block) override;
-            LegacyOp* clone() override;
-        };
-    }
-}
+ public:
+  LegacyStatsOp();
+  LegacyStatsOp(int opNum);
 
+  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  LegacyOp* clone() override;
+};
+}  // namespace ops
+}  // namespace sd
 
-#endif //LIBND4J_LEGACYSTATSOP_H
+#endif  // LIBND4J_LEGACYSTATSOP_H

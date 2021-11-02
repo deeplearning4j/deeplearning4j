@@ -19,48 +19,45 @@
 //
 // Created by raver119 on 15.10.2017.
 //
-
-#include "testlayers.h"
 #include <graph/Graph.h>
 #include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
+
+#include "testlayers.h"
 
 using namespace sd;
 using namespace sd::graph;
 
 class ScopeTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(ScopeTests, BasicTests_1) {
-    Graph graph;
+  Graph graph;
 
-    auto x = NDArrayFactory::create_<float>('c', {2, 2});
-    x->assign(0.0f);
+  auto x = NDArrayFactory::create_<float>('c', {2, 2});
+  x->assign(0.0f);
 
-    auto variableSpace = graph.getVariableSpace();
-    variableSpace->putVariable(-1, x);
+  auto variableSpace = graph.getVariableSpace();
+  variableSpace->putVariable(-1, x);
 
-    sd::ops::Scope opScope;
+  sd::ops::Scope opScope;
 
-    auto scopeBody = new Node(OpType_LOGIC, 10, 1);
-    scopeBody->setName("scopeBody");
-    scopeBody->setCustomOp(&opScope);
+  auto scopeBody = new Node(OpType_LOGIC, 10, 1);
+  scopeBody->setName("scopeBody");
+  scopeBody->setCustomOp(&opScope);
 
+  graph.addNode(scopeBody);
 
-    graph.addNode(scopeBody);
+  ASSERT_EQ(1, graph.totalNodes());
 
-    ASSERT_EQ(1, graph.totalNodes());
+  auto scopedB0 = new Node(OpType_SCALAR, 0, 6, {-1}, {}, {}, 1.0f);
+  scopedB0->markInplace(true);
+  scopedB0->setScopeInfo(1, "scopeBody");
 
-    auto scopedB0 = new Node(OpType_SCALAR, 0, 6, {-1}, {}, {}, 1.0f);
-    scopedB0->markInplace(true);
-    scopedB0->setScopeInfo(1, "scopeBody");
+  graph.addNode(scopedB0);
 
-    graph.addNode(scopedB0);
-
-    ASSERT_EQ(1, graph.totalNodes());
-
+  ASSERT_EQ(1, graph.totalNodes());
 }
 /*
 TEST_F(ScopeTests, RealTests_1) {
@@ -156,8 +153,8 @@ TEST_F(ScopeTests, RealTests_1) {
     ASSERT_EQ(5, graph.totalNodes());
 
     // now, let's try to execute graph
-    Nd4jStatus status = GraphExecutioner::execute(&graph);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
+    sd::Status status = GraphExecutioner::execute(&graph);
+    ASSERT_EQ(sd::Status::OK, status);
 
     auto w = variableSpace->getVariable(12, 0)->getNDArray();
 

@@ -19,61 +19,59 @@
 //
 // Created by raver119 on 16.10.2017.
 //
-
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 
-
 namespace sd {
-    namespace ops {
-        LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp::LegacyOp(2) {
-            this->getOpDescriptor()->allowInplace(true);
-        }
-
-        LegacyPairwiseTransformOp::LegacyPairwiseTransformOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
-            this->getOpDescriptor()->allowInplace(true);
-        }
-
-        LegacyOp* LegacyPairwiseTransformOp::clone() {
-            return new LegacyPairwiseTransformOp(this->_opNum);
-        }
-
-        Nd4jStatus LegacyPairwiseTransformOp::validateAndExecute(Context &block) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
-
-            NDArray::prepareSpecialUse({z}, {x, y});
-
-            if (!x->isSameShape(y))
-                REQUIRE_TRUE(x->isSameShape(y) || y->isScalar(), 0, "Node_%i: For Pairwise transforms shapes of both operands should be equal but got %s vs %s", block.getNodeId(), ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
-
-            int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
-
-            ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext(), "LegacyPairwiseTransformOp");
-
-            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                    y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                    extras.argumentsAsT(z->dataType()));
-
-            manager.synchronize();
-            STORE_RESULT(*z);
-
-            return Status::OK();
-        }
-
-        /**
-        *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
-        */
-        ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-            auto inShape = inputShape->at(0);
-
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-
-            return SHAPELIST(CONSTANT(newShape));
-        }
-    }
+namespace ops {
+LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp::LegacyOp(2) {
+  this->getOpDescriptor()->allowInplace(true);
 }
+
+LegacyPairwiseTransformOp::LegacyPairwiseTransformOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
+  this->getOpDescriptor()->allowInplace(true);
+}
+
+LegacyOp *LegacyPairwiseTransformOp::clone() { return new LegacyPairwiseTransformOp(this->_opNum); }
+
+sd::Status LegacyPairwiseTransformOp::validateAndExecute(Context &block) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
+
+  NDArray::prepareSpecialUse({z}, {x, y});
+
+  if (!x->isSameShape(y))
+    REQUIRE_TRUE(x->isSameShape(y) || y->isScalar(), 0,
+                 "Node_%i: For Pairwise transforms shapes of both operands should be equal but got %s vs %s",
+                 block.getNodeId(), ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
+
+  int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+
+  ExtraArguments extras(*block.getTArguments());
+  PointersManager manager(block.launchContext(), "LegacyPairwiseTransformOp");
+
+  NativeOpExecutioner::execPairwiseTransform(
+      block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), y->buffer(),
+      y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+      z->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
+
+  manager.synchronize();
+  STORE_RESULT(*z);
+
+  return sd::Status::OK;
+}
+
+/**
+ *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
+ */
+ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+  auto inShape = inputShape->at(0);
+
+  sd::LongType *newShape;
+  COPY_SHAPE(inShape, newShape);
+
+  return SHAPELIST(CONSTANT(newShape));
+}
+}  // namespace ops
+}  // namespace sd

@@ -32,7 +32,7 @@
 
 #define Y_TYPES \
         (DATA_INT8, int8_t) ,\
-        (DATA_INT16, int16_t) 
+        (DATA_INT16, int16_t)
 
 #define Z_TYPES \
         (DATA_UINT8, uint8_t) ,\
@@ -40,7 +40,7 @@
 
 #define PWT_LIST \
     (float, long, float),\
-    (float, long, long)        
+    (float, long, long)
 
 
 BUILD_SINGLE_TEMPLATE_TWICE(template class functionName, , DATA_TYPES)
@@ -48,23 +48,22 @@ BUILD_SINGLE_TEMPLATE_TWICE(template class functionName, , DATA_TYPES)
 
 DECLARE_PLATFORM(conv2d, ENGINE_CPU)
 
-//BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
+// BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
 
-//BUILD_SINGLE_UNCHAINED_TEMPLATE(functionName , (signature), Y_TYPES);
+// BUILD_SINGLE_UNCHAINED_TEMPLATE(functionName , (signature), Y_TYPES);
 
-//BUILD_TRIPLE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
+// BUILD_TRIPLE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
 
+// BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
 
-//BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
+// BUILD_ENUMERATION(DATA_TYPES)
 
-//BUILD_ENUMERATION(DATA_TYPES)
+// BUILD_SINGLE_SELECTOR(xType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES)
+// BUILD_DOUBLE_SELECTOR(xType, yType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES, DATA_TYPES)
 
-//BUILD_SINGLE_SELECTOR(xType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES)
-//BUILD_DOUBLE_SELECTOR(xType, yType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES, DATA_TYPES)
+// BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
 
-//BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
-
-//BUILD_DOUBLE_TEMPLATE(template class Alpha, (signature) , DATA_TYPES, DATA_TYPES);
+// BUILD_DOUBLE_TEMPLATE(template class Alpha, (signature) , DATA_TYPES, DATA_TYPES);
 
 /*
 #define SCALAR_OPS \
@@ -113,15 +112,16 @@ DECLARE_PLATFORM(conv2d, ENGINE_CPU)
 EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
 */
 
+// EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
 
-//EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
+// BUILD_CALL_1(template void sd::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b),
+// TRANSFORM_OPS)
 
-//BUILD_CALL_1(template void sd::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
+// BUILD_CALL_1(template void sd::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16*
+// extraParams), PAIRWISE_TRANSFORM_OPS) BUILD_TRACKER(TRANSFORM, ACTIVATIONS)
 
-//BUILD_CALL_1(template void sd::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
-//BUILD_TRACKER(TRANSFORM, ACTIVATIONS)
-
-//BUILD_CALL_1(template void sd::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target, float16 *extraParams) , ACTIVATIONS);
+// BUILD_CALL_1(template void sd::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target,
+// float16 *extraParams) , ACTIVATIONS);
 
 /*
 #define DECLARE_OP(NAME, NIN, NOUT)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT)
@@ -130,43 +130,56 @@ EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
                                                 public:\
                                                 NAME() : sd::ops::DeclarableOp<T>(NIN, NOUT, #NAME) { } \
                                                 protected: \
-                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                    sd::Status validateAndExecute(Block<T>& block); \
                                                 };\
                                                 template <typename T> \
-                                                Nd4jStatus sd::ops::NAME<T>::validateAndExecute(Block<T>& block)
+                                                sd::Status sd::ops::NAME<T>::validateAndExecute(Block<T>& block)
 */
 //#define END_OP(NAME) }; static sd::ops::__registrator<NAME<float>> register_op##Name;
 
 //#DECLARE_OP(Concat, -1, 1)
 
-//END_OP(Concat)
+// END_OP(Concat)
 
+// BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
 
-//BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
+// DISPATCH_SIMPLE(scalarAlongDimension_, float, PARAMS(x, xShapeInfo, extraParamx, z, zShapeInfo, scalars,
+// tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
+//_EXEC_KERNEL_F(scalarAlongDimension_, scalarAlongDimensionGeneric, float, (float inputA, float inputB), (paramA,
+//paramB), (10, SCALAR::Add), (11, SCALAR::Subtract), (12, SCALAR::Multiply))
 
-//DISPATCH_SIMPLE(scalarAlongDimension_, float, PARAMS(x, xShapeInfo, extraParamx, z, zShapeInfo, scalars, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-
-//_EXEC_KERNEL_F(scalarAlongDimension_, scalarAlongDimensionGeneric, float, (float inputA, float inputB), (paramA, paramB), (10, SCALAR::Add), (11, SCALAR::Subtract), (12, SCALAR::Multiply))
-
-//DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float inputA, float inputB), PARAMS(paramA, paramB), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float inputA, float inputB),
+// PARAMS(paramA, paramB), OPS_A(SCALAR_OPS))
 
 // original version
-//    DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(SCALAR_OPS), OPS_B(PAIRWISE_TRANSFORM_OPS))
+//    DISPATCH_METAOP(functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda, PARAMS(N, dx, dy,
+//    xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), InvertedMetaOp, OPS_A(SCALAR_OPS),
+//    OPS_B(PAIRWISE_TRANSFORM_OPS))
 
 /*
-DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape, extrasA, extrasB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));*/
+DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, x, xShape, y, yShape, z, zShape,
+extrasA, extrasB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));*/
 
-//DISPATCH_KERNEL_META(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, float, simdOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB), PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
+// DISPATCH_KERNEL_META(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, float,
+// simdOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, long N, float *dx, int *xShapeInfo, float *dy,
+// int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB),
+// PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB),
+// OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
 
-//_EXPAND_KERNEL_CALL(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, float, simdOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB), PARAMS(N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), 66, simdOps::SomeOpA, 99, simdOps::SomeOpB)
+//_EXPAND_KERNEL_CALL(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, float,
+//simdOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, long N, float *dx, int *xShapeInfo, float *dy,
+//int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB), PARAMS(N,
+//dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr), 66, simdOps::SomeOpA, 99,
+//simdOps::SomeOpB)
 
 /*
- extern "C" __global__ void invertedMetaOpKernel_Pairwise_Scalar_16_1_float(const int opTypeA, const int opTypeB, long N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
-    invertedMetaPairwiseShapedGeneric<float, simdOps::InvertedMetaOp<float, simdOps::Copy<float>, simdOps::Multiply<float>>>(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+ extern "C" SD_KERNEL void invertedMetaOpKernel_Pairwise_Scalar_16_1_float(const int opTypeA, const int opTypeB, long N,
+ float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float
+ scalarA, float scalarB) { invertedMetaPairwiseShapedGeneric<float, simdOps::InvertedMetaOp<float, simdOps::Copy<float>,
+ simdOps::Multiply<float>>>(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB,
+ scalarA, scalarB);
  }
  */
 
-
-
-#endif //LIBND4J_PLAY_H
+#endif  // LIBND4J_PLAY_H

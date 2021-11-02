@@ -26,53 +26,52 @@
 
 #ifndef LIBND4J_RESULTSET_H
 #define LIBND4J_RESULTSET_H
+#include <graph/generated/result_generated.h>
+#include <system/common.h>
 
 #include <vector>
-#include <graph/generated/result_generated.h>
-#include <system/pointercast.h>
-#include <system/dll.h>
 
 namespace sd {
 
-    class NDArray; // forward declaration of template class NDArray
+class NDArray;  // forward declaration of template class NDArray
 
-    class ND4J_EXPORT ResultSet {
-    private:
-        std::vector<sd::NDArray *> _content;
-        Nd4jStatus _status = ND4J_STATUS_OK;
-        bool _removable = true;
+class SD_LIB_EXPORT ResultSet {
+ private:
+  std::vector<sd::NDArray *> _content;
+  sd::Status _status = sd::Status::OK;
+  bool _removable = true;
 
-        void delContent();
+  void delContent();
 
-    public:
-        explicit ResultSet();
+ public:
+  explicit ResultSet();
 
 #ifndef __JAVACPP_HACK__
-        ResultSet(const sd::graph::FlatResult* result);
+  ResultSet(const sd::graph::FlatResult *result);
 #endif
 
-        ResultSet(const ResultSet& other) noexcept;
+  ResultSet(const ResultSet &other) noexcept;
 
-        ResultSet& operator=(const ResultSet& other) noexcept;
+  ResultSet &operator=(const ResultSet &other) noexcept;
 
-        // move constructor
-        ResultSet(ResultSet&& other) noexcept;
+  // move constructor
+  ResultSet(ResultSet &&other) noexcept;
 
-        // move assignment operator
-        ResultSet& operator=(ResultSet&& other) noexcept;
+  // move assignment operator
+  ResultSet &operator=(ResultSet &&other) noexcept;
 
-        ~ResultSet();
+  ~ResultSet();
 
-        int size();
-        sd::NDArray* at(const unsigned long idx) const;
-        sd::NDArray* operator[](const unsigned long idx) const;
-        void push_back(sd::NDArray* array);
+  int size();
+  sd::NDArray *at(const unsigned long idx) const;
+  sd::NDArray *operator[](const unsigned long idx) const;
+  void push_back(sd::NDArray *array);
 
-        Nd4jStatus status();
-        void setStatus(Nd4jStatus status);
-        void purge();
-        void setNonRemovable();
-    };
-}
+  sd::Status status();
+  void setStatus(sd::Status status);
+  void purge();
+  void setNonRemovable();
+};
+}  // namespace sd
 
-#endif //LIBND4J_RESULTSET_H
+#endif  // LIBND4J_RESULTSET_H

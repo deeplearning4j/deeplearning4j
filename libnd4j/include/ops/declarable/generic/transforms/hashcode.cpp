@@ -24,37 +24,35 @@
 #if NOT_EXCLUDED(OP_hashcode)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/hashcode.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(hashcode, 1, 1, false, 0, 0) {
-            REQUIRE_TRUE(block.width() == 1, 0, "hashcode: this op can't be applied along dimension");
+namespace ops {
+CUSTOM_OP_IMPL(hashcode, 1, 1, false, 0, 0) {
+  REQUIRE_TRUE(block.width() == 1, 0, "hashcode: this op can't be applied along dimension");
 
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isScalar(), 0, "hashcode: this op requires scalar output");
+  REQUIRE_TRUE(output->isScalar(), 0, "hashcode: this op requires scalar output");
 
-            helpers::hashCode(block.launchContext(), *input, *output);
+  helpers::hashCode(block.launchContext(), *input, *output);
 
-            return Status::OK();
-        };
+  return sd::Status::OK;
+};
 
-        DECLARE_SHAPE_FN(hashcode) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
-        }
-
-
-        DECLARE_TYPES(hashcode) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setAllowedOutputTypes({sd::DataType::INT64});
-        };
-    }
+DECLARE_SHAPE_FN(hashcode) {
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
 }
 
-#endif
+DECLARE_TYPES(hashcode) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedOutputTypes({sd::DataType::INT64});
+};
+}  // namespace ops
+}  // namespace sd
 
+#endif

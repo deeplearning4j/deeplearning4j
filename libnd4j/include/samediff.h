@@ -32,10 +32,10 @@
 #include <array/NDArrayFactory.h>
 
 // basic Graph-related includes
-#include <graph/GraphExecutioner.h>
 #include <graph/Graph.h>
+#include <graph/GraphExecutioner.h>
 
 // ML ops includes
 #include <ops/declarable/CustomOperations.h>
 
-#endif //S_SAMEDIFF_H
+#endif  // S_SAMEDIFF_H

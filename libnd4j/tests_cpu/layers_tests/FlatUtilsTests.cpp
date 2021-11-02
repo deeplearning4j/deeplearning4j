@@ -21,84 +21,79 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
-#include "testlayers.h"
-#include <graph/Stash.h>
 #include <graph/FlatUtils.h>
+#include <graph/Stash.h>
+
+#include "testlayers.h"
 
 using namespace sd;
 
 class FlatUtilsTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(FlatUtilsTests, flat_float_serde_1) {
-    auto array = NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f});
+  auto array = NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f});
 
-    flatbuffers::FlatBufferBuilder builder(1024);
-    auto flatArray = FlatUtils::toFlatArray(builder, array);
-    builder.Finish(flatArray);
+  flatbuffers::FlatBufferBuilder builder(1024);
+  auto flatArray = FlatUtils::toFlatArray(builder, array);
+  builder.Finish(flatArray);
 
+  auto pfArray = GetFlatArray(builder.GetBufferPointer());
 
-    auto pfArray = GetFlatArray(builder.GetBufferPointer());
+  auto restored = FlatUtils::fromFlatArray(pfArray);
 
-    auto restored = FlatUtils::fromFlatArray(pfArray);
+  ASSERT_EQ(array, *restored);
 
-    ASSERT_EQ(array, *restored);
-
-    delete restored;
+  delete restored;
 }
 
 TEST_F(FlatUtilsTests, flat_int_serde_1) {
-    auto array = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
+  auto array = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
 
-    flatbuffers::FlatBufferBuilder builder(1024);
-    auto flatArray = FlatUtils::toFlatArray(builder, array);
-    builder.Finish(flatArray);
+  flatbuffers::FlatBufferBuilder builder(1024);
+  auto flatArray = FlatUtils::toFlatArray(builder, array);
+  builder.Finish(flatArray);
 
+  auto pfArray = GetFlatArray(builder.GetBufferPointer());
 
-    auto pfArray = GetFlatArray(builder.GetBufferPointer());
+  auto restored = FlatUtils::fromFlatArray(pfArray);
 
-    auto restored = FlatUtils::fromFlatArray(pfArray);
+  ASSERT_EQ(array, *restored);
 
-    ASSERT_EQ(array, *restored);
-
-    delete restored;
+  delete restored;
 }
 
 TEST_F(FlatUtilsTests, flat_bool_serde_1) {
-    auto array = NDArrayFactory::create<bool>('c', {4}, {true, false, true, false});
+  auto array = NDArrayFactory::create<bool>('c', {4}, {true, false, true, false});
 
-    flatbuffers::FlatBufferBuilder builder(1024);
-    auto flatArray = FlatUtils::toFlatArray(builder, array);
-    builder.Finish(flatArray);
+  flatbuffers::FlatBufferBuilder builder(1024);
+  auto flatArray = FlatUtils::toFlatArray(builder, array);
+  builder.Finish(flatArray);
 
+  auto pfArray = GetFlatArray(builder.GetBufferPointer());
 
-    auto pfArray = GetFlatArray(builder.GetBufferPointer());
+  auto restored = FlatUtils::fromFlatArray(pfArray);
 
-    auto restored = FlatUtils::fromFlatArray(pfArray);
+  ASSERT_EQ(array, *restored);
 
-    ASSERT_EQ(array, *restored);
-
-    delete restored;
+  delete restored;
 }
 
 TEST_F(FlatUtilsTests, flat_string_serde_1) {
-    auto array = NDArrayFactory::string( {3}, {"alpha", "beta", "gamma"});
+  auto array = NDArrayFactory::string({3}, {"alpha", "beta", "gamma"});
 
-    flatbuffers::FlatBufferBuilder builder(1024);
-    auto flatArray = FlatUtils::toFlatArray(builder, array);
-    builder.Finish(flatArray);
+  flatbuffers::FlatBufferBuilder builder(1024);
+  auto flatArray = FlatUtils::toFlatArray(builder, array);
+  builder.Finish(flatArray);
 
+  auto pfArray = GetFlatArray(builder.GetBufferPointer());
 
-    auto pfArray = GetFlatArray(builder.GetBufferPointer());
+  auto restored = FlatUtils::fromFlatArray(pfArray);
 
-    auto restored = FlatUtils::fromFlatArray(pfArray);
+  ASSERT_EQ(array, *restored);
 
-    ASSERT_EQ(array, *restored);
-
-    delete restored;
+  delete restored;
 }

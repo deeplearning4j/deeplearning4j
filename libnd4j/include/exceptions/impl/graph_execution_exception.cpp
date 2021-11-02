@@ -19,12 +19,13 @@
 //
 // Created by raver on 8/31/2018.
 //
-
-#include <helpers/StringUtils.h>
 #include <exceptions/graph_execution_exception.h>
+#include <helpers/StringUtils.h>
 
 namespace sd {
-    graph_execution_exception::graph_execution_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Caught exception during graph execution", graphId), graphId) {
-        _graphId = graphId;
-    }
+graph_execution_exception::graph_execution_exception(sd::LongType graphId)
+    : graph_exception(StringUtils::buildGraphErrorMessage("Caught exception during graph execution", graphId),
+                      graphId) {
+  _graphId = graphId;
 }
+}  // namespace sd

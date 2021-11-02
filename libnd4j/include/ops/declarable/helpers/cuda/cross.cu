@@ -20,105 +20,105 @@
 // @author Yurii Shyrma, created on 10.06.2019
 //
 
-
-#include <ops/declarable/helpers/cross.h>
 #include <helpers/PointersManager.h>
+#include <ops/declarable/helpers/cross.h>
 
-
-namespace sd 	  {
-namespace ops 	  {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-__global__ static void crossCuda(const void* vx, const Nd4jLong* xShapeInfo,
-                                 const void* vy, const Nd4jLong* yShapeInfo,
-                                 	   void* vz, const Nd4jLong* zShapeInfo) {
+template <typename T>
+SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
+                                const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo) {
+  __shared__ const T* x;
+  __shared__ const T* y;
+  __shared__ T* z;
+  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType lenWithoutLastDim, totalThreads;
 
-    __shared__ const T* x;
-    __shared__ const T* y;
-    __shared__ 		 T* z;
-    __shared__ int rank, *sharedMem;
-    __shared__ Nd4jLong lenWithoutLastDim, totalThreads;
+  if (threadIdx.x == 0) {
+    x = reinterpret_cast<const T*>(vx);
+    y = reinterpret_cast<const T*>(vy);
+    z = reinterpret_cast<T*>(vz);
 
-    if (threadIdx.x == 0) {
-    	x = reinterpret_cast<const T*>(vx);
-    	y = reinterpret_cast<const T*>(vy);
-    	z = reinterpret_cast<T*>(vz);
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<int*>(shmem);
+    totalThreads = gridDim.x * blockDim.x;
 
-        extern __shared__ unsigned char shmem[];
-        sharedMem    = reinterpret_cast<int*>(shmem);
-        totalThreads = gridDim.x * blockDim.x;
+    rank = shape::rank(xShapeInfo);
+    lenWithoutLastDim = shape::length(xShapeInfo) / xShapeInfo[rank];  //  shape::length(xShapeInfo) / 3;
+  }
+  __syncthreads();
 
-        rank              = shape::rank(xShapeInfo);
-        lenWithoutLastDim = shape::length(xShapeInfo) / xShapeInfo[rank]; //  shape::length(xShapeInfo) / 3;
-    }
-    __syncthreads();
+  auto coords = sharedMem + threadIdx.x * rank;
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    auto coords = sharedMem + threadIdx.x * rank;
-    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (sd::Unsigned i = tid; i < lenWithoutLastDim; i += totalThreads) {
+    shape::index2coords(i, rank - 1, xShapeInfo + 1, coords);
 
-    for (uint i = tid; i < lenWithoutLastDim; i += totalThreads) {
+    coords[rank - 1] = 0;
 
-        shape::index2coords(i, rank - 1, xShapeInfo + 1, coords);
+    auto xOffset = shape::getOffset(xShapeInfo, coords);
+    auto yOffset = shape::getOffset(yShapeInfo, coords);
 
-        coords[rank - 1] = 0;
+    const auto x0 = x[xOffset];
+    const auto y0 = y[yOffset];
 
-        auto xOffset = shape::getOffset(xShapeInfo, coords);
-        auto yOffset = shape::getOffset(yShapeInfo, coords);
+    xOffset += shape::stride(const_cast<sd::LongType*>(xShapeInfo))[rank - 1];
+    yOffset += shape::stride(const_cast<sd::LongType*>(yShapeInfo))[rank - 1];
 
-        const auto x0 = x[xOffset];
-        const auto y0 = y[yOffset];
+    const auto x1 = x[xOffset];
+    const auto y1 = y[yOffset];
 
-		xOffset += shape::stride(const_cast<Nd4jLong*>(xShapeInfo))[rank - 1];
-		yOffset += shape::stride(const_cast<Nd4jLong*>(yShapeInfo))[rank - 1];
+    xOffset += shape::stride(const_cast<sd::LongType*>(xShapeInfo))[rank - 1];
+    yOffset += shape::stride(const_cast<sd::LongType*>(yShapeInfo))[rank - 1];
 
-		const auto x1 = x[xOffset];
-        const auto y1 = y[yOffset];
+    const auto x2 = x[xOffset];
+    const auto y2 = y[yOffset];
 
-        xOffset += shape::stride(const_cast<Nd4jLong*>(xShapeInfo))[rank - 1];
-		yOffset += shape::stride(const_cast<Nd4jLong*>(yShapeInfo))[rank - 1];
+    auto zOffset = shape::getOffset(zShapeInfo, coords);
+    z[zOffset] = x1 * y2 - x2 * y1;
 
-		const auto x2 = x[xOffset];
-        const auto y2 = y[yOffset];
+    zOffset += shape::stride(const_cast<sd::LongType*>(zShapeInfo))[rank - 1];
+    z[zOffset] = x2 * y0 - x0 * y2;
 
-        auto zOffset = shape::getOffset(zShapeInfo, coords);
-        z[zOffset] = x1 * y2 - x2 * y1;
-
-        zOffset += shape::stride(const_cast<Nd4jLong*>(zShapeInfo))[rank - 1];
-        z[zOffset] = x2 * y0 - x0 * y2;
-
-        zOffset += shape::stride(const_cast<Nd4jLong*>(zShapeInfo))[rank - 1];
-		z[zOffset] = x0 * y1 - x1 * y0;
-    }
+    zOffset += shape::stride(const_cast<sd::LongType*>(zShapeInfo))[rank - 1];
+    z[zOffset] = x0 * y1 - x1 * y0;
+  }
 }
 
-template<typename T>
-__host__ static void crossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
-							   		   const void* vx, const Nd4jLong* xShapeInfo,
-							   		   const void* vy, const Nd4jLong* yShapeInfo,
-									 	     void* vz, const Nd4jLong* zShapeInfo) {
-
-    crossCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+template <typename T>
+SD_HOST static void crossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
+                                      const void* vy, const sd::LongType* yShapeInfo, void* vz,
+                                      const sd::LongType* zShapeInfo) {
+  crossCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
-BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES);
+BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher,
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                       const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
+                       const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo),
+                      SD_NUMERIC_TYPES);
 
+void crossBatched(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* z) {
+  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;
+  const int sharedMem = sizeof(int) * threadsPerBlock * x->rankOf() + 128;
 
-ND4J_LOCAL void crossBatched(sd::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z) {
+  PointersManager manager(context, "cross");
 
-	const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = sizeof(int) * threadsPerBlock * x->rankOf() + 128;
+  NDArray::prepareSpecialUse({z}, {x, y});
+  BUILD_SINGLE_SELECTOR(
+      x->dataType(), crossCudaLauncher,
+      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
+       y->specialBuffer(), y->specialShapeInfo(), z->specialBuffer(), z->specialShapeInfo()),
+      SD_NUMERIC_TYPES);
+  NDArray::registerSpecialUse({z}, {x, y});
 
-    PointersManager manager(context, "cross");
-
-    NDArray::prepareSpecialUse({z}, {x, y});
-    BUILD_SINGLE_SELECTOR(x->dataType(), crossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->specialBuffer(), z->specialShapeInfo()), NUMERIC_TYPES);
-    NDArray::registerSpecialUse({z}, {x, y});
-
-    manager.synchronize();
+  manager.synchronize();
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

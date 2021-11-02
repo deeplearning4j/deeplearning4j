@@ -27,28 +27,32 @@
 #include <ops/declarable/helpers/print_variable.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(print_affinity, 1, 1, true, 0, 0) {
-            // TODO: make this op compatible with ArrayList etc
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(print_affinity, 1, 1, true, 0, 0) {
+  // TODO: make this op compatible with ArrayList etc
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            nd4j_printf("<Node %i>: Actuality: [HOST: %s; DEVICE: %s]; affinity: [%i]; Pointers: [HOST: %p; DEVICE: %p]; DataBuffer length: %lld\n", block.nodeId(), input->isActualOnHostSide() ? "true" : "false", input->isActualOnDeviceSide() ? "true" : "false", input->dataBuffer()->deviceId(), input->buffer(), input->specialBuffer(), input->dataBuffer()->getLenInBytes());
+  sd_printf(
+      "<Node %i>: Actuality: [HOST: %s; DEVICE: %s]; affinity: [%i]; Pointers: [HOST: %p; DEVICE: %p]; DataBuffer "
+      "length: %lld\n",
+      block.nodeId(), input->isActualOnHostSide() ? "true" : "false", input->isActualOnDeviceSide() ? "true" : "false",
+      input->dataBuffer()->deviceId(), input->buffer(), input->specialBuffer(), input->dataBuffer()->getLenInBytes());
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(print_affinity) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, sd::DataType::ANY)
-                    ->setAllowedInputTypes(1, {ALL_STRINGS})
-                    ->setAllowedOutputTypes(0, sd::DataType::INT32);
-        }
-
-        DECLARE_SHAPE_FN(print_affinity) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT32));
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(print_affinity) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(1, {ALL_STRINGS})
+      ->setAllowedOutputTypes(0, sd::DataType::INT32);
+}
+
+DECLARE_SHAPE_FN(print_affinity) {
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT32));
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

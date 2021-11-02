@@ -24,45 +24,45 @@
 
 #ifndef LIBND4J_CONSTANTHOLDER_H
 #define LIBND4J_CONSTANTHOLDER_H
+#include <array/ConstantDataBuffer.h>
+#include <array/ConstantDescriptor.h>
 
 #include <map>
-#include <array/ConstantDescriptor.h>
-#include <array/ConstantDataBuffer.h>
 #include <mutex>
 
 namespace sd {
-    class ConstantHolder {
-    private:
-        int _deviceId = 0;
-        std::mutex _mutex;
+class ConstantHolder {
+ private:
+  int _deviceId = 0;
+  std::mutex _mutex;
 
-        std::map<sd::DataType, ConstantDataBuffer> _buffers;
-    public:
-        ConstantHolder(const ConstantHolder& other);
-        ConstantHolder() = default;
-        ~ConstantHolder() = default;
+  std::map<sd::DataType, ConstantDataBuffer> _buffers;
 
-        ConstantHolder& operator=(const ConstantHolder& other) = default;
-        ConstantHolder& operator=(ConstantHolder&& other) = default;
+ public:
+  ConstantHolder(const ConstantHolder &other);
+  ConstantHolder() = default;
+  ~ConstantHolder() = default;
 
-        bool hasBuffer(sd::DataType dataType);
+  ConstantHolder &operator=(const ConstantHolder &other) = default;
+  ConstantHolder &operator=(ConstantHolder &&other) = default;
 
-        template <typename T>
-        bool hasBuffer();
+  bool hasBuffer(sd::DataType dataType);
 
-        void addBuffer(ConstantDataBuffer &pointer, sd::DataType dataType);
+  template <typename T>
+  bool hasBuffer();
 
-        template <typename T>
-        void addBuffer(ConstantDataBuffer &pointer);
+  void addBuffer(ConstantDataBuffer &pointer, sd::DataType dataType);
 
-        ConstantDataBuffer* getConstantDataBuffer(sd::DataType dataType);
+  template <typename T>
+  void addBuffer(ConstantDataBuffer &pointer);
 
-        template <typename T>
-        ConstantDataBuffer* getConstantDataBuffer();
+  ConstantDataBuffer *getConstantDataBuffer(sd::DataType dataType);
 
-        std::mutex* mutex();
-    };
-}
+  template <typename T>
+  ConstantDataBuffer *getConstantDataBuffer();
 
+  std::mutex *mutex();
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_CONSTANTHOLDER_H
+#endif  // DEV_TESTS_CONSTANTHOLDER_H

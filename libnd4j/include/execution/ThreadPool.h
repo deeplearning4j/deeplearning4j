@@ -22,50 +22,53 @@
 
 #ifndef SAMEDIFF_THREADPOOL_H
 #define SAMEDIFF_THREADPOOL_H
-
-#include <list>
-#include <vector>
-#include <thread>
-#include <atomic>
-#include <mutex>
 #include <execution/BlockingQueue.h>
-#include <execution/CallableWithArguments.h>
 #include <execution/CallableInterface.h>
+#include <execution/CallableWithArguments.h>
 #include <execution/Ticket.h>
+#include <system/common.h>
+
+#include <atomic>
+#include <list>
+#include <mutex>
 #include <queue>
+#include <thread>
+#include <vector>
 
 namespace samediff {
-    class ND4J_EXPORT ThreadPool {
-    private:
-        std::vector<std::thread> _threads;
-        std::vector<BlockingQueue<CallableWithArguments*>*> _queues;
-        std::vector<CallableInterface*> _interfaces;
+class SD_LIB_EXPORT ThreadPool {
+ private:
+  std::vector<std::thread> _threads;
+  std::vector<BlockingQueue<CallableWithArguments*>*> _queues;
+  std::vector<CallableInterface*> _interfaces;
 
-        std::mutex _lock;
-        std::atomic<int> _available;
-        std::queue<Ticket*> _tickets;
-    protected:
-        ThreadPool();
-        ~ThreadPool();
-    public:
-        static ThreadPool& getInstance();
+  std::mutex _lock;
+  std::atomic<int> _available;
+  std::queue<Ticket*> _tickets;
 
-        /**
-         * This method returns list of pointers to threads ONLY if num_threads of threads were available upon request, returning empty list otherwise
-         * @param num_threads
-         * @return
-         */
-        Ticket* tryAcquire(int num_threads);
+ protected:
+  ThreadPool();
+  ~ThreadPool();
 
-        /**
-         * This method marks specified number of threads as released, and available for use
-         * @param num_threads
-         */
-        void release(int num_threads = 1);
+ public:
+  static ThreadPool& getInstance();
 
-        void release(Ticket *ticket);
-    };
-}
+  /**
+   * This method returns list of pointers to threads ONLY if num_threads of threads were available upon request,
+   * returning empty list otherwise
+   * @param num_threads
+   * @return
+   */
+  Ticket* tryAcquire(int num_threads);
 
+  /**
+   * This method marks specified number of threads as released, and available for use
+   * @param num_threads
+   */
+  void release(int num_threads = 1);
 
-#endif //DEV_TESTS_THREADPOOL_H
+  void release(Ticket* ticket);
+};
+}  // namespace samediff
+
+#endif  // DEV_TESTS_THREADPOOL_H

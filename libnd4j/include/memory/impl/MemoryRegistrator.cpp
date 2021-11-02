@@ -19,69 +19,56 @@
 //
 // Created by raver119 on 07.10.2017.
 //
-
 #include <memory/MemoryRegistrator.h>
 
 namespace sd {
-    namespace memory {
+namespace memory {
 
-        MemoryRegistrator::MemoryRegistrator() {
-            _workspace = nullptr;
-        };
+MemoryRegistrator::MemoryRegistrator() { _workspace = nullptr; };
 
-        MemoryRegistrator& MemoryRegistrator::getInstance() {
-          static MemoryRegistrator instance;
-          return instance;
-        }
-
-        bool MemoryRegistrator::hasWorkspaceAttached() {
-            return _workspace != nullptr;
-        }
-
-        Workspace* MemoryRegistrator::getWorkspace() {
-            return _workspace;
-        }
-
-        void MemoryRegistrator::attachWorkspace(Workspace* workspace) {
-            _workspace = workspace;
-        }
-
-        void MemoryRegistrator::forgetWorkspace() {
-            _workspace = nullptr;
-        }
-
-        void MemoryRegistrator::setGraphMemoryFootprint(Nd4jLong hash, Nd4jLong bytes) {
-            _lock.lock();
-    
-            _footprint[hash] = bytes;
-
-            _lock.unlock();
-        }
-
-        void MemoryRegistrator::setGraphMemoryFootprintIfGreater(Nd4jLong hash, Nd4jLong bytes) {
-            _lock.lock();
-
-            if (_footprint.count(hash) == 0)
-                _footprint[hash] = bytes;
-            else {
-                Nd4jLong cv = _footprint[hash];
-                if (bytes > cv)
-                    _footprint[hash] = bytes;
-            }
-
-            _lock.unlock();
-        }
-
-        Nd4jLong MemoryRegistrator::getGraphMemoryFootprint(Nd4jLong hash) {
-            _lock.lock();
-            
-            Nd4jLong result = 0L;
-            if (_footprint.count(hash) > 0)
-                result = _footprint[hash];
-        
-            _lock.unlock();
-
-            return result;
-        }
-    }
+MemoryRegistrator& MemoryRegistrator::getInstance() {
+  static MemoryRegistrator instance;
+  return instance;
 }
+
+bool MemoryRegistrator::hasWorkspaceAttached() { return _workspace != nullptr; }
+
+Workspace* MemoryRegistrator::getWorkspace() { return _workspace; }
+
+void MemoryRegistrator::attachWorkspace(Workspace* workspace) { _workspace = workspace; }
+
+void MemoryRegistrator::forgetWorkspace() { _workspace = nullptr; }
+
+void MemoryRegistrator::setGraphMemoryFootprint(sd::LongType hash, sd::LongType bytes) {
+  _lock.lock();
+
+  _footprint[hash] = bytes;
+
+  _lock.unlock();
+}
+
+void MemoryRegistrator::setGraphMemoryFootprintIfGreater(sd::LongType hash, sd::LongType bytes) {
+  _lock.lock();
+
+  if (_footprint.count(hash) == 0)
+    _footprint[hash] = bytes;
+  else {
+    sd::LongType cv = _footprint[hash];
+    if (bytes > cv) _footprint[hash] = bytes;
+  }
+
+  _lock.unlock();
+}
+
+sd::LongType MemoryRegistrator::getGraphMemoryFootprint(sd::LongType hash) {
+  _lock.lock();
+
+  sd::LongType result = 0L;
+  if (_footprint.count(hash) > 0) result = _footprint[hash];
+
+  _lock.unlock();
+
+  return result;
+}
+}  // namespace memory
+}  // namespace sd

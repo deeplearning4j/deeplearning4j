@@ -19,33 +19,30 @@
 //
 // Created by raver on 4/18/2019.
 //
-
-#include "testlayers.h"
 #include <graph/Graph.h>
 #include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
+
+#include "testlayers.h"
 
 using namespace sd;
 using namespace sd::graph;
 
 class ResultSetTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(ResultSetTests, basic_test_1) {
-    auto x = NDArrayFactory::create<float>('c', {3, 5});
+  auto x = NDArrayFactory::create<float>('c', {3, 5});
 
-    auto tensors = x.allTensorsAlongDimension({1});
-    ASSERT_EQ(3, tensors.size());
+  auto tensors = x.allTensorsAlongDimension({1});
+  ASSERT_EQ(3, tensors.size());
 
-    ResultSet set = tensors;
-    ASSERT_EQ(3, tensors.size());
-    ASSERT_EQ(3, set.size());
+  ResultSet set = tensors;
+  ASSERT_EQ(3, tensors.size());
+  ASSERT_EQ(3, set.size());
 
-    for (int e = 0; e < set.size(); e++)
-        ASSERT_EQ(5, set.at(e)->lengthOf());
+  for (int e = 0; e < set.size(); e++) ASSERT_EQ(5, set.at(e)->lengthOf());
 
-    for (int e = 0; e < tensors.size(); e++)
-        ASSERT_EQ(5, tensors.at(e)->lengthOf());
+  for (int e = 0; e < tensors.size(); e++) ASSERT_EQ(5, tensors.at(e)->lengthOf());
 }

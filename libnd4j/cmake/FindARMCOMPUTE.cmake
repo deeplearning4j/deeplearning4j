@@ -18,7 +18,6 @@
 ################################################################################
 
 
-
 ### Find ARM COMPUTE LIBRARY STATIC libraries
 
 if (NOT DEFINED ${ARMCOMPUTE_ROOT})

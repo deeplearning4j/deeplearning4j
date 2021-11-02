@@ -20,7 +20,6 @@
 //  @author raver119@gmail.com
 //
 
-
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cube)
 
@@ -28,41 +27,37 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace sd {
-    namespace ops {
-        CONFIGURABLE_OP_IMPL(cube, 1, 1, true, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CONFIGURABLE_OP_IMPL(cube, 1, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            input->applyTransform(sd::transform::Cube, *output);
-            STORE_RESULT(output);
+  input->applyTransform(sd::transform::Cube, *output);
+  STORE_RESULT(output);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(cube) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setSameMode(true);
-        }
-
-        CONFIGURABLE_OP_IMPL(cube_bp, 2, 1, true, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto epsilon = INPUT_VARIABLE(1);
-
-            auto z = OUTPUT_VARIABLE(0);
-
-            //input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
-            helpers::cubeDerivative(block.launchContext(), input, epsilon, z);
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(cube_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(cube) { getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setSameMode(true); }
+
+CONFIGURABLE_OP_IMPL(cube_bp, 2, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto epsilon = INPUT_VARIABLE(1);
+
+  auto z = OUTPUT_VARIABLE(0);
+
+  // input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
+  helpers::cubeDerivative(block.launchContext(), input, epsilon, z);
+  return sd::Status::OK;
+}
+
+DECLARE_TYPES(cube_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

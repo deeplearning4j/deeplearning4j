@@ -20,15 +20,13 @@
 //  @author raver119@gmail.com
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <exceptions/cuda_exception.h>
 #include <cublas_v2.h>
+#include <exceptions/cuda_exception.h>
+#include <helpers/PointersManager.h>
+#include <ops/declarable/helpers/batched_gemm.h>
 #include <ops/specials_cuda.h>
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
-#include <ops/declarable/helpers/batched_gemm.h>
-#include <helpers/PointersManager.h>
-
 
 namespace sd {
 namespace ops {
@@ -36,145 +34,137 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////
 // bsxMXK x bSxKxN = bSxMxN
-ND4J_LOCAL void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc) {
+void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC,
+           const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda,
+           const int ldb, const int ldc) {
+  const auto bS = vA.size();  // batch size
 
-    const auto bS = vA.size();      // batch size
+  std::vector<NDArray*> pA(bS), pB(bS), pC(bS);
 
-    std::vector<NDArray*> pA(bS), pB(bS), pC(bS);
+  std::vector<NDArray*> toDelete;
 
-    std::vector<NDArray*> toDelete;
+  for (int i = 0; i < bS; ++i) {
+    if (vA[i]->ews() != 1) {
+      pA[i] = new NDArray(vA[i]->dup('f'));
+      toDelete.emplace_back(pA[i]);
+    } else
+      pA[i] = vA[i];
 
-    for(int i = 0; i < bS; ++i) {
+    if (vB[i]->ews() != 1) {
+      pB[i] = new NDArray(vB[i]->dup('f'));
+      toDelete.emplace_back(pB[i]);
+    } else
+      pB[i] = vB[i];
 
-        if(vA[i]->ews() != 1) {
-            pA[i] = new NDArray(vA[i]->dup('f'));
-            toDelete.emplace_back(pA[i]);
-        }
-        else
-            pA[i] = vA[i];
+    if (vC[i]->ews() != 1) {
+      pC[i] = new NDArray(vC[i]->dup('f'));
+      toDelete.emplace_back(pC[i]);
+    } else
+      pC[i] = vC[i];
 
-        if(vB[i]->ews() != 1) {
-            pB[i] = new NDArray(vB[i]->dup('f'));
-            toDelete.emplace_back(pB[i]);
-        }
-        else
-            pB[i] = vB[i];
-
-        if(vC[i]->ews() != 1) {
-            pC[i] = new NDArray(vC[i]->dup('f'));
-            toDelete.emplace_back(pC[i]);
-        }
-        else
-            pC[i] = vC[i];
-
-        if(pC[i]->ordering() != 'f') {
-            auto temp = pA[i];
-            pA[i] = new NDArray(pB[i]->permute({1,0}));
-            pB[i] = new NDArray(temp ->permute({1,0}));
-            pC[i] = new NDArray(pC[i]->permute({1,0}));
-            toDelete.push_back(pA[i]);
-            toDelete.push_back(pB[i]);
-            toDelete.push_back(pC[i]);
-            M = pA[i]->sizeAt(0);
-            K = pA[i]->sizeAt(1);
-            N = pB[i]->sizeAt(1);
-        }
-
-        NDArray::prepareSpecialUse ({pC[i]}, {pA[i], pB[i]});
-        NDArray::registerSpecialUse({pC[i]}, {pA[i], pB[i]});
+    if (pC[i]->ordering() != 'f') {
+      auto temp = pA[i];
+      pA[i] = new NDArray(pB[i]->permute({1, 0}));
+      pB[i] = new NDArray(temp->permute({1, 0}));
+      pC[i] = new NDArray(pC[i]->permute({1, 0}));
+      toDelete.push_back(pA[i]);
+      toDelete.push_back(pB[i]);
+      toDelete.push_back(pC[i]);
+      M = pA[i]->sizeAt(0);
+      K = pA[i]->sizeAt(1);
+      N = pB[i]->sizeAt(1);
     }
 
-    NDArray::prepareSpecialUse ({}, {alphas, betas});
-    NDArray::registerSpecialUse({}, {alphas, betas});
+    NDArray::prepareSpecialUse({pC[i]}, {pA[i], pB[i]});
+    NDArray::registerSpecialUse({pC[i]}, {pA[i], pB[i]});
+  }
 
-    std::vector<void*> pAbuffs(bS), pBbuffs(bS), pCbuffs(bS);
-    for(int i = 0; i < bS; ++i) {
-        pAbuffs[i] = pA[i]->specialBuffer();
-        pBbuffs[i] = pB[i]->specialBuffer();
-        pCbuffs[i] = pC[i]->specialBuffer();
-    }
+  NDArray::prepareSpecialUse({}, {alphas, betas});
+  NDArray::registerSpecialUse({}, {alphas, betas});
 
-    sd::LaunchContext* context = vA[0]->getContext();
-    PointersManager manager(context, "helpers::bgemm cuda");
+  std::vector<void*> pAbuffs(bS), pBbuffs(bS), pCbuffs(bS);
+  for (int i = 0; i < bS; ++i) {
+    pAbuffs[i] = pA[i]->specialBuffer();
+    pBbuffs[i] = pB[i]->specialBuffer();
+    pCbuffs[i] = pC[i]->specialBuffer();
+  }
 
-    const void** aBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pAbuffs.data(), bS * sizeof(void*)));
-    const void** bBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pBbuffs.data(), bS * sizeof(void*)));
-          void** cBuffers = reinterpret_cast<void**>(manager.replicatePointer(pCbuffs.data(), bS * sizeof(void*)));
+  sd::LaunchContext* context = vA[0]->getContext();
+  PointersManager manager(context, "helpers::bgemm cuda");
 
-    // const auto aOrder = pA->ordering();
-    // const auto bOrder = pB->ordering();
+  const void** aBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pAbuffs.data(), bS * sizeof(void*)));
+  const void** bBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pBbuffs.data(), bS * sizeof(void*)));
+  void** cBuffers = reinterpret_cast<void**>(manager.replicatePointer(pCbuffs.data(), bS * sizeof(void*)));
 
-    // const bool transA = aOrder != 'f';
-    // const bool transB = bOrder != 'f';
+  // const auto aOrder = pA->ordering();
+  // const auto bOrder = pB->ordering();
 
-    const cublasOperation_t transAblas = transA == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
-    const cublasOperation_t transBblas = transB == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
+  // const bool transA = aOrder != 'f';
+  // const bool transB = bOrder != 'f';
 
-    // const int lda = aOrder == 'f' ? M : K;
-    // const int ldb = bOrder == 'f' ? K : N;
-    // const int ldc = M; // cOrder == 'f' ? M : N;
+  const cublasOperation_t transAblas = transA == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
+  const cublasOperation_t transBblas = transB == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-    const auto aType = pA[0]->dataType();
-    const auto bType = pB[0]->dataType();
-    const auto cType = pC[0]->dataType();
+  // const int lda = aOrder == 'f' ? M : K;
+  // const int ldb = bOrder == 'f' ? K : N;
+  // const int ldc = M; // cOrder == 'f' ? M : N;
 
-    std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
+  const auto aType = pA[0]->dataType();
+  const auto bType = pB[0]->dataType();
+  const auto cType = pC[0]->dataType();
 
-    auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
-    auto stream = context->getCudaStream();
+  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
-    auto status = cublasSetStream_v2(*handle, *stream);
+  auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
+  auto stream = context->getCudaStream();
 
-    if (status != CUBLAS_STATUS_SUCCESS)
-        throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+  auto status = cublasSetStream_v2(*handle, *stream);
 
-    const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
+  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
-    // choose appropriate cuda gemm api depending on data types
-    if(ABC && aType == DataType::DOUBLE) {
-        double alpha = alphas->e<double>(0);
-        double beta  = betas->e<double>(0);
-        status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const double**)aBuffers, lda, (const double**)bBuffers, ldb, &beta, (double**)cBuffers, ldc, bS);
-    }
-    else if(ABC && aType == DataType::FLOAT32) {
-        float alpha = alphas->e<float>(0);
-        float beta  = betas->e<float>(0);
-        status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda, (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
-    }
-    else if(ABC && aType == DataType::HALF) {
-        __half alpha = alphas->e<float>(0);
-        __half beta  = betas->e<float>(0);
-        status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda, (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
-    }
-    else if(AB && aType == DataType::INT8 && cType == DataType::FLOAT32) {
-        float alpha = alphas->e<float>(0);
-        float beta  = betas->e<float>(0);
-        status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_8I, lda, bBuffers, CUDA_R_8I, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-    }
-    else if(AB && aType == DataType::HALF && cType == DataType::FLOAT32) {
-        float alpha = alphas->e<float>(0);
-        float beta  = betas->e<float>(0);
-        status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_16F, lda, bBuffers, CUDA_R_16F, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-    }
-    else
-        throw std::runtime_error("batched gemm cuda: this mode is not implemented yet !");
+  const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
-    if (status != CUBLAS_STATUS_SUCCESS)
-        throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+  // choose appropriate cuda gemm api depending on data types
+  if (ABC && aType == DataType::DOUBLE) {
+    double alpha = alphas->e<double>(0);
+    double beta = betas->e<double>(0);
+    status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const double**)aBuffers, lda,
+                                (const double**)bBuffers, ldb, &beta, (double**)cBuffers, ldc, bS);
+  } else if (ABC && aType == DataType::FLOAT32) {
+    float alpha = alphas->e<float>(0);
+    float beta = betas->e<float>(0);
+    status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda,
+                                (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
+  } else if (ABC && aType == DataType::HALF) {
+    __half alpha = alphas->e<float>(0);
+    __half beta = betas->e<float>(0);
+    status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda,
+                                (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
+  } else if (AB && aType == DataType::INT8 && cType == DataType::FLOAT32) {
+    float alpha = alphas->e<float>(0);
+    float beta = betas->e<float>(0);
+    status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_8I, lda, bBuffers,
+                                 CUDA_R_8I, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
+  } else if (AB && aType == DataType::HALF && cType == DataType::FLOAT32) {
+    float alpha = alphas->e<float>(0);
+    float beta = betas->e<float>(0);
+    status =
+        cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_16F, lda, bBuffers,
+                            CUDA_R_16F, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
+  } else
+    throw std::runtime_error("batched gemm cuda: this mode is not implemented yet !");
 
-    auto cudaResult = cudaStreamSynchronize(*stream);
-    if (cudaResult != 0)
-        throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
-    for(int i = 0; i < bS; ++i)
-    if(vC[i]->ews() != 1)
-        vC[i]->assign(pC[i]);
+  auto cudaResult = cudaStreamSynchronize(*stream);
+  if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
 
-    for(int i = toDelete.size() - 1; i >= 0; --i)
-        delete toDelete[i];
+  for (int i = 0; i < bS; ++i)
+    if (vC[i]->ews() != 1) vC[i]->assign(pC[i]);
+
+  for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 }
 
-}
-}
-}
-
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

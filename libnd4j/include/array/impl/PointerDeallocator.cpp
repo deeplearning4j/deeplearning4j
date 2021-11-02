@@ -21,7 +21,6 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <array/PointerDeallocator.h>
 
 namespace sd {
@@ -30,4 +29,4 @@ void PointerDeallocator::release(void *ptr) {
   // noop
 }
 
-} // namespace sd
+}  // namespace sd

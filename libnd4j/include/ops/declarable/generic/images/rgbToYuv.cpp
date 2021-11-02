@@ -20,45 +20,40 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
-
-
-#include <ops/declarable/headers/images.h>
-#include <ops/declarable/CustomOperations.h>  
-#include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/images.h>
 #if NOT_EXCLUDED(OP_rgb_to_yuv)
 namespace sd {
 namespace ops {
 
 CONFIGURABLE_OP_IMPL(rgb_to_yuv, 1, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    auto input = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
+  // just skip op if input is empty
+  if (input->isEmpty()) return sd::Status::OK;
 
-    // just skip op if input is empty
-    if (input->isEmpty())
-        return Status::OK();
+  const int rank = input->rankOf();
+  const int argSize = block.getIArguments()->size();
+  const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
 
-    const int rank = input->rankOf();
-    const int argSize = block.getIArguments()->size();
-    const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+  REQUIRE_TRUE(rank >= 1, 0, "RGBtoYUV: Fails to meet the rank requirement: %i >= 1 ", rank);
+  if (argSize > 0) {
+    REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ",
+                 INT_ARG(0), -rank, rank);
+  }
+  REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoYUV: operation expects 3 channels (R, G, B), but got %i instead",
+               input->sizeAt(dimC));
 
-    REQUIRE_TRUE(rank >= 1, 0, "RGBtoYUV: Fails to meet the rank requirement: %i >= 1 ", rank);
-    if (argSize > 0) {
-        REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
-    }
-    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoYUV: operation expects 3 channels (R, G, B), but got %i instead", input->sizeAt(dimC));
+  helpers::transformRgbYuv(block.launchContext(), *input, *output, dimC);
 
-    helpers::transformRgbYuv(block.launchContext(), *input, *output, dimC);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-DECLARE_TYPES(rgb_to_yuv) {
-    getOpDescriptor()->setAllowedInputTypes({ ALL_FLOATS })
-        ->setSameMode(true);
-}
+DECLARE_TYPES(rgb_to_yuv) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

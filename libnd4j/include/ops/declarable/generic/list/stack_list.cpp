@@ -27,21 +27,21 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        LIST_OP_IMPL(stack_list, 1, 1, 0, 0) {
-            auto list = INPUT_LIST(0);
-            //auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+LIST_OP_IMPL(stack_list, 1, 1, 0, 0) {
+  auto list = INPUT_LIST(0);
+  // auto z = OUTPUT_VARIABLE(0);
 
-            // FIXME: this is obviously bad
-            auto result = list->stack();
+  // FIXME: this is obviously bad
+  auto result = list->stack();
 
-            //OVERWRITE_RESULT(result);
-            setupResult(result, block);
-            return Status::OK();
-        }
-        DECLARE_SYN(TensorArrayConcatV3, stack_list);
-        DECLARE_SYN(tensorarrayconcatv3, stack_list);
-    }
+  // OVERWRITE_RESULT(result);
+  setupResult(result, block);
+  return sd::Status::OK;
 }
+DECLARE_SYN(TensorArrayConcatV3, stack_list);
+DECLARE_SYN(tensorarrayconcatv3, stack_list);
+}  // namespace ops
+}  // namespace sd
 
 #endif

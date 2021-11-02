@@ -22,65 +22,59 @@
 
 #ifndef DEV_TESTS_PARAMETERSBATCH_H
 #define DEV_TESTS_PARAMETERSBATCH_H
-
 #include <helpers/benchmark/ParametersSpace.h>
-#include <vector>
 #include <helpers/shape.h>
 
+#include <vector>
+
 namespace sd {
-    class ParametersBatch {
-    protected:
-        std::vector<ParametersSpace*> _spaces;
-    public:
-        ParametersBatch() = default;
-        ParametersBatch(std::initializer_list<ParametersSpace*> spaces) {
-            _spaces = spaces;
-        }
+class ParametersBatch {
+ protected:
+  std::vector<ParametersSpace*> _spaces;
 
-        ParametersBatch(std::vector<ParametersSpace*> spaces) {
-            _spaces = spaces;
-        }
+ public:
+  ParametersBatch() = default;
+  ParametersBatch(std::initializer_list<ParametersSpace*> spaces) { _spaces = spaces; }
 
+  ParametersBatch(std::vector<ParametersSpace*> spaces) { _spaces = spaces; }
 
-        std::vector<Parameters> parameters() {
-            std::vector<Parameters> result;
-            std::vector<std::vector<int>> vectors;
-            int totalIterations = 1;
+  std::vector<Parameters> parameters() {
+    std::vector<Parameters> result;
+    std::vector<std::vector<int>> vectors;
+    int totalIterations = 1;
 
-            // hehe
-            int xCoords[MAX_RANK];
-            Nd4jLong xShape[MAX_RANK];
-            int xRank = _spaces.size();
+    // hehe
+    int xCoords[SD_MAX_RANK];
+    sd::LongType xShape[SD_MAX_RANK];
+    int xRank = _spaces.size();
 
-            for (int e = 0; e < _spaces.size(); e++) {
-                auto space = _spaces[e];
-                auto values = space->evaluate();
-                vectors.emplace_back(values);
+    for (int e = 0; e < _spaces.size(); e++) {
+      auto space = _spaces[e];
+      auto values = space->evaluate();
+      vectors.emplace_back(values);
 
-                totalIterations *= values.size();
-                xShape[e] = values.size();
-            }
+      totalIterations *= values.size();
+      xShape[e] = values.size();
+    }
 
-            //nd4j_printf("Total Iterations: %i\n", totalIterations);
+    // sd_printf("Total Iterations: %i\n", totalIterations);
 
-            for (int i = 0; i < totalIterations; i++) {
-                if (xRank > 0)
-                    shape::index2coords(i, xRank, xShape, xCoords);
+    for (int i = 0; i < totalIterations; i++) {
+      if (xRank > 0) shape::index2coords(i, xRank, xShape, xCoords);
 
-                Parameters params;
-                for (int j = 0; j < xRank; j++) {
-                    int value = vectors[j][xCoords[j]];
-                    std::string name = _spaces[j]->name();
-                    params.addIntParam(name, value);
-                }
+      Parameters params;
+      for (int j = 0; j < xRank; j++) {
+        int value = vectors[j][xCoords[j]];
+        std::string name = _spaces[j]->name();
+        params.addIntParam(name, value);
+      }
 
-                result.emplace_back(params);
-            }
+      result.emplace_back(params);
+    }
 
+    return result;
+  }
+};
+}  // namespace sd
 
-            return result;
-        }
-    };
-}
-
-#endif //DEV_TESTS_PARAMETERSBATCH_H
+#endif  // DEV_TESTS_PARAMETERSBATCH_H

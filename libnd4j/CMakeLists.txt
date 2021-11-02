@@ -27,6 +27,10 @@ if(SD_AURORA)
     set(CMAKE_CXX_STANDARD 11)
 endif()
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
+    SET(INFORMATIVE_FLAGS  "-fmax-errors=49999")
+endif()
+
 if (SD_CUDA AND NOT SD_AURORA)
     message("Enabling cuda")
     enable_language(CUDA)
@@ -79,21 +83,19 @@ endif()
 #////////////////////////////////////////////////////////////////////////////////
 #  A simple template-configuration file example:
 # // hints and defines what types will be generated
-# #cmakedefine LIBND4J_TYPE_GEN
-# #cmakedefine FLOAT_TYPE_GEN
+# #cmakedefine SD_COMMON_TYPES_GEN
+# #cmakedefine SD_FLOAT_TYPES_GEN
 # // below if defines blocks are needed for correctly handling multiple types
-# #if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
+# #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 #  BUILD_DOUBLE_TEMPLATE(template void someFunc, (arg_list,..),
-#                          LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
+#                          SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
 # #endif
-# #if defined(FLOAT_TYPE_GEN) && defined(FLOAT_TYPES_@FL_TYPE_INDEX@)
-#  BUILD_SINGLE_TEMPLATE(template class SomeClass,, FLOAT_TYPES_@FL_TYPE_INDEX@);
+# #if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
+#  BUILD_SINGLE_TEMPLATE(template class SomeClass,, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
 # #endif
 #////////////////////////////////////////////////////////////////////////////////
 
 set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
-
-
 
 
 function(genCompilation FILE_ITEM)
@@ -109,36 +111,37 @@ function(genCompilation FILE_ITEM)
     #check content for types
 
     #set all to false
-    set (FLOAT_TYPE_GEN     0)
-    set (INT_TYPE_GEN       0)
-    set (LIBND4J_TYPE_GEN   0)
-    set (PAIRWISE_TYPE_GEN  0)
+    set (SD_FLOAT_TYPES_GEN     0)
+    set (SD_INTEGER_TYPES_GEN       0)
+    set (SD_COMMON_TYPES_GEN   0)
+    set (SD_PAIRWISE_TYPES_GEN  0)
     set (RANGE_STOP         -1)
 
-    string(REGEX MATCHALL "#cmakedefine[ \t]+[^_]+_TYPE_GEN" TYPE_MATCHES ${CONTENT_FL})
-    #STOP=COUNT(LIBND4J_TYPES)-1
-    set(INT_TYPE_STOP 7)
-    set(LIBND4J_TYPE_STOP 12)
-    set(FLOAT_TYPE_STOP 3)
-    set(PAIRWISE_TYPE_STOP 12)
+    string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
+
+    #STOP=COUNT(SD_COMMON_TYPES)-1
+    set(SD_INTEGER_TYPES_END 7)
+    set(SD_COMMON_TYPES_END 12)
+    set(SD_FLOAT_TYPES_END 3)
+    set(SD_PAIRWISE_TYPES_END 12)
 
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
-        if(TYPEX MATCHES "INT_TYPE_GEN$")
-           set (INT_TYPE_GEN  1)
-           set(STOP ${INT_TYPE_STOP})
+        if(TYPEX MATCHES "SD_INTEGER_TYPES_GEN$")
+           set (SD_INTEGER_TYPES_GEN  1)
+           set(STOP ${SD_INTEGER_TYPES_END})
         endif()
-        if(TYPEX MATCHES "LIBND4J_TYPE_GEN$")
-           set (LIBND4J_TYPE_GEN 1)
-           set(STOP ${LIBND4J_TYPE_STOP})
+        if(TYPEX MATCHES "SD_COMMON_TYPES_GEN$")
+           set (SD_COMMON_TYPES_GEN 1)
+           set(STOP ${SD_COMMON_TYPES_END})
         endif()
-        if(TYPEX MATCHES "FLOAT_TYPE_GEN$")
-           set (FLOAT_TYPE_GEN 1)
-           set(STOP ${FLOAT_TYPE_STOP})
+        if(TYPEX MATCHES "SD_FLOAT_TYPES_GEN$")
+           set (SD_FLOAT_TYPES_GEN 1)
+           set(STOP ${SD_FLOAT_TYPES_END})
         endif()
-        if(TYPEX MATCHES "PAIRWISE_TYPE_GEN$")
-           set (PAIRWISE_TYPE_GEN  1)
-           set(STOP ${PAIRWISE_TYPE_STOP})
+        if(TYPEX MATCHES "SD_PAIRWISE_TYPES_GEN$")
+           set (SD_PAIRWISE_TYPES_GEN  1)
+           set(STOP ${SD_PAIRWISE_TYPES_END})
         endif()
         if(STOP GREATER RANGE_STOP)
            set(RANGE_STOP ${STOP})
@@ -149,14 +152,14 @@ function(genCompilation FILE_ITEM)
     if(RANGE_STOP GREATER -1)
         foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
             # set OFF if the index is above
-            if(FL_TYPE_INDEX GREATER ${FLOAT_TYPE_STOP})
-                 set (FLOAT_TYPE_GEN     0)
+            if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
+                 set (SD_FLOAT_TYPES_GEN     0)
             endif()
-            if(FL_TYPE_INDEX GREATER ${INT_TYPE_STOP})
-                 set (INT_TYPE_GEN     0)
+            if(FL_TYPE_INDEX GREATER ${SD_INTEGER_TYPES_END})
+                 set (SD_INTEGER_TYPES_GEN     0)
             endif()
-            if(FL_TYPE_INDEX GREATER ${LIBND4J_TYPE_STOP})
-                 set (LIBND4J_TYPE_GEN   0)
+            if(FL_TYPE_INDEX GREATER ${SD_COMMON_TYPES_END})
+                 set (SD_COMMON_TYPES_GEN   0)
             endif()
             set(GENERATED_SOURCE  "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
             configure_file(  "${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
@@ -166,7 +169,6 @@ function(genCompilation FILE_ITEM)
 
     set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 endfunction()
-
 
 
 # MSVC runtime lib can be either "MultiThreaded" or "MultiThreadedDLL", /MT and /MD respectively
@@ -341,7 +343,6 @@ if(${HELPERS_armcompute})
 endif()
 
 
-
 # new one-dnn entry
 if (${HELPERS_onednn})
     message("Going to pull & build onednn")
@@ -397,7 +398,6 @@ if (${HELPERS_cudnn})
             PATH_SUFFIXES cuda/include include)
 
 
-
     find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
             PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
@@ -441,7 +441,6 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
 set(HAVE_FLATBUFFERS 1)
 set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
 include_directories(${FLATBUFFERS_PATH}/include)
-
 
 
 configure_file(include/config.h.in include/config.h)

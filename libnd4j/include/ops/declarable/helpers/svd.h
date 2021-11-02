@@ -22,21 +22,21 @@
 
 #ifndef LIBND4J_SVD_HELPER_H
 #define LIBND4J_SVD_HELPER_H
-
 #include <ops/declarable/helpers/helpers.h>
+
 #include "array/NDArray.h"
 
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 // svd operation, this function is not method of SVD class, it is standalone function
-void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+SD_LIB_HIDDEN void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs,
+                       const bool fullUV, const bool calcUV, const int switchNum);
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-}
-}
-}
-
-#endif //LIBND4J_SVD_HELPER_H
+#endif  // LIBND4J_SVD_HELPER_H

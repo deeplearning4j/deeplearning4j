@@ -24,79 +24,85 @@
 #if NOT_EXCLUDED(OP_gather_nd)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/scatter.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
 namespace ops {
 
-
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto indices = INPUT_VARIABLE(1);
+  auto output = OUTPUT_VARIABLE(0);
 
-	auto input   = INPUT_VARIABLE(0);
-    auto indices = INPUT_VARIABLE(1);
-    auto output  = OUTPUT_VARIABLE(0);
+  const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
 
-    const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
+  const int rankIn = input->rankOf();
+  const int rankInd = indices->rankOf();
 
-    const int rankIn = input->rankOf();
-    const int rankInd = indices->rankOf();
+  REQUIRE_TRUE(
+      rankInd > 0, 0,
+      "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!",
+      rankInd);
+  int lastIndDim = indices->sizeAt(-1);
+  REQUIRE_TRUE(lastIndDim <= rankIn, 0,
+               "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i "
+               "correspondingly!",
+               lastIndDim, rankIn);
 
-    REQUIRE_TRUE(rankInd > 0, 0, "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!", rankInd);
-    int lastIndDim = indices->sizeAt(-1);
-    REQUIRE_TRUE(lastIndDim <= rankIn, 0, "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i correspondingly!", lastIndDim, rankIn);
+  if (checkIndices) {
+    const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *input);
+    REQUIRE_TRUE(numOfBadIndx == 0, 0,
+                 "GATHER_ND OP: please check elements of indices-array, total number of wrong elements is %lld!",
+                 numOfBadIndx);
+  }
 
-    if(checkIndices) {
-        const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *input);
-        REQUIRE_TRUE(numOfBadIndx == 0, 0, "GATHER_ND OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
-    }
+  helpers::gatherND(block.launchContext(), *input, *indices, *output);
 
-    helpers::gatherND(block.launchContext(), *input, *indices, *output);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_TYPES(gather_nd) {
-    getOpDescriptor()
-         ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-         ->setAllowedInputTypes(1, {ALL_INTS})
-         ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(gather_nd) {
+  auto inShapeInfoIn = inputShape->at(0);
+  auto inShapeInfoInd = inputShape->at(1);
 
-	auto inShapeInfoIn = inputShape->at(0);
-    auto inShapeInfoInd = inputShape->at(1);
+  const int rankIn = inShapeInfoIn[0];
+  const int rankInd = inShapeInfoInd[0];
+  REQUIRE_TRUE(
+      rankInd > 0, 0,
+      "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!",
+      rankInd);
+  const int lastIndDim = inShapeInfoInd[rankInd];
+  REQUIRE_TRUE(lastIndDim <= rankIn, 0,
+               "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i "
+               "correspondingly!",
+               lastIndDim, rankIn);
 
-    const int rankIn = inShapeInfoIn[0];
-    const int rankInd = inShapeInfoInd[0];
-    REQUIRE_TRUE(rankInd > 0, 0, "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!", rankInd);
-    const int lastIndDim = inShapeInfoInd[rankInd];
-    REQUIRE_TRUE(lastIndDim <= rankIn, 0, "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i correspondingly!", lastIndDim, rankIn);
+  int outRank = (rankInd - 1) + (rankIn - lastIndDim);
 
-	int outRank = (rankInd - 1) + (rankIn - lastIndDim);
+  sd::LongType* outShapeInfo = nullptr;
+  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
 
-    Nd4jLong* outShapeInfo = nullptr;
-	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+  outShapeInfo[0] = outRank;
 
-    outShapeInfo[0] = outRank;
+  for (int i = 1; i <= rankInd - 1; ++i) outShapeInfo[i] = inShapeInfoInd[i];
 
-    for(int i = 1; i <= rankInd-1; ++i)
-        outShapeInfo[i] = inShapeInfoInd[i];
+  for (int i = 0; i < rankIn - lastIndDim; ++i) outShapeInfo[rankInd + i] = inShapeInfoIn[lastIndDim + i + 1];
 
-    for(int i = 0; i < rankIn-lastIndDim; ++i)
-        outShapeInfo[rankInd + i] = inShapeInfoIn[lastIndDim + i + 1];
-
-	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfoIn, 'c');
-    //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
-    return SHAPELIST(CONSTANT(outShapeInfo));
+  ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfoIn, 'c');
+  // ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
+  return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
-
-
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

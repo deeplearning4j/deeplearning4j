@@ -21,19 +21,20 @@
 //
 #ifndef __GRADIENT_H_HELPERS__
 #define __GRADIENT_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    /*
-     * applyGradientDescent: calculate z = x - y * w.
-     * */
-    void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output);
+/*
+ * applyGradientDescent: calculate z = x - y * w.
+ * */
+SD_LIB_HIDDEN void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight,
+                                        NDArray* output);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

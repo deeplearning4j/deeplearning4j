@@ -19,21 +19,19 @@
 //
 //  @author raver119@gmail.com
 //
-
-#include <system/op_boilerplate.h>
-#include <loops/broadcasting.h>
-#include <loops/legacy_ops.h>
-#include <types/types.h>
-#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <string>
-#include <stdexcept>
 #include <helpers/StringUtils.h>
+#include <loops/broadcasting.h>
+#include <loops/legacy_ops.h>
 #include <ops/specials_cuda.h>
+#include <system/Environment.h>
+#include <system/op_boilerplate.h>
+#include <types/types.h>
+
+#include <stdexcept>
+#include <string>
 
 namespace functions {
-    namespace broadcast {
-
-    }
-}
+namespace broadcast {}
+}  // namespace functions

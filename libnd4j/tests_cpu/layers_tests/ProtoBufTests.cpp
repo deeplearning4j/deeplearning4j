@@ -20,9 +20,9 @@
 // @author raver119@gmail.com
 //
 
+#include <graph/GraphExecutioner.h>
 
 #include "testlayers.h"
-#include <graph/GraphExecutioner.h>
 
 /*
 
@@ -35,7 +35,8 @@ class ProtoBufTests : public testing::Test {
 TEST_F(ProtoBufTests, TestBinaryLoad1) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    auto graph = GraphExecutioner<float>::importFromTensorFlow("../../../tests/resources/tensorflow_inception_graph.pb");
+    auto graph =
+GraphExecutioner<float>::importFromTensorFlow("../../../tests/resources/tensorflow_inception_graph.pb");
 
     ASSERT_FALSE(graph == nullptr);
 }

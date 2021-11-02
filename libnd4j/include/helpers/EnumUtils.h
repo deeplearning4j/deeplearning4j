@@ -22,17 +22,16 @@
 
 #ifndef ND4J_ENUM_UTILS_H
 #define ND4J_ENUM_UTILS_H
-
 #include <graph/VariableType.h>
 #include <graph/generated/node_generated.h>
 
 namespace sd {
-    class EnumUtils {
-    public:
-        static const char * _VariableTypeToString(sd::graph::VariableType variableType);
-        static const char * _OpTypeToString(sd::graph::OpType opType);
-        static const char * _LogicOpToString(int opNum);
-    };
-}
+class EnumUtils {
+ public:
+  static const char* _VariableTypeToString(sd::graph::VariableType variableType);
+  static const char* _OpTypeToString(sd::graph::OpType opType);
+  static const char* _LogicOpToString(int opNum);
+};
+}  // namespace sd
 
 #endif

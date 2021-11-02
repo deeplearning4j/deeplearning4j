@@ -3,9 +3,7 @@
 
 #ifndef FLATBUFFERS_GENERATED_UIGRAPHEVENTS_ND4J_GRAPH_H_
 #define FLATBUFFERS_GENERATED_UIGRAPHEVENTS_ND4J_GRAPH_H_
-
 #include "flatbuffers/flatbuffers.h"
-
 #include "array_generated.h"
 
 namespace sd {
