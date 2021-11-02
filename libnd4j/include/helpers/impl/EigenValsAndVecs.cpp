@@ -41,7 +41,7 @@ EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
     Schur<T> schur(matrix);
 
     NDArray& schurMatrixU = schur.u;
-    NDArray& schurMatrixT = schur.u;
+    NDArray& schurMatrixT = schur.t;
 
     _Vecs = NDArray(matrix.ordering(), {schurMatrixU.sizeAt(1), schurMatrixU.sizeAt(1), 2}, matrix.dataType(), matrix.getContext());
     _Vals = NDArray(matrix.ordering(), {matrix.sizeAt(1), 2}, matrix.dataType(), matrix.getContext());
