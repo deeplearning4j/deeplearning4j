@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyWithLogitsLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.Moments;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.reduce.SufficientStatistics;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
@@ -1529,6 +1530,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
+                .gradCheckMinAbsError(1e-3)
+                .gradCheckMaxRelativeError(1e-3)
                 .expectedOutput(output.name(), expected);
 
         String err = OpValidation.validate(tc);
@@ -1538,20 +1541,22 @@ public class ReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMean(Nd4jBackend backend) {
-
+        Nd4j.getExecutioner().enableDebugMode(true);
+        MeanBp meanBp = new MeanBp();
+        meanBp.addInputArgument(Nd4j.linspace(1,12,12).reshape(3,4),Nd4j.ones(4).reshape(4));
+        meanBp.addIArgument(0);
+        INDArray[] exec = Nd4j.getExecutioner().exec(meanBp);
         SameDiff sameDiff = SameDiff.create();
 
         INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
         SDVariable input = sameDiff.var(in);
         INDArray expected = Nd4j.createFromArray(new double[]{
                 5.0000,    6.0000,    7.0000,    8.0000
-        });
+        }).reshape(1,4);
 
-        SDVariable output = new Mean(sameDiff, input, false, new int[]{Integer.MAX_VALUE}).outputVariable();
-
+        SDVariable output = new Mean(sameDiff, input, true, new int[]{0}).outputVariable();
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
-
                 .expectedOutput(output.name(), expected);
 
         String err = OpValidation.validate(tc);
