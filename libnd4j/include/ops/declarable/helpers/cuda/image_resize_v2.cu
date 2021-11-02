@@ -6,119 +6,7 @@
 namespace sd {
     namespace ops {
         namespace helpers {
-// -------------------------------------------------------------------------------------------------------------- //
-// resize v2 implementation                                                                                       //
-// -------------------------------------------------------------------------------------------------------------- //
-// A functional interface for a scale kernels.
-//struct IKernelFunc {
-//    _CUDA_HD virtual float operator()(float x) const = 0;
-//    _CUDA_HD virtual float radius() const = 0;
-//    _CUDA_HD virtual size_t size() const = 0;
-//};
 
-struct LanczosKernelFunc /*: public IKernelFunc*/ {
-    // Pass 1 for Lanczos1 kernel, 3 for Lanczos3 etc.
-    explicit LanczosKernelFunc(float const radius) : _radius(radius) {}
-    _CUDA_HD float operator()(float x) const {
-        float const kPI = 3.141592653589793f;
-        x = math::nd4j_abs(x);
-        if (x > _radius) return 0.f;
-        // Need to special case the limit case of sin(x) / x when x is zero.
-        if (x <= 1.e-3f) {
-            return 1.f;
-        }
-        return _radius * std::sin(kPI * x) * std::sin(kPI * x / _radius) / (kPI * kPI * x * x);
-    }
-    _CUDA_HD float radius() const { return _radius; }
-    const float _radius;
-};
-
-struct GaussianKernelFunc /*: public IKernelFunc*/ {
-    static constexpr float kRadiusMultiplier = 3.0f;
-    // https://en.wikipedia.org/wiki/Gaussian_function
-    // We use sigma = 0.5, as suggested on p. 4 of Ken Turkowski's "Filters
-    // for Common Resampling Tasks" for kernels with a support of 3 pixels:
-    // www.realitypixels.com/turk/computergraphics/ResamplingFilters.pdf
-    // This implies a radius of 1.5,
-    explicit GaussianKernelFunc(float radius = 1.5f)
-            : _radius(radius), _sigma(radius / kRadiusMultiplier) {}
-    _CUDA_HD float operator()(float x) const {
-        x = math::nd4j_abs(x);
-        if (x >= _radius) return 0.0f;
-        return std::exp(-x * x / (2.0 * _sigma * _sigma));
-    }
-    _CUDA_HD float radius() const { return _radius; }
-    const float _radius;
-    const float _sigma;  // Gaussian standard deviation
-};
-
-struct BoxKernelFunc /*: public IKernelFunc*/ {
-    _CUDA_HD float operator()(float x) const {
-        x = math::nd4j_abs(x);
-        return x < 0.5f ? 1.f : x == 0.5f ? 0.5f : 0.f;
-    }
-    _CUDA_HD float radius() const { return 1.f; }
-    _CUDA_HD size_t size() const { return sizeof(BoxKernelFunc); }
-};
-
-struct TriangleKernelFunc /*: public IKernelFunc*/ {
-    // https://en.wikipedia.org/wiki/Triangle_function
-    _CUDA_HD float operator()(float x) const {
-        x = math::nd4j_abs(x);
-        return x < 1.f ? 1.f - x : 0.f;
-    }
-    _CUDA_HD float radius() const { return 1.f; }
-};
-
-struct KeysCubicKernelFunc /*: public IKernelFunc*/ {
-    // http://ieeexplore.ieee.org/document/1163711/
-    // R. G. Keys. Cubic convolution interpolation for digital image
-    // processing. IEEE Transactions on Acoustics, Speech, and Signal
-    // Processing, 29(6):1153–1160, 1981.
-    _CUDA_HD float operator()(float x) const {
-        x = math::nd4j_abs(x);
-        if (x >= 2.0f) {
-            return 0.0f;
-        } else if (x >= 1.0f) {
-            return ((-0.5f * x + 2.5f) * x - 4.0f) * x + 2.0f;
-        } else {
-            return ((1.5f * x - 2.5f) * x) * x + 1.0f;
-        }
-    }
-    _CUDA_HD float radius() const { return 2.f; }
-};
-
-struct MitchellCubicKernelFunc/* : public IKernelFunc*/ {
-    // https://doi.org/10.1145/378456.378514
-    // D. P. Mitchell and A. N. Netravali. Reconstruction filters in computer
-    // graphics.  Computer Graphics (Proceedings of ACM SIGGRAPH 1988),
-    // 22(4):221–228, 1988.
-    _CUDA_HD float operator()(float x) const {
-        x = math::nd4j_abs(x);
-        if (x >= 2.f) {
-            return 0.f;
-        } else if (x >= 1.f) {
-            return (((-7.f / 18.f) * x + 2.f) * x - 10.f / 3.f) * x + 16.f / 9.f;
-        } else {
-            return (((7.f / 6.f) * x - 2.f) * x) * x + 8.f / 9.f;
-        }
-    }
-    _CUDA_HD float radius() const { return 2.f; }
-};
-
-// A pre-computed span of pixels along a single dimension.
-// The output pixel will be the weighted sum of pixels starting from start.
-struct Spans {
-    // The maximum span size of any output pixel.
-    int _spanSize;
-    // int32 tensor with shape {outputSize}.
-    NDArray _starts;
-
-    // float32 tensor of size {outputSize, spanSize}.
-    // The output pixel at x is computed as:
-    //   dot_product(input[starts[x]:starts[x]+span_size], weights[x]).
-    NDArray _weights;
-};
 
 static inline _CUDA_HD Nd4jLong boundsAmp(Nd4jLong  const low, Nd4jLong const high, Nd4jLong const value) {
     if (high < value) return high;
@@ -254,66 +142,20 @@ static int computeSpans(LaunchContext* context, TKernelFunc& kernel, Nd4jLong co
 
 //template int computeSpans(LaunchContext* context, TriangleKernelFunc& kernel, Nd4jLong const outSize, Nd4jLong const inSize, float const scale, float const translate, bool const antialias, Spans& spans);
 
-
 template <typename X, typename Z>
-static __device__ void gatherRows(int const spanSize, int const* starts, Z const* weights, X const* imagePtr, Nd4jLong const inputHeight, Nd4jLong const inputWidth, Nd4jLong const outputHeight,
-                       Nd4jLong const outputWidth, Nd4jLong const channels, Z* outputPtr) {
-    auto inRowSize = inputWidth * channels;
-    auto outRowSize = outputWidth * channels;
+static __global__ void batchedGatherSpan(  Nd4jLong outputWidth, Nd4jLong outputHeight, int rowSpanSize, int const* rowStartsBuf, Z const* rowWeightBuf, int columnSpanSize, int const* columnStartsBuf, Z const* columnWeightBuf,
+     X const* pImages, const Nd4jLong* imageSpecialShapeInfo, Z* pIntermediate, Z* pOutput , Nd4jLong outputPixPerBatch ) {
 
-    auto addScaledVector = [](const X* inVector, int vectorLen, Z weight, Z* outVector) {
-        Z* outVecEnd = outVector + vectorLen;
-        for (; outVector != outVecEnd; ++outVector, ++inVector) {
-            *outVector += weight * static_cast<Z>(*inVector);
-        }
-    };
-
-    for (int y = 0; y < outputHeight; ++y) {
-        Z* outRowData = outputPtr + outRowSize * y;
-        memset(outRowData, '\0', outRowSize * sizeof(Z));//            std::fill(outRowData, outRowData + outRowSize, 0.f);
-        int inRow = starts[y];
-        auto inRowData = imagePtr + inRowSize * inRow;
-        auto weightsStart = weights + y * spanSize;
-        auto realSpanSize = math::nd4j_min(starts[y] + spanSize, static_cast<int>(inputHeight)) - starts[y];
-        auto weightsEnd = weightsStart + realSpanSize;
-        for (auto weightPtr = weightsStart; weightPtr != weightsEnd; ++weightPtr) {
-            addScaledVector(inRowData, inRowSize, *weightPtr, outRowData);
-            inRowData += inRowSize;
-        }
-    }
-}
-
-template <typename Z>
-static __device__ void gatherColumns(int const spanSize, int const* starts, Z const* weights, Z const* imagesPtr, Nd4jLong const inputHeight, Nd4jLong const inputWidth, Nd4jLong const outputHeight, Nd4jLong const outputWidth, Nd4jLong channels, Z* outputPtr) {
-    auto inRowSize = inputWidth * channels;
-    auto outRowSize = outputWidth * channels;
-
-    for (auto y = 0LL; y < outputHeight; ++y) {
-        auto inputRowStart = imagesPtr + inRowSize * y;
-        auto outPixels = outputPtr + outRowSize * y;
-        for (auto x = 0LL; x < outputWidth; ++x, outPixels += channels) {
-            auto inPixels = inputRowStart + starts[x] * channels;
-            auto weightsStart = weights + x * spanSize;
-            auto realSpanSize = math::nd4j_min(starts[x] + spanSize, static_cast<int>(inputWidth)) - starts[x];
-            auto weightsEnd = weightsStart + realSpanSize;
-            for (int c = 0; c < channels; ++c) {
-                outPixels[c] = 0.0f;
-            }
-            for (auto weightPtr = weightsStart; weightPtr != weightsEnd; ++weightPtr) {
-                Z w = *weightPtr;
-                for (int c = 0; c < channels; ++c) {
-                    outPixels[c] += w * static_cast<Z>(inPixels[c]);
-                }
-                inPixels += channels;
-            }
-        }
-    }
-}
-
-template <typename X, typename Z>
-static __global__ void batchedGatherSpan(Nd4jLong batchSize, Nd4jLong inputWidth, Nd4jLong inputHeight, Nd4jLong outputWidth, Nd4jLong outputHeight, Nd4jLong channels, int rowSpanSize, int const* rowStartsBuf, Z const* rowWeightBuf, int columnSpanSize, int const* columnStartsBuf, Z const* columnWeightBuf, X const* pImages, Z* pIntermediate, Z* pOutput,
-        Nd4jLong inputPixPerBatch, Nd4jLong intermediatePixPerBatch, Nd4jLong outputPixPerBatch) {
-
+    auto batchSize = shape::sizeAt(imageSpecialShapeInfo, 0);
+    auto inputHeight = shape::sizeAt(imageSpecialShapeInfo, 1);
+    auto inputWidth = shape::sizeAt(imageSpecialShapeInfo, 2);
+    auto channels = shape::sizeAt(imageSpecialShapeInfo, 3);
+    bool inputEws1 = shape::elementWiseStride(imageSpecialShapeInfo)==1;
+    auto inputPixPerBatch = shape::strideAt(imageSpecialShapeInfo, 0);
+    auto inRowStride = shape::strideAt(imageSpecialShapeInfo, 1);
+    auto wStride = shape::strideAt(imageSpecialShapeInfo, 2);
+    auto cStride = shape::strideAt(imageSpecialShapeInfo, 3);
+    auto intermediatePixPerBatch = inputWidth * outputHeight * channels;
     auto tid = threadIdx.x + blockIdx.x * blockDim.x;
     auto step = blockDim.x * gridDim.x;
 
@@ -323,7 +165,7 @@ static __global__ void batchedGatherSpan(Nd4jLong batchSize, Nd4jLong inputWidth
         auto outputPtr = pOutput + b * outputPixPerBatch;
         gatherRows<X, Z>(rowSpanSize, rowStartsBuf, rowWeightBuf,
                          imagePtr, inputHeight, inputWidth, outputHeight,
-                         inputWidth, channels, intermediatePtr);
+                         inputWidth, channels, intermediatePtr,  inputEws1, inRowStride, wStride, cStride);
         gatherColumns<Z>(columnSpanSize, columnStartsBuf, columnWeightBuf,
                          intermediatePtr, outputHeight, inputWidth, outputHeight, outputWidth, channels, outputPtr);
     }
@@ -331,16 +173,11 @@ static __global__ void batchedGatherSpan(Nd4jLong batchSize, Nd4jLong inputWidth
 
 template <typename X, typename Z>
 static void gatherSpans(LaunchContext* context, int const rowSpanSize, NDArray const& rowStarts, NDArray const& rowWeights, int const colSpanSize, NDArray const& columnStarts, NDArray const& columnWeights, NDArray const* images, NDArray& intermediate, NDArray* output) {
-    auto batchSize = images->sizeAt(0);
-    auto inputHeight = images->sizeAt(1);
-    auto inputWidth = images->sizeAt(2);
-    auto channels = images->sizeAt(3);
-
+ 
+    const auto imageSpecialShapeInfo = images->specialShapeInfo();
     auto outputHeight = output->sizeAt(1);
     auto outputWidth = output->sizeAt(2);
-
-    auto inputPixPerBatch = inputWidth * inputHeight * channels;
-    auto intermediatePixPerBatch = inputWidth * outputHeight * channels;
+    auto channels = images->sizeAt(3);
     auto outputPixPerBatch = outputWidth * outputHeight * channels;
     auto intermediatePtr = reinterpret_cast<Z*>(intermediate.specialBuffer());
 
@@ -351,11 +188,12 @@ static void gatherSpans(LaunchContext* context, int const rowSpanSize, NDArray c
     auto rowWeightBuf = reinterpret_cast<Z const*>(rowWeights.specialBuffer());
     auto columnStartsBuf = reinterpret_cast<int const*>(columnStarts.specialBuffer());
     auto columnWeightBuf = reinterpret_cast<Z const*>(columnWeights.specialBuffer());
-    batchedGatherSpan<X,Z><<<128, 128, 256, *stream>>>(batchSize, inputWidth, inputHeight, outputWidth, outputHeight, channels, rowSpanSize, rowStartsBuf, rowWeightBuf, colSpanSize, columnStartsBuf, columnWeightBuf, imagePtr, intermediatePtr, outputPtr, inputPixPerBatch, intermediatePixPerBatch, outputPixPerBatch);
+    batchedGatherSpan<X,Z><<<128, 128, 256, *stream>>>( outputWidth, outputHeight, rowSpanSize, 
+        rowStartsBuf, rowWeightBuf, colSpanSize, columnStartsBuf, columnWeightBuf, imagePtr, imageSpecialShapeInfo, intermediatePtr, outputPtr, outputPixPerBatch );
 }
 
 template <typename X, typename Z>
-static int resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArray const* input, Nd4jLong outWidth, Nd4jLong outHeight, bool antialias, NDArray* output) {
+static int resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArray const* input, Nd4jLong outWidth, Nd4jLong outHeight, bool antialias, double coefficient, NDArray* output) {
     Nd4jLong const batchSize = input->sizeAt(0);
     Nd4jLong const inputHeight = input->sizeAt(1);
     Nd4jLong const inputWidth = input->sizeAt(2);
@@ -381,7 +219,7 @@ static int resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArr
         }
             break;
         case kResizeBicubic: {
-            KeysCubicKernelFunc kernel;
+            KeysCubicKernelFunc<float> kernel(static_cast<float>(coefficient));
             res = computeSpans(context, kernel, outWidth, inputWidth, columnScale, 0.f, antialias,
                                colSpans);
             if (res != Status::OK()) return res;
@@ -443,43 +281,49 @@ static int resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArr
 
 static int resizeTriangle(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
 //    std::unique_ptr<IKernelFunc> kernel(new TriangleKernelFunc);
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBilinear, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBilinear, image, width, height, antialias, 0, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeTriangle: This resize method is avaliable in future versions");
 }
 
 static int resizeLanczos3(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
 //    std::unique_ptr<IKernelFunc> kernel(new LanczosKernelFunc(3.f));
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos3, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos3, image, width, height, antialias, 0, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeLanczos3: This resize method is avaliable in future versions");
 }
 
 static int resizeLanczos5(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
 //    std::unique_ptr<IKernelFunc> kernel(new LanczosKernelFunc(5.f));
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos5, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeLanczos5, image, width, height, antialias, 0, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeLanczos5: This resize method is avaliable in future versions");
 }
 
 static int resizeGaussian(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeGaussian, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeGaussian, image, width, height, antialias, 0, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeGaussian: This resize method is avaliable in future versions");
 }
 static int resizeMitchellcubic(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeMitchellcubic, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeMitchellcubic, image, width, height, antialias, 0, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
     return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeMitchelcubic: This resize method is avaliable in future versions");
 }
-static int resizeKeycubic(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, NDArray* output) {
-    if (!antialias)
-        return resizeBicubicFunctorA(context, image, width, height, false, true, output);
-    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBicubic, image, width, height, antialias, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
-    return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeKeycubic: This resize method is avaliable in future versions");
+
+static int resizeBicubicA(sd::LaunchContext * context, NDArray const* image, int const width, int const height, CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient, NDArray* output) {
+    constexpr bool alignCorners = false;
+    return resizeBicubicFunctorA(context,  image, width, height, alignCorners, coorMode, exclude_outside, coefficient,  output);
 }
+
+static int resizeBicubicAntialias(sd::LaunchContext * context, NDArray const* image, int const width, int const height, bool const antialias, double coefficient, NDArray* output) {
+    BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,(context, kResizeBicubic, image, width, height, antialias, coefficient, output), NUMERIC_TYPES, FLOAT_TYPES_FLOAT32);
+    return Status::CODE(ND4J_STATUS_VALIDATION, "helpers::resizeMitchelcubic: This resize method is avaliable in future versions");
+}
+
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
-                  ImageResizeMethods method, bool antialias, NDArray* output) {
+ND4J_LOCAL int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+                    ImageResizeMethods method, CoordinateTransformationMode coorMode,  bool exclude_outside,
+                    NearestMode nearestMode, double coefficient, bool antialias, NDArray* output) {
     switch (method) {
 
-        case kResizeNearest:      return resizeNeighborFunctor(context, image, width, height, false, true, output);
+        case kResizeNearest:      return resizeNeighborFunctor(context, image, width, height, coorMode, nearestMode, false, output);
         case kResizeArea:         return resizeAreaFunctor(context, image, width, height, false, output);
 
 #if defined(HAS_FLOAT32)
@@ -488,7 +332,16 @@ ND4J_LOCAL int resizeFunctor(sd::LaunchContext * context, NDArray const* image, 
         case kResizeLanczos5:     return resizeLanczos5(context, image, width, height, antialias, output);
         case kResizeGaussian:     return resizeGaussian(context, image, width, height, antialias, output);
         case kResizeMitchellcubic: return resizeMitchellcubic(context, image, width, height, antialias, output);
-        case kResizeBicubic:      return resizeKeycubic(context, image, width, height, antialias, output);
+        case kResizeBicubic:{
+                //if antialias then coorMode is HALF_PIXEL and exlude_outside is true 
+                if(antialias){
+                    return resizeBicubicAntialias(context, image, width, height, antialias, coefficient, output );
+                }
+                else{
+                    //use modified v1
+                    return resizeBicubicA(context, image, width, height,  coorMode, exclude_outside, coefficient, output);
+                }
+            }
 #else
         case kResizeBilinear:
         case kResizeLanczos3:

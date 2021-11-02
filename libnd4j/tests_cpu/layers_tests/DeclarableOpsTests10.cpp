@@ -28,7 +28,7 @@
 #include <array/NDArray.h>
 #include <ops/ops.h>
 #include <helpers/GradCheck.h>
-
+#include <ops/declarable/helpers/image_resize.h>
 
 using namespace sd;
 
@@ -2257,14 +2257,14 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1_1) {
     input.linspace(1);
 
     sd::ops::resize_nearest_neighbor op;
-    auto results = op.evaluate({&input}, {}, {4,5}, {false, true});
+    auto results = op.evaluate({&input}, {}, {4,5, ops::helpers::ROUND_PREFER_CEIL}, {false, true});
 
     ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
     NDArray* result = results.at(0);
 
-//    result.printIndexedBuffer("Resized to 4x5");
-//    expected.printBuffer("Expect for 4x5");
+    // result->printIndexedBuffer("Resized to 4x5");
+    // expected.printBuffer("Expect for 4x5");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 }

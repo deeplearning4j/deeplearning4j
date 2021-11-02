@@ -159,7 +159,7 @@ struct SequenceNode
  *
  */
 template <typename T>
- class SequenceContainer
+class SequenceContainer
 {
 public:
     SequenceContainer() : count_(1)

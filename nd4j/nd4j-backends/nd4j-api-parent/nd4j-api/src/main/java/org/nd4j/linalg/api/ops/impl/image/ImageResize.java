@@ -25,6 +25,8 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.ImageResizeMethod;
+import org.nd4j.enums.NearestMode;
+import org.nd4j.enums.CoordinateTransformationMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -46,17 +48,63 @@ public class ImageResize extends DynamicCustomOp {
     public ImageResize(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable size, boolean preserveAspectRatio, boolean antialias, ImageResizeMethod method) {
         super("image_resize", sameDiff, new SDVariable[]{in, size});
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
     }
 
     public ImageResize(@NonNull INDArray in, @NonNull INDArray size, boolean preserveAspectRatio, boolean antialias, ImageResizeMethod method) {
         super("image_resize", new INDArray[]{in, size}, null);
         Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
     }
 
+    public ImageResize(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable size,double bicubicCoefficient, boolean preserveAspectRatio, boolean antialias) {
+        super("image_resize", sameDiff, new SDVariable[]{in, size});
+        ImageResizeMethod method = ImageResizeMethod.ResizeBicubic;
+        addBArgument(preserveAspectRatio, antialias);
+        addIArgument(method.methodIndex());
+        addTArgument(bicubicCoefficient);
+    }
 
+    public ImageResize(@NonNull INDArray in, @NonNull INDArray size, double bicubicCoefficient, boolean exclude_outside, boolean preserveAspectRatio) {
+        super("image_resize", new INDArray[]{in, size}, null);
+        Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
+        ImageResizeMethod method = ImageResizeMethod.ResizeBicubic;
+        addBArgument(preserveAspectRatio, false, exclude_outside);
+        addIArgument(method.methodIndex());
+        addTArgument(bicubicCoefficient);
+    }
+
+    public ImageResize(@NonNull INDArray in, @NonNull INDArray size, double bicubicCoefficient, CoordinateTransformationMode coorMode, boolean exclude_outside, boolean preserveAspectRatio) {
+        super("image_resize", new INDArray[]{in, size}, null);
+        Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
+        ImageResizeMethod method = ImageResizeMethod.ResizeBicubic;
+        addBArgument(preserveAspectRatio, false, exclude_outside);
+        addIArgument(method.methodIndex());
+        addIArgument(coorMode.getIndex());
+        addTArgument(bicubicCoefficient);
+    }
+
+    public ImageResize(@NonNull INDArray in, @NonNull INDArray size, NearestMode nearestMode, boolean preserveAspectRatio, boolean antialias) {
+        super("image_resize", new INDArray[]{in, size}, null);
+        Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
+        ImageResizeMethod method = ImageResizeMethod.ResizeNearest;
+        CoordinateTransformationMode coorMode = CoordinateTransformationMode.HALF_PIXEL_NN;
+        addBArgument(preserveAspectRatio, antialias);
+        addIArgument(method.methodIndex());
+        addIArgument(coorMode.getIndex());
+        addIArgument(nearestMode.getIndex());
+    }
+
+    public ImageResize(@NonNull INDArray in, @NonNull INDArray size, CoordinateTransformationMode coorMode, NearestMode nearestMode, boolean preserveAspectRatio, boolean antialias) {
+        super("image_resize", new INDArray[]{in, size}, null);
+        Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
+        ImageResizeMethod method = ImageResizeMethod.ResizeNearest;
+        addBArgument(preserveAspectRatio, antialias);
+        addIArgument(method.methodIndex());
+        addIArgument(coorMode.getIndex());
+        addIArgument(nearestMode.getIndex());
+    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
