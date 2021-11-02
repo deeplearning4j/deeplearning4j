@@ -19,107 +19,102 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <graph/VariableSpace.h>
-#include <graph/Stash.h>
 #include <graph/SessionLocalStorage.h>
+#include <graph/Stash.h>
+#include <graph/VariableSpace.h>
 
 namespace sd {
-    namespace graph {
-        SessionLocalStorage::SessionLocalStorage(VariableSpace* variableSpace, Stash* stash) {
-            // we start from 1, since key 0 holds original VariableSpace
-            _sessionCounter.store(1);
-            _variableSpace = variableSpace;
-            _stash = stash;
-        }
-
-        VariableSpace* SessionLocalStorage::localVariableSpace(Nd4jLong sessionId) {
-            _mutex.lock();
-            auto varSpace = _threadVariableSpace.at(sessionId);
-            _mutex.unlock();
-
-            return varSpace;
-        }
-
-        VariableSpace* SessionLocalStorage::localVariableSpace() {
-            return localVariableSpace(getSessionId());
-        }
-
-        SessionLocalStorage::~SessionLocalStorage() {
-            for (const auto & v: _threadVariableSpace) {
-                delete v.second;
-            }
-        }
-
-
-        Nd4jLong SessionLocalStorage::getThreadId() {
-#ifdef __APPLE__
-            // syscall?
-#elif _WIN32
-            // some win32api
-#else
-    // syscall!
-#endif
-            auto id=std::this_thread::get_id();
-            uint64_t* ptr=(uint64_t*) &id;
-            return (*ptr);
-        }
-
-        int SessionLocalStorage::numberOfSessions() {
-            _mutex.lock();
-            int size = (int) _threadSession.size();
-            _mutex.unlock();
-            return size;
-        }
-
-        void SessionLocalStorage::endSession(Nd4jLong sessionId) {
-            // we should delete specific holders here
-            _mutex.lock();
-            auto vs = _threadVariableSpace[sessionId];
-            _threadVariableSpace.erase(sessionId);
-
-            delete vs;
-            _mutex.unlock();
-        }
-
-        void SessionLocalStorage::endSession() {
-            auto tid = getThreadId();
-
-            _mutex.lock();
-
-            auto ntid = _threadSession[tid];
-            _threadSession.erase(tid);
-
-            _mutex.unlock();
-
-            endSession(ntid);
-        }
-
-        Nd4jLong SessionLocalStorage::getSessionId() {
-            auto tid = getThreadId();
-
-            _mutex.lock();
-            auto ntid = _threadSession[tid];
-
-            _mutex.unlock();
-
-            return ntid;
-        }
-
-        Nd4jLong sd::graph::SessionLocalStorage::startSession() {
-            auto tid = getThreadId();
-
-            nd4j_debug("Adding ThreadId: %i;\n", (int) tid);
-            Nd4jLong ntid = _sessionCounter++;
-            _mutex.lock();
-
-            _threadSession[tid] = ntid;
-            _threadVariableSpace[ntid] = _variableSpace->clone();
-
-            _mutex.unlock();
-
-            return ntid;
-        }
-    }
+namespace graph {
+SessionLocalStorage::SessionLocalStorage(VariableSpace* variableSpace, Stash* stash) {
+  // we start from 1, since key 0 holds original VariableSpace
+  _sessionCounter.store(1);
+  _variableSpace = variableSpace;
+  _stash = stash;
 }
 
+VariableSpace* SessionLocalStorage::localVariableSpace(sd::LongType sessionId) {
+  _mutex.lock();
+  auto varSpace = _threadVariableSpace.at(sessionId);
+  _mutex.unlock();
+
+  return varSpace;
+}
+
+VariableSpace* SessionLocalStorage::localVariableSpace() { return localVariableSpace(getSessionId()); }
+
+SessionLocalStorage::~SessionLocalStorage() {
+  for (const auto& v : _threadVariableSpace) {
+    delete v.second;
+  }
+}
+
+sd::LongType SessionLocalStorage::getThreadId() {
+#ifdef __APPLE__
+  // syscall?
+#elif _WIN32
+  // some win32api
+#else
+  // syscall!
+#endif
+  auto id = std::this_thread::get_id();
+  uint64_t* ptr = (uint64_t*)&id;
+  return (*ptr);
+}
+
+int SessionLocalStorage::numberOfSessions() {
+  _mutex.lock();
+  int size = (int)_threadSession.size();
+  _mutex.unlock();
+  return size;
+}
+
+void SessionLocalStorage::endSession(sd::LongType sessionId) {
+  // we should delete specific holders here
+  _mutex.lock();
+  auto vs = _threadVariableSpace[sessionId];
+  _threadVariableSpace.erase(sessionId);
+
+  delete vs;
+  _mutex.unlock();
+}
+
+void SessionLocalStorage::endSession() {
+  auto tid = getThreadId();
+
+  _mutex.lock();
+
+  auto ntid = _threadSession[tid];
+  _threadSession.erase(tid);
+
+  _mutex.unlock();
+
+  endSession(ntid);
+}
+
+sd::LongType SessionLocalStorage::getSessionId() {
+  auto tid = getThreadId();
+
+  _mutex.lock();
+  auto ntid = _threadSession[tid];
+
+  _mutex.unlock();
+
+  return ntid;
+}
+
+sd::LongType sd::graph::SessionLocalStorage::startSession() {
+  auto tid = getThreadId();
+
+  sd_debug("Adding ThreadId: %i;\n", (int)tid);
+  sd::LongType ntid = _sessionCounter++;
+  _mutex.lock();
+
+  _threadSession[tid] = ntid;
+  _threadVariableSpace[ntid] = _variableSpace->clone();
+
+  _mutex.unlock();
+
+  return ntid;
+}
+}  // namespace graph
+}  // namespace sd

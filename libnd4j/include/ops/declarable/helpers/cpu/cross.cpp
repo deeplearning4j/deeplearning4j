@@ -20,39 +20,38 @@
 // @author GS (sgazeos@gmail.com), created on 10/1/2018
 //
 
-
-#include<ops/declarable/helpers/cross.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/cross.h>
 
-namespace sd 	  {
-namespace ops 	  {
+namespace sd {
+namespace ops {
 namespace helpers {
 
- void crossBatched(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
-    auto _a = a->reshape(a->ordering(), {-1, 3});
-    auto _b = b->reshape(b->ordering(), {-1, 3});
-    auto _o = o->reshape(o->ordering(), {-1, 3}, false);
+void crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
+  auto _a = a->reshape(a->ordering(), {-1, 3});
+  auto _b = b->reshape(b->ordering(), {-1, 3});
+  auto _o = o->reshape(o->ordering(), {-1, 3}, false);
 
-    auto tadsA = _a.allTensorsAlongDimension({1});
-    auto tadsB = _b.allTensorsAlongDimension({1});
-    auto tadsO = _o.allTensorsAlongDimension({1});
+  auto tadsA = _a.allTensorsAlongDimension({1});
+  auto tadsB = _b.allTensorsAlongDimension({1});
+  auto tadsO = _o.allTensorsAlongDimension({1});
 
-    int tads = tadsA.size();
+  int tads = tadsA.size();
 
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-            auto a_ = tadsA.at(e);
-            auto b_ = tadsB.at(e);
-            auto o_ = tadsO.at(e);
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto e = start; e < stop; e++) {
+      auto a_ = tadsA.at(e);
+      auto b_ = tadsB.at(e);
+      auto o_ = tadsO.at(e);
 
-            helpers::cross(context, a_, b_, o_);
-        }
-    };
+      helpers::cross(context, a_, b_, o_);
+    }
+  };
 
-    samediff::Threads::parallel_tad(func, 0, tads);
+  samediff::Threads::parallel_tad(func, 0, tads);
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

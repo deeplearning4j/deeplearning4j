@@ -27,150 +27,138 @@
 #include <ops/declarable/helpers/gather.h>
 #include <ops/declarable/helpers/scatter.h>
 
-
 namespace sd {
-namespace ops  {
-
+namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
+  auto input = INPUT_VARIABLE(0);
+  auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
+  auto output = OUTPUT_VARIABLE(0);
 
-	auto input   = INPUT_VARIABLE(0);
-    auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
-	auto output  = OUTPUT_VARIABLE(0);
+  const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
 
-	const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
+  // Edge case: empty indices -> empty output
+  if (indices != nullptr && indices->isEmpty()) {
+    REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
+    return sd::Status::OK;  // No op
+  }
 
-	//Edge case: empty indices -> empty output
-	if(indices != nullptr && indices->isEmpty()){
-		REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
-		return Status::OK();	//No op
-	}
+  const int numOfIntArgs = block.numI();
 
-	const int numOfIntArgs = block.numI();
+  std::vector<int> intArgs;
+  if (block.width() > 2) {
+    intArgs = INPUT_VARIABLE(2)->template asVectorT<int>();
+  } else {
+    if (numOfIntArgs == 0)
+      intArgs.emplace_back(0);
+    else
+      for (int i = 0; i < numOfIntArgs; ++i) intArgs.emplace_back(block.getIArguments()->at(i));
+  }
 
-    std::vector<int> intArgs;
-    if (block.width() > 2) {
-    	intArgs = INPUT_VARIABLE(2)->template asVectorT<int>();
-    }
-    else {
-		if (numOfIntArgs == 0)
-			intArgs.emplace_back(0);
-		else
-			for (int i = 0; i < numOfIntArgs; ++i)
-				intArgs.emplace_back(block.getIArguments()->at(i));
-	}
+  const int inputRank = input->rankOf();
+  if (intArgs[0] < 0) intArgs[0] += inputRank;
 
-    const int inputRank = input->rankOf();
-	if(intArgs[0] < 0)
-        intArgs[0] += inputRank;
+  // input validation
+  REQUIRE_TRUE(intArgs[0] < inputRank, 0,
+               "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!",
+               intArgs[0], inputRank);
+  REQUIRE_TRUE(indices != nullptr || numOfIntArgs > 1, 0,
+               "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
-	// input validation
-    REQUIRE_TRUE(intArgs[0] < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", intArgs[0], inputRank);
-    REQUIRE_TRUE(indices != nullptr || numOfIntArgs > 1, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
+  if (checkIndices) {
+    NDArray* pIndices = indices;
+    if (indices == nullptr)
+      pIndices =
+          new NDArray(input->ordering(), {static_cast<int>(intArgs.size()) - 1},
+                      std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, block.launchContext());
+    const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
+    REQUIRE_TRUE(numOfBadIndx == 0, 0,
+                 "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
+                 numOfBadIndx);
+    if (indices == nullptr) delete pIndices;
+  }
 
-	if(checkIndices) {
+  helpers::gather(block.launchContext(), input, indices, output, intArgs);
 
-		NDArray* pIndices = indices;
-		if(indices == nullptr)
-            pIndices = new NDArray(input->ordering(), {static_cast<int>(intArgs.size()) - 1}, std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, block.launchContext());
-        const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
-        REQUIRE_TRUE(numOfBadIndx == 0, 0, "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
-        if(indices == nullptr)
-            delete pIndices;
-    }
-
-	helpers::gather(block.launchContext(), input, indices, output, intArgs);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_TYPES(gather) {
-	getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
-	getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS});
-	getOpDescriptor()->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS});
+  getOpDescriptor()->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS});
 }
-
 
 DECLARE_SHAPE_FN(gather) {
+  // check shape of paddings
+  auto inputShapeInfo = inputShape->at(0);
+  sd::LongType* outputShapeInfo = nullptr;
 
-	// check shape of paddings
-	auto inputShapeInfo  = inputShape->at(0);
-	Nd4jLong* outputShapeInfo = nullptr;
+  int axis = 0;
 
-	int axis = 0;
+  if (block.width() > 2) {
+    axis = INPUT_VARIABLE(2)->e<int>(0);
+  } else
+    axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 
-	if (block.width() > 2) {
-		axis = INPUT_VARIABLE(2)->e<int>(0);
-	} else
-		axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
+  int inputRank = shape::rank(inputShapeInfo);
+  if (axis < 0) axis += inputRank;
 
-	int inputRank = shape::rank(inputShapeInfo);
-	if(axis < 0)
-		axis += inputRank;
+  REQUIRE_TRUE(axis < inputRank, 0,
+               "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis,
+               inputRank);
 
-    REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
+  bool isEmpty = false;
 
-	bool isEmpty = false;
+  if (block.width() > 1) {
+    auto indicesShapeInfo = inputShape->at(1);
 
-	if (block.width() > 1) {
-		auto indicesShapeInfo = inputShape->at(1);
+    int indicesRank = shape::rank(indicesShapeInfo);
 
-    	int indicesRank = shape::rank(indicesShapeInfo);
+    int outputRank = inputRank + indicesRank - 1;
 
-    	int outputRank = inputRank + indicesRank - 1;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
-    	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
+    // fill output shapeInfo
+    outputShapeInfo[0] = outputRank;
+    int shapeIdx = 1;
 
-    	// fill output shapeInfo
-    	outputShapeInfo[0] = outputRank;
-    	int shapeIdx = 1;
+    for (int i = 0; i < axis; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
 
-    	for(int i = 0; i < axis; ++i)
-    		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
+    for (int i = 0; i < indicesRank; ++i) outputShapeInfo[shapeIdx++] = indicesShapeInfo[i + 1];
 
-		for(int i = 0; i < indicesRank; ++i)
-    		outputShapeInfo[shapeIdx++] = indicesShapeInfo[i+1];
+    for (int i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
+  } else if (block.numI() > 1) {
+    int indicesRank = block.numI() == 2 ? 0 : 1;
 
-    	for(int i = axis+1; i < inputRank; ++i)
-    		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
-	}
-	else if (block.numI() > 1) {
+    int outputRank = inputRank + indicesRank - 1;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
-		int indicesRank = block.numI() == 2 ? 0 : 1;
+    // building shape manually
+    outputShapeInfo[0] = outputRank;
+    int shapeIdx = 1;
+    for (int i = 0; i < axis; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
 
-		int outputRank = inputRank + indicesRank - 1;
-		ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
+    if (block.numI() > 2) outputShapeInfo[shapeIdx++] = block.numI() - 1;
 
-		// building shape manually
-		outputShapeInfo[0] = outputRank;
-    	int shapeIdx = 1;
-    	for(int i = 0; i < axis; ++i)
-    		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
+    for (int i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
+  } else
+    REQUIRE_TRUE(false, 0,
+                 "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
-		if (block.numI() > 2)
-			outputShapeInfo[shapeIdx++] = block.numI() - 1;
+  ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
-		for(int i = axis+1; i < inputRank; ++i)
-    		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
-	}
-    else
-        REQUIRE_TRUE(false, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
+  if (isEmpty) {
+    ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
+  }
 
-	ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
-
-	if(isEmpty){
-		ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
-	}
-
-	auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outputShapeInfo));
-	RELEASE(outputShapeInfo, block.getWorkspace());
-    return SHAPELIST(result);
-
+  auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outputShapeInfo));
+  RELEASE(outputShapeInfo, block.getWorkspace());
+  return SHAPELIST(result);
 }
 
-}
-}
-
+}  // namespace ops
+}  // namespace sd
 
 #endif

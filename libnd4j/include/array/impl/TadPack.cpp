@@ -19,45 +19,34 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include "../TadPack.h"
-#include <system/Environment.h>
+
 #include <helpers/shape.h>
+#include <system/Environment.h>
 
 namespace sd {
-    TadPack::TadPack(const ConstantShapeBuffer &shapes, const ConstantOffsetsBuffer &offets, Nd4jLong numTads) : _tadShape(shapes), _tadOffsets(offets) {
-        _numTads = numTads;
-    }
-
-    const Nd4jLong* TadPack::primaryShapeInfo() const {
-        return _tadShape.primary();
-    }
-
-    const Nd4jLong* TadPack::primaryOffsets() const {
-        return _tadOffsets.primary();
-    }
-
-    const Nd4jLong* TadPack::specialShapeInfo() const {
-        return _tadShape.special();
-    }
-
-    const Nd4jLong* TadPack::specialOffsets() const {
-        return _tadOffsets.special();
-    }
-
-    Nd4jLong TadPack::numberOfTads() const {
-        return _numTads;
-    }
-
-    const Nd4jLong* TadPack::platformShapeInfo() const {
-        return sd::Environment::getInstance().isCPU() ? primaryShapeInfo() : specialShapeInfo();
-    }
-
-    const Nd4jLong* TadPack::platformOffsets() const {
-        return sd::Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
-    }
-
-    int TadPack::shapeInfoLength() const {
-        return (int) shape::shapeInfoLength(primaryShapeInfo());
-    }
+TadPack::TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer& offets, sd::LongType numTads)
+    : _tadShape(shapes), _tadOffsets(offets) {
+  _numTads = numTads;
 }
+
+const sd::LongType* TadPack::primaryShapeInfo() const { return _tadShape.primary(); }
+
+const sd::LongType* TadPack::primaryOffsets() const { return _tadOffsets.primary(); }
+
+const sd::LongType* TadPack::specialShapeInfo() const { return _tadShape.special(); }
+
+const sd::LongType* TadPack::specialOffsets() const { return _tadOffsets.special(); }
+
+sd::LongType TadPack::numberOfTads() const { return _numTads; }
+
+const sd::LongType* TadPack::platformShapeInfo() const {
+  return sd::Environment::getInstance().isCPU() ? primaryShapeInfo() : specialShapeInfo();
+}
+
+const sd::LongType* TadPack::platformOffsets() const {
+  return sd::Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
+}
+
+int TadPack::shapeInfoLength() const { return (int)shape::shapeInfoLength(primaryShapeInfo()); }
+}  // namespace sd

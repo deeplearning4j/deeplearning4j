@@ -22,37 +22,31 @@
 
 #ifndef LIBND4J_HHCOLPICQR_H
 #define LIBND4J_HHCOLPICQR_H
-
-#include <helpers/hhColPivQR.h>
 #include <array/NDArray.h>
+#include <helpers/hhColPivQR.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 class HHcolPivQR {
+ public:
+  NDArray _qr;
+  NDArray _coeffs;
+  NDArray _permut;
+  int _diagSize;
 
-    public:        
-    
-        NDArray _qr;
-        NDArray _coeffs;
-        NDArray _permut;
-        int _diagSize;
+  HHcolPivQR() = delete;
+  HHcolPivQR(const NDArray& matrix);
 
-        HHcolPivQR() = delete;
-        HHcolPivQR(const NDArray& matrix);
+  template <typename T>
+  void _evalData();
 
-        template <typename T>
-        void _evalData();
-
-        void evalData();
+  void evalData();
 };
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-
-}
-}
-}
-
-
-#endif //LIBND4J_HHCOLPICQR_H
+#endif  // LIBND4J_HHCOLPICQR_H

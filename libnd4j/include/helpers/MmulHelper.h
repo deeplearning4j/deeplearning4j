@@ -24,48 +24,57 @@
 
 #ifndef LIBND4J_MMULHELPER_H
 #define LIBND4J_MMULHELPER_H
-
 #include "array/NDArray.h"
 
 namespace sd {
-    class ND4J_EXPORT MmulHelper {
+class SD_LIB_EXPORT MmulHelper {
+ private:
+  // multiptication N-dimensions tensor on other N-dimensions one
+  static sd::NDArray* mmulNxN(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, const double alpha = 1.0,
+                              const double beta = 0.0, const char outOrder = 'f');
 
-    private:
+  // dot product of vectors (X * Y) = Z[0]
+  static sd::NDArray* dot(const sd::NDArray* X, const sd::NDArray* Y, sd::NDArray* Z, const double alpha = 1.0,
+                          const double beta = 0.0);
 
-        // multiptication N-dimensions tensor on other N-dimensions one
-        static sd::NDArray* mmulNxN(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
+  // multiptication Matrix to Matrix
+  static sd::NDArray* mmulMxM(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, double alpha = 1.0,
+                              double beta = 0.0, const char outOrder = 'f');
 
-        // dot product of vectors (X * Y) = Z[0]
-        static sd::NDArray* dot(const sd::NDArray* X, const sd::NDArray* Y, sd::NDArray* Z, const double alpha = 1.0, const double beta = 0.0);
+  // multiptication Matrix to vector
+  static sd::NDArray* mmulMxV(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, double alpha = 1.0,
+                              double beta = 0.0, const char outOrder = 'f');
 
-        // multiptication Matrix to Matrix
-        static sd::NDArray* mmulMxM(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
+ public:
+  static sd::NDArray* mmul(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C = nullptr,
+                           const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
-        // multiptication Matrix to vector
-        static sd::NDArray* mmulMxV(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
+  static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::initializer_list<int>& axesA,
+                                const std::initializer_list<int>& axesB = {});
 
-    public:
+  static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::vector<int>& axesA,
+                                const std::vector<int>& axesB);
 
-        static sd::NDArray* mmul(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C = nullptr, const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
-
-        static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB = {});
-
-        static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::vector<int>& axesA, const std::vector<int>& axesB);
-
-        static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
-
+  static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c, const std::vector<int>& axes_a,
+                        const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
 
 #ifndef __JAVACPP_HACK__
-        /**
-        *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must take care of correctness of such arrays by himself
-        */
-        static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC);
-        static sd::NDArray* tensorDot(const sd::NDArray* a, const sd::NDArray* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB);
+  /**
+   *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must
+   * take care of correctness of such arrays by himself
+   */
+  static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c,
+                        const std::vector<std::vector<sd::LongType>>& modifA,
+                        const std::vector<std::vector<sd::LongType>>& modifB,
+                        const std::vector<std::vector<sd::LongType>>& modifC);
+  static sd::NDArray* tensorDot(const sd::NDArray* a, const sd::NDArray* b,
+                                const std::vector<std::vector<sd::LongType>>& modifA,
+                                const std::vector<std::vector<sd::LongType>>& modifB);
 #endif
 
-        static void matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY, double alpha = 1.0, double beta = 0.0);
-    };
-}
+  static void matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY,
+                     double alpha = 1.0, double beta = 0.0);
+};
+}  // namespace sd
 
-
-#endif //LIBND4J_MMULHELPER_H
+#endif  // LIBND4J_MMULHELPER_H

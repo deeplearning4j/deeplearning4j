@@ -26,20 +26,16 @@
 #include <ops/declarable/headers/tests.h>
 
 namespace sd {
-    namespace ops {
-        REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
+  auto z = OUTPUT_VARIABLE(0);
 
-//            STORE_RESULT(*z);
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(testreduction) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  //            STORE_RESULT(*z);
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(testreduction) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

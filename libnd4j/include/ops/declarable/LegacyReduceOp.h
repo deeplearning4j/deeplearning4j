@@ -27,9 +27,9 @@
 /*
 namespace sd {
     namespace ops {
-        class ND4J_EXPORT LegacyReduceOp : public LegacyOp {
+        class SD_LIB_EXPORT LegacyReduceOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context& block);
+            sd::Status validateAndExecute(Context& block);
         public:
             LegacyReduceOp();
             LegacyReduceOp(int opNum);
@@ -40,10 +40,9 @@ namespace sd {
     }
 }
 */
-#include <ops/declarable/LegacyReduceFloatOp.h>
-#include <ops/declarable/LegacyReduceSameOp.h>
 #include <ops/declarable/LegacyReduceBoolOp.h>
+#include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyReduceLongOp.h>
+#include <ops/declarable/LegacyReduceSameOp.h>
 
-
-#endif //LIBND4J_LEGACYREDUCEOP_H
+#endif  // LIBND4J_LEGACYREDUCEOP_H

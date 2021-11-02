@@ -19,44 +19,45 @@
 //
 // @author raver119@gmail.com
 //
+#include <array/NDArray.h>
+#include <helpers/MmulHelper.h>
+#include <memory/MemoryRegistrator.h>
+#include <memory/Workspace.h>
 
 #include "testlayers.h"
-#include <array/NDArray.h>
-#include <memory/Workspace.h>
-#include <memory/MemoryRegistrator.h>
-#include <helpers/MmulHelper.h>
 
 using namespace sd;
 using namespace sd::memory;
 
-class CudaWorkspaceTests : public testing::Test {
-
-};
+class CudaWorkspaceTests : public testing::Test {};
 
 TEST_F(CudaWorkspaceTests, Basic_Tests_1) {
-    Workspace workspace(65536, 65536);
+  Workspace workspace(65536, 65536);
 
-    ASSERT_EQ(0, workspace.getCurrentOffset());
-    LaunchContext ctx;
-    ctx.setWorkspace(&workspace);
-    auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
+  ASSERT_EQ(0, workspace.getCurrentOffset());
+  LaunchContext ctx;
+  ctx.setWorkspace(&workspace);
+  auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
 
-    ASSERT_EQ(108, workspace.getCurrentOffset());
-    ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
+  ASSERT_EQ(108, workspace.getCurrentOffset());
+  ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
 
-    array.e<int>(0);
+  array.e<int>(0);
 
-    ASSERT_EQ(100, workspace.getCurrentSecondaryOffset());
+  ASSERT_EQ(100, workspace.getCurrentSecondaryOffset());
 }
 
 TEST_F(CudaWorkspaceTests, Basic_Tests_2) {
-    Workspace workspace(65536, 65536);
+  Workspace workspace(65536, 65536);
 
-    ASSERT_EQ(0, workspace.getCurrentOffset());
-    LaunchContext ctx;
-    ctx.setWorkspace(&workspace);
-    auto array = NDArrayFactory::create<float>('c', {5, 5}, {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, &ctx);
+  ASSERT_EQ(0, workspace.getCurrentOffset());
+  LaunchContext ctx;
+  ctx.setWorkspace(&workspace);
+  auto array = NDArrayFactory::create<float>(
+      'c', {5, 5}, {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+      &ctx);
 
-    ASSERT_EQ(108, workspace.getCurrentOffset());
-    ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
+  ASSERT_EQ(108, workspace.getCurrentOffset());
+  ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
 }

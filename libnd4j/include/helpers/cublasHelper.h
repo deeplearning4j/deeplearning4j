@@ -23,31 +23,32 @@
 #ifndef DEV_TESTS_CUBLASHELPER_H
 #define DEV_TESTS_CUBLASHELPER_H
 
-#include <system/dll.h>
-#include <system/pointercast.h>
-#include <vector>
+#include <system/common.h>
+
 #include <mutex>
+#include <vector>
 
 namespace sd {
-    class ND4J_EXPORT CublasHelper {
-    private:
-        static std::mutex _mutex;
+class SD_LIB_EXPORT CublasHelper {
+ private:
+  static std::mutex _mutex;
 
-        std::vector<void*> _cache;
-        std::vector<void*> _solvers;
-        std::vector<void*> _cudnn;
+  std::vector<void*> _cache;
+  std::vector<void*> _solvers;
+  std::vector<void*> _cudnn;
 
-        CublasHelper();
-    public:
-      ~CublasHelper();
-      static CublasHelper& getInstance();
+  CublasHelper();
 
-        void* cudnn();
-        void* solver();
+ public:
+  ~CublasHelper();
+  static CublasHelper& getInstance();
 
-        void* handle();
-        void* handle(int deviceId);
-    };
-}
+  void* cudnn();
+  void* solver();
 
-#endif //DEV_TESTS_CUBLASHELPER_H
+  void* handle();
+  void* handle(int deviceId);
+};
+}  // namespace sd
+
+#endif  // DEV_TESTS_CUBLASHELPER_H

@@ -22,77 +22,75 @@
 
 #ifndef SD_PLATFORMHELPER_H
 #define SD_PLATFORMHELPER_H
-
-#include <helpers/ShapeUtils.h>
 #include <execution/Engine.h>
 #include <graph/Context.h>
-#include <string>
-#include <system/pointercast.h>
-#include <system/dll.h>
+#include <helpers/ShapeUtils.h>
 #include <system/RequirementsHelper.h>
 
+#include <string>
+
 namespace sd {
-    namespace ops {
-        namespace platforms {
-            /**
-             * This abstract class defines methods used by platform-specific helpers implementations
-             */
-            class ND4J_EXPORT PlatformHelper {
-            protected:
-                // target engine for this impl
-                samediff::Engine _engine;
+namespace ops {
+namespace platforms {
+/**
+ * This abstract class defines methods used by platform-specific helpers implementations
+ */
+class SD_LIB_EXPORT PlatformHelper {
+ protected:
+  // target engine for this impl
+  samediff::Engine _engine;
 
-                // name of the operation this helper is built for
-                std::string _name;
+  // name of the operation this helper is built for
+  std::string _name;
 
-                // hash of the operation this helper is built for
-                Nd4jLong _hash;
-            public:
-                PlatformHelper(const char *name, samediff::Engine engine);
+  // hash of the operation this helper is built for
+  sd::LongType _hash;
 
-                ~PlatformHelper() = default;
+ public:
+  PlatformHelper(const char *name, samediff::Engine engine);
 
-                std::string name();
+  ~PlatformHelper() = default;
 
-                samediff::Engine engine();
+  std::string name();
 
-                Nd4jLong hash();
+  samediff::Engine engine();
 
-                /**
-                 * This method checks, if given helper can be used with given input/output/configuration options
-                 *
-                 * @param context
-                 * @return
-                 */
-                virtual bool isUsable(graph::Context &context) = 0;
+  sd::LongType hash();
 
-                /**
-                 * This method invokes helper. Typically this method replaces actual op execution
-                 *
-                 * @param context
-                 * @return
-                 */
-                virtual Nd4jStatus invokeHelper(graph::Context &context) = 0;
+  /**
+   * This method checks, if given helper can be used with given input/output/configuration options
+   *
+   * @param context
+   * @return
+   */
+  virtual bool isUsable(graph::Context &context) = 0;
 
-                /**
-                 * Helper method, needed for compatibility with DeclarableOp macros
-                 * @param ctx
-                 * @param inputId
-                 * @return
-                 */
-                sd::NDArray* getZ(graph::Context &ctx, int inputId);
+  /**
+   * This method invokes helper. Typically this method replaces actual op execution
+   *
+   * @param context
+   * @return
+   */
+  virtual sd::Status invokeHelper(graph::Context &context) = 0;
 
-                /**
-                 * Helper method, needed for compatibility with DeclarableOp macros
-                 * @param ctx
-                 * @param inputId
-                 * @return
-                 */
-                sd::NDArray* getNullifiedZ(graph::Context &ctx, int inputId);
-            };
-        }
-    }
-}
+  /**
+   * Helper method, needed for compatibility with DeclarableOp macros
+   * @param ctx
+   * @param inputId
+   * @return
+   */
+  sd::NDArray *getZ(graph::Context &ctx, int inputId);
 
+  /**
+   * Helper method, needed for compatibility with DeclarableOp macros
+   * @param ctx
+   * @param inputId
+   * @return
+   */
+  sd::NDArray *getNullifiedZ(graph::Context &ctx, int inputId);
+};
+}  // namespace platforms
+}  // namespace ops
+}  // namespace sd
 
-#endif //SD_PLATFORMHELPER_H
+#endif  // SD_PLATFORMHELPER_H

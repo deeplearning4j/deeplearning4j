@@ -26,48 +26,41 @@
 
 #if NOT_EXCLUDED(OP_matrix_diag)
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CUSTOM_OP_IMPL(matrix_diag, 1, 1, false, 0, 0) {
+  auto diagonal = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    auto diagonal = INPUT_VARIABLE(0);
-    auto output   = OUTPUT_VARIABLE(0);
+  REQUIRE_TRUE(!diagonal->isScalar(), 0,
+               "CUSTOM_OP matrix_diag: input diagonal array must be at list a vector, but scalar was given!");
 
-    REQUIRE_TRUE(!diagonal->isScalar(), 0, "CUSTOM_OP matrix_diag: input diagonal array must be at list a vector, but scalar was given!");
+  helpers::matrixSetDiag(block.launchContext(), *output, *diagonal, *output, true);
 
-    helpers::matrixSetDiag(block.launchContext(), *output, *diagonal, *output, true);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(matrix_diag) {
+  sd::LongType* outShapeInfo = nullptr;
+  auto in = inputShape->at(0);
+  int inRank = shape::rank(in);
 
-    Nd4jLong* outShapeInfo = nullptr;
-    auto in = inputShape->at(0);
-    int inRank = shape::rank(in);
+  //  if for example diagonal array has shape [A,B,C] then output array has shape [A,B,C,C]
 
-    //  if for example diagonal array has shape [A,B,C] then output array has shape [A,B,C,C]
+  int outRank = inRank + 1;
 
-    int outRank = inRank + 1;
+  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
+  outShapeInfo[0] = outRank;
+  for (int i = 0; i < inRank; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
+  outShapeInfo[outRank] = shape::sizeAt(in, -1);
 
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
-    outShapeInfo[0] = outRank;
-    for(int i = 0; i < inRank; ++i)
-        outShapeInfo[i + 1] = shape::sizeAt(in, i);
-    outShapeInfo[outRank] = shape::sizeAt(in, -1);
+  ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
-    ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
-
-    return SHAPELIST(CONSTANT(outShapeInfo));
+  return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
-DECLARE_TYPES(matrix_diag) {
-    getOpDescriptor()
-            ->setAllowedInputTypes(sd::DataType::ANY)
-            ->setSameMode(true);
-}
-}
-}
+DECLARE_TYPES(matrix_diag) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif
-

@@ -22,10 +22,10 @@
 
 #ifndef LIBND4J_READWRITELOCK_H
 #define LIBND4J_READWRITELOCK_H
+#include <system/common.h>
 
 #include <atomic>
 #include <mutex>
-#include <system/dll.h>
 
 /**
  * This class provides PRIMITIVE read-write lock, and should NOT be used outside of GraphServer due to its inefficiency.
@@ -34,29 +34,27 @@
  * Basic idea: write lock won't be obtained before all read requests served
  */
 namespace sd {
-    class ND4J_EXPORT SimpleReadWriteLock {
-    private:
-        std::atomic<unsigned long long int> _read_locks;
-        std::atomic<unsigned long long int> _write_locks;
-        std::mutex _mutex;
+class SD_LIB_EXPORT SimpleReadWriteLock {
+ private:
+  std::atomic<unsigned long long int> _read_locks;
+  std::atomic<unsigned long long int> _write_locks;
+  std::mutex _mutex;
 
-    public:
+ public:
+  explicit SimpleReadWriteLock();
+  SimpleReadWriteLock(const SimpleReadWriteLock& other);
+  ~SimpleReadWriteLock() = default;
 
-        explicit SimpleReadWriteLock();
-        SimpleReadWriteLock(const SimpleReadWriteLock& other);
-        ~SimpleReadWriteLock() = default;
+  // read lock
+  void lockRead();
+  void unlockRead();
 
-        // read lock
-        void lockRead();
-        void unlockRead();
+  // write lock
+  void lockWrite();
+  void unlockWrite();
 
-        // write lock
-        void lockWrite();
-        void unlockWrite();
+  SimpleReadWriteLock& operator=(const SimpleReadWriteLock& other);
+};
+}  // namespace sd
 
-        SimpleReadWriteLock& operator= ( const SimpleReadWriteLock &other);
-    };
-}
-
-
-#endif //DEV_TESTS_READWRITELOCK_H
+#endif  // DEV_TESTS_READWRITELOCK_H

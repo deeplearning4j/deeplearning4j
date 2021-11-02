@@ -27,20 +27,17 @@
 #include <ops/declarable/helpers/compare_elem.h>
 
 namespace sd {
-    namespace ops {
-        BOOLEAN_OP_IMPL(is_numeric_tensor, 1, true) {
+namespace ops {
+BOOLEAN_OP_IMPL(is_numeric_tensor, 1, true) {
+  auto input = INPUT_VARIABLE(0);
 
-            auto input = INPUT_VARIABLE(0);
-
-            return input->isR() || input->isZ() ? ND4J_STATUS_TRUE : ND4J_STATUS_FALSE;
-        }
-
-        DECLARE_TYPES(is_numeric_tensor) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::BOOL);
-        }
-    }
+  return input->isR() || input->isZ() ? sd::Status::TRUE : sd::Status::FALSE;
 }
+
+DECLARE_TYPES(is_numeric_tensor) {
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::BOOL);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

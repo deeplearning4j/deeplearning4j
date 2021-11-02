@@ -22,36 +22,31 @@
 
 #ifndef LIBND4J_VARIABLESSET_H
 #define LIBND4J_VARIABLESSET_H
+#include <graph/Variable.h>
 
 #include <iterator>
 #include <vector>
-#include <system/pointercast.h>
-#include <system/dll.h>
-#include <graph/Variable.h>
-
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT VariablesSet {
-        protected:
-            std::vector<sd::graph::Variable*> _holder;
-            Nd4jStatus _status;
-        public:
-            VariablesSet(Nd4jStatus status = ND4J_STATUS_OK);
-            ~VariablesSet();
+namespace graph {
+class SD_LIB_EXPORT VariablesSet {
+ protected:
+  std::vector<sd::graph::Variable*> _holder;
+  sd::Status _status;
 
-            Nd4jStatus status();
+ public:
+  VariablesSet(sd::Status status = sd::Status::OK);
+  ~VariablesSet();
 
-            int size();
+  sd::Status status();
 
-            void push_back(Variable* variable);
+  int size();
 
-            Variable* at(int index);
+  void push_back(Variable* variable);
 
-        };
-    }
-}
+  Variable* at(int index);
+};
+}  // namespace graph
+}  // namespace sd
 
-
-
-#endif //LIBND4J_VARIABLESSET_H
+#endif  // LIBND4J_VARIABLESSET_H

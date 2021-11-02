@@ -160,7 +160,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fmax-errors=2 ")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS} ")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/")
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(APPLE) AND NOT(WIN32))
@@ -200,24 +200,21 @@ if(SD_CUDA)
     endif()
 
 
-
     if (CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
         include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
         if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
             message("Experimental mode ENABLED")
-            set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
-            set(EXPM " -D__ND4J_EXPERIMENTAL__=true")
+            set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
+            set(EXPM " -DSD_EXPERIMENTAL_ENABLED=true")
         endif()
-
 
 
         # the only difference for debug mode here is host/device debug symbols
         set(CMAKE_CUDA_FLAGS_DEBUG " -G -g")
-
         # we need -fPIC on Linux/GCC
         if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
             message("Enabling fPIC...")
@@ -332,8 +329,8 @@ elseif(SD_CPU OR SD_AURORA)
 
     if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
         message("Experimental mode ENABLED")
-        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
     endif()
 
     file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
@@ -365,7 +362,6 @@ elseif(SD_CPU OR SD_AURORA)
         set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
-
 
 
     if(SD_CHECK_VECTORIZATION)

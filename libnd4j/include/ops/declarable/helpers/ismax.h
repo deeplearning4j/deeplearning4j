@@ -23,18 +23,17 @@
 
 #ifndef LIBND4J_ISMAX_H
 #define LIBND4J_ISMAX_H
-
 #include <ops/declarable/helpers/helpers.h>
 
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
-	void ismax(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions);
+SD_LIB_HIDDEN void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output,
+                         const std::vector<int>& dimensions);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 
-
-#endif //LIBND4J_LSTM_H
+#endif  // LIBND4J_LSTM_H

@@ -19,65 +19,66 @@
 //
 //  @author raver119@gmail.com
 //
-
-#include <ops/declarable/helpers/max_pooling.h>
 #include <ops/declarable/helpers/convolutions.h>
-
+#include <ops/declarable/helpers/max_pooling.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
+template <typename T>
+static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArray* values,
+                               std::vector<int> const& params, NDArray* indices) {
+  int kY = params[0];
+  int kX = params[1];
 
-            int kY = params[0];
-            int kX = params[1];
+  int sY = params[2];
+  int sX = params[3];
 
-            int sY = params[2];
-            int sX = params[3];
+  int pY = params[4];
+  int pX = params[5];
 
-            int pY = params[4];
-            int pX = params[5];
+  int dY = params[6];
+  int dX = params[7];
 
-            int dY = params[6];
-            int dX = params[7];
+  int oY = 0;
+  int oX = 0;
 
-            int oY = 0;
-            int oX = 0;
+  const int bSize = input->sizeAt(0);
+  const int inD = input->sizeAt(1);
+  const int inY = input->sizeAt(2);
+  const int inX = input->sizeAt(3);
 
-            const int bSize = input->sizeAt(0);
-            const int inD = input->sizeAt(1);
-            const int inY = input->sizeAt(2);
-            const int inX = input->sizeAt(3);
+  const bool isSameMode = params[8] != 0;
 
-            const bool isSameMode = params[8] != 0;
+  ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
-            ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+  if (isSameMode)
+    ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6],
+                                    params[7]);
 
-            if (isSameMode)
-                ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);
+  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 -
+  // poolingMode; 9 - divisor;
+  ConvolutionUtils::pooling2d(block, *input, *values, kY, kX, sY, sX, pY, pX, dY, dX, PoolingType::MAX_POOL, 1);
 
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-            ConvolutionUtils::pooling2d(block, *input, *values, kY, kX, sY, sX, pY, pX, dY, dX, PoolingType::MAX_POOL, 1);
-            
-            if (nullptr != indices) {
-                // for max_pool_with_argmax 
-                int total = input->lengthOf();
-                int part = total / bSize;
-                
-                for (int k = 0; k < total; )
-                for (int i = 0; i < part; i++) {
-                    indices->p(k++, i);
-                }
-            }
+  if (nullptr != indices) {
+    // for max_pool_with_argmax
+    int total = input->lengthOf();
+    int part = total / bSize;
 
-    }
-
-    ND4J_LOCAL void maxPoolingFunctor(sd::LaunchContext * context, sd::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), maxPoolingFunctor_, (block, input, values, params, indices), LIBND4J_TYPES);
-    }
-
+    for (int k = 0; k < total;)
+      for (int i = 0; i < part; i++) {
+        indices->p(k++, i);
+      }
+  }
 }
+
+void maxPoolingFunctor(sd::LaunchContext* context, sd::graph::Context& block, NDArray* input, NDArray* values,
+                       std::vector<int> const& params, NDArray* indices) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), maxPoolingFunctor_, (block, input, values, params, indices),
+                        SD_COMMON_TYPES);
 }
-}
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

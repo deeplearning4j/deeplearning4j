@@ -19,12 +19,12 @@
 //
 // Created by raver on 8/31/2018.
 //
-
-#include <helpers/StringUtils.h>
 #include <exceptions/graph_exists_exception.h>
+#include <helpers/StringUtils.h>
 
 namespace sd {
-    graph_exists_exception::graph_exists_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Graph with given ID already exists", graphId), graphId) {
-        _graphId = graphId;
-    }
+graph_exists_exception::graph_exists_exception(sd::LongType graphId)
+    : graph_exception(StringUtils::buildGraphErrorMessage("Graph with given ID already exists", graphId), graphId) {
+  _graphId = graphId;
 }
+}  // namespace sd

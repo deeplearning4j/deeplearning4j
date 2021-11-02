@@ -26,79 +26,57 @@
 
 #ifndef TRANSFORM_SAME_H_
 #define TRANSFORM_SAME_H_
-#include <vector>
+#include <helpers/OmpLaunchHelper.h>
 #include <math/templatemath.h>
 #include <ops/ops.h>
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-#include <helpers/OmpLaunchHelper.h>
-#include <system/dll.h>
+#include <vector>
 
 //#include <loops/reduce.h>
 //#include <loops/scalar.h>
 //#include <loops/indexreduce.h>
 //#include <loops/broadcasting.h>
 
-#ifdef __CUDACC__
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
-
-#include "legacy_ops.h"
-
+#include <loops/legacy_ops.h>
 
 namespace functions {
-    namespace transform {
+namespace transform {
 
-        template<typename X>
-        class TransformSame {
-        public:
-
+template <typename X>
+class TransformSame {
+ public:
 #ifdef __CUDACC__
 
-			template<typename OpType>
-	static  __device__ void transformCuda(const void *dy, const Nd4jLong *shapeInfo,
-                                          void *params,
-                                          void *result, const Nd4jLong *resultShapeInfo,
-                                          int *allocationPointer, void *reductionPointer,
-                                          const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+  template <typename OpType>
+  static SD_DEVICE void transformCuda(const void *dy, const sd::LongType *shapeInfo, void *params, void *result,
+                                      const sd::LongType *resultShapeInfo, int *allocationPointer,
+                                      void *reductionPointer, const sd::LongType *tadShapeInfo,
+                                      const sd::LongType *tadOffsets);
 
+  template <typename OpType>
+  static SD_HOST void intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,
+                                         const sd::LongType *xShape, int xRank, void *extraParams, void *z,
+                                         const sd::LongType *zShape, int zRank, int *allocationPointer,
+                                         void *reductionPointer, const sd::LongType *tadShapeInfo,
+                                         const sd::LongType *tadOffsets);
 
-	template <typename OpType>
-	static _CUDA_H void intermediateShaped(dim3 launchDims, cudaStream_t *stream,
-                                           const void *x, const Nd4jLong *xShape, int xRank,
-                                           void *extraParams,
-                                           void *z, const Nd4jLong *zShape, int zRank,
-                                           int *allocationPointer, void *reductionPointer,
-                                           const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
-
-	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream,
-                                               int opNum,
-                                               const void *x, const Nd4jLong *xShape, int xRank,
-                                               void *extraParams,
-                                               void *z, const Nd4jLong *zShape, int zRank,
-                                               int *allocationPointer, void *reductionPointer,
-                                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
-
+  static SD_HOST void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x,
+                                             const sd::LongType *xShape, int xRank, void *extraParams, void *z,
+                                             const sd::LongType *zShape, int zRank, int *allocationPointer,
+                                             void *reductionPointer, const sd::LongType *tadShapeInfo,
+                                             const sd::LongType *tadOffsets);
 
 #else
-			static void exec(int opNum,
-                             const void *dx, const Nd4jLong *xShapeInfo,
-                             void *result, const Nd4jLong *resultShapeInfo,
-                             void *extraParams,
-                             uint64_t threadId, uint64_t numThreads);
+  static void exec(int opNum, const void *dx, const sd::LongType *xShapeInfo, void *result,
+                   const sd::LongType *resultShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
 
-			template<typename OpType>
-			static ND4J_EXPORT void exec(const void *dx, const Nd4jLong *xShapeInfo,
-			                             void *result, const Nd4jLong *resultShapeInfo,
-			                             void *extraParams,
-			                             uint64_t threadId, uint64_t numThreads);
+  template <typename OpType>
+  static SD_LIB_EXPORT void exec(const void *dx, const sd::LongType *xShapeInfo, void *result,
+                                 const sd::LongType *resultShapeInfo, void *extraParams, uint64_t threadId,
+                                 uint64_t numThreads);
 #endif
-        };
-    }
-}
-
+};
+}  // namespace transform
+}  // namespace functions
 
 #endif /* TRANSFORM_H_ */

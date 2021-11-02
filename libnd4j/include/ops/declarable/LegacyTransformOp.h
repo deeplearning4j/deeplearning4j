@@ -23,32 +23,30 @@
 #ifndef LIBND4J__LEGACY_TRANSFORM_OP__H
 #define LIBND4J__LEGACY_TRANSFORM_OP__H
 
-
 //#include <ops/declarable/LegacyOp.h>
 #ifdef ONLY_SAME_TRANSFORM
 namespace sd {
-    namespace ops {
-        /**
-        *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
-        */
-        class ND4J_EXPORT LegacyTransformOp : public LegacyOp {
-        protected:
-            Nd4jStatus validateAndExecute(Context &block);
-        public:
-            LegacyTransformOp();
-            LegacyTransformOp(int opNum);
+namespace ops {
+/**
+ *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
+ */
+class SD_LIB_EXPORT LegacyTransformOp : public LegacyOp {
+ protected:
+  sd::Status validateAndExecute(Context& block);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context &block);
-            virtual LegacyOp* clone();
-        };
-    }
-}
+ public:
+  LegacyTransformOp();
+  LegacyTransformOp(int opNum);
+
+  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block);
+  virtual LegacyOp* clone();
+};
+}  // namespace ops
+}  // namespace sd
 #endif
-
+#include <ops/declarable/LegacyTransformBoolOp.h>
 #include <ops/declarable/LegacyTransformFloatOp.h>
 #include <ops/declarable/LegacyTransformSameOp.h>
-#include <ops/declarable/LegacyTransformBoolOp.h>
 #include <ops/declarable/LegacyTransformStrictOp.h>
 
-
-#endif //LIBND4J__LEGACY_TRANSFORM_OP__H
+#endif  // LIBND4J__LEGACY_TRANSFORM_OP__H

@@ -19,52 +19,49 @@
 //
 // Created by raver119 on 16.10.2017.
 //
-
-#include <ops/declarable/LegacyTransformOp.h>
-
 #include <legacy/NativeOpExecutioner.h>
+#include <ops/declarable/LegacyTransformOp.h>
 
 #ifdef ONLY_SAME_TRANSFORM
 namespace sd {
-    namespace ops {
-        LegacyTransformOp::LegacyTransformOp() : LegacyOp::LegacyOp(1) {
-            // just a no-op
-        }
-
-        LegacyTransformOp::LegacyTransformOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-            // just a no-op
-        }
-
-        LegacyOp* LegacyTransformOp::clone() {
-            return new LegacyTransformOp(this->_opNum);
-        }
-
-        Nd4jStatus LegacyTransformOp::validateAndExecute(Context &block) {
-            auto input = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
-            int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
-
-            NativeOpExcutioner::execTransformSame(opNum, input->buffer(), input->shapeInfo(), z->buffer(), z->shapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
-
-            STORE_RESULT(*z);
-
-            return ND4J_STATUS_OK;
-        }
-
-        /**
-        * For transform operations, output shape always equals to input shape. With just a few exclusions, like im2col and col2im. 
-        * But these ops already have CustomOp implementations.
-        *
-        */
-        ShapeList *LegacyTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-            auto inShape = inputShape->at(0);
-
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-
-            return SHAPELIST(CONSTANT(newShape));
-        }
-    }
+namespace ops {
+LegacyTransformOp::LegacyTransformOp() : LegacyOp::LegacyOp(1) {
+  // just a no-op
 }
+
+LegacyTransformOp::LegacyTransformOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+  // just a no-op
+}
+
+LegacyOp *LegacyTransformOp::clone() { return new LegacyTransformOp(this->_opNum); }
+
+sd::Status LegacyTransformOp::validateAndExecute(Context &block) {
+  auto input = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
+
+  int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+
+  NativeOpExcutioner::execTransformSame(opNum, input->buffer(), input->shapeInfo(), z->buffer(), z->shapeInfo(),
+                                        block.getTArguments()->data(), nullptr, nullptr);
+
+  STORE_RESULT(*z);
+
+  return sd::Status::OK;
+}
+
+/**
+ * For transform operations, output shape always equals to input shape. With just a few exclusions, like im2col and
+ * col2im. But these ops already have CustomOp implementations.
+ *
+ */
+ShapeList *LegacyTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+  auto inShape = inputShape->at(0);
+
+  sd::LongType *newShape;
+  COPY_SHAPE(inShape, newShape);
+
+  return SHAPELIST(CONSTANT(newShape));
+}
+}  // namespace ops
+}  // namespace sd
 #endif

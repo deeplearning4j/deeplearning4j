@@ -20,358 +20,347 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-
-#include "cudnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace sd      {
-namespace ops       {
+#include "cudnnUtils.h"
+
+namespace sd {
+namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-std::tuple<std::unique_ptr<NDArray>,std::unique_ptr<NDArray>> 
-checkConv2dCUDNNPadAsymmetric(const NDArray* input, const NDArray* gradI,
-                                            const int iH, const int iW,
-                                            const int oH, const int oW,
-                                            const int kH, const int kW,
-                                            const int sH, const int sW,
-                                            const int pH, const int pW,
-                                            const int dH, const int dW,
-                                            const bool isNCHW) {
+std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv2dCUDNNPadAsymmetric(
+    const NDArray* input, const NDArray* gradI, const int iH, const int iW, const int oH, const int oW, const int kH,
+    const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
+    const bool isNCHW) {
+  const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
+  const auto pWsum = ((oW - 1) * sW + ((kW - 1) * dW + 1) - iW);
 
-    const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
-    const auto pWsum = ((oW - 1) * sW + ((kW - 1) * dW + 1) - iW);
+  const bool isPHasymm = pH != (pHsum - pH);
+  const bool isPWasymm = pW != (pWsum - pW);
+  std::unique_ptr<NDArray> uNewInput = {}, uNewGradI = {};
 
-    const bool isPHasymm = pH != (pHsum - pH);
-    const bool isPWasymm = pW != (pWsum - pW);
-    std::unique_ptr<NDArray> uNewInput ={}, uNewGradI={};
+  if (!isPHasymm && !isPWasymm) return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 
-    if(!isPHasymm && !isPWasymm)
-        return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
+  std::vector<sd::LongType> newShape = input->getShapeAsVector();
 
-    std::vector<Nd4jLong> newShape = input->getShapeAsVector();
+  const int iHposition = isNCHW ? 2 : 1;
 
-    const int iHposition = isNCHW ? 2 : 1;
+  if (isPHasymm) newShape[iHposition] += 1;
+  if (isPWasymm) newShape[iHposition + 1] += 1;
 
-    if(isPHasymm)
-        newShape[iHposition] += 1;
-    if(isPWasymm)
-        newShape[iHposition + 1] += 1;
-    
+  uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
 
-    uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
+  if (isNCHW)
+    (*uNewInput)({0, 0, 0, 0, 0, input->sizeAt(2), 0, input->sizeAt(3)}).assign(input);
+  else
+    (*uNewInput)({0, 0, 0, input->sizeAt(1), 0, input->sizeAt(2), 0, 0}).assign(input);
 
-    if(isNCHW)
-        (*uNewInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3)}).assign(input);
-    else
-        (*uNewInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,0}).assign(input);
-
-
-    if(gradI != nullptr)
-        uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
-    return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-std::tuple<std::unique_ptr<NDArray>,std::unique_ptr<NDArray>> 
-checkConv3dCUDNNPadAsymmetric(const NDArray* input,const NDArray* gradI,
-                                            const int iD, const int iH, const int iW,
-                                            const int oD, const int oH, const int oW,
-                                            const int kD, const int kH, const int kW,
-                                            const int sD, const int sH, const int sW,
-                                            const int pD, const int pH, const int pW,
-                                            const int dD, const int dH, const int dW,
-                                            const bool isNCDHW) {
-
-    const auto pDsum = ((oD - 1) * sD + ((kD - 1) * dD + 1) - iD);
-    const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
-    const auto pWsum = ((oW - 1) * sW + ((kW - 1) * dW + 1) - iW);
-
-    const bool isPDasymm = pD != (pDsum - pD);
-    const bool isPHasymm = pH != (pHsum - pH);
-    const bool isPWasymm = pW != (pWsum - pW);
-    std::unique_ptr<NDArray> uNewInput ={}, uNewGradI={};
-    if(!isPDasymm && !isPHasymm && !isPWasymm)
-        return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
-
-    std::vector<Nd4jLong> newShape = input->getShapeAsVector();
-
-    const int iDposition = isNCDHW ? 2 : 1;
-
-    if(isPDasymm)
-        newShape[iDposition] += 1;
-    if(isPHasymm)
-        newShape[iDposition + 1] += 1;
-    if(isPWasymm)
-        newShape[iDposition + 2] += 1;
-
-    uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
-
-    if(isNCDHW)
-        (*uNewInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3),  0,input->sizeAt(4)}).assign(input);
-    else
-        (*uNewInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,input->sizeAt(3),  0,0}).assign(input);
-
-    if(gradI != nullptr)
-        uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
-    return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
+  if (gradI != nullptr)
+    uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
+  return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void pooling2dCUDNN(const LaunchContext* context,
-                    const NDArray* input, NDArray* output,
-                    const int kH, const int kW,
-                    const int sH, const int sW,
-                    const int pH, const int pW,
-                    const int dH, const int dW,
+std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv3dCUDNNPadAsymmetric(
+    const NDArray* input, const NDArray* gradI, const int iD, const int iH, const int iW, const int oD, const int oH,
+    const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD,
+    const int pH, const int pW, const int dD, const int dH, const int dW, const bool isNCDHW) {
+  const auto pDsum = ((oD - 1) * sD + ((kD - 1) * dD + 1) - iD);
+  const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
+  const auto pWsum = ((oW - 1) * sW + ((kW - 1) * dW + 1) - iW);
+
+  const bool isPDasymm = pD != (pDsum - pD);
+  const bool isPHasymm = pH != (pHsum - pH);
+  const bool isPWasymm = pW != (pWsum - pW);
+  std::unique_ptr<NDArray> uNewInput = {}, uNewGradI = {};
+  if (!isPDasymm && !isPHasymm && !isPWasymm) return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
+
+  std::vector<sd::LongType> newShape = input->getShapeAsVector();
+
+  const int iDposition = isNCDHW ? 2 : 1;
+
+  if (isPDasymm) newShape[iDposition] += 1;
+  if (isPHasymm) newShape[iDposition + 1] += 1;
+  if (isPWasymm) newShape[iDposition + 2] += 1;
+
+  uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
+
+  if (isNCDHW)
+    (*uNewInput)({0, 0, 0, 0, 0, input->sizeAt(2), 0, input->sizeAt(3), 0, input->sizeAt(4)}).assign(input);
+  else
+    (*uNewInput)({0, 0, 0, input->sizeAt(1), 0, input->sizeAt(2), 0, input->sizeAt(3), 0, 0}).assign(input);
+
+  if (gradI != nullptr)
+    uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
+  return std::make_tuple(std::move(uNewInput), std::move(uNewGradI));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void pooling2dCUDNN(const LaunchContext* context, const NDArray* input, NDArray* output, const int kH, const int kW,
+                    const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
                     const bool isNCHW, const cudnnPoolingMode_t mode) {
+  int bS, iC, iH, iW, oC, oH,
+      oW;  // batch size, input channels, input height/width, output channels, output height/width;
+  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
+                                             indWiC, indWoC, indWkH, indOoH);
 
-    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
-    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+  auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
-    auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
-    cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
+  // input descriptor, output descriptor
+  CudnnTensor x, z;
+  if (input->ews() == 1 && input->ordering() == 'c')
+    x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
+  else
+    x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC),
+              input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
-    // input descriptor, output descriptor
-    CudnnTensor x, z;
-    if(input->ews() == 1 && input->ordering() == 'c')
-        x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
-    else
-        x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
+  if (output->ews() == 1 && output->ordering() == 'c')
+    z.set4D(format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
+  else
+    z.set4DEx(cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC),
+              output->strideAt(indOoH), output->strideAt(indOoH + 1));
 
-    if(output->ews() == 1 && output->ordering() == 'c')
-        z.set4D(format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
-    else
-        z.set4DEx(cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
+  // description of pooling
+  PoolingDesc pooling;
+  pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
 
-    // description of pooling
-    PoolingDesc pooling;
-    pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
+  // provide scaling parameters
+  const float alpha32(1), beta32(0);
+  const double alpha64(1), beta64(0);
+  const void* alpha =
+      output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
+  const void* beta =
+      output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
-    // provide scaling parameters
-    const float  alpha32(1), beta32(0);
-    const double alpha64(1), beta64(0);
-    const void* alpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
-    const void* beta  = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32)  : reinterpret_cast<const void*>(&beta64);
+  NDArray::prepareSpecialUse({output}, {input});
 
-    NDArray::prepareSpecialUse({output}, {input});
+  // run calculation
+  CHECK_CUDNN_FAILURE_MSG(
+      STRINGIZE(cudnnPoolingForward),
+      cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
 
-    // run calculation
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingForward), cudnnPoolingForward( *handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
+  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
+  if (cudaErr != 0) throw cuda_exception::build("pooling2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
-    auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-    if (cudaErr != 0)
-        throw cuda_exception::build("pooling2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
-
-    NDArray::registerSpecialUse({output}, {input});
+  NDArray::registerSpecialUse({output}, {input});
 }
 
 //////////////////////////////////////////////////////////////////////////
-void pooling2dBpCUDNN(const LaunchContext* context,
-                    const NDArray* input, const NDArray* gradO,
-                          NDArray* gradI,
-                    const int kH, const int kW,
-                    const int sH, const int sW,
-                    const int pH, const int pW,
-                    const int dH, const int dW,
-                    const bool isNCHW, const cudnnPoolingMode_t mode) {
+void pooling2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* gradO, NDArray* gradI,
+                      const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
+                      const int dW, const bool isNCHW, const cudnnPoolingMode_t mode) {
+  int bS, iC, iH, iW, oC, oH,
+      oW;  // batch size, input channels, input height/width, output channels, output height/width;
+  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
+                                             indWiC, indWoC, indWkH, indOoH);
 
-    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
-    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+  auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
-    auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
-    cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
+  // input and gradI descriptor
+  CudnnTensor x;
+  if (input->ews() == 1 && input->ordering() == 'c')
+    x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
+  else
+    x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC),
+              input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
-    // input and gradI descriptor
-    CudnnTensor x;
-    if(input->ews() == 1 && input->ordering() == 'c')
-        x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
-    else
-        x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
+  // gradO descriptor
+  CudnnTensor dz;
+  if (gradO->ews() == 1 && gradO->ordering() == 'c')
+    dz.set4D(format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
+  else
+    dz.set4DEx(cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC),
+               gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
 
-    // gradO descriptor
-    CudnnTensor dz;
-    if(gradO->ews() == 1 && gradO->ordering() == 'c')
-        dz.set4D(format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
-    else
-        dz.set4DEx(cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
+  // description of pooling
+  PoolingDesc pooling;
 
-    // description of pooling
-    PoolingDesc pooling;
+  pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
 
-    pooling.set2D(mode, CUDNN_PROPAGATE_NAN, kH, kW, pH, pW, sH, sW);
+  // provide scaling parameters
+  const float alpha32(1), beta32(0);
+  const double alpha64(1), beta64(0);
+  const void* alpha =
+      gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
+  const void* beta =
+      gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
 
-    // provide scaling parameters
-    const float  alpha32(1), beta32(0);
-    const double alpha64(1), beta64(0);
-    const void* alpha = gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
-    const void* beta  = gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32)  : reinterpret_cast<const void*>(&beta64);
+  NDArray::prepareSpecialUse({gradI}, {input, gradO});
 
+  // run calculation for gradI
+  CHECK_CUDNN_FAILURE_MSG(
+      STRINGIZE(cudnnPoolingBackward),
+      cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x,
+                           input->specialBuffer(), beta, x, gradI->specialBuffer()));
+
+  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
+  if (cudaErr != 0) throw cuda_exception::build("pooling2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
+
+  NDArray::registerSpecialUse({gradI}, {input, gradO});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void pooling3dCUDNN(const LaunchContext* context, const NDArray* input, NDArray* output, const int kD, const int kH,
+                    const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
+                    const int dD, const int dH, const int dW, const bool isNCDHW, const cudnnPoolingMode_t mode) {
+  auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+
+  const int numDims = 5;
+
+  int bS, iC, iD, iH, iW, oC, oD, oH,
+      oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
+  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
+                                             indIOioD, indWiC, indWoC, indWkD);
+
+  const int pSizes[] = {pD, pH, pW};
+  const int sSizes[] = {sD, sH, sW};
+  const int kSizes[] = {kD, kH, kW};
+
+  const int xShape[] = {bS, iC, iD, iH, iW};
+  const int zShape[] = {bS, oC, oD, oH, oW};
+
+  const int xStrides[] = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
+                          (int)input->strideAt(3), (int)input->strideAt(4)};
+  const int zStrides[] = {(int)output->strideAt(0), (int)output->strideAt(1), (int)output->strideAt(2),
+                          (int)output->strideAt(3), (int)output->strideAt(4)};
+
+  cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
+
+  // input descriptor, output descriptor
+  CudnnTensor x, z;
+  if (input->ews() == 1 && input->ordering() == 'c')
+    x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
+  else
+    x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
+
+  if (output->ews() == 1 && output->ordering() == 'c')
+    z.setEx(format, cudnnDataType(output->dataType()), numDims, zShape);
+  else
+    z.set(cudnnDataType(output->dataType()), numDims, zShape, zStrides);
+
+  // description of pooling
+  PoolingDesc pooling;
+  pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
+
+  // provide scaling parameters
+  const float alpha32(1), beta32(0);
+  const double alpha64(1), beta64(0);
+  const void* alpha =
+      output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
+  const void* beta =
+      output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
+
+  NDArray::prepareSpecialUse({output}, {input});
+
+  // run calculation
+  CHECK_CUDNN_FAILURE_MSG(
+      STRINGIZE(cudnnPoolingForward),
+      cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
+
+  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
+  if (cudaErr != 0) throw cuda_exception::build("pooling3dCUDNN: cudaStreamSynchronize failed !", cudaErr);
+
+  NDArray::registerSpecialUse({output}, {input});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void pooling3dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* gradO, NDArray* gradI,
+                      const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD,
+                      const int pH, const int pW, const int dD, const int dH, const int dW, const bool isNCDHW,
+                      const cudnnPoolingMode_t mode) {
+  auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
+  CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+
+  const int numDims = 5;
+
+  int bS, iC, iD, iH, iW, oC, oD, oH,
+      oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
+  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
+                                             indIOioD, indWiC, indWoC, indWkD);
+
+  const int pSizes[] = {pD, pH, pW};
+  const int sSizes[] = {sD, sH, sW};
+  const int kSizes[] = {kD, kH, kW};
+
+  const int xShape[] = {bS, iC, iD, iH, iW};
+  const int dzShape[] = {bS, oC, oD, oH, oW};
+
+  const int xStrides[] = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
+                          (int)input->strideAt(3), (int)input->strideAt(4)};
+  const int dzStrides[] = {(int)gradO->strideAt(0), (int)gradO->strideAt(1), (int)gradO->strideAt(2),
+                           (int)gradO->strideAt(3), (int)gradO->strideAt(4)};
+
+  cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
+
+  // input and gradI descriptor
+  CudnnTensor x;
+  if (input->ews() == 1 && input->ordering() == 'c')
+    x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
+  else
+    x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
+
+  // gradO descriptor
+  CudnnTensor dz;
+  if (gradO->ews() == 1 && gradO->ordering() == 'c')
+    dz.setEx(format, cudnnDataType(gradO->dataType()), numDims, dzShape);
+  else
+    dz.set(cudnnDataType(gradO->dataType()), numDims, dzShape, dzStrides);
+
+  // description of pooling
+  PoolingDesc pooling;
+  pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
+
+  // provide scaling parameters
+  const float alpha32(1), beta32(0);
+  const double alpha64(1), beta64(0);
+  const void* alpha =
+      gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
+  const void* beta =
+      gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32) : reinterpret_cast<const void*>(&beta64);
+
+  // cudnn maxpool2d_bp api requires ff output as one of input arguments
+  if (mode == CUDNN_POOLING_MAX) {
+    NDArray temp(gradO);
+    NDArray::prepareSpecialUse({gradI}, {input, gradO, &temp});
+
+    // run ff calculation
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnPoolingForward),
+        cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, dz, temp.specialBuffer()));
+
+    // run bp calculation for gradI
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnPoolingBackward),
+        cudnnPoolingBackward(*handle, pooling, alpha, dz, temp.specialBuffer(), dz, gradO->specialBuffer(), x,
+                             input->specialBuffer(), beta, x, gradI->specialBuffer()));
+
+    NDArray::registerSpecialUse({gradI}, {input, gradO, &temp});
+  } else {
     NDArray::prepareSpecialUse({gradI}, {input, gradO});
-
-    // run calculation for gradI
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingBackward), cudnnPoolingBackward( *handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer()));
-
-    auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-    if (cudaErr != 0)
-        throw cuda_exception::build("pooling2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
-
+    // run bp calculation for gradI
+    CHECK_CUDNN_FAILURE_MSG(
+        STRINGIZE(cudnnPoolingBackward),
+        cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x,
+                             input->specialBuffer(), beta, x, gradI->specialBuffer()));
     NDArray::registerSpecialUse({gradI}, {input, gradO});
+  }
+
+  auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
+  if (cudaErr != 0) throw cuda_exception::build("pooling3dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void pooling3dCUDNN(const LaunchContext* context,
-                    const NDArray* input, NDArray* output,
-                    const int kD, const int kH, const int kW,
-                    const int sD, const int sH, const int sW,
-                    const int pD, const int pH, const int pW,
-                    const int dD, const int dH, const int dW,
-                    const bool isNCDHW, const cudnnPoolingMode_t mode) {
-
-    auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
-
-    const int numDims = 5;
-
-    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-    int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
-
-    const int pSizes[] = {pD, pH, pW};
-    const int sSizes[] = {sD, sH, sW};
-    const int kSizes[] = {kD, kH, kW};
-
-    const int xShape[] = {bS, iC, iD, iH, iW};
-    const int zShape[] = {bS, oC, oD, oH, oW};
-
-    const int xStrides[] = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2), (int)input->strideAt(3), (int)input->strideAt(4)};
-    const int zStrides[] = {(int)output->strideAt(0), (int)output->strideAt(1), (int)output->strideAt(2), (int)output->strideAt(3), (int)output->strideAt(4)};
-
-    cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
-
-    // input descriptor, output descriptor
-    CudnnTensor x, z;
-    if(input->ews() == 1 && input->ordering() == 'c')
-        x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
-    else
-        x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
-
-    if(output->ews() == 1 && output->ordering() == 'c')
-        z.setEx(format, cudnnDataType(output->dataType()), numDims, zShape);
-    else
-       z.set(cudnnDataType(output->dataType()), numDims, zShape, zStrides);
-
-    // description of pooling
-    PoolingDesc pooling;
-    pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
-
-    // provide scaling parameters
-    const float  alpha32(1), beta32(0);
-    const double alpha64(1), beta64(0);
-    const void* alpha = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
-    const void* beta  = output->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32)  : reinterpret_cast<const void*>(&beta64);
-
-    NDArray::prepareSpecialUse({output}, {input});
-
-    // run calculation
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingForward), cudnnPoolingForward( *handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer()));
-
-    auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-    if (cudaErr != 0)
-        throw cuda_exception::build("pooling3dCUDNN: cudaStreamSynchronize failed !", cudaErr);
-
-    NDArray::registerSpecialUse({output}, {input});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void pooling3dBpCUDNN(const LaunchContext* context,
-                    const NDArray* input, const NDArray* gradO,
-                          NDArray* gradI,
-                    const int kD, const int kH, const int kW,
-                    const int sD, const int sH, const int sW,
-                    const int pD, const int pH, const int pW,
-                    const int dD, const int dH, const int dW,
-                    const bool isNCDHW, const cudnnPoolingMode_t mode) {
-
-    auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
-    CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
-
-    const int numDims = 5;
-
-    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-    int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
-
-    const int pSizes[] = {pD, pH, pW};
-    const int sSizes[] = {sD, sH, sW};
-    const int kSizes[] = {kD, kH, kW};
-
-    const int xShape[]  = {bS, iC, iD, iH, iW};
-    const int dzShape[] = {bS, oC, oD, oH, oW};
-
-    const int xStrides[]  = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2), (int)input->strideAt(3), (int)input->strideAt(4)};
-    const int dzStrides[] = {(int)gradO->strideAt(0), (int)gradO->strideAt(1), (int)gradO->strideAt(2), (int)gradO->strideAt(3), (int)gradO->strideAt(4)};
-
-    cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
-
-    // input and gradI descriptor
-    CudnnTensor x;
-    if(input->ews() == 1 && input->ordering() == 'c')
-        x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
-    else
-        x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
-
-    // gradO descriptor
-    CudnnTensor dz;
-    if(gradO->ews() == 1 && gradO->ordering() == 'c')
-        dz.setEx( format, cudnnDataType(gradO->dataType()), numDims, dzShape);
-    else
-        dz.set( cudnnDataType(gradO->dataType()), numDims, dzShape, dzStrides);
-
-    // description of pooling
-    PoolingDesc pooling;
-    pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
-
-    // provide scaling parameters
-    const float  alpha32(1), beta32(0);
-    const double alpha64(1), beta64(0);
-    const void* alpha = gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&alpha32) : reinterpret_cast<const void*>(&alpha64);
-    const void* beta  = gradO->sizeOfT() <= 4 ? reinterpret_cast<const void*>(&beta32)  : reinterpret_cast<const void*>(&beta64);
-
-    // cudnn maxpool2d_bp api requires ff output as one of input arguments
-    if(mode == CUDNN_POOLING_MAX) {
-
-        NDArray temp(gradO);
-        NDArray::prepareSpecialUse({gradI}, {input, gradO, &temp});
-
-        // run ff calculation
-        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingForward), cudnnPoolingForward( *handle, pooling, alpha, x, input->specialBuffer(), beta, dz, temp.specialBuffer()));
-
-        // run bp calculation for gradI
-        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingBackward), cudnnPoolingBackward( *handle, pooling, alpha, dz, temp.specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer()));
-
-        NDArray::registerSpecialUse({gradI}, {input, gradO, &temp});
-    }
-    else {
-
-        NDArray::prepareSpecialUse({gradI}, {input, gradO});
-        // run bp calculation for gradI
-        CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnPoolingBackward), cudnnPoolingBackward( *handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer()));
-        NDArray::registerSpecialUse({gradI}, {input, gradO});
-    }
-
-    auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-    if (cudaErr != 0)
-        throw cuda_exception::build("pooling3dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
-}
-
-}
-}
-}
+}  // namespace platforms
+}  // namespace ops
+}  // namespace sd

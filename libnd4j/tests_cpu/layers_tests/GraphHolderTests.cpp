@@ -19,70 +19,65 @@
 //
 // Created by raver119 on 11.12.17.
 //
+#include <graph/GraphHolder.h>
 
 #include "testlayers.h"
-#include <graph/GraphHolder.h>
 
 using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
 class GraphHolderTests : public testing::Test {
-public:
-
+ public:
 };
 
 TEST_F(GraphHolderTests, SimpleTests_1) {
-    Graph graph;
-    Nd4jLong graphId = 119;
-    GraphHolder::getInstance().registerGraph(graphId, &graph);
+  Graph graph;
+  sd::LongType graphId = 119;
+  GraphHolder::getInstance().registerGraph(graphId, &graph);
 
-    ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
+  ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
 
-    GraphHolder::getInstance().forgetGraph(graphId);
+  GraphHolder::getInstance().forgetGraph(graphId);
 
-    ASSERT_FALSE(GraphHolder::getInstance().hasGraph(graphId));
+  ASSERT_FALSE(GraphHolder::getInstance().hasGraph(graphId));
 }
-
-
 
 TEST_F(GraphHolderTests, SimpleTests_2) {
-    auto graph = new Graph;
-    Nd4jLong graphId = 117;
-    GraphHolder::getInstance().registerGraph(graphId, graph);
+  auto graph = new Graph;
+  sd::LongType graphId = 117;
+  GraphHolder::getInstance().registerGraph(graphId, graph);
 
-    ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
+  ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
 
-    auto graph2 = GraphHolder::getInstance().cloneGraph(graphId);
+  auto graph2 = GraphHolder::getInstance().cloneGraph(graphId);
 
-    ASSERT_TRUE(graph != graph2);
-    ASSERT_TRUE(graph2 != nullptr);
+  ASSERT_TRUE(graph != graph2);
+  ASSERT_TRUE(graph2 != nullptr);
 
-    GraphHolder::getInstance().forgetGraph(graphId);
+  GraphHolder::getInstance().forgetGraph(graphId);
 
-    ASSERT_FALSE(GraphHolder::getInstance().hasGraph(graphId));
+  ASSERT_FALSE(GraphHolder::getInstance().hasGraph(graphId));
 
-    delete graph;
-    delete graph2;
+  delete graph;
+  delete graph2;
 }
 
-
 TEST_F(GraphHolderTests, SimpleTests_3) {
-    auto graph = new Graph;
-    Nd4jLong graphId = 117;
-    GraphHolder::getInstance().registerGraph(graphId, graph);
+  auto graph = new Graph;
+  sd::LongType graphId = 117;
+  GraphHolder::getInstance().registerGraph(graphId, graph);
 
-    ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
+  ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
 
-    auto graph2 = GraphHolder::getInstance().cloneGraph(graphId);
+  auto graph2 = GraphHolder::getInstance().cloneGraph(graphId);
 
-    ASSERT_TRUE(graph != graph2);
-    ASSERT_TRUE(graph2 != nullptr);
+  ASSERT_TRUE(graph != graph2);
+  ASSERT_TRUE(graph2 != nullptr);
 
-    GraphHolder::getInstance().dropGraph(graphId);
+  GraphHolder::getInstance().dropGraph(graphId);
 
-    ASSERT_FALSE(GraphHolder::getInstance().hasGraph(graphId));
+  ASSERT_FALSE(GraphHolder::getInstance().hasGraph(graphId));
 
-
-    delete graph2;
+  delete graph2;
 }

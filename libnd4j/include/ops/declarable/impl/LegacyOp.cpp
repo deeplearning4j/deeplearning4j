@@ -19,19 +19,17 @@
 //
 // Created by raver119 on 16.10.2017.
 //
-
 #include <ops/declarable/LegacyOp.h>
 
-
 namespace sd {
-    namespace ops {
-        LegacyOp::LegacyOp(int numInputs) : DeclarableOp::DeclarableOp(numInputs , 1, "LegacyOp", false) {
-            _numInputs = numInputs;
-        }
-
-        LegacyOp::LegacyOp(int numInputs, int opNum) : DeclarableOp::DeclarableOp(numInputs , 1, "LegacyOp", false) {
-            _opNum = opNum;
-            _numInputs = numInputs;
-        }
-    }
+namespace ops {
+LegacyOp::LegacyOp(int numInputs) : DeclarableOp::DeclarableOp(numInputs, 1, "LegacyOp", false) {
+  _numInputs = numInputs;
 }
+
+LegacyOp::LegacyOp(int numInputs, int opNum) : DeclarableOp::DeclarableOp(numInputs, 1, "LegacyOp", false) {
+  _opNum = opNum;
+  _numInputs = numInputs;
+}
+}  // namespace ops
+}  // namespace sd

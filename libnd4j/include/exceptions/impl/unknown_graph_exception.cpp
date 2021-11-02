@@ -19,12 +19,12 @@
 //
 // Created by raver on 8/31/2018.
 //
-
-#include <helpers/StringUtils.h>
 #include <exceptions/unknown_graph_exception.h>
+#include <helpers/StringUtils.h>
 
 namespace sd {
-    unknown_graph_exception::unknown_graph_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Unknown graph", graphId), graphId) {
-        _graphId = graphId;
-    }
+unknown_graph_exception::unknown_graph_exception(sd::LongType graphId)
+    : graph_exception(StringUtils::buildGraphErrorMessage("Unknown graph", graphId), graphId) {
+  _graphId = graphId;
 }
+}  // namespace sd

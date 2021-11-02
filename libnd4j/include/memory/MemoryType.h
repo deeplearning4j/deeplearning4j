@@ -6,12 +6,12 @@
 #define DEV_TESTS_MEMORYTYPE_H
 
 namespace sd {
-    namespace memory {
-        enum MemoryType {
-            HOST = 0,
-            DEVICE = 10,
-        };
-    }
+namespace memory {
+enum MemoryType {
+  HOST = 0,
+  DEVICE = 10,
+};
 }
+}  // namespace sd
 
-#endif //DEV_TESTS_MEMORYTYPE_H
+#endif  // DEV_TESTS_MEMORYTYPE_H

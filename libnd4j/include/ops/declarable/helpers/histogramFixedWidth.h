@@ -22,18 +22,17 @@
 
 #ifndef LIBND4J_HELPERS_HISTOGRAMFIXEDWIDTH_H
 #define LIBND4J_HELPERS_HISTOGRAMFIXEDWIDTH_H
-
 #include <ops/declarable/helpers/helpers.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-void histogramFixedWidth(sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output);
-
+SD_LIB_HIDDEN void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range,
+                                       NDArray& output);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 
-#endif //LIBND4J_HELPERS_HISTOGRAMFIXEDWIDTH_H
+#endif  // LIBND4J_HELPERS_HISTOGRAMFIXEDWIDTH_H

@@ -23,19 +23,15 @@
 #ifndef LIBND4J_CUDALAUNCHHELPER_H
 #define LIBND4J_CUDALAUNCHHELPER_H
 
-
-#include <system/pointercast.h>
-#include <system/dll.h>
 #include <system/op_boilerplate.h>
 #include <types/triple.h>
 
 namespace sd {
-    class ND4J_EXPORT CudaLaunchHelper {
-    public:
-        static Triple getFlatLaunchParams(Nd4jLong length, int SM, int CORES, int SHARED_MEMORY);
-        static int getReductionBlocks(Nd4jLong xLength, int blockSize = 512);
-    };
-}
+class SD_LIB_EXPORT CudaLaunchHelper {
+ public:
+  static Triple getFlatLaunchParams(sd::LongType length, int SM, int CORES, int SHARED_MEMORY);
+  static int getReductionBlocks(sd::LongType xLength, int blockSize = 512);
+};
+}  // namespace sd
 
-
-#endif //LIBND4J_CUDALAUNCHHELPER_H
+#endif  // LIBND4J_CUDALAUNCHHELPER_H

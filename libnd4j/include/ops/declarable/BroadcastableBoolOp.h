@@ -22,24 +22,24 @@
 
 #ifndef SD_BROADCASTABLEBOOLOP_H
 #define SD_BROADCASTABLEBOOLOP_H
-
 #include <graph/Context.h>
-#include "OpDescriptor.h"
-#include "DeclarableOp.h"
+
 #include "DeclarableCustomOp.h"
+#include "DeclarableOp.h"
+#include "OpDescriptor.h"
 
 namespace sd {
-    namespace ops {
-        class ND4J_EXPORT BroadcastableBoolOp : public DeclarableCustomOp{
-        protected:
-            Nd4jStatus validateAndExecute(Context& block) override = 0;
-        public:
-            BroadcastableBoolOp(const char *name, int numTArgs, int numIArgs);
+namespace ops {
+class SD_LIB_EXPORT BroadcastableBoolOp : public DeclarableCustomOp {
+ protected:
+  sd::Status validateAndExecute(Context &block) override = 0;
 
-            ShapeList *calculateOutputShape(ShapeList *inputShape, sd::graph::Context& block) override;
-        };
-    }
-}
+ public:
+  BroadcastableBoolOp(const char *name, int numTArgs, int numIArgs);
 
+  ShapeList *calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) override;
+};
+}  // namespace ops
+}  // namespace sd
 
-#endif //SD_BROADCASTABLEBOOLOP_H
+#endif  // SD_BROADCASTABLEBOOLOP_H

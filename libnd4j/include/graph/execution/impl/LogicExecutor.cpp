@@ -19,55 +19,53 @@
 //
 // Created by raver119 on 20.10.2017.
 //
-
-#include <graph/execution/LogicExecutor.h>
-#include <graph/execution/LogicScope.h>
-#include <graph/execution/LogicWhile.h>
-#include <graph/execution/LogicSwitch.h>
 #include <graph/execution/LogicConditional.h>
-#include <graph/execution/LogicReturn.h>
-#include <graph/execution/LogicExpose.h>
-#include <graph/execution/LogicMerge.h>
 #include <graph/execution/LogicEnter.h>
+#include <graph/execution/LogicExecutor.h>
 #include <graph/execution/LogicExit.h>
+#include <graph/execution/LogicExpose.h>
 #include <graph/execution/LogicLoopCond.h>
+#include <graph/execution/LogicMerge.h>
 #include <graph/execution/LogicNextIteration.h>
-
+#include <graph/execution/LogicReturn.h>
+#include <graph/execution/LogicScope.h>
+#include <graph/execution/LogicSwitch.h>
+#include <graph/execution/LogicWhile.h>
 
 namespace sd {
-    namespace graph {
-        Nd4jStatus LogicExecutor::processNode(Graph *graph, Node *node) {
-            switch (node->opNum()) {
-                case sd::logic::While:
-                    return LogicWhile::processNode(graph, node);
-                case sd::logic::Scope:
-                    return LogicScope::processNode(graph, node);
-                case sd::logic::Conditional:
-                    return LogicConditional::processNode(graph, node);
-                case sd::logic::Switch:
-                    return LogicSwitch::processNode(graph, node);
-                case sd::logic::Return:
-                    return LogicReturn::processNode(graph, node);
-                case sd::logic::Expose:
-                    return LogicExpose::processNode(graph, node);
-                case sd::logic::Merge:
-                    return LogicMerge::processNode(graph, node);
-                case sd::logic::LoopCond:
-                    return LogicLoopCond::processNode(graph, node);
-                case sd::logic::NextIteration:
-                    return LogicNextIeration::processNode(graph, node);
-                case sd::logic::Exit:
-                    return LogicExit::processNode(graph, node);
-                case sd::logic::Enter:
-                    return LogicEnter::processNode(graph, node);
-            }
+namespace graph {
+sd::Status LogicExecutor::processNode(Graph *graph, Node *node) {
+  switch (node->opNum()) {
+    case sd::logic::While:
+      return LogicWhile::processNode(graph, node);
+    case sd::logic::Scope:
+      return LogicScope::processNode(graph, node);
+    case sd::logic::Conditional:
+      return LogicConditional::processNode(graph, node);
+    case sd::logic::Switch:
+      return LogicSwitch::processNode(graph, node);
+    case sd::logic::Return:
+      return LogicReturn::processNode(graph, node);
+    case sd::logic::Expose:
+      return LogicExpose::processNode(graph, node);
+    case sd::logic::Merge:
+      return LogicMerge::processNode(graph, node);
+    case sd::logic::LoopCond:
+      return LogicLoopCond::processNode(graph, node);
+    case sd::logic::NextIteration:
+      return LogicNextIeration::processNode(graph, node);
+    case sd::logic::Exit:
+      return LogicExit::processNode(graph, node);
+    case sd::logic::Enter:
+      return LogicEnter::processNode(graph, node);
+  }
 
-            if (node->getName() == nullptr) {
-                nd4j_printf("Unknown LogicOp used at node [%i]: [%i]\n", node->id(), node->opNum());
-            } else {
-                nd4j_printf("Unknown LogicOp used at node [%i:<%s>]: [%i]\n", node->id(), node->getName()->c_str(), node->opNum());
-            }
-            return ND4J_STATUS_BAD_INPUT;
-        }
-    }
+  if (node->getName() == nullptr) {
+    sd_printf("Unknown LogicOp used at node [%i]: [%i]\n", node->id(), node->opNum());
+  } else {
+    sd_printf("Unknown LogicOp used at node [%i:<%s>]: [%i]\n", node->id(), node->getName()->c_str(), node->opNum());
+  }
+  return sd::Status::BAD_INPUT;
 }
+}  // namespace graph
+}  // namespace sd

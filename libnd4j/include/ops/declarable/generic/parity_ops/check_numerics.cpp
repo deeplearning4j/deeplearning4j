@@ -26,33 +26,32 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto message = INPUT_VARIABLE(1);
-            auto output = OUTPUT_VARIABLE(0);
+CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto message = INPUT_VARIABLE(1);
+  auto output = OUTPUT_VARIABLE(0);
 
-            auto allFinite = input->reduceNumber(reduce::BoolOps::IsFinite);
-            REQUIRE_TRUE(allFinite.e<bool>(0), 0, "CheckNumerics: %s", message->e<std::string>(0).c_str());
+  auto allFinite = input->reduceNumber(reduce::BoolOps::IsFinite);
+  REQUIRE_TRUE(allFinite.e<bool>(0), 0, "CheckNumerics: %s", message->e<std::string>(0).c_str());
 
-            if (!block.isInplace())
-                output->assign(input);
+  if (!block.isInplace()) output->assign(input);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(check_numerics) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inputShape->at(0))));
-        }
-
-        DECLARE_TYPES(check_numerics) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, sd::DataType::UTF8)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(check_numerics) {
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inputShape->at(0))));
+}
+
+DECLARE_TYPES(check_numerics) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_FLOATS})
+      ->setAllowedInputTypes(1, sd::DataType::UTF8)
+      ->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

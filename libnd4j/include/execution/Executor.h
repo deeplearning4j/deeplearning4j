@@ -24,12 +24,12 @@
 #define SD_EXECUTOR_H
 
 namespace sd {
-    class Executor {
-    public:
-        static void execute() {
-            //
-        }
-    };
-}
+class Executor {
+ public:
+  static void execute() {
+    //
+  }
+};
+}  // namespace sd
 
-#endif //SD_EXECUTOR_H
+#endif  // SD_EXECUTOR_H

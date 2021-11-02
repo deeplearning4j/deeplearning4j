@@ -173,8 +173,6 @@ Requirement Helper Example#8: {6} expected to be one of these {[1, 2, 3, 7, 8, 9
 ```
 
 
-
-
 ##### Here is live example:
 **Note:** some classes were mocked  there and do not represent the exact implementations in libnd4j. 
 https://godbolt.org/z/sq98vchs5

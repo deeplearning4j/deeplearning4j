@@ -18,65 +18,62 @@
  *  *****************************************************************************
  */
 
- //
- // @author Oleh Semeniv (oleg.semeniv@gmail.com)
- //
+//
+// @author Oleh Semeniv (oleg.semeniv@gmail.com)
+//
 
-#include <ops/declarable/headers/updaters.h>
-#include <ops/declarable/CustomOperations.h>
-#include <helpers/ConstantTadHelper.h>
-#include <execution/Threads.h>
 #include <array/NDArray.h>
+#include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/updaters.h>
 #if NOT_EXCLUDED(OP_ada_grad_updater)
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        CONFIGURABLE_OP_IMPL(ada_grad_updater, 2, 2, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(ada_grad_updater, 2, 2, true, 0, 0) {
+  const auto gradient = INPUT_VARIABLE(0);
+  const auto initState = INPUT_VARIABLE(1);
 
-            const auto gradient = INPUT_VARIABLE(0);
-            const auto initState = INPUT_VARIABLE(1);
+  auto update = OUTPUT_VARIABLE(0);
+  auto stateH = OUTPUT_VARIABLE(1);
 
-            auto update = OUTPUT_VARIABLE(0);
-            auto stateH = OUTPUT_VARIABLE(1);
+  if (gradient->isEmpty() || initState->isEmpty()) return sd::Status::OK;
 
-            if (gradient->isEmpty() || initState->isEmpty())
-                return Status::OK();
+  REQUIRE_TRUE(gradient->isSameShape(initState), 0,
+               "ADA_GRAD UPDATER OP: input state must have the same shape as gradient,"
+               "  expected shape %s, but got %s!",
+               ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+               ShapeUtils::shapeAsString(initState->shapeInfo()).c_str());
 
-            REQUIRE_TRUE(gradient->isSameShape(initState), 0, "ADA_GRAD UPDATER OP: input state must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initState->shapeInfo()).c_str());
+  bool bParamsSupply = 4 == block.width() || 2 == block.getTArguments()->size();
 
+  REQUIRE_TRUE(bParamsSupply, 0, "ADA_GRAD UPDATER OP: learning rate and epsilon were not provided!");
 
-            bool bParamsSupply = 4 == block.width() || 2 == block.getTArguments()->size();
+  double dLr, dEpsilon;
 
-            REQUIRE_TRUE(bParamsSupply, 0, "ADA_GRAD UPDATER OP: learning rate and epsilon were not provided!");
+  if (block.width() > 2) {
+    const auto lr = INPUT_VARIABLE(2);
+    const auto epsilon = INPUT_VARIABLE(3);
 
-            double dLr, dEpsilon;
+    REQUIRE_TRUE(lr->isScalar(), 0, "ADA_GRAD UPDATER OP: Learning rate has to be a scalar, but instead got rank %i!",
+                 lr->rankOf());
+    REQUIRE_TRUE(epsilon->isScalar(), 0, "ADA_GRAD UPDATER OP: Epsilon has to be a scalar, but instead got rank %i!",
+                 epsilon->rankOf());
 
-            if (block.width() > 2) {
-                const auto lr = INPUT_VARIABLE(2);
-                const auto epsilon = INPUT_VARIABLE(3);
+    dLr = lr->e<double>(0);
+    dEpsilon = epsilon->e<double>(0);
+  } else {
+    dLr = T_ARG(0);
+    dEpsilon = T_ARG(1);
+  }
 
-                REQUIRE_TRUE(lr->isScalar(), 0, "ADA_GRAD UPDATER OP: Learning rate has to be a scalar, but instead got rank %i!", lr->rankOf());
-                REQUIRE_TRUE(epsilon->isScalar(), 0, "ADA_GRAD UPDATER OP: Epsilon has to be a scalar, but instead got rank %i!", epsilon->rankOf());
-
-                dLr = lr->e<double>(0);
-                dEpsilon = epsilon->e<double>(0);
-            }
-            else {
-                dLr = T_ARG(0);
-                dEpsilon = T_ARG(1);
-            }
-
-            helpers::updaterAdaGrad(block.launchContext(), *gradient, *initState, *update, *stateH, dLr, dEpsilon);
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(ada_grad_updater) {
-            getOpDescriptor()->setAllowedInputTypes({ ALL_FLOATS })
-                ->setSameMode(true);
-        }
-
-    }
+  helpers::updaterAdaGrad(block.launchContext(), *gradient, *initState, *update, *stateH, dLr, dEpsilon);
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(ada_grad_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+
+}  // namespace ops
+}  // namespace sd
 #endif

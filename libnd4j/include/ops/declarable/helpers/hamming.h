@@ -22,13 +22,13 @@
 
 #ifndef SD_HAMMING_H
 #define SD_HAMMING_H
-
+#include <ops/declarable/headers/common.h>
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output);
-        }
-    }
+namespace ops {
+namespace helpers {
+SD_LIB_HIDDEN void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output);
 }
+}  // namespace ops
+}  // namespace sd
 
-#endif //DEV_TESTS_HAMMING_H
+#endif  // DEV_TESTS_HAMMING_H

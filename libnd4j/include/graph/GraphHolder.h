@@ -19,77 +19,74 @@
 //
 //  @author raver119@gmail.com
 //
-
-#include <helpers/logger.h>
-#include <system/pointercast.h>
-#include <unordered_map>
-#include <map>
+#include <exceptions/unknown_graph_exception.h>
 #include <graph/Graph.h>
 #include <helpers/SimpleReadWriteLock.h>
-#include <exceptions/unknown_graph_exception.h>
+#include <helpers/logger.h>
+
+#include <map>
+#include <unordered_map>
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT GraphHolder {
-        private:
-            MAP_IMPL<Nd4jLong, Graph *> _graphF;
+namespace graph {
+class SD_LIB_EXPORT GraphHolder {
+ private:
+  SD_MAP_IMPL<sd::LongType, Graph*> _graphF;
 
-            MAP_IMPL<Nd4jLong, SimpleReadWriteLock> _locks;
+  SD_MAP_IMPL<sd::LongType, SimpleReadWriteLock> _locks;
 
-            GraphHolder() = default;
-            ~GraphHolder() = default;
-        public:
-            static GraphHolder& getInstance();
+  GraphHolder() = default;
+  ~GraphHolder() = default;
 
-            void registerGraph(Nd4jLong graphId, Graph *graph);
-            
-            Graph* cloneGraph(Nd4jLong graphId);
+ public:
+  static GraphHolder& getInstance();
 
-            Graph* pullGraph(Nd4jLong graphId);
+  void registerGraph(sd::LongType graphId, Graph* graph);
 
-            void forgetGraph(Nd4jLong graphId);
+  Graph* cloneGraph(sd::LongType graphId);
 
-            void dropGraph(Nd4jLong graphId);
+  Graph* pullGraph(sd::LongType graphId);
 
-            void dropGraphAny(Nd4jLong graphId);
+  void forgetGraph(sd::LongType graphId);
 
-            bool hasGraph(Nd4jLong graphId);
+  void dropGraph(sd::LongType graphId);
 
-            bool hasGraphAny(Nd4jLong graphId);
+  void dropGraphAny(sd::LongType graphId);
 
-            flatbuffers::Offset<FlatResult> execute(Nd4jLong graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
+  bool hasGraph(sd::LongType graphId);
 
-            void replaceGraph(Nd4jLong graphId, Graph *graph);
+  bool hasGraphAny(sd::LongType graphId);
 
-            /////////////////////////////
+  flatbuffers::Offset<FlatResult> execute(sd::LongType graphId, flatbuffers::FlatBufferBuilder& builder,
+                                          const FlatInferenceRequest* request);
 
-            FORCEINLINE void lockWrite(Nd4jLong graphId) {
-                if (_locks.count(graphId) == 0)
-                    return;
+  void replaceGraph(sd::LongType graphId, Graph* graph);
 
-                _locks[graphId].lockWrite();
-            }
+  /////////////////////////////
 
-            FORCEINLINE void unlockWrite(Nd4jLong graphId) {
-                if (_locks.count(graphId) == 0)
-                    return;
+  SD_INLINE void lockWrite(sd::LongType graphId) {
+    if (_locks.count(graphId) == 0) return;
 
-                _locks[graphId].unlockWrite();
-            }
+    _locks[graphId].lockWrite();
+  }
 
-            FORCEINLINE void lockRead(Nd4jLong graphId) {
-                if (_locks.count(graphId) == 0)
-                    return;
+  SD_INLINE void unlockWrite(sd::LongType graphId) {
+    if (_locks.count(graphId) == 0) return;
 
-                _locks[graphId].lockRead();
-            }
+    _locks[graphId].unlockWrite();
+  }
 
-            FORCEINLINE void unlockRead(Nd4jLong graphId) {
-                if (_locks.count(graphId) == 0)
-                    return;
+  SD_INLINE void lockRead(sd::LongType graphId) {
+    if (_locks.count(graphId) == 0) return;
 
-                _locks[graphId].unlockRead();
-            }
-        };
-    }
-}
+    _locks[graphId].lockRead();
+  }
+
+  SD_INLINE void unlockRead(sd::LongType graphId) {
+    if (_locks.count(graphId) == 0) return;
+
+    _locks[graphId].unlockRead();
+  }
+};
+}  // namespace graph
+}  // namespace sd

@@ -20,7 +20,7 @@
 #
 
 function message {
-	echo "BUILDER:::: ${@}"
+    echo "BUILDER:::: ${@}"
 }
 if [ -z "${BUILD_USING_MAVEN}" ]; then export BUILD_USING_MAVEN=; fi
 if [ -z "${CURRENT_TARGET}" ]; then export  CURRENT_TARGET=arm32; fi
@@ -88,8 +88,8 @@ for i in "${!TARGET_ARRS[@]}"; do
 done
 
 if [ ${TARGET_INDEX} -eq -1 ];then
-	message "could not find  ${CURRENT_TARGET} in ${TARGET_ARRS[@]}"
-	exit -1
+    message "could not find  ${CURRENT_TARGET} in ${TARGET_ARRS[@]}"
+    exit -1
 fi
 
 #BASE_DIR=${HOME}/pi
@@ -141,74 +141,74 @@ mkdir -p "${THIRD_PARTY}"
 cd "$BASE_DIR"
 
 function check_requirements {
-	for i in "${@}"
-	do
+    for i in "${@}"
+    do
       if [ ! -e "$i" ]; then
          message "missing: ${i}"
-		 exit -2
-	  fi
-	done
+         exit -2
+      fi
+    done
 }
 
 function rename_top_folder {
-	for dir in "${1}"/*
-	do
-		if [ -d "$dir" ]
-		then
-		    mv "${dir}" "${1}/folder/"
-			message "${dir} => ${1}/folder/"
-			break
-		fi
-	done
+    for dir in "${1}"/*
+    do
+        if [ -d "$dir" ]
+        then
+            mv "${dir}" "${1}/folder/"
+            message "${dir} => ${1}/folder/"
+            break
+        fi
+    done
 }
 
 function download_extract_base {
-	#$1 is extract arg, $2 is url, $3 is dir
-	xtract_arg="${1}"
-	down_url="${2}"
-	down_dir=$(dirname "${3}"/__ )
-	down_file="${down_dir}_file"
-	if [ ! -f "${down_file}" ]; then
-		message "download ${down_url}"
-		wget  --show-progress -O "${down_file}" "${down_url}"
-	fi
+    #$1 is extract arg, $2 is url, $3 is dir
+    xtract_arg="${1}"
+    down_url="${2}"
+    down_dir=$(dirname "${3}"/__ )
+    down_file="${down_dir}_file"
+    if [ ! -f "${down_file}" ]; then
+        message "download ${down_url}"
+        wget  --show-progress -O "${down_file}" "${down_url}"
+    fi
  
-	message "extract $@"
+    message "extract $@"
     #extract
-	mkdir -p "${down_dir}" 
-	if [ ${xtract_arg} = "-unzip" ]; then
-		command="unzip -qq \"${down_file}\" -d \"${down_dir}\" "
-	else
-		command="tar ${xtract_arg} \"${down_file}\" --directory=\"${down_dir}\" "
-	fi
-	message $command
-	eval $command
-	check_requirements "${down_dir}"
+    mkdir -p "${down_dir}" 
+    if [ ${xtract_arg} = "-unzip" ]; then
+        command="unzip -qq \"${down_file}\" -d \"${down_dir}\" "
+    else
+        command="tar ${xtract_arg} \"${down_file}\" --directory=\"${down_dir}\" "
+    fi
+    message $command
+    eval $command
+    check_requirements "${down_dir}"
 }
 
 function download_extract {
-	download_extract_base -xf "$@"
+    download_extract_base -xf "$@"
 }
 
 function download_extract_xz {
-	download_extract_base -xf "$@"
+    download_extract_base -xf "$@"
 }
 
 function download_extract_unzip {
-	download_extract_base -unzip "$@"
+    download_extract_base -unzip "$@"
 }
 
 function git_check {
-	#$1 is url #$2 is dir #$3 is tag or branch if optional
-	command=
-	if [ -n "$3" ]; then
-	    command="git clone --quiet --depth 1 --branch \"${3}\" \"${1}\" \"${2}\""
-	else 
-	command="git clone --quiet \"${1}\" \"${2}\""
-	fi
-	message "$command"
-	eval $command
-	check_requirements "${2}"
+    #$1 is url #$2 is dir #$3 is tag or branch if optional
+    command=
+    if [ -n "$3" ]; then
+        command="git clone --quiet --depth 1 --branch \"${3}\" \"${1}\" \"${2}\""
+    else 
+    command="git clone --quiet \"${1}\" \"${2}\""
+    fi
+    message "$command"
+    eval $command
+    check_requirements "${2}"
 }
 
 #fix py debug linkage manually and also makes it use gold
@@ -223,36 +223,36 @@ function fix_pi_linker {
 }
 
 function cuda_cross_setup {
-		# $1 is local  cuda toolkit version
-		# $2 the folder where cross cuda toolkit will be
-		export loc_VER="${LOCAL_CUDA_INSTALLED_VER}"
-		export loc_DIR="${2-/tmp}"
-		export CUDA_DIR="${CUDA_DIR-/usr/local/cuda-${loc_VER}}"
-		export CUDA_TARGET_STUBS="${loc_DIR}/target_stub${loc_VER}"
-		export CUDA_TARGET_STUB_URL=https://github.com/KonduitAI/jetson-release/releases/download/0.1.0/aarch64_linux_cuda_10.2_cudnn8.2.tar.gz
-		download_extract "${CUDA_TARGET_STUB_URL}" "${CUDA_TARGET_STUBS}"
-		mv "${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2" "${CUDA_TARGET_STUBS}/aarch64-linux/"
-		message "Moving  ${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2 to ${CUDA_TARGET_STUBS}/aarch64-linux/"
-		cp -r ${CUDA_TARGET_STUBS}/aarch64-linux/* "${CUDA_TARGET_STUBS}/aarch64-linux/"
-		message "lets setup cuda toolkit by combining local cuda-${loc_VER} and target ${CUDA_TARGET_STUBS}"
-		message "cuda cross folder: ${loc_DIR}"
-		check_requirements "${CUDA_DIR}" "${CUDA_TARGET_STUBS}/aarch64-linux/"
-		if [ ! -d "${loc_DIR}/cuda/bin" ];then
-			mkdir -p "${loc_DIR}/cuda/bin"
-			cd "${CUDA_DIR}/bin/"
-			# we are obliged to symlink inner files and folders to avoid errors happening 
-			# when  relative folders are used from symlinks 
-			for i in $(find . -maxdepth 1)
-			do 
-				ln -s "${CUDA_DIR}/bin/""${i}" "${loc_DIR}/cuda/bin/""${i}"
-			done
-			cd -
-			ln -s "${CUDA_DIR}/nvvm" "${loc_DIR}/cuda/nvvm"
-			ln -s "${CUDA_TARGET_STUBS}" "${loc_DIR}/cuda/targets"
-		fi
-		export CUDACXX="${loc_DIR}"/cuda/bin/nvcc
-		export CUDNN_ROOT_DIR="${CUDA_TARGET_STUBS}/aarch64-linux"
-		export CUDA_TOOLKIT_ROOT="${loc_DIR}"/cuda
+        # $1 is local  cuda toolkit version
+        # $2 the folder where cross cuda toolkit will be
+        export loc_VER="${LOCAL_CUDA_INSTALLED_VER}"
+        export loc_DIR="${2-/tmp}"
+        export CUDA_DIR="${CUDA_DIR-/usr/local/cuda-${loc_VER}}"
+        export CUDA_TARGET_STUBS="${loc_DIR}/target_stub${loc_VER}"
+        export CUDA_TARGET_STUB_URL=https://github.com/KonduitAI/jetson-release/releases/download/0.1.0/aarch64_linux_cuda_10.2_cudnn8.2.tar.gz
+        download_extract "${CUDA_TARGET_STUB_URL}" "${CUDA_TARGET_STUBS}"
+        mv "${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2" "${CUDA_TARGET_STUBS}/aarch64-linux/"
+        message "Moving  ${CUDA_TARGET_STUBS}/aarch64_linux_cuda_10.2_cudnn8.2 to ${CUDA_TARGET_STUBS}/aarch64-linux/"
+        cp -r ${CUDA_TARGET_STUBS}/aarch64-linux/* "${CUDA_TARGET_STUBS}/aarch64-linux/"
+        message "lets setup cuda toolkit by combining local cuda-${loc_VER} and target ${CUDA_TARGET_STUBS}"
+        message "cuda cross folder: ${loc_DIR}"
+        check_requirements "${CUDA_DIR}" "${CUDA_TARGET_STUBS}/aarch64-linux/"
+        if [ ! -d "${loc_DIR}/cuda/bin" ];then
+            mkdir -p "${loc_DIR}/cuda/bin"
+            cd "${CUDA_DIR}/bin/"
+            # we are obliged to symlink inner files and folders to avoid errors happening 
+            # when  relative folders are used from symlinks 
+            for i in $(find . -maxdepth 1)
+            do 
+                ln -s "${CUDA_DIR}/bin/""${i}" "${loc_DIR}/cuda/bin/""${i}"
+            done
+            cd -
+            ln -s "${CUDA_DIR}/nvvm" "${loc_DIR}/cuda/nvvm"
+            ln -s "${CUDA_TARGET_STUBS}" "${loc_DIR}/cuda/targets"
+        fi
+        export CUDACXX="${loc_DIR}"/cuda/bin/nvcc
+        export CUDNN_ROOT_DIR="${CUDA_TARGET_STUBS}/aarch64-linux"
+        export CUDA_TOOLKIT_ROOT="${loc_DIR}"/cuda
 }
 
 #check if we should download cross
@@ -260,11 +260,11 @@ function cuda_cross_setup {
 if [ "${DOWNLOAD_CROSS}" == "ok" ]; then
 
 if [ ! -d "${CROSS_COMPILER_DIR}/folder" ]; then
-	#out file
-	message "download CROSS_COMPILER"
-	${COMPILER_DOWNLOAD_CMD} "${CROSS_COMPILER_URL}" "${CROSS_COMPILER_DIR}"
-	message "rename top folder  (instead of --strip-components=1)"
-	rename_top_folder "${CROSS_COMPILER_DIR}"
+    #out file
+    message "download CROSS_COMPILER"
+    ${COMPILER_DOWNLOAD_CMD} "${CROSS_COMPILER_URL}" "${CROSS_COMPILER_DIR}"
+    message "rename top folder  (instead of --strip-components=1)"
+    rename_top_folder "${CROSS_COMPILER_DIR}"
 fi
 
 export CROSS_COMPILER_DIR="${CROSS_COMPILER_DIR}"/folder
@@ -274,49 +274,49 @@ fi #DOWNLOAD_CROSS
 message "Cross compiler directory for the target: ${CROSS_COMPILER_DIR}"
 
 if [ "${TARGET_OS}" = "android" ];then
-	ND_VER=${NDK_VERSION:1:${#NDK_VERSION}-2}
-	SUFFIX=
-	ABI_PREFIX=
-	if [ $ND_VER -lt 19 ]; then
-		message "old ndk version is in use. we wil try to make standalone toolchain"
-		command="bash \"${CROSS_COMPILER_DIR}\"/build//tools/make-standalone-toolchain.sh  --arch=${LIBND4J_PLATFORM_EXT} --platform=android-${ANDROID_VERSION} --install-dir=\"${CROSS_COMPILER_DIR}\"/toolchain${LIBND4J_PLATFORM_EXT} --verbose --force"
-		message $command
-		eval $command
-		export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}/toolchain${LIBND4J_PLATFORM_EXT}"
-	else
-		export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
-		SUFFIX=${ANDROID_VERSION}
-		ABI_PREFIX="v7a"
-	fi
-	
-	COMPILER_PREFIX_DIR="${ANDROID_TOOLCHAIN}/bin/"
-	NDK_TARGET="${PREFIX}${SUFFIX}"
-	export TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
-	if [ "$BLAS_TARGET_NAME" = "ARMV7" ];then
-	    BLAS_XTRA="ARM_SOFTFP_ABI=1 "
-		NDK_TARGET="arm${ABI_PREFIX}-linux-androideabi${SUFFIX}"
-	fi
+    ND_VER=${NDK_VERSION:1:${#NDK_VERSION}-2}
+    SUFFIX=
+    ABI_PREFIX=
+    if [ $ND_VER -lt 19 ]; then
+        message "old ndk version is in use. we wil try to make standalone toolchain"
+        command="bash \"${CROSS_COMPILER_DIR}\"/build//tools/make-standalone-toolchain.sh  --arch=${LIBND4J_PLATFORM_EXT} --platform=android-${ANDROID_VERSION} --install-dir=\"${CROSS_COMPILER_DIR}\"/toolchain${LIBND4J_PLATFORM_EXT} --verbose --force"
+        message $command
+        eval $command
+        export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}/toolchain${LIBND4J_PLATFORM_EXT}"
+    else
+        export ANDROID_TOOLCHAIN="${CROSS_COMPILER_DIR}/toolchains/llvm/prebuilt/linux-x86_64"
+        SUFFIX=${ANDROID_VERSION}
+        ABI_PREFIX="v7a"
+    fi
+    
+    COMPILER_PREFIX_DIR="${ANDROID_TOOLCHAIN}/bin/"
+    NDK_TARGET="${PREFIX}${SUFFIX}"
+    export TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
+    if [ "$BLAS_TARGET_NAME" = "ARMV7" ];then
+        BLAS_XTRA="ARM_SOFTFP_ABI=1 "
+        NDK_TARGET="arm${ABI_PREFIX}-linux-androideabi${SUFFIX}"
+    fi
 
-	export COMPILER_PREFIX="${COMPILER_PREFIX_DIR}/${NDK_TARGET}"
-	export CC_EXE="clang"
-	export CXX_EXE="clang++"
-	export AR="${TOOLCHAIN_PREFIX}-ar"
-	export RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
-	export COMPILER="${COMPILER_PREFIX}-${CC_EXE}"	
-	export BLAS_XTRA="CC=\"${COMPILER}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\" ${BLAS_XTRA}"
+    export COMPILER_PREFIX="${COMPILER_PREFIX_DIR}/${NDK_TARGET}"
+    export CC_EXE="clang"
+    export CXX_EXE="clang++"
+    export AR="${TOOLCHAIN_PREFIX}-ar"
+    export RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
+    export COMPILER="${COMPILER_PREFIX}-${CC_EXE}"    
+    export BLAS_XTRA="CC=\"${COMPILER}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\" ${BLAS_XTRA}"
 else
-	export BINUTILS_BIN="${CROSS_COMPILER_DIR}/${PREFIX}/bin"
-	export COMPILER_PREFIX="${CROSS_COMPILER_DIR}/bin/${PREFIX}"
-	export TOOLCHAIN_PREFIX="${COMPILER_PREFIX}"
-	export SYS_ROOT="${CROSS_COMPILER_DIR}/${PREFIX}/libc"
-	#LD_LIBRARY_PATH=${CROSS_COMPILER_DIR}/lib:$LD_LIBRARY_PATH
-	export CC_EXE="gcc"
-	export CXX_EXE="g++"
-	export RANLIB="${BINUTILS_BIN}/ranlib"
-	export LD="${BINUTILS_BIN}/ld"
-	export AR="${BINUTILS_BIN}/ar"
-	export COMPILER="${COMPILER_PREFIX}-${CC_EXE}"
-	export BLAS_XTRA="CC=\"${COMPILER}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\"  CFLAGS=--sysroot=\"${SYS_ROOT}\" LDFLAGS=\"-L${SYS_ROOT}/../lib/ -lm\""
+    export BINUTILS_BIN="${CROSS_COMPILER_DIR}/${PREFIX}/bin"
+    export COMPILER_PREFIX="${CROSS_COMPILER_DIR}/bin/${PREFIX}"
+    export TOOLCHAIN_PREFIX="${COMPILER_PREFIX}"
+    export SYS_ROOT="${CROSS_COMPILER_DIR}/${PREFIX}/libc"
+    #LD_LIBRARY_PATH=${CROSS_COMPILER_DIR}/lib:$LD_LIBRARY_PATH
+    export CC_EXE="gcc"
+    export CXX_EXE="g++"
+    export RANLIB="${BINUTILS_BIN}/ranlib"
+    export LD="${BINUTILS_BIN}/ld"
+    export AR="${BINUTILS_BIN}/ar"
+    export COMPILER="${COMPILER_PREFIX}-${CC_EXE}"
+    export BLAS_XTRA="CC=\"${COMPILER}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\"  CFLAGS=--sysroot=\"${SYS_ROOT}\" LDFLAGS=\"-L${SYS_ROOT}/../lib/ -lm\""
 fi
 
 check_requirements "${COMPILER}"
@@ -324,22 +324,22 @@ check_requirements "${COMPILER}"
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
 #lets build OpenBlas 
 if [ ! -d "${OPENBLAS_DIR}" ]; then
-	message "download OpenBLAS"
-	git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.10"
+    message "download OpenBLAS"
+    git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.10"
 fi
 
 if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
-	message "build and install OpenBLAS" 
-	cd "${OPENBLAS_DIR}"
+    message "build and install OpenBLAS" 
+    cd "${OPENBLAS_DIR}"
 
-	command="make TARGET=${BLAS_TARGET_NAME} HOSTCC=gcc  NOFORTRAN=1 ${BLAS_XTRA} "
-	message $command
-	eval $command  &>/dev/null
+    command="make TARGET=${BLAS_TARGET_NAME} HOSTCC=gcc  NOFORTRAN=1 ${BLAS_XTRA} "
+    message $command
+    eval $command  &>/dev/null
     message "install it"
-	command="make TARGET=${BLAS_TARGET_NAME} PREFIX=\"${THIRD_PARTY}\" install &>/dev/null"
-	message $command
-	eval $command
-	cd "$BASE_DIR"
+    command="make TARGET=${BLAS_TARGET_NAME} PREFIX=\"${THIRD_PARTY}\" install &>/dev/null"
+    message $command
+    eval $command
+    cd "$BASE_DIR"
 
 fi
 check_requirements "${THIRD_PARTY}/lib/libopenblas.so"
@@ -358,15 +358,15 @@ XTRA_ARGS=" -h armcompute "
 XTRA_MVN_ARGS=" -Dlibnd4j.helper=armcompute "
 
 if [ ! -d "${SCONS_LOCAL_DIR}" ]; then
-	#out file
-	message "download Scons local"
-	download_extract "${SCONS_LOCAL_URL}" "${SCONS_LOCAL_DIR}"
+    #out file
+    message "download Scons local"
+    download_extract "${SCONS_LOCAL_URL}" "${SCONS_LOCAL_DIR}"
 fi
 check_requirements "${SCONS_LOCAL_DIR}"/scons.py
 
 if [ ! -d "${ARMCOMPUTE_DIR}" ]; then 
-	message "download ArmCompute Source" 
-	git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}" 
+    message "download ArmCompute Source" 
+    git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}" 
 fi
 
 #build armcompute
@@ -386,26 +386,26 @@ fi #if armcompute
 
 
 if [ "${TARGET_OS}" = "android" ];then
-	export ANDROID_NDK="${CROSS_COMPILER_DIR}"
-	XTRA_MVN_ARGS="${XTRA_MVN_ARGS}"
+    export ANDROID_NDK="${CROSS_COMPILER_DIR}"
+    XTRA_MVN_ARGS="${XTRA_MVN_ARGS}"
 else
-	 if [ "${CURRENT_TARGET}" == "jetson-arm64" ];then
-	 	message  "jetson cuda build "
-		cuda_cross_setup ${CUDA_VER}
-		XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\",!\":deeplearning4j-cuda-${CUDA_VER}\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
-		# need to be in base directory to exec contrib folder
-		cd "${BASE_DIR}/.."
-		bash "${BASE_DIR}/../change-cuda-versions.sh" "${CUDA_VER}"
-		cd "${BASE_DIR}"
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn"
-		export SYSROOT="${CROSS_COMPILER_DIR}/${PREFIX}/libc"
-	else
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}"
-	fi
-	export RPI_BIN="${CROSS_COMPILER_DIR}/bin/${PREFIX}"
-	export JAVA_LIBRARY_PATH="${CROSS_COMPILER_DIR}/${PREFIX}/lib"
-	fix_pi_linker "${BINUTILS_BIN}"
+     if [ "${CURRENT_TARGET}" == "jetson-arm64" ];then
+         message  "jetson cuda build "
+        cuda_cross_setup ${CUDA_VER}
+        XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
+        XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\",!\":deeplearning4j-cuda-${CUDA_VER}\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+        # need to be in base directory to exec contrib folder
+        cd "${BASE_DIR}/.."
+        bash "${BASE_DIR}/../change-cuda-versions.sh" "${CUDA_VER}"
+        cd "${BASE_DIR}"
+        XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn"
+        export SYSROOT="${CROSS_COMPILER_DIR}/${PREFIX}/libc"
+    else
+        XTRA_MVN_ARGS="${XTRA_MVN_ARGS}"
+    fi
+    export RPI_BIN="${CROSS_COMPILER_DIR}/bin/${PREFIX}"
+    export JAVA_LIBRARY_PATH="${CROSS_COMPILER_DIR}/${PREFIX}/lib"
+    fix_pi_linker "${BINUTILS_BIN}"
 fi
 
 

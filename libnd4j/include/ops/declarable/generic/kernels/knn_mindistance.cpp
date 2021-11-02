@@ -27,35 +27,36 @@
 #include <ops/declarable/helpers/knn.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(knn_mindistance, 3, 1, false, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto lowest = INPUT_VARIABLE(1);
-            auto highest = INPUT_VARIABLE(2);
+namespace ops {
+CUSTOM_OP_IMPL(knn_mindistance, 3, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto lowest = INPUT_VARIABLE(1);
+  auto highest = INPUT_VARIABLE(2);
 
-            auto output = OUTPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->lengthOf() == lowest->lengthOf() && input->lengthOf() == highest->lengthOf(), 0, "knn_mindistance: all input arrays must have same length");
-            REQUIRE_TRUE(input->dataType() == lowest->dataType() && input->dataType() == highest->dataType() && input->dataType() == output->dataType(), 0, "knn_mindistance: all inputs must have the same data type");
+  REQUIRE_TRUE(input->lengthOf() == lowest->lengthOf() && input->lengthOf() == highest->lengthOf(), 0,
+               "knn_mindistance: all input arrays must have same length");
+  REQUIRE_TRUE(input->dataType() == lowest->dataType() && input->dataType() == highest->dataType() &&
+                   input->dataType() == output->dataType(),
+               0, "knn_mindistance: all inputs must have the same data type");
 
-            helpers::knn_mindistance(*input, *lowest, *highest, *output);
+  helpers::knn_mindistance(*input, *lowest, *highest, *output);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(knn_mindistance) {
-            auto input = inputShape->at(0);
-
-            // always return scalar here
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(input)));
-        }
-
-        DECLARE_TYPES(knn_mindistance) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_FLOATS})
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(knn_mindistance) {
+  auto input = inputShape->at(0);
+
+  // always return scalar here
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(input)));
+}
+
+DECLARE_TYPES(knn_mindistance) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

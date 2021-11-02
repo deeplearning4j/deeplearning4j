@@ -28,46 +28,48 @@
 
 // this op will probably never become GPU-compatible
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(listdiff, 2, 2, false, 0, 0) {
-            auto values = INPUT_VARIABLE(0);
-            auto keep = INPUT_VARIABLE(1);
-            auto output1 = OUTPUT_VARIABLE(0);
-            auto output2 = OUTPUT_VARIABLE(1);
+namespace ops {
+CUSTOM_OP_IMPL(listdiff, 2, 2, false, 0, 0) {
+  auto values = INPUT_VARIABLE(0);
+  auto keep = INPUT_VARIABLE(1);
+  auto output1 = OUTPUT_VARIABLE(0);
+  auto output2 = OUTPUT_VARIABLE(1);
 
-            REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
-            REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
-            REQUIRE_TRUE(keep->dataType() == values->dataType(), 0, "ListDiff: both inputs must have same data type");
+  REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead",
+               values->rankOf());
+  REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
+  REQUIRE_TRUE(keep->dataType() == values->dataType(), 0, "ListDiff: both inputs must have same data type");
 
-            return helpers::listDiffFunctor(block.launchContext(), values, keep, output1, output2);
-        };
+  return helpers::listDiffFunctor(block.launchContext(), values, keep, output1, output2);
+};
 
-        DECLARE_SHAPE_FN(listdiff) {
-            auto values = INPUT_VARIABLE(0);
-            auto keep = INPUT_VARIABLE(1);
+DECLARE_SHAPE_FN(listdiff) {
+  auto values = INPUT_VARIABLE(0);
+  auto keep = INPUT_VARIABLE(1);
 
-            REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
-            REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
-            auto v = values->dataType();
-            auto k = keep->dataType();
-            REQUIRE_TRUE(k == v, 0, "ListDiff: both inputs must have same data type");
+  REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead",
+               values->rankOf());
+  REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
+  auto v = values->dataType();
+  auto k = keep->dataType();
+  REQUIRE_TRUE(k == v, 0, "ListDiff: both inputs must have same data type");
 
-            auto saved = helpers::listDiffCount(block.launchContext(), values, keep);
+  auto saved = helpers::listDiffCount(block.launchContext(), values, keep);
 
-            REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
+  REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
-            auto shapeX = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, values->dataType());
-            auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, DataType::INT64);
-            return SHAPELIST(shapeX, shapeY);
-        }
-
-        DECLARE_TYPES(listdiff) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
-                    ->setAllowedOutputTypes(0, DataType::INHERIT)
-                    ->setAllowedOutputTypes(1, {ALL_INTS});
-        }
-    }
+  auto shapeX = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, values->dataType());
+  auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, DataType::INT64);
+  return SHAPELIST(shapeX, shapeY);
 }
+
+DECLARE_TYPES(listdiff) {
+  getOpDescriptor()
+      ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setAllowedOutputTypes(1, {ALL_INTS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

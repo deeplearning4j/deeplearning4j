@@ -23,39 +23,40 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_igamma)
 
-#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(igamma, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+BROADCASTABLE_OP_IMPL(igamma, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
 
-            BROADCAST_CHECK_EMPTY(x,y,z);
+  BROADCAST_CHECK_EMPTY(x, y, z);
 
-            //REQUIRE_TRUE(!y->isB(), 0, "Pairwise OP: you can't divide by bool array!");
+  // REQUIRE_TRUE(!y->isB(), 0, "Pairwise OP: you can't divide by bool array!");
 
-//            auto tZ = BroadcastHelper::broadcastApply({scalar::IGamma, pairwise::IGamma, broadcast::IGamma}, x, y, z);
-            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::IGamma(), x, y, z);
+  //            auto tZ = BroadcastHelper::broadcastApply({scalar::IGamma, pairwise::IGamma, broadcast::IGamma}, x, y,
+  //            z);
+  auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::IGamma(), x, y, z);
 
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+  if (tZ == nullptr)
+    return sd::Status::KERNEL_FAILURE;
+  else if (tZ != z) {
+    OVERWRITE_RESULT(tZ);
+  }
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(igamma) {
-            getOpDescriptor()
-                ->setAllowedInputTypes(0, {ALL_FLOATS})
-                ->setAllowedInputTypes(1, {ALL_FLOATS})
-                ->setAllowedOutputTypes(0, {ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(igamma) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

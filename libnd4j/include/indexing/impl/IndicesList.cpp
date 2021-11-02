@@ -19,37 +19,28 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <indexing/IndicesList.h>
 
 using namespace sd;
 
-sd::IndicesList::IndicesList(std::initializer_list<NDIndex *> list) {
-	for (auto v: list)
-	_indices.emplace_back(v);
+sd::IndicesList::IndicesList(std::initializer_list<NDIndex*> list) {
+  for (auto v : list) _indices.emplace_back(v);
 }
 
 sd::IndicesList::~IndicesList() {
-    for(auto v: _indices)
-        delete v;
+  for (auto v : _indices) delete v;
 }
 
-int sd::IndicesList::size() {
-    return (int) _indices.size();
-}
+int sd::IndicesList::size() { return (int)_indices.size(); }
 
 bool sd::IndicesList::isScalar() {
-    if (_indices.size() == 1) {
-        return _indices.at(0)->isPoint();
-    }
+  if (_indices.size() == 1) {
+    return _indices.at(0)->isPoint();
+  }
 
-    return false;
+  return false;
 }
 
-sd::NDIndex* sd::IndicesList::at(int idx) {
-    return _indices.at(idx);
-}
+sd::NDIndex* sd::IndicesList::at(int idx) { return _indices.at(idx); }
 
-void sd::IndicesList::push_back(NDIndex* idx) {
-    _indices.emplace_back(idx);
-}
+void sd::IndicesList::push_back(NDIndex* idx) { _indices.emplace_back(idx); }

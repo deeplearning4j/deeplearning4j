@@ -27,39 +27,36 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(cast, 1, 1, false, 0, 1) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(cast, 1, 1, false, 0, 1) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            if(input->isEmpty()){
-                REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
-                return Status::OK();
-			}
+  if (input->isEmpty()) {
+    REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
+    return sd::Status::OK;
+  }
 
-            if (!block.isInplace())
-                output->assign(input);
-            
-            STORE_RESULT(output);
-            return Status::OK();
-        }
-        DECLARE_SYN(Cast, cast);
+  if (!block.isInplace()) output->assign(input);
 
-        DECLARE_SHAPE_FN(cast) {
-            auto inShape = inputShape->at(0);
-
-            auto it = INT_ARG(0);
-            DataType newType = DataTypeUtils::fromInt(it);
-
-            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
-        }
-
-        DECLARE_TYPES(cast) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(sd::DataType::ANY);
-        }
-    }
+  STORE_RESULT(output);
+  return sd::Status::OK;
 }
+DECLARE_SYN(Cast, cast);
+
+DECLARE_SHAPE_FN(cast) {
+  auto inShape = inputShape->at(0);
+
+  auto it = INT_ARG(0);
+  DataType newType = DataTypeUtils::fromInt(it);
+
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
+}
+
+DECLARE_TYPES(cast) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

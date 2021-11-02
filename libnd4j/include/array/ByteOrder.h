@@ -24,10 +24,10 @@
 #define LIBND4J_BYTEORDER_H
 
 namespace sd {
-    enum ByteOrder {
-        LE = 0,
-        BE = 1,
-    };
+enum ByteOrder {
+  LE = 0,
+  BE = 1,
+};
 }
 
-#endif //LIBND4J_BYTEORDER_H
+#endif  // LIBND4J_BYTEORDER_H

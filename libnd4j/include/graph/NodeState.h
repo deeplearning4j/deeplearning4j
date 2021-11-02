@@ -23,49 +23,48 @@
 #ifndef LIBND4J_NODESTATE_H
 #define LIBND4J_NODESTATE_H
 
-#include <system/pointercast.h>
-#include <system/dll.h>
+#include <system/common.h>
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT NodeState {
-        private:
-            // inner time spent on specific node
-            Nd4jLong _inner = 0;
+namespace graph {
+class SD_LIB_EXPORT NodeState {
+ private:
+  // inner time spent on specific node
+  sd::LongType _inner = 0;
 
-            // outer time spent on specific node
-            Nd4jLong _outer = 0;
-            
-            // flag that shows if node is active or disabled (i.e. after Switch op)
-            bool _active = true;
+  // outer time spent on specific node
+  sd::LongType _outer = 0;
 
-            bool _executed = false;
+  // flag that shows if node is active or disabled (i.e. after Switch op)
+  bool _active = true;
 
-            // active divergence branch
-            int _branch = 0;
+  bool _executed = false;
 
-            int _id = 0;
-        public:
-            NodeState(int id = 0);
-            ~NodeState() = default;
+  // active divergence branch
+  int _branch = 0;
 
-            void setInnerTime(Nd4jLong time);
-            void setOuterTime(Nd4jLong time);
+  int _id = 0;
 
-            Nd4jLong innerTime();
-            Nd4jLong outerTime();
+ public:
+  NodeState(int id = 0);
+  ~NodeState() = default;
 
-            void markActive(bool isActive);
-            bool isActive();
+  void setInnerTime(sd::LongType time);
+  void setOuterTime(sd::LongType time);
 
-            int branch();
-            void markBranch(int index);
+  sd::LongType innerTime();
+  sd::LongType outerTime();
 
-            bool wasExecuted();
-            void markExecuted(bool wasExecuted);
-        };
-    }
-}
+  void markActive(bool isActive);
+  bool isActive();
 
+  int branch();
+  void markBranch(int index);
 
-#endif //LIBND4J_NODESTATE_H
+  bool wasExecuted();
+  void markExecuted(bool wasExecuted);
+};
+}  // namespace graph
+}  // namespace sd
+
+#endif  // LIBND4J_NODESTATE_H

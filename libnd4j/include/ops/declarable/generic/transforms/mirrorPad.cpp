@@ -23,82 +23,106 @@
 #if NOT_EXCLUDED(OP_mirror_pad)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
 namespace ops {
 
-
 CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
+  auto input = INPUT_VARIABLE(0);
+  auto paddings = INPUT_VARIABLE(1);
 
-    auto input    = INPUT_VARIABLE(0);
-    auto paddings = INPUT_VARIABLE(1);
-    
-    auto output  = OUTPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    const int mode = INT_ARG(0);    // 0 - REFLECT, else - SYMMETRIC
-    const int includeBorder = mode ? 0 : 1;
+  const int mode = INT_ARG(0);  // 0 - REFLECT, else - SYMMETRIC
+  const int includeBorder = mode ? 0 : 1;
 
-    if(input->rankOf() <= 1) {  // when input is scalar or vector;
-        REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
-        REQUIRE_TRUE( (paddings->e<Nd4jLong>(0) <= (input->lengthOf() - includeBorder)) && (paddings->e<Nd4jLong>(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
-    }
-    else {
-        REQUIRE_TRUE(paddings->rankOf() == 2, 0, "MIRROR_PAD OP: the rank of paddings array must be equal 2, but got %i instead !", paddings->rankOf());
-        REQUIRE_TRUE(paddings->sizeAt(0) == input->rankOf(), 0, "MIRROR_PAD OP: zero dimension of paddings array must be equal to input array rank, but got %i and %i correspondingly !", paddings->sizeAt(0), input->rankOf());
+  if (input->rankOf() <= 1) {  // when input is scalar or vector;
+    REQUIRE_TRUE(paddings->lengthOf() == 2, 0,
+                 "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, "
+                 "bot but got %i instead !",
+                 paddings->rankOf());
+    REQUIRE_TRUE((paddings->e<sd::LongType>(0) <= (input->lengthOf() - includeBorder)) &&
+                     (paddings->e<sd::LongType>(1) <= (input->lengthOf() - includeBorder)),
+                 0,
+                 "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input "
+                 "array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
+  } else {
+    REQUIRE_TRUE(paddings->rankOf() == 2, 0,
+                 "MIRROR_PAD OP: the rank of paddings array must be equal 2, but got %i instead !", paddings->rankOf());
+    REQUIRE_TRUE(paddings->sizeAt(0) == input->rankOf(), 0,
+                 "MIRROR_PAD OP: zero dimension of paddings array must be equal to input array rank, but got %i and %i "
+                 "correspondingly !",
+                 paddings->sizeAt(0), input->rankOf());
 
-        for(int i = 0; i < input->rankOf(); ++i)
-            REQUIRE_TRUE( (paddings->e<Nd4jLong>(i,0) <= (input->sizeAt(i) - includeBorder)) && (paddings->e<Nd4jLong>(i,1) <= (input->sizeAt(i) - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
-    }
+    for (int i = 0; i < input->rankOf(); ++i)
+      REQUIRE_TRUE((paddings->e<sd::LongType>(i, 0) <= (input->sizeAt(i) - includeBorder)) &&
+                       (paddings->e<sd::LongType>(i, 1) <= (input->sizeAt(i) - includeBorder)),
+                   0,
+                   "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding "
+                   "dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
+  }
 
-    helpers::mirrorPad(block.launchContext(), *input, *paddings, *output, mode);
+  helpers::mirrorPad(block.launchContext(), *input, *paddings, *output, mode);
 
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-    DECLARE_TYPES(mirror_pad) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}); // to conform with TF
-        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
-    }
+DECLARE_TYPES(mirror_pad) {
+  getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});  // to conform with TF
+  getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
 
 DECLARE_SHAPE_FN(mirror_pad) {
+  auto input = INPUT_VARIABLE(0);
+  auto paddings = INPUT_VARIABLE(1);
 
-    auto input    = INPUT_VARIABLE(0);
-    auto paddings = INPUT_VARIABLE(1);
+  const int rank = input->rankOf() ? input->rankOf() : 1;  // if scalar is input then vector is output
+  const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;
 
-    const int rank = input->rankOf() ? input->rankOf() : 1;                 // if scalar is input then vector is output
-    const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;        
+  if (rank == 1) {  // when input is scalar or vector;
+    REQUIRE_TRUE(paddings->lengthOf() == 2, 0,
+                 "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, "
+                 "bot but got %i instead !",
+                 paddings->rankOf());
+    REQUIRE_TRUE((paddings->e<sd::LongType>(0) <= (input->lengthOf() - includeBorder)) &&
+                     (paddings->e<sd::LongType>(1) <= (input->lengthOf() - includeBorder)),
+                 0,
+                 "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input "
+                 "array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
+  } else {
+    REQUIRE_TRUE(paddings->rankOf() == 2, 0,
+                 "MIRROR_PAD OP: the rank of paddings array must be equal 2, but got %i instead !", paddings->rankOf());
+    REQUIRE_TRUE(paddings->sizeAt(0) == input->rankOf(), 0,
+                 "MIRROR_PAD OP: zero dimension of paddings array must be equal to input array rank, but got %i and %i "
+                 "correspondingly !",
+                 paddings->sizeAt(0), input->rankOf());
+    for (int i = 0; i < input->rankOf(); ++i)
+      REQUIRE_TRUE((paddings->e<sd::LongType>(i, 0) <= (input->sizeAt(i) - includeBorder)) &&
+                       (paddings->e<sd::LongType>(i, 1) <= (input->sizeAt(i) - includeBorder)),
+                   0,
+                   "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding "
+                   "dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
+  }
 
-    if(rank == 1) {  // when input is scalar or vector;
-        REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
-        REQUIRE_TRUE( (paddings->e<Nd4jLong>(0) <= (input->lengthOf() - includeBorder)) && (paddings->e<Nd4jLong>(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
-    }
-    else {
-        REQUIRE_TRUE(paddings->rankOf() == 2, 0, "MIRROR_PAD OP: the rank of paddings array must be equal 2, but got %i instead !", paddings->rankOf());
-        REQUIRE_TRUE(paddings->sizeAt(0) == input->rankOf(), 0, "MIRROR_PAD OP: zero dimension of paddings array must be equal to input array rank, but got %i and %i correspondingly !", paddings->sizeAt(0), input->rankOf());
-        for(int i = 0; i < input->rankOf(); ++i)
-            REQUIRE_TRUE( (paddings->e<Nd4jLong>(i,0) <= (input->sizeAt(i) - includeBorder)) && (paddings->e<Nd4jLong>(i,1) <= (input->sizeAt(i) - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
-    }
-    
-    if(rank == 1) {
-        Nd4jLong len = input->lengthOf() + paddings->e<Nd4jLong>(0) + paddings->e<Nd4jLong>(1);
-        return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, input->dataType()));
-    }
+  if (rank == 1) {
+    sd::LongType len = input->lengthOf() + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
+    return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, input->dataType()));
+  }
 
-    Nd4jLong* outShapeInfo(nullptr);
+  sd::LongType* outShapeInfo(nullptr);
 
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-    outShapeInfo[0] = rank;
-    for(int i = 0; i < rank; ++i)
-        outShapeInfo[i+1] = input->sizeAt(i) + paddings->e<Nd4jLong>(i,0) + paddings->e<Nd4jLong>(i,1);
-    ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
+  ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
+  outShapeInfo[0] = rank;
+  for (int i = 0; i < rank; ++i)
+    outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(i, 0) + paddings->e<sd::LongType>(i, 1);
+  ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
 
-    return SHAPELIST(CONSTANT(outShapeInfo));
+  return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

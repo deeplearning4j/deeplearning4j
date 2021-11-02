@@ -21,40 +21,52 @@
  */
 #ifndef DEV_TESTS_BROADCASTSCALARCONVERTER_H
 #define DEV_TESTS_BROADCASTSCALARCONVERTER_H
-
 #include <system/op_boilerplate.h>
 #include <system/op_enums.h>
+
 #include <stdexcept>
 
 namespace sd {
-    inline bool isConvertibleToScalar(broadcast::Ops op) {
-        int opNum = (int) op;
+inline bool isConvertibleToScalar(broadcast::Ops op) {
+  int opNum = (int)op;
 
-        if (opNum <= 17)
-            return true;
+  if (opNum <= 17) return true;
 
-        return false;
-    }
-
-    inline scalar::Ops convertToScalar(broadcast::Ops op) {
-        switch (op) {
-            case broadcast::Add: return scalar::Add;
-            case broadcast::Subtract: return scalar::Subtract;
-            case broadcast::Multiply: return scalar::Multiply;
-            case broadcast::Divide: return scalar::Divide;
-            case broadcast::ReverseDivide: return scalar::ReverseDivide;
-            case broadcast::ReverseSubtract: return scalar::ReverseSubtract;
-            case broadcast::CopyPws: return scalar::CopyPws;
-            case broadcast::Pow: return scalar::Pow;
-            case broadcast::MinPairwise: return scalar::MinPairwise;
-            case broadcast::MaxPairwise: return scalar::MaxPairwise;
-            case broadcast::AMinPairwise: return scalar::AMinPairwise;
-            case broadcast::AMaxPairwise: return scalar::AMaxPairwise;
-            case broadcast::SquaredSubtract: return scalar::SquaredSubtract;
-            default:
-                throw std::runtime_error("Not convertible operation");
-        }
-    }
+  return false;
 }
 
-#endif //DEV_TESTS_BROADCASTSCALARCONVERTER_H
+inline scalar::Ops convertToScalar(broadcast::Ops op) {
+  switch (op) {
+    case broadcast::Add:
+      return scalar::Add;
+    case broadcast::Subtract:
+      return scalar::Subtract;
+    case broadcast::Multiply:
+      return scalar::Multiply;
+    case broadcast::Divide:
+      return scalar::Divide;
+    case broadcast::ReverseDivide:
+      return scalar::ReverseDivide;
+    case broadcast::ReverseSubtract:
+      return scalar::ReverseSubtract;
+    case broadcast::CopyPws:
+      return scalar::CopyPws;
+    case broadcast::Pow:
+      return scalar::Pow;
+    case broadcast::MinPairwise:
+      return scalar::MinPairwise;
+    case broadcast::MaxPairwise:
+      return scalar::MaxPairwise;
+    case broadcast::AMinPairwise:
+      return scalar::AMinPairwise;
+    case broadcast::AMaxPairwise:
+      return scalar::AMaxPairwise;
+    case broadcast::SquaredSubtract:
+      return scalar::SquaredSubtract;
+    default:
+      throw std::runtime_error("Not convertible operation");
+  }
+}
+}  // namespace sd
+
+#endif  // DEV_TESTS_BROADCASTSCALARCONVERTER_H

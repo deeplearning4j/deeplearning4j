@@ -26,25 +26,23 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        OP_IMPL(Log1p, 1, 1, true) {
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+OP_IMPL(Log1p, 1, 1, true) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-            x->applyTransform(transform::Log1p, *z);
+  x->applyTransform(transform::Log1p, *z);
 
-            STORE_RESULT(z);
+  STORE_RESULT(z);
 
-            return Status::OK();
-        }
-        DECLARE_SYN(log1p, Log1p);
-    }
-
-    DECLARE_TYPES(Log1p) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(log1p, Log1p);
+}  // namespace ops
+
+DECLARE_TYPES(Log1p) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace sd
 
 #endif

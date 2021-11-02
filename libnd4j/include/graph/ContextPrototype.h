@@ -26,119 +26,119 @@
 
 #ifndef ND4J_CONTEXT_PROTOTYPE_H
 #define ND4J_CONTEXT_PROTOTYPE_H
-
-#include <vector>
-#include <system/Environment.h>
 #include <array/DataType.h>
-#include <system/dll.h>
-#include <graph/RandomGenerator.h>
-#include <ops/declarable/OpDescriptor.h>
 #include <execution/Engine.h>
 #include <execution/ExecutionMode.h>
+#include <graph/RandomGenerator.h>
+#include <ops/declarable/OpDescriptor.h>
+#include <system/Environment.h>
+
+#include <vector>
 
 #ifndef __STANDALONE_BUILD__
 #include <config.h>
 #endif
 
 namespace sd {
-    namespace graph {
+namespace graph {
 
-        class ND4J_EXPORT ContextPrototype {
-        protected:
-            // int ids of the input nodes
-            std::vector<std::pair<int, int>> _inputs;
-            int _nodeId;
-            std::vector<double> _tArgs;
-            std::vector<int> _iArgs;
-            std::vector<bool> _bArgs;
-            std::vector<int> _axis;
-            std::vector<sd::DataType> _dArgs;
+class SD_LIB_EXPORT ContextPrototype {
+ protected:
+  // int ids of the input nodes
+  std::vector<std::pair<int, int>> _inputs;
+  int _nodeId;
+  std::vector<double> _tArgs;
+  std::vector<int> _iArgs;
+  std::vector<bool> _bArgs;
+  std::vector<int> _axis;
+  std::vector<sd::DataType> _dArgs;
 
-            // TODO: remove this field
-			sd::DataType _dataType = sd::DataType::FLOAT32;
-			bool _isInplace;
+  // TODO: remove this field
+  sd::DataType _dataType = sd::DataType::FLOAT32;
+  bool _isInplace;
 
-            // opNum for legacy XYZ ops
-            int _opNum = -1;
-            uint64_t _rootSeed;
-            RandomGenerator _randomGenerator;
+  // opNum for legacy XYZ ops
+  int _opNum = -1;
+  uint64_t _rootSeed;
+  RandomGenerator _randomGenerator;
 
-            std::vector<sd::DataType> _dataTypes;
+  std::vector<sd::DataType> _dataTypes;
 
-            sd::ops::OpDescriptor* _opDescriptor;
-            bool _useONEDNN = sd::Environment::getInstance().isUseONEDNN();
+  sd::ops::OpDescriptor* _opDescriptor;
+  bool _useONEDNN = sd::Environment::getInstance().isUseONEDNN();
 
-            // target engine for execution
-            samediff::Engine _engine = DEFAULT_ENGINE;
+  // target engine for execution
+  samediff::Engine _engine = DEFAULT_ENGINE;
 
-            samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
-        public:
-            explicit ContextPrototype(sd::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
-            ~ContextPrototype() = default;
+  samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
 
-            int getNodeId();
-            int nodeId();
+ public:
+  explicit ContextPrototype(sd::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
+  ~ContextPrototype() = default;
 
-            // this method returns true, if inputs are defined
-            bool hasVariablesFilled();
+  int getNodeId();
+  int nodeId();
 
-            void setOpDescriptor(sd::ops::OpDescriptor* opDescriptor);
+  // this method returns true, if inputs are defined
+  bool hasVariablesFilled();
 
-            virtual sd::DataType dataType();
-            virtual sd::DataType dataType(int index);
-            virtual void setDataType(int index, sd::DataType type);
+  void setOpDescriptor(sd::ops::OpDescriptor* opDescriptor);
 
-            bool isInplace();
-            void markInplace(bool reallyInplace);
+  virtual sd::DataType dataType();
+  virtual sd::DataType dataType(int index);
+  virtual void setDataType(int index, sd::DataType type);
 
-            void pickInput(int input);
-            void pickInput(int input, int index);
-            void pickInput(std::pair<int, int>& p);
-            void fillInputs(std::initializer_list<int> inputs);
-            void fillInputs(std::vector<int>& inputs);
-            std::vector<std::pair<int, int>>* inputs();
+  bool isInplace();
+  void markInplace(bool reallyInplace);
 
-            std::vector<double>* getTArguments();
-            std::vector<int>* getIArguments();
-            std::vector<bool>* getBArguments();
-            std::vector<sd::DataType>* getDArguments();
-            std::vector<int>* getAxis();
+  void pickInput(int input);
+  void pickInput(int input, int index);
+  void pickInput(std::pair<int, int>& p);
+  void fillInputs(std::initializer_list<int> inputs);
+  void fillInputs(std::vector<int>& inputs);
+  std::vector<std::pair<int, int>>* inputs();
 
-            samediff::Engine engine();
+  std::vector<double>* getTArguments();
+  std::vector<int>* getIArguments();
+  std::vector<bool>* getBArguments();
+  std::vector<sd::DataType>* getDArguments();
+  std::vector<int>* getAxis();
 
-            size_t numT();
-            size_t numI();
-            size_t numB();
-            size_t numD();
+  samediff::Engine engine();
 
-            std::pair<int, int>* input(int idx);
+  size_t numT();
+  size_t numI();
+  size_t numB();
+  size_t numD();
 
-            int opNum();
-            void setOpNum(int opNum);
+  std::pair<int, int>* input(int idx);
 
-            bool isUseONEDNN() { return _useONEDNN; }
-            void setUseONEDNN(bool useONEDNN) { _useONEDNN = useONEDNN; }
+  int opNum();
+  void setOpNum(int opNum);
 
-            /**
-             * This method returns number of inputs available in this block
-             * @return
-             */
-            virtual unsigned long width();
+  bool isUseONEDNN() { return _useONEDNN; }
+  void setUseONEDNN(bool useONEDNN) { _useONEDNN = useONEDNN; }
 
-            // just a clone
-            ContextPrototype* clone();
+  /**
+   * This method returns number of inputs available in this block
+   * @return
+   */
+  virtual unsigned long width();
 
-            template <typename N>
-            ContextPrototype* asT();
+  // just a clone
+  ContextPrototype* clone();
 
-            RandomGenerator& randomGenerator() {return _randomGenerator;}
-            RandomGenerator const& getRng()const { return _randomGenerator; }
-            void setRng(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
-            void setRandomGenerator(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
-            uint64_t randomSeed() const { return _rootSeed; }
-            void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
-        };
-    }
-}
+  template <typename N>
+  ContextPrototype* asT();
 
-#endif //ND4J_CONTEXT_PROTOTYPE_H
+  RandomGenerator& randomGenerator() { return _randomGenerator; }
+  RandomGenerator const& getRng() const { return _randomGenerator; }
+  void setRng(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
+  void setRandomGenerator(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
+  uint64_t randomSeed() const { return _rootSeed; }
+  void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
+};
+}  // namespace graph
+}  // namespace sd
+
+#endif  // ND4J_CONTEXT_PROTOTYPE_H

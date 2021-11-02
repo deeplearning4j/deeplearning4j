@@ -19,38 +19,36 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <graph/execution/LogicLoopCond.h>
 
-
 namespace sd {
-    namespace graph {
-        Nd4jStatus LogicLoopCond::processNode(Graph *graph, Node *node) {
-            auto __variableSpace = graph->getVariableSpace();
-            auto __flowPath = __variableSpace->flowPath();
+namespace graph {
+sd::Status LogicLoopCond::processNode(Graph *graph, Node *node) {
+  auto __variableSpace = graph->getVariableSpace();
+  auto __flowPath = __variableSpace->flowPath();
 
-            Context ctx(node->getContextPrototype(), __variableSpace);
-            auto input = ctx.variable(0)->getNDArray();
+  Context ctx(node->getContextPrototype(), __variableSpace);
+  auto input = ctx.variable(0)->getNDArray();
 
-            std::pair<int, int> pair0(node->id(), 0);
+  std::pair<int, int> pair0(node->id(), 0);
 
-            if (!__variableSpace->hasVariable(pair0))
-                __variableSpace->putVariable(pair0, new Variable(nullptr, nullptr, node->id(), 0));
+  if (!__variableSpace->hasVariable(pair0))
+    __variableSpace->putVariable(pair0, new Variable(nullptr, nullptr, node->id(), 0));
 
-            __variableSpace->getVariable(pair0)->setNDArray(input);
-            __variableSpace->getVariable(pair0)->markRemovable(false);
+  __variableSpace->getVariable(pair0)->setNDArray(input);
+  __variableSpace->getVariable(pair0)->markRemovable(false);
 
-            // pass further
-            if (input->e<int>(0) > 0) {
-                // if condition is TRUE body will be invoked some time soon
-     //           __flowPath->markFrameActive(node->getFrameId(), true);
-                //__flowPath->i
-            } else {
-                // body won't be activated
-     //           __flowPath->markFrameActive(node->getFrameId(), false);
-            }
+  // pass further
+  if (input->e<int>(0) > 0) {
+    // if condition is TRUE body will be invoked some time soon
+    //           __flowPath->markFrameActive(node->getFrameId(), true);
+    //__flowPath->i
+  } else {
+    // body won't be activated
+    //           __flowPath->markFrameActive(node->getFrameId(), false);
+  }
 
-            return ND4J_STATUS_OK;
-        }
-    }
+  return sd::Status::OK;
 }
+}  // namespace graph
+}  // namespace sd

@@ -22,87 +22,87 @@
 
 #ifndef LIBND4J_SCOPE_H
 #define LIBND4J_SCOPE_H
+#include <graph/Node.h>
 
 #include <string>
 #include <unordered_map>
-#include <graph/Node.h>
 
 namespace sd {
-    namespace graph {
+namespace graph {
 
-        /**
-         * Scope holds sequential list of operations, and made suitable for continuous
-         * re-execution of multiple operations.
-         *
-         * @tparam T
-         */
-        class ND4J_EXPORT Scope {
-        protected:
-            // Graph-unique IDs for Scope instances
-            int _id;
-            std::string _name;
+/**
+ * Scope holds sequential list of operations, and made suitable for continuous
+ * re-execution of multiple operations.
+ *
+ * @tparam T
+ */
+class SD_LIB_EXPORT Scope {
+ protected:
+  // Graph-unique IDs for Scope instances
+  int _id;
+  std::string _name;
 
-            // list of nodes to run, always sequential
-            // Graph takes care of topo sort
-            std::vector<Node*> _nodes;
-        public:
-            // attach GiG here, with shared namespace?
-            // or just rebuilt graph leaf?
-            //          ¯\_(ツ)_/¯
+  // list of nodes to run, always sequential
+  // Graph takes care of topo sort
+  std::vector<Node*> _nodes;
 
-            // default consructor
-            explicit Scope(int id, const char* name = nullptr);
+ public:
+  // attach GiG here, with shared namespace?
+  // or just rebuilt graph leaf?
+  //          ¯\_(ツ)_/¯
 
-            // default destructor
-            ~Scope();
+  // default consructor
+  explicit Scope(int id, const char* name = nullptr);
 
-            /**
-             * this method adds op node to the scope
-             *
-             * PLEASE NOTE: We assume that ops are being added ORDERED
-             */
-            void push_back(Node* node);
+  // default destructor
+  ~Scope();
 
-            /**
-             * This method returns list of ops stored earlier, ready for execution
-             *
-             * PLEASE NOTE: If the scope is conditional - last op in list should be BooleanOp
-             * @return
-             */
-            std::vector<Node*> * nodes();
+  /**
+   * this method adds op node to the scope
+   *
+   * PLEASE NOTE: We assume that ops are being added ORDERED
+   */
+  void push_back(Node* node);
 
-            /**
-             * This function returns number of nodes in this scope
-             *
-             * @return
-             */
-            int size();
+  /**
+   * This method returns list of ops stored earlier, ready for execution
+   *
+   * PLEASE NOTE: If the scope is conditional - last op in list should be BooleanOp
+   * @return
+   */
+  std::vector<Node*>* nodes();
 
-            /**
-             * Returns ID of this scope
-             * @return
-             */
-            int id();
+  /**
+   * This function returns number of nodes in this scope
+   *
+   * @return
+   */
+  int size();
 
-            /**
-             * Returns name of this scope
-             *
-             * @return
-             */
-            std::string* name();
+  /**
+   * Returns ID of this scope
+   * @return
+   */
+  int id();
 
-            /**
-             * This method returns clone of this Scope
-             */
-            Scope* clone();
+  /**
+   * Returns name of this scope
+   *
+   * @return
+   */
+  std::string* name();
 
-            /**
-             * This method removes all Nodes from this scope
-             */
-            void forgetNodes();
-        };
-    }
-}
+  /**
+   * This method returns clone of this Scope
+   */
+  Scope* clone();
 
+  /**
+   * This method removes all Nodes from this scope
+   */
+  void forgetNodes();
+};
+}  // namespace graph
+}  // namespace sd
 
-#endif //LIBND4J_SCOPE_H
+#endif  // LIBND4J_SCOPE_H

@@ -19,55 +19,52 @@
 //
 // Created by raver119 on 21.02.18.
 //
-
-#include <graph/profiling/GraphProfilingHelper.h>
 #include <graph/GraphExecutioner.h>
+#include <graph/profiling/GraphProfilingHelper.h>
 
 namespace sd {
-    namespace graph {
-        GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations) {
+namespace graph {
+GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations) {
+  // saving original workspace
+  auto varSpace = graph->getVariableSpace()->clone();
 
-            // saving original workspace
-            auto varSpace = graph->getVariableSpace()->clone();
+  // printing out graph structure
+  // graph->printOut();
 
-            // printing out graph structure
-            // graph->printOut();
+  // warm up
+  for (int e = 0; e < iterations; e++) {
+    FlowPath fp;
 
-            // warm up
-            for (int e = 0; e < iterations; e++) {
-                FlowPath fp;
+    auto _vs = varSpace->clone();
+    //_vs->workspace()->expandTo(100000);
+    _vs->setFlowPath(&fp);
+    GraphExecutioner::execute(graph, _vs);
 
-                auto _vs = varSpace->clone();
-                //_vs->workspace()->expandTo(100000);
-                _vs->setFlowPath(&fp);
-                GraphExecutioner::execute(graph, _vs);
+    delete _vs;
+  }
 
-                delete _vs;
-            }
+  auto profile = new GraphProfile();
+  for (int e = 0; e < iterations; e++) {
+    FlowPath fp;
 
+    // we're always starting from "fresh" varspace here
+    auto _vs = varSpace->clone();
+    //_vs->workspace()->expandTo(100000);
+    _vs->setFlowPath(&fp);
+    GraphExecutioner::execute(graph, _vs);
 
-            auto profile = new GraphProfile();
-            for (int e = 0; e < iterations; e++) {
-                FlowPath fp;
+    auto p = fp.profile();
+    if (e == 0)
+      profile->assign(p);
+    else
+      profile->merge(p);
 
-                // we're always starting from "fresh" varspace here
-                auto _vs = varSpace->clone();
-                //_vs->workspace()->expandTo(100000);
-                _vs->setFlowPath(&fp);
-                GraphExecutioner::execute(graph, _vs);
+    delete _vs;
+  }
 
-                auto p = fp.profile();
-                if (e == 0)
-                    profile->assign(p);
-                else
-                    profile->merge(p);
+  delete varSpace;
 
-                delete _vs;
-            }
-
-            delete varSpace;
-
-            return profile;
-        }
-    }
+  return profile;
 }
+}  // namespace graph
+}  // namespace sd

@@ -25,18 +25,17 @@
 #ifndef SD_CUDAYPOINTERDEALLOCATOR_H_
 #define SD_CUDAYPOINTERDEALLOCATOR_H_
 
-#include <system/dll.h>
-#include <system/pointercast.h>
 #include <array/PointerDeallocator.h>
+#include <system/common.h>
 
 namespace sd {
-class ND4J_EXPORT CudaPointerDeallocator : public PointerDeallocator {
+class SD_LIB_EXPORT CudaPointerDeallocator : public PointerDeallocator {
  public:
   CudaPointerDeallocator() = default;
   ~CudaPointerDeallocator() = default;
 
-  void release(void* ptr) override;
+  void release(void *ptr) override;
 };
-}
+}  // namespace sd
 
-#endif //SD_CUDAYPOINTERDEALLOCATOR_H_
+#endif  // SD_CUDAYPOINTERDEALLOCATOR_H_

@@ -19,57 +19,54 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
+
 #include "testlayers.h"
 
 using namespace sd;
 
 class NDArrayListTests : public testing::Test {
-public:
-
+ public:
 };
 
-
 TEST_F(NDArrayListTests, BasicTests_1) {
-    NDArrayList list(false);
+  NDArrayList list(false);
 
-    auto x = NDArrayFactory::create<float>('c', {1, 10});
-    auto y = NDArrayFactory::create<float>('c', {1, 10});
+  auto x = NDArrayFactory::create<float>('c', {1, 10});
+  auto y = NDArrayFactory::create<float>('c', {1, 10});
 
-    ASSERT_EQ(ND4J_STATUS_OK, list.write(1, new NDArray(x.dup())));
+  ASSERT_EQ(sd::Status::OK, list.write(1, new NDArray(x.dup())));
 
-    //ASSERT_EQ(ND4J_STATUS_DOUBLE_WRITE, list.write(1, &y));
+  // ASSERT_EQ(sd::Status::DOUBLE_WRITE, list.write(1, &y));
 }
 
 TEST_F(NDArrayListTests, BasicTests_2) {
-    NDArrayList list(false);
+  NDArrayList list(false);
 
-    auto x = NDArrayFactory::create<float>('c', {1, 10});
-    auto y = NDArrayFactory::create<float>('c', {1, 7});
+  auto x = NDArrayFactory::create<float>('c', {1, 10});
+  auto y = NDArrayFactory::create<float>('c', {1, 7});
 
-    ASSERT_EQ(ND4J_STATUS_OK, list.write(1, new NDArray(x.dup())));
+  ASSERT_EQ(sd::Status::OK, list.write(1, new NDArray(x.dup())));
 
-    ASSERT_EQ(ND4J_STATUS_BAD_INPUT, list.write(0, &y));
+  ASSERT_EQ(sd::Status::BAD_INPUT, list.write(0, &y));
 }
 
-
 TEST_F(NDArrayListTests, Test_Stack_UnStack_1) {
-    auto input = NDArrayFactory::create<float>('c', {10, 10});
-    input.linspace(1);
+  auto input = NDArrayFactory::create<float>('c', {10, 10});
+  input.linspace(1);
 
-    NDArrayList list(false);
+  NDArrayList list(false);
 
-    list.unstack(&input, 0);
+  list.unstack(&input, 0);
 
-    ASSERT_EQ(10, list.elements());
+  ASSERT_EQ(10, list.elements());
 
-    auto array = list.stack();
+  auto array = list.stack();
 
-    ASSERT_TRUE(input.isSameShape(array));
+  ASSERT_TRUE(input.isSameShape(array));
 
-    ASSERT_TRUE(input.equalsTo(array));
+  ASSERT_TRUE(input.equalsTo(array));
 
-    delete array;
+  delete array;
 }

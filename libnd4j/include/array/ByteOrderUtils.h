@@ -22,17 +22,15 @@
 
 #ifndef LIBND4J_BYTEORDERUTILS_H
 #define LIBND4J_BYTEORDERUTILS_H
-
+#include <array/ByteOrder.h>
 #include <graph/generated/array_generated.h>
-#include "ByteOrder.h"
-#include <system/dll.h>
+#include <system/common.h>
 
 namespace sd {
-    class ND4J_EXPORT  ByteOrderUtils {
-    public:
-        static ByteOrder fromFlatByteOrder(sd::graph::ByteOrder order);
-    };
-}
+class SD_LIB_EXPORT ByteOrderUtils {
+ public:
+  static ByteOrder fromFlatByteOrder(sd::graph::ByteOrder order);
+};
+}  // namespace sd
 
-
-#endif //LIBND4J_BYTEORDERUTILS_H
+#endif  // LIBND4J_BYTEORDERUTILS_H

@@ -20,14 +20,13 @@
 //
 
 //inform Cmake that each of LIBND4J_TYPE will be generated and used in separate cpp files.
-#cmakedefine LIBND4J_TYPE_GEN 
-
+#cmakedefine SD_COMMON_TYPES_GEN 
 #include <ops/declarable/helpers/cpu/summaryReductions.hpp>
-#if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void variance_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected), LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES);
+            BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void variance_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES);
         }
     }
 }

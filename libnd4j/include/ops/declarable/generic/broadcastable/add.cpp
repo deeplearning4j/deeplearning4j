@@ -23,97 +23,91 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_add)
 
-#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace sd {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(add, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+BROADCASTABLE_OP_IMPL(add, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
 
-            BROADCAST_CHECK_EMPTY(x,y,z);
+  BROADCAST_CHECK_EMPTY(x, y, z);
 
-            auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Add(), x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z)
-                throw std::runtime_error("add: result was replaced");
+  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Add(), x, y, z);
+  if (tZ == nullptr)
+    return sd::Status::KERNEL_FAILURE;
+  else if (tZ != z)
+    throw std::runtime_error("add: result was replaced");
 
-
-    		return Status::OK();
-        }
-
-        DECLARE_TYPES(add) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::ANY);
-        }
-
-        DECLARE_TYPES(add_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-
-
-        CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto epsNext = INPUT_VARIABLE(2);
-
-            auto gradX = OUTPUT_VARIABLE(0);
-            auto gradY = OUTPUT_VARIABLE(1);
-
-            if (x->isSameShape(y)) {
-                // PWT case case
-                gradY->assign(epsNext);
-                gradX->assign(epsNext);
-            } else if (y->isScalar()) {
-                // scalar case
-                auto tmp = epsNext->reduceNumber(sd::reduce::Sum);
-                gradY->assign(tmp);
-                gradX->assign(epsNext);
-            } else {
-                // broadcast case
-                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
-
-                if (axisX.size() > 0) {
-                    auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisX);
-                    gradX->assign(sum);
-                } else
-                    gradX->assign(epsNext);
-
-                if (axisY.size() > 0) {
-                    auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisY);
-                    gradY->assign(sum);
-                } else
-                    gradY->assign(epsNext);
-            }
-
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(add_bp) {
-            auto x = inputShape->at(0);
-            auto y = inputShape->at(1);
-            auto e = inputShape->at(2);
-
-            // eps always has shape of x
-            // grad always has shape of y
-
-            Nd4jLong *shapeE;
-            Nd4jLong *shapeG;
-
-            COPY_SHAPE(x, shapeE);
-            COPY_SHAPE(y, shapeG);
-
-            return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(add) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, DataType::ANY)
+      ->setAllowedOutputTypes(DataType::ANY);
+}
+
+DECLARE_TYPES(add_bp) { getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+
+CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto epsNext = INPUT_VARIABLE(2);
+
+  auto gradX = OUTPUT_VARIABLE(0);
+  auto gradY = OUTPUT_VARIABLE(1);
+
+  if (x->isSameShape(y)) {
+    // PWT case case
+    gradY->assign(epsNext);
+    gradX->assign(epsNext);
+  } else if (y->isScalar()) {
+    // scalar case
+    auto tmp = epsNext->reduceNumber(sd::reduce::Sum);
+    gradY->assign(tmp);
+    gradX->assign(epsNext);
+  } else {
+    // broadcast case
+    auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+    auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+
+    if (axisX.size() > 0) {
+      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisX);
+      gradX->assign(sum);
+    } else
+      gradX->assign(epsNext);
+
+    if (axisY.size() > 0) {
+      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisY);
+      gradY->assign(sum);
+    } else
+      gradY->assign(epsNext);
+  }
+
+  return sd::Status::OK;
+}
+
+DECLARE_SHAPE_FN(add_bp) {
+  auto x = inputShape->at(0);
+  auto y = inputShape->at(1);
+  auto e = inputShape->at(2);
+
+  // eps always has shape of x
+  // grad always has shape of y
+
+  sd::LongType *shapeE;
+  sd::LongType *shapeG;
+
+  COPY_SHAPE(x, shapeE);
+  COPY_SHAPE(y, shapeG);
+
+  return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -29,55 +29,53 @@
 namespace sd {
 namespace ops {
 
-
-    DECLARE_TYPES(log_softmax) {
-        getOpDescriptor()
-                ->setAllowedInputTypes({ALL_FLOATS})
-                ->setSameMode(true);
-    }
+DECLARE_TYPES(log_softmax) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
-    auto input  = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    const int rank = input->rankOf();
-    const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  const int rank = input->rankOf();
+  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
-    REQUIRE_TRUE(dim < rank, 0, "LOG_SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
+  REQUIRE_TRUE(dim < rank, 0,
+               "LOG_SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank "
+               "%i, but got dimension = %i instead !",
+               rank, dim);
 
-    helpers::logSoftmax(block.launchContext(), *input, *output, dim);
+  helpers::logSoftmax(block.launchContext(), *input, *output, dim);
 
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-    DECLARE_TYPES(log_softmax_bp) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(0, DataType::ANY)
-                ->setAllowedInputTypes(1, {ALL_FLOATS})
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
-
+DECLARE_TYPES(log_softmax_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
 CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
-    auto input = INPUT_VARIABLE(0);
-    auto gradO = INPUT_VARIABLE(1);
-    auto gradI = OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0);
+  auto gradO = INPUT_VARIABLE(1);
+  auto gradI = OUTPUT_VARIABLE(0);
 
-    const int rank = input->rankOf();
-    const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  const int rank = input->rankOf();
+  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
-    REQUIRE_TRUE(dim < rank, 0, "LOG_SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
+  REQUIRE_TRUE(dim < rank, 0,
+               "LOG_SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank "
+               "%i, but got dimension = %i instead !",
+               rank, dim);
 
-    helpers::softmax(block.launchContext(), *input, *gradI, dim);
+  helpers::softmax(block.launchContext(), *input, *gradI, dim);
 
-    gradI->assign( *gradO - (*gradI * *gradO).reduceAlongDimension(reduce::Sum, {dim}, true) );
+  gradI->assign(*gradO - (*gradI * *gradO).reduceAlongDimension(reduce::Sum, {dim}, true));
 
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

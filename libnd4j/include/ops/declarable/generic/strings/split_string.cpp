@@ -26,27 +26,25 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(split_string, 2, 1, true, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto delim = INPUT_VARIABLE(1);
+namespace ops {
+CUSTOM_OP_IMPL(split_string, 2, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto delim = INPUT_VARIABLE(1);
 
-            return Status::OK();
-        };
+  return sd::Status::OK;
+};
 
-        DECLARE_SHAPE_FN(split_string) {
-            auto input = INPUT_VARIABLE(0);
-            auto delim = INPUT_VARIABLE(1);
+DECLARE_SHAPE_FN(split_string) {
+  auto input = INPUT_VARIABLE(0);
+  auto delim = INPUT_VARIABLE(1);
 
-            return SHAPELIST();
-        }
-
-        DECLARE_TYPES(split_string) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_STRINGS})
-                    ->setAllowedOutputTypes({ALL_STRINGS});
-        }
-    }
+  return SHAPELIST();
 }
+
+DECLARE_TYPES(split_string) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_STRINGS})->setAllowedOutputTypes({ALL_STRINGS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

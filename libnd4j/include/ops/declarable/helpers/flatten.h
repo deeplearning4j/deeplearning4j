@@ -22,49 +22,43 @@
 
 #ifndef DEV_TESTS_FLATTEN_H
 #define DEV_TESTS_FLATTEN_H
-
-#include <vector>
 #include <array/NDArray.h>
 
-namespace sd    {
-namespace ops     {
+#include <vector>
+
+namespace sd {
+namespace ops {
 namespace helpers {
 
+//////////////////////////////////////////////////////////////////////
+SD_LIB_HIDDEN void flatten(sd::LaunchContext *context, std::vector<NDArray *> &inputs, NDArray *output, char order);
 
 //////////////////////////////////////////////////////////////////////
-void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order);
+SD_INLINE SD_HOST_DEVICE sd::LongType getIndexOffsetOrdered(sd::LongType index, const sd::LongType *shapeInfo,
+                                                            const char order) {
+  sd::LongType offset = 0;
 
-
-//////////////////////////////////////////////////////////////////////
-INLINEDEF _CUDA_HD Nd4jLong getIndexOffsetOrdered(Nd4jLong index, const Nd4jLong *shapeInfo, const char order) {
-
-    Nd4jLong offset = 0;
-
-    if (order == 'c') {
-
-        for(uint i = shapeInfo[0]; i > 1; --i) {
-            offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
-            index /= shapeInfo[i];
-        }
-
-        offset += index * shapeInfo[1 + shapeInfo[0]];  // last iteration
-    }
-    else {
-
-        for(uint i = 1; i < shapeInfo[0]; ++i) {
-            offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
-            index /= shapeInfo[i];
-        }
-
-        offset += index * shapeInfo[2 * shapeInfo[0]];  // last iteration
+  if (order == 'c') {
+    for (sd::Unsigned i = shapeInfo[0]; i > 1; --i) {
+      offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
+      index /= shapeInfo[i];
     }
 
-    return offset;
+    offset += index * shapeInfo[1 + shapeInfo[0]];  // last iteration
+  } else {
+    for (sd::Unsigned i = 1; i < shapeInfo[0]; ++i) {
+      offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
+      index /= shapeInfo[i];
+    }
+
+    offset += index * shapeInfo[2 * shapeInfo[0]];  // last iteration
+  }
+
+  return offset;
 }
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-}
-}
-}
-
-#endif //DEV_TESTS_FLATTEN_H
+#endif  // DEV_TESTS_FLATTEN_H

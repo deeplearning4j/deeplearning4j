@@ -28,40 +28,38 @@
 #include <ops/declarable/helpers/max_pooling.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
+namespace ops {
+CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_NULLIFIED(0);
+  auto indices = OUTPUT_NULLIFIED(1);
 
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_NULLIFIED(0);
-            auto indices = OUTPUT_NULLIFIED(1);
+  REQUIRE_TRUE(x->rankOf() == 4, 0, "max_pool_with_argmax: Input should have rank of 4, but got %i instead",
+               x->rankOf());
 
-            REQUIRE_TRUE(x->rankOf() == 4, 0, "max_pool_with_argmax: Input should have rank of 4, but got %i instead", x->rankOf());
+  auto argI = *(block.getIArguments());
 
-            auto argI = *(block.getIArguments());
+  helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indices);
 
-            helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indices);
-
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(max_pool_with_argmax) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
-                    ->setAllowedOutputTypes(1, {ALL_INDICES});
-
-        }
-
-        DECLARE_SHAPE_FN(max_pool_with_argmax) {
-          auto in = inputShape->at(0);
-          auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
-          auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in));
-          auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in, dtype));
-            
-          return SHAPELIST(valuesShape, indicesShape);
-        }
-    }
+  return sd::Status::OK;
 }
 
-#endif
+DECLARE_TYPES(max_pool_with_argmax) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
+      ->setAllowedOutputTypes(1, {ALL_INDICES});
+}
 
+DECLARE_SHAPE_FN(max_pool_with_argmax) {
+  auto in = inputShape->at(0);
+  auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
+  auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in));
+  auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in, dtype));
+
+  return SHAPELIST(valuesShape, indicesShape);
+}
+}  // namespace ops
+}  // namespace sd
+
+#endif

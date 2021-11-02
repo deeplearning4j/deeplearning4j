@@ -21,9 +21,8 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
 #include <helpers/cpu/loops/IndexReductionLoops.hpp>
-#cmakedefine  LIBND4J_TYPE_GEN
-#if  defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
-BUILD_DOUBLE_TEMPLATE(template ND4J_LOCAL void sd::IndexReductionLoops, ::wrapIndexReduce(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES_@FL_TYPE_INDEX@, (sd::DataType::INT64, Nd4jLong));
+#cmakedefine  SD_COMMON_TYPES_GEN
+#if  defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_INDEXING_TYPES_0)
+BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void sd::IndexReductionLoops, ::wrapIndexReduce(const int opNum, const void* vx, const sd::LongType* xShapeInfo, void* z, const sd::LongType* zShapeInfo, const sd::LongType* tadShapeInfo, const sd::LongType* tadOffsets, void* vextraParams), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES_0 );
 #endif

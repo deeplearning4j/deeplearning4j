@@ -23,49 +23,47 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_random_bernoulli)
 
-#include <ops/declarable/headers/random.h>
 #include <helpers/RandomLauncher.h>
+#include <ops/declarable/headers/random.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
-            auto rng = block.getRng();
-            // FIXME: to be implemented
-/*
-            if (rng == nullptr)
-                return Status::THROW("RNG is null, aborting...");
+namespace ops {
+CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
+  auto rng = block.getRng();
+  // FIXME: to be implemented
+  /*
+              if (rng == nullptr)
+                  return Logger::logKernelFailureMsg("RNG is null, aborting...");
 
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
+              auto x = INPUT_VARIABLE(0);
+              auto z = OUTPUT_VARIABLE(0);
 
-            T f = T_ARG(0);
+              T f = T_ARG(0);
 
-            functions::random::RandomFunction<T>::template execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->buffer(), z->shapeInfo(), &f);
-*/
+              functions::random::RandomFunction<T>::template
+     execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->buffer(), z->shapeInfo(), &f);
+  */
 
-            auto z = OUTPUT_VARIABLE(0);
-            auto f = T_ARG(0);
+  auto z = OUTPUT_VARIABLE(0);
+  auto f = T_ARG(0);
 
-            RandomLauncher::fillBernoulli(block.launchContext(), rng, z, f);
+  RandomLauncher::fillBernoulli(block.launchContext(), rng, z, f);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(random_bernoulli) {
-            auto in = INPUT_VARIABLE(0);
-            auto shape = in->template asVectorT<Nd4jLong>();
-
-            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
-            return SHAPELIST(newShape);
-        }
-
-
-        DECLARE_TYPES(random_bernoulli) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(random_bernoulli) {
+  auto in = INPUT_VARIABLE(0);
+  auto shape = in->template asVectorT<sd::LongType>();
+
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
+  return SHAPELIST(newShape);
+}
+
+DECLARE_TYPES(random_bernoulli) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

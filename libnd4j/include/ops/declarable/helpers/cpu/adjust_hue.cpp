@@ -20,82 +20,75 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <ops/declarable/helpers/adjust_hue.h>
-#include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/helpers/adjust_hue.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 template <typename T>
-static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
+static void adjustHue_(const NDArray *input, const NDArray *deltaScalarArr, NDArray *output, const int dimC) {
+  const T delta = deltaScalarArr->e<T>(0);
+  const int rank = input->rankOf();
 
-    const T delta  = deltaScalarArr->e<T>(0);
-    const int rank = input->rankOf();
+  const T *x = input->bufferAsT<T>();
+  T *z = output->bufferAsT<T>();
 
-    const T* x = input->bufferAsT<T>();
-          T* z = output->bufferAsT<T>();
+  if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' &&
+      output->ordering() == 'c') {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i += increment) {
+        T h, s, v;
 
-    if(dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+        rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
-                T h, s, v;
+        h += delta;
+        if (h > (T)1)
+          h -= (T)1;
+        else if (h < 0)
+          h += (T)1;
 
-                rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
+        hsvToRgb<T>(h, s, v, z[i], z[i + 1], z[i + 2]);
+      }
+    };
 
-                h += delta ;
-                if (h > (T)1)
-                    h -= (T)1;
-                else if (h < 0)
-                    h += (T)1;
+    samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
+  } else {
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
-                hsvToRgb<T>(h, s, v, z[i], z[i + 1], z[i + 2]);
-            }
-        };
+    const sd::LongType numOfTads = packX.numberOfTads();
+    const sd::LongType xDimCstride = input->stridesOf()[dimC];
+    const sd::LongType zDimCstride = output->stridesOf()[dimC];
 
-        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
-    }
-    else {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        const T *xTad = x + packX.platformOffsets()[i];
+        T *zTad = z + packZ.platformOffsets()[i];
 
-        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
+        T h, s, v;
 
-        const Nd4jLong numOfTads   = packX.numberOfTads();
-        const Nd4jLong xDimCstride = input->stridesOf()[dimC];
-        const Nd4jLong zDimCstride = output->stridesOf()[dimC];
+        rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i++) {
+        h += delta;
+        if (h > (T)1)
+          h -= (T)1;
+        else if (h < 0)
+          h += (T)1;
 
-                const T *xTad = x + packX.platformOffsets()[i];
-                T *zTad = z + packZ.platformOffsets()[i];
+        hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+      }
+    };
 
-                T h, s, v;
-
-                rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
-
-                h += delta ;
-                if (h > (T)1)
-                    h -= (T)1;
-                else if (h < 0)
-                    h += (T)1;
-
-                hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
-
-            }
-        };
-
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
-    }
+    samediff::Threads::parallel_tad(func, 0, numOfTads);
+  }
 }
 
-
- void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
-    BUILD_SINGLE_SELECTOR(input->dataType(), adjustHue_, (input, deltaScalarArr, output, dimC), FLOAT_TYPES);
+void adjustHue(sd::LaunchContext *context, const NDArray *input, const NDArray *deltaScalarArr, NDArray *output,
+               const int dimC) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), adjustHue_, (input, deltaScalarArr, output, dimC), SD_FLOAT_TYPES);
 }
 
 /*
@@ -179,21 +172,22 @@ void adjust_hue_(sd::LaunchContext * context, NDArray *array, NDArray *output, N
         // FIXME: template selector should be moved out of loop
         PRAGMA_OMP_PARALLEL_FOR
         for (int e = 0; e < tSize; e++) {
-            BUILD_SINGLE_SELECTOR(xType, adjust_hue_single_, (context, tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, adjust_hue_single_, (context, tadsIn->at(e), tadsOut->at(e), d, isNHWC);,
+SD_FLOAT_TYPES);
         }
 
 
         delete tadsIn;
         delete tadsOut;
     } else {
-        BUILD_SINGLE_SELECTOR(xType, adjust_hue_single_, (context, array, output, d, isNHWC);, FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, adjust_hue_single_, (context, array, output, d, isNHWC);, SD_FLOAT_TYPES);
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template void adjust_hue_single_, (sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC);, FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void adjust_hue_single_, (sd::LaunchContext * context, NDArray *array, NDArray *output,
+float delta, bool isNHWC);, SD_FLOAT_TYPES);
 */
 
-
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

@@ -19,63 +19,60 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
 #include <array/ResultSet.h>
-#include <ops/declarable/helpers/matrixSetDiag.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/matrixSetDiag.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-ND4J_LOCAL void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+template <typename T>
+void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+  // input and output are the same array (x == z) when zeroPad = true
+  // xRank = zRank, xRank = yRank + 1
+  // xLen = zLen
 
-    // input and output are the same array (x == z) when zeroPad = true
-    // xRank = zRank, xRank = yRank + 1
-    // xLen = zLen
+  const T* x = input.bufferAsT<T>();
+  const T* y = diagonal.bufferAsT<T>();
+  T* z = output.bufferAsT<T>();
 
-    const T* x = input.bufferAsT<T>();
-    const T* y = diagonal.bufferAsT<T>();
-          T* z = output.bufferAsT<T>();
+  const sd::LongType* xShapeInfo = input.shapeInfo();
+  const sd::LongType* yShapeInfo = diagonal.shapeInfo();
+  const sd::LongType* zShapeInfo = output.shapeInfo();
 
-    const Nd4jLong* xShapeInfo = input.shapeInfo();
-    const Nd4jLong* yShapeInfo = diagonal.shapeInfo();
-    const Nd4jLong* zShapeInfo = output.shapeInfo();
+  const bool areSameOffsets =
+      shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);  // shapes are definitely the same, but strides might not
 
-    const bool areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);    // shapes are definitely the same, but strides might not
+  const int xRank = input.rankOf();
+  const auto xLen = input.lengthOf();
 
-    const int xRank = input.rankOf();
-    const auto xLen = input.lengthOf();
+  auto func = PRAGMA_THREADS_FOR {
+    int coords[SD_MAX_RANK];
 
-    auto func = PRAGMA_THREADS_FOR {
+    for (sd::LongType i = 0; i < xLen; ++i) {
+      shape::index2coordsCPU(start, i, xShapeInfo, coords);
 
-        int coords[MAX_RANK];
+      const auto xOffset = shape::getOffset(xShapeInfo, coords);
+      const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords);
 
-        for (Nd4jLong i = 0; i < xLen; ++i) {
-
-            shape::index2coordsCPU(start, i, xShapeInfo, coords);
-
-            const auto xOffset = shape::getOffset(xShapeInfo, coords);
-            const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords);
-
-            // condition to be on diagonal of innermost matrix
-            if (coords[xRank - 2] == coords[xRank - 1])
-                z[zOffset] = y[shape::getOffset(yShapeInfo, coords)];
-            else
-                z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
-        }
-    };
-    samediff::Threads::parallel_for(func, 0, xLen);
+      // condition to be on diagonal of innermost matrix
+      if (coords[xRank - 2] == coords[xRank - 1])
+        z[zOffset] = y[shape::getOffset(yShapeInfo, coords)];
+      else
+        z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
+    }
+  };
+  samediff::Threads::parallel_for(func, 0, xLen);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiag_, (input, diagonal, output, zeroPad), LIBND4J_TYPES);
+void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output,
+                   const bool zeroPad) {
+  BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiag_, (input, diagonal, output, zeroPad), SD_COMMON_TYPES);
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

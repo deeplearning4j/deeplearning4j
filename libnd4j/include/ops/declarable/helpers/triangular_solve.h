@@ -23,18 +23,20 @@
 //
 #ifndef __TRIANGULAR_SOLVE__H_HELPERS__
 #define __TRIANGULAR_SOLVE__H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower, bool unitsOnDiag, NDArray* output);
-    template <typename T>
-    void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput, const bool lower, const bool unitsOnDiag, NDArray& output);
-    void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output);
-}
-}
-}
+SD_LIB_HIDDEN sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
+                                                bool lower, bool unitsOnDiag, NDArray* output);
+template <typename T>
+SD_LIB_HIDDEN void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput,
+                                     const bool lower, const bool unitsOnDiag, NDArray& output);
+SD_LIB_HIDDEN void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

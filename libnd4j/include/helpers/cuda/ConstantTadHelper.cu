@@ -19,97 +19,104 @@
 //
 //  @author raver119@gmail.com
 //
+#include <array/CudaPointerDeallocator.h>
+#include <array/PrimaryPointerDeallocator.h>
+#include <exceptions/cuda_exception.h>
+#include <execution/AffinityManager.h>
+#include <execution/LaunchContext.h>
+#include <helpers/ConstantHelper.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
 
 #include "../ConstantTadHelper.h"
-#include <helpers/TAD.h>
-#include <helpers/ConstantHelper.h>
-#include <execution/AffinityManager.h>
-#include <exceptions/cuda_exception.h>
-#include <execution/LaunchContext.h>
-#include <helpers/ShapeUtils.h>
-#include <array/PrimaryPointerDeallocator.h>
-#include <array/CudaPointerDeallocator.h>
 
 namespace sd {
-    ConstantTadHelper::ConstantTadHelper() {
-        auto numDevices = AffinityManager::numberOfDevices();
+ConstantTadHelper::ConstantTadHelper() {
+  auto numDevices = AffinityManager::numberOfDevices();
 
-        for (int e = 0; e < numDevices; e++) {
-            MAP_IMPL<TadDescriptor, TadPack> pack;
-            _cache.emplace_back(pack);
-        }
-    }
-
-    ConstantTadHelper& ConstantTadHelper::getInstance() {
-      static ConstantTadHelper instance;
-      return instance;
-    }
-
-    TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int dimension, const bool keepUnitiesInShape) {
-        return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
-    }
-
-    TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, const std::vector<int> &dimensions, const bool keepUnitiesInShape) {
-        return tadForDimensions(originalShape, const_cast<int *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
-    }
-
-    TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int* dimensions, int dimLength, const bool keepUnitiesInShape) {
-        TadDescriptor tadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
-        return tadForDimensions(tadDescriptor);
-    }
-
-    TadPack ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions, const bool keepUnitiesInShape) {
-        TadDescriptor tadDescriptor(descriptor, dimensions, keepUnitiesInShape);
-        return tadForDimensions(tadDescriptor);
-    }
-
-    TadPack ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
-        const int deviceId = AffinityManager::currentDeviceId();
-
-        std::lock_guard<std::mutex> lock(_mutex);
-
-        if (_cache[deviceId].count(descriptor) == 0) {
-            const auto shapeInfo = descriptor.originalShape().toShapeInfo();
-            const int rank = shape::rank(shapeInfo);
-            const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor.axis());
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
-            const int subArrRank = (rank == dimsToExclude.size() || descriptor.areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
-
-            auto sPtr = std::make_shared<PointerWrapper>(new Nd4jLong[shape::shapeInfoLength(subArrRank)], std::make_shared<PrimaryPointerDeallocator>());
-            auto oPtr = std::make_shared<PointerWrapper>(new Nd4jLong[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
-
-            if (numOfSubArrs > 0)
-                shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr->pointerAsT<Nd4jLong>(), oPtr->pointerAsT<Nd4jLong>(), descriptor.areUnitiesinShape());
-
-            Nd4jPointer soPtr;
-            auto res = cudaMalloc(reinterpret_cast<void**>(&soPtr),  numOfSubArrs * sizeof(Nd4jLong));
-            if (res != 0)
-                throw cuda_exception::build("Memory allocation for tadOffsets failed", res);
-
-            res = cudaMemcpy(soPtr, oPtr->pointer(), numOfSubArrs * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
-            if (res != 0)
-                throw cuda_exception::build("tadOffsets copy failed", res);
-
-            // TODO: add deallocator here?
-            auto ssPtr = std::make_shared<PointerWrapper>(ConstantHelper::getInstance().replicatePointer(sPtr->pointer(), shape::shapeInfoByteLength(subArrRank)));
-
-
-
-            ConstantShapeBuffer shapesBuffer(sPtr, ssPtr);
-            ConstantOffsetsBuffer offsetsBuffer(oPtr, std::make_shared<PointerWrapper>(soPtr, std::make_shared<CudaPointerDeallocator>()));
-
-            TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
-            _cache[deviceId][descriptor] = t;
-
-            TadPack r = _cache[deviceId][descriptor];
-
-            delete[] shapeInfo;
-
-            return r;
-        } else {
-            TadPack r = _cache[deviceId][descriptor];
-
-            return r;
-        }
-    }
+  for (int e = 0; e < numDevices; e++) {
+    SD_MAP_IMPL<TadDescriptor, TadPack> pack;
+    _cache.emplace_back(pack);
+  }
 }
+
+ConstantTadHelper &ConstantTadHelper::getInstance() {
+  static ConstantTadHelper instance;
+  return instance;
+}
+
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, int dimension,
+                                            const bool keepUnitiesInShape) {
+  return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
+}
+
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<int> &dimensions,
+                                            const bool keepUnitiesInShape) {
+  return tadForDimensions(originalShape, const_cast<int *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
+}
+
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, int *dimensions, int dimLength,
+                                            const bool keepUnitiesInShape) {
+  TadDescriptor tadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
+  return tadForDimensions(tadDescriptor);
+}
+
+TadPack ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions,
+                                            const bool keepUnitiesInShape) {
+  TadDescriptor tadDescriptor(descriptor, dimensions, keepUnitiesInShape);
+  return tadForDimensions(tadDescriptor);
+}
+
+TadPack ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
+  const int deviceId = AffinityManager::currentDeviceId();
+
+  std::lock_guard<std::mutex> lock(_mutex);
+
+  if (_cache[deviceId].count(descriptor) == 0) {
+    const auto shapeInfo = descriptor.originalShape().toShapeInfo();
+    const int rank = shape::rank(shapeInfo);
+    const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor.axis());
+    const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
+    const int subArrRank =
+        (rank == dimsToExclude.size() || descriptor.areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
+
+    auto sPtr = std::make_shared<PointerWrapper>(new sd::LongType[shape::shapeInfoLength(subArrRank)],
+                                                 std::make_shared<PrimaryPointerDeallocator>());
+    auto oPtr =
+        std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
+
+    if (numOfSubArrs > 0)
+      shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(),
+                                            sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
+                                            descriptor.areUnitiesinShape());
+
+    sd::Pointer soPtr;
+    auto res = cudaMalloc(reinterpret_cast<void **>(&soPtr), numOfSubArrs * sizeof(sd::LongType));
+    if (res != 0) throw cuda_exception::build("Memory allocation for tadOffsets failed", res);
+
+    res = cudaMemcpy(soPtr, oPtr->pointer(), numOfSubArrs * sizeof(sd::LongType), cudaMemcpyHostToDevice);
+    if (res != 0) throw cuda_exception::build("tadOffsets copy failed", res);
+
+    // TODO: add deallocator here?
+    auto ssPtr = std::make_shared<PointerWrapper>(
+        ConstantHelper::getInstance().replicatePointer(sPtr->pointer(), shape::shapeInfoByteLength(subArrRank)));
+
+    ConstantShapeBuffer shapesBuffer(sPtr, ssPtr);
+    ConstantOffsetsBuffer offsetsBuffer(
+        oPtr, std::make_shared<PointerWrapper>(soPtr, std::make_shared<CudaPointerDeallocator>()));
+
+    TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
+    _cache[deviceId][descriptor] = t;
+
+    TadPack r = _cache[deviceId][descriptor];
+
+    delete[] shapeInfo;
+
+    return r;
+  } else {
+    TadPack r = _cache[deviceId][descriptor];
+
+    return r;
+  }
+}
+}  // namespace sd

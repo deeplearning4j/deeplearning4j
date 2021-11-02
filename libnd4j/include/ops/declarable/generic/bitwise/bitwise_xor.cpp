@@ -30,25 +30,23 @@
 #include <ops/declarable/helpers/shift.h>
 
 namespace sd {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(bitwise_xor, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+BROADCASTABLE_OP_IMPL(bitwise_xor, 0, 0) {
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
 
-            BROADCAST_CHECK_EMPTY(x,y,z);
+  BROADCAST_CHECK_EMPTY(x, y, z);
 
-            x->applyTrueBroadcast(BroadcastIntOpsTuple::custom(scalar::IntOps::IntXor, pairwise::IntOps::IntXor, broadcast::IntOps::IntXor), *y, *z, false);
+  x->applyTrueBroadcast(
+      BroadcastIntOpsTuple::custom(scalar::IntOps::IntXor, pairwise::IntOps::IntXor, broadcast::IntOps::IntXor), *y, *z,
+      false);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(bitwise_xor) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_INTS})
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(bitwise_xor) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

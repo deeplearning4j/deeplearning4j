@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
- //
- // Created by george@skymind.io on 26.01.2018.
- //
+//
+// Created by george@skymind.io on 26.01.2018.
+//
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_normalize_moments)
@@ -26,62 +26,60 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
-            auto counts = INPUT_VARIABLE(0);
-            auto  means = INPUT_VARIABLE(1);
-            auto variances = INPUT_VARIABLE(2);
+namespace ops {
+CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
+  auto counts = INPUT_VARIABLE(0);
+  auto means = INPUT_VARIABLE(1);
+  auto variances = INPUT_VARIABLE(2);
 
-            auto resMeans = OUTPUT_VARIABLE(0);
-            auto resVariances = OUTPUT_VARIABLE(1);
+  auto resMeans = OUTPUT_VARIABLE(0);
+  auto resVariances = OUTPUT_VARIABLE(1);
 
-            // FIXME: double?
-            NDArray shift = NDArrayFactory::create<double>(0., block.launchContext());
+  // FIXME: double?
+  NDArray shift = NDArrayFactory::create<double>(0., block.launchContext());
 
-            if (block.getTArguments()->size() > 0) {
-                shift.assign(T_ARG(0));
-            }
+  if (block.getTArguments()->size() > 0) {
+    shift.assign(T_ARG(0));
+  }
 
-            means->applyScalarArr(scalar::Divide, *counts, *resMeans);
+  means->applyScalarArr(scalar::Divide, *counts, *resMeans);
 
-            NDArray squareMeans = resMeans->dup('c');
-            NDArray tempVariances = resVariances->dup('c');
+  NDArray squareMeans = resMeans->dup('c');
+  NDArray tempVariances = resVariances->dup('c');
 
-            squareMeans.applyTransform(transform::Square, squareMeans, nullptr);
-            variances->applyScalarArr(scalar::Divide, *counts, tempVariances);
-            //            tempVariances.printIndexedBuffer("varianced divided by count");
-            tempVariances.applyPairwiseTransform(pairwise::Subtract, squareMeans, *resVariances);
+  squareMeans.applyTransform(transform::Square, squareMeans, nullptr);
+  variances->applyScalarArr(scalar::Divide, *counts, tempVariances);
+  //            tempVariances.printIndexedBuffer("varianced divided by count");
+  tempVariances.applyPairwiseTransform(pairwise::Subtract, squareMeans, *resVariances);
 
-            if (shift.e<double>(0) != 0) {
-                resMeans->applyScalarArr(scalar::Add, shift, *resMeans);
-            }
+  if (shift.e<double>(0) != 0) {
+    resMeans->applyScalarArr(scalar::Add, shift, *resMeans);
+  }
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(normalize_moments) {
-            auto in = inputShape->at(1);
-
-            Nd4jLong* meanShape = nullptr;
-            Nd4jLong* varianceShape = nullptr;
-
-            COPY_SHAPE_EX(in, meanShape, block.getWorkspace());
-            COPY_SHAPE_EX(in, varianceShape, block.getWorkspace());
-
-            auto shapeList = SHAPELIST();
-            shapeList->push_back(CONSTANT(meanShape));
-            shapeList->push_back(CONSTANT(varianceShape));
-
-            return shapeList;
-        }
-
-        DECLARE_TYPES(normalize_moments) {
-            getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setAllowedOutputTypes({ ALL_FLOATS });
-        }
-    }
-
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(normalize_moments) {
+  auto in = inputShape->at(1);
+
+  sd::LongType* meanShape = nullptr;
+  sd::LongType* varianceShape = nullptr;
+
+  COPY_SHAPE_EX(in, meanShape, block.getWorkspace());
+  COPY_SHAPE_EX(in, varianceShape, block.getWorkspace());
+
+  auto shapeList = SHAPELIST();
+  shapeList->push_back(CONSTANT(meanShape));
+  shapeList->push_back(CONSTANT(varianceShape));
+
+  return shapeList;
+}
+
+DECLARE_TYPES(normalize_moments) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+
+}  // namespace sd
 
 #endif

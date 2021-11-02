@@ -24,13 +24,13 @@
 #define ND4J_ARRAY_TYPE_H
 
 namespace sd {
-    enum ArrayType {
-        DENSE = 1,
-        SPARSE = 2,
-        COMPRESSED = 3,
-        EMPTY = 4,
-        RAGGED = 5,
-    };
+enum ArrayType {
+  DENSE = 1,
+  SPARSE = 2,
+  COMPRESSED = 3,
+  EMPTY = 4,
+  RAGGED = 5,
+};
 }
 
 #endif

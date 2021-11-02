@@ -26,135 +26,126 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            std::vector<int> axis;
+  std::vector<int> axis;
 
-            if (block.numI() > 0)
-                for (int e = 0; e < block.numI(); e++) {
-                    int _a = INT_ARG(e);
-                    if (_a < 0)
-                        _a += input->rankOf();
+  if (block.numI() > 0)
+    for (int e = 0; e < block.numI(); e++) {
+      int _a = INT_ARG(e);
+      if (_a < 0) _a += input->rankOf();
 
-                    axis.emplace_back(_a);
-                }
-            else if (block.width() > 1) {
-                auto a = INPUT_VARIABLE(1);
-                for (Nd4jLong e = 0; e < a->lengthOf(); e++) {
-                    int _a = a->e<int>(e);
-
-                    if (_a < 0)
-                        _a += input->rankOf();
-
-                    axis.emplace_back(_a);
-                }
-            }
-
-            if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
-                output->assign(input);
-                return Status::OK();
-            }
-
-            std::vector<Nd4jLong> shape;
-            if (axis.size() == 0) {
-                for (int d = 0; d < input->rankOf(); d++)
-                    if (input->sizeAt(d) > 1)
-                        shape.emplace_back(input->sizeAt(d));
-            } else {
-                for (int d = 0; d < input->rankOf(); d++) {
-                    if (input->sizeAt(d) == 1) {
-                        if (std::find(axis.begin(), axis.end(), d) == axis.end())
-                            shape.emplace_back(input->sizeAt(d));
-                    } else shape.emplace_back(input->sizeAt(d));
-                }
-            }
-
-            if (block.isInplace()) {
-                output->reshapei(input->ordering(), shape, false);
-            } else {
-                if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
-                    output->dataBuffer()->copyBufferFrom(*input->dataBuffer().get(), output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0, input->bufferOffset());
-                } else {
-                    auto tmp = input->reshape(input->ordering(), shape);
-                    output->assign(tmp);
-                }
-            }
-
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(squeeze) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-
-        DECLARE_SHAPE_FN(squeeze) {
-            auto shapeList = SHAPELIST();
-
-//            Nd4jLong* newShape;
-            auto in = inputShape->at(0);
-            auto rank = shape::rank(in);
-            auto length = shape::length(in);
-
-            if (rank == 0 || (rank == 1 && length == 1)) {
-                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
-                return shapeList;
-            }
-
-            std::vector<int> axis;
-
-            if (block.numI() > 0)
-                for (int e = 0; e < block.numI(); e++) {
-                    int _a = INT_ARG(e);
-                    if (_a < 0)
-                        _a += rank;
-
-                    axis.emplace_back(_a);
-                }
-            else if (block.width() > 1) {
-                auto a = INPUT_VARIABLE(1);
-                for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = a->e<int>(e);
-
-                    if (_a < 0)
-                        _a += rank;
-
-                    axis.emplace_back(_a);
-                }
-
-            }
-
-            auto order = shape::order(in);
-            auto oldShape = shape::shapeOf(in);
-
-            std::vector<Nd4jLong> shape;
-            if (axis.size() == 0) {
-                for (int d = 0; d < rank; d++)
-                    if (oldShape[d] > 1)
-                        shape.emplace_back(oldShape[d]);
-            } else {
-                for (int d = 0; d < rank; d++) {
-                    if (oldShape[d] == 1) {
-                        if (std::find(axis.begin(), axis.end(), d) == axis.end())
-                            shape.emplace_back(oldShape[d]);
-                    } else shape.emplace_back(oldShape[d]);
-                }
-            }
-
-            if (shape.size() == 0) {
-                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
-                return shapeList;
-            }
-
-            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
-            shapeList->push_back(newShape);
-            return shapeList;
-        }
+      axis.emplace_back(_a);
     }
+  else if (block.width() > 1) {
+    auto a = INPUT_VARIABLE(1);
+    for (sd::LongType e = 0; e < a->lengthOf(); e++) {
+      int _a = a->e<int>(e);
+
+      if (_a < 0) _a += input->rankOf();
+
+      axis.emplace_back(_a);
+    }
+  }
+
+  if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
+    output->assign(input);
+    return sd::Status::OK;
+  }
+
+  std::vector<sd::LongType> shape;
+  if (axis.size() == 0) {
+    for (int d = 0; d < input->rankOf(); d++)
+      if (input->sizeAt(d) > 1) shape.emplace_back(input->sizeAt(d));
+  } else {
+    for (int d = 0; d < input->rankOf(); d++) {
+      if (input->sizeAt(d) == 1) {
+        if (std::find(axis.begin(), axis.end(), d) == axis.end()) shape.emplace_back(input->sizeAt(d));
+      } else
+        shape.emplace_back(input->sizeAt(d));
+    }
+  }
+
+  if (block.isInplace()) {
+    output->reshapei(input->ordering(), shape, false);
+  } else {
+    if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
+      output->dataBuffer()->copyBufferFrom(*input->dataBuffer().get(),
+                                           output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0,
+                                           input->bufferOffset());
+    } else {
+      auto tmp = input->reshape(input->ordering(), shape);
+      output->assign(tmp);
+    }
+  }
+
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(squeeze) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+
+DECLARE_SHAPE_FN(squeeze) {
+  auto shapeList = SHAPELIST();
+
+  //            sd::LongType* newShape;
+  auto in = inputShape->at(0);
+  auto rank = shape::rank(in);
+  auto length = shape::length(in);
+
+  if (rank == 0 || (rank == 1 && length == 1)) {
+    shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
+    return shapeList;
+  }
+
+  std::vector<int> axis;
+
+  if (block.numI() > 0)
+    for (int e = 0; e < block.numI(); e++) {
+      int _a = INT_ARG(e);
+      if (_a < 0) _a += rank;
+
+      axis.emplace_back(_a);
+    }
+  else if (block.width() > 1) {
+    auto a = INPUT_VARIABLE(1);
+    for (int e = 0; e < a->lengthOf(); e++) {
+      int _a = a->e<int>(e);
+
+      if (_a < 0) _a += rank;
+
+      axis.emplace_back(_a);
+    }
+  }
+
+  auto order = shape::order(in);
+  auto oldShape = shape::shapeOf(in);
+
+  std::vector<sd::LongType> shape;
+  if (axis.size() == 0) {
+    for (int d = 0; d < rank; d++)
+      if (oldShape[d] > 1) shape.emplace_back(oldShape[d]);
+  } else {
+    for (int d = 0; d < rank; d++) {
+      if (oldShape[d] == 1) {
+        if (std::find(axis.begin(), axis.end(), d) == axis.end()) shape.emplace_back(oldShape[d]);
+      } else
+        shape.emplace_back(oldShape[d]);
+    }
+  }
+
+  if (shape.size() == 0) {
+    shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
+    return shapeList;
+  }
+
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
+  shapeList->push_back(newShape);
+  return shapeList;
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

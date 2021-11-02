@@ -19,73 +19,73 @@
 //
 //  @author raver119@gmail.com
 //
-
 #include <graph/VariableSpace.h>
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT VariableProxy: public VariableSpace {
-        protected:
-            VariableSpace* _backed = nullptr;
-            VariableSpace* _current = nullptr;
-        public:
-            explicit VariableProxy(VariableSpace* reference);
-            ~VariableProxy();
+namespace graph {
+class SD_LIB_EXPORT VariableProxy : public VariableSpace {
+ protected:
+  VariableSpace *_backed = nullptr;
+  VariableSpace *_current = nullptr;
 
-            virtual VariableSpace& operator=(const VariableSpace& other);
+ public:
+  explicit VariableProxy(VariableSpace *reference);
+  ~VariableProxy();
 
-            virtual int numberOfPlaceholders();
-            virtual std::vector<Variable*>* getPlaceholders();
+  virtual VariableSpace &operator=(const VariableSpace &other);
 
-            virtual sd::memory::Workspace *workspace();
+  virtual int numberOfPlaceholders();
+  virtual std::vector<Variable *> *getPlaceholders();
 
-            virtual bool hasExternalVariable(int it);
-            virtual bool hasExternalVariable(std::pair<int,int>& pair);
-            virtual bool hasExternalVariable(std::string *symbol);
+  virtual sd::memory::Workspace *workspace();
 
-            virtual bool hasVariable(int id);
-            virtual bool hasVariable(int id, int idx);
-            virtual bool hasVariable(std::pair<int,int>& pair);
-            virtual bool hasVariable(std::string *symbol);
+  virtual bool hasExternalVariable(int it);
+  virtual bool hasExternalVariable(std::pair<int, int> &pair);
+  virtual bool hasExternalVariable(std::string *symbol);
 
-            virtual sd::graph::Variable *getVariable(int id);
-            virtual sd::graph::Variable *getVariable(int id, int idx);
-            virtual sd::graph::Variable *getVariable(std::pair<int,int>& pair);
-            virtual sd::graph::Variable *getVariable(std::string *symbol);
+  virtual bool hasVariable(int id);
+  virtual bool hasVariable(int id, int idx);
+  virtual bool hasVariable(std::pair<int, int> &pair);
+  virtual bool hasVariable(std::string *symbol);
 
-            virtual std::vector<Variable*> getVariables();
+  virtual sd::graph::Variable *getVariable(int id);
+  virtual sd::graph::Variable *getVariable(int id, int idx);
+  virtual sd::graph::Variable *getVariable(std::pair<int, int> &pair);
+  virtual sd::graph::Variable *getVariable(std::string *symbol);
 
-            virtual Variable* putVariable(std::pair<int,int>& pair, NDArray *array);
-            virtual void putVariable(std::pair<int,int>& pair, Variable *variable);
-            virtual void putVariable(int id, Variable *variable);
-            virtual void putVariable(int id, NDArray *array);
-            virtual Variable* putVariable(int id, int idx, NDArray *array);
-            virtual void putVariable(int id, int idx, NDArray &array);
-            virtual void putVariable(int id, int idx, Variable *array);
+  virtual std::vector<Variable *> getVariables();
 
-            virtual void replaceVariable(Variable *variable);
+  virtual Variable *putVariable(std::pair<int, int> &pair, NDArray *array);
+  virtual void putVariable(std::pair<int, int> &pair, Variable *variable);
+  virtual void putVariable(int id, Variable *variable);
+  virtual void putVariable(int id, NDArray *array);
+  virtual Variable *putVariable(int id, int idx, NDArray *array);
+  virtual void putVariable(int id, int idx, NDArray &array);
+  virtual void putVariable(int id, int idx, Variable *array);
 
-            virtual void dropVariable(std::pair<int,int> &pair);
-            virtual void dropVariable(int id, int idx);
+  virtual void replaceVariable(Variable *variable);
 
-            virtual void putOutputVariable(Variable *variable);
+  virtual void dropVariable(std::pair<int, int> &pair);
+  virtual void dropVariable(int id, int idx);
 
-            virtual void trackList(sd::NDArrayList *list);
+  virtual void putOutputVariable(Variable *variable);
 
-            // memory-related statistics
-            virtual Nd4jLong externalMemory();
-            virtual Nd4jLong internalMemory();
-            virtual Nd4jLong totalMemory();
+  virtual void trackList(sd::NDArrayList *list);
 
-            virtual int externalEntries();
-            virtual int internalEntries();
-            virtual int totalEntries();
+  // memory-related statistics
+  virtual sd::LongType externalMemory();
+  virtual sd::LongType internalMemory();
+  virtual sd::LongType totalMemory();
 
-            virtual sd::graph::VariableSpace *clone();
+  virtual int externalEntries();
+  virtual int internalEntries();
+  virtual int totalEntries();
 
-            virtual sd::graph::Stash* getStash();
-            virtual void setFlowPath(FlowPath* timers);
-            virtual FlowPath* flowPath();
-        };
-    }
-}
+  virtual sd::graph::VariableSpace *clone();
+
+  virtual sd::graph::Stash *getStash();
+  virtual void setFlowPath(FlowPath *timers);
+  virtual FlowPath *flowPath();
+};
+}  // namespace graph
+}  // namespace sd

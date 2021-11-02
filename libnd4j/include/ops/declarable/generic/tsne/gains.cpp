@@ -27,25 +27,21 @@
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {
-namespace ops  {
-		
-    OP_IMPL(barnes_gains, 3, 1, true) {
-        auto input  = INPUT_VARIABLE(0);
-        auto gradX = INPUT_VARIABLE(1);
-        auto epsilon = INPUT_VARIABLE(2);
+namespace ops {
 
-        auto output = OUTPUT_VARIABLE(0);
+OP_IMPL(barnes_gains, 3, 1, true) {
+  auto input = INPUT_VARIABLE(0);
+  auto gradX = INPUT_VARIABLE(1);
+  auto epsilon = INPUT_VARIABLE(2);
 
-        helpers::barnes_gains(input, gradX, epsilon, output);
-        return Status::OK();
-    }
+  auto output = OUTPUT_VARIABLE(0);
 
-    DECLARE_TYPES(barnes_gains) {
-        getOpDescriptor()
-            ->setAllowedInputTypes(sd::DataType::ANY)
-            ->setSameMode(true);
-    }
+  helpers::barnes_gains(input, gradX, epsilon, output);
+  return sd::Status::OK;
 }
-}
+
+DECLARE_TYPES(barnes_gains) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

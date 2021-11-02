@@ -24,132 +24,128 @@
 #ifndef DEV_TESTS_DATABUFFER_H
 #define DEV_TESTS_DATABUFFER_H
 
-#include <cstring>
-#include <system/op_boilerplate.h>
-#include <system/dll.h>
-#include <system/pointercast.h>
 #include <array/DataType.h>
-#include <memory/Workspace.h>
 #include <execution/LaunchContext.h>
+#include <memory/Workspace.h>
+#include <system/common.h>
+#include <system/op_boilerplate.h>
+
+#include <cstring>
 
 namespace sd {
 
-class ND4J_EXPORT DataBuffer {
+class SD_LIB_EXPORT DataBuffer {
+ private:
+  void *_primaryBuffer = nullptr;
+  void *_specialBuffer = nullptr;
+  size_t _lenInBytes = 0;
+  DataType _dataType;
+  memory::Workspace *_workspace = nullptr;
+  bool _isOwnerPrimary;
+  bool _isOwnerSpecial;
+  std::atomic<int> _deviceId;
 
-    private:
+#ifdef __CUDABLAS__
+  mutable std::atomic<sd::LongType> _counter;
+  mutable std::atomic<sd::LongType> _writePrimary;
+  mutable std::atomic<sd::LongType> _writeSpecial;
+  mutable std::atomic<sd::LongType> _readPrimary;
+  mutable std::atomic<sd::LongType> _readSpecial;
+#endif
 
-        void* _primaryBuffer = nullptr;
-        void* _specialBuffer = nullptr;
-        size_t _lenInBytes = 0;
-        DataType _dataType;
-        memory::Workspace* _workspace = nullptr;
-        bool _isOwnerPrimary;
-        bool _isOwnerSpecial;
-        std::atomic<int> _deviceId;
+  void setCountersToZero();
+  void copyCounters(const DataBuffer &other);
+  void deleteSpecial();
+  void deletePrimary();
+  void deleteBuffers();
+  void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
+  void allocateBuffers(const bool allocBoth = false);
+  void setSpecial(void *special, const bool isOwnerSpecial);
+  void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
+                          const sd::LongType offsetHostBuffer = 0);
 
-    #ifdef __CUDABLAS__
-        mutable std::atomic<Nd4jLong> _counter;
-        mutable std::atomic<Nd4jLong> _writePrimary;
-        mutable std::atomic<Nd4jLong> _writeSpecial;
-        mutable std::atomic<Nd4jLong> _readPrimary;
-        mutable std::atomic<Nd4jLong> _readSpecial;
-    #endif
+ public:
+  DataBuffer(void *primary, void *special, const size_t lenInBytes, const DataType dataType,
+             const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
+             memory::Workspace *workspace = nullptr);
 
-        void setCountersToZero();
-        void copyCounters(const DataBuffer& other);
-        void deleteSpecial();
-        void deletePrimary();
-        void deleteBuffers();
-        void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
-        void allocateBuffers(const bool allocBoth = false);
-        void setSpecial(void* special, const bool isOwnerSpecial);
-        void copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetHostBuffer = 0);
+  DataBuffer(void *primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary = false,
+             memory::Workspace *workspace = nullptr);
 
+  DataBuffer(const void *hostBuffer,  // copies data from hostBuffer to own memory buffer
+             const DataType dataType, const size_t lenInBytes, memory::Workspace *workspace = nullptr);
 
-    public:
+  DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace *workspace = nullptr,
+             const bool allocBoth = false);
 
-        DataBuffer(void* primary, void* special,
-                               const size_t lenInBytes, const DataType dataType,
-                               const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
-                               memory::Workspace* workspace = nullptr);
+  DataBuffer(const DataBuffer &other);
+  DataBuffer(DataBuffer &&other);
+  explicit DataBuffer();
+  ~DataBuffer();
 
-        DataBuffer(void* primary,
-                               const size_t lenInBytes, const DataType dataType,
-                               const bool isOwnerPrimary = false,
-                               memory::Workspace* workspace = nullptr);
+  DataBuffer &operator=(const DataBuffer &other);
+  DataBuffer &operator=(DataBuffer &&other) noexcept;
 
-        DataBuffer(const void* hostBuffer,      // copies data from hostBuffer to own memory buffer
-                               const DataType dataType, const size_t lenInBytes,
-                               memory::Workspace* workspace = nullptr);
+  DataType getDataType();
+  void setDataType(DataType dataType);
+  size_t getLenInBytes() const;
 
-        DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr, const bool allocBoth = false);
+  void *primary();
+  void *special();
 
-        DataBuffer(const DataBuffer& other);
-        DataBuffer(DataBuffer&& other);
-        explicit DataBuffer();
-        ~DataBuffer();
+  void allocatePrimary();
+  void allocateSpecial();
 
-        DataBuffer& operator=(const DataBuffer& other);
-        DataBuffer& operator=(DataBuffer&& other) noexcept;
+  void writePrimary() const;
+  void writeSpecial() const;
+  void readPrimary() const;
+  void readSpecial() const;
+  bool isPrimaryActual() const;
+  bool isSpecialActual() const;
 
-        DataType getDataType();
-        void setDataType(DataType dataType);
-        size_t getLenInBytes() const;
+  void expand(const uint64_t size);
 
-        void* primary();
-        void* special();
+  int deviceId() const;
+  void setDeviceId(int deviceId);
+  void migrate();
 
-        void allocatePrimary();
-        void allocateSpecial();
+  template <typename T>
+  SD_INLINE T *primaryAsT();
+  template <typename T>
+  SD_INLINE T *specialAsT();
 
-        void writePrimary() const;
-        void writeSpecial() const;
-        void readPrimary()  const;
-        void readSpecial()  const;
-        bool isPrimaryActual() const;
-        bool isSpecialActual() const;
+  void syncToPrimary(const LaunchContext *context, const bool forceSync = false);
+  void syncToSpecial(const bool forceSync = false);
 
-        void expand(const uint64_t size);
+  void setToZeroBuffers(const bool both = false);
 
-        int deviceId() const;
-        void setDeviceId(int deviceId);
-        void migrate();
+  void copyBufferFrom(const DataBuffer &other, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
+                      const sd::LongType offsetOther = 0);
 
-        template <typename T> FORCEINLINE T* primaryAsT();
-        template <typename T> FORCEINLINE T* specialAsT();
+  static void memcpy(const DataBuffer &dst, const DataBuffer &src);
 
-        void syncToPrimary(const LaunchContext* context, const bool forceSync = false);
-        void syncToSpecial(const bool forceSync = false);
+  void setPrimaryBuffer(void *buffer, size_t length);
+  void setSpecialBuffer(void *buffer, size_t length);
 
-        void setToZeroBuffers(const bool both = false);
-
-        void copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
-
-        static void memcpy(const DataBuffer &dst, const DataBuffer &src);
-
-        void setPrimaryBuffer(void *buffer, size_t length);
-        void setSpecialBuffer(void *buffer, size_t length);
-
-        /**
-         * This method deletes buffers, if we're owners
-         */
-        void close();
+  /**
+   * This method deletes buffers, if we're owners
+   */
+  void close();
 };
 ///// IMLEMENTATION OF INLINE METHODS /////
 
 ////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    T* DataBuffer::primaryAsT() {
-        return reinterpret_cast<T*>(_primaryBuffer);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    T* DataBuffer::specialAsT() {
-        return reinterpret_cast<T*>(_specialBuffer);
-    }
-
+template <typename T>
+T *DataBuffer::primaryAsT() {
+  return reinterpret_cast<T *>(_primaryBuffer);
 }
 
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T *DataBuffer::specialAsT() {
+  return reinterpret_cast<T *>(_specialBuffer);
+}
 
-#endif //DEV_TESTS_DATABUFFER_H
+}  // namespace sd
+
+#endif  // DEV_TESTS_DATABUFFER_H

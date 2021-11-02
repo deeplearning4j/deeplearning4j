@@ -21,11 +21,10 @@
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
-
-#include <ops/declarable/helpers/updatersHelpers.h>
 #include <execution/Threads.h>
 #include <math/platformmath.h>
 #include <math/templatemath.h>
+#include <ops/declarable/helpers/updatersHelpers.h>
 
 namespace sd {
 namespace ops {
@@ -33,63 +32,64 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void nesterovsUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateV, const double dLr, const double dMomentum) {
+static void nesterovsUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateV,
+                              const double dLr, const double dMomentum) {
+  const T* grad = gradient.bufferAsT<T>();
+  const T* init = initState.bufferAsT<T>();
 
-    const T* grad = gradient.bufferAsT<T>();
-    const T* init = initState.bufferAsT<T>();
+  T* up = update.bufferAsT<T>();
+  T* st = stateV.bufferAsT<T>();
 
-    T* up = update.bufferAsT<T>();
-    T* st = stateV.bufferAsT<T>();
+  const T lr = static_cast<T>(dLr);
+  const T momentum = static_cast<T>(dMomentum);
+  const T momentumT = (-momentum - 1);
 
-    const T lr = static_cast<T>(dLr);
-    const T momentum = static_cast<T>(dMomentum);
-    const T momentumT = (-momentum - 1);
+  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateV.ews() && 1 == initState.ews();
+  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateV.ordering() &&
+                       stateV.ordering() == initState.ordering();
 
-    bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateV.ews() && 1 == initState.ews();
-    bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateV.ordering() && stateV.ordering() == initState.ordering();
-
-    if (bEws1 && bSameOrdering) {
-            
-            auto func = PRAGMA_THREADS_FOR{
-                 for (auto i = start; i < stop; i++) {
-                     T prevState = momentum * init[i];
-                     st[i] = prevState - lr * grad[i];
-                     up[i] = prevState + momentumT * st[i];
-                 }
-            };
-
-           samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-           return;
-    }
-    
-    bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
-    bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
-    bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateV.shapeInfo());
-
-    auto func = PRAGMA_THREADS_FOR{
-
-        int coords[MAX_RANK];
-        for (auto i = start; i < stop; i++) {
-            shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-            const auto xOffset =  shape::getOffset(gradient.shapeInfo(), coords);
-            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-            const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
-            const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateV.shapeInfo(), coords);
-            
-            T prevState = momentum * init[initOffset];
-            st[stOffset] = prevState - lr * grad[xOffset];
-            up[zOffset] = prevState + momentumT * st[stOffset];
-        }
+  if (bEws1 && bSameOrdering) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        T prevState = momentum * init[i];
+        st[i] = prevState - lr * grad[i];
+        up[i] = prevState + momentumT * st[i];
+      }
     };
 
     samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
     return;
+  }
+
+  bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
+  bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
+  bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateV.shapeInfo());
+
+  auto func = PRAGMA_THREADS_FOR {
+    int coords[SD_MAX_RANK];
+    for (auto i = start; i < stop; i++) {
+      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
+      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
+      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
+      const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
+      const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateV.shapeInfo(), coords);
+
+      T prevState = momentum * init[initOffset];
+      st[stOffset] = prevState - lr * grad[xOffset];
+      up[zOffset] = prevState + momentumT * st[stOffset];
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
+  return;
 }
 
- void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateV, const double dLr, const double dMomentum) {
-    BUILD_SINGLE_SELECTOR(gradient.dataType(), nesterovsUpdater_, (gradient, initState, update, stateV, dLr, dMomentum), FLOAT_TYPES);
+void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+                      NDArray& stateV, const double dLr, const double dMomentum) {
+  BUILD_SINGLE_SELECTOR(gradient.dataType(), nesterovsUpdater_, (gradient, initState, update, stateV, dLr, dMomentum),
+                        SD_FLOAT_TYPES);
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

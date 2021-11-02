@@ -22,38 +22,38 @@
 
 #ifndef DEV_TESTS_INTPOWERPARAMETERS_H
 #define DEV_TESTS_INTPOWERPARAMETERS_H
-
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
+
 #include "Parameters.h"
 #include "ParametersSpace.h"
 
 namespace sd {
-    class IntPowerParameters : public ParametersSpace {
-    protected:
-        int _base;
-        int _start;
-        int _stop;
-        int _step;
+class IntPowerParameters : public ParametersSpace {
+ protected:
+  int _base;
+  int _start;
+  int _stop;
+  int _step;
 
-    public:
-        IntPowerParameters(std::string name, int base, int start, int stop, int step = 1) : ParametersSpace() {
-            _base = base;
-            _start = start;
-            _stop = stop;
-            _step = step;
-            _name = name;
-        }
+ public:
+  IntPowerParameters(std::string name, int base, int start, int stop, int step = 1) : ParametersSpace() {
+    _base = base;
+    _start = start;
+    _stop = stop;
+    _step = step;
+    _name = name;
+  }
 
-        std::vector<int> evaluate() override {
-            std::vector<int> result;
-            for (int e = _start; e <= _stop; e += _step) {
-               result.emplace_back(sd::math::nd4j_pow<double, double, int>(_base, e));
-            }
-            return result;
-        }
-    };
-}
+  std::vector<int> evaluate() override {
+    std::vector<int> result;
+    for (int e = _start; e <= _stop; e += _step) {
+      result.emplace_back(sd::math::sd_pow<double, double, int>(_base, e));
+    }
+    return result;
+  }
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_INTPOWERPARAMETERS_H
+#endif  // DEV_TESTS_INTPOWERPARAMETERS_H

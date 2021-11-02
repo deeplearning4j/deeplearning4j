@@ -22,27 +22,27 @@
 
 #ifndef DEV_TESTS_ERRORREFERENCE_H
 #define DEV_TESTS_ERRORREFERENCE_H
+#include <system/common.h>
 
 #include <string>
-#include <system/dll.h>
 
 namespace sd {
-    class ND4J_EXPORT ErrorReference {
-    private:
-        int _errorCode = 0;
-        std::string _errorMessage;
-    public:
-        ErrorReference() = default;
-        ~ErrorReference() = default;
+class SD_LIB_EXPORT ErrorReference {
+ private:
+  int _errorCode = 0;
+  std::string _errorMessage;
 
-        int errorCode();
-        const char* errorMessage();
+ public:
+  ErrorReference() = default;
+  ~ErrorReference() = default;
 
-        void setErrorCode(int errorCode);
-        void setErrorMessage(std::string message);
-        void setErrorMessage(const char* message);
-    };
-}
+  int errorCode();
+  const char *errorMessage();
 
+  void setErrorCode(int errorCode);
+  void setErrorMessage(std::string message);
+  void setErrorMessage(const char *message);
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_ERRORREFERENCE_H
+#endif  // DEV_TESTS_ERRORREFERENCE_H

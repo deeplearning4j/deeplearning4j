@@ -17,34 +17,35 @@
  ******************************************************************************/
 
 //
-// Stronger 64-bit hash function helper, as described here: http://www.javamex.com/tutorials/collections/strong_hash_code_implementation.shtml
+// Stronger 64-bit hash function helper, as described here:
+// http://www.javamex.com/tutorials/collections/strong_hash_code_implementation.shtml
 // @author raver119@gmail.com
 //
 
 #ifndef LIBND4J_HELPER_HASH_H
 #define LIBND4J_HELPER_HASH_H
 
-#include <string>
-#include <system/dll.h>
-#include <system/pointercast.h>
+#include <system/common.h>
+
 #include <mutex>
+#include <string>
 
 namespace sd {
-    namespace ops {
-        class ND4J_EXPORT HashHelper {
-        private:
-            Nd4jLong _byteTable[256];
-            const Nd4jLong HSTART = 0xBB40E64DA205B064L;
-            const Nd4jLong HMULT = 7664345821815920749L;
+namespace ops {
+class SD_LIB_EXPORT HashHelper {
+ private:
+  sd::LongType _byteTable[256];
+  const sd::LongType HSTART = 0xBB40E64DA205B064L;
+  const sd::LongType HMULT = 7664345821815920749L;
 
-            bool _isInit = false;
-            std::mutex _locker;
+  bool _isInit = false;
+  std::mutex _locker;
 
-        public:
-            static HashHelper& getInstance();
-            Nd4jLong getLongHash(std::string& str);
-        };
-    }
-}
+ public:
+  static HashHelper& getInstance();
+  sd::LongType getLongHash(std::string& str);
+};
+}  // namespace ops
+}  // namespace sd
 
-#endif //LIBND4J_HELPER_HASH_H
+#endif  // LIBND4J_HELPER_HASH_H

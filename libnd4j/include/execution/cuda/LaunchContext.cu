@@ -19,173 +19,148 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <execution/LaunchContext.h>
-#include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
-#include <helpers/cublasHelper.h>
-#include <thread>
 #include <execution/AffinityManager.h>
+#include <execution/LaunchContext.h>
+#include <helpers/cublasHelper.h>
+#include <helpers/logger.h>
+
+#include <thread>
 
 thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 
 namespace sd {
 
-    std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
-    std::mutex LaunchContext::_mutex;
-    MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
+std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
+std::mutex LaunchContext::_mutex;
+SD_MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
 
 ////////////////////////////////////////////////////////////////////////
-LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
-
-	//_cudaStream 	   = cudaStream;
-	//_cudaSpecialStream = &specialCudaStream; // ideal is = new cudaStream_t; *_cudaSpecialStream = specialCudaStream;
-	//_reductionPointer  = reductionPointer;
-	//_scalarPointer     = scalarPointer;
-	//_allocationPointer = allocationPointer;
-	_workspace = nullptr;
-	_isAllocated = false;
+LaunchContext::LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer,
+                             void* scalarPointer, int* allocationPointer) {
+  //_cudaStream        = cudaStream;
+  //_cudaSpecialStream = &specialCudaStream; // ideal is = new cudaStream_t; *_cudaSpecialStream = specialCudaStream;
+  //_reductionPointer  = reductionPointer;
+  //_scalarPointer     = scalarPointer;
+  //_allocationPointer = allocationPointer;
+  _workspace = nullptr;
+  _isAllocated = false;
 }
 
-    std::mutex* LaunchContext::deviceMutex() {
-        auto deviceId = AffinityManager::currentDeviceId();
-        return _deviceMutexes[deviceId];
-    }
+std::mutex* LaunchContext::deviceMutex() {
+  auto deviceId = AffinityManager::currentDeviceId();
+  return _deviceMutexes[deviceId];
+}
 
 LaunchContext::~LaunchContext() {
-    if (_isAllocated) {
-
-    }
+  if (_isAllocated) {
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
-            // default constructor, just to make clang/ranlib happy
-    _workspace = nullptr;
-    _deviceID = 0;
+  // default constructor, just to make clang/ranlib happy
+  _workspace = nullptr;
+  _deviceID = 0;
 
-    _isAllocated = true;
+  _isAllocated = true;
 }
 
-    LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer scalarPointer, Nd4jPointer allocationPointer) {
-        _isAllocated = false;
-        //_cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
-       // _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
-        //_reductionPointer = reductionPointer;
-        //_scalarPointer = scalarPointer;
-        //_allocationPointer = reinterpret_cast<int *>(allocationPointer);
-    }
+LaunchContext::LaunchContext(sd::Pointer cudaStream, sd::Pointer reductionPointer, sd::Pointer scalarPointer,
+                             sd::Pointer allocationPointer) {
+  _isAllocated = false;
+  //_cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+  // _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+  //_reductionPointer = reductionPointer;
+  //_scalarPointer = scalarPointer;
+  //_allocationPointer = reinterpret_cast<int *>(allocationPointer);
+}
 
-    LaunchContext* LaunchContext::defaultContext() {
-      /**
-       * This method returns LaunchContext, that has multiple entities within:
-       * 1) temporary buffers. they must be per-thread
-       * 2) CUDA stream. it must be either per-thread or per-device
-       * 3) cuBLAS handle. it must be per-device
-       */
-      auto deviceId = AffinityManager::currentDeviceId();
+LaunchContext* LaunchContext::defaultContext() {
+  /**
+   * This method returns LaunchContext, that has multiple entities within:
+   * 1) temporary buffers. they must be per-thread
+   * 2) CUDA stream. it must be either per-thread or per-device
+   * 3) cuBLAS handle. it must be per-device
+   */
+  auto deviceId = AffinityManager::currentDeviceId();
 
-      {
-        // we need this block synchronous, to avoid double initialization etc
-        std::lock_guard<std::mutex> lock(_mutex);
-        if (LaunchContext::_contexts.empty()) {
-          // create one context per device
-          auto numDevices = AffinityManager::numberOfDevices();
+  {
+    // we need this block synchronous, to avoid double initialization etc
+    std::lock_guard<std::mutex> lock(_mutex);
+    if (LaunchContext::_contexts.empty()) {
+      // create one context per device
+      auto numDevices = AffinityManager::numberOfDevices();
 
-          _contexts.resize(numDevices);
-          for (int e = 0; e < numDevices; e++) {
-            _deviceMutexes[e] = new std::mutex();
+      _contexts.resize(numDevices);
+      for (int e = 0; e < numDevices; e++) {
+        _deviceMutexes[e] = new std::mutex();
 
-            AffinityManager::setCurrentNativeDevice(e);
+        AffinityManager::setCurrentNativeDevice(e);
 
-            LaunchContext::_contexts[e] = std::make_shared<LaunchContext>();
-          }
-
-          // don't forget to restore device back again
-          AffinityManager::setCurrentNativeDevice(deviceId);
-        }
+        LaunchContext::_contexts[e] = std::make_shared<LaunchContext>();
       }
 
-      // return context for current device
-      return LaunchContext::_contexts[deviceId].get();
+      // don't forget to restore device back again
+      AffinityManager::setCurrentNativeDevice(deviceId);
     }
+  }
 
-
-    void* LaunchContext::getReductionPointer () const {
-        return contextBuffers.reductionBuffer();
-    };
-
-    void* LaunchContext::getScalarPointer() const {
-        return contextBuffers.scalarBuffer();
-    };
-
-    int* LaunchContext::getAllocationPointer() const {
-        return reinterpret_cast<int*>(contextBuffers.allocationBuffer());
-    };
-
-    void* LaunchContext::getCublasHandle() const {
-        return CublasHelper::getInstance().handle();
-    };
-
-    void* LaunchContext::getCusolverHandle() const {
-        return CublasHelper::getInstance().solver();
-    };
-
-    cudaStream_t* LaunchContext::getCudaStream() const {
-        return reinterpret_cast<cudaStream_t*>(contextBuffers.execStream());
-    };
-
-    cudaStream_t* LaunchContext::getCudaSpecialStream() const {
-        return reinterpret_cast<cudaStream_t*>(contextBuffers.specialStream());;
-    };
-
-
-    void LaunchContext::setReductionPointer (void* reductionPointer) {
-        contextBuffers.setReductionBuffer(reductionPointer);
-    };
-
-    void LaunchContext::setScalarPointer(void* scalarPointer) {
-        contextBuffers.setScalarBuffer(scalarPointer);
-    };
-
-    void LaunchContext::setAllocationPointer(int* allocationPointer) {
-        contextBuffers.setAllocationBuffer(allocationPointer);
-    };
-
-    void LaunchContext::setCudaStream(cudaStream_t* cudaStream)  {
-        //_cudaStream = cudaStream;
-    };
-
-    void LaunchContext::setCudaSpecialStream(cudaStream_t* cudaStream)  {
-        //_cudaSpecialStream = cudaStream;
-    };
-
-    void LaunchContext::setCublasHandle(void *handle) {
-        _cublasHandle = handle;
-    };
-
-    void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {
-        contextBuffers = buffers;
-    };
-
-    void LaunchContext::releaseBuffers() {
-        //nd4j_printf("LaunchContext::releaseBuffers() was invoked\n", "");
-        contextBuffers.release();
-    }
-
-    bool LaunchContext::isInitialized() {
-        return contextBuffers.isInitialized();
-    }
-
-    void* LaunchContext::getCuDnnHandle() const {
-        return CublasHelper::getInstance().cudnn();
-    }
-
-    sd::ErrorReference* LaunchContext::errorReference() {
-        return contextBuffers.errorReference();
-    }
-
-    void* LaunchContext::engine() {
-        return _engine;
-    }
+  // return context for current device
+  return LaunchContext::_contexts[deviceId].get();
 }
+
+void* LaunchContext::getReductionPointer() const { return contextBuffers.reductionBuffer(); };
+
+void* LaunchContext::getScalarPointer() const { return contextBuffers.scalarBuffer(); };
+
+int* LaunchContext::getAllocationPointer() const { return reinterpret_cast<int*>(contextBuffers.allocationBuffer()); };
+
+void* LaunchContext::getCublasHandle() const { return CublasHelper::getInstance().handle(); };
+
+void* LaunchContext::getCusolverHandle() const { return CublasHelper::getInstance().solver(); };
+
+cudaStream_t* LaunchContext::getCudaStream() const {
+  return reinterpret_cast<cudaStream_t*>(contextBuffers.execStream());
+};
+
+cudaStream_t* LaunchContext::getCudaSpecialStream() const {
+  return reinterpret_cast<cudaStream_t*>(contextBuffers.specialStream());
+  ;
+};
+
+void LaunchContext::setReductionPointer(void* reductionPointer) {
+  contextBuffers.setReductionBuffer(reductionPointer);
+};
+
+void LaunchContext::setScalarPointer(void* scalarPointer) { contextBuffers.setScalarBuffer(scalarPointer); };
+
+void LaunchContext::setAllocationPointer(int* allocationPointer) {
+  contextBuffers.setAllocationBuffer(allocationPointer);
+};
+
+void LaunchContext::setCudaStream(cudaStream_t* cudaStream){
+    //_cudaStream = cudaStream;
+};
+
+void LaunchContext::setCudaSpecialStream(cudaStream_t* cudaStream){
+    //_cudaSpecialStream = cudaStream;
+};
+
+void LaunchContext::setCublasHandle(void* handle) { _cublasHandle = handle; };
+
+void LaunchContext::swapContextBuffers(ContextBuffers& buffers) { contextBuffers = buffers; };
+
+void LaunchContext::releaseBuffers() {
+  // sd_printf("LaunchContext::releaseBuffers() was invoked\n", "");
+  contextBuffers.release();
+}
+
+bool LaunchContext::isInitialized() { return contextBuffers.isInitialized(); }
+
+void* LaunchContext::getCuDnnHandle() const { return CublasHelper::getInstance().cudnn(); }
+
+sd::ErrorReference* LaunchContext::errorReference() { return contextBuffers.errorReference(); }
+
+void* LaunchContext::engine() { return _engine; }
+}  // namespace sd

@@ -19,28 +19,28 @@
 //
 //  @author raver119@gmail.com
 //
+#include <graph/GraphState.h>
+#include <legacy/NativeOps.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/LegacyReduceOp.h>
+#include <ops/declarable/LegacyTransformOp.h>
 
 #include "testlayers.h"
-#include <graph/GraphState.h>
-#include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/LegacyTransformOp.h>
-#include <ops/declarable/LegacyReduceOp.h>
-#include <legacy/NativeOps.h>
 
 using namespace sd;
 using namespace sd::graph;
 
 class GraphStateTests : public testing::Test {
-public:
-    GraphStateTests() {
-        Environment::getInstance().setDebug(false);
-        Environment::getInstance().setVerbose(false);
-    };
+ public:
+  GraphStateTests() {
+    Environment::getInstance().setDebug(false);
+    Environment::getInstance().setVerbose(false);
+  };
 
-    ~GraphStateTests() {
-        Environment::getInstance().setDebug(false);
-        Environment::getInstance().setVerbose(false);
-    }
+  ~GraphStateTests() {
+    Environment::getInstance().setDebug(false);
+    Environment::getInstance().setVerbose(false);
+  }
 };
 
 /*
@@ -53,61 +53,61 @@ public:
  */
 
 TEST_F(GraphStateTests, Basic_Tests_1) {
-    auto state = (GraphState *) getGraphState(117L);
-    ASSERT_EQ(117L, state->id());
+  auto state = (GraphState *)getGraphState(117L);
+  ASSERT_EQ(117L, state->id());
 
-    // this call will create scope internally
-    state->registerScope(119);
+  // this call will create scope internally
+  state->registerScope(119);
 
-    sd::ops::add opA;
-    sd::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
+  sd::ops::add opA;
+  sd::ops::LegacyTransformSameOp opB(transform::Neg);  // simdOps::Neg
 
-    ArgumentsList argsA;
-    ArgumentsList argsB;
+  ArgumentsList argsA;
+  ArgumentsList argsB;
 
-    state->attachOpToScope(119, 1, &opA, argsA);
-    state->attachOpToScope(119, 2, &opB, argsB);
+  state->attachOpToScope(119, 1, &opA, argsA);
+  state->attachOpToScope(119, 2, &opB, argsB);
 
-    auto scope = state->getScope(119);
-    ASSERT_TRUE(scope != nullptr);
-    ASSERT_EQ(2, scope->size());
+  auto scope = state->getScope(119);
+  ASSERT_TRUE(scope != nullptr);
+  ASSERT_EQ(2, scope->size());
 
-    deleteGraphState(state);
+  deleteGraphState(state);
 }
 
 // just separate case for doubles wrapper in NativeOps, nothing else
 TEST_F(GraphStateTests, Basic_Tests_2) {
-    auto state = (GraphState *) getGraphState(117L);
-    ASSERT_EQ(117L, state->id());
+  auto state = (GraphState *)getGraphState(117L);
+  ASSERT_EQ(117L, state->id());
 
-    // this call will create scope internally
-    state->registerScope(119);
+  // this call will create scope internally
+  state->registerScope(119);
 
-    sd::ops::add opA;
-    sd::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
+  sd::ops::add opA;
+  sd::ops::LegacyTransformSameOp opB(transform::Neg);  // simdOps::Neg
 
-    ArgumentsList argsA;
-    ArgumentsList argsB;
+  ArgumentsList argsA;
+  ArgumentsList argsB;
 
-    state->attachOpToScope(119, 1, &opA, argsA);
-    state->attachOpToScope(119, 2, &opB, argsB);
+  state->attachOpToScope(119, 1, &opA, argsA);
+  state->attachOpToScope(119, 2, &opB, argsB);
 
-    auto scope = state->getScope(119);
-    ASSERT_TRUE(scope != nullptr);
-    ASSERT_EQ(2, scope->size());
+  auto scope = state->getScope(119);
+  ASSERT_TRUE(scope != nullptr);
+  ASSERT_EQ(2, scope->size());
 
-    deleteGraphState(state);
+  deleteGraphState(state);
 }
 
 /*
 TEST_F(GraphStateTests, Stateful_Execution_1) {
     auto state = getGraphState(117L);
 
-    Nd4jLong scopes[] = {22, 33};
+    sd::LongType scopes[] = {22, 33};
     //auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
 
-    ASSERT_EQ(Status::THROW(), status);
+    ASSERT_EQ(Logger::logKernelFailureMsg(), status);
 
     deleteGraphState(state);
 }
@@ -118,10 +118,10 @@ TEST_F(GraphStateTests, Stateful_Execution_2) {
     state->registerScope(22);
     state->registerScope(33);
 
-    Nd4jLong scopes[] = {22, 33};
+    sd::LongType scopes[] = {22, 33};
     auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     // it's no-op: just LogicScope
-    ASSERT_EQ(Status::OK(), status);
+    ASSERT_EQ(sd::Status::OK, status);
 
     deleteGraphState(state);
 }
@@ -140,11 +140,13 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     auto state = (GraphState *) getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
-    Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer(), (Nd4jPointer)var2.buffer()};
-    Nd4jPointer ptrShapes[] = {(Nd4jPointer) var0.shapeInfo(), (Nd4jPointer) var1.shapeInfo(), (Nd4jPointer)var2.shapeInfo()};
+    sd::Pointer ptrBuffers[] = {(sd::Pointer) var0.buffer(), (sd::Pointer) var1.buffer(), (sd::Pointer)var2.buffer()};
+    sd::Pointer ptrShapes[] = {(sd::Pointer) var0.shapeInfo(), (sd::Pointer) var1.shapeInfo(),
+(sd::Pointer)var2.shapeInfo()};
 
-    Nd4jPointer outBuffers[] = {(Nd4jPointer) res0.buffer(), (Nd4jPointer) res1.buffer(), (Nd4jPointer) res2.buffer()};
-    Nd4jPointer outShapes[] = {(Nd4jPointer) res0.shapeInfo(), (Nd4jPointer) res1.shapeInfo(), (Nd4jPointer) res2.shapeInfo()};
+    sd::Pointer outBuffers[] = {(sd::Pointer) res0.buffer(), (sd::Pointer) res1.buffer(), (sd::Pointer) res2.buffer()};
+    sd::Pointer outShapes[] = {(sd::Pointer) res0.shapeInfo(), (sd::Pointer) res1.shapeInfo(), (sd::Pointer)
+res2.shapeInfo()};
 
     // conditional scope
     state->registerScope(22);
@@ -184,23 +186,23 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // so, at the end of body, initial variables will be updated
     state->defineReturn(33, 5, args5);
 
-    Nd4jLong scopes[] = {22, 33};
+    sd::LongType scopes[] = {22, 33};
 
     // we're executing while loop
-    auto status = execCustomOpWithScope(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes, 3);
-    ASSERT_EQ(Status::OK(), status);
+    auto status = execCustomOpWithScope(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes,
+3); ASSERT_EQ(sd::Status::OK, status);
 
     // now we check provided result array
     float sum = res0.reduceNumber(reduce::Sum).e<float>(0);
 
-    // Expected result is {1, 2, 3, 4} + {2} elementwise + {2} elementwise, which gives { 5, 6, 7, 8}, and sum should be 26
-    ASSERT_NEAR(26.0f, sum, 1e-5);
+    // Expected result is {1, 2, 3, 4} + {2} elementwise + {2} elementwise, which gives { 5, 6, 7, 8}, and sum should be
+26 ASSERT_NEAR(26.0f, sum, 1e-5);
 
-    // nd4j_printf("0 ------------------\n","");
+    // sd_printf("0 ------------------\n","");
 
     deleteGraphState(state);
 
-    // nd4j_printf("1 ------------------\n","");
+    // sd_printf("1 ------------------\n","");
 }
 
 // This test checks CONDITIONAL execution for FALSE
@@ -218,11 +220,11 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     auto state = (GraphState *) getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
-    Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer()};
-    Nd4jPointer ptrShapes[] = {(Nd4jPointer) var0.shapeInfo(), (Nd4jPointer) var1.shapeInfo()};
+    sd::Pointer ptrBuffers[] = {(sd::Pointer) var0.buffer(), (sd::Pointer) var1.buffer()};
+    sd::Pointer ptrShapes[] = {(sd::Pointer) var0.shapeInfo(), (sd::Pointer) var1.shapeInfo()};
 
-    Nd4jPointer outBuffers[] = {(Nd4jPointer) res0.buffer(), (Nd4jPointer) res1.buffer()};
-    Nd4jPointer outShapes[] = {(Nd4jPointer) res0.shapeInfo(), (Nd4jPointer) res1.shapeInfo()};
+    sd::Pointer outBuffers[] = {(sd::Pointer) res0.buffer(), (sd::Pointer) res1.buffer()};
+    sd::Pointer outShapes[] = {(sd::Pointer) res0.shapeInfo(), (sd::Pointer) res1.shapeInfo()};
 
     // conditional scope
     state->registerScope(22);
@@ -263,11 +265,11 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     state->defineReturn(44, 20, args20);
 
 
-    Nd4jLong scopes[] = {22, 33, 44};
+    sd::LongType scopes[] = {22, 33, 44};
 
     // we're executing conditional op
-    auto status = execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
-    ASSERT_EQ(Status::OK(), status);
+    auto status = execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes,
+2); ASSERT_EQ(sd::Status::OK, status);
 
     ASSERT_TRUE(exp.isSameShape(&res0));
     ASSERT_TRUE(exp.equalsTo(&res0));
@@ -292,11 +294,11 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     auto state = (GraphState *) getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
-    Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer()};
-    Nd4jPointer ptrShapes[] = {(Nd4jPointer) var0.shapeInfo(), (Nd4jPointer) var1.shapeInfo()};
+    sd::Pointer ptrBuffers[] = {(sd::Pointer) var0.buffer(), (sd::Pointer) var1.buffer()};
+    sd::Pointer ptrShapes[] = {(sd::Pointer) var0.shapeInfo(), (sd::Pointer) var1.shapeInfo()};
 
-    Nd4jPointer outBuffers[] = {(Nd4jPointer) res0.buffer(), (Nd4jPointer) res1.buffer()};
-    Nd4jPointer outShapes[] = {(Nd4jPointer) res0.shapeInfo(), (Nd4jPointer) res1.shapeInfo()};
+    sd::Pointer outBuffers[] = {(sd::Pointer) res0.buffer(), (sd::Pointer) res1.buffer()};
+    sd::Pointer outShapes[] = {(sd::Pointer) res0.shapeInfo(), (sd::Pointer) res1.shapeInfo()};
 
     // conditional scope
     state->registerScope(22);
@@ -337,11 +339,11 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     state->defineReturn(44, 20, args20);
 
 
-    Nd4jLong scopes[] = {22, 33, 44};
+    sd::LongType scopes[] = {22, 33, 44};
 
     // we're executing conditional op
-    auto status = execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
-    ASSERT_EQ(Status::OK(), status);
+    auto status = execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes,
+2); ASSERT_EQ(sd::Status::OK, status);
 
     ASSERT_TRUE(exp.isSameShape(&res0));
     ASSERT_TRUE(exp.equalsTo(&res0));
