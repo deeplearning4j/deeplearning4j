@@ -2933,7 +2933,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_2) {
     x.linspace(1);
 
     sd::ops::moments op;
-    auto result = op.evaluate({&x}, {1.}, {0, 1});
+    auto result = op.evaluate({&x}, {}, {0, 1}, {true});
     ASSERT_EQ(Status::OK(), result.status());
 
     auto outputMeans = result.at(0);
@@ -2991,7 +2991,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_4) {
     x.linspace(1);
 
     sd::ops::moments op;
-    auto result = op.evaluate({&x}, {1.}, {0, 2});
+    auto result = op.evaluate({&x}, {}, {0, 2}, {true});
     ASSERT_EQ(Status::OK(), result.status());
 
     auto outputMeans = result.at(0);
@@ -3049,7 +3049,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_7) {
     x.linspace(1);
     // x.printIndexedBuffer("Input with shape (2, 3, 4) is");
     sd::ops::moments op;
-    auto result = op.evaluate({&x}, {1.}, {0,1,2});
+    auto result = op.evaluate({&x}, {}, {0, 1, 2}, {true});
     ASSERT_EQ(Status::OK(), result.status());
 
     auto outputMeans = result.at(0);
