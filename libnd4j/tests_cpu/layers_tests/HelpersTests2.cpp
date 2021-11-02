@@ -143,16 +143,16 @@ TEST_F(HelpersTests2, Schur_1) {
     NDArray expU('c', {3,3}, {0.3, 0.2,-0.1, 0,-0.1, 0.2, -0.3,-0.4, 0.5},  sd::DataType::DOUBLE);
 
     ops::helpers::Schur<double> schur(x);
-    schur._T.linspace(-3, 1);
-    schur._U.linspace(-0.3, 0.1);
+    schur.t.linspace(-3, 1);
+    schur.u.linspace(-0.3, 0.1);
 
     schur.splitTwoRows(1, 0.5);
 
-    ASSERT_TRUE(schur._T.isSameShape(&expT));
-    ASSERT_TRUE(schur._T.equalsTo(&expT));
+    ASSERT_TRUE(schur.t.isSameShape(&expT));
+    ASSERT_TRUE(schur.t.equalsTo(&expT));
 
-    ASSERT_TRUE(schur._U.isSameShape(&expU));
-    ASSERT_TRUE(schur._U.equalsTo(&expU));
+    ASSERT_TRUE(schur.u.isSameShape(&expU));
+    ASSERT_TRUE(schur.u.equalsTo(&expU));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -171,26 +171,26 @@ TEST_F(HelpersTests2, Schur_2) {
     ops::helpers::Schur<double> schur(x);
     // schur._U.linspace(-0.3, 0.1);    // doesn't matter
 
-    schur._T.linspace(-3, 1);
+    schur.t.linspace(-3, 1);
     double expShift =0;
     schur.calcShift(1, 5, expShift, shift);
-    ASSERT_TRUE(schur._T.equalsTo(&exp1T));
+    ASSERT_TRUE(schur.t.equalsTo(&exp1T));
     ASSERT_TRUE(shift.isSameShape(&exp1));
     ASSERT_TRUE(shift.equalsTo(&exp1));
     ASSERT_TRUE(expShift == 0);
 
-    schur._T.linspace(-3, 1);
+    schur.t.linspace(-3, 1);
     expShift = 0;
     schur.calcShift(2, 10, expShift, shift);
-    ASSERT_TRUE(schur._T.equalsTo(&exp2T));
+    ASSERT_TRUE(schur.t.equalsTo(&exp2T));
     ASSERT_TRUE(shift.isSameShape(&exp2));
     ASSERT_TRUE(shift.equalsTo(&exp2));
     ASSERT_TRUE(expShift == 5);
 
-    schur._T.linspace(-3, 1);
+    schur.t.linspace(-3, 1);
     expShift = 0;
     schur.calcShift(2, 30, expShift, shift);
-    ASSERT_TRUE(schur._T.equalsTo(&exp3T));
+    ASSERT_TRUE(schur.t.equalsTo(&exp3T));
     ASSERT_TRUE(shift.isSameShape(&exp3));
     ASSERT_TRUE(shift.equalsTo(&exp3));
     ASSERT_TRUE((6.4641-0.00001) < expShift && expShift < (6.4641+0.00001));
@@ -205,11 +205,11 @@ TEST_F(HelpersTests2, Schur_3) {
 
     ops::helpers::Schur<double> schur(x);
 
-    ASSERT_TRUE(schur._T.isSameShape(&x));
-    ASSERT_TRUE(schur._T.equalsTo(&x));
+    ASSERT_TRUE(schur.t.isSameShape(&x));
+    ASSERT_TRUE(schur.t.equalsTo(&x));
 
-    ASSERT_TRUE(schur._U.isSameShape(&expU));
-    ASSERT_TRUE(schur._U.equalsTo(&expU));
+    ASSERT_TRUE(schur.u.isSameShape(&expU));
+    ASSERT_TRUE(schur.u.equalsTo(&expU));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -221,11 +221,11 @@ TEST_F(HelpersTests2, Schur_4) {
 
     ops::helpers::Schur<double> schur(x);
 
-    ASSERT_TRUE(schur._T.isSameShape(&expT));
-    ASSERT_TRUE(schur._T.equalsTo(&expT));
+    ASSERT_TRUE(schur.t.isSameShape(&expT));
+    ASSERT_TRUE(schur.t.equalsTo(&expT));
 
-    ASSERT_TRUE(schur._U.isSameShape(&expU));
-    ASSERT_TRUE(schur._U.equalsTo(&expU));
+    ASSERT_TRUE(schur.u.isSameShape(&expU));
+    ASSERT_TRUE(schur.u.equalsTo(&expU));
 }
 
 /*

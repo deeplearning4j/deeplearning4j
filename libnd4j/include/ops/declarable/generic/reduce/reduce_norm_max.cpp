@@ -30,7 +30,7 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm_max)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_norm_max, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
@@ -94,7 +94,7 @@ DECLARE_TYPES(reduce_norm_max) {
 #if NOT_EXCLUDED(OP_reduce_norm_max_bp)
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
@@ -117,7 +117,6 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
     *gradI = 0;
 
     if(gradO->lengthOf() == 1) {
-
         auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
         const Nd4jLong ind = indOfAbsMaxElem.t<Nd4jLong>(0);
         const int sign = input->e<float>(ind) >= 0 ? 1 : -1;

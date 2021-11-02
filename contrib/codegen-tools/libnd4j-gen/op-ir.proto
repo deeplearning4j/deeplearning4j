@@ -17,6 +17,15 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "thresholdRelative"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "thresholdAbsolute"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -27,15 +36,6 @@ opList {
   argDescriptor {
     name: "y"
     argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "thresholdRelative"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "thresholdAbsolute"
-    argType: DOUBLE
     argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
@@ -47,6 +47,10 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "threshold"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -63,14 +67,19 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "threshold"
-    argType: DOUBLE
-  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
   name: "ClipByValue"
+  argDescriptor {
+    name: "clipValueMin"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "clipValueMax"
+    argType: DOUBLE
+    argIndex: 1
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -82,15 +91,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "clipValueMin"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "clipValueMax"
-    argType: DOUBLE
-    argIndex: 1
   }
 }
 opList {
@@ -260,8 +260,13 @@ opList {
 opList {
   name: "Switch"
   argDescriptor {
-    name: "outputs"
+    name: "out0"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "out1"
+    argType: OUTPUT_TENSOR
+    argIndex: 1
   }
   argDescriptor {
     name: "input"
@@ -302,6 +307,10 @@ opList {
 opList {
   name: "While"
   argDescriptor {
+    name: "frameName"
+    argType: STRING
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -312,10 +321,6 @@ opList {
   argDescriptor {
     name: "isConstant"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "frameName"
-    argType: STRING
   }
   opDeclarationType: LOGIC_OP_IMPL
 }
@@ -367,6 +372,10 @@ opList {
 opList {
   name: "_powderivative"
   argDescriptor {
+    name: "pow"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -377,10 +386,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "pow"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -510,6 +515,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -522,10 +531,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -549,6 +554,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -561,10 +570,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -610,6 +615,15 @@ opList {
 opList {
   name: "ada_delta_updater"
   argDescriptor {
+    name: "dRho"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
     name: "update"
     argType: OUTPUT_TENSOR
   }
@@ -652,15 +666,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 5
   }
-  argDescriptor {
-    name: "dRho"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 1
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -672,6 +677,15 @@ opList {
   argDescriptor {
     name: "stateH"
     argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
     argIndex: 1
   }
   argDescriptor {
@@ -693,15 +707,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 1
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -719,6 +724,29 @@ opList {
     name: "stateM"
     argType: OUTPUT_TENSOR
     argIndex: 2
+  }
+  argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dBeta1"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dBeta2"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "iteration"
+    argType: INT64
   }
   argDescriptor {
     name: "gradient"
@@ -753,29 +781,6 @@ opList {
     name: "epsilon"
     argType: INPUT_TENSOR
     argIndex: 6
-  }
-  argDescriptor {
-    name: "iteration"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dBeta1"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dBeta2"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 3
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -796,6 +801,29 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dBeta1"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dBeta2"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "iteration"
+    argType: INT64
+  }
+  argDescriptor {
     name: "gradient"
     argType: INPUT_TENSOR
   }
@@ -828,29 +856,6 @@ opList {
     name: "epsilon"
     argType: INPUT_TENSOR
     argIndex: 6
-  }
-  argDescriptor {
-    name: "iteration"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dBeta1"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dBeta2"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 3
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -871,6 +876,29 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dBeta1"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dBeta2"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "iteration"
+    argType: INT64
+  }
+  argDescriptor {
     name: "gradient"
     argType: INPUT_TENSOR
   }
@@ -903,29 +931,6 @@ opList {
     name: "epsilon"
     argType: INPUT_TENSOR
     argIndex: 6
-  }
-  argDescriptor {
-    name: "iteration"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dBeta1"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dBeta2"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 3
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -1036,17 +1041,21 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "factor"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "adjust_hue"
   argDescriptor {
+    name: "factor"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimC"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -1056,22 +1065,22 @@ opList {
     name: "delta"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimC"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "delta"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "adjust_saturation"
   argDescriptor {
+    name: "factor"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimC"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -1081,10 +1090,6 @@ opList {
     name: "factor"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimC"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -1095,21 +1100,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -1120,15 +1125,11 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "p"
     argType: DOUBLE
   }
   argDescriptor {
-    name: "b"
+    name: "alpha"
     argType: DOUBLE
     argIndex: 1
   }
@@ -1142,6 +1143,10 @@ opList {
     argType: DOUBLE
     argIndex: 3
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
@@ -1149,24 +1154,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradOut"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "reduceShape"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "seed"
-    argType: INT64
   }
   argDescriptor {
     name: "probValue"
@@ -1187,6 +1174,24 @@ opList {
     argType: DOUBLE
     argIndex: 3
   }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradOut"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "reduceShape"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -1196,21 +1201,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -1242,21 +1247,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -1267,21 +1272,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -1328,6 +1333,29 @@ opList {
     argIndex: 3
   }
   argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dBeta1"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dBeta2"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "iteration"
+    argType: INT64
+  }
+  argDescriptor {
     name: "gradient"
     argType: INPUT_TENSOR
   }
@@ -1366,29 +1394,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 7
   }
-  argDescriptor {
-    name: "iteration"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dBeta1"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dBeta2"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 3
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -1396,6 +1401,10 @@ opList {
   argDescriptor {
     name: "dataType"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "comparable"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "outputs"
@@ -1406,13 +1415,8 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "comparable"
-    argType: DOUBLE
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -1439,11 +1443,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
@@ -1451,14 +1459,14 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
   name: "apply_sgd"
+  argDescriptor {
+    name: "lr"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "Z"
     argType: OUTPUT_TENSOR
@@ -1476,10 +1484,6 @@ opList {
     name: "tarr"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "lr"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -1501,6 +1505,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -1512,10 +1520,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -1529,6 +1533,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -1540,10 +1548,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -1557,6 +1561,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "iArguments"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -1570,8 +1583,14 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
+    name: "isComplex"
+    argType: BOOL
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "isEmptyReduce"
+    argType: BOOL
+    argIndex: 2
   }
 }
 opList {
@@ -1585,6 +1604,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "iArguments"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -1598,8 +1626,14 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
+    name: "isComplex"
+    argType: BOOL
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "isEmptyReduce"
+    argType: BOOL
+    argIndex: 2
   }
 }
 opList {
@@ -1696,21 +1730,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -1765,10 +1799,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -1821,6 +1851,10 @@ opList {
     name: "isNCHW"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -1834,15 +1868,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -1896,6 +1921,15 @@ opList {
     argType: INT64
     argIndex: 10
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "avgpool3dnew"
@@ -1906,10 +1940,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "kD"
@@ -1984,6 +2014,10 @@ opList {
     name: "isNCDHW"
     argType: INT64
     argIndex: 14
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -1997,15 +2031,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "kD"
     argType: INT64
   }
@@ -2079,6 +2104,15 @@ opList {
     argType: INT64
     argIndex: 14
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "axpy"
@@ -2089,6 +2123,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "a"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "input"
@@ -2105,12 +2143,8 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "n"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "a"
-    argType: DOUBLE
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -2123,6 +2157,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "N"
+    argType: INT64
   }
   argDescriptor {
     name: "rowP"
@@ -2142,10 +2180,6 @@ opList {
     name: "dataP"
     argType: INPUT_TENSOR
     argIndex: 3
-  }
-  argDescriptor {
-    name: "N"
-    argType: INT64
   }
 }
 opList {
@@ -2191,6 +2225,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "N"
+    argType: INT64
+  }
+  argDescriptor {
     name: "rowP"
     argType: INPUT_TENSOR
   }
@@ -2209,10 +2247,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "N"
-    argType: INT64
-  }
 }
 opList {
   name: "batch_to_space"
@@ -2223,6 +2257,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "blockSize"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -2237,10 +2275,6 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "blockSize"
-    argType: INT64
-  }
 }
 opList {
   name: "batch_to_space_nd"
@@ -2251,6 +2285,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "blocks"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -2270,10 +2308,6 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "blocks"
-    argType: INT64
-  }
 }
 opList {
   name: "batched_gemm"
@@ -2284,34 +2318,6 @@ opList {
   argDescriptor {
     name: "vC"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "alpha"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "beta"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "vA"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "vB"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "transposeA"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "transposeB"
-    argType: BOOL
-    argIndex: 1
   }
   argDescriptor {
     name: "transA"
@@ -2357,6 +2363,34 @@ opList {
     argType: INT64
     argIndex: 8
   }
+  argDescriptor {
+    name: "alpha"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "beta"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "vA"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "vB"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "transposeA"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "transposeB"
+    argType: BOOL
+    argIndex: 1
+  }
 }
 opList {
   name: "batchnorm"
@@ -2367,6 +2401,19 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "applyScale"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "applyOffset"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "input"
@@ -2401,25 +2448,16 @@ opList {
     argType: BOOL
     argIndex: 2
   }
-  argDescriptor {
-    name: "epsilon"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "applyScale"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "applyOffset"
-    argType: INT64
-    argIndex: 1
-  }
 }
 opList {
   name: "batchnorm_bp"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "dLdI"
@@ -2441,6 +2479,15 @@ opList {
     argIndex: 3
   }
   argDescriptor {
+    name: "applyScale"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "applyOffset"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -2472,19 +2519,6 @@ opList {
     name: "applyBeta"
     argType: BOOL
     argIndex: 2
-  }
-  argDescriptor {
-    name: "epsilon"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "applyScale"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "applyOffset"
-    argType: INT64
-    argIndex: 1
   }
 }
 opList {
@@ -2578,6 +2612,20 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "minLength"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "maxLength"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "outputType"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
     name: "values"
     argType: INPUT_TENSOR
   }
@@ -2596,20 +2644,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "minLength"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "maxLength"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "outputType"
-    argType: INT64
-    argIndex: 2
-  }
 }
 opList {
   name: "bitcast"
@@ -2622,17 +2656,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "dataType"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "newType"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -2821,14 +2850,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -2836,6 +2857,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -2846,14 +2875,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -2861,6 +2882,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -2891,6 +2920,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -2903,10 +2936,6 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
-  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
@@ -2916,14 +2945,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -2931,6 +2952,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -2941,14 +2970,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -2956,6 +2977,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -2966,14 +2995,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -2981,6 +3002,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -2991,14 +3020,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3006,6 +3027,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3016,14 +3045,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3031,6 +3052,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3041,14 +3070,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3056,6 +3077,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3066,14 +3095,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3081,6 +3102,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3093,6 +3122,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "shape"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -3111,6 +3144,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -3118,14 +3155,6 @@ opList {
     name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3136,14 +3165,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3151,6 +3172,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3161,14 +3190,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3177,6 +3198,14 @@ opList {
     argType: INT64
     argIndex: 1
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
+  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
@@ -3184,6 +3213,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimension"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -3198,10 +3231,6 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
-  }
   opDeclarationType: OP_IMPL
 }
 opList {
@@ -3211,14 +3240,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3226,6 +3247,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3236,14 +3265,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3251,6 +3272,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3261,14 +3290,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3276,6 +3297,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3286,14 +3315,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "shape"
     argType: INT64
   }
@@ -3301,6 +3322,14 @@ opList {
     name: "dimension"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3315,19 +3344,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
     name: "compare"
     argType: DOUBLE
   }
@@ -3340,6 +3356,19 @@ opList {
     name: "eps"
     argType: DOUBLE
     argIndex: 2
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "to"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "from"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3354,14 +3383,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
     name: "compare"
     argType: DOUBLE
   }
@@ -3374,6 +3395,14 @@ opList {
     name: "eps"
     argType: DOUBLE
     argIndex: 2
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -3388,6 +3417,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dst"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -3395,16 +3428,21 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dst"
-    argType: INT64
-  }
 }
 opList {
   name: "cbow"
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "numWorkers"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "nsRounds"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "target"
@@ -3489,15 +3527,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "numWorkers"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "nsRounds"
-    argType: INT64
-    argIndex: 1
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -3531,6 +3560,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "corner"
     argType: INPUT_TENSOR
   }
@@ -3547,10 +3580,6 @@ opList {
   argDescriptor {
     name: "contains"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
   }
 }
 opList {
@@ -3618,6 +3647,14 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "scalar"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "arg"
     argType: INPUT_TENSOR
   }
@@ -3625,14 +3662,6 @@ opList {
     name: "comp"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "scalar"
-    argType: DOUBLE
   }
 }
 opList {
@@ -3642,35 +3671,40 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "clipNorm"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "clipNorm"
-    argType: DOUBLE
   }
 }
 opList {
   name: "clipbyavgnorm"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
+    name: "clipValue"
+    argType: DOUBLE
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dimensions"
     argType: INT64
   }
   argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
     name: "clipNorm"
-    argType: DOUBLE
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -3695,26 +3729,27 @@ opList {
   }
   argDescriptor {
     name: "clipNorm"
-    argType: DOUBLE
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
   name: "clipbynorm"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
+    name: "clipValue"
+    argType: DOUBLE
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dimensions"
     argType: INT64
   }
   argDescriptor {
-    name: "clipValue"
-    argType: DOUBLE
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -3725,8 +3760,16 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "clipValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -3737,25 +3780,9 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "clipValue"
-    argType: DOUBLE
-  }
 }
 opList {
   name: "clipbyvalue"
-  argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
   argDescriptor {
     name: "left"
     argType: DOUBLE
@@ -3764,6 +3791,14 @@ opList {
     name: "right"
     argType: DOUBLE
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -3788,15 +3823,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inputArrays"
-    argType: INPUT_TENSOR
-    argIndex: 1
   }
   argDescriptor {
     name: "strideY"
@@ -3837,12 +3863,25 @@ opList {
     argType: INT64
     argIndex: 7
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inputArrays"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "compare_and_bitpack"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "threshold"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "outputs"
@@ -3856,10 +3895,6 @@ opList {
     name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "threshold"
-    argType: DOUBLE
   }
 }
 opList {
@@ -3938,6 +3973,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "concatDimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -3950,10 +3989,6 @@ opList {
     name: "isDynamicAxis"
     argType: BOOL
   }
-  argDescriptor {
-    name: "concatDimension"
-    argType: INT64
-  }
 }
 opList {
   name: "concat_bp"
@@ -3964,6 +3999,10 @@ opList {
   argDescriptor {
     name: "epsilonChunk"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "concatDimension"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -3978,10 +4017,6 @@ opList {
     name: "dynamicAxis"
     argType: BOOL
   }
-  argDescriptor {
-    name: "concatDimension"
-    argType: INT64
-  }
 }
 opList {
   name: "confusion_matrix"
@@ -3992,6 +4027,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dataType"
+    argType: INT64
   }
   argDescriptor {
     name: "labels"
@@ -4007,10 +4046,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "numClasses"
-    argType: INT64
-  }
 }
 opList {
   name: "conv1d"
@@ -4021,20 +4056,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
   }
   argDescriptor {
     name: "kW"
@@ -4069,6 +4090,20 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 6
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -4092,25 +4127,6 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
     name: "kW"
     argType: INT64
   }
@@ -4144,17 +4160,6 @@ opList {
     argType: INT64
     argIndex: 6
   }
-}
-opList {
-  name: "conv2d"
-  argDescriptor {
-    name: "dtype"
-    argType: DATA_TYPE
-  }
-  argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
@@ -4168,6 +4173,22 @@ opList {
     name: "bias"
     argType: INPUT_TENSOR
     argIndex: 2
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+}
+opList {
+  name: "conv2d"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "kH"
@@ -4222,6 +4243,20 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -4245,6 +4280,60 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "kH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "kW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "sH"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "sW"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "pH"
+    argType: INT64
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "pW"
+    argType: INT64
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "dH"
+    argType: INT64
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "dW"
+    argType: INT64
+    argIndex: 7
+  }
+  argDescriptor {
+    name: "isSameMode"
+    argType: INT64
+    argIndex: 8
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+    argIndex: 9
+  }
+  argDescriptor {
+    name: "wFormat"
+    argType: INT64
+    argIndex: 10
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -4262,6 +4351,17 @@ opList {
     name: "gradO"
     argType: INPUT_TENSOR
     argIndex: 3
+  }
+}
+opList {
+  name: "conv2d_input_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradI"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "kH"
@@ -4316,17 +4416,6 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
-  }
-}
-opList {
-  name: "conv2d_input_bp"
-  argDescriptor {
-    name: "dtype"
-    argType: DATA_TYPE
-  }
-  argDescriptor {
-    name: "gradI"
-    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "gradIShape"
@@ -4342,60 +4431,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "kH"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "kW"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "sH"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "sW"
-    argType: INT64
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "pH"
-    argType: INT64
-    argIndex: 4
-  }
-  argDescriptor {
-    name: "pW"
-    argType: INT64
-    argIndex: 5
-  }
-  argDescriptor {
-    name: "dH"
-    argType: INT64
-    argIndex: 6
-  }
-  argDescriptor {
-    name: "dW"
-    argType: INT64
-    argIndex: 7
-  }
-  argDescriptor {
-    name: "isSameMode"
-    argType: INT64
-    argIndex: 8
-  }
-  argDescriptor {
-    name: "isNCHW"
-    argType: INT64
-    argIndex: 9
-  }
-  argDescriptor {
-    name: "wFormat"
-    argType: INT64
-    argIndex: 10
-  }
 }
 opList {
   name: "conv3dnew"
@@ -4406,20 +4441,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
   }
   argDescriptor {
     name: "kD"
@@ -4494,6 +4515,20 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 14
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -4517,25 +4552,6 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
     name: "kD"
     argType: INT64
   }
@@ -4608,6 +4624,25 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 14
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 3
   }
 }
 opList {
@@ -4686,6 +4721,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -4698,15 +4742,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-    argIndex: 1
   }
 }
 opList {
@@ -4730,6 +4765,15 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -4743,21 +4787,16 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-    argIndex: 1
-  }
 }
 opList {
   name: "cosinedistance"
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -4773,13 +4812,9 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "allDistances"
+    name: "isComplex"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -4790,6 +4825,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -4807,10 +4846,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
@@ -4820,21 +4855,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -4845,21 +4880,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -4874,14 +4909,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "init"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "order"
     argType: INT64
   }
@@ -4889,6 +4916,14 @@ opList {
     name: "outputType"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "init"
+    argType: BOOL
   }
 }
 opList {
@@ -4898,10 +4933,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "height"
     argType: INT64
   }
@@ -4909,6 +4940,10 @@ opList {
     name: "expandable"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LIST_OP_IMPL
 }
@@ -4958,6 +4993,14 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "extrapolationVal"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "method"
+    argType: INT64
+  }
+  argDescriptor {
     name: "image"
     argType: INPUT_TENSOR
   }
@@ -4975,14 +5018,6 @@ opList {
     name: "newImageSize"
     argType: INPUT_TENSOR
     argIndex: 3
-  }
-  argDescriptor {
-    name: "method"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "extrapolationVal"
-    argType: DOUBLE
   }
 }
 opList {
@@ -5023,19 +5058,6 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "logit"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "sequence_length"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "normalize_logits"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "blank_index"
     argType: INT64
   }
@@ -5049,6 +5071,19 @@ opList {
     argType: INT64
     argIndex: 2
   }
+  argDescriptor {
+    name: "logit"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "sequence_length"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "normalize_logits"
+    argType: BOOL
+  }
 }
 opList {
   name: "ctc_loss"
@@ -5059,6 +5094,10 @@ opList {
   argDescriptor {
     name: "outputLosses"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "blankIndex"
+    argType: INT64
   }
   argDescriptor {
     name: "targetLabels"
@@ -5078,10 +5117,6 @@ opList {
     name: "logitInputLengths"
     argType: INPUT_TENSOR
     argIndex: 3
-  }
-  argDescriptor {
-    name: "blankIndex"
-    argType: INT64
   }
 }
 opList {
@@ -5095,6 +5130,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "blankIndex"
+    argType: INT64
+  }
+  argDescriptor {
     name: "targetLabels"
     argType: INPUT_TENSOR
   }
@@ -5112,10 +5151,6 @@ opList {
     name: "logitInputLengths"
     argType: INPUT_TENSOR
     argIndex: 3
-  }
-  argDescriptor {
-    name: "blankIndex"
-    argType: INT64
   }
 }
 opList {
@@ -5182,6 +5217,20 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "exclusive"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "reverse"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -5198,20 +5247,6 @@ opList {
     name: "reverse"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "exclusive"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "reverse"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-    argIndex: 2
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -5226,6 +5261,20 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "exclusive"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "reverse"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -5248,6 +5297,13 @@ opList {
     argType: BOOL
     argIndex: 1
   }
+}
+opList {
+  name: "cumsum"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
   argDescriptor {
     name: "exclusive"
     argType: INT64
@@ -5261,13 +5317,6 @@ opList {
     name: "dimensions"
     argType: INT64
     argIndex: 2
-  }
-}
-opList {
-  name: "cumsum"
-  argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "input"
@@ -5286,20 +5335,6 @@ opList {
     name: "reverse"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "exclusive"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "reverse"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-    argIndex: 2
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -5314,6 +5349,20 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "exclusive"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "reverse"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -5335,20 +5384,6 @@ opList {
     name: "reverse"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "exclusive"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "reverse"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-    argIndex: 2
   }
 }
 opList {
@@ -5452,20 +5487,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -5518,6 +5539,20 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -5541,6 +5576,60 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "kH"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "kW"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "sH"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "sW"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "pH"
+    argType: INT64
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "pW"
+    argType: INT64
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "dH"
+    argType: INT64
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "dW"
+    argType: INT64
+    argIndex: 7
+  }
+  argDescriptor {
+    name: "isSameMode"
+    argType: INT64
+    argIndex: 8
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+    argIndex: 9
+  }
+  argDescriptor {
+    name: "wFormat"
+    argType: INT64
+    argIndex: 10
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -5558,6 +5647,17 @@ opList {
     name: "gradO"
     argType: INPUT_TENSOR
     argIndex: 3
+  }
+}
+opList {
+  name: "deconv2d_tf"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "gradI"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "kH"
@@ -5612,17 +5712,6 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
-  }
-}
-opList {
-  name: "deconv2d_tf"
-  argDescriptor {
-    name: "dtype"
-    argType: DATA_TYPE
-  }
-  argDescriptor {
-    name: "gradI"
-    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "gradIShape"
@@ -5638,60 +5727,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "kH"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "kW"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "sH"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "sW"
-    argType: INT64
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "pH"
-    argType: INT64
-    argIndex: 4
-  }
-  argDescriptor {
-    name: "pW"
-    argType: INT64
-    argIndex: 5
-  }
-  argDescriptor {
-    name: "dH"
-    argType: INT64
-    argIndex: 6
-  }
-  argDescriptor {
-    name: "dW"
-    argType: INT64
-    argIndex: 7
-  }
-  argDescriptor {
-    name: "isSameMode"
-    argType: INT64
-    argIndex: 8
-  }
-  argDescriptor {
-    name: "isNCHW"
-    argType: INT64
-    argIndex: 9
-  }
-  argDescriptor {
-    name: "wFormat"
-    argType: INT64
-    argIndex: 10
-  }
 }
 opList {
   name: "deconv3d"
@@ -5702,20 +5737,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
   }
   argDescriptor {
     name: "kD"
@@ -5790,6 +5811,20 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 14
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -5813,25 +5848,6 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
     name: "kD"
     argType: INT64
   }
@@ -5904,6 +5920,25 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 14
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 3
   }
 }
 opList {
@@ -5938,10 +5973,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "block_size"
     argType: INT64
   }
@@ -5949,6 +5980,10 @@ opList {
     name: "isNHWC"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -5960,20 +5995,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
   }
   argDescriptor {
     name: "kH"
@@ -6028,6 +6049,20 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -6051,25 +6086,6 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -6122,6 +6138,25 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 3
   }
 }
 opList {
@@ -6185,6 +6220,20 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "isSameMode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "rates"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "strides"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -6207,35 +6256,16 @@ opList {
     name: "isSameMode"
     argType: BOOL
   }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "isSameMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "rates"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "strides"
-    argType: INT64
-    argIndex: 2
-  }
 }
 opList {
   name: "distribution_bernoulli"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
     name: "prob"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dataType"
@@ -6251,12 +6281,12 @@ opList {
 opList {
   name: "distribution_binomial"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
     name: "probability"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "trials"
@@ -6281,21 +6311,17 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "trials"
-    argType: INT64
-  }
-  argDescriptor {
     name: "probability"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "trials"
+    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
   name: "distribution_gaussian"
-  argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
   argDescriptor {
     name: "mean"
     argType: DOUBLE
@@ -6304,6 +6330,10 @@ opList {
     name: "stddev"
     argType: DOUBLE
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dataType"
@@ -6319,17 +6349,17 @@ opList {
 opList {
   name: "distribution_lognormal"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "stddev"
+    name: "mean"
     argType: DOUBLE
   }
   argDescriptor {
     name: "stdev"
     argType: DOUBLE
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dataType"
@@ -6345,10 +6375,6 @@ opList {
 opList {
   name: "distribution_truncated"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
     name: "mean"
     argType: DOUBLE
   }
@@ -6356,6 +6382,10 @@ opList {
     name: "stddev"
     argType: DOUBLE
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dataType"
@@ -6371,10 +6401,6 @@ opList {
 opList {
   name: "distribution_uniform"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
     name: "from"
     argType: DOUBLE
   }
@@ -6382,6 +6408,10 @@ opList {
     name: "to"
     argType: DOUBLE
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "dataType"
@@ -6494,6 +6524,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -6511,10 +6545,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
@@ -6530,6 +6560,15 @@ opList {
   argDescriptor {
     name: "weights"
     argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "normalization"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "outputWeights"
+    argType: INT64
     argIndex: 1
   }
   argDescriptor {
@@ -6560,15 +6599,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "normalization"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "outputWeights"
-    argType: INT64
-    argIndex: 1
-  }
 }
 opList {
   name: "dot_product_attention_bp"
@@ -6589,6 +6619,10 @@ opList {
     name: "dLdv"
     argType: OUTPUT_TENSOR
     argIndex: 2
+  }
+  argDescriptor {
+    name: "normalization"
+    argType: INT64
   }
   argDescriptor {
     name: "queries"
@@ -6618,10 +6652,6 @@ opList {
     name: "scaled"
     argType: BOOL
   }
-  argDescriptor {
-    name: "normalization"
-    argType: INT64
-  }
 }
 opList {
   name: "draw_bounding_boxes"
@@ -6648,8 +6678,16 @@ opList {
 opList {
   name: "dropout"
   argDescriptor {
+    name: "probValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -6660,21 +6698,21 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "seed"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "probValue"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "dropout_bp"
   argDescriptor {
+    name: "probValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -6690,14 +6728,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "seed"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "probValue"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -6707,12 +6737,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "p"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -6740,6 +6770,10 @@ opList {
     name: "hBWFinal"
     argType: OUTPUT_TENSOR
     argIndex: 3
+  }
+  argDescriptor {
+    name: "timeMajor"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -6785,10 +6819,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 8
   }
-  argDescriptor {
-    name: "timeMajor"
-    argType: INT64
-  }
 }
 opList {
   name: "dynamic_partition"
@@ -6801,6 +6831,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numPartitions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -6808,10 +6842,6 @@ opList {
     name: "indices"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "numPartitions"
-    argType: INT64
   }
 }
 opList {
@@ -6823,6 +6853,10 @@ opList {
   argDescriptor {
     name: "outputList"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "numPartition"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -6837,10 +6871,6 @@ opList {
     name: "gradsAtOutput"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numPartition"
-    argType: INT64
   }
 }
 opList {
@@ -6857,6 +6887,10 @@ opList {
     name: "hFinal"
     argType: OUTPUT_TENSOR
     argIndex: 1
+  }
+  argDescriptor {
+    name: "timeMajor"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -6878,13 +6912,9 @@ opList {
     argIndex: 3
   }
   argDescriptor {
-    name: "h0"
+    name: "maxTimeStep"
     argType: INPUT_TENSOR
     argIndex: 4
-  }
-  argDescriptor {
-    name: "timeMajor"
-    argType: INT64
   }
 }
 opList {
@@ -6898,6 +6928,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numPartitions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "index"
     argType: INPUT_TENSOR
   }
@@ -6905,10 +6939,6 @@ opList {
     name: "input"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "numPartitions"
-    argType: INT64
   }
 }
 opList {
@@ -6938,17 +6968,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "alpha"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "elu_bp"
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -6961,10 +6995,6 @@ opList {
     name: "epsilon"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "alpha"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -6979,6 +7009,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "partition_mode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -6986,10 +7020,6 @@ opList {
     name: "indices"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "partition_mode"
-    argType: INT64
   }
 }
 opList {
@@ -7008,6 +7038,10 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "threshold"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -7020,10 +7054,6 @@ opList {
     name: "counter"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "threshold"
-    argType: DOUBLE
   }
 }
 opList {
@@ -7042,6 +7072,14 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "threshold"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "boundary"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -7050,17 +7088,13 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "boundary"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "threshold"
-    argType: DOUBLE
-  }
 }
 opList {
   name: "enter"
+  argDescriptor {
+    name: "frameName"
+    argType: STRING
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -7073,10 +7107,6 @@ opList {
     name: "isConstant"
     argType: BOOL
   }
-  argDescriptor {
-    name: "frameName"
-    argType: STRING
-  }
 }
 opList {
   name: "entropy"
@@ -7085,21 +7115,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -7192,11 +7222,19 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "eps"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
@@ -7205,12 +7243,9 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "eps"
-    argType: DOUBLE
+    name: "allDistances"
+    argType: BOOL
+    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -7261,6 +7296,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -7277,10 +7316,6 @@ opList {
     name: "allDistances"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -7316,16 +7351,16 @@ opList {
 opList {
   name: "exit"
   argDescriptor {
+    name: "frameName"
+    argType: STRING
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "frameName"
-    argType: STRING
   }
 }
 opList {
@@ -7359,12 +7394,16 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
+    name: "inPlace"
+    argType: BOOL
   }
 }
 opList {
@@ -7413,14 +7452,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "sameMode"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "ksizeRows"
     argType: INT64
   }
@@ -7454,6 +7485,14 @@ opList {
     argType: INT64
     argIndex: 6
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "sameMode"
+    argType: BOOL
+  }
 }
 opList {
   name: "eye"
@@ -7464,15 +7503,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "numRows"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "numCols"
-    argType: INPUT_TENSOR
-    argIndex: 1
   }
   argDescriptor {
     name: "dataType"
@@ -7501,8 +7531,21 @@ opList {
 opList {
   name: "fake_quant_with_min_max_args"
   argDescriptor {
+    name: "min"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "max"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "numBits"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -7512,47 +7555,12 @@ opList {
     name: "narrowRange"
     argType: BOOL
   }
-  argDescriptor {
-    name: "numBits"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "min"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "max"
-    argType: DOUBLE
-    argIndex: 1
-  }
 }
 opList {
   name: "fake_quant_with_min_max_vars"
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "min"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "max"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "narrowed"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "numBits"
-    argType: INT64
   }
   argDescriptor {
     name: "m"
@@ -7563,13 +7571,9 @@ opList {
     argType: DOUBLE
     argIndex: 1
   }
-  opDeclarationType: CONFIGURABLE_OP_IMPL
-}
-opList {
-  name: "fake_quant_with_min_max_vars_per_channel"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
+    name: "numBits"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -7589,9 +7593,35 @@ opList {
     name: "narrowed"
     argType: BOOL
   }
+  opDeclarationType: CONFIGURABLE_OP_IMPL
+}
+opList {
+  name: "fake_quant_with_min_max_vars_per_channel"
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
   argDescriptor {
     name: "numBits"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "min"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "max"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "narrowed"
+    argType: BOOL
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -7602,8 +7632,16 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "value"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dtype"
+    argType: INT64
   }
   argDescriptor {
     name: "shape"
@@ -7613,14 +7651,6 @@ opList {
     name: "outputs"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dtype"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "value"
-    argType: DOUBLE
   }
 }
 opList {
@@ -7653,8 +7683,21 @@ opList {
 opList {
   name: "first_index"
   argDescriptor {
+    name: "compare"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "eps"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -7663,19 +7706,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "compare"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "eps"
-    argType: DOUBLE
-    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -7690,12 +7720,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "order"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -7709,12 +7739,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
+    name: "flattenDimension"
+    argType: INT64
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -7904,6 +7934,10 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "y"
     argType: OUTPUT_TENSOR
   }
@@ -7916,6 +7950,15 @@ opList {
     name: "batchVar"
     argType: OUTPUT_TENSOR
     argIndex: 2
+  }
+  argDescriptor {
+    name: "dataFormat"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "isTraining"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "input"
@@ -7946,19 +7989,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 5
   }
-  argDescriptor {
-    name: "epsilon"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dataFormat"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "isTraining"
-    argType: INT64
-    argIndex: 1
-  }
 }
 opList {
   name: "gather"
@@ -7969,6 +7999,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -7987,10 +8021,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -8431,6 +8461,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -8444,13 +8478,9 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "allDistances"
+    name: "isComplex"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -8602,16 +8632,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "keepDims"
-    argType: BOOL
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
+    name: "keepDims"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -8622,16 +8657,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "keepDims"
-    argType: BOOL
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
   argDescriptor {
-    name: "dimensions"
-    argType: INT64
+    name: "keepDims"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -8646,6 +8686,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -8658,10 +8702,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -8685,6 +8725,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -8698,10 +8742,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
 }
 opList {
   name: "histogram"
@@ -8714,12 +8754,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "numBins"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -8731,6 +8771,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "nbins"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -8746,10 +8790,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "nbins"
-    argType: INT64
-  }
 }
 opList {
   name: "hsv_to_rgb"
@@ -8758,12 +8798,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -8778,6 +8818,14 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "delta"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -8790,14 +8838,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "delta"
-    argType: DOUBLE
   }
 }
 opList {
@@ -8821,6 +8861,14 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "delta"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -8833,14 +8881,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "delta"
-    argType: DOUBLE
   }
 }
 opList {
@@ -8940,15 +8980,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inputArrays"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "zeroPadVal"
     argType: DOUBLE
   }
@@ -8991,6 +9022,15 @@ opList {
     argType: INT64
     argIndex: 7
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inputArrays"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "im2col_bp"
@@ -9001,15 +9041,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradAtOutput"
-    argType: INPUT_TENSOR
-    argIndex: 1
   }
   argDescriptor {
     name: "zeroPadVal"
@@ -9054,6 +9085,15 @@ opList {
     argType: INT64
     argIndex: 7
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradAtOutput"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "image_resize"
@@ -9064,6 +9104,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "method"
+    argType: INT64
   }
   argDescriptor {
     name: "image"
@@ -9083,10 +9127,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "method"
-    argType: INT64
-  }
 }
 opList {
   name: "in_top_k"
@@ -9097,6 +9137,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "k"
+    argType: INT64
   }
   argDescriptor {
     name: "predictions"
@@ -9110,10 +9154,6 @@ opList {
   argDescriptor {
     name: "sorted"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "k"
-    argType: INT64
   }
 }
 opList {
@@ -9231,12 +9271,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimensions"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -9267,6 +9307,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -9280,13 +9324,9 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "allDistances"
+    name: "isComplex"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -9338,8 +9378,21 @@ opList {
 opList {
   name: "last_index"
   argDescriptor {
+    name: "compare"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "eps"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -9349,19 +9402,6 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "compare"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "eps"
-    argType: DOUBLE
-    argIndex: 1
-  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
@@ -9369,6 +9409,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -9385,12 +9429,8 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "channelsFirst"
+    name: "noBias"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -9413,6 +9453,10 @@ opList {
     name: "dLdb"
     argType: OUTPUT_TENSOR
     argIndex: 2
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -9449,16 +9493,16 @@ opList {
     argIndex: 6
   }
   argDescriptor {
-    name: "channelsFirst"
+    name: "noBias"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
   name: "leakyrelu"
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -9470,10 +9514,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "alpha"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -9484,16 +9524,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "alpha"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -9603,6 +9639,19 @@ opList {
   }
   argDescriptor {
     name: "start"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "stop"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "elements"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "start"
     argType: INPUT_TENSOR
   }
   argDescriptor {
@@ -9615,34 +9664,21 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "dataType"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "start"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "stop"
-    argType: DOUBLE
-    argIndex: 1
-  }
 }
 opList {
   name: "linspace_random"
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
+    name: "from"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "step"
     argType: DOUBLE
+    argIndex: 1
   }
   argDescriptor {
-    name: "to"
-    argType: DOUBLE
-    argIndex: 1
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "length"
@@ -9731,6 +9767,14 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -9743,14 +9787,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "epsilon"
-    argType: DOUBLE
   }
 }
 opList {
@@ -9774,6 +9810,14 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "epsilon"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -9786,14 +9830,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "epsilon"
-    argType: DOUBLE
   }
 }
 opList {
@@ -9826,6 +9862,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "log_predictions"
     argType: INPUT_TENSOR
   }
@@ -9842,10 +9882,6 @@ opList {
   argDescriptor {
     name: "full"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -9869,6 +9905,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "log_predictions"
     argType: INPUT_TENSOR
   }
@@ -9886,10 +9926,6 @@ opList {
     name: "full"
     argType: BOOL
   }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
 }
 opList {
   name: "log_softmax"
@@ -9898,12 +9934,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimension"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -9914,6 +9950,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -9921,10 +9961,6 @@ opList {
     name: "gradO"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -9935,12 +9971,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "base"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -9966,21 +10002,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -10007,16 +10043,16 @@ opList {
 opList {
   name: "loop_cond"
   argDescriptor {
+    name: "frameName"
+    argType: STRING
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "frameName"
-    argType: STRING
   }
 }
 opList {
@@ -10026,17 +10062,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "alpha"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "lrelu_bp"
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -10050,10 +10090,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "alpha"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -10061,18 +10097,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "depth"
-    argType: INT64
   }
   argDescriptor {
     name: "bias"
@@ -10088,6 +10112,18 @@ opList {
     argType: DOUBLE
     argIndex: 2
   }
+  argDescriptor {
+    name: "depth"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
+  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -10095,6 +10131,24 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "bias"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "beta"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "depth"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -10108,24 +10162,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "depth"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "bias"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "alpha"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "beta"
-    argType: DOUBLE
-    argIndex: 2
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -10142,6 +10178,29 @@ opList {
   argDescriptor {
     name: "c"
     argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "clippingCellValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "clippingProjValue"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "forgetBias"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "peephole"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "projection"
+    argType: INT64
     argIndex: 1
   }
   argDescriptor {
@@ -10183,35 +10242,21 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 7
   }
-  argDescriptor {
-    name: "peephole"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "projection"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "clippingCellValue"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "clippingProjValue"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "forgetBias"
-    argType: DOUBLE
-    argIndex: 2
-  }
 }
 opList {
   name: "lstmBlock"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "forgetBias"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "clippingCellValue"
+    argType: DOUBLE
+    argIndex: 1
   }
   argDescriptor {
     name: "i"
@@ -10246,6 +10291,15 @@ opList {
     name: "y"
     argType: OUTPUT_TENSOR
     argIndex: 6
+  }
+  argDescriptor {
+    name: "peephole"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "dataFormat"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "maxTSLength"
@@ -10291,6 +10345,13 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 8
   }
+}
+opList {
+  name: "lstmBlockCell"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
   argDescriptor {
     name: "forgetBias"
     argType: DOUBLE
@@ -10299,22 +10360,6 @@ opList {
     name: "clippingCellValue"
     argType: DOUBLE
     argIndex: 1
-  }
-  argDescriptor {
-    name: "peephole"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dataFormat"
-    argType: INT64
-    argIndex: 1
-  }
-}
-opList {
-  name: "lstmBlockCell"
-  argDescriptor {
-    name: "dtype"
-    argType: DATA_TYPE
   }
   argDescriptor {
     name: "i"
@@ -10349,6 +10394,10 @@ opList {
     name: "y"
     argType: OUTPUT_TENSOR
     argIndex: 6
+  }
+  argDescriptor {
+    name: "peephole"
+    argType: INT64
   }
   argDescriptor {
     name: "xt"
@@ -10389,19 +10438,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 7
   }
-  argDescriptor {
-    name: "peephole"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "forgetBias"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "clippingCellValue"
-    argType: DOUBLE
-    argIndex: 1
-  }
 }
 opList {
   name: "lstmCell"
@@ -10416,6 +10452,29 @@ opList {
   argDescriptor {
     name: "ct"
     argType: OUTPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "clippingCellValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "clippingProjValue"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "forgetBias"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "peephole"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "projection"
+    argType: INT64
     argIndex: 1
   }
   argDescriptor {
@@ -10457,29 +10516,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 7
   }
-  argDescriptor {
-    name: "peephole"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "projection"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "clippingCellValue"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "clippingProjValue"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "forgetBias"
-    argType: DOUBLE
-    argIndex: 2
-  }
 }
 opList {
   name: "lstmLayer"
@@ -10500,6 +10536,64 @@ opList {
     name: "cL"
     argType: OUTPUT_TENSOR
     argIndex: 2
+  }
+  argDescriptor {
+    name: "cellClip"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "gateAlpha"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gateBeta"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "cellAlpha"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "cellBeta"
+    argType: DOUBLE
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "outAlpha"
+    argType: DOUBLE
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "outBeta"
+    argType: DOUBLE
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "dataFormat"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "directionMode"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gateAct"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "cellAct"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "outAct"
+    argType: INT64
+    argIndex: 4
   }
   argDescriptor {
     name: "input"
@@ -10579,29 +10673,21 @@ opList {
     argType: BOOL
     argIndex: 7
   }
+}
+opList {
+  name: "lstmLayerCell"
   argDescriptor {
-    name: "dataFormat"
-    argType: INT64
+    name: "dtype"
+    argType: DATA_TYPE
   }
   argDescriptor {
-    name: "directionMode"
-    argType: INT64
+    name: "h"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "c"
+    argType: OUTPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "gateAct"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellAct"
-    argType: INT64
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "outAct"
-    argType: INT64
-    argIndex: 4
   }
   argDescriptor {
     name: "cellClip"
@@ -10637,21 +10723,19 @@ opList {
     argType: DOUBLE
     argIndex: 6
   }
-}
-opList {
-  name: "lstmLayerCell"
   argDescriptor {
-    name: "dtype"
-    argType: DATA_TYPE
+    name: "gateAct"
+    argType: INT64
   }
   argDescriptor {
-    name: "h"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "c"
-    argType: OUTPUT_TENSOR
+    name: "cellAct"
+    argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outAct"
+    argType: INT64
+    argIndex: 2
   }
   argDescriptor {
     name: "input"
@@ -10696,54 +10780,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "gateAct"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "cellAct"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "outAct"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellClip"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "gateAlpha"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "gateBeta"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellAlpha"
-    argType: DOUBLE
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "cellBeta"
-    argType: DOUBLE
-    argIndex: 4
-  }
-  argDescriptor {
-    name: "outAlpha"
-    argType: DOUBLE
-    argIndex: 5
-  }
-  argDescriptor {
-    name: "outBeta"
-    argType: DOUBLE
-    argIndex: 6
-  }
 }
 opList {
   name: "lstmLayerCellBp"
@@ -10784,6 +10820,54 @@ opList {
     name: "dLdWp"
     argType: OUTPUT_TENSOR
     argIndex: 6
+  }
+  argDescriptor {
+    name: "cellClip"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "gateAlpha"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gateBeta"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "cellAlpha"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "cellBeta"
+    argType: DOUBLE
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "outAlpha"
+    argType: DOUBLE
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "outBeta"
+    argType: DOUBLE
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "gateAct"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "cellAct"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "outAct"
+    argType: INT64
+    argIndex: 2
   }
   argDescriptor {
     name: "input"
@@ -10833,54 +10917,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "gateAct"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "cellAct"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "outAct"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellClip"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "gateAlpha"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "gateBeta"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellAlpha"
-    argType: DOUBLE
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "cellBeta"
-    argType: DOUBLE
-    argIndex: 4
-  }
-  argDescriptor {
-    name: "outAlpha"
-    argType: DOUBLE
-    argIndex: 5
-  }
-  argDescriptor {
-    name: "outBeta"
-    argType: DOUBLE
-    argIndex: 6
-  }
 }
 opList {
   name: "lstmLayer_bp"
@@ -10921,6 +10957,64 @@ opList {
     name: "dLdWp"
     argType: OUTPUT_TENSOR
     argIndex: 6
+  }
+  argDescriptor {
+    name: "cellClip"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "gateAlpha"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gateBeta"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "cellAlpha"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "cellBeta"
+    argType: DOUBLE
+    argIndex: 4
+  }
+  argDescriptor {
+    name: "outAlpha"
+    argType: DOUBLE
+    argIndex: 5
+  }
+  argDescriptor {
+    name: "outBeta"
+    argType: DOUBLE
+    argIndex: 6
+  }
+  argDescriptor {
+    name: "dataFormat"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "directionMode"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "gateAct"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "cellAct"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "outAct"
+    argType: INT64
+    argIndex: 4
   }
   argDescriptor {
     name: "input"
@@ -11020,70 +11114,16 @@ opList {
     argType: BOOL
     argIndex: 7
   }
-  argDescriptor {
-    name: "dataFormat"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "directionMode"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "gateAct"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellAct"
-    argType: INT64
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "outAct"
-    argType: INT64
-    argIndex: 4
-  }
-  argDescriptor {
-    name: "cellClip"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "gateAlpha"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "gateBeta"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "cellAlpha"
-    argType: DOUBLE
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "cellBeta"
-    argType: DOUBLE
-    argIndex: 4
-  }
-  argDescriptor {
-    name: "outAlpha"
-    argType: DOUBLE
-    argIndex: 5
-  }
-  argDescriptor {
-    name: "outBeta"
-    argType: DOUBLE
-    argIndex: 6
-  }
 }
 opList {
   name: "lstsq"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "l2_factor"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "outputs"
@@ -11101,10 +11141,6 @@ opList {
   argDescriptor {
     name: "fastFlag"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "l2_factor"
-    argType: DOUBLE
   }
 }
 opList {
@@ -11134,6 +11170,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -11147,13 +11187,9 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "allDistances"
+    name: "isComplex"
     argType: BOOL
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -11164,18 +11200,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
     name: "compare"
     argType: DOUBLE
   }
@@ -11184,17 +11208,14 @@ opList {
     argType: DOUBLE
     argIndex: 1
   }
-  opDeclarationType: LEGACY_XYZ
-}
-opList {
-  name: "match_condition_transform"
   argDescriptor {
-    name: "dataType"
-    argType: DATA_TYPE
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
+    name: "mode"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "input"
@@ -11206,17 +11227,32 @@ opList {
     argIndex: 1
   }
   argDescriptor {
-    name: "mode"
-    argType: INT64
+    name: "keepDims"
+    argType: BOOL
   }
+  opDeclarationType: LEGACY_XYZ
+}
+opList {
+  name: "match_condition_transform"
   argDescriptor {
-    name: "compare"
-    argType: DOUBLE
+    name: "dataType"
+    argType: DATA_TYPE
   }
   argDescriptor {
     name: "eps"
     argType: DOUBLE
-    argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -11229,29 +11265,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "transposeX"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "transposeY"
-    argType: BOOL
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "transposeZ"
-    argType: BOOL
-    argIndex: 2
   }
   argDescriptor {
     name: "alpha"
@@ -11276,6 +11289,29 @@ opList {
     argType: INT64
     argIndex: 2
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "transposeX"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "transposeY"
+    argType: BOOL
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "transposeZ"
+    argType: BOOL
+    argIndex: 2
+  }
 }
 opList {
   name: "matmul_bp"
@@ -11291,6 +11327,29 @@ opList {
     name: "dldy"
     argType: OUTPUT_TENSOR
     argIndex: 1
+  }
+  argDescriptor {
+    name: "alpha"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "beta"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "transX"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "transY"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "transZ"
+    argType: INT64
+    argIndex: 2
   }
   argDescriptor {
     name: "input"
@@ -11316,35 +11375,21 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 4
   }
-  argDescriptor {
-    name: "alpha"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "beta"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "transX"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "transY"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "transZ"
-    argType: INT64
-    argIndex: 2
-  }
 }
 opList {
   name: "matrix_band_part"
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "minLower"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "maxUpper"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "input"
@@ -11359,15 +11404,6 @@ opList {
     name: "maxUpperT"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "minLower"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "maxUpper"
-    argType: INT64
-    argIndex: 1
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -11502,15 +11538,6 @@ opList {
     argIndex: 1
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "outArgMax"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -11563,6 +11590,15 @@ opList {
     name: "isNHWC"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "outArgMax"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
 }
 opList {
@@ -11668,10 +11704,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -11724,6 +11756,10 @@ opList {
     name: "isNCHW"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -11737,15 +11773,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -11799,6 +11826,15 @@ opList {
     argType: INT64
     argIndex: 10
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "maxpool3dnew"
@@ -11809,15 +11845,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "arrayOutput"
-    argType: INPUT_TENSOR
-    argIndex: 1
   }
   argDescriptor {
     name: "kD"
@@ -11892,6 +11919,15 @@ opList {
     name: "isNCDHW"
     argType: INT64
     argIndex: 14
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "arrayOutput"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
 }
 opList {
@@ -11905,15 +11941,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "kD"
     argType: INT64
   }
@@ -11987,6 +12014,15 @@ opList {
     argType: INT64
     argIndex: 14
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "mean_pairwssqerr_loss"
@@ -11997,6 +12033,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
   }
   argDescriptor {
     name: "predictions"
@@ -12011,10 +12051,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -12038,6 +12074,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -12050,10 +12090,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -12067,6 +12103,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -12079,10 +12119,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -12106,6 +12142,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "predictions"
     argType: INPUT_TENSOR
   }
@@ -12118,10 +12158,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
   }
 }
 opList {
@@ -12250,12 +12286,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "inArrs"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dataType"
     argType: INT64
+  }
+  argDescriptor {
+    name: "inArrs"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -12280,16 +12316,16 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "swapFirst2Dims"
+    argType: INT64
+  }
+  argDescriptor {
     name: "inArrs"
     argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "cartesian"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "swapFirst2Dims"
-    argType: INT64
   }
 }
 opList {
@@ -12305,15 +12341,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -12336,6 +12363,26 @@ opList {
     argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
+}
+opList {
+  name: "min_max_datatype"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dataType"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "minOrMax"
+    argType: INT64
+    argIndex: 1
+  }
 }
 opList {
   name: "min_pairwise"
@@ -12424,6 +12471,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "mode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -12435,10 +12486,6 @@ opList {
   argDescriptor {
     name: "isSymmetric"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
   }
 }
 opList {
@@ -12536,6 +12583,14 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "keepDims"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -12549,14 +12604,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: DOUBLE
-  }
 }
 opList {
   name: "mul_scalar"
@@ -12569,9 +12616,8 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -12584,6 +12630,15 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "normalization"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "weights"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "queries"
@@ -12633,15 +12688,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "normalization"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "weights"
-    argType: INT64
-    argIndex: 1
-  }
 }
 opList {
   name: "multi_head_dot_product_attention_bp"
@@ -12682,6 +12728,10 @@ opList {
     name: "dLdWo"
     argType: OUTPUT_TENSOR
     argIndex: 6
+  }
+  argDescriptor {
+    name: "normalization"
+    argType: INT64
   }
   argDescriptor {
     name: "queries"
@@ -12730,10 +12780,6 @@ opList {
   argDescriptor {
     name: "scaled"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "normalization"
-    argType: INT64
   }
 }
 opList {
@@ -12812,6 +12858,29 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dBeta1"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dBeta2"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "iteration"
+    argType: INT64
+  }
+  argDescriptor {
     name: "gradient"
     argType: INPUT_TENSOR
   }
@@ -12844,29 +12913,6 @@ opList {
     name: "epsilon"
     argType: INPUT_TENSOR
     argIndex: 6
-  }
-  argDescriptor {
-    name: "iteration"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dBeta1"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dBeta2"
-    argType: DOUBLE
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 3
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -12902,6 +12948,15 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dMomentum"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
     name: "gradient"
     argType: INPUT_TENSOR
   }
@@ -12920,19 +12975,14 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dMomentum"
-    argType: DOUBLE
-    argIndex: 1
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "next_iteration"
+  argDescriptor {
+    name: "frameName"
+    argType: STRING
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -12940,10 +12990,6 @@ opList {
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "frameName"
-    argType: STRING
   }
 }
 opList {
@@ -12957,6 +13003,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "maxOutputSize"
+    argType: INT64
+  }
+  argDescriptor {
     name: "boxes"
     argType: INPUT_TENSOR
   }
@@ -12979,10 +13029,6 @@ opList {
     name: "scoreThreshold"
     argType: INPUT_TENSOR
     argIndex: 4
-  }
-  argDescriptor {
-    name: "maxOutputSize"
-    argType: INT64
   }
 }
 opList {
@@ -12996,6 +13042,19 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "overlapThreshold"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "scoreThreshold"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "maxOutputSize"
+    argType: INT64
+  }
+  argDescriptor {
     name: "boxes"
     argType: INPUT_TENSOR
   }
@@ -13018,19 +13077,6 @@ opList {
     name: "scoreThreshold"
     argType: INPUT_TENSOR
     argIndex: 4
-  }
-  argDescriptor {
-    name: "maxOutputSize"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "overlapThreshold"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "scoreThreshold"
-    argType: DOUBLE
-    argIndex: 1
   }
 }
 opList {
@@ -13044,6 +13090,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "maxOutputSize"
+    argType: INT64
+  }
+  argDescriptor {
     name: "boxes"
     argType: INPUT_TENSOR
   }
@@ -13066,10 +13116,6 @@ opList {
     name: "scoreThreshold"
     argType: INPUT_TENSOR
     argIndex: 4
-  }
-  argDescriptor {
-    name: "maxOutputSize"
-    argType: INT64
   }
 }
 opList {
@@ -13087,6 +13133,10 @@ opList {
 opList {
   name: "norm"
   argDescriptor {
+    name: "mode"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "*output"
     argType: OUTPUT_TENSOR
   }
@@ -13098,10 +13148,6 @@ opList {
     name: "dimensions"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "mode"
-    argType: DOUBLE
   }
   opDeclarationType: REDUCTION_OP_IMPL
 }
@@ -13121,6 +13167,10 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "shift"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "counts"
     argType: INPUT_TENSOR
   }
@@ -13135,8 +13185,14 @@ opList {
     argIndex: 2
   }
   argDescriptor {
-    name: "shift"
-    argType: DOUBLE
+    name: "outMean"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "outVar"
+    argType: INPUT_TENSOR
+    argIndex: 4
   }
 }
 opList {
@@ -13144,6 +13200,10 @@ opList {
   argDescriptor {
     name: "dataType"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "comparable"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "outputs"
@@ -13157,10 +13217,6 @@ opList {
     name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "comparable"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -13232,6 +13288,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reverse"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -13243,10 +13303,6 @@ opList {
   argDescriptor {
     name: "reverse"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "reverse"
-    argType: INT64
   }
 }
 opList {
@@ -13280,25 +13336,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "depth"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "on"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "off"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
     name: "on"
     argType: DOUBLE
   }
@@ -13320,6 +13357,25 @@ opList {
     name: "dataType"
     argType: INT64
     argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "depth"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "on"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "off"
+    argType: INPUT_TENSOR
+    argIndex: 3
   }
 }
 opList {
@@ -13353,12 +13409,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dataType"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -13366,6 +13422,10 @@ opList {
   argDescriptor {
     name: "dataType"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "comparable"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "outputs"
@@ -13381,8 +13441,8 @@ opList {
     argIndex: 1
   }
   argDescriptor {
-    name: "comparable"
-    argType: DOUBLE
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -13424,8 +13484,16 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "padValue"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "mode"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -13435,14 +13503,6 @@ opList {
     name: "paddings"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "mode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "padValue"
-    argType: DOUBLE
   }
 }
 opList {
@@ -13476,14 +13536,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
     name: "q"
     argType: DOUBLE
   }
@@ -13497,6 +13549,14 @@ opList {
     argType: DOUBLE
     argIndex: 2
   }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
 }
 opList {
   name: "permute"
@@ -13509,17 +13569,17 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "reverseDims"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "permuteDims"
+    name: "permutationVector"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "reverseDims"
-    argType: INT64
   }
 }
 opList {
@@ -13548,10 +13608,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "kY"
@@ -13607,6 +13663,10 @@ opList {
     argType: INT64
     argIndex: 10
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
 }
 opList {
   name: "pnormpool2d_bp"
@@ -13617,15 +13677,6 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "gradO"
-    argType: INPUT_TENSOR
-    argIndex: 1
   }
   argDescriptor {
     name: "eps"
@@ -13685,6 +13736,15 @@ opList {
     argType: INT64
     argIndex: 10
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "gradO"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
 }
 opList {
   name: "pointwise_conv2d"
@@ -13695,6 +13755,15 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCHW"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "wFormat"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "input"
@@ -13709,15 +13778,6 @@ opList {
     name: "bias"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "isNCHW"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "wFormat"
-    argType: INT64
-    argIndex: 1
   }
 }
 opList {
@@ -13760,6 +13820,10 @@ opList {
 opList {
   name: "pow"
   argDescriptor {
+    name: "pow"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -13775,10 +13839,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "pow"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -13839,6 +13899,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "sharedAxes"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -13846,10 +13910,6 @@ opList {
     name: "alpha"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "sharedAxes"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -13863,6 +13923,10 @@ opList {
     name: "dLdA"
     argType: OUTPUT_TENSOR
     argIndex: 1
+  }
+  argDescriptor {
+    name: "sharedAxes"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -13887,10 +13951,6 @@ opList {
     name: "dLdA"
     argType: INPUT_TENSOR
     argIndex: 4
-  }
-  argDescriptor {
-    name: "sharedAxes"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -13936,6 +13996,10 @@ opList {
 opList {
   name: "probablistic_merge"
   argDescriptor {
+    name: "probability"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -13947,10 +14011,6 @@ opList {
     name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "probability"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -13985,16 +14045,16 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "f"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "f"
-    argType: DOUBLE
   }
 }
 opList {
@@ -14008,6 +14068,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "seed"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14015,10 +14079,6 @@ opList {
     name: "shape"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "seed"
-    argType: INT64
   }
 }
 opList {
@@ -14028,16 +14088,16 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "lambda"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "shape"
     argType: INT64
-  }
-  argDescriptor {
-    name: "lambda"
-    argType: DOUBLE
   }
 }
 opList {
@@ -14049,6 +14109,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "seed"
+    argType: INT64
   }
   argDescriptor {
     name: "shape"
@@ -14064,10 +14128,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "seed"
-    argType: INT64
-  }
 }
 opList {
   name: "random_multinomial"
@@ -14080,6 +14140,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimC"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14087,10 +14151,6 @@ opList {
     name: "inputSamples"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimC"
-    argType: INT64
   }
 }
 opList {
@@ -14119,6 +14179,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "seed"
+    argType: INT64
+  }
+  argDescriptor {
     name: "shape"
     argType: INPUT_TENSOR
   }
@@ -14126,10 +14190,6 @@ opList {
     name: "lambda"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "seed"
-    argType: INT64
   }
 }
 opList {
@@ -14139,25 +14199,17 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "seeds"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: OP_IMPL
 }
 opList {
   name: "randomnormal"
-  argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "shape"
-    argType: INPUT_TENSOR
-  }
   argDescriptor {
     name: "mean"
     argType: DOUBLE
@@ -14166,6 +14218,14 @@ opList {
     name: "stdev"
     argType: DOUBLE
     argIndex: 1
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "shape"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -14177,20 +14237,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "shape"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "min"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "max"
-    argType: INPUT_TENSOR
-    argIndex: 2
   }
   argDescriptor {
     name: "min"
@@ -14209,6 +14255,20 @@ opList {
     name: "seed"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "shape"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "min"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "max"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -14223,16 +14283,16 @@ opList {
   }
   argDescriptor {
     name: "from"
-    argType: INPUT_TENSOR
+    argType: DOUBLE
   }
   argDescriptor {
     name: "to"
-    argType: INPUT_TENSOR
+    argType: DOUBLE
     argIndex: 1
   }
   argDescriptor {
     name: "step"
-    argType: INPUT_TENSOR
+    argType: DOUBLE
     argIndex: 2
   }
   argDescriptor {
@@ -14251,16 +14311,16 @@ opList {
   }
   argDescriptor {
     name: "from"
-    argType: DOUBLE
+    argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "to"
-    argType: DOUBLE
+    argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "step"
-    argType: DOUBLE
+    argType: INPUT_TENSOR
     argIndex: 2
   }
 }
@@ -14363,9 +14423,8 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -14380,6 +14439,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "index"
+    argType: INT64
+  }
+  argDescriptor {
     name: "list"
     argType: INPUT_TENSOR
   }
@@ -14387,10 +14450,6 @@ opList {
     name: "vec"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "index"
-    argType: INT64
   }
   opDeclarationType: LIST_OP_IMPL
 }
@@ -14534,6 +14593,10 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14561,10 +14624,6 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_logsumexp"
@@ -14577,6 +14636,14 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "keepDims"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14586,16 +14653,8 @@ opList {
     argIndex: 1
   }
   argDescriptor {
-    name: "keepDim"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
     name: "keepDims"
-    argType: DOUBLE
+    argType: BOOL
   }
 }
 opList {
@@ -14609,6 +14668,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14620,10 +14683,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14637,6 +14696,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14653,10 +14716,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14670,6 +14729,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14681,10 +14744,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14698,6 +14757,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14714,10 +14777,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14731,6 +14790,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14742,10 +14805,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14759,6 +14818,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14775,10 +14838,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14792,6 +14851,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14803,10 +14866,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14820,6 +14879,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14836,10 +14899,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14853,6 +14912,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14865,10 +14928,6 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_norm2_bp"
@@ -14879,6 +14938,10 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -14897,10 +14960,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -14938,6 +14997,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -14955,10 +15018,6 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_normmax"
@@ -14967,21 +15026,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -14996,6 +15055,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15007,10 +15070,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -15024,6 +15083,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15040,10 +15103,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -15057,6 +15116,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15069,10 +15132,6 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_sqnorm_bp"
@@ -15083,6 +15142,10 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -15102,16 +15165,21 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_stdev"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "biasCorrected"
+    argType: DOUBLE
+    argIndex: 1
   }
   argDescriptor {
     name: "outputs"
@@ -15124,15 +15192,6 @@ opList {
   argDescriptor {
     name: "dimensions"
     argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "biasCorrected"
-    argType: DOUBLE
     argIndex: 1
   }
 }
@@ -15147,6 +15206,19 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "keepDims"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "biasCorrected"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15167,19 +15239,6 @@ opList {
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "biasCorrected"
-    argType: DOUBLE
     argIndex: 1
   }
 }
@@ -15194,6 +15253,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15206,10 +15269,6 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_sum_bp"
@@ -15220,6 +15279,10 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -15239,16 +15302,21 @@ opList {
     name: "keepDims"
     argType: BOOL
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reduce_variance"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "biasCorrected"
+    argType: DOUBLE
+    argIndex: 1
   }
   argDescriptor {
     name: "outputs"
@@ -15261,15 +15329,6 @@ opList {
   argDescriptor {
     name: "dimensions"
     argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "biasCorrected"
-    argType: DOUBLE
     argIndex: 1
   }
 }
@@ -15284,6 +15343,19 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "keepDims"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "biasCorrected"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15306,22 +15378,13 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "biasCorrected"
-    argType: DOUBLE
-    argIndex: 1
-  }
 }
 opList {
   name: "relu"
+  argDescriptor {
+    name: "cutoff"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -15333,10 +15396,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "cutoff"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -15347,6 +15406,10 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "cutoff"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -15358,14 +15421,14 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "cutoff"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "relu6_bp"
+  argDescriptor {
+    name: "cutoff"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
@@ -15379,14 +15442,14 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "cutoff"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "relu_bp"
+  argDescriptor {
+    name: "scalar"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -15399,10 +15462,6 @@ opList {
     name: "epsilon"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "scalar"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -15467,9 +15526,8 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -15484,12 +15542,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimensions"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -15499,12 +15557,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "set"
     argType: DOUBLE
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -15519,6 +15577,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "shapeArr"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15526,10 +15588,6 @@ opList {
     name: "shape"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "shapeArr"
-    argType: INT64
   }
 }
 opList {
@@ -15563,6 +15621,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "height"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "width"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "image"
     argType: INPUT_TENSOR
   }
@@ -15574,15 +15641,6 @@ opList {
   argDescriptor {
     name: "alignCorners"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "height"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "width"
-    argType: INT64
-    argIndex: 1
   }
 }
 opList {
@@ -15625,6 +15683,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "height"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "width"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "image"
     argType: INPUT_TENSOR
   }
@@ -15638,17 +15705,8 @@ opList {
     argType: BOOL
   }
   argDescriptor {
-    name: "halfPixelCenters"
+    name: "halfPixelCenter"
     argType: BOOL
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "height"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "width"
-    argType: INT64
     argIndex: 1
   }
 }
@@ -15697,6 +15755,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "height"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "width"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "image"
     argType: INPUT_TENSOR
   }
@@ -15714,15 +15781,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "height"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "width"
-    argType: INT64
-    argIndex: 1
-  }
 }
 opList {
   name: "restorev2"
@@ -15738,6 +15796,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -15745,10 +15807,6 @@ opList {
     name: "dimensions"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -15761,6 +15819,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "dimensions"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -15776,10 +15838,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
 }
 opList {
   name: "reverse_sequence"
@@ -15792,21 +15850,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "seqLengths"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "seqDim"
     argType: INT64
   }
   argDescriptor {
     name: "batchDim"
     argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "seqLengths"
+    argType: INPUT_TENSOR
     argIndex: 1
   }
 }
@@ -15997,12 +16055,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -16012,12 +16070,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -16028,12 +16086,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -16044,12 +16102,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -16085,6 +16143,20 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "dLr"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "dRmsDecay"
+    argType: DOUBLE
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "dEpsilon"
+    argType: DOUBLE
+    argIndex: 2
+  }
+  argDescriptor {
     name: "gradient"
     argType: INPUT_TENSOR
   }
@@ -16108,20 +16180,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 4
   }
-  argDescriptor {
-    name: "dLr"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "dRmsDecay"
-    argType: DOUBLE
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "dEpsilon"
-    argType: DOUBLE
-    argIndex: 2
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -16129,6 +16187,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "shift"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -16143,10 +16205,6 @@ opList {
     name: "dimensions"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "shift"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -16658,20 +16716,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "*input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "*weightsDepth"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "bias"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -16724,6 +16768,25 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "*input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "*weightsDepth"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "weightsPoint"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 3
   }
 }
 opList {
@@ -16752,25 +16815,6 @@ opList {
     argIndex: 3
   }
   argDescriptor {
-    name: "*input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "*gradO"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "*weightsDepth"
-    argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "weightsPoint"
-    argType: INPUT_TENSOR
-    argIndex: 3
-  }
-  argDescriptor {
     name: "kH"
     argType: INT64
   }
@@ -16823,6 +16867,25 @@ opList {
     name: "wFormat"
     argType: INT64
     argIndex: 10
+  }
+  argDescriptor {
+    name: "*input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "*gradO"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "*weightsDepth"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "bias"
+    argType: INPUT_TENSOR
+    argIndex: 3
   }
 }
 opList {
@@ -17163,6 +17226,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "maxInd"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "dataType"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -17174,15 +17246,6 @@ opList {
   argDescriptor {
     name: "is_static_maxlen"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "maxInd"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "dataType"
-    argType: INT64
-    argIndex: 1
   }
 }
 opList {
@@ -17200,9 +17263,8 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "y"
-    argType: INPUT_TENSOR
-    argIndex: 1
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -17234,12 +17296,36 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "seed"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+}
+opList {
+  name: "set_shape"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "seed"
-    argType: INT64
+    name: "shape"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
 }
 opList {
@@ -17247,6 +17333,15 @@ opList {
   argDescriptor {
     name: "dataType"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "min"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "max"
+    argType: DOUBLE
+    argIndex: 1
   }
   argDescriptor {
     name: "outputs"
@@ -17259,15 +17354,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "min"
-    argType: DOUBLE
-  }
-  argDescriptor {
-    name: "max"
-    argType: DOUBLE
-    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -17290,6 +17376,10 @@ opList {
 opList {
   name: "sgd_updater"
   argDescriptor {
+    name: "lr"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -17301,10 +17391,6 @@ opList {
     name: "lr"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "lr"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -17315,21 +17401,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "dimensions"
+    name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
   }
   argDescriptor {
     name: "keepDims"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -17407,6 +17493,14 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "labelsSmoothing"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -17420,20 +17514,16 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "labelsSmoothing"
-    argType: DOUBLE
-  }
 }
 opList {
   name: "sigm_cross_entropy_loss_grad"
   argDescriptor {
     name: "dtype"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "labelSmoothing"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "dLdp"
@@ -17450,6 +17540,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -17462,14 +17556,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "labelSmoothing"
-    argType: DOUBLE
   }
 }
 opList {
@@ -17595,12 +17681,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimensions"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -17620,6 +17706,15 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "numWorkers"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "nsRounds"
+    argType: INT64
+    argIndex: 1
   }
   argDescriptor {
     name: "target"
@@ -17689,15 +17784,6 @@ opList {
     argType: BOOL
     argIndex: 1
   }
-  argDescriptor {
-    name: "numWorkers"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "nsRounds"
-    argType: INT64
-    argIndex: 1
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
@@ -17709,6 +17795,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "size"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -17723,10 +17813,6 @@ opList {
     name: "e"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "size"
-    argType: INT64
   }
 }
 opList {
@@ -17758,10 +17844,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "size"
-    argType: INT64
-  }
 }
 opList {
   name: "softmax"
@@ -17774,16 +17856,16 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -17794,6 +17876,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimension"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -17801,10 +17887,6 @@ opList {
     name: "gradO"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimension"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -17819,6 +17901,14 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "labelsSmoothing"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -17831,14 +17921,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "labelsSmoothing"
-    argType: DOUBLE
   }
 }
 opList {
@@ -17862,6 +17944,14 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "labelsSmoothing"
+    argType: DOUBLE
+  }
+  argDescriptor {
+    name: "reductionMode"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -17875,14 +17965,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "reductionMode"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "labelsSmoothing"
-    argType: DOUBLE
-  }
 }
 opList {
   name: "softmax_cross_entropy_loss_with_logits"
@@ -17895,6 +17977,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "classesDim"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -17902,10 +17988,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "classesDim"
-    argType: INT64
   }
 }
 opList {
@@ -17924,6 +18006,10 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "classesDim"
+    argType: INT64
+  }
+  argDescriptor {
     name: "logits"
     argType: INPUT_TENSOR
   }
@@ -17931,10 +18017,6 @@ opList {
     name: "labels"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "classesDim"
-    argType: INT64
   }
 }
 opList {
@@ -18067,6 +18149,10 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
+    name: "l2_factor"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -18082,10 +18168,6 @@ opList {
   argDescriptor {
     name: "fastFlag"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "l2_factor"
-    argType: DOUBLE
   }
 }
 opList {
@@ -18126,6 +18208,20 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "blockSize"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "paddingTop"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "paddingBottom"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -18133,14 +18229,6 @@ opList {
     name: "padding"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "blockSize"
-    argType: INT64
   }
 }
 opList {
@@ -18152,6 +18240,10 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "blocks"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -18171,10 +18263,6 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "blocks"
-    argType: INT64
-  }
 }
 opList {
   name: "space_to_depth"
@@ -18187,10 +18275,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "block_size"
     argType: INT64
   }
@@ -18198,6 +18282,10 @@ opList {
     name: "isNHWC"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -18251,21 +18339,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "a"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "b"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "numSplit"
     argType: INT64
   }
   argDescriptor {
     name: "dimensions"
     argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "a"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "b"
+    argType: INPUT_TENSOR
     argIndex: 1
   }
 }
@@ -18326,6 +18414,15 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "numSplit"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -18338,15 +18435,6 @@ opList {
     name: "_a"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "numSplit"
-    argType: INT64
-    argIndex: 1
   }
 }
 opList {
@@ -18467,6 +18555,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "_a"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -18474,10 +18566,6 @@ opList {
     name: "a"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "_a"
-    argType: INT64
   }
 }
 opList {
@@ -18736,14 +18824,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "inPlace"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "realMin"
     argType: DOUBLE
   }
@@ -18756,6 +18836,14 @@ opList {
     name: "k"
     argType: DOUBLE
     argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "inPlace"
+    argType: BOOL
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -18770,6 +18858,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -18777,10 +18869,6 @@ opList {
     name: "inArrs"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -18806,6 +18894,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -18813,10 +18905,6 @@ opList {
     name: "dimensions"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -18831,6 +18919,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -18843,10 +18935,6 @@ opList {
     name: "eps"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -18949,7 +19037,7 @@ opList {
     argIndex: 3
   }
   argDescriptor {
-    name: "h0"
+    name: "maxTimeStep"
     argType: INPUT_TENSOR
     argIndex: 4
   }
@@ -18961,26 +19049,44 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
+    name: "mean"
+    argType: DOUBLE
   }
   argDescriptor {
-    name: "newFormat"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: BOOL
+    name: "bias"
+    argType: DOUBLE
     argIndex: 1
   }
   argDescriptor {
     name: "dimensions"
     argType: INT64
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "biasCorrected"
+    argType: BOOL
+    argIndex: 1
+  }
   opDeclarationType: LEGACY_XYZ
 }
 opList {
   name: "step"
+  argDescriptor {
+    name: "cutoff"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
@@ -18992,10 +19098,6 @@ opList {
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "cutoff"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -19030,6 +19132,30 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "begin_mask"
+    argType: INT64
+  }
+  argDescriptor {
+    name: "ellipsis_mask"
+    argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "end_mask"
+    argType: INT64
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "new_axis_mask"
+    argType: INT64
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "shrink_axis_mask"
+    argType: INT64
+    argIndex: 4
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -19047,6 +19173,17 @@ opList {
     name: "v_stride"
     argType: INPUT_TENSOR
     argIndex: 3
+  }
+}
+opList {
+  name: "strided_slice_bp"
+  argDescriptor {
+    name: "dtype"
+    argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "outputs"
+    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "begin_mask"
@@ -19071,17 +19208,6 @@ opList {
     name: "shrink_axis_mask"
     argType: INT64
     argIndex: 4
-  }
-}
-opList {
-  name: "strided_slice_bp"
-  argDescriptor {
-    name: "dtype"
-    argType: DATA_TYPE
-  }
-  argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
   }
   argDescriptor {
     name: "input"
@@ -19107,30 +19233,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 4
   }
-  argDescriptor {
-    name: "begin_mask"
-    argType: INT64
-  }
-  argDescriptor {
-    name: "ellipsis_mask"
-    argType: INT64
-    argIndex: 1
-  }
-  argDescriptor {
-    name: "end_mask"
-    argType: INT64
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "new_axis_mask"
-    argType: INT64
-    argIndex: 3
-  }
-  argDescriptor {
-    name: "shrink_axis_mask"
-    argType: INT64
-    argIndex: 4
-  }
 }
 opList {
   name: "sub_scalar"
@@ -19143,8 +19245,9 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "inPlace"
-    argType: BOOL
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -19258,19 +19361,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "fullUV"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "computeUv"
-    argType: BOOL
-    argIndex: 1
-  }
-  argDescriptor {
     name: "fullUV"
     argType: INT64
   }
@@ -19283,6 +19373,34 @@ opList {
     name: "switchNum"
     argType: INT64
     argIndex: 2
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "s"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "u"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "v"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
+    name: "fullUV"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "computeUv"
+    argType: BOOL
+    argIndex: 1
   }
 }
 opList {
@@ -19308,6 +19426,10 @@ opList {
 opList {
   name: "switch"
   argDescriptor {
+    name: "frameName"
+    argType: STRING
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -19319,10 +19441,6 @@ opList {
     name: "predicate"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "frameName"
-    argType: STRING
   }
 }
 opList {
@@ -19442,6 +19560,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensionsY"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -19464,10 +19586,6 @@ opList {
     argType: BOOL
     argIndex: 2
   }
-  argDescriptor {
-    name: "dimensionsY"
-    argType: INT64
-  }
 }
 opList {
   name: "tensormmul"
@@ -19480,21 +19598,21 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "a"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "b"
-    argType: INPUT_TENSOR
-    argIndex: 1
-  }
-  argDescriptor {
     name: "axe0_size"
     argType: INT64
   }
   argDescriptor {
     name: "axe1_size"
     argType: INT64
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "a"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "b"
+    argType: INPUT_TENSOR
     argIndex: 1
   }
 }
@@ -19512,6 +19630,10 @@ opList {
     name: "dLdB"
     argType: OUTPUT_TENSOR
     argIndex: 1
+  }
+  argDescriptor {
+    name: "axe0Size"
+    argType: INT64
   }
   argDescriptor {
     name: "A"
@@ -19536,10 +19658,6 @@ opList {
     name: "dldy"
     argType: INPUT_TENSOR
     argIndex: 4
-  }
-  argDescriptor {
-    name: "axe0Size"
-    argType: INT64
   }
 }
 opList {
@@ -19638,6 +19756,10 @@ opList {
 opList {
   name: "thresholdedrelu"
   argDescriptor {
+    name: "cutoff"
+    argType: DOUBLE
+  }
+  argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
   }
@@ -19649,14 +19771,14 @@ opList {
     name: "inPlace"
     argType: BOOL
   }
-  argDescriptor {
-    name: "cutoff"
-    argType: DOUBLE
-  }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
 opList {
   name: "thresholdedrelu_bp"
+  argDescriptor {
+    name: "cutoff"
+    argType: DOUBLE
+  }
   argDescriptor {
     name: "dLdI"
     argType: OUTPUT_TENSOR
@@ -19669,10 +19791,6 @@ opList {
     name: "dLdO"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "cutoff"
-    argType: DOUBLE
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -19687,6 +19805,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dimensions"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -19698,10 +19820,6 @@ opList {
   argDescriptor {
     name: "is_static_reps"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dimensions"
-    argType: INT64
   }
 }
 opList {
@@ -19724,8 +19842,9 @@ opList {
     argIndex: 1
   }
   argDescriptor {
-    name: "repeat"
-    argType: INT64
+    name: "grad"
+    argType: INPUT_TENSOR
+    argIndex: 2
   }
 }
 opList {
@@ -19916,16 +20035,16 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "k"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "needSort"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "k"
-    argType: INT64
   }
 }
 opList {
@@ -19954,6 +20073,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "permuteDims"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -19961,10 +20084,6 @@ opList {
     name: "permutationVector"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "permuteDims"
-    argType: INT64
   }
 }
 opList {
@@ -20012,6 +20131,16 @@ opList {
     argIndex: 1
   }
   argDescriptor {
+    name: "lower"
+    argType: INPUT_TENSOR
+    argIndex: 2
+  }
+  argDescriptor {
+    name: "adjoint"
+    argType: INPUT_TENSOR
+    argIndex: 3
+  }
+  argDescriptor {
     name: "isLower"
     argType: BOOL
   }
@@ -20032,12 +20161,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "diag"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -20051,6 +20180,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "diag"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20058,10 +20191,6 @@ opList {
     name: "gradO"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "diag"
-    argType: INT64
   }
 }
 opList {
@@ -20145,6 +20274,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20157,10 +20290,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20174,6 +20303,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20186,10 +20319,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20203,6 +20332,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20215,10 +20348,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20232,6 +20361,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20244,10 +20377,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20261,6 +20390,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20273,10 +20406,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20290,6 +20419,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20302,10 +20435,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20319,6 +20448,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20331,10 +20464,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20348,6 +20477,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20360,10 +20493,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20377,6 +20506,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20389,10 +20522,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20406,6 +20535,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20418,10 +20551,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20435,6 +20564,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20447,10 +20580,6 @@ opList {
     name: "numSegments"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
   }
 }
 opList {
@@ -20464,6 +20593,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "numSegments"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20477,10 +20610,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 2
   }
-  argDescriptor {
-    name: "numSegments"
-    argType: INT64
-  }
 }
 opList {
   name: "unstack"
@@ -20493,10 +20622,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimensions"
     argType: INT64
   }
@@ -20504,6 +20629,10 @@ opList {
     name: "num"
     argType: INT64
     argIndex: 1
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
 }
 opList {
@@ -20529,14 +20658,6 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "nchw"
-    argType: BOOL
-  }
-  argDescriptor {
     name: "factorH"
     argType: INT64
   }
@@ -20550,6 +20671,14 @@ opList {
     argType: INT64
     argIndex: 2
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "nchw"
+    argType: BOOL
+  }
 }
 opList {
   name: "upsampling2d_bp"
@@ -20560,6 +20689,10 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "scaleW"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -20574,10 +20707,6 @@ opList {
     name: "nchw"
     argType: BOOL
   }
-  argDescriptor {
-    name: "scaleW"
-    argType: INT64
-  }
 }
 opList {
   name: "upsampling3d"
@@ -20588,14 +20717,6 @@ opList {
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR
-  }
-  argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
-    name: "ncdhw"
-    argType: BOOL
   }
   argDescriptor {
     name: "factorD"
@@ -20616,6 +20737,14 @@ opList {
     argType: INT64
     argIndex: 3
   }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "ncdhw"
+    argType: BOOL
+  }
 }
 opList {
   name: "upsampling3d_bp"
@@ -20626,6 +20755,10 @@ opList {
   argDescriptor {
     name: "gradI"
     argType: OUTPUT_TENSOR
+  }
+  argDescriptor {
+    name: "isNCDHW"
+    argType: INT64
   }
   argDescriptor {
     name: "input"
@@ -20640,10 +20773,6 @@ opList {
     name: "ncdhw"
     argType: BOOL
   }
-  argDescriptor {
-    name: "isNCDHW"
-    argType: INT64
-  }
 }
 opList {
   name: "var"
@@ -20652,21 +20781,35 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
+    name: "mean"
+    argType: DOUBLE
   }
   argDescriptor {
-    name: "biasCorrected"
-    argType: BOOL
-  }
-  argDescriptor {
-    name: "keepDims"
-    argType: BOOL
+    name: "bias"
+    argType: DOUBLE
     argIndex: 1
   }
   argDescriptor {
     name: "dimensions"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
+  }
+  argDescriptor {
+    name: "y"
+    argType: INPUT_TENSOR
+    argIndex: 1
+  }
+  argDescriptor {
+    name: "keepDims"
+    argType: BOOL
+  }
+  argDescriptor {
+    name: "biasCorrected"
+    argType: BOOL
+    argIndex: 1
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -20724,6 +20867,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "idx"
+    argType: INT64
+  }
+  argDescriptor {
     name: "list"
     argType: INPUT_TENSOR
   }
@@ -20732,10 +20879,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
-  argDescriptor {
-    name: "idx"
-    argType: INT64
-  }
   opDeclarationType: LIST_OP_IMPL
 }
 opList {
@@ -20743,6 +20886,10 @@ opList {
   argDescriptor {
     name: "dataType"
     argType: DATA_TYPE
+  }
+  argDescriptor {
+    name: "comparable"
+    argType: DOUBLE
   }
   argDescriptor {
     name: "outputs"
@@ -20756,10 +20903,6 @@ opList {
     name: "y"
     argType: INPUT_TENSOR
     argIndex: 1
-  }
-  argDescriptor {
-    name: "comparable"
-    argType: DOUBLE
   }
   opDeclarationType: LEGACY_XYZ
 }
@@ -20790,6 +20933,10 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "bTranspose"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20802,10 +20949,6 @@ opList {
     name: "b"
     argType: INPUT_TENSOR
     argIndex: 2
-  }
-  argDescriptor {
-    name: "bTranspose"
-    argType: INT64
   }
 }
 opList {
@@ -20829,6 +20972,10 @@ opList {
     argIndex: 2
   }
   argDescriptor {
+    name: "bTranspose"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
@@ -20847,10 +20994,6 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "bTranspose"
-    argType: INT64
-  }
 }
 opList {
   name: "yiq_to_rgb"
@@ -20859,12 +21002,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -20875,12 +21018,12 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
-    name: "input"
-    argType: INPUT_TENSOR
-  }
-  argDescriptor {
     name: "dimC"
     argType: INT64
+  }
+  argDescriptor {
+    name: "input"
+    argType: INPUT_TENSOR
   }
   opDeclarationType: CONFIGURABLE_OP_IMPL
 }
@@ -20928,16 +21071,16 @@ opList {
     argType: OUTPUT_TENSOR
   }
   argDescriptor {
+    name: "dataType"
+    argType: INT64
+  }
+  argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
   argDescriptor {
     name: "inPlace"
     argType: BOOL
-  }
-  argDescriptor {
-    name: "dataType"
-    argType: INT64
   }
 }
 opList {

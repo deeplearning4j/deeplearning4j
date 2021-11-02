@@ -64,7 +64,7 @@ namespace sd {
 
             }
 
-            ND4J_LOCAL void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
+             void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _compare_elem, (input, isStrictlyIncreasing, output), LIBND4J_TYPES);

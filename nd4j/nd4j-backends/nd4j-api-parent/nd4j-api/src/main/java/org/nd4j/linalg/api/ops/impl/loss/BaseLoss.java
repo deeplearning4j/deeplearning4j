@@ -71,6 +71,8 @@ public abstract class BaseLoss extends DynamicCustomOp {
 
     public abstract String opName();
 
+ 
+
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 2, "Expected exactly 2 or more input datatypes for %s, got %s", getClass(), inputDataTypes);

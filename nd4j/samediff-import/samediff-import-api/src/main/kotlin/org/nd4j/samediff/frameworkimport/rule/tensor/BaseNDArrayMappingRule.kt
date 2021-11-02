@@ -90,18 +90,24 @@ abstract class BaseNDArrayMappingRule<
         val mappingsToPerform = inputArgumentMappings()
         val nameUsageCounts = Counter<String>()
         mappingsToPerform.forEach { (k, v) ->
-            ret.add(ArgDescriptor {
-                name = mappingContext.nodeInputNameForOpDefInputName(v)
-                argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
-                inputValue = mappingContext.tensorInputFor(v).toArgTensor()
-                argIndex = lookupIndexForArgDescriptor(
-                    argDescriptorName = k,
-                    opDescriptorName = mappingContext.nd4jOpName(),
-                    argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
-                )
-            })
+          //only allow inputs that exist on the node, this accounts for default optional inputs on the node associated with the context
+            if(mappingContext.hasInput(v)) {
+              ret.add(ArgDescriptor {
+                  name = mappingContext.nodeInputNameForOpDefInputName(v)
+                  argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
+                  inputValue = mappingContext.tensorInputFor(v).toArgTensor()
+                  argIndex = lookupIndexForArgDescriptor(
+                      argDescriptorName = k,
+                      opDescriptorName = mappingContext.nd4jOpName(),
+                      argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
+                  )
+              })
 
-            nameUsageCounts.incrementCount(v,1.0)
+              nameUsageCounts.incrementCount(v,1.0)
+          } else {
+              println("Skipping input $v on node ${mappingContext.irNode().nodeName()}")
+            }
+
         }
 
 

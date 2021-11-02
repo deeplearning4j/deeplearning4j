@@ -973,6 +973,21 @@ fun Math() =  Namespace("Math") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce"
         Input(NUMERIC, "input") { description = "Input to calculate moments for" }
         Arg(INT, "axes"){ count = AtLeast(0); description = "Dimensions to perform calculation over" }
+        Arg(BOOL,"keepDims") { description = "Whether to keep dimensions during reduction or not. "}
+        Output(NUMERIC, "output_mean"){ description = "Mean variable" }
+        Output(NUMERIC, "output_variance"){ description = "Variance variable" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Calculate the mean and (population) variance for the input variable, for the specified axis
+            """.trimIndent()
+        }
+    }
+
+    Op("moments") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce"
+        Input(NUMERIC, "input") { description = "Input to calculate moments for" }
+        Input(NUMERIC, "axes"){ description = "Dimensions to perform calculation over" }
+        Arg(BOOL,"keepDims") { description = "Whether to keep dimensions during reduction or not. "}
         Output(NUMERIC, "output_mean"){ description = "Mean variable" }
         Output(NUMERIC, "output_variance"){ description = "Variance variable" }
         Doc(Language.ANY, DocScope.ALL){

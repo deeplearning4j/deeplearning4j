@@ -1100,12 +1100,12 @@ namespace sd {
 
 
             template<typename X, typename Z>
-            ND4J_LOCAL void  variance_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+             void  variance_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 return reduction_<X, Z, Deviation<X, Z>>(input, output, dimensions, biasCorrected);
             }
 
             template<typename X, typename Z>
-            ND4J_LOCAL void  standardDeviation_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+             void  standardDeviation_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
                 return  reduction_<X, Z, Deviation<X, Z, true>>(input, output, dimensions, biasCorrected);
             }
         }

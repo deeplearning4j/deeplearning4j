@@ -19,11 +19,24 @@
  */
 package org.nd4j.samediff.frameworkimport.hooks
 
+import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
+/**
+ * The hook fore preprocessing
+ * model import contexts.
+ * Can be used to implement custom import flows
+ * if an [MappingProcess] can't be defined for the op.
+ *
+ * @author Adam Gibson
+ */
 interface PreImportHook {
 
     fun preProcess(
@@ -32,7 +45,44 @@ interface PreImportHook {
         attributes: Map<String, Any>,
         descriptor: OpNamespace.OpDescriptor,
         outputNames: List<String>,
-        isFinalOutput: Boolean
-    ): HookResult
+        isFinalOutput: Boolean,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): HookResult {
+        // Parameter docs below are from the onnx operator docs:
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
+        return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph),
+            proceedWithInit = false)
+    }
+
+    fun handleOutputs(
+        outputNames: List<String>,
+        sd: SameDiff,
+        op: SameDiffOp,
+        attributes: Map<String, Any>,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String,List<SDVariable>> {
+        outputNames.forEach { outputVarName ->
+            if(outputVarName != null && sd.hasVariable(outputVarName)) {
+                sd.variables.remove(outputVarName)
+                sd.ops.remove(outputVarName)
+            }
+        }
+
+        op.outputsOfOp = outputNames
+
+        return doImport(sd, attributes, outputNames, op,mappingRegistry,importGraph)
+    }
+
+    fun doImport(
+        sd: SameDiff,
+        attributes: Map<String, Any>,
+        outputNames: List<String>,
+        op: SameDiffOp,
+        mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+    ): Map<String,List<SDVariable>>
+
 
 }

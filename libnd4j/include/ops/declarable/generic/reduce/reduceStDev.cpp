@@ -29,7 +29,7 @@ namespace sd    {
 namespace ops     {
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_stdev, 1, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
     auto input   = INPUT_VARIABLE(0);
     auto output  = OUTPUT_VARIABLE(0);
 
@@ -99,7 +99,7 @@ DECLARE_TYPES(reduce_stdev) {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto gradO  = INPUT_VARIABLE(1);
 
@@ -133,20 +133,30 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
     const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
     const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;
 
+    nd4j_debug("Pre mean calculation %d\n",0);
     auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
+    nd4j_debug("Post mean calculation %d\n",0);
 
+    nd4j_debug("Pre variance calculation %d\n",0);
     NDArray variance(mean.shapeInfo(), true, block.launchContext());                    // create empty array with shape matching shape of mean array
     input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, dimensions);
+    nd4j_debug("Post variance calculation %d\n",0);
 
     gradI->assign( (*input - mean) / (variance * NminusOne));                              // automatic broadcasting happens here
 
     if(!keepDims) {
         auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
-        *gradI *= gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+        if(!gradO->isScalar()) {
+            *gradI *= gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(
+                    gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+        } else {
+            *gradI *= *gradO;  // for example could be something like [a,b] -> [1,a,1,b]
+        }
     }
-    else
+    else {
         *gradI *= *gradO;           // automatic broadcasting happens here
 
+    }
     return Status::OK();
 }
 

@@ -49,6 +49,19 @@ interface IRGraph<
 
     fun isPlaceHolder(opName: String): Boolean
 
+    /**
+     * Updates the node cache to be this node cache.
+     * Usually shouldn't be used directly, this is mainly to refresh state after
+     * the graph is loaded.
+     */
+    fun updateNodeCacheWith(nodeList: List<IRNode<NODE_TYPE,TENSOR_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,DATA_TYPE>>)
+
+    /**
+     * Returns true if a given name is an input or an output
+     * to a node.
+     */
+    fun isInputOrOutput(name: String): Boolean
+
     fun isVariable(nodeName: String): Boolean
 
     fun isConstantOpName(name: String): Boolean
@@ -58,6 +71,7 @@ interface IRGraph<
     fun nodeByName(input: String): NODE_TYPE
 
     fun irNodeByName(input: String): IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>
+
 
     fun hasNode(nodeName: String): Boolean
 

@@ -93,7 +93,7 @@ void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff,
 
 	const auto xFirstElem = x.t<T>(0);
 
-	if(tailXnorm <= DataTypeUtils::min<T>()) {
+	if(tailXnorm <= DataTypeUtils::min_positive<T>()) {
 
 		normX = xFirstElem;
 		coeff = (T)0.f;

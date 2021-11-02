@@ -21,13 +21,26 @@
 package org.nd4j.linalg.util;
 
 import lombok.val;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.Arrays;
 
 public class LinAlgExceptions {
+
+    /**
+     * Asserts that at least the number of arguments on the given op is
+     * met.
+     * @param op the op to validate
+     * @param numExpectedArgs the number of expected arguments
+     */
+    public static void assertAllConfigured(CustomOp op,int numExpectedArgs) {
+        Preconditions.checkArgument(op.numIArguments() >= numExpectedArgs,"Unable to instantiate configuration, int arguments are incomplete. Please either specify a configuration or populate all fields in the int arguments.");
+    }
+
     /**
      * Asserts both arrays be the same length
      * @param x

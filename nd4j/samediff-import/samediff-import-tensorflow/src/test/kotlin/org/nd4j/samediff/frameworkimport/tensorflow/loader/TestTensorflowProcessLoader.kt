@@ -52,12 +52,7 @@ class TestTensorflowProcessLoader {
     }
 
 
-    @Test
-    fun testBert() {
-        val importer = TensorflowFrameworkImporter()
-        val imported = importer.runImport("C:\\Users\\agibs\\Downloads\\bert_mrpc_frozen_v1\\bert_mrpc_frozen.pb", emptyMap())
-        imported.asFlatFile(File("output-bert.fb"))
-    }
+
 
     @Test
     fun saveTest() {

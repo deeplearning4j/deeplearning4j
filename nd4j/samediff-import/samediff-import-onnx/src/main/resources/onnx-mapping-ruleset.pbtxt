@@ -66,6 +66,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -460,6 +461,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Unsqueeze"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "equals"
   inputFrameworkOpName: "Equal"
   rule {
@@ -526,6 +532,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -551,18 +558,8 @@ mappings {
     inputFrameworkOpName: "Squeeze"
   }
   rule {
-    ruleName: "convertinputnumberlisttondarray"
-    functionName: "convertinputnumberlisttondarray"
-    inputToOutput {
-      key: "a"
-      value: "axes"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Squeeze"
-  }
-  rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
     outputIntName: "_a"
     inputToOutput {
       key: "_a"
@@ -632,8 +629,9 @@ mappings {
     inputFrameworkOpName: "ReduceSum"
   }
   rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -761,9 +759,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
+    outputIntName: "flattenDimension"
     inputToOutput {
-      key: "dimensions"
+      key: "flattenDimension"
       value: "axis"
     }
     ruleType: "attribute"
@@ -772,31 +770,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "transpose"
+  opName: "noop"
   inputFrameworkOpName: "Transpose"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Transpose"
-  }
-  rule {
-    ruleName: "listnumbertolistnumber"
-    functionName: "listnumbertolistnumber"
-    outputIntName: "permuteDims"
-    inputToOutput {
-      key: "permuteDims"
-      value: "perm"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Transpose"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -830,6 +805,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -837,6 +813,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "ArgMax"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Min"
 }
 mappings {
   frameworkName: "onnx"
@@ -869,6 +850,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -876,6 +858,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "ReduceMean"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Expand"
 }
 mappings {
   frameworkName: "onnx"
@@ -1108,56 +1095,18 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "split"
+  opName: "noop"
   inputFrameworkOpName: "Split"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "a"
-    inputToOutput {
-      key: "a"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "axis"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "numSplit"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "numSplit"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "Split"
-  }
-  rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "b"
-      value: "split"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Split"
-  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "If"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "NonZero"
 }
 mappings {
   frameworkName: "onnx"
@@ -1191,9 +1140,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "keepdims"
-    outputBooleanName: "keepDim"
+    outputDoubleName: "keepDims"
     inputToOutput {
-      key: "keepDim"
+      key: "keepDims"
       value: "keepdims"
     }
     ruleType: "attribute"
@@ -1202,12 +1151,42 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "ReduceLogSumExp"
+  }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "Where"
+  inputFrameworkOpName: "Where"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "condition"
+    inputTensorName: "X"
+    inputTensorName: "Y"
+    outputTensorName: "condition"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "condition"
+      value: "condition"
+    }
+    inputToOutput {
+      key: "input"
+      value: "X"
+    }
+    inputToOutput {
+      key: "y"
+      value: "Y"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "Where"
   }
 }
 mappings {
@@ -1310,6 +1289,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Gemm"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Cast"
 }
 mappings {
   frameworkName: "onnx"
@@ -1484,6 +1468,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Max"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "hard_sigmoid"
   inputFrameworkOpName: "HardSigmoid"
   rule {
@@ -1512,6 +1501,11 @@ mappings {
     }
     inputFrameworkOpName: "HardSigmoid"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Clip"
 }
 mappings {
   frameworkName: "onnx"
@@ -1544,6 +1538,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1614,6 +1609,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1685,6 +1681,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -1692,6 +1689,11 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "ArgMin"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "RoiAlign"
 }
 mappings {
   frameworkName: "onnx"
@@ -4314,6 +4316,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Resize"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "cos"
   inputFrameworkOpName: "Cos"
   rule {
@@ -4770,6 +4777,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "padding"
     outputIntName: "pH"
     inputFloatName: "pads"
     inputToOutput {
@@ -4783,12 +4791,32 @@ mappings {
         name: "pads"
         argIndex: 4
       }
+      transformerArgs {
+        name: "padding"
+        int64Value: 1
+        argType: INT64
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "padding"
+        int64Value: 1
+        argType: INT64
+        argIndex: 4
+      }
     }
     inputFrameworkOpName: "Conv"
   }
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "padding"
     outputIntName: "pW"
     inputFloatName: "pads"
     inputToOutput {
@@ -4801,6 +4829,24 @@ mappings {
       transformerArgs {
         name: "pads"
         int64Value: 1
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "padding"
+        argType: INT64
+        argIndex: 5
+      }
+    }
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 1
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "padding"
+        argType: INT64
         argIndex: 5
       }
     }
@@ -5093,8 +5139,8 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "X"
-    inputTensorName: "mean"
-    inputTensorName: "var"
+    inputTensorName: "input_mean"
+    inputTensorName: "input_var"
     inputTensorName: "scale"
     outputTensorName: "input"
     outputTensorName: "mean"
@@ -5110,11 +5156,11 @@ mappings {
     }
     inputToOutput {
       key: "mean"
-      value: "mean"
+      value: "input_mean"
     }
     inputToOutput {
       key: "variance"
-      value: "var"
+      value: "input_var"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "BatchNormalization"
@@ -5254,6 +5300,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -5656,6 +5703,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -5732,6 +5780,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5742,6 +5791,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5752,6 +5802,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -5863,16 +5914,25 @@ mappings {
     inputFrameworkOpName: "Reshape"
   }
   rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "shapeArr"
-    inputToOutput {
-      key: "shapeArr"
-      value: "shape"
-    }
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "shapeArr"
     ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "shapeArr"
+        int64Value: -99
+        argType: INT64
+      }
+    }
     inputFrameworkOpName: "Reshape"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Slice"
 }
 mappings {
   frameworkName: "onnx"
@@ -5883,6 +5943,8 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "high"
@@ -6133,8 +6195,8 @@ mappings {
     functionName: "valuemapping"
     inputIntName: "exclusive"
     inputIntName: "reverse"
-    outputBooleanName: "exclusive"
-    outputBooleanName: "reverse"
+    outputIntName: "exclusive"
+    outputIntName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -6149,6 +6211,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -6235,46 +6298,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "fill"
+  opName: "noop"
   inputFrameworkOpName: "ConstantOfShape"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "shape"
-    inputToOutput {
-      key: "shape"
-      value: "input"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-  rule {
-    ruleName: "attributendarraytoscalarattribute"
-    functionName: "attributendarraytoscalarattribute"
-    outputDoubleName: "value"
-    inputTensorName: "value"
-    inputToOutput {
-      key: "value"
-      value: "value"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "ConstantOfShape"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "outputDataType"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "outputDataType"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "ConstantOfShape"
-  }
 }
 mappings {
   frameworkName: "onnx"

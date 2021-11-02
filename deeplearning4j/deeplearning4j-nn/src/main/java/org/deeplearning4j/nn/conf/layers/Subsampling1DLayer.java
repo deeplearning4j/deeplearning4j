@@ -258,7 +258,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          */
         @Override
         public void setStride(int... stride) {
-            this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
+            this.stride = ConvolutionUtils.getIntConfig(stride,1);
         }
 
         /**
@@ -268,7 +268,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          */
         @Override
         public void setPadding(int... padding) {
-            this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
+            this.padding = ConvolutionUtils.getIntConfig(padding,1);
         }
     }
 }

@@ -27,6 +27,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -547,20 +551,27 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatmulBp(Nd4jBackend backend) {
-        val a = Nd4j.create(DataType.DOUBLE, 1,3);
-        val b = Nd4j.create(DataType.DOUBLE, 1,4);
-        val gI = Nd4j.create(DataType.DOUBLE, 3,4);
-
-        val gA = Nd4j.create(DataType.DOUBLE, 1,3);
-        val gB = Nd4j.create(DataType.DOUBLE, 1,4);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
 
         val mt = MMulTranspose.builder()
                 .transposeA(true)
                 .transposeB(false)
                 .transposeResult(false).build();
 
-        val op = new MmulBp(a, b, gI, gA, gB, mt);
-        Nd4j.exec(op);
+
+
+
+
+        SameDiff sd = SameDiff.create();
+        val a2 = Nd4j.create(DataType.DOUBLE, 1,3);
+        val b2 = Nd4j.create(DataType.DOUBLE, 1,4);
+        SDVariable a1 = sd.var("a",a2);
+        SDVariable b1 = sd.var("b",b2);
+        SDVariable out = sd.mmul("out",a1,b1,mt.isTransposeA(),mt.isTransposeB(),mt.isTransposeResult());
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
     }
 
 

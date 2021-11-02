@@ -53,7 +53,7 @@ public class GradCheckUtil {
     public static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     public static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
 
-    public static boolean checkGradients(TestCase t){
+    public static boolean checkGradients(TestCase t) {
         return checkGradients(t.sameDiff(), t.placeholderValues(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
                 t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables(), t.gradCheckMask());
     }
@@ -86,7 +86,7 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables, Map<String,INDArray> gradCheckMask,
-                                         int maxPerParam, Subset subset){
+                                         int maxPerParam, Subset subset) {
 
         boolean debugBefore = sd.isDebugMode();
         if(debugMode){
@@ -112,12 +112,12 @@ public class GradCheckUtil {
 
         //Check that all non-Array type SDVariables have arrays associated with them
         for(Variable v : sd.getVariables().values()){
-            if(v.getVariable().getVariableType() == VariableType.ARRAY){
+            if(v.getVariable().getVariableType() == VariableType.ARRAY) {
                 //OK if variable is not available for this, it'll be created during forward pass
                 continue;
             }
 
-            if(v.getVariable().getArr(true) == null){
+            if(v.getVariable().getArr(true) == null) {
                 throw new IllegalStateException("Variable \"" + v.getName() + "\" does not have array associated with it");
             }
         }
@@ -131,7 +131,7 @@ public class GradCheckUtil {
 
         //Collect variables to get gradients for - we want placeholders AND variables
         Set<String> varsNeedingGrads = new HashSet<>();
-        for(Variable v : sd.getVariables().values()){
+        for(Variable v : sd.getVariables().values()) {
             if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
                 SDVariable g = v.getVariable().getGradient();
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
@@ -142,7 +142,7 @@ public class GradCheckUtil {
         //Add non-inplace validation listener, to check that non-inplace ops don't modify their inputs
         List<Listener> listenersBefore = new ArrayList<>(sd.getListeners());
         int listenerIdx = -1;
-        if(listenersBefore.isEmpty()){
+        if(listenersBefore.isEmpty()) {
             sd.addListeners(new NonInplaceValidationListener());
             listenerIdx = 0;
         } else {
@@ -278,7 +278,7 @@ public class GradCheckUtil {
 
                 totalCount++;
                 double orig = a.getDouble(idx);
-                a.putScalar(idx, orig+eps);
+                a.putScalar(idx, orig + eps);
                 double scorePlus = 0.0;
                 Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
                 for(INDArray arr : m.values()){

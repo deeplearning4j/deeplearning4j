@@ -27,7 +27,6 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.VariableType
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.autodiff.samediff.internal.Variable
-
 import org.nd4j.common.base.Preconditions
 import org.nd4j.common.io.ReflectionUtils
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder
@@ -35,6 +34,7 @@ import org.nd4j.imports.graphmapper.OpImportFilter
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.DynamicCustomOp
+import org.nd4j.linalg.api.ops.NoOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -46,13 +46,20 @@ import org.nd4j.samediff.frameworkimport.runner.ImportRunner
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.io.File
-import java.lang.IllegalArgumentException
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 
-
+/**
+ * Core import class for running model import for any framework.
+ * This should be paired with an [OpMappingRegistry]
+ * and a set of classes implemented in protobuf that extend [GeneratedMessageV3]
+ * and [ProtocolMessageEnum] respectively.
+ *
+ * The end result with these abstractions is direct interop with a file format's schema
+ * convertable to primitives like Nd4j's [INDArray] and [SameDiff]
+ *
+ * @author Adam Gibson
+ *
+ */
 open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         NODE_TYPE : GeneratedMessageV3,
         OP_DEF_TYPE : GeneratedMessageV3,
@@ -207,6 +214,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>): SameDiff {
 
 
+      
+
         /*
         First, build an in-memory representation of the graph that allows us to build the graph incrementally
         If we can build the graph incrementally, we can make sure that the added variables are set up with the correct
@@ -235,6 +244,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     sd.`var`(name,converted)
             }
         }
+
+
         val defaultRunner =
             DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
 
@@ -436,7 +447,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //from the graph and initialize them if an input name appears before a mention of a constant.
                             //This can happen in certain frameworks. Sometimes frameworks will have auto sorted
                             //DAGS, this may not be true for all situations though.
-                            if(!sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName)) {
+                            //note, we only want variables being auto declared if they are actually inputs or outputs not only nodes
+                            if(!sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName) && irGraph.isInputOrOutput(inName)) {
                                 val otherInputs = nd.inputs().filter { input -> sd.hasVariable(input) }
                                 var dataType = DataType.FLOAT
                                 //guess input from other data types
@@ -455,6 +467,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             } else if(!sd.hasVariable(inName) && irGraph.hasConstantInitializer(inName)) {
                                 val const = irGraph.getConstantArrayForName(inName)
                                 sd.constant(inName,const)
+                            } else if(!sd.hasVariable(inName)){
+                                throw IllegalStateException("Input variable at index ${i} named ${inName} of node $name was not assigned to any variable")
                             }
 
                             val v = sd.variables[inName]
@@ -467,10 +481,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                             if (v != null && !isControlDep && (v!!.inputsForOp == null || !v.inputsForOp.contains(name))) {
                                 //May already be present - for example, add(x,x)
-                                if (v.inputsForOp == null) v.inputsForOp = java.util.ArrayList()
+                                if (v.inputsForOp == null) v.inputsForOp = ArrayList()
                                 v.inputsForOp.add(name)
                             } else if (v != null && isControlDep) {
-                                if (v!!.controlDepsForOp == null) v.controlDepsForOp = java.util.ArrayList()
+                                if (v!!.controlDepsForOp == null) v.controlDepsForOp = ArrayList()
                                 if (!v.controlDepsForOp.contains(name)) {
                                     v.controlDepsForOp.add(name)
                                 }
@@ -544,7 +558,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 attributes,
                                 importInfo[name]!!.second,
                                 nd.outputs(),
-                                availableToAdd.isEmpty()
+                                availableToAdd.isEmpty(),
+                                opMappingRegistry as OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+                                this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
                             ).proceedWithInit
                         }
 
@@ -598,10 +614,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             for (i in 0 until numOutputs) {
                                 val dt = outputDataTypes[i]
                                 val varName = nd.outputAt(i)
-                                //TODO: handle variadic type in kotlin
-                                /**
-                                 * TODO: handle data type import
-                                 */
+
                                 outSDVars[i] = if(sd.hasVariable(varName)) sd.getVariable(varName) else sd.`var`(varName, VariableType.ARRAY, null, dt)
                                 outNames.add(varName)
                                 outVars[i] = Variable.builder()
@@ -619,7 +632,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                             sd.ops[name]!!.outputsOfOp = outNames
                             println("Imported op: $opName (name=$name)")
-                            opsImported.add(opName + "," + name)
+                            opsImported.add("$opName,$name")
 
                         }
 
@@ -668,7 +681,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     println("Importing op $opName using override $importOverride")
 
                     //First, get inputs:
-                    val inputs: MutableList<SDVariable> = java.util.ArrayList()
+                    val inputs: MutableList<SDVariable> = ArrayList()
                     var controlDeps: MutableList<SDVariable?>? = null
                     val nd4jOpName = opMappingRegistry.lookupOpMappingProcess(opName).opName()
                     val opDescriptor = opMappingRegistry.lookupNd4jOpDef(nd4jOpName)
@@ -681,7 +694,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         val controlDep = isControlDep(inName)
                         val v = sd.getVariable(name)
                         if (controlDep) {
-                            if (controlDeps == null) controlDeps = java.util.ArrayList()
+                            if (controlDeps == null) controlDeps = ArrayList()
                             controlDeps.add(v)
                         } else {
                             inputs.add(v)
@@ -762,7 +775,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             for (s in cdOpNames) {
                 val sdo = sd.ops[s]
                 if(sd.ops.containsKey(s)) {
-                    if (sdo!!.controlDepFor == null) sdo.controlDepFor = java.util.ArrayList()
+                    if (sdo!!.controlDepFor == null) sdo.controlDepFor = ArrayList()
                     val l = sdo.controlDepFor
                     if (!l.contains(s)) l.add(varName)
                 }
@@ -773,7 +786,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         for ((key, value) in mergeOpsPostProcess) {
             val v = sd.variables[value]
             if(v != null) {
-                if ( v!!.inputsForOp == null) v.inputsForOp = java.util.ArrayList()
+                if ( v!!.inputsForOp == null) v.inputsForOp = ArrayList()
                 v.inputsForOp.add(key)
             }
 
@@ -784,10 +797,25 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         FileUtils.writeLines(File("variables-added-new.txt"),variablesAdded)
         println("Ops imported $opsImported")
         FileUtils.writeLines(File("ops-imported-new.txt"),opsImported)
-        println("Ops added$opsAdded")
+        println("Ops added $opsAdded")
         FileUtils.writeLines(File("ops-added-new.txt"),opsAdded)
         println("Ops removed $opsRemoved")
         FileUtils.writeLines(File("ops-removed-new.txt"),opsRemoved)
+
+
+        //see if there are any node names that are just purely outputs and not actual nodes
+        //if so remove those and throw an exception for what's left
+        if(remainingNodes.isNotEmpty()) {
+            val toRemove = HashSet<String>()
+            remainingNodes.keys.forEach {
+                if(!irGraph.hasNode(it)) {
+                    toRemove.add(it)
+                }
+            }
+            toRemove.forEach {
+                remainingNodes.remove(it)
+            }
+        }
 
         Preconditions.checkState(
             remainingNodes.isEmpty(),
@@ -795,6 +823,15 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             remainingNodes.size,
             remainingNodes.keys
         )
+
+        //purge presence of no ops
+        val noOpNames = sd.ops.filter { input -> input.value.op is NoOp }.keys
+        sd.ops.keys.removeAll(noOpNames)
+        sd.ops.forEach { (name, op) ->
+            val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
+            op.inputsToOp.removeAll(noOpNamesForInputs)
+        }
+
         return sd
     }
 }

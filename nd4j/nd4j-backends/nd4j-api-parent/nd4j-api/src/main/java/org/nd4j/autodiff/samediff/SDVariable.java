@@ -64,7 +64,8 @@ public class SDVariable implements Serializable {
 
 
     public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType){
-        Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
+        if(varType != VariableType.PLACEHOLDER)
+            Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
         varName = sameDiff.generateNewVarName(varName, 0, true);
 
@@ -96,7 +97,7 @@ public class SDVariable implements Serializable {
     }
 
     /**
-     * Returns true if this variable is a place holder
+     * Returns true if this variable is a placeholder
      * @return
      */
     public boolean isPlaceHolder() {
@@ -133,12 +134,15 @@ public class SDVariable implements Serializable {
      *
      * @return the {@link INDArray} associated with this variable.
      */
-    public INDArray getArr(boolean enforceExistence){
+    public INDArray getArr(boolean enforceExistence) {
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
-        if(variableType == VariableType.ARRAY){
+        if(variableType == VariableType.ARRAY && enforceExistence) {
             throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
+        } else if(variableType == VariableType.ARRAY) {
+            return null;
         }
+
         INDArray ret = sameDiff.getArrForVarName(getVarName());
         if(enforceExistence && ret == null){
             throw new IllegalStateException("No array exists for variable \"" + name() + "\"");
@@ -181,9 +185,10 @@ public class SDVariable implements Serializable {
      */
     public long[] getShape() {
         if (variableType == VariableType.PLACEHOLDER ) {
-                return shape;
-        } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT){
-            return getArr().shape();
+            return shape;
+        } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
+            if(getArr() != null)
+                return getArr().shape();
         }
 
         return null;
@@ -239,7 +244,7 @@ public class SDVariable implements Serializable {
      * @param value Value for returned variable
      * @return new variable
      */
-    public SDVariable assign(Number value){
+    public SDVariable assign(Number value) {
         return sameDiff.scalarSet(this, value.doubleValue());
     }
 

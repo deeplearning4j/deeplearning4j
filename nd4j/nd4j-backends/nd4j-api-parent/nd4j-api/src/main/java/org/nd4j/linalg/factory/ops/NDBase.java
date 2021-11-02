@@ -157,6 +157,18 @@ public class NDBase {
   }
 
   /**
+   * Assign the contents of y to x.<br>
+   * Y must be broadcastable to x or the same shape.<br>
+   *
+   * @param x The variable to assign to (NDARRAY type)
+   * @param y The variable to assign (NDARRAY type)
+   * @return output The newly assigned output (NUMERIC type)
+   */
+  public INDArray assign(INDArray x, INDArray y) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(x, y))[0];
+  }
+
+  /**
    * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
    * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
    * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
@@ -208,6 +220,63 @@ public class NDBase {
    */
   public INDArray castTo(INDArray arg, DataType datatype) {
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast(arg, datatype))[0];
+  }
+
+  /**
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max for clipping
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByNorm(INDArray x, double clipValue) {
+    NDValidation.validateNumerical("clipByNorm", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue))[0];
+  }
+
+  /**
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max value for clipping (NUMERIC type)
+   * @param dimensions The dimensions to clip (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByNorm(INDArray x, INDArray clipValue, INDArray dimensions) {
+    NDValidation.validateNumerical("clipByNorm", "x", x);
+    NDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
+    NDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue, dimensions))[0];
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping
+   * @param clipValueMax The max value to clip to
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByValue(INDArray x, double clipValueMin, double clipValueMax) {
+    NDValidation.validateNumerical("clipByValue", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax))[0];
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping (NUMERIC type)
+   * @param clipValueMax The max value to clip to (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public INDArray clipByValue(INDArray x, INDArray clipValueMin, INDArray clipValueMax) {
+    NDValidation.validateNumerical("clipByValue", "x", x);
+    NDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
+    NDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(x, clipValueMin, clipValueMax))[0];
   }
 
   /**
@@ -407,13 +476,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray eq(INDArray x, INDArray y) {
-    NDValidation.validateNumerical("eq", "x", x);
-    NDValidation.validateNumerical("eq", "y", y);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo(x, y))[0];
   }
 
@@ -493,12 +560,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray gt(INDArray x, double y) {
-    NDValidation.validateNumerical("gt", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan(x, y));
   }
 
@@ -512,13 +578,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray gt(INDArray x, INDArray y) {
-    NDValidation.validateNumerical("gt", "x", x);
-    NDValidation.validateNumerical("gt", "y", y);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan(x, y))[0];
   }
 
@@ -527,12 +591,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray gte(INDArray x, double y) {
-    NDValidation.validateNumerical("gte", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThanOrEqual(x, y));
   }
 
@@ -546,24 +609,21 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output  (NDARRAY type)
    */
   public INDArray gte(INDArray x, INDArray y) {
-    NDValidation.validateNumerical("gte", "x", x);
-    NDValidation.validateNumerical("gte", "y", y);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual(x, y))[0];
   }
 
   /**
    * Elementwise identity operation: out = x<br>
    *
-   * @param input Input variable (NUMERIC type)
-   * @return output Output variable (NUMERIC type)
+   * @param input Input variable (NDARRAY type)
+   * @return output Output variable (NDARRAY type)
    */
   public INDArray identity(INDArray input) {
-    NDValidation.validateNumerical("identity", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.same.Identity(input))[0];
   }
 
@@ -627,12 +687,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray lt(INDArray x, double y) {
-    NDValidation.validateNumerical("lt", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan(x, y));
   }
 
@@ -646,13 +705,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public INDArray lt(INDArray x, INDArray y) {
-    NDValidation.validateNumerical("lt", "x", x);
-    NDValidation.validateNumerical("lt", "y", y);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan(x, y))[0];
   }
 
@@ -661,12 +718,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray lte(INDArray x, double y) {
-    NDValidation.validateNumerical("lte", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThanOrEqual(x, y));
   }
 
@@ -862,13 +918,11 @@ public class NDBase {
    * the first of them becomes available. If both are available, the output is undefined (either input could<br>
    * be forwarded to the output)<br>
    *
-   * @param x Input variable (NUMERIC type)
-   * @param y Input variable (NUMERIC type)
-   * @return output Output (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
+   * @param y Input variable (NDARRAY type)
+   * @return output Output (NDARRAY type)
    */
   public INDArray merge(INDArray x, INDArray y) {
-    NDValidation.validateNumerical("merge", "x", x);
-    NDValidation.validateNumerical("merge", "y", y);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(x, y))[0];
   }
 
@@ -931,6 +985,17 @@ public class NDBase {
   }
 
   /**
+   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   *
+   * @param datatype The input target data type represented as an int
+   * @param minOrMax The min or max (0 or 1) value to return
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public INDArray minMax(int datatype, int minOrMax) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(datatype, minOrMax))[0];
+  }
+
+  /**
    * Matrix multiplication: out = mmul(x,y)<br>
    * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
    *
@@ -967,12 +1032,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public INDArray neq(INDArray x, double y) {
-    NDValidation.validateNumerical("neq", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals(x, y));
   }
 
@@ -986,13 +1050,11 @@ public class NDBase {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public INDArray neq(INDArray x, INDArray y) {
-    NDValidation.validateNumerical("neq", "x", x);
-    NDValidation.validateNumerical("neq", "y", y);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo(x, y))[0];
   }
 
@@ -1182,23 +1244,21 @@ public class NDBase {
    * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:<br>
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *
-   * @param input Input INDArray  (NUMERIC type)
+   * @param input Input INDArray  (NDARRAY type)
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
    */
   public INDArray onesLike(INDArray input) {
-    NDValidation.validateNumerical("onesLike", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OnesLike(input))[0];
   }
 
   /**
    * As per onesLike(String, SDVariable) but the output datatype may be specified<br>
    *
-   * @param input  (NUMERIC type)
+   * @param input  (NDARRAY type)
    * @param dataType 
    * @return output  (NUMERIC type)
    */
   public INDArray onesLike(INDArray input, DataType dataType) {
-    NDValidation.validateNumerical("onesLike", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.OnesLike(input, dataType))[0];
   }
 
@@ -1206,12 +1266,11 @@ public class NDBase {
    * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Permute dimensions (INT type)
    * @return output Output variable (permuted input) (NUMERIC type)
    */
   public INDArray permute(INDArray x, INDArray dimensions) {
-    NDValidation.validateNumerical("permute", "x", x);
     NDValidation.validateInteger("permute", "dimensions", dimensions);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions))[0];
   }
@@ -1220,12 +1279,11 @@ public class NDBase {
    * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output Output variable (permuted input) (NUMERIC type)
    */
   public INDArray permute(INDArray x, int... dimensions) {
-    NDValidation.validateNumerical("permute", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions))[0];
   }
@@ -1307,11 +1365,10 @@ public class NDBase {
   /**
    * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NUMERIC type)
+   * @param in Input variable (NDARRAY type)
    * @return output (scalar) output variable with value equal to the rank of the input variable (NUMERIC type)
    */
   public INDArray rank(INDArray in) {
-    NDValidation.validateNumerical("rank", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Rank(in))[0];
   }
 
@@ -1351,12 +1408,11 @@ public class NDBase {
    * input, but with the specified shape.<br>
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public INDArray reshape(INDArray x, INDArray shape) {
-    NDValidation.validateNumerical("reshape", "x", x);
     NDValidation.validateNumerical("reshape", "shape", shape);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape))[0];
   }
@@ -1366,12 +1422,11 @@ public class NDBase {
    * input, but with the specified shape.<br>
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray reshape(INDArray x, long... shape) {
-    NDValidation.validateNumerical("reshape", "x", x);
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape))[0];
   }
@@ -1389,12 +1444,11 @@ public class NDBase {
    * [4, 5, 6]<br>
    * [1, 2 3]<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Input variable (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray reverse(INDArray x, int... dimensions) {
-    NDValidation.validateNumerical("reverse", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(x, dimensions))[0];
   }
@@ -1402,14 +1456,13 @@ public class NDBase {
   /**
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
    * @param seqDim Sequence dimension
    * @param batchDim Batch dimension
    * @return output Reversed sequences (NUMERIC type)
    */
   public INDArray reverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim) {
-    NDValidation.validateNumerical("reverseSequence", "x", x);
     NDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, seqDim, batchDim))[0];
   }
@@ -1417,12 +1470,11 @@ public class NDBase {
   /**
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
    * @return output Reversed sequences (NUMERIC type)
    */
   public INDArray reverseSequence(INDArray x, INDArray seq_lengths) {
-    NDValidation.validateNumerical("reverseSequence", "x", x);
     NDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(x, seq_lengths, -1, 0))[0];
   }
@@ -1753,6 +1805,18 @@ public class NDBase {
   }
 
   /**
+   * Sets an inplace shape on the passed in input.<br>
+   *
+   * @param input The input to set the shape of (NUMERIC type)
+   * @param shape The shape to set the input to (NUMERIC type)
+   */
+  public INDArray[] setShape(INDArray input, INDArray shape) {
+    NDValidation.validateNumerical("setShape", "input", input);
+    NDValidation.validateNumerical("setShape", "shape", shape);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SetShape(input, shape));
+  }
+
+  /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
    * @param input Input variable (NUMERIC type)
@@ -1797,13 +1861,12 @@ public class NDBase {
    * [e]<br>
    * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
    *
-   * @param input input Variable to get subset of (NUMERIC type)
+   * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (Size: AtLeast(min=1))
    * @param size Size of the output array. Must be same length as rank of input array (Size: AtLeast(min=1))
    * @return output Subset of the input (NUMERIC type)
    */
   public INDArray slice(INDArray input, int[] begin, int... size) {
-    NDValidation.validateNumerical("slice", "input", input);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(size.length >= 1, "size has incorrect size/length. Expected: size.length >= 1, got %s", size.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size))[0];
@@ -1819,13 +1882,12 @@ public class NDBase {
    * [e]<br>
    * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
    *
-   * @param input input Variable to get subset of (NUMERIC type)
+   * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (INT type)
    * @param size Size of the output array. Must be same length as rank of input array (INT type)
    * @return output Subset of the input (NUMERIC type)
    */
   public INDArray slice(INDArray input, INDArray begin, INDArray size) {
-    NDValidation.validateNumerical("slice", "input", input);
     NDValidation.validateInteger("slice", "begin", begin);
     NDValidation.validateInteger("slice", "size", size);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size))[0];
@@ -1867,12 +1929,24 @@ public class NDBase {
   /**
    * Split a value in to a list of ndarrays.<br>
    *
-   * @param input Input to split (NUMERIC type)
+   * @param input Input to split (NDARRAY type)
    * @param numSplit Number of splits
    * @param splitDim The dimension to split on
    */
   public INDArray[] split(INDArray input, int numSplit, int splitDim) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Split(input, numSplit, splitDim));
+  }
+
+  /**
+   * Split a value in to a list of ndarrays.<br>
+   *
+   * @param input Input to split (NUMERIC type)
+   * @param numSplit Number of splits (NUMERIC type)
+   * @param splitDim The dimension to split on
+   */
+  public INDArray[] split(INDArray input, INDArray numSplit, int splitDim) {
     NDValidation.validateNumerical("split", "input", input);
+    NDValidation.validateNumerical("split", "numSplit", numSplit);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Split(input, numSplit, splitDim));
   }
 
@@ -2002,7 +2076,7 @@ public class NDBase {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
    * @param end End index (Size: AtLeast(min=1))
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
@@ -2015,7 +2089,6 @@ public class NDBase {
    */
   public INDArray stridedSlice(INDArray in, long[] begin, long[] end, long[] strides, int beginMask,
       int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
-    NDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
@@ -2032,14 +2105,13 @@ public class NDBase {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
    * @param end End index (Size: AtLeast(min=1))
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
    * @return output A subset of the input array (NUMERIC type)
    */
   public INDArray stridedSlice(INDArray in, long[] begin, long[] end, long... strides) {
-    NDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
@@ -2056,7 +2128,7 @@ public class NDBase {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
@@ -2069,7 +2141,6 @@ public class NDBase {
    */
   public INDArray stridedSlice(INDArray in, INDArray begin, INDArray end, INDArray strides,
       int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
-    NDValidation.validateNumerical("stridedSlice", "in", in);
     NDValidation.validateNumerical("stridedSlice", "begin", begin);
     NDValidation.validateNumerical("stridedSlice", "end", end);
     NDValidation.validateNumerical("stridedSlice", "strides", strides);
@@ -2086,14 +2157,13 @@ public class NDBase {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
    * @return output A subset of the input array (NUMERIC type)
    */
   public INDArray stridedSlice(INDArray in, INDArray begin, INDArray end, INDArray strides) {
-    NDValidation.validateNumerical("stridedSlice", "in", in);
     NDValidation.validateNumerical("stridedSlice", "begin", begin);
     NDValidation.validateNumerical("stridedSlice", "end", end);
     NDValidation.validateNumerical("stridedSlice", "strides", strides);
@@ -2409,14 +2479,12 @@ public class NDBase {
    * keepDims = true: [a,1,c]<br>
    * keepDims = false: [a,c]<br>
    *
-   * @param x The first array (NUMERIC type)
-   * @param y The second array (NUMERIC type)
+   * @param x The first array (NDARRAY type)
+   * @param y The second array (NDARRAY type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public INDArray where(INDArray x, INDArray y, INDArray condition) {
-    NDValidation.validateNumerical("where", "x", x);
-    NDValidation.validateNumerical("where", "y", y);
     NDValidation.validateBool("where", "condition", condition);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.Where(x, y, condition))[0];
   }
@@ -2469,14 +2537,12 @@ public class NDBase {
    * keepDims = true: [a,1,c]<br>
    * keepDims = false: [a,c]<br>
    *
-   * @param x The first array (NUMERIC type)
-   * @param y The second array (NUMERIC type)
+   * @param x The first array (NDARRAY type)
+   * @param y The second array (NDARRAY type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public INDArray whereNumpy(INDArray x, INDArray y, INDArray condition) {
-    NDValidation.validateNumerical("whereNumpy", "x", x);
-    NDValidation.validateNumerical("whereNumpy", "y", y);
     NDValidation.validateNumerical("whereNumpy", "condition", condition);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(x, y, condition))[0];
   }
@@ -2485,11 +2551,10 @@ public class NDBase {
    * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:<br>
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *
-   * @param input Input  (NUMERIC type)
+   * @param input Input  (NDARRAY type)
    * @return output A new Variable with the same (dynamic) shape as the input (NUMERIC type)
    */
   public INDArray zerosLike(INDArray input) {
-    NDValidation.validateNumerical("zerosLike", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ZerosLike(input))[0];
   }
 }

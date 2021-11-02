@@ -46,7 +46,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Disabled
+//@Disabled
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class BertWordPieceTokenizerTests extends BaseDL4JTest {
@@ -250,5 +250,36 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         System.out.println(list);
 
         assertEquals(8, list.size());
+    }
+
+    @Test
+    public void testBertWordPieceTokenizerHandlesUnicodePunctuation() throws Exception {
+        //Insert some unicode punctuations
+        String arabicQuestionMark = "\u061F"; //؟
+        String toTokenize = "I saw a girl with a telescope" + arabicQuestionMark;
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
+
+        Tokenizer tokenizer = t.create(toTokenize);
+
+        final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", arabicQuestionMark);
+        assertEquals(expected, tokenizer.getTokens());
+    }
+
+    @Test
+    public void testBertWordPieceTokenizerHandlesMorePunctuations() throws Exception {
+        String toTokenizePrefix = "I saw a girl with a telescope";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
+
+        char[] punctuations = {'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';',
+                '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '{', '|', '}', '~'
+        };
+
+        for (char p: punctuations) {
+            String toTokenize = toTokenizePrefix + p;
+            Tokenizer tokenizer = t.create(toTokenize);
+
+            final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", String.valueOf(p));
+            assertEquals(expected, tokenizer.getTokens());
+        }
     }
 }

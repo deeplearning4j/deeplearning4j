@@ -1500,11 +1500,11 @@ namespace sd {
          *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
          */
         #if NOT_EXCLUDED(OP_reduce_sum)
-        DECLARE_CUSTOM_OP(reduce_sum, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_sum, -1, 1, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_reduce_sum_bp)
-        DECLARE_CUSTOM_OP(reduce_sum_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_sum_bp, -1, 1, false, 0, 0);
         #endif
 
         /**
@@ -1528,11 +1528,11 @@ namespace sd {
          *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
          */
         #if NOT_EXCLUDED(OP_reduce_prod)
-        DECLARE_CUSTOM_OP(reduce_prod, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_prod, -1, 1, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_reduce_prod_bp)
-        DECLARE_CUSTOM_OP(reduce_prod_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_prod_bp, -1, 1, false, 0, 0);
         #endif
 
        /**
@@ -1551,10 +1551,10 @@ namespace sd {
         *    reduced tensor with calculated mins
         */
         #if NOT_EXCLUDED(OP_reduce_min)
-        DECLARE_CUSTOM_OP(reduce_min, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_min, -1, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_reduce_min_bp)
-        DECLARE_CUSTOM_OP(reduce_min_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_min_bp, -1, 1, false, 0, 0);
         #endif
 
        /**
@@ -1573,10 +1573,10 @@ namespace sd {
         *    reduced tensor with calculated maxes
         */
         #if NOT_EXCLUDED(OP_reduce_max)
-        DECLARE_CUSTOM_OP(reduce_max, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_max, -1, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_reduce_max_bp)
-        DECLARE_CUSTOM_OP(reduce_max_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_max_bp, -1, 1, false, 0, 0);
         #endif
 
        /**
@@ -1595,10 +1595,10 @@ namespace sd {
         *    reduced tensor with calculated norm1
         */
         #if NOT_EXCLUDED(OP_reduce_norm1)
-        DECLARE_CUSTOM_OP(reduce_norm1, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_norm1, -1, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_reduce_norm1_bp)
-        DECLARE_CUSTOM_OP(reduce_norm1_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_norm1_bp, -1, 1, false, 0, 0);
         #endif
 
        /**
@@ -1617,10 +1617,10 @@ namespace sd {
         *    reduced tensor with calculated norm2
         */
         #if NOT_EXCLUDED(OP_reduce_norm2)
-        DECLARE_CUSTOM_OP(reduce_norm2, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_norm2, -1, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_reduce_norm2_bp)
-        DECLARE_CUSTOM_OP(reduce_norm2_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_norm2_bp, -1, 1, false, 0, 0);
         #endif
 
 
@@ -1640,10 +1640,10 @@ namespace sd {
         *    reduced tensor with calculated norm
         */
         #if NOT_EXCLUDED(OP_reduce_sqnorm)
-        DECLARE_CUSTOM_OP(reduce_sqnorm, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_sqnorm, -1, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
-        DECLARE_CUSTOM_OP(reduce_sqnorm_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_sqnorm_bp, -1, 1, false, 0, 0);
         #endif
 
        /**
@@ -1662,10 +1662,10 @@ namespace sd {
         *    reduced tensor with calculated norm
         */
         #if NOT_EXCLUDED(OP_reduce_norm_max)
-        DECLARE_CUSTOM_OP(reduce_norm_max, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_norm_max, -1, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_reduce_norm_max_bp)
-        DECLARE_CUSTOM_OP(reduce_norm_max_bp, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_norm_max_bp, -1, 1, false, 0, 0);
         #endif
 
         /**
@@ -1684,11 +1684,11 @@ namespace sd {
         *    reduced tensor with calculated means
         */
         #if NOT_EXCLUDED(OP_reduce_mean)
-        DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_mean, -1, 1, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_reduce_mean_bp)
-        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        DECLARE_CUSTOM_OP(reduce_mean_bp, -1, 1, false, 0, 0)
         #endif
         /**
         * This op calculates sample variance of elements along given dimensions
@@ -1707,8 +1707,8 @@ namespace sd {
         *    reduced tensor with calculated means
         */
         #if NOT_EXCLUDED(OP_reduce_variance)
-        DECLARE_CUSTOM_OP(reduce_variance, 1, 1, false, 0, 0);
-        DECLARE_CUSTOM_OP(reduce_variance_bp, 2, 1, false, 0, 0)
+        DECLARE_CUSTOM_OP(reduce_variance, -1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_variance_bp, -1, 1, false, 0, 0)
         #endif
         /**
         * This op calculates sample standard deviation of elements along given dimensions
@@ -1727,8 +1727,8 @@ namespace sd {
         *    reduced tensor with calculated means
         */
 #if NOT_EXCLUDED(OP_reduce_stdev)
-        DECLARE_CUSTOM_OP(reduce_stdev, 1, 1, false, 0, 0);
-        DECLARE_CUSTOM_OP(reduce_stdev_bp, 2, 1, false, 0, 0)
+        DECLARE_CUSTOM_OP(reduce_stdev, -1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_stdev_bp, -1, 1, false, 0, 0)
 #endif
         /**
         * This op calculates backprop dot for two tensors along given dimensions
@@ -1749,7 +1749,7 @@ namespace sd {
         */
 
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_dot_bp, -1, 2, false, 0, 0);
         #endif
         /**
          * reduce_logsumexp - tf.reduce_logsumexe operation
@@ -1774,14 +1774,14 @@ namespace sd {
          *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
          */
         #if NOT_EXCLUDED(OP_reduce_logsumexp)
-        DECLARE_CUSTOM_OP(reduce_logsumexp, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_logsumexp, -1, 1, false, 0, -2);
         #endif
 
        /**
         * Copy a tensor setting everything outside a central band in each innermost matrix
         *
         * input array:
-        *    x: given tensor with shape {..., M, N} - as vector (matrix) of matricies MxN
+        *    x: given tensor with shape {..., M, N} - as vector (matrix) of matrices MxN
         *
         * int arguments:
         *   lower band

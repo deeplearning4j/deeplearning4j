@@ -24,6 +24,7 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
@@ -57,6 +58,11 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
+        //don't double count parameters for conv 1d
+        if(layerConf instanceof Convolution1DLayer) {
+            return nIn * nOut * kernel[0] + (layerConf.hasBias() ? nOut : 0);
+        }
+
         return nIn * nOut * kernel[0] * kernel[1] + (layerConf.hasBias() ? nOut : 0);
     }
 
@@ -184,13 +190,14 @@ public class ConvolutionParamInitializer implements ParamInitializer {
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            val weightsShape = new long[] {outputDepth, inputDepth, kernel[0], kernel[1]};
+            val weightsShape = layerConf instanceof  Convolution1DLayer ? new long[] {outputDepth, inputDepth, kernel[0], 1} : new long[] {outputDepth, inputDepth, kernel[0], kernel[1]};
 
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c', weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
+            long[] realWeights = layerConf instanceof  Convolution1DLayer ?  new long[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], 1} :  new long[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]};
             return WeightInitUtil.reshapeWeights(
-                            new long[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                    realWeights, weightView, 'c');
         }
     }
 }

@@ -49,7 +49,6 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{origInput, gradAtOutput}, false);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        addArgs();
     }
 
     /**
@@ -64,7 +63,6 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{origInput1, origInput2, gradAtOutput}, false);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        addArgs();
     }
 
     /**
@@ -79,7 +77,6 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         super(null, new INDArray[]{origInput, gradAtOutput}, (output == null ? null : new INDArray[]{output}));
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        addArgs();
     }
 
     /**
@@ -95,20 +92,28 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         super(null, new INDArray[]{origInput1, origInput2, gradAtOutput}, (output == null ? null : new INDArray[]{output}));
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        addArgs();
     }
 
     public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions){
         super(null, new INDArray[]{origInput1, origInput2, gradAtOutput}, new INDArray[]{output1, output2});
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        addArgs();
     }
 
-    protected void addArgs(){
-        addTArgument(keepDims ? 1 : 0);
-        if(dimensions != null && dimensions.length > 0){
-            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE ){
+    public BaseReductionBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, INDArray dimensions) {
+        super(null,new INDArray[]{origInput,gradAtOutput,dimensions},new INDArray[]{output});
+        this.keepDims = keepDims;
+    }
+
+    public BaseReductionBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, SDVariable dimensions) {
+        super(null,sameDiff,new SDVariable[]{origInput,gradAtOutput,dimensions},false);
+        this.keepDims = keepDims;
+    }
+
+    protected void addArgs() {
+        addBArgument(keepDims);
+        if(dimensions != null && dimensions.length > 0) {
+            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE) {
                 //Integer.MAX_VALUE means "full array" but here no dimension args == full array
                 addIArgument(dimensions);
             }
@@ -117,11 +122,6 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
 
     public abstract String opName();
 
-
-    @Override
-    public int getNumOutputs() {
-        return 1;
-    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {

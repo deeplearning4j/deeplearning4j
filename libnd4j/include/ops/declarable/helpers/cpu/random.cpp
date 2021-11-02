@@ -244,7 +244,7 @@ namespace helpers {
         const Tx* x = input.bufferAsT<Tx>();
         Tz* z = output.bufferAsT<Tz>();
 
-        Tx minVal = DataTypeUtils::min<Tx>();
+        Tx minVal = DataTypeUtils::min_positive<Tx>();
         Tx maxVal = 1.0;
 
         auto dimA = (0 == dimC) ? 1 : 0;

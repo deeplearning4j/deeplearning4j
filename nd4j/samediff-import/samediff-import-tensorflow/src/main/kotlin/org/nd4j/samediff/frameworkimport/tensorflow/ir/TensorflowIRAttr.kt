@@ -21,8 +21,12 @@ package org.nd4j.samediff.frameworkimport.tensorflow.ir
 
 import org.nd4j.samediff.frameworkimport.ir.IRAttribute
 import org.nd4j.samediff.frameworkimport.ir.IRDataType
+import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.ir.IRTensor
+import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeValueType
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import org.tensorflow.framework.AttrValue
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.OpDef
@@ -111,6 +115,10 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
 
     override fun dataTataTypeValue(): IRDataType<DataType> {
         return TensorflowIRDataType(attributeValue.type)
+    }
+
+    override fun graphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum> {
+        throw UnsupportedOperationException("Unsupported for Tensorflow. Graphs do not exist on attributes.")
     }
 
 }

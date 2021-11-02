@@ -168,7 +168,7 @@ class KerasConvolution3DTest extends BaseDL4JTest {
         assertNotNull(multiLayerConfiguration);
         //null pre processor should still work and default to channels last
         ReshapePreprocessor reshapePreprocessor = (ReshapePreprocessor) multiLayerConfiguration.getInputPreProcess(4);
-        assertNull(reshapePreprocessor.getFormat());
+        assertNotNull(reshapePreprocessor.getFormat());
         System.out.println(multiLayerConfiguration);
     }
 

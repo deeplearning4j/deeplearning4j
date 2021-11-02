@@ -131,7 +131,7 @@ jobs:
                        eval "$command"
           fi
 
-          ./change-spark-versions.sh 3.1.1
+          bash ./change-spark-versions.sh 3.1.2
 
           if [ "$PERFORM_RELEASE" == 1 ]; then
                         echo "Performing release"

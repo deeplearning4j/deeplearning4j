@@ -28,17 +28,17 @@
 namespace sd {
     namespace ops {
         #if NOT_EXCLUDED(OP_clipbyvalue)
-        DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0);
+        DECLARE_CONFIGURABLE_OP(clipbyvalue, -1, 1, true, -1, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_clipbynorm)
-        DECLARE_CONFIGURABLE_OP(clipbynorm, 1, 1, true, 1, 0);
-        DECLARE_CUSTOM_OP(clipbynorm_bp, 2, 1, false, 1, 0);
+        DECLARE_CONFIGURABLE_OP(clipbynorm, -1, 1, true, -1, 0);
+        DECLARE_CUSTOM_OP(clipbynorm_bp, -1, 1, false, -1, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_clipbyavgnorm)
-        DECLARE_CONFIGURABLE_OP(clipbyavgnorm, 1, 1, true, 1, 0);
-        DECLARE_CUSTOM_OP(clipbyavgnorm_bp, 2, 1, false, 1, 0);
+        DECLARE_CONFIGURABLE_OP(clipbyavgnorm, -1, 1, true, -1, 0);
+        DECLARE_CUSTOM_OP(clipbyavgnorm_bp, -1, 1, false, -1, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_cumsum)

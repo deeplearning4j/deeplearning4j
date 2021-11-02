@@ -110,7 +110,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             if(this.rnnDataFormat == null || override)
                 this.rnnDataFormat = r.getFormat();
 
-             if(this.cnn2dDataFormat == null || override)
+            if(this.cnn2dDataFormat == null || override)
                 this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
         } else if(inputType.getType() == InputType.Type.FF) {
             InputType.InputTypeFeedForward r = (InputType.InputTypeFeedForward) inputType;
@@ -236,11 +236,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 return;
             }
 
-            if(this.kernelSize == null){
-                this.kernelSize = new int[] {1, 1};
-            }
-
-            this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
+            this.kernelSize = ConvolutionUtils.getIntConfig(kernelSize,1);
         }
 
         @Override
@@ -251,11 +247,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 return;
             }
 
-            if(this.stride == null){
-                this.stride = new int[] {1, 1};
-            }
+            this.stride = ConvolutionUtils.getIntConfig(stride,1);
 
-            this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
         }
 
         @Override
@@ -266,26 +259,20 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 return;
             }
 
-            if(this.padding == null){
-                this.padding = new int[] {0, 0};
-            }
+            this.padding = ConvolutionUtils.getIntConfig(padding,0);
 
-            this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
         }
 
         @Override
         public void setDilation(int... dilation) {
 
-            if(dilation == null){
+            if(dilation == null) {
                 this.dilation = null;
                 return;
             }
 
-            if(this.dilation == null){
-                this.dilation = new int[] {1, 1};
-            }
+            this.dilation = ConvolutionUtils.getIntConfig(dilation,1);
 
-            this.dilation[0] = ValidationUtils.validate1NonNegative(dilation, "dilation")[0];
         }
 
         @Override

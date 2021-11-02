@@ -61,6 +61,10 @@ public class AvgPooling3D extends Pooling3D {
         return "config";
     }
 
+    @Override
+    protected Pooling3DType getDefaultType() {
+        return Pooling3DType.AVG;
+    }
 
     @Override
     public Map<String, Object> propertiesForFunction() {

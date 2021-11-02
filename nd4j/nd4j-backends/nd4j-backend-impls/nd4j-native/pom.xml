@@ -493,6 +493,13 @@
             </properties>
         </profile>
         <profile>
+            <!--
+            Windows note:
+               Do NOT use the gcc compiler in usr/ always use the one in mingw/bin
+               Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
+               prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
+               may show up.
+            -->
             <id>mingw</id>
             <activation>
                 <os>
@@ -515,6 +522,13 @@
             </build>
         </profile>
         <profile>
+            <!--
+          Windows note:
+             Do NOT use the gcc compiler in usr/ always use the one in mingw/bin
+             Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
+             prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
+             may show up.
+      -->
             <id>mingw-windows-platform</id>
             <activation>
                 <os>

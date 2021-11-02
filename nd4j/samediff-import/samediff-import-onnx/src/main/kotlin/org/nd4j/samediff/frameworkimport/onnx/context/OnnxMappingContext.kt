@@ -34,6 +34,7 @@ import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRNode
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import java.lang.IllegalArgumentException
+import java.lang.IllegalStateException
 
 class OnnxMappingContext(opDef: Onnx.NodeProto, node: Onnx.NodeProto, graph:
 IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
@@ -66,11 +67,6 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
     }
 
     override fun tensorInputFor(name: String): IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
-        var foundIndex = -1
-        opDef.inputList.forEachIndexed {
-                index,argDef -> if(argDef == name) foundIndex = index
-        }
-
         return tensorInputFromInputFrameworkName(name)
     }
 
@@ -141,9 +137,19 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
     override fun nodeInputNameForOpDefInputName(name: String): String {
         var foundIndex = opDef.inputList.map { input -> input.toString() }.indexOf(name)
         if(foundIndex < 0) {
-           throw IllegalArgumentException("No name ${name} found on op def with name ${opDef.name}")
+            throw IllegalArgumentException("No name ${name} found on op def with name ${opDef.name}")
         }
+
+        if(foundIndex >= node.inputCount) {
+            throw IllegalStateException("Node with name $name was found at index $foundIndex but was inconsistent with number of inputs for node ${node.name}")
+        }
+
         return node.getInput(foundIndex)
+    }
+
+    override fun hasInput(name: String): Boolean {
+        var foundIndex = opDef.inputList.map { input -> input.toString() }.indexOf(name)
+        return foundIndex >= 0 && foundIndex < node.inputCount
     }
 
 }

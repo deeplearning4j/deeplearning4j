@@ -41,7 +41,7 @@ namespace helpers {
         return saved;
     }
 
-    ND4J_LOCAL Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep) {
+     Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
 
         NDArray::preparePrimaryUse({},{values, keep});
@@ -97,7 +97,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    ND4J_LOCAL int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
+     int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
         NDArray::preparePrimaryUse({output1, output2}, {values, keep});

@@ -27,7 +27,7 @@
 
 #include <stdlib.h>
 
-#if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
+#if defined(__GNUC__) &&  !defined(SD_WINDOWS_BUILD) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
 
 #include <unistd.h>
 #include <execinfo.h>
@@ -47,7 +47,7 @@ namespace sd {
             return instance;
         }
 
-#if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
+#if defined(__GNUC__) &&   !defined(__CYGWIN__) && !defined(SD_WINDOWS)  && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
         std::string demangle(char *message) {
             char *mangled_name = 0, *offset_begin = 0, *offset_end = 0;
 
@@ -98,7 +98,7 @@ namespace sd {
 #endif
 
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
-#if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
+#if defined(__GNUC__) && !defined(__MINGW64__) && !defined(__CYGWIN__) && !defined(SD_ANDROID_BUILD) && !defined(SD_WINDOWS) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
             if (Environment::getInstance().isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 

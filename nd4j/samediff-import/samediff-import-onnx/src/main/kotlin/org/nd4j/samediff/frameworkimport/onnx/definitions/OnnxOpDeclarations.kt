@@ -97,6 +97,8 @@ val less = OnnxMappingProcess(
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)
 
+
+
 val greaterEqual = OnnxMappingProcess(
         inputFrameworkOpName = "GreaterOrEqual",
         opName = "greater_equal",
@@ -180,7 +182,9 @@ val batchNorm = OnnxMappingProcess(
         opName = "batchnorm",
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "BatchNormalization",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X","mean" to "mean","variance" to "var","gamma" to "scale"))),
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf(
+                "input" to "X","mean" to "input_mean",
+                "variance" to "input_var","gamma" to "scale"))),
         attributeMappingRules = listOf(valueMappings(mapOf("epsilon" to "epsilon")),
                 booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0],
                 booleanConstant(inputName = "applyGamma",constantValue = false,argumentIndex = 1)[0],
@@ -190,7 +194,6 @@ val batchNorm = OnnxMappingProcess(
         ))
 //TODO: Binarizer
 //TODO: Bitshift
-//TODO: Cast
 //TODO: CastMap
 //TODO: CategoryMapper
 //TODO: Celu
@@ -206,14 +209,7 @@ val concat = OnnxMappingProcess(
 
 )
 //TODO: ConcatFromSequence
-val constantFill = OnnxMappingProcess(
-        opName = "fill",
-        inputFrameworkOpName = "ConstantOfShape",
-        opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("shape" to "input"))),
-        attributeMappingRules = listOf(ndarrayAttributeToScalarAttribute(outputAttributeValue = "value",inputAttributeValue = "value"),
-                intConstant(inputName = "outputDataType",constantValue = 0,argumentIndex = 0)[0])
-)
+
 
 //TODO: ConvInteger
 //TODO: ConvTranspose
@@ -310,7 +306,6 @@ val softmax = OnnxMappingProcess(
 
 //TODO: DynamicQuantizeLinear
 //TODO: Einsum
-//TODO: Expand
 //TODO: EyeLike
 //TODO: FeatureVectorizer
 val gru = OnnxMappingProcess(
@@ -346,6 +341,33 @@ val gatherNd = OnnxMappingProcess(
 )
 
 
+val ifOp = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "If",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val clip = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Clip",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
+
+val roiAlign = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "RoiAlign",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
+
+val nonZero = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "NonZero",
+        opMappingRegistry = onnxOpRegistry
+)
 
 
 val gemm = OnnxMappingProcess(
@@ -360,6 +382,7 @@ val gemm = OnnxMappingProcess(
                 invertBooleanNumber(mutableMapOf("transX" to "transA","transY" to "transB")))
 )
 //note: no ops are mostly just stubs for ops implemented as pre processors
+//These are implemented using the PreImportHook found: https://github.com/eclipse/deeplearning4j/tree/master/nd4j/samediff-import/samediff-import-onnx/src/main/kotlin/org/nd4j/samediff/frameworkimport/onnx/definitions/implementations
 val globalAveragePooling = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "GlobalAveragePool",
@@ -372,9 +395,21 @@ val globalMaxPooling = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+val cast = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Cast",
+        opMappingRegistry = onnxOpRegistry
+)
+
 val resize = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Resize",
+        opMappingRegistry = onnxOpRegistry
+)
+
+val constantOfShape = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ConstantOfShape",
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -394,6 +429,18 @@ val expand = OnnxMappingProcess(
         inputFrameworkOpName = "Expand",
         opMappingRegistry = onnxOpRegistry
 )
+
+
+val min = OnnxMappingProcess(
+        inputFrameworkOpName = "Min",
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry)
+
+val max = OnnxMappingProcess(
+        inputFrameworkOpName = "Max",
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry)
+
 
 
 //TODO: Gradient
@@ -723,7 +770,7 @@ val reduceLogSumExp = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
         attributeMappingRules = listOf(
                 invertBooleanNumber(mutableMapOf("keepDims" to "keepdims")),
-                valueMappings(mutableMapOf("keepDim" to "keepdims")),
+                valueMappings(mutableMapOf("keepDims" to "keepdims")),
                 listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
         opMappingRegistry = onnxOpRegistry
 )
@@ -768,7 +815,7 @@ val reduceSum = OnnxMappingProcess(
         opName = "reduce_sum",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
         attributeMappingRules = listOf(invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+                ndarrayToIntList(mutableMapOf( "dimensions" to "axes"))),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -777,7 +824,7 @@ val flatten = OnnxMappingProcess(
         inputFrameworkOpName = "Flatten",
         opName = "flatten_2d",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimensions" to "axis"))),
+        attributeMappingRules = listOf(valueMappings(mutableMapOf("flattenDimension" to "axis"))),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -785,12 +832,11 @@ val reshape = OnnxMappingProcess(
         inputFrameworkOpName = "Reshape",
         opName = "reshape",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","shape" to "shape"))),
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("shapeArr" to "shape"))),
+        attributeMappingRules = listOf(intConstant(inputName = "shapeArr",constantValue = -99,argumentIndex = 0)[0]),
         opMappingRegistry = onnxOpRegistry
 )
 
 //TODO: ReduceSumSquare
-//TODO: Resize PRIORITIZE
 //for mapping indices see: https://github.com/eclipse/deeplearning4j/blob/228f6cda30e27999f0fea74badc8d98ee8fb0647/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/enums/ImageResizeMethod.java#L29
 
 //TODO: ReverseSequence
@@ -866,16 +912,19 @@ val spaceToDepth = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-//TODO: don't know a good default value for num_splits, look at TF and implementation in libnd4j to figure out best value
 val split = OnnxMappingProcess(
-        opName = "split",
+        opName = "noop",
         inputFrameworkOpName = "Split",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("a" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("dimensions" to "axis")),
-                intConstant(inputName = "numSplit",constantValue = 0,argumentIndex = 0)[0],
-                listNumberToNDarray(outputAttributeValue = "b" ,inputAttributeValue = "split"))
 )
+
+val transpose = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Transpose",
+
+        opMappingRegistry = onnxOpRegistry
+)
+
 
 val sqrt = OnnxMappingProcess(
         opName = "sqrt",
@@ -899,8 +948,7 @@ val squeeze = OnnxMappingProcess(
         inputFrameworkOpName = "Squeeze",
         opMappingRegistry = onnxOpRegistry,
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(convertNumericalListToNDArray(outputAttributeValue = "a" ,inputAttributeValue =  "axes"),
-                listNumberToListNumber(outputAttributeValue = "_a",inputAttributeValue = "axes"))
+        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf( "_a" to  "axes")))
 )
 
 //TODO: StringNormalizer
@@ -926,17 +974,11 @@ val topK = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
-val transpose = OnnxMappingProcess(
-        opName = "transpose",
-        inputFrameworkOpName = "Transpose",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToListNumber(outputAttributeValue = "permuteDims",inputAttributeValue = "perm")),
-        opMappingRegistry = onnxOpRegistry
-)
 
 val where = OnnxMappingProcess(
         inputFrameworkOpName = "Where",
-        opName = "where",
+        opName = "Where",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("condition" to "condition","input" to "X","y" to "Y"))),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -993,8 +1035,20 @@ val conv2d = OnnxMappingProcess(
                         argIndex = 7
                         argType = OpNamespace.ArgDescriptor.ArgType.INT64
                 }),
-                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4),
-                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 1,argumentIndex = 5),
+                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4,
+                        defaultValueIfNotFound = ArgDescriptor {
+                                int64Value = 1
+                                name = "padding"
+                                argIndex = 4
+                                argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        }),
+                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 1,argumentIndex = 5,
+                        defaultValueIfNotFound = ArgDescriptor {
+                                int64Value = 0
+                                name = "padding"
+                                argIndex = 5
+                                argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        }),
                 listAttributeValueLookup(outputAttributeValue = "sH",inputAttributeValue = "strides",indexValue = 0,argumentIndex = 2,
                         defaultValueIfNotFound = ArgDescriptor {
                                 int64Value = 1

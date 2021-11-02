@@ -29,23 +29,23 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    ND4J_EXPORT void softMaxForVector(sd::LaunchContext * context, const NDArray &input, NDArray &output);
+    ND4J_LOCAL void softMaxForVector(sd::LaunchContext * context, const NDArray &input, NDArray &output);
 
-    ND4J_EXPORT void logSoftMaxForVector(sd::LaunchContext * context, const NDArray &input, NDArray &output);
+    ND4J_LOCAL void logSoftMaxForVector(sd::LaunchContext * context, const NDArray &input, NDArray &output);
 
-    ND4J_EXPORT void softmax(sd::LaunchContext * context, const NDArray &input, NDArray &output, const int dimension);
+    ND4J_LOCAL void softmax(sd::LaunchContext * context, const NDArray &input, NDArray &output, const int dimension);
 
-    ND4J_EXPORT void logSoftmax(sd::LaunchContext * context, const NDArray &input, NDArray &output, const int dimension);
+    ND4J_LOCAL void logSoftmax(sd::LaunchContext * context, const NDArray &input, NDArray &output, const int dimension);
 
-    ND4J_EXPORT void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension);
+    ND4J_LOCAL void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension);
 
-    ND4J_EXPORT void prelu(sd::LaunchContext * context, const NDArray &input, const NDArray &alpha, NDArray &output);
+    ND4J_LOCAL void prelu(sd::LaunchContext * context, const NDArray &input, const NDArray &alpha, NDArray &output);
 
-    ND4J_EXPORT void preluBP(sd::LaunchContext * context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
+    ND4J_LOCAL void preluBP(sd::LaunchContext * context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
 
-    ND4J_EXPORT void thresholdRelu(sd::LaunchContext * context, const NDArray &input, double threshold, NDArray &output);
+    ND4J_LOCAL void thresholdRelu(sd::LaunchContext * context, const NDArray &input, double threshold, NDArray &output);
 
-    ND4J_EXPORT void thresholdReluDerivative(sd::LaunchContext * context, NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
+    ND4J_LOCAL void thresholdReluDerivative(sd::LaunchContext * context, NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
 }
 }
 }

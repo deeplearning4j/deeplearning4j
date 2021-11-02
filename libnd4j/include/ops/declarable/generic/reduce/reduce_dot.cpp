@@ -29,7 +29,7 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_dot_bp)
 
 ////////////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
+CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
 
     auto x     = INPUT_VARIABLE(0);
     auto y     = INPUT_VARIABLE(1);

@@ -45,10 +45,7 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         super(null, inputs, outputs);
     }
 
-    @Override
-    public int getNumOutputs() {
-        return 1;
-    }
+
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){

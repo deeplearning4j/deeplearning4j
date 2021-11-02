@@ -1513,11 +1513,25 @@ public class NDMath {
    *
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
+   * @param keepDims Whether to keep dimensions during reduction or not. 
    */
-  public INDArray[] moments(INDArray input, int... axes) {
+  public INDArray[] moments(INDArray input, int[] axes, boolean keepDims) {
     NDValidation.validateNumerical("moments", "input", input);
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes, keepDims));
+  }
+
+  /**
+   * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
+   *
+   * @param input Input to calculate moments for (NUMERIC type)
+   * @param axes Dimensions to perform calculation over (NUMERIC type)
+   * @param keepDims Whether to keep dimensions during reduction or not. 
+   */
+  public INDArray[] moments(INDArray input, INDArray axes, boolean keepDims) {
+    NDValidation.validateNumerical("moments", "input", input);
+    NDValidation.validateNumerical("moments", "axes", axes);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes, keepDims));
   }
 
   /**

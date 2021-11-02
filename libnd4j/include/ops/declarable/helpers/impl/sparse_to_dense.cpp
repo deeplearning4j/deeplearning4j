@@ -50,7 +50,7 @@ namespace sd {
 
             }
 
-            ND4J_LOCAL void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArray *def, NDArray &output) {
+             void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArray *def, NDArray &output) {
                 // make sure host buffer is updated
                 values.syncToHost();
                 indices.syncToHost();

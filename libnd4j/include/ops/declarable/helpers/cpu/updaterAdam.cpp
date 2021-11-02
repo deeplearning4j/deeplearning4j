@@ -108,7 +108,7 @@ static void adamUpdater_(const NDArray& gradient, const NDArray& initStateU, con
     return;
 }
 
-ND4J_LOCAL void updaterAdam(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateU, const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,  const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
+ void updaterAdam(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateU, const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,  const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
     BUILD_SINGLE_SELECTOR(gradient.dataType(), adamUpdater_, (gradient, initStateU, initStateM, update, stateU, stateM, dLr, dBeta1, dBeta2, dEpsilon, nIteration), FLOAT_TYPES);
 }
 

@@ -291,6 +291,32 @@ public class SDBaseOps {
   }
 
   /**
+   * Assign the contents of y to x.<br>
+   * Y must be broadcastable to x or the same shape.<br>
+   *
+   * @param x The variable to assign to (NDARRAY type)
+   * @param y The variable to assign (NDARRAY type)
+   * @return output The newly assigned output (NUMERIC type)
+   */
+  public SDVariable assign(SDVariable x, SDVariable y) {
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Assign the contents of y to x.<br>
+   * Y must be broadcastable to x or the same shape.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x The variable to assign to (NDARRAY type)
+   * @param y The variable to assign (NDARRAY type)
+   * @return output The newly assigned output (NUMERIC type)
+   */
+  public SDVariable assign(String name, SDVariable x, SDVariable y) {
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
    * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
    * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
@@ -401,6 +427,131 @@ public class SDBaseOps {
    */
   public SDVariable castTo(String name, SDVariable arg, DataType datatype) {
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast(sd,arg, datatype).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max for clipping
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(SDVariable x, double clipValue) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue).outputVariable();
+  }
+
+  /**
+   * Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max for clipping
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(String name, SDVariable x, double clipValue) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max value for clipping (NUMERIC type)
+   * @param dimensions The dimensions to clip (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(SDVariable x, SDVariable clipValue, SDVariable dimensions) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    SDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
+    SDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue, dimensions).outputVariable();
+  }
+
+  /**
+   *   Returns a clipped ndarray such that the input is normalized so that its L2 norm <br>
+   * is <= the specified value.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to clip (NUMERIC type)
+   * @param clipValue The value max value for clipping (NUMERIC type)
+   * @param dimensions The dimensions to clip (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByNorm(String name, SDVariable x, SDVariable clipValue,
+      SDVariable dimensions) {
+    SDValidation.validateNumerical("clipByNorm", "x", x);
+    SDValidation.validateNumerical("clipByNorm", "clipValue", clipValue);
+    SDValidation.validateNumerical("clipByNorm", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(sd,x, clipValue, dimensions).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping
+   * @param clipValueMax The max value to clip to
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(SDVariable x, double clipValueMin, double clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping
+   * @param clipValueMax The max value to clip to
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(String name, SDVariable x, double clipValueMin,
+      double clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping (NUMERIC type)
+   * @param clipValueMax The max value to clip to (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(SDVariable x, SDVariable clipValueMin, SDVariable clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    SDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
+    SDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
+  }
+
+  /**
+   * Return the clipped ndarray containing values no smaller or larger than the given min and max.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable to cip (NUMERIC type)
+   * @param clipValueMin The value min for clipping (NUMERIC type)
+   * @param clipValueMax The max value to clip to (NUMERIC type)
+   * @return output The clipped value (NUMERIC type)
+   */
+  public SDVariable clipByValue(String name, SDVariable x, SDVariable clipValueMin,
+      SDVariable clipValueMax) {
+    SDValidation.validateNumerical("clipByValue", "x", x);
+    SDValidation.validateNumerical("clipByValue", "clipValueMin", clipValueMin);
+    SDValidation.validateNumerical("clipByValue", "clipValueMax", clipValueMax);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue(sd,x, clipValueMin, clipValueMax).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -814,13 +965,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable eq(SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("eq", "x", x);
-    SDValidation.validateNumerical("eq", "y", y);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo(sd,x, y).outputVariable();
   }
 
@@ -835,13 +984,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable eq(String name, SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("eq", "x", x);
-    SDValidation.validateNumerical("eq", "y", y);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1003,12 +1150,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable gt(SDVariable x, double y) {
-    SDValidation.validateNumerical("gt", "x", x);
     return new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan(sd,x, y).outputVariable();
   }
 
@@ -1018,12 +1164,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable gt(String name, SDVariable x, double y) {
-    SDValidation.validateNumerical("gt", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1038,13 +1183,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable gt(SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("gt", "x", x);
-    SDValidation.validateNumerical("gt", "y", y);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan(sd,x, y).outputVariable();
   }
 
@@ -1059,13 +1202,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable gt(String name, SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("gt", "x", x);
-    SDValidation.validateNumerical("gt", "y", y);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1075,12 +1216,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable gte(SDVariable x, double y) {
-    SDValidation.validateNumerical("gte", "x", x);
     return new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThanOrEqual(sd,x, y).outputVariable();
   }
 
@@ -1090,12 +1230,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable gte(String name, SDVariable x, double y) {
-    SDValidation.validateNumerical("gte", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThanOrEqual(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1110,13 +1249,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output  (NDARRAY type)
    */
   public SDVariable gte(SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("gte", "x", x);
-    SDValidation.validateNumerical("gte", "y", y);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual(sd,x, y).outputVariable();
   }
 
@@ -1131,13 +1268,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output  (NDARRAY type)
    */
   public SDVariable gte(String name, SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("gte", "x", x);
-    SDValidation.validateNumerical("gte", "y", y);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1145,11 +1280,10 @@ public class SDBaseOps {
   /**
    * Elementwise identity operation: out = x<br>
    *
-   * @param input Input variable (NUMERIC type)
-   * @return output Output variable (NUMERIC type)
+   * @param input Input variable (NDARRAY type)
+   * @return output Output variable (NDARRAY type)
    */
   public SDVariable identity(SDVariable input) {
-    SDValidation.validateNumerical("identity", "input", input);
     return new org.nd4j.linalg.api.ops.impl.transforms.same.Identity(sd,input).outputVariable();
   }
 
@@ -1157,11 +1291,10 @@ public class SDBaseOps {
    * Elementwise identity operation: out = x<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input variable (NUMERIC type)
-   * @return output Output variable (NUMERIC type)
+   * @param input Input variable (NDARRAY type)
+   * @return output Output variable (NDARRAY type)
    */
   public SDVariable identity(String name, SDVariable input) {
-    SDValidation.validateNumerical("identity", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.same.Identity(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1292,12 +1425,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable lt(SDVariable x, double y) {
-    SDValidation.validateNumerical("lt", "x", x);
     return new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan(sd,x, y).outputVariable();
   }
 
@@ -1307,12 +1439,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable lt(String name, SDVariable x, double y) {
-    SDValidation.validateNumerical("lt", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1327,13 +1458,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public SDVariable lt(SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("lt", "x", x);
-    SDValidation.validateNumerical("lt", "y", y);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan(sd,x, y).outputVariable();
   }
 
@@ -1348,13 +1477,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output Output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public SDVariable lt(String name, SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("lt", "x", x);
-    SDValidation.validateNumerical("lt", "y", y);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1364,12 +1491,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable lte(SDVariable x, double y) {
-    SDValidation.validateNumerical("lte", "x", x);
     return new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThanOrEqual(sd,x, y).outputVariable();
   }
 
@@ -1379,12 +1505,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable lte(String name, SDVariable x, double y) {
-    SDValidation.validateNumerical("lte", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThanOrEqual(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1789,13 +1914,11 @@ public class SDBaseOps {
    * the first of them becomes available. If both are available, the output is undefined (either input could<br>
    * be forwarded to the output)<br>
    *
-   * @param x Input variable (NUMERIC type)
-   * @param y Input variable (NUMERIC type)
-   * @return output Output (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
+   * @param y Input variable (NDARRAY type)
+   * @return output Output (NDARRAY type)
    */
   public SDVariable merge(SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("merge", "x", x);
-    SDValidation.validateNumerical("merge", "y", y);
     return new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(sd,x, y).outputVariable();
   }
 
@@ -1805,13 +1928,11 @@ public class SDBaseOps {
    * be forwarded to the output)<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
-   * @param y Input variable (NUMERIC type)
-   * @return output Output (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
+   * @param y Input variable (NDARRAY type)
+   * @return output Output (NDARRAY type)
    */
   public SDVariable merge(String name, SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("merge", "x", x);
-    SDValidation.validateNumerical("merge", "y", y);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -1939,6 +2060,30 @@ public class SDBaseOps {
   }
 
   /**
+   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   *
+   * @param datatype The input target data type represented as an int
+   * @param minOrMax The min or max (0 or 1) value to return
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public SDVariable minMax(int datatype, int minOrMax) {
+    return new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(sd,datatype, minOrMax).outputVariable();
+  }
+
+  /**
+   * Return a scalar array reflecting the min or max value for a given data type.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param datatype The input target data type represented as an int
+   * @param minOrMax The min or max (0 or 1) value to return
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public SDVariable minMax(String name, int datatype, int minOrMax) {
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType(sd,datatype, minOrMax).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Matrix multiplication: out = mmul(x,y)<br>
    * Supports specifying transpose argument to perform operation such as mmul(a^T, b), etc.<br>
    *
@@ -2011,12 +2156,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable neq(SDVariable x, double y) {
-    SDValidation.validateNumerical("neq", "x", x);
     return new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals(sd,x, y).outputVariable();
   }
 
@@ -2026,12 +2170,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input array (NUMERIC type)
+   * @param x Input array (NDARRAY type)
    * @param y Double value argument to use in operation
    * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
    */
   public SDVariable neq(String name, SDVariable x, double y) {
-    SDValidation.validateNumerical("neq", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -2046,13 +2189,11 @@ public class SDBaseOps {
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public SDVariable neq(SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("neq", "x", x);
-    SDValidation.validateNumerical("neq", "y", y);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo(sd,x, y).outputVariable();
   }
 
@@ -2067,13 +2208,11 @@ public class SDBaseOps {
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input 1 (NUMERIC type)
-   * @param y Input 2 (NUMERIC type)
-   * @return output Boolean array out, with values true/false based on where the condition is satisfied (NUMERIC type)
+   * @param x Input 1 (NDARRAY type)
+   * @param y Input 2 (NDARRAY type)
+   * @return output Boolean array out, with values true/false based on where the condition is satisfied (NDARRAY type)
    */
   public SDVariable neq(String name, SDVariable x, SDVariable y) {
-    SDValidation.validateNumerical("neq", "x", x);
-    SDValidation.validateNumerical("neq", "y", y);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo(sd,x, y).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -2465,11 +2604,10 @@ public class SDBaseOps {
    * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:<br>
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *
-   * @param input Input INDArray  (NUMERIC type)
+   * @param input Input INDArray  (NDARRAY type)
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
    */
   public SDVariable onesLike(SDVariable input) {
-    SDValidation.validateNumerical("onesLike", "input", input);
     return new org.nd4j.linalg.api.ops.impl.shape.OnesLike(sd,input).outputVariable();
   }
 
@@ -2478,11 +2616,10 @@ public class SDBaseOps {
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input INDArray  (NUMERIC type)
+   * @param input Input INDArray  (NDARRAY type)
    * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
    */
   public SDVariable onesLike(String name, SDVariable input) {
-    SDValidation.validateNumerical("onesLike", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.OnesLike(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -2490,12 +2627,11 @@ public class SDBaseOps {
   /**
    * As per onesLike(String, SDVariable) but the output datatype may be specified<br>
    *
-   * @param input  (NUMERIC type)
+   * @param input  (NDARRAY type)
    * @param dataType 
    * @return output  (NUMERIC type)
    */
   public SDVariable onesLike(SDVariable input, DataType dataType) {
-    SDValidation.validateNumerical("onesLike", "input", input);
     return new org.nd4j.linalg.api.ops.impl.shape.OnesLike(sd,input, dataType).outputVariable();
   }
 
@@ -2503,12 +2639,11 @@ public class SDBaseOps {
    * As per onesLike(String, SDVariable) but the output datatype may be specified<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input  (NUMERIC type)
+   * @param input  (NDARRAY type)
    * @param dataType 
    * @return output  (NUMERIC type)
    */
   public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
-    SDValidation.validateNumerical("onesLike", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.OnesLike(sd,input, dataType).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -2517,12 +2652,11 @@ public class SDBaseOps {
    * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Permute dimensions (INT type)
    * @return output Output variable (permuted input) (NUMERIC type)
    */
   public SDVariable permute(SDVariable x, SDVariable dimensions) {
-    SDValidation.validateNumerical("permute", "x", x);
     SDValidation.validateInteger("permute", "dimensions", dimensions);
     return new org.nd4j.linalg.api.ops.impl.shape.Permute(sd,x, dimensions).outputVariable();
   }
@@ -2532,12 +2666,11 @@ public class SDBaseOps {
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Permute dimensions (INT type)
    * @return output Output variable (permuted input) (NUMERIC type)
    */
   public SDVariable permute(String name, SDVariable x, SDVariable dimensions) {
-    SDValidation.validateNumerical("permute", "x", x);
     SDValidation.validateInteger("permute", "dimensions", dimensions);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Permute(sd,x, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -2547,12 +2680,11 @@ public class SDBaseOps {
    * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output Output variable (permuted input) (NUMERIC type)
    */
   public SDVariable permute(SDVariable x, int... dimensions) {
-    SDValidation.validateNumerical("permute", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return new org.nd4j.linalg.api.ops.impl.shape.Permute(sd,x, dimensions).outputVariable();
   }
@@ -2562,12 +2694,11 @@ public class SDBaseOps {
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output Output variable (permuted input) (NUMERIC type)
    */
   public SDVariable permute(String name, SDVariable x, int... dimensions) {
-    SDValidation.validateNumerical("permute", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Permute(sd,x, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -2733,11 +2864,10 @@ public class SDBaseOps {
   /**
    * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NUMERIC type)
+   * @param in Input variable (NDARRAY type)
    * @return output (scalar) output variable with value equal to the rank of the input variable (NUMERIC type)
    */
   public SDVariable rank(SDVariable in) {
-    SDValidation.validateNumerical("rank", "in", in);
     return new org.nd4j.linalg.api.ops.impl.shape.Rank(sd,in).outputVariable();
   }
 
@@ -2745,11 +2875,10 @@ public class SDBaseOps {
    * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Input variable (NUMERIC type)
+   * @param in Input variable (NDARRAY type)
    * @return output (scalar) output variable with value equal to the rank of the input variable (NUMERIC type)
    */
   public SDVariable rank(String name, SDVariable in) {
-    SDValidation.validateNumerical("rank", "in", in);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Rank(sd,in).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -2827,12 +2956,11 @@ public class SDBaseOps {
    * input, but with the specified shape.<br>
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reshape(SDVariable x, SDVariable shape) {
-    SDValidation.validateNumerical("reshape", "x", x);
     SDValidation.validateNumerical("reshape", "shape", shape);
     return new org.nd4j.linalg.api.ops.impl.shape.Reshape(sd,x, shape).outputVariable();
   }
@@ -2843,12 +2971,11 @@ public class SDBaseOps {
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reshape(String name, SDVariable x, SDVariable shape) {
-    SDValidation.validateNumerical("reshape", "x", x);
     SDValidation.validateNumerical("reshape", "shape", shape);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Reshape(sd,x, shape).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -2859,12 +2986,11 @@ public class SDBaseOps {
    * input, but with the specified shape.<br>
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reshape(SDVariable x, long... shape) {
-    SDValidation.validateNumerical("reshape", "x", x);
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
     return new org.nd4j.linalg.api.ops.impl.shape.Reshape(sd,x, shape).outputVariable();
   }
@@ -2875,12 +3001,11 @@ public class SDBaseOps {
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param shape New shape for variable (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reshape(String name, SDVariable x, long... shape) {
-    SDValidation.validateNumerical("reshape", "x", x);
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Reshape(sd,x, shape).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -2899,12 +3024,11 @@ public class SDBaseOps {
    * [4, 5, 6]<br>
    * [1, 2 3]<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Input variable (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reverse(SDVariable x, int... dimensions) {
-    SDValidation.validateNumerical("reverse", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(sd,x, dimensions).outputVariable();
   }
@@ -2923,12 +3047,11 @@ public class SDBaseOps {
    * [1, 2 3]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Input variable (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reverse(String name, SDVariable x, int... dimensions) {
-    SDValidation.validateNumerical("reverse", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(sd,x, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -2937,7 +3060,7 @@ public class SDBaseOps {
   /**
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
    * @param seqDim Sequence dimension
    * @param batchDim Batch dimension
@@ -2945,7 +3068,6 @@ public class SDBaseOps {
    */
   public SDVariable reverseSequence(SDVariable x, SDVariable seq_lengths, int seqDim,
       int batchDim) {
-    SDValidation.validateNumerical("reverseSequence", "x", x);
     SDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(sd,x, seq_lengths, seqDim, batchDim).outputVariable();
   }
@@ -2954,7 +3076,7 @@ public class SDBaseOps {
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
    * @param seqDim Sequence dimension
    * @param batchDim Batch dimension
@@ -2962,7 +3084,6 @@ public class SDBaseOps {
    */
   public SDVariable reverseSequence(String name, SDVariable x, SDVariable seq_lengths, int seqDim,
       int batchDim) {
-    SDValidation.validateNumerical("reverseSequence", "x", x);
     SDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(sd,x, seq_lengths, seqDim, batchDim).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -2971,12 +3092,11 @@ public class SDBaseOps {
   /**
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
    * @return output Reversed sequences (NUMERIC type)
    */
   public SDVariable reverseSequence(SDVariable x, SDVariable seq_lengths) {
-    SDValidation.validateNumerical("reverseSequence", "x", x);
     SDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(sd,x, seq_lengths, -1, 0).outputVariable();
   }
@@ -2985,12 +3105,11 @@ public class SDBaseOps {
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (NUMERIC type)
+   * @param x Input variable (NDARRAY type)
    * @param seq_lengths Length of the sequences (INT type)
    * @return output Reversed sequences (NUMERIC type)
    */
   public SDVariable reverseSequence(String name, SDVariable x, SDVariable seq_lengths) {
-    SDValidation.validateNumerical("reverseSequence", "x", x);
     SDValidation.validateInteger("reverseSequence", "seq_lengths", seq_lengths);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence(sd,x, seq_lengths, -1, 0).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -3693,6 +3812,32 @@ public class SDBaseOps {
   }
 
   /**
+   * Sets an inplace shape on the passed in input.<br>
+   *
+   * @param input The input to set the shape of (NUMERIC type)
+   * @param shape The shape to set the input to (NUMERIC type)
+   */
+  public SDVariable[] setShape(SDVariable input, SDVariable shape) {
+    SDValidation.validateNumerical("setShape", "input", input);
+    SDValidation.validateNumerical("setShape", "shape", shape);
+    return new org.nd4j.linalg.api.ops.impl.shape.SetShape(sd,input, shape).outputVariables();
+  }
+
+  /**
+   * Sets an inplace shape on the passed in input.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input The input to set the shape of (NUMERIC type)
+   * @param shape The shape to set the input to (NUMERIC type)
+   */
+  public SDVariable[] setShape(String[] names, SDVariable input, SDVariable shape) {
+    SDValidation.validateNumerical("setShape", "input", input);
+    SDValidation.validateNumerical("setShape", "shape", shape);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.shape.SetShape(sd,input, shape).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
    * @param input Input variable (NUMERIC type)
@@ -3778,13 +3923,12 @@ public class SDBaseOps {
    * [e]<br>
    * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
    *
-   * @param input input Variable to get subset of (NUMERIC type)
+   * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (Size: AtLeast(min=1))
    * @param size Size of the output array. Must be same length as rank of input array (Size: AtLeast(min=1))
    * @return output Subset of the input (NUMERIC type)
    */
   public SDVariable slice(SDVariable input, int[] begin, int... size) {
-    SDValidation.validateNumerical("slice", "input", input);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(size.length >= 1, "size has incorrect size/length. Expected: size.length >= 1, got %s", size.length);
     return new org.nd4j.linalg.api.ops.impl.shape.Slice(sd,input, begin, size).outputVariable();
@@ -3801,13 +3945,12 @@ public class SDBaseOps {
    * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input input Variable to get subset of (NUMERIC type)
+   * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (Size: AtLeast(min=1))
    * @param size Size of the output array. Must be same length as rank of input array (Size: AtLeast(min=1))
    * @return output Subset of the input (NUMERIC type)
    */
   public SDVariable slice(String name, SDVariable input, int[] begin, int... size) {
-    SDValidation.validateNumerical("slice", "input", input);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(size.length >= 1, "size has incorrect size/length. Expected: size.length >= 1, got %s", size.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Slice(sd,input, begin, size).outputVariable();
@@ -3824,13 +3967,12 @@ public class SDBaseOps {
    * [e]<br>
    * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
    *
-   * @param input input Variable to get subset of (NUMERIC type)
+   * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (INT type)
    * @param size Size of the output array. Must be same length as rank of input array (INT type)
    * @return output Subset of the input (NUMERIC type)
    */
   public SDVariable slice(SDVariable input, SDVariable begin, SDVariable size) {
-    SDValidation.validateNumerical("slice", "input", input);
     SDValidation.validateInteger("slice", "begin", begin);
     SDValidation.validateInteger("slice", "size", size);
     return new org.nd4j.linalg.api.ops.impl.shape.Slice(sd,input, begin, size).outputVariable();
@@ -3847,13 +3989,12 @@ public class SDBaseOps {
    * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input input Variable to get subset of (NUMERIC type)
+   * @param input input Variable to get subset of (NDARRAY type)
    * @param begin Beginning index. Must be same length as rank of input array (INT type)
    * @param size Size of the output array. Must be same length as rank of input array (INT type)
    * @return output Subset of the input (NUMERIC type)
    */
   public SDVariable slice(String name, SDVariable input, SDVariable begin, SDVariable size) {
-    SDValidation.validateNumerical("slice", "input", input);
     SDValidation.validateInteger("slice", "begin", begin);
     SDValidation.validateInteger("slice", "size", size);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Slice(sd,input, begin, size).outputVariable();
@@ -3934,12 +4075,37 @@ public class SDBaseOps {
   /**
    * Split a value in to a list of ndarrays.<br>
    *
-   * @param input Input to split (NUMERIC type)
+   * @param input Input to split (NDARRAY type)
    * @param numSplit Number of splits
    * @param splitDim The dimension to split on
    */
   public SDVariable[] split(SDVariable input, int numSplit, int splitDim) {
+    return new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
+  }
+
+  /**
+   * Split a value in to a list of ndarrays.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input to split (NDARRAY type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public SDVariable[] split(String[] names, SDVariable input, int numSplit, int splitDim) {
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Split a value in to a list of ndarrays.<br>
+   *
+   * @param input Input to split (NUMERIC type)
+   * @param numSplit Number of splits (NUMERIC type)
+   * @param splitDim The dimension to split on
+   */
+  public SDVariable[] split(SDVariable input, SDVariable numSplit, int splitDim) {
     SDValidation.validateNumerical("split", "input", input);
+    SDValidation.validateNumerical("split", "numSplit", numSplit);
     return new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
   }
 
@@ -3948,11 +4114,12 @@ public class SDBaseOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param input Input to split (NUMERIC type)
-   * @param numSplit Number of splits
+   * @param numSplit Number of splits (NUMERIC type)
    * @param splitDim The dimension to split on
    */
-  public SDVariable[] split(String[] names, SDVariable input, int numSplit, int splitDim) {
+  public SDVariable[] split(String[] names, SDVariable input, SDVariable numSplit, int splitDim) {
     SDValidation.validateNumerical("split", "input", input);
+    SDValidation.validateNumerical("split", "numSplit", numSplit);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -4212,7 +4379,7 @@ public class SDBaseOps {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
    * @param end End index (Size: AtLeast(min=1))
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
@@ -4225,7 +4392,6 @@ public class SDBaseOps {
    */
   public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides,
       int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
@@ -4243,7 +4409,7 @@ public class SDBaseOps {
    * [h, i]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
    * @param end End index (Size: AtLeast(min=1))
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
@@ -4257,7 +4423,6 @@ public class SDBaseOps {
   public SDVariable stridedSlice(String name, SDVariable in, long[] begin, long[] end,
       long[] strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
       int shrinkAxisMask) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
@@ -4275,14 +4440,13 @@ public class SDBaseOps {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
    * @param end End index (Size: AtLeast(min=1))
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
    * @return output A subset of the input array (NUMERIC type)
    */
   public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long... strides) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
@@ -4300,7 +4464,7 @@ public class SDBaseOps {
    * [h, i]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin Beginning index (Size: AtLeast(min=1))
    * @param end End index (Size: AtLeast(min=1))
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
@@ -4308,7 +4472,6 @@ public class SDBaseOps {
    */
   public SDVariable stridedSlice(String name, SDVariable in, long[] begin, long[] end,
       long... strides) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
     Preconditions.checkArgument(strides.length >= 1, "strides has incorrect size/length. Expected: strides.length >= 1, got %s", strides.length);
@@ -4326,7 +4489,7 @@ public class SDBaseOps {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
@@ -4340,7 +4503,6 @@ public class SDBaseOps {
   public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
       SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
       int shrinkAxisMask) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     SDValidation.validateNumerical("stridedSlice", "begin", begin);
     SDValidation.validateNumerical("stridedSlice", "end", end);
     SDValidation.validateNumerical("stridedSlice", "strides", strides);
@@ -4358,7 +4520,7 @@ public class SDBaseOps {
    * [h, i]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
@@ -4372,7 +4534,6 @@ public class SDBaseOps {
   public SDVariable stridedSlice(String name, SDVariable in, SDVariable begin, SDVariable end,
       SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask,
       int shrinkAxisMask) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     SDValidation.validateNumerical("stridedSlice", "begin", begin);
     SDValidation.validateNumerical("stridedSlice", "end", end);
     SDValidation.validateNumerical("stridedSlice", "strides", strides);
@@ -4390,7 +4551,7 @@ public class SDBaseOps {
    * [b, c]<br>
    * [h, i]<br>
    *
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
@@ -4398,7 +4559,6 @@ public class SDBaseOps {
    */
   public SDVariable stridedSlice(SDVariable in, SDVariable begin, SDVariable end,
       SDVariable strides) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     SDValidation.validateNumerical("stridedSlice", "begin", begin);
     SDValidation.validateNumerical("stridedSlice", "end", end);
     SDValidation.validateNumerical("stridedSlice", "strides", strides);
@@ -4416,7 +4576,7 @@ public class SDBaseOps {
    * [h, i]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Variable to get subset of (NUMERIC type)
+   * @param in Variable to get subset of (NDARRAY type)
    * @param begin The beginning indices for the slice (NUMERIC type)
    * @param end The ending indicesof the slice (NUMERIC type)
    * @param strides The strides for each dimension (NUMERIC type)
@@ -4424,7 +4584,6 @@ public class SDBaseOps {
    */
   public SDVariable stridedSlice(String name, SDVariable in, SDVariable begin, SDVariable end,
       SDVariable strides) {
-    SDValidation.validateNumerical("stridedSlice", "in", in);
     SDValidation.validateNumerical("stridedSlice", "begin", begin);
     SDValidation.validateNumerical("stridedSlice", "end", end);
     SDValidation.validateNumerical("stridedSlice", "strides", strides);
@@ -5083,14 +5242,12 @@ public class SDBaseOps {
    * keepDims = true: [a,1,c]<br>
    * keepDims = false: [a,c]<br>
    *
-   * @param x The first array (NUMERIC type)
-   * @param y The second array (NUMERIC type)
+   * @param x The first array (NDARRAY type)
+   * @param y The second array (NDARRAY type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(SDVariable x, SDVariable y, SDVariable condition) {
-    SDValidation.validateNumerical("where", "x", x);
-    SDValidation.validateNumerical("where", "y", y);
     SDValidation.validateBool("where", "condition", condition);
     return new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
   }
@@ -5106,14 +5263,12 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x The first array (NUMERIC type)
-   * @param y The second array (NUMERIC type)
+   * @param x The first array (NDARRAY type)
+   * @param y The second array (NDARRAY type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (BOOL type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable where(String name, SDVariable x, SDVariable y, SDVariable condition) {
-    SDValidation.validateNumerical("where", "x", x);
-    SDValidation.validateNumerical("where", "y", y);
     SDValidation.validateBool("where", "condition", condition);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.Where(sd,x, y, condition).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -5209,14 +5364,12 @@ public class SDBaseOps {
    * keepDims = true: [a,1,c]<br>
    * keepDims = false: [a,c]<br>
    *
-   * @param x The first array (NUMERIC type)
-   * @param y The second array (NUMERIC type)
+   * @param x The first array (NDARRAY type)
+   * @param y The second array (NDARRAY type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable whereNumpy(SDVariable x, SDVariable y, SDVariable condition) {
-    SDValidation.validateNumerical("whereNumpy", "x", x);
-    SDValidation.validateNumerical("whereNumpy", "y", y);
     SDValidation.validateNumerical("whereNumpy", "condition", condition);
     return new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(sd,x, y, condition).outputVariable();
   }
@@ -5232,14 +5385,12 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x The first array (NUMERIC type)
-   * @param y The second array (NUMERIC type)
+   * @param x The first array (NDARRAY type)
+   * @param y The second array (NDARRAY type)
    * @param condition Condition array determining which elements at which indices should  be picked from. If true, picks from x, other wise y (NUMERIC type)
    * @return output Number of elements that the condition is satisfied for (NUMERIC type)
    */
   public SDVariable whereNumpy(String name, SDVariable x, SDVariable y, SDVariable condition) {
-    SDValidation.validateNumerical("whereNumpy", "x", x);
-    SDValidation.validateNumerical("whereNumpy", "y", y);
     SDValidation.validateNumerical("whereNumpy", "condition", condition);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy(sd,x, y, condition).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -5249,11 +5400,10 @@ public class SDBaseOps {
    * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:<br>
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *
-   * @param input Input  (NUMERIC type)
+   * @param input Input  (NDARRAY type)
    * @return output A new Variable with the same (dynamic) shape as the input (NUMERIC type)
    */
   public SDVariable zerosLike(SDVariable input) {
-    SDValidation.validateNumerical("zerosLike", "input", input);
     return new org.nd4j.linalg.api.ops.impl.shape.ZerosLike(sd,input).outputVariable();
   }
 
@@ -5262,11 +5412,10 @@ public class SDBaseOps {
    * if the input shape changes in later execution, the returned variable's shape will also be updated<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input  (NUMERIC type)
+   * @param input Input  (NDARRAY type)
    * @return output A new Variable with the same (dynamic) shape as the input (NUMERIC type)
    */
   public SDVariable zerosLike(String name, SDVariable input) {
-    SDValidation.validateNumerical("zerosLike", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.ZerosLike(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

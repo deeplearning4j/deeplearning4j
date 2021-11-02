@@ -30,7 +30,7 @@ fun NodeProto(block: Onnx.NodeProto.Builder.() -> Unit): Onnx.NodeProto {
 }
 
 fun AttributeProto(block: Onnx.AttributeProto.Builder.() -> Unit) : Onnx.AttributeProto {
-    return Onnx.AttributeProto.newBuilder().apply { block }.build()
+    return Onnx.AttributeProto.newBuilder().apply(block).build()
 }
 
 fun Onnx.AttributeProto.Builder.TensorValue(inputValue: Onnx.TensorProto) {
@@ -151,7 +151,6 @@ fun Onnx.TensorProto.Builder.OnnxRawData(byteArray: ByteArray) {
 }
 
 fun Onnx.TensorProto.Builder.Shape(shape: List<Long>) {
-    this.dimsList.clear()
     this.dimsList.addAll(shape)
 }
 
