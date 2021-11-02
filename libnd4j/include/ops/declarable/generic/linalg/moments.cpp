@@ -76,7 +76,7 @@ namespace sd {
 
             }
             //std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+            const bool keepDims = block.getBArguments()->size() > 0 ? (bool)B_ARG(0) : false;
 
             auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
             auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
