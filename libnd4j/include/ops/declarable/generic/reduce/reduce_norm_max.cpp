@@ -117,7 +117,6 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
     *gradI = 0;
 
     if(gradO->lengthOf() == 1) {
-
         auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
         const Nd4jLong ind = indOfAbsMaxElem.t<Nd4jLong>(0);
         const int sign = input->e<float>(ind) >= 0 ? 1 : -1;

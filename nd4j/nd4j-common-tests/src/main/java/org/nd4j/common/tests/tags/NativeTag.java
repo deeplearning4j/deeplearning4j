@@ -25,6 +25,7 @@ package org.nd4j.common.tests.tags;
 
 import org.junit.jupiter.api.Tag;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -34,5 +35,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Tag("jvm-crash")
 @Tag("hardware-accelerated")
+@NotThreadSafe
 public @interface NativeTag {
 }

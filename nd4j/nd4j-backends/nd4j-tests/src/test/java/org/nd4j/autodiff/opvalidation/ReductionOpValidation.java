@@ -1127,14 +1127,14 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttention(){
+    public void testDotProductAttention(Nd4jBackend backend) {
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
 
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1)));
-        Nd4j.exec((CustomOp) new SoftMax(exec, exec, 1));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1153,7 +1153,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionWithMask(){
+    public void testDotProductAttentionWithMask(Nd4jBackend backend) {
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
@@ -1163,7 +1163,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1)));
         exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
-        Nd4j.exec((CustomOp) new SoftMax(exec, exec, 1));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1184,7 +1184,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionMultiHeadInputWithMask(){
+    public void testDotProductAttentionMultiHeadInputWithMask(Nd4jBackend backend) {
         final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
         final INDArray query = Nd4j.rand(new int[]{2, 5, 4, 2});
@@ -1194,7 +1194,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(-2)));
         exec.addi(Nd4j.tile(mask.reshape(2, 1, 3, 1), 1, 5, 1, 2).sub(1).muli(1e9));
-        Nd4j.exec((CustomOp) new SoftMax(exec, exec, -2));
+        Nd4j.exec(new SoftMax(exec, exec, -2));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1216,14 +1216,14 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionMultiHeadInput(){
+    public void testDotProductAttentionMultiHeadInput(Nd4jBackend backend){
         final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
         final INDArray query = Nd4j.rand(new int[]{2, 5, 4, 1});
 
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(-2)));
-        Nd4j.exec((CustomOp) new SoftMax(exec, exec, -2));
+        Nd4j.exec(new SoftMax(exec, exec, -2));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1530,8 +1530,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
-                .gradCheckMinAbsError(1e-3)
-                .gradCheckMaxRelativeError(1e-3)
                 .expectedOutput(output.name(), expected);
 
         String err = OpValidation.validate(tc);
