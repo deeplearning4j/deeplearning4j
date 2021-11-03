@@ -564,8 +564,8 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
 
 
         SameDiff sd = SameDiff.create();
-        val a2 = Nd4j.create(DataType.DOUBLE, 1,3);
-        val b2 = Nd4j.create(DataType.DOUBLE, 1,4);
+        val a2 = Nd4j.linspace(1,3,3).reshape(1,3).castTo(DataType.DOUBLE);
+        val b2 = Nd4j.linspace(1,4,4).reshape(1,4).castTo(DataType.DOUBLE);
         SDVariable a1 = sd.var("a",a2);
         SDVariable b1 = sd.var("b",b2);
         SDVariable out = sd.mmul("out",a1,b1,mt.isTransposeA(),mt.isTransposeB(),mt.isTransposeResult());
