@@ -577,6 +577,29 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMatmulBpMatrix(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
+        val mt = MMulTranspose.builder()
+                .transposeA(false)
+                .transposeB(false)
+                .transposeResult(false).build();
+
+
+        SameDiff sd = SameDiff.create();
+        val a2 = Nd4j.linspace(1,6,6).reshape(3,2).castTo(DataType.DOUBLE);
+        val b2 = Nd4j.linspace(1,8,8).reshape(2,4).castTo(DataType.DOUBLE);
+        SDVariable a1 = sd.var("a",a2);
+        SDVariable b1 = sd.var("b",b2);
+        SDVariable out = sd.mmul("out",a1,b1,mt.isTransposeA(),mt.isTransposeB(),mt.isTransposeResult());
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedSliceEdgeCase(Nd4jBackend backend) {
         INDArray in = Nd4j.scalar(10.0).reshape(1);   //Int [1]
         INDArray begin = Nd4j.ones(DataType.INT, 1);

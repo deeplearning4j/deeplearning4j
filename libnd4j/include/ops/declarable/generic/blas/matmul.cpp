@@ -176,8 +176,28 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
             // special case for scalar value
             if (eps->isScalar()) {
 
-                dldx->assign((*eps) * y->sumNumber());
-                dldy->assign((*eps) * x->sumNumber());
+                if(x->isVector() && y->isVector()) {
+                    dldx->assign((*eps) * y->sumNumber());
+                    dldy->assign((*eps) * x->sumNumber());
+                } else {
+                    //assign all ones to shape as baseline
+                    dldx->assign(1.0);
+                    dldy->assign(1.0);
+                    //match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
+                    //the dimensions should match the matching dimensions to compute proper gradients wrt each input
+                    //core gradient for each is sum(input) * eps as scalar
+                    auto xSum = x->reduceAlongDimension(sd::reduce::Sum,{0});
+                    xSum *= *eps;
+                    //ensure we have proper shape for broadcasted multiplication
+                    auto xSumRow = xSum.reshape(xSum.ordering(),{xSum.lengthOf(),1});
+                    auto ySum = y->reduceAlongDimension(sd::reduce::Sum,{1});
+                    ySum *= *eps;
+                    auto ySumRow = ySum.reshape(ySum.ordering(),{1,ySum.lengthOf()});
+                    //execute proper multiplication: rows for first input, columns for second
+                    dldx->mulRowVector(ySumRow,*dldx);
+                    dldy->muliColumnVector(xSumRow);
+                }
+
 
                 return Status::OK();
             }

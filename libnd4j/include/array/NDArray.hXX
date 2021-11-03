@@ -4596,7 +4596,7 @@ namespace sd {
         if (isS())
             throw std::runtime_error("NDArray::mulRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() || !row.isRowVector() || columns() != row.columns())
-            throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+            throw std::invalid_argument("NDArray::mulRowVector: wrong arguments !");
         if(target.dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()))
             throw std::invalid_argument("NDArray::mulRowVector: wrong type of target array !");
 
