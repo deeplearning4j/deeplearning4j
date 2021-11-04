@@ -26,30 +26,27 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(to_int32, 1, 1, true, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(to_int32, 1, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            if (!block.isInplace())
-                output->assign(input);
+  if (!block.isInplace()) output->assign(input);
 
-            STORE_RESULT(output);
+  STORE_RESULT(output);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(to_int32) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(sd::DataType::INT32);
-        }
-        DECLARE_SHAPE_FN(to_int32) {
-            auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::INT32, true, block.workspace());
-            return SHAPELIST(CONSTANT(outShape));
-        }
-
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(to_int32) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::INT32);
+}
+DECLARE_SHAPE_FN(to_int32) {
+  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::INT32, true, block.workspace());
+  return SHAPELIST(CONSTANT(outShape));
+}
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

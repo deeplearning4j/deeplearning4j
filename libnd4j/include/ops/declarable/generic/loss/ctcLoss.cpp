@@ -18,120 +18,137 @@
 // @author AbdelRauf
 //
 
-
-#include <system/op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/ctc.h>
+#include <system/op_boilerplate.h>
 
 #if NOT_EXCLUDED(OP_ctc_loss)
 namespace sd {
-namespace ops  {
-
+namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(ctc_loss, 4, 1, false, 0, 1) {
+  auto targetLabels = INPUT_VARIABLE(0);
+  auto logitInput = INPUT_VARIABLE(1);
+  auto targetLabelLengths = INPUT_VARIABLE(2);
+  auto logitInputLengths = INPUT_VARIABLE(3);
+  auto outputLosses = OUTPUT_VARIABLE(0);
 
-    auto targetLabels = INPUT_VARIABLE(0);
-    auto logitInput = INPUT_VARIABLE(1);
-    auto targetLabelLengths = INPUT_VARIABLE(2);
-    auto logitInputLengths = INPUT_VARIABLE(3);
-    auto outputLosses = OUTPUT_VARIABLE(0);
+  int blankIndex = INT_ARG(0);
 
-    int blankIndex = INT_ARG(0);
+  REQUIRE_TRUE(
+      targetLabels->rankOf() == 2, 0,
+      "CtcLoss: target labels fails to meet rank requirement (batch_size, max_label_sequence_length): %i == 2 ",
+      targetLabels->rankOf());
+  REQUIRE_TRUE(logitInput->rankOf() == 3, 0,
+               "CtcLoss: logit Input fails to meet rank requirement (batch_size, frames, classes): %i == 3 ",
+               logitInput->rankOf());
+  REQUIRE_TRUE(targetLabelLengths->rankOf() == 1, 0,
+               "CtcLoss: target label length fails to meet rank requirement (batch_size): %i == 1 ",
+               targetLabelLengths->rankOf());
+  REQUIRE_TRUE(logitInputLengths->rankOf() == 1, 0,
+               "CtcLoss: logit Input lengths fails to meet rank requirement (batch_size): %i == 1 ",
+               logitInputLengths->rankOf());
 
-    REQUIRE_TRUE(targetLabels->rankOf()==2, 0, "CtcLoss: target labels fails to meet rank requirement (batch_size, max_label_sequence_length): %i == 2 ", targetLabels->rankOf());
-    REQUIRE_TRUE(logitInput->rankOf()==3, 0, "CtcLoss: logit Input fails to meet rank requirement (batch_size, frames, classes): %i == 3 ", logitInput->rankOf());
-    REQUIRE_TRUE(targetLabelLengths->rankOf()==1, 0, "CtcLoss: target label length fails to meet rank requirement (batch_size): %i == 1 ", targetLabelLengths->rankOf());
-    REQUIRE_TRUE(logitInputLengths->rankOf()==1, 0, "CtcLoss: logit Input lengths fails to meet rank requirement (batch_size): %i == 1 ", logitInputLengths->rankOf());
+  auto batchSize0 = targetLabels->sizeAt(0);
+  auto batchSize1 = logitInput->sizeAt(0);
+  auto batchSize2 = targetLabelLengths->sizeAt(0);
+  auto batchSize3 = logitInputLengths->sizeAt(0);
+  auto batchSize4 = outputLosses->sizeAt(0);
 
-    auto batchSize0 = targetLabels->sizeAt(0);
-    auto batchSize1 = logitInput->sizeAt(0);
-    auto batchSize2 = targetLabelLengths->sizeAt(0);
-    auto batchSize3 = logitInputLengths->sizeAt(0);
-    auto batchSize4 = outputLosses->sizeAt(0);
+  bool check_batches = (batchSize0 == batchSize1) && (batchSize2 == batchSize3);
+  check_batches = check_batches && (batchSize0 == batchSize4) && (batchSize0 == batchSize2);
 
-    bool check_batches = (batchSize0 == batchSize1) && (batchSize2 == batchSize3);
-    check_batches = check_batches && (batchSize0 == batchSize4) && (batchSize0 == batchSize2);
+  REQUIRE_TRUE(check_batches, 0, "CtcLoss: All batch sizes should be %i", batchSize0);
+  REQUIRE_TRUE(outputLosses->isSameShape(targetLabelLengths), 0,
+               "CtcLoss: wrong shape of output array, expected is %s but got %s instead !",
+               ShapeUtils::shapeAsString(targetLabelLengths).c_str(), ShapeUtils::shapeAsString(outputLosses).c_str());
 
-    REQUIRE_TRUE(check_batches, 0, "CtcLoss: All batch sizes should be %i", batchSize0);
-    REQUIRE_TRUE(outputLosses->isSameShape(targetLabelLengths), 0, "CtcLoss: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(targetLabelLengths).c_str(), ShapeUtils::shapeAsString(outputLosses).c_str());
+  auto emptyGradients = NDArrayFactory::empty<float>();
+  sd::ops::helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, *outputLosses,
+                            emptyGradients, blankIndex);
 
-    auto emptyGradients = NDArrayFactory::empty<float>();
-    sd::ops::helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, *outputLosses, emptyGradients, blankIndex);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(ctc_loss) {
-        getOpDescriptor()->setAllowedInputTypes({ALL_INDICES})
-                     ->setAllowedInputTypes(1,{ALL_FLOATS})
-                     ->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()
+      ->setAllowedInputTypes({ALL_INDICES})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(ctc_loss) {
-    auto yShapeInfo =  inputShape->at(1);
-    auto zShapeInfo = inputShape->at(2);
+  auto yShapeInfo = inputShape->at(1);
+  auto zShapeInfo = inputShape->at(2);
 
-    auto dtype = ArrayOptions::dataType(yShapeInfo);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(zShapeInfo, dtype)));
+  auto dtype = ArrayOptions::dataType(yShapeInfo);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(zShapeInfo, dtype)));
 }
-
-
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(ctc_loss_grad, 4, 1, false, 0, 1) {
+  auto targetLabels = INPUT_VARIABLE(0);
+  auto logitInput = INPUT_VARIABLE(1);
+  auto targetLabelLengths = INPUT_VARIABLE(2);
+  auto logitInputLengths = INPUT_VARIABLE(3);
+  auto outputGradients = OUTPUT_VARIABLE(0);
 
-    auto targetLabels = INPUT_VARIABLE(0);
-    auto logitInput = INPUT_VARIABLE(1);
-    auto targetLabelLengths = INPUT_VARIABLE(2);
-    auto logitInputLengths = INPUT_VARIABLE(3);
-    auto outputGradients = OUTPUT_VARIABLE(0);
+  int blankIndex = INT_ARG(0);
 
-    int blankIndex = INT_ARG(0);
+  REQUIRE_TRUE(
+      targetLabels->rankOf() == 2, 0,
+      "CtcLoss: target labels fails to meet rank requirement (batch_size, max_label_sequence_length): %i == 2 ",
+      targetLabels->rankOf());
+  REQUIRE_TRUE(logitInput->rankOf() == 3, 0,
+               "CtcLoss: logit Input fails to meet rank requirement (batch_size, frames, classes): %i == 3 ",
+               logitInput->rankOf());
+  REQUIRE_TRUE(targetLabelLengths->rankOf() == 1, 0,
+               "CtcLoss: target label length fails to meet rank requirement (batch_size): %i == 1 ",
+               targetLabelLengths->rankOf());
+  REQUIRE_TRUE(logitInputLengths->rankOf() == 1, 0,
+               "CtcLoss: logit Input lengths fails to meet rank requirement (batch_size): %i == 1 ",
+               logitInputLengths->rankOf());
 
-    REQUIRE_TRUE(targetLabels->rankOf()==2, 0, "CtcLoss: target labels fails to meet rank requirement (batch_size, max_label_sequence_length): %i == 2 ", targetLabels->rankOf());
-    REQUIRE_TRUE(logitInput->rankOf()==3, 0, "CtcLoss: logit Input fails to meet rank requirement (batch_size, frames, classes): %i == 3 ", logitInput->rankOf());
-    REQUIRE_TRUE(targetLabelLengths->rankOf()==1, 0, "CtcLoss: target label length fails to meet rank requirement (batch_size): %i == 1 ", targetLabelLengths->rankOf());
-    REQUIRE_TRUE(logitInputLengths->rankOf()==1, 0, "CtcLoss: logit Input lengths fails to meet rank requirement (batch_size): %i == 1 ", logitInputLengths->rankOf());
+  auto batchSize0 = targetLabels->sizeAt(0);
+  auto batchSize1 = logitInput->sizeAt(0);
+  auto batchSize2 = targetLabelLengths->sizeAt(0);
+  auto batchSize3 = logitInputLengths->sizeAt(0);
+  auto batchSize4 = outputGradients->sizeAt(0);
 
-    auto batchSize0 = targetLabels->sizeAt(0);
-    auto batchSize1 = logitInput->sizeAt(0);
-    auto batchSize2 = targetLabelLengths->sizeAt(0);
-    auto batchSize3 = logitInputLengths->sizeAt(0);
-    auto batchSize4 = outputGradients->sizeAt(0);
+  bool check_batches = (batchSize0 == batchSize1) && (batchSize2 == batchSize3);
+  check_batches = check_batches && (batchSize0 == batchSize4) && (batchSize0 == batchSize2);
 
-    bool check_batches = (batchSize0 == batchSize1) && (batchSize2 == batchSize3);
-    check_batches = check_batches && (batchSize0 == batchSize4) && (batchSize0 == batchSize2);
+  REQUIRE_TRUE(check_batches, 0, "CtcLoss Gradient: All batch sizes should be %i", batchSize0);
+  REQUIRE_TRUE(outputGradients->isSameShape(logitInput), 0,
+               "CtcLoss Gradient: wrong shape of output array, expected is %s but got %s instead !",
+               ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
 
-    REQUIRE_TRUE(check_batches, 0, "CtcLoss Gradient: All batch sizes should be %i", batchSize0);
-    REQUIRE_TRUE(outputGradients->isSameShape(logitInput), 0, "CtcLoss Gradient: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
+  auto emptyLoss = NDArrayFactory::empty<float>();
+  sd::ops::helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, emptyLoss,
+                            *outputGradients, blankIndex);
 
-    auto emptyLoss = NDArrayFactory::empty<float>();
-    sd::ops::helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, emptyLoss, *outputGradients, blankIndex);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(ctc_loss_grad) {
-        getOpDescriptor()->setAllowedInputTypes({ALL_INDICES})
-                     ->setAllowedInputTypes(1,{ALL_FLOATS})
-                     ->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()
+      ->setAllowedInputTypes({ALL_INDICES})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(ctc_loss_grad) {
-    auto yShapeInfo =  inputShape->at(1);
-    auto dtype = ArrayOptions::dataType(yShapeInfo);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(yShapeInfo, dtype)));
-
+  auto yShapeInfo = inputShape->at(1);
+  auto dtype = ArrayOptions::dataType(yShapeInfo);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(yShapeInfo, dtype)));
 }
 
-
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

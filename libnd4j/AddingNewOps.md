@@ -12,7 +12,7 @@ This kind of operations is actually split into multiple subtypes, based on eleme
 Despite differences between these operations, they are all using XZ/XYZ three-operand design, where X and Y are inputs, and Z is output.
 Data access in these operations is usually trivial, and loop based. I.e. most trivial loop for scalar transform will look like this:
 ```c++
-for (Nd4jLong i = start; i < end; i++) {
+for (sd::LongType i = start; i < end; i++) {
     result[i] = OpType::op(x[i], scalar, extraParams);
 }
 ```
@@ -26,24 +26,24 @@ Now, let's take a look into typical XYZ op implementation. Here's how `Add` oper
 template<typename T>
 class Add {
 public:
-    op_def static T op(T d1, T d2) {
-	    return d1 + d2;
-	}
+    SD_OP_DEF static T op(T d1, T d2) {
+        return d1 + d2;
+    }
 
     // this signature will be used in Scalar loops
-	op_def static T op(T d1, T d2, T *params) {
-		return d1 + d2;
-	}
+    SD_OP_DEF static T op(T d1, T d2, T *params) {
+        return d1 + d2;
+    }
 
     // this signature will be used in reductions
-	op_def static T op(T d1) {
-		return d1;
-	}
+    SD_OP_DEF static T op(T d1) {
+        return d1;
+    }
 
-	// op for MetaOps
-	op_def static T op(T d1, T *params) {
-		return d1 + params[0];
-	}
+    // op for MetaOps
+    SD_OP_DEF static T op(T d1, T *params) {
+        return d1 + params[0];
+    }
 };
 ```
 
@@ -88,7 +88,7 @@ CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
 
     delete tads;
 
-    return ND4J_STATUS_OK;
+    return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(tear) {
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(tear) {
 
     shape::TAD tad(inShape, dims.data(), (int) dims.size());
     tad.createTadOnlyShapeInfo();
-    Nd4jLong numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
+    sd::LongType numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
 
     auto result = SHAPELIST();
     for (int e = 0; e < numTads; e++) {
@@ -183,8 +183,8 @@ We have number of utility macros, suitable for custom ops. Here they are:
 - **REQUIRE_TRUE**(...): this macro takes condition, and evaluates it. If evaluation doesn't end up as True - exception is raised, and specified message is printed out.
 - **LAMBDA_T**(X) and **LAMBDA_TT**(X, Y): lambda declaration for `NDArray::applyLambda` and `NDArray::applyPairwiseLambda`
 - **COPY_SHAPE**(SRC, TGT): this macro allocates memory for TGT pointer and copies shape from SRC pointer 
-- **ILAMBDA_T**(X) and **ILAMBDA_TT**(X, Y): lambda declaration for indexed lambdas, index argument is passed in as Nd4jLong (aka **long long**)
-- **FORCEINLINE**: platform-specific definition for functions inlining
+- **ILAMBDA_T**(X) and **ILAMBDA_TT**(X, Y): lambda declaration for indexed lambdas, index argument is passed in as sd::LongType (aka **long long**)
+- **SD_INLINE**: platform-specific definition for functions inlining
 
 
 #### Explicit template instantiations in helper methods.
@@ -199,17 +199,17 @@ Suppose we have such function:
 We should write this to explicitly instantiate it.
 
     BUILD_DOUBLE_TEMPLATE(template void argMin_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions),
-                   LIBND4J_TYPES, INDEXING_TYPES);
+                   SD_COMMON_TYPES, SD_INDEXING_TYPES);
  
  Here:
-- ***LIBND4J_TYPES*** means we want to use all types in the place of X
-- ***INDEXING_TYPES*** means we will use index types ( int, int64_t) as Z type
+- ***SD_COMMON_TYPES*** means we want to use all types in the place of X
+- ***SD_INDEXING_TYPES*** means we will use index types ( int, int64_t) as Z type
      
 But to speed up compilation process and also helping compilers we can further separate it into different source files. Firstly we rename the original template source with ***hpp*** extension:
 Secondly we add file  with the suffix ***cpp.in*** (or ***cu.in*** for cuda) that will include that hpp header and place it  in the apropriate compilation units folder. in our case it will be in **./libnd4j/include/ops/declarable/helpers/cpu/compilation_units** folder with the name ***argmax.cpp.in*** .    
-Later we decide which type we want to separate into different sources. In our case we want to split ***LIBND4J_TYPES*** (other ones: ***INT_TYPE , FLOAT_TYPE, PAIRWISE_TYPE*** ). We hint cmake that case with this (adding ***_GEN*** suffix):
+Later we decide which type we want to separate into different sources. In our case we want to split ***SD_COMMON_TYPES*** (other ones: ***SD_INTEGER_TYPES , SD_FLOAT_TYPES, SD_PAIRWISE_TYPES*** ). We hint cmake that case with this (adding ***_GEN*** suffix):
 
-    #cmakedefine LIBND4J_TYPE_GEN 
+    #cmakedefine SD_COMMON_TYPES_GEN 
 
 Then we just add ***_@FL_TYPE_INDEX@***  as suffix in type name and it will split those types for us and generate cpp files inside ${CMAKE_BINARY_DIR}/compilation_units folder.
 
@@ -217,17 +217,17 @@ Then we just add ***_@FL_TYPE_INDEX@***  as suffix in type name and it will spli
 
 Here how the complete cpp.in file will look like:
 
-    #cmakedefine LIBND4J_TYPE_GEN 
+    #cmakedefine SD_COMMON_TYPES_GEN 
     //this header is where our template functions resides
     #include <ops/declarable/helpers/cpu/indexReductions.hpp>
 
     //guard against undefined cases
-    #if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
+    #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
     namespace sd {
         namespace ops {
             namespace helpers {
                 BUILD_DOUBLE_TEMPLATE(template void argMax_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions), 
-                   LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
+                   SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
             }
         }
     }

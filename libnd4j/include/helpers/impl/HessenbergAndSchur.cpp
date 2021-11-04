@@ -19,361 +19,325 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
 #include <helpers/HessenbergAndSchur.h>
-#include <helpers/householder.h>
 #include <helpers/hhSequence.h>
+#include <helpers/householder.h>
 #include <helpers/jacobiSVD.h>
 
-
-namespace sd      {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 Hessenberg<T>::Hessenberg(const NDArray& matrix) {
+  if (matrix.rankOf() != 2) throw std::runtime_error("ops::helpers::Hessenberg constructor: input matrix must be 2D !");
 
-    if(matrix.rankOf() != 2)
-        throw std::runtime_error("ops::helpers::Hessenberg constructor: input matrix must be 2D !");
-
-    if(matrix.sizeAt(0) == 1) {
-        _Q = NDArray(matrix.ordering(), {1,1}, matrix.dataType(), matrix.getContext());
-        _Q = 1;
-        _H = matrix.dup();
-        return;
-    }
-
-    if(matrix.sizeAt(0) != matrix.sizeAt(1))
-        throw std::runtime_error("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
-
+  if (matrix.sizeAt(0) == 1) {
+    _Q = NDArray(matrix.ordering(), {1, 1}, matrix.dataType(), matrix.getContext());
+    _Q = 1;
     _H = matrix.dup();
-    _Q = matrix.ulike();
+    return;
+  }
 
-    evalData();
+  if (matrix.sizeAt(0) != matrix.sizeAt(1))
+    throw std::runtime_error("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
+
+  _H = matrix.dup();
+  _Q = matrix.ulike();
+
+  evalData();
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void Hessenberg<T>::evalData() {
+  const int rows = _H.sizeAt(0);
 
-    const int rows = _H.sizeAt(0);
+  NDArray hhCoeffs(_H.ordering(), {rows - 1}, _H.dataType(), _H.getContext());
 
-    NDArray hhCoeffs(_H.ordering(), {rows - 1}, _H.dataType(), _H.getContext());
+  // calculate _H
+  for (sd::Unsigned i = 0; i < rows - 1; ++i) {
+    T coeff, norm;
 
-    // calculate _H
-    for(uint i = 0; i < rows - 1; ++i) {
+    NDArray tail1 = _H({i + 1, -1, i, i + 1});
+    NDArray tail2 = _H({i + 2, -1, i, i + 1}, true);
 
-        T coeff, norm;
+    Householder<T>::evalHHmatrixDataI(tail1, coeff, norm);
 
-        NDArray tail1 = _H({i+1,-1, i,i+1});
-        NDArray tail2 = _H({i+2,-1, i,i+1}, true);
+    _H({0, 0, i, i + 1}).template r<T>(i + 1) = norm;
+    hhCoeffs.template r<T>(i) = coeff;
 
-        Householder<T>::evalHHmatrixDataI(tail1, coeff, norm);
+    NDArray bottomRightCorner = _H({i + 1, -1, i + 1, -1}, true);
+    Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
 
-        _H({0,0, i,i+1}). template r<T>(i+1) = norm;
-        hhCoeffs. template r<T>(i) = coeff;
+    NDArray rightCols = _H({0, 0, i + 1, -1}, true);
+    Householder<T>::mulRight(rightCols, tail2.transpose(), coeff);
+  }
 
-        NDArray bottomRightCorner = _H({i+1,-1, i+1,-1}, true);
-        Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
+  // calculate _Q
+  HHsequence hhSeq(_H, hhCoeffs, 'u');
+  hhSeq._diagSize = rows - 1;
+  hhSeq._shift = 1;
+  hhSeq.applyTo_<T>(_Q);
 
-        NDArray rightCols = _H({0,0, i+1,-1}, true);
-        Householder<T>::mulRight(rightCols, tail2.transpose(), coeff);
-    }
-
-    // calculate _Q
-    HHsequence hhSeq(_H, hhCoeffs, 'u');
-    hhSeq._diagSize = rows - 1;
-    hhSeq._shift = 1;
-    hhSeq.applyTo_<T>(_Q);
-
-    // fill down with zeros starting at first subdiagonal
-    _H.fillAsTriangular<T>(0, -1, 0, _H, 'l');
+  // fill down with zeros starting at first subdiagonal
+  _H.fillAsTriangular<T>(0, -1, 0, _H, 'l');
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 Schur<T>::Schur(const NDArray& matrix) {
+  if (matrix.rankOf() != 2) throw std::runtime_error("ops::helpers::Schur constructor: input matrix must be 2D !");
 
-    if(matrix.rankOf() != 2)
-        throw std::runtime_error("ops::helpers::Schur constructor: input matrix must be 2D !");
+  if (matrix.sizeAt(0) != matrix.sizeAt(1))
+    throw std::runtime_error("ops::helpers::Schur constructor: input array must be 2D square matrix !");
 
-    if(matrix.sizeAt(0) != matrix.sizeAt(1))
-        throw std::runtime_error("ops::helpers::Schur constructor: input array must be 2D square matrix !");
-
-    evalData(matrix);
+  evalData(matrix);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void Schur<T>::evalData(const NDArray& matrix) {
+  const T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
 
-    const T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
+  const T almostZero = DataTypeUtils::min_positive<T>();
 
-    const T almostZero = DataTypeUtils::min_positive<T>();
+  if (scale < DataTypeUtils::min_positive<T>()) {
+    t = matrix.ulike();
+    u = matrix.ulike();
 
-    if(scale < DataTypeUtils::min_positive<T>()) {
+    t.nullify();
+    u.setIdentity();
 
-        t = matrix.ulike();
-        u = matrix.ulike();
+    return;
+  }
 
-        t.nullify();
-        u.setIdentity();
+  // perform Hessenberg decomposition
+  Hessenberg<T> hess(matrix / scale);
 
-        return;
-    }
+  t = std::move(hess._H);
+  u = std::move(hess._Q);
 
-    // perform Hessenberg decomposition
-    Hessenberg<T> hess(matrix / scale);
+  calcFromHessenberg();
 
-    t = std::move(hess._H);
-    u = std::move(hess._Q);
-
-    calcFromHessenberg();
-
-    t *= scale;
+  t *= scale;
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
+template <typename T>
 void Schur<T>::splitTwoRows(const int ind, const T shift) {
+  const int numCols = t.sizeAt(1);
 
-    const int numCols = t.sizeAt(1);
+  T p = (T)0.5 * (t.t<T>(ind - 1, ind - 1) - t.t<T>(ind, ind));
 
-    T p = (T)0.5 * (t.t<T>(ind-1, ind-1) - t.t<T>(ind, ind));
+  T q = p * p + t.t<T>(ind, ind - 1) * t.t<T>(ind - 1, ind);
 
-    T q = p*p + t.t<T>(ind, ind-1) * t.t<T>(ind-1, ind);
+  t.r<T>(ind, ind) += shift;
+  t.r<T>(ind - 1, ind - 1) += shift;
 
-    t.r<T>(ind, ind) += shift;
-    t.r<T>(ind-1, ind-1) += shift;
+  if (q >= (T)0) {
+    T z = math::sd_sqrt<T, T>(math::sd_abs<T>(q));
 
-    if (q >= (T)0) {
+    NDArray rotation(t.ordering(), {2, 2}, t.dataType(), t.getContext());
 
-        T z = math::nd4j_sqrt<T,T>(math::nd4j_abs<T>(q));
+    if (p >= (T)0)
+      JacobiSVD<T>::createJacobiRotationGivens(p + z, t.t<T>(ind, ind - 1), rotation);
+    else
+      JacobiSVD<T>::createJacobiRotationGivens(p - z, t.t<T>(ind, ind - 1), rotation);
 
-        NDArray rotation(t.ordering(), {2, 2}, t.dataType(), t.getContext());
+    NDArray rightCols = t({0, 0, ind - 1, -1});
+    JacobiSVD<T>::mulRotationOnLeft(ind - 1, ind, rightCols, rotation.transpose());
 
-        if (p >= (T)0)
-            JacobiSVD<T>::createJacobiRotationGivens(p+z, t.t<T>(ind, ind-1), rotation);
-        else
-            JacobiSVD<T>::createJacobiRotationGivens(p-z, t.t<T>(ind, ind-1), rotation);
+    NDArray topRows = t({0, ind + 1, 0, 0});
+    JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, topRows, rotation);
 
-        NDArray rightCols = t({0,0, ind-1,-1});
-        JacobiSVD<T>::mulRotationOnLeft(ind-1, ind, rightCols, rotation.transpose());
+    JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, u, rotation);
 
-        NDArray topRows = t({0,ind+1, 0,0});
-        JacobiSVD<T>::mulRotationOnRight(ind-1, ind, topRows, rotation);
+    t.r<T>(ind, ind - 1) = (T)0;
+  }
 
-        JacobiSVD<T>::mulRotationOnRight(ind-1, ind, u, rotation);
-
-        t.r<T>(ind, ind-1) = (T)0;
-    }
-
-    if (ind > 1)
-        t.r<T>(ind-1, ind-2) = (T)0;
+  if (ind > 1) t.r<T>(ind - 1, ind - 2) = (T)0;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
+template <typename T>
 void Schur<T>::calcShift(const int ind, const int iter, T& shift, NDArray& shiftVec) {
-
-    // shiftVec has length = 3
-
-    shiftVec.r<T>(0) = t.t<T>(ind, ind);
-    shiftVec.r<T>(1) = t.t<T>(ind-1, ind-1);
-    shiftVec.r<T>(2) = t.t<T>(ind, ind-1) * t.t<T>(ind-1, ind);
-
-    if (iter == 10) {
-        shift += shiftVec.t<T>(0);
-
-        for (int i = 0; i <= ind; ++i)
-            t.r<T>(i,i) -= shiftVec.t<T>(0);
-
-        T s = math::nd4j_abs<T>(t.t<T>(ind, ind-1)) + math::nd4j_abs<T>(t.t<T>(ind-1, ind-2));
-
-        shiftVec.r<T>(0) = T(0.75) * s;
-        shiftVec.r<T>(1) = T(0.75) * s;
-        shiftVec.r<T>(2) = T(-0.4375) * s*s;
-    }
-
-    if (iter == 30) {
-
-        T s = (shiftVec.t<T>(1) - shiftVec.t<T>(0)) / T(2.0);
-        s = s*s + shiftVec.t<T>(2);
-
-        if (s > T(0)) {
-
-            s = math::nd4j_sqrt<T,T>(s);
-
-            if (shiftVec.t<T>(1) < shiftVec.t<T>(0))
-                s = -s;
-
-            s = s + (shiftVec.t<T>(1) - shiftVec.t<T>(0)) / T(2.0);
-            s = shiftVec.t<T>(0) - shiftVec.t<T>(2) / s;
-            shift += s;
-
-            for (int i = 0; i <= ind; ++i)
-                t.r<T>(i,i) -= s;
-
-            shiftVec = T(0.964);
-        }
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-void Schur<T>::initFrancisQR(const int ind1,  const int ind2, const NDArray& shiftVec, int& ind3, NDArray& householderVec) {
-
   // shiftVec has length = 3
 
-  for (ind3 = ind2-2; ind3 >= ind1; --ind3) {
+  shiftVec.r<T>(0) = t.t<T>(ind, ind);
+  shiftVec.r<T>(1) = t.t<T>(ind - 1, ind - 1);
+  shiftVec.r<T>(2) = t.t<T>(ind, ind - 1) * t.t<T>(ind - 1, ind);
 
-        const T mm = t.t<T>(ind3, ind3);
-        const T r = shiftVec.t<T>(0) - mm;
-        const T s = shiftVec.t<T>(1) - mm;
+  if (iter == 10) {
+    shift += shiftVec.t<T>(0);
 
-        householderVec.r<T>(0) = (r * s - shiftVec.t<T>(2)) / t.t<T>(ind3+1, ind3) + t.t<T>(ind3, ind3+1);
-        householderVec.r<T>(1) = t.t<T>(ind3+1, ind3+1) - mm - r - s;
-        householderVec.r<T>(2) = t.t<T>(ind3+2, ind3+1);
+    for (int i = 0; i <= ind; ++i) t.r<T>(i, i) -= shiftVec.t<T>(0);
 
-        if (ind3 == ind1)
-          break;
+    T s = math::sd_abs<T>(t.t<T>(ind, ind - 1)) + math::sd_abs<T>(t.t<T>(ind - 1, ind - 2));
 
-        const T lhs = t.t<T>(ind3,ind3-1) * (math::nd4j_abs<T>(householderVec.t<T>(1)) + math::nd4j_abs<T>(householderVec.t<T>(2)));
-        const T rhs = householderVec.t<T>(0) * (math::nd4j_abs<T>(t.t<T>(ind3-1, ind3-1)) + math::nd4j_abs<T>(mm) + math::nd4j_abs<T>(t.t<T>(ind3+1, ind3+1)));
+    shiftVec.r<T>(0) = T(0.75) * s;
+    shiftVec.r<T>(1) = T(0.75) * s;
+    shiftVec.r<T>(2) = T(-0.4375) * s * s;
+  }
 
-        if(math::nd4j_abs<T>(lhs) < DataTypeUtils::eps<T>() * rhs)
-            break;
+  if (iter == 30) {
+    T s = (shiftVec.t<T>(1) - shiftVec.t<T>(0)) / T(2.0);
+    s = s * s + shiftVec.t<T>(2);
+
+    if (s > T(0)) {
+      s = math::sd_sqrt<T, T>(s);
+
+      if (shiftVec.t<T>(1) < shiftVec.t<T>(0)) s = -s;
+
+      s = s + (shiftVec.t<T>(1) - shiftVec.t<T>(0)) / T(2.0);
+      s = shiftVec.t<T>(0) - shiftVec.t<T>(2) / s;
+      shift += s;
+
+      for (int i = 0; i <= ind; ++i) t.r<T>(i, i) -= s;
+
+      shiftVec = T(0.964);
     }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
+template <typename T>
+void Schur<T>::initFrancisQR(const int ind1, const int ind2, const NDArray& shiftVec, int& ind3,
+                             NDArray& householderVec) {
+  // shiftVec has length = 3
+
+  for (ind3 = ind2 - 2; ind3 >= ind1; --ind3) {
+    const T mm = t.t<T>(ind3, ind3);
+    const T r = shiftVec.t<T>(0) - mm;
+    const T s = shiftVec.t<T>(1) - mm;
+
+    householderVec.r<T>(0) = (r * s - shiftVec.t<T>(2)) / t.t<T>(ind3 + 1, ind3) + t.t<T>(ind3, ind3 + 1);
+    householderVec.r<T>(1) = t.t<T>(ind3 + 1, ind3 + 1) - mm - r - s;
+    householderVec.r<T>(2) = t.t<T>(ind3 + 2, ind3 + 1);
+
+    if (ind3 == ind1) break;
+
+    const T lhs =
+        t.t<T>(ind3, ind3 - 1) * (math::sd_abs<T>(householderVec.t<T>(1)) + math::sd_abs<T>(householderVec.t<T>(2)));
+    const T rhs = householderVec.t<T>(0) * (math::sd_abs<T>(t.t<T>(ind3 - 1, ind3 - 1)) + math::sd_abs<T>(mm) +
+                                            math::sd_abs<T>(t.t<T>(ind3 + 1, ind3 + 1)));
+
+    if (math::sd_abs<T>(lhs) < DataTypeUtils::eps<T>() * rhs) break;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
 void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const NDArray& householderVec) {
+  if (!(ind2 >= ind1))
+    throw std::runtime_error(
+        "ops::helpers::Schur:doFrancisQR: wrong input indexes, condition ind2 >= ind1 must be true !");
+  if (!(ind2 <= ind3 - 2))
+    throw std::runtime_error(
+        "ops::helpers::Schur:doFrancisQR: wrong input indexes, condition iind2 <= ind3-2 must be true !");
 
-    if(!(ind2 >= ind1))
-        throw std::runtime_error("ops::helpers::Schur:doFrancisQR: wrong input indexes, condition ind2 >= ind1 must be true !");
-    if(!(ind2 <= ind3-2))
-        throw std::runtime_error("ops::helpers::Schur:doFrancisQR: wrong input indexes, condition iind2 <= ind3-2 must be true !");
+  const int numCols = t.sizeAt(1);
 
-    const int numCols = t.sizeAt(1);
-
-    for (int k = ind2; k <= ind3-2; ++k) {
-
-        const bool firstIter = (k == ind2);
-
-        T coeff, normX;
-        NDArray tail(t.ordering(), {2, 1}, t.dataType(), t.getContext());
-        Householder<T>::evalHHmatrixData(firstIter ? householderVec : t({k,k+3, k-1,k}), tail, coeff, normX);
-
-        if (normX != T(0)) {
-
-            if (firstIter && k > ind1)
-                t.r<T>(k, k-1) = -t.t<T>(k, k-1);
-            else if (!firstIter)
-                t.r<T>(k, k-1) = normX;
-
-            NDArray block1 = t({k,k+3, k,numCols}, true);
-            Householder<T>::mulLeft(block1, tail, coeff);
-
-            NDArray block2 = t({0,math::nd4j_min<int>(ind3,k+3)+1, k,k+3}, true);
-            Householder<T>::mulRight(block2, tail, coeff);
-
-            NDArray block3 = u({0,numCols, k,k+3}, true);
-            Householder<T>::mulRight(block3, tail, coeff);
-        }
-    }
+  for (int k = ind2; k <= ind3 - 2; ++k) {
+    const bool firstIter = (k == ind2);
 
     T coeff, normX;
-    NDArray tail(t.ordering(), {1, 1}, t.dataType(), t.getContext());
-    Householder<T>::evalHHmatrixData(t({ind3-1,ind3+1, ind3-2,ind3-1}), tail, coeff, normX);
+    NDArray tail(t.ordering(), {2, 1}, t.dataType(), t.getContext());
+    Householder<T>::evalHHmatrixData(firstIter ? householderVec : t({k, k + 3, k - 1, k}), tail, coeff, normX);
 
     if (normX != T(0)) {
+      if (firstIter && k > ind1)
+        t.r<T>(k, k - 1) = -t.t<T>(k, k - 1);
+      else if (!firstIter)
+        t.r<T>(k, k - 1) = normX;
 
-        t.r<T>(ind3-1, ind3-2) = normX;
+      NDArray block1 = t({k, k + 3, k, numCols}, true);
+      Householder<T>::mulLeft(block1, tail, coeff);
 
-        NDArray block1 = t({ind3-1,ind3+1, ind3-1,numCols}, true);
-        Householder<T>::mulLeft(block1, tail, coeff);
+      NDArray block2 = t({0, math::sd_min<int>(ind3, k + 3) + 1, k, k + 3}, true);
+      Householder<T>::mulRight(block2, tail, coeff);
 
-        NDArray block2 = t({0,ind3+1, ind3-1,ind3+1}, true);
-        Householder<T>::mulRight(block2, tail, coeff);
-
-        NDArray block3 = u({0,numCols, ind3-1,ind3+1}, true);
-        Householder<T>::mulRight(block3, tail, coeff);
+      NDArray block3 = u({0, numCols, k, k + 3}, true);
+      Householder<T>::mulRight(block3, tail, coeff);
     }
+  }
 
-    for (int i = ind2+2; i <= ind3; ++i) {
-        t.r<T>(i, i-2) = T(0);
-        if (i > ind2+2)
-            t.r<T>(i, i-3) = T(0);
-    }
+  T coeff, normX;
+  NDArray tail(t.ordering(), {1, 1}, t.dataType(), t.getContext());
+  Householder<T>::evalHHmatrixData(t({ind3 - 1, ind3 + 1, ind3 - 2, ind3 - 1}), tail, coeff, normX);
+
+  if (normX != T(0)) {
+    t.r<T>(ind3 - 1, ind3 - 2) = normX;
+
+    NDArray block1 = t({ind3 - 1, ind3 + 1, ind3 - 1, numCols}, true);
+    Householder<T>::mulLeft(block1, tail, coeff);
+
+    NDArray block2 = t({0, ind3 + 1, ind3 - 1, ind3 + 1}, true);
+    Householder<T>::mulRight(block2, tail, coeff);
+
+    NDArray block3 = u({0, numCols, ind3 - 1, ind3 + 1}, true);
+    Householder<T>::mulRight(block3, tail, coeff);
+  }
+
+  for (int i = ind2 + 2; i <= ind3; ++i) {
+    t.r<T>(i, i - 2) = T(0);
+    if (i > ind2 + 2) t.r<T>(i, i - 3) = T(0);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
+template <typename T>
 void Schur<T>::calcFromHessenberg() {
+  const int maxIters = _maxItersPerRow * t.sizeAt(0);
 
-    const int maxIters = _maxItersPerRow * t.sizeAt(0);
+  const int numCols = t.sizeAt(1);
+  int iu = numCols - 1;
+  int iter = 0;
+  int totalIter = 0;
 
-    const int numCols = t.sizeAt(1);
-    int iu = numCols - 1;
-    int iter = 0;
-    int totalIter = 0;
+  T shift = T(0);
 
-    T shift = T(0);
+  T norm = 0;
+  for (int j = 0; j < numCols; ++j)
+    norm += t({0, math::sd_min<int>(numCols, j + 2), j, j + 1}).reduceNumber(reduce::ASum).template t<T>(0);
 
-    T norm = 0;
-    for (int j = 0; j < numCols; ++j)
-        norm += t({0,math::nd4j_min<int>(numCols,j+2), j,j+1}).reduceNumber(reduce::ASum).template t<T>(0);
+  if (norm != T(0)) {
+    while (iu >= 0) {
+      const int il = getSmallSubdiagEntry(iu);
 
-    if(norm != T(0)) {
+      if (il == iu) {
+        t.r<T>(iu, iu) = t.t<T>(iu, iu) + shift;
+        if (iu > 0) t.r<T>(iu, iu - 1) = T(0);
+        iu--;
+        iter = 0;
 
-        while (iu >= 0) {
+      } else if (il == iu - 1) {
+        splitTwoRows(iu, shift);
+        iu -= 2;
+        iter = 0;
+      } else {
+        NDArray householderVec(t.ordering(), {3}, t.dataType(), t.getContext());
+        NDArray shiftVec(t.ordering(), {3}, t.dataType(), t.getContext());
 
-            const int il = getSmallSubdiagEntry(iu);
+        calcShift(iu, iter, shift, shiftVec);
 
-            if (il == iu) {
+        ++iter;
+        ++totalIter;
 
-                t.r<T>(iu,iu) = t.t<T>(iu,iu) + shift;
-                if (iu > 0)
-                    t.r<T>(iu, iu-1) = T(0);
-                iu--;
-                iter = 0;
+        if (totalIter > maxIters) break;
 
-            }
-            else if (il == iu-1) {
-
-                splitTwoRows(iu, shift);
-                iu -= 2;
-                iter = 0;
-            }
-            else  {
-
-                NDArray householderVec(t.ordering(), {3}, t.dataType(), t.getContext());
-                NDArray shiftVec      (t.ordering(), {3}, t.dataType(), t.getContext());
-
-                calcShift(iu, iter, shift, shiftVec);
-
-                ++iter;
-                ++totalIter;
-
-                if (totalIter > maxIters)
-                    break;
-
-                int im;
-                initFrancisQR(il, iu, shiftVec, im, householderVec);
-                doFrancisQR(il, im, iu, householderVec);
-            }
-        }
+        int im;
+        initFrancisQR(il, iu, shiftVec, im, householderVec);
+        doFrancisQR(il, im, iu, householderVec);
+      }
     }
+  }
 }
 
+BUILD_SINGLE_TEMPLATE(template class Hessenberg, , SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template class Schur, , SD_FLOAT_TYPES);
 
-    BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Hessenberg,,FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template class ND4J_LOCAL Schur,,FLOAT_TYPES);
-
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

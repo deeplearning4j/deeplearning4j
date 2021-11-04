@@ -19,40 +19,25 @@
 //
 // @author raver119@gmail.com
 //
-
 #include "../cublasHelper.h"
 
 namespace sd {
-    static void* handle_() {
-        return nullptr;
-    }
+static void* handle_() { return nullptr; }
 
-    static void destroyHandle_(void* handle) {
+static void destroyHandle_(void* handle) {}
 
-    }
+CublasHelper::CublasHelper() {}
 
-    CublasHelper::CublasHelper() {
+CublasHelper::~CublasHelper() {}
 
-    }
-
-    CublasHelper::~CublasHelper() {
-
-    }
-
-    CublasHelper& CublasHelper::getInstance() {
-      static CublasHelper instance;
-      return instance;
-    }
-
-    void* CublasHelper::handle() {
-        return nullptr;
-    }
-
-    void* CublasHelper::solver() {
-        return nullptr;
-    }
-
-    void* CublasHelper::handle(int deviceId) {
-        return nullptr;
-    }
+CublasHelper& CublasHelper::getInstance() {
+  static CublasHelper instance;
+  return instance;
 }
+
+void* CublasHelper::handle() { return nullptr; }
+
+void* CublasHelper::solver() { return nullptr; }
+
+void* CublasHelper::handle(int deviceId) { return nullptr; }
+}  // namespace sd

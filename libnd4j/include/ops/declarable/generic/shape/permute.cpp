@@ -24,60 +24,56 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_permute)
 
-#include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
+namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 // here iArgs is int vector of ordered set of dimensions to be permuted
 CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-    auto x = INPUT_VARIABLE(0);
-    auto z = OUTPUT_VARIABLE(0);
+  if (x->isEmpty()) {
+    REQUIRE_TRUE(z->isEmpty(), 0, "PERMUTE OP: when input is empty, output must also be empty");
+    return sd::Status::OK;  // No op
+  }
 
-    if (x->isEmpty()) {
-        REQUIRE_TRUE(z->isEmpty(), 0, "PERMUTE OP: when input is empty, output must also be empty");
-        return Status::OK();    //No op
-    }
+  if (block.width() == 1 && block.getIArguments()->size() == 0) {
+    z->assign(x->transpose());
+    return sd::Status::OK;
+  }
 
-    if (block.width() == 1 && block.getIArguments()->size() == 0) {
-        z->assign(x->transpose());
-        return Status::OK();
-    }
+  std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
 
-    std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+  z->assign(x->permute(permutationVector));
 
-    z->assign(x->permute(permutationVector));
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(permute) {
-    getOpDescriptor()
-            ->setAllowedInputTypes(0, sd::DataType::ANY)
-            ->setAllowedInputTypes(1, {ALL_INTS})
-            ->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(permute) {
+  auto x = INPUT_VARIABLE(0);
 
-    auto x = INPUT_VARIABLE(0);
+  if (block.width() == 1 && block.getIArguments()->size() == 0)
+    return SHAPELIST(ShapeUtils::evalTranspShapeInfo(*x, block.workspace(), true));
 
-    if (block.width() == 1 && block.getIArguments()->size() == 0)
-        return SHAPELIST(ShapeUtils::evalTranspShapeInfo(*x, block.workspace(), true));
+  std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
 
-    std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+  auto outputShapeInfo =
+      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
 
-    auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
-
-    return SHAPELIST(outputShapeInfo);
+  return SHAPELIST(outputShapeInfo);
 }
 
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

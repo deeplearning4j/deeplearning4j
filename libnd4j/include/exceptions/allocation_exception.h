@@ -22,29 +22,20 @@
 
 #ifndef DEV_TESTS_ALLOCATION_EXCEPTION_H
 #define DEV_TESTS_ALLOCATION_EXCEPTION_H
+#include <system/common.h>
 
-#include <string>
 #include <stdexcept>
-#include <system/pointercast.h>
-#include <system/dll.h>
-
-#if defined(_MSC_VER)
-
-// we're ignoring warning about non-exportable parent class, since std::runtime_error is a part of Standard C++ Library
-#pragma warning( disable : 4275 )
-
-#endif
+#include <string>
 
 namespace sd {
-    class ND4J_EXPORT allocation_exception : public std::runtime_error {
-    public:
-        allocation_exception(std::string message);
-        ~allocation_exception() = default;
+class SD_LIB_EXPORT allocation_exception : public std::runtime_error {
+ public:
+  allocation_exception(std::string message);
+  ~allocation_exception() = default;
 
-        static allocation_exception build(std::string message, Nd4jLong bytes);
-        static allocation_exception build(std::string message, Nd4jLong limit, Nd4jLong bytes);
-    };
-}
+  static allocation_exception build(std::string message, sd::LongType bytes);
+  static allocation_exception build(std::string message, sd::LongType limit, sd::LongType bytes);
+};
+}  // namespace sd
 
-
-#endif //DEV_TESTS_ALLOCATION_EXCEPTION_H
+#endif  // DEV_TESTS_ALLOCATION_EXCEPTION_H

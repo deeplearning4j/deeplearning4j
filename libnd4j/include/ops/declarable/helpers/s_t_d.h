@@ -19,14 +19,14 @@
 //
 //  @author raver119@gmail.com
 //
-
-#include <ops/declarable/helpers/helpers.h>
 #include <array/NDArray.h>
+#include <ops/declarable/helpers/helpers.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
-    void _spaceTodepth(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC);
+SD_LIB_HIDDEN void _spaceTodepth(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
+                                 bool isNHWC);
 }
-}
-}
+}  // namespace ops
+}  // namespace sd

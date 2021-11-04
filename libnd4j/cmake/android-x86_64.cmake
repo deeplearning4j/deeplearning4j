@@ -35,5 +35,4 @@ if (WIN32)
 endif (WIN32)
 
 
-
 add_definitions(-D__ANDROID_API__=$ENV{ANDROID_VERSION} -DANDROID -fPIC -ffunction-sections -funwind-tables -fstack-protector-strong -target x86_64-none-linux-android)

@@ -27,30 +27,30 @@
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        CUSTOM_OP_IMPL(cell_contains, 3, 1, false, 0, 1) {
-            auto corner = INPUT_VARIABLE(0);
-            auto width = INPUT_VARIABLE(1);
-            auto point = INPUT_VARIABLE(2);
+CUSTOM_OP_IMPL(cell_contains, 3, 1, false, 0, 1) {
+  auto corner = INPUT_VARIABLE(0);
+  auto width = INPUT_VARIABLE(1);
+  auto point = INPUT_VARIABLE(2);
 
-            auto output = OUTPUT_VARIABLE(0);
-            auto dimension = INT_ARG(0);
-            output->assign(helpers::cell_contains(corner, width, point, dimension));
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(cell_contains) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(sd::DataType::BOOL)
-                    ->setSameMode(false);
-        }
-
-        DECLARE_SHAPE_FN(cell_contains) {
-            return SHAPELIST(CONSTANT(ShapeBuilders::createScalarShapeInfo(sd::DataType::BOOL, block.workspace())));
-        }
-    }
+  auto output = OUTPUT_VARIABLE(0);
+  auto dimension = INT_ARG(0);
+  output->assign(helpers::cell_contains(corner, width, point, dimension));
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(cell_contains) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedOutputTypes(sd::DataType::BOOL)
+      ->setSameMode(false);
+}
+
+DECLARE_SHAPE_FN(cell_contains) {
+  return SHAPELIST(CONSTANT(ShapeBuilders::createScalarShapeInfo(sd::DataType::BOOL, block.workspace())));
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

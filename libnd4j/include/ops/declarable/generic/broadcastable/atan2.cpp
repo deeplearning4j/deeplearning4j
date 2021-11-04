@@ -30,33 +30,32 @@ namespace sd {
 namespace ops {
 
 BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
+  auto y = INPUT_VARIABLE(0);
+  auto x = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
 
-    auto y = INPUT_VARIABLE(0);
-    auto x = INPUT_VARIABLE(1);
-    auto z = OUTPUT_VARIABLE(0);
+  BROADCAST_CHECK_EMPTY(x, y, z);
 
-    BROADCAST_CHECK_EMPTY(x,y,z);
+  // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
+  x->applyTrueBroadcast(sd::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), *y, *z, true);
 
-    // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
-    x->applyTrueBroadcast(sd::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), *y, *z, true);
+  // if (tZ == nullptr)
+  //     return sd::Status::KERNEL_FAILURE;
+  // else if (tZ != z) {
+  //     OVERWRITE_RESULT(tZ);
+  // }
 
-    // if (tZ == nullptr)
-    //     return ND4J_STATUS_KERNEL_FAILURE;
-    // else if (tZ != z) {
-    //     OVERWRITE_RESULT(tZ);
-    // }
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-    DECLARE_TYPES(tf_atan2) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(0, DataType::ANY)
-                ->setAllowedInputTypes(1, DataType::ANY)
-                ->setAllowedOutputTypes(0, DataType::INHERIT);
-    }
+DECLARE_TYPES(tf_atan2) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, DataType::ANY)
+      ->setAllowedOutputTypes(0, DataType::INHERIT);
+}
 
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

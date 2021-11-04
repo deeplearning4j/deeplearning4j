@@ -28,9 +28,10 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);
-    Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep);
-}
-}
-}
+SD_LIB_HIDDEN sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray* keep, NDArray* output1,
+                                         NDArray* output2);
+SD_LIB_HIDDEN sd::LongType listDiffCount(sd::LaunchContext* context, NDArray* values, NDArray* keep);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

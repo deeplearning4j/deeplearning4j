@@ -21,306 +21,295 @@
 //
 // Created by raver119 on 20.11.17.
 //
-
-#include "testlayers.h"
+#include <build_info.h>
 #include <graph/Graph.h>
-#include <chrono>
 #include <graph/Node.h>
-#include <ops/declarable/CustomOperations.h>
 #include <graph/profiling/GraphProfilingHelper.h>
-#include <loops/type_conversions.h>
-#include <helpers/threshold.h>
-#include <helpers/MmulHelper.h>
-#include <ops/ops.h>
-#include <helpers/OmpLaunchHelper.h>
-#include <helpers/GradCheck.h>
-#include <ops/declarable/helpers/im2col.h>
-#include <helpers/Loops.h>
-#include <helpers/RandomLauncher.h>
-#include <ops/declarable/helpers/convolutions.h>
-
 #include <helpers/BenchmarkHelper.h>
-#include <ops/declarable/helpers/scatter.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
-#include <array>
-
-#include <random>
-#include <ops/declarable/helpers/legacy_helpers.h>
+#include <helpers/GradCheck.h>
+#include <helpers/Loops.h>
+#include <helpers/LoopsCoordsHelper.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <helpers/RandomLauncher.h>
+#include <helpers/threshold.h>
+#include <loops/type_conversions.h>
+#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/helpers/convolutions.h>
+#include <ops/declarable/helpers/im2col.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/reductions.h>
-#include <helpers/LoopsCoordsHelper.h>
-#include <build_info.h>
+#include <ops/declarable/helpers/scatter.h>
+#include <ops/ops.h>
+
+#include <array>
+#include <chrono>
+#include <random>
+
+#include "testlayers.h"
 using namespace sd;
 using namespace sd::graph;
 
 class PlaygroundTests : public testing::Test {
-public:
-    int numIterations = 3;
-    int poolSize = 10;
+ public:
+  int numIterations = 3;
+  int poolSize = 10;
 
-    PlaygroundTests() {
-    }
+  PlaygroundTests() {}
 };
 
 TEST_F(PlaygroundTests, test_avx) {
-    nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
+  sd_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
 }
 
-TEST_F(PlaygroundTests, buildver) {
-    nd4j_printf("%s\n", buildInfo());
-}
+TEST_F(PlaygroundTests, buildver) { sd_printf("%s\n", buildInfo()); }
 
 TEST_F(PlaygroundTests, test_biasAdd_1) {
-    auto x = NDArrayFactory::create<float>('c', {512, 3072});
-    auto y = NDArrayFactory::create<float>('c', {3072});
+  auto x = NDArrayFactory::create<float>('c', {512, 3072});
+  auto y = NDArrayFactory::create<float>('c', {3072});
 
-    std::vector<Nd4jLong> values;
+  std::vector<sd::LongType> values;
 
-    sd::ops::biasadd op;
+  sd::ops::biasadd op;
 
-    for (int e = 0; e < 100; e++) {
-        auto timeStart = std::chrono::system_clock::now();
+  for (int e = 0; e < 100; e++) {
+    auto timeStart = std::chrono::system_clock::now();
 
-        op.execute({&x, &y}, {&x});
+    op.execute({&x, &y}, {&x});
 
-        auto timeEnd = std::chrono::system_clock::now();
-        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-        values.emplace_back(outerTime);
-    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+    values.emplace_back(outerTime);
+  }
 
-    std::sort(values.begin(), values.end());
+  std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+  sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 }
-
 
 TEST_F(PlaygroundTests, test_bert_full_1) {
 #ifdef _RELEASE
 
-    // this test will run ONLY if this model exists
-    if (sd::graph::getFileSize("/home/raver119/Downloads/BertFull/model.fb") < 0)
-        return;
+  // this test will run ONLY if this model exists
+  if (sd::graph::getFileSize("/home/raver119/Downloads/BertFull/model.fb") < 0) return;
 
-    auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/BertFull/model.fb");
+  auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/BertFull/model.fb");
 
-    auto t = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in0_IteratorGetNext.npy");
-    auto u = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in1_IteratorGetNext_1.npy");
-    auto v = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in2_IteratorGetNext_4.npy");
-    auto z = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/out_loss-Softmax.npy");
+  auto t = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in0_IteratorGetNext.npy");
+  auto u = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in1_IteratorGetNext_1.npy");
+  auto v = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in2_IteratorGetNext_4.npy");
+  auto z = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/out_loss-Softmax.npy");
 
-    //graph->printOut();
+  // graph->printOut();
 
-    graph->tagInplaceNodes();
+  graph->tagInplaceNodes();
 
-    graph->getVariableSpace()->putVariable(658,0, t);
-    graph->getVariableSpace()->putVariable(659,0, u);
-    graph->getVariableSpace()->putVariable(660,0, v);
+  graph->getVariableSpace()->putVariable(658, 0, t);
+  graph->getVariableSpace()->putVariable(659, 0, u);
+  graph->getVariableSpace()->putVariable(660, 0, v);
 
-/*
-    // validating graph now
-    auto status = GraphExecutioner::execute(graph);
-    ASSERT_EQ(Status::OK(), status);
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1620));
+  /*
+      // validating graph now
+      auto status = GraphExecutioner::execute(graph);
+      ASSERT_EQ(Status::OK, status);
+      ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1620));
 
-    auto array = graph->getVariableSpace()->getVariable(1620)->getNDArray();
-    ASSERT_EQ(z, *array);
+      auto array = graph->getVariableSpace()->getVariable(1620)->getNDArray();
+      ASSERT_EQ(z, *array);
 
-*/
+  */
 
-    sd::Environment::getInstance().setProfiling(true);
-    auto profile = GraphProfilingHelper::profile(graph, 1);
+  sd::Environment::getInstance().setProfiling(true);
+  auto profile = GraphProfilingHelper::profile(graph, 1);
 
-    profile->printOut();
+  profile->printOut();
 
-    sd::Environment::getInstance().setProfiling(false);
-    delete profile;
+  sd::Environment::getInstance().setProfiling(false);
+  delete profile;
 
-/*
-    std::vector<Nd4jLong> values;
+  /*
+      std::vector<sd::LongType> values;
 
-    for (int e = 0; e < 1; e++) {
-        auto timeStart = std::chrono::system_clock::now();
+      for (int e = 0; e < 1; e++) {
+          auto timeStart = std::chrono::system_clock::now();
 
-        GraphExecutioner::execute(graph);
+          GraphExecutioner::execute(graph);
 
-        auto timeEnd = std::chrono::system_clock::now();
-        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-        values.emplace_back(outerTime);
-    }
+          auto timeEnd = std::chrono::system_clock::now();
+          auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+          values.emplace_back(outerTime);
+      }
 
-    std::sort(values.begin(), values.end());
+      std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
-*/
-    delete graph;
+      sd_printf("Time: %lld us;\n", values[values.size() / 2]);
+  */
+  delete graph;
 #endif
 }
 
-
 TEST_F(PlaygroundTests, test_bert_1) {
 #ifdef _RELEASE
-    // this test will run ONLY if this model exists
-    if (sd::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb") < 0)
-        return;
+  // this test will run ONLY if this model exists
+  if (sd::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb") < 0) return;
 
-    auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb");
+  auto graph =
+      GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb");
 
-    auto t = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext.numpy");
-    auto u = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext_1.numpy");
-    auto v = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext_4.numpy");
-    auto z = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model_output.numpy");
+  auto t = NDArrayFactory::fromNpyFile(
+      "/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext.numpy");
+  auto u = NDArrayFactory::fromNpyFile(
+      "/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext_1.numpy");
+  auto v = NDArrayFactory::fromNpyFile(
+      "/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext_4.numpy");
+  auto z = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model_output.numpy");
 
-    //graph->printOut();
+  // graph->printOut();
 
-    graph->tagInplaceNodes();
+  graph->tagInplaceNodes();
 
-    graph->getVariableSpace()->putVariable(85,0, t);
-    graph->getVariableSpace()->putVariable(86,0, u);
-    graph->getVariableSpace()->putVariable(87,0, v);
+  graph->getVariableSpace()->putVariable(85, 0, t);
+  graph->getVariableSpace()->putVariable(86, 0, u);
+  graph->getVariableSpace()->putVariable(87, 0, v);
 
-/*
-    // validating graph now
-    auto status = GraphExecutioner::execute(graph);
-    ASSERT_EQ(Status::OK(), status);
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(198));
+  /*
+      // validating graph now
+      auto status = GraphExecutioner::execute(graph);
+      ASSERT_EQ(Status::OK, status);
+      ASSERT_TRUE(graph->getVariableSpace()->hasVariable(198));
 
-    auto array = graph->getVariableSpace()->getVariable(198)->getNDArray();
-    ASSERT_EQ(z, *array);
+      auto array = graph->getVariableSpace()->getVariable(198)->getNDArray();
+      ASSERT_EQ(z, *array);
 
-*/
-    sd::Environment::getInstance().setProfiling(true);
-    auto profile = GraphProfilingHelper::profile(graph, 1);
+  */
+  sd::Environment::getInstance().setProfiling(true);
+  auto profile = GraphProfilingHelper::profile(graph, 1);
 
-    profile->printOut();
+  profile->printOut();
 
-    sd::Environment::getInstance().setProfiling(false);
-    delete profile;
+  sd::Environment::getInstance().setProfiling(false);
+  delete profile;
 
-/*
-    std::vector<Nd4jLong> values;
+  /*
+      std::vector<sd::LongType> values;
 
-    for (int e = 0; e < 1; e++) {
-        auto timeStart = std::chrono::system_clock::now();
+      for (int e = 0; e < 1; e++) {
+          auto timeStart = std::chrono::system_clock::now();
 
-        GraphExecutioner::execute(graph);
+          GraphExecutioner::execute(graph);
 
-        auto timeEnd = std::chrono::system_clock::now();
-        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-        values.emplace_back(outerTime);
-    }
+          auto timeEnd = std::chrono::system_clock::now();
+          auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+          values.emplace_back(outerTime);
+      }
 
-    std::sort(values.begin(), values.end());
+      std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
-*/
-    delete graph;
+      sd_printf("Time: %lld us;\n", values[values.size() / 2]);
+  */
+  delete graph;
 #endif
 }
 
 TEST_F(PlaygroundTests, test_bert_2) {
 #ifdef _RELEASE
-    // this test will run ONLY if this model exists
-    if (sd::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_like_ops.fb") < 0)
-        return;
+  // this test will run ONLY if this model exists
+  if (sd::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_like_ops.fb") < 0) return;
 
-    auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/Bert_minimal_model/bert_like_ops.fb");
+  auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/Bert_minimal_model/bert_like_ops.fb");
 
-    //graph->printOut();
+  // graph->printOut();
 
-    graph->tagInplaceNodes();
+  graph->tagInplaceNodes();
 
+  /*
+      // validating graph now
+      auto status = GraphExecutioner::execute(graph);
+      ASSERT_EQ(Status::OK, status);
+      ASSERT_TRUE(graph->getVariableSpace()->hasVariable(198));
 
-/*
-    // validating graph now
-    auto status = GraphExecutioner::execute(graph);
-    ASSERT_EQ(Status::OK(), status);
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(198));
+      auto array = graph->getVariableSpace()->getVariable(198)->getNDArray();
+      ASSERT_EQ(z, *array);
+  */
 
-    auto array = graph->getVariableSpace()->getVariable(198)->getNDArray();
-    ASSERT_EQ(z, *array);
-*/
+  sd::Environment::getInstance().setProfiling(true);
+  auto profile = GraphProfilingHelper::profile(graph, 1);
 
-    sd::Environment::getInstance().setProfiling(true);
-    auto profile = GraphProfilingHelper::profile(graph, 1);
+  profile->printOut();
 
-    profile->printOut();
+  sd::Environment::getInstance().setProfiling(false);
+  delete profile;
 
-    sd::Environment::getInstance().setProfiling(false);
-    delete profile;
+  /*
+      std::vector<sd::LongType> values;
 
-/*
-    std::vector<Nd4jLong> values;
+      for (int e = 0; e < 1; e++) {
+          auto timeStart = std::chrono::system_clock::now();
 
-    for (int e = 0; e < 1; e++) {
-        auto timeStart = std::chrono::system_clock::now();
+          GraphExecutioner::execute(graph);
 
-        GraphExecutioner::execute(graph);
+          auto timeEnd = std::chrono::system_clock::now();
+          auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+          values.emplace_back(outerTime);
+      }
 
-        auto timeEnd = std::chrono::system_clock::now();
-        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-        values.emplace_back(outerTime);
-    }
+      std::sort(values.begin(), values.end());
 
-    std::sort(values.begin(), values.end());
-
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
-*/
-    delete graph;
+      sd_printf("Time: %lld us;\n", values[values.size() / 2]);
+  */
+  delete graph;
 #endif
 }
 
-
 TEST_F(PlaygroundTests, test_one_off_ops_1) {
-    auto x = NDArrayFactory::create<float>('c', {4, 128, 768});
-    auto y = NDArrayFactory::create<float>('c', {4, 128, 1});
-    auto z = x.ulike();
+  auto x = NDArrayFactory::create<float>('c', {4, 128, 768});
+  auto y = NDArrayFactory::create<float>('c', {4, 128, 1});
+  auto z = x.ulike();
 
-    sd::ops::squaredsubtract op;
-    op.execute({&x, &y}, {&z});
+  sd::ops::squaredsubtract op;
+  op.execute({&x, &y}, {&z});
 }
 
 #if defined(INDEX_REDUCTIONS_BENCH_TESTS)
-//temporarly, testing against the original one
+// temporarly, testing against the original one
 void original_argmax(const NDArray& input, std::vector<int>& axis, NDArray& output) {
-    sd::ops::helpers::adjustAxis(input.rankOf(), axis);
-    input.applyIndexReduce(sd::indexreduce::IndexMax, output, axis);
+  sd::ops::helpers::adjustAxis(input.rankOf(), axis);
+  input.applyIndexReduce(sd::indexreduce::IndexMax, output, axis);
 }
 
-template<typename T>
+template <typename T>
 void fill_random(sd::NDArray& arr) {
-    Nd4jLong coords[MAX_RANK] = {};
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    //for floats
-    std::uniform_real_distribution<T> dis((T)-10.0, (T)22.9);
-    T* x = arr.bufferAsT<T>();
-    auto shapeInfo = arr.shapeInfo();
-    auto strides = arr.stridesOf();
-    Nd4jLong rank = shapeInfo[0];
-    auto bases = &(shapeInfo[1]);
-    size_t t = 1;
-    for (size_t i = 0; i < rank ; i++) {
-        t *= bases[i];
+  sd::LongType coords[SD_MAX_RANK] = {};
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  // for floats
+  std::uniform_real_distribution<T> dis((T)-10.0, (T)22.9);
+  T* x = arr.bufferAsT<T>();
+  auto shapeInfo = arr.shapeInfo();
+  auto strides = arr.stridesOf();
+  sd::LongType rank = shapeInfo[0];
+  auto bases = &(shapeInfo[1]);
+  size_t t = 1;
+  for (size_t i = 0; i < rank; i++) {
+    t *= bases[i];
+  }
+  size_t offset = 0;
+  if (arr.ordering() == 'c') {
+    for (size_t i = 0; i < t; i++) {
+      x[offset] = dis(gen);
+      offset = sd::inc_coords(bases, strides, coords, offset, rank);
     }
-    size_t offset = 0;
-    if (arr.ordering() == 'c') {
 
-        for (size_t i = 0; i < t; i++) {
-            x[offset] = dis(gen) ;
-            offset = sd::inc_coords(bases, strides, coords, offset, rank);
-        }
-
+  } else {
+    for (size_t i = 0; i < t; i++) {
+      x[offset] = dis(gen);
+      offset = sd::inc_coords<false>(bases, strides, coords, offset, rank);
     }
-    else {
-
-        for (size_t i = 0; i < t; i++) {
-            x[offset] = dis(gen) ;
-            offset = sd::inc_coords<false>(bases, strides, coords, offset, rank);
-        }
-
-    }
+  }
 }
 
 void testLegacy(bool random) {
@@ -328,161 +317,153 @@ void testLegacy(bool random) {
     int bases[] = { 3, 2, 4, 5, 7 };
     constexpr int Loop = 1;
 #else
-    int bases[] = { 8, 32, 64, 32, 64 };
-    constexpr int Loop = 10;
+  int bases[] = {8, 32, 64, 32, 64};
+  constexpr int Loop = 10;
 #endif
-    constexpr int N = 5;
+  constexpr int N = 5;
 
-    auto x = NDArrayFactory::create<float>('c', { bases[0], bases[1], bases[2], bases[3], bases[4] });
-    if (!random) {
-        x.linspace(1);
-    }
-    else{
-        fill_random<float>(x);
-     }
+  auto x = NDArrayFactory::create<float>('c', {bases[0], bases[1], bases[2], bases[3], bases[4]});
+  if (!random) {
+    x.linspace(1);
+  } else {
+    fill_random<float>(x);
+  }
 
 #define COMBINATIONS 1
 #if COMBINATIONS
-//https://www.rosettacode.org/wiki/Combinations#C.2B.2B
-for (int k = N; k >= 1; k--) {
-
-    std::string bitmask(k, 1); // K leading 1's
-    bitmask.resize(N, 0); // N-K trailing 0's
+  // https://www.rosettacode.org/wiki/Combinations#C.2B.2B
+  for (int k = N; k >= 1; k--) {
+    std::string bitmask(k, 1);  // K leading 1's
+    bitmask.resize(N, 0);       // N-K trailing 0's
 
     do {
+      std::vector<int> dimension;
+      std::vector<sd::LongType> output_bases;
 
-        std::vector<int> dimension;
-        std::vector<Nd4jLong> output_bases;
-
-        for (int i = 0; i < N; ++i) // [0..N-1] integers
-        {
-            if (bitmask[i])  dimension.push_back(i);
-            else {
-                output_bases.push_back(bases[i]);
-            }
+      for (int i = 0; i < N; ++i)  // [0..N-1] integers
+      {
+        if (bitmask[i])
+          dimension.push_back(i);
+        else {
+          output_bases.push_back(bases[i]);
         }
+      }
 #else
-std::vector<int> dimension = { 0,1,2,3 };
-int k = 4;
+  std::vector<int> dimension = {0, 1, 2, 3};
+  int k = 4;
 #endif
-auto dim = NDArrayFactory::create<int>(dimension);
+      auto dim = NDArrayFactory::create<int>(dimension);
 
 #if 1
-nd4j_printf("C(N:%d K:%d) \n", N, k);
-dim.printIndexedBuffer("Dimension");
-for (int xind : dimension) {
-    nd4j_printf(" %d ,", bases[xind]);
-}
-nd4j_printf("%s", "\n");
+      sd_printf("C(N:%d K:%d) \n", N, k);
+      dim.printIndexedBuffer("Dimension");
+      for (int xind : dimension) {
+        sd_printf(" %d ,", bases[xind]);
+      }
+      sd_printf("%s", "\n");
 #endif
 
+      std::vector<sd::LongType> values;
+      sd::ResultSet result;
+      for (int e = 0; e < Loop; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+        NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<sd::LongType>('c', output_bases)
+                                              : NDArrayFactory::create<sd::LongType>(0);
+        original_argmax(x, dimension, exp);
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+      }
 
+      std::sort(values.begin(), values.end());
 
-std::vector<Nd4jLong> values;
-sd::ResultSet result;
-for (int e = 0; e < Loop; e++) {
-    auto timeStart = std::chrono::system_clock::now();
-    NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
-    original_argmax(x, dimension, exp);
-    auto timeEnd = std::chrono::system_clock::now();
-    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-    values.emplace_back(outerTime);
-}
-
-std::sort(values.begin(), values.end());
-
-nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+      sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 #if COMBINATIONS
 
     } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
-
-}
+  }
 #endif
 }
 
 #define DEBUG 1
 
-void testNewReduction(bool random, bool checkCorrectness = false , char order ='c') {
-    std::vector<Nd4jLong> arr_dimensions;
+void testNewReduction(bool random, bool checkCorrectness = false, char order = 'c') {
+  std::vector<sd::LongType> arr_dimensions;
 #if defined(DEBUG)
-    int bases[] = { 3, 2, 3, 3, 5 ,4,7,4,7,7 };
-    constexpr int Loop = 1;
-    constexpr int N = 10;
+  int bases[] = {3, 2, 3, 3, 5, 4, 7, 4, 7, 7};
+  constexpr int Loop = 1;
+  constexpr int N = 10;
 #else
-    int bases[] = { 8, 32, 64, 32, 64 };
-    constexpr int Loop = 10;
-    constexpr int N = 5;
+  int bases[] = {8, 32, 64, 32, 64};
+  constexpr int Loop = 10;
+  constexpr int N = 5;
 
 #endif
 
-    for (int i = 0; i < N; i++) {
-        arr_dimensions.push_back(bases[i]);
-    }
-    auto x = NDArrayFactory::create<float>(order,arr_dimensions);
-    if (!random) {
-        x.linspace(1);
-    }
-    else {
-        fill_random<float>(x);
-    }
+  for (int i = 0; i < N; i++) {
+    arr_dimensions.push_back(bases[i]);
+  }
+  auto x = NDArrayFactory::create<float>(order, arr_dimensions);
+  if (!random) {
+    x.linspace(1);
+  } else {
+    fill_random<float>(x);
+  }
 
 #define COMBINATIONS 1
 #if COMBINATIONS
-    //https://www.rosettacode.org/wiki/Combinations#C.2B.2B
-    for (int k = N; k >= 1; k--) {
+  // https://www.rosettacode.org/wiki/Combinations#C.2B.2B
+  for (int k = N; k >= 1; k--) {
+    std::string bitmask(k, 1);  // K leading 1's
+    bitmask.resize(N, 0);       // N-K trailing 0's
 
-        std::string bitmask(k, 1); // K leading 1's
-        bitmask.resize(N, 0); // N-K trailing 0's
+    do {
+      std::vector<int> dimension;
 
-        do {
+      std::vector<sd::LongType> output_bases;
 
-
-            std::vector<int> dimension;
-
-            std::vector<Nd4jLong> output_bases;
-
-            for (int i = 0; i < N; ++i) // [0..N-1] integers
-            {
-                if (bitmask[i])  dimension.push_back(i);
-                else {
-                    output_bases.push_back(bases[i]);
-                }
-            }
+      for (int i = 0; i < N; ++i)  // [0..N-1] integers
+      {
+        if (bitmask[i])
+          dimension.push_back(i);
+        else {
+          output_bases.push_back(bases[i]);
+        }
+      }
 #else
-    std::vector<int> dimension = { 0,1,2,3 };
-    int k = 4;
+  std::vector<int> dimension = {0, 1, 2, 3};
+  int k = 4;
 #endif
-    auto dim = NDArrayFactory::create<int>(dimension);
+      auto dim = NDArrayFactory::create<int>(dimension);
 
 #if 1
-    nd4j_printf("C(N:%d K:%d) \n", N, k);
-    dim.printIndexedBuffer("Dimension");
-    for (int xind : dimension) {
-        nd4j_printf(" %d ,", bases[xind]);
-    }
-    nd4j_printf("%s", "\n");
+      sd_printf("C(N:%d K:%d) \n", N, k);
+      dim.printIndexedBuffer("Dimension");
+      for (int xind : dimension) {
+        sd_printf(" %d ,", bases[xind]);
+      }
+      sd_printf("%s", "\n");
 #endif
 
-
-    sd::ops::argmax op;
-    std::vector<Nd4jLong> values;
-    sd::ResultSet result;
-    for (int e = 0; e < Loop; e++) {
+      sd::ops::argmax op;
+      std::vector<sd::LongType> values;
+      sd::ResultSet result;
+      for (int e = 0; e < Loop; e++) {
         auto timeStart = std::chrono::system_clock::now();
-        result = op.evaluate({ &x, &dim }, {}, {});
+        result = op.evaluate({&x, &dim}, {}, {});
         auto timeEnd = std::chrono::system_clock::now();
         auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
         values.emplace_back(outerTime);
-    }
-    auto z = result.at(0);
+      }
+      auto z = result.at(0);
 
-    if (checkCorrectness) {
-        //check for the correctness
-        NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
+      if (checkCorrectness) {
+        // check for the correctness
+        NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<sd::LongType>('c', output_bases)
+                                              : NDArrayFactory::create<sd::LongType>(0);
         original_argmax(x, dimension, exp);
 
-
-#if  0// defined(DEBUG)
+#if 0  // defined(DEBUG)
      x.printIndexedBuffer("X");
     exp.printIndexedBuffer("Expected");
     z->printIndexedBuffer("Z");
@@ -490,41 +471,30 @@ void testNewReduction(bool random, bool checkCorrectness = false , char order ='
 
         ASSERT_TRUE(exp.isSameShape(z));
         ASSERT_TRUE(exp.equalsTo(z));
-    }
-    std::sort(values.begin(), values.end());
+      }
+      std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+      sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 #if COMBINATIONS
 
-        } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
-
-    }
+    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+  }
 #endif
 }
 
 constexpr bool test_corr = true;
 #if !defined(DEBUG)
-TEST_F(PlaygroundTests, ArgMaxPerfLinspace) {
-    testNewReduction(false, test_corr);
-}
+TEST_F(PlaygroundTests, ArgMaxPerfLinspace) { testNewReduction(false, test_corr); }
 #endif
 
-TEST_F(PlaygroundTests, ArgMaxPerfRandom) {
-    testNewReduction(true, test_corr);
-}
+TEST_F(PlaygroundTests, ArgMaxPerfRandom) { testNewReduction(true, test_corr); }
 
-TEST_F(PlaygroundTests, ArgMaxPerfRandomOrderF) {
-    testNewReduction(true, test_corr, 'f');
-}
+TEST_F(PlaygroundTests, ArgMaxPerfRandomOrderF) { testNewReduction(true, test_corr, 'f'); }
 
 #if !defined(DEBUG)
-TEST_F(PlaygroundTests, ArgMaxPerfLegacyLinspace) {
-    testLegacy(false);
-}
+TEST_F(PlaygroundTests, ArgMaxPerfLegacyLinspace) { testLegacy(false); }
 
-TEST_F(PlaygroundTests, ArgMaxPerfLegacyRandom) {
-    testLegacy(true);
-}
+TEST_F(PlaygroundTests, ArgMaxPerfLegacyRandom) { testLegacy(true); }
 
 #endif
 
@@ -547,7 +517,7 @@ TEST_F(PlaygroundTests, test_broadcast_1) {
         aY[e]->assign(119 * (e+3));
     }
 
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
     Context ctx(1);
 
     sd::ops::biasadd op;
@@ -569,7 +539,7 @@ TEST_F(PlaygroundTests, test_broadcast_1) {
 
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+    sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 
     for (int e = 0; e < pool; e++) {
         delete aX[e];
@@ -596,8 +566,7 @@ TEST_F(PlaygroundTests, test_broadcast_1) {
     }
 
 
-
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
 
     for (int e = 0; e < 1000; e++) {
         auto x = aX[e < pool ? e : e % pool];
@@ -616,7 +585,7 @@ TEST_F(PlaygroundTests, test_broadcast_1) {
 
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+    sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 
     for (int e = 0; e < pool; e++) {
         delete aX[e];
@@ -629,7 +598,7 @@ TEST_F(PlaygroundTests, test_broadcast_1) {
 /*
 
 TEST_F(PlaygroundTests, test_s_0) {
-    std::vector<std::vector<Nd4jLong>> shapes = {{32, 224, 224, 3}, {32, 56, 56, 64}, {32, 7, 7, 512}};
+    std::vector<std::vector<sd::LongType>> shapes = {{32, 224, 224, 3}, {32, 56, 56, 64}, {32, 7, 7, 512}};
     std::vector<int> threads = {1, 2, 4, 8, 16};
 
     for (auto shape: shapes) {
@@ -640,7 +609,7 @@ TEST_F(PlaygroundTests, test_s_0) {
             auto y = NDArrayFactory::create<float>('c', {shape[3]});
             auto z = x.ulike();
 
-            std::vector<Nd4jLong> values;
+            std::vector<sd::LongType> values;
             Context ctx(1);
             ctx.setInputArray(0, &x);
             ctx.setInputArray(1, &y);
@@ -662,13 +631,14 @@ TEST_F(PlaygroundTests, test_s_0) {
 
             std::sort(values.begin(), values.end());
 
-            nd4j_printf("Shape: [%lld, %lld, %lld, %lld]; Threads: [%i]; Time: %lld us;\n", shape[0], shape[1], shape[2], shape[3], t, values[values.size() / 2]);
+            sd_printf("Shape: [%lld, %lld, %lld, %lld]; Threads: [%i]; Time: %lld us;\n", shape[0], shape[1], shape[2],
+shape[3], t, values[values.size() / 2]);
         }
     }
 }
 
 TEST_F(PlaygroundTests, test_s_1) {
-    std::vector<std::vector<Nd4jLong>> shapes = {{32, 3, 224, 224}, {32, 64, 56, 56}, {32, 512, 7, 7}};
+    std::vector<std::vector<sd::LongType>> shapes = {{32, 3, 224, 224}, {32, 64, 56, 56}, {32, 512, 7, 7}};
     std::vector<int> threads = {1, 2, 4, 8, 16};
 
     for (auto shape: shapes) {
@@ -679,7 +649,7 @@ TEST_F(PlaygroundTests, test_s_1) {
             auto y = NDArrayFactory::create<float>('c', {shape[1]});
             auto z = x.ulike();
 
-            std::vector<Nd4jLong> values;
+            std::vector<sd::LongType> values;
             Context ctx(1);
             ctx.setInputArray(0, &x);
             ctx.setInputArray(1, &y);
@@ -701,7 +671,8 @@ TEST_F(PlaygroundTests, test_s_1) {
 
             std::sort(values.begin(), values.end());
 
-            nd4j_printf("Shape: [%lld, %lld, %lld, %lld]; Threads: [%i]; Time: %lld us;\n", shape[0], shape[1], shape[2], shape[3], t, values[values.size() / 2]);
+            sd_printf("Shape: [%lld, %lld, %lld, %lld]; Threads: [%i]; Time: %lld us;\n", shape[0], shape[1], shape[2],
+shape[3], t, values[values.size() / 2]);
         }
     }
 }
@@ -713,7 +684,7 @@ TEST_F(PlaygroundTests, test_s_0) {
     auto y = NDArrayFactory::create<float>('c', {16});
     auto z = x.ulike();
 
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
     Context ctx(1);
     ctx.setInputArray(0, &x);
     ctx.setInputArray(1, &y);
@@ -734,7 +705,7 @@ TEST_F(PlaygroundTests, test_s_0) {
 
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+    sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 }
 */
 /*
@@ -761,7 +732,7 @@ TEST_F(PlaygroundTests, test_s_1) {
     ctx.setOutputArray(0, &z);
     ctx.setBArguments({true});
 
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
 
     sd::ops::concat op;
     op.execute(&ctx);
@@ -779,7 +750,7 @@ TEST_F(PlaygroundTests, test_s_1) {
 
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+    sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 }
 */
 
@@ -797,7 +768,7 @@ TEST_F(PlaygroundTests, test_s_2) {
     };
 
     samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
 
     for (int e = 0; e < 100000; e++) {
         s = 0;
@@ -814,14 +785,14 @@ TEST_F(PlaygroundTests, test_s_2) {
     };
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Time: %lld;\n", values[values.size() / 2]);
+    sd_printf("Time: %lld;\n", values[values.size() / 2]);
 }
  */
 /*
 TEST_F(PlaygroundTests, test_s_4) {
     std::atomic<float> f;
     std::atomic<int> s;
-    std::vector<Nd4jLong> valuesX, valuesY;
+    std::vector<sd::LongType> valuesX, valuesY;
     int iterations = 1000;
     s = 0;
     auto func = PRAGMA_THREADS_FOR {
@@ -886,22 +857,24 @@ TEST_F(PlaygroundTests, test_s_4) {
 
     if (valuesX.size() > 0) {
         std::sort(valuesX.begin(), valuesX.end());
-        nd4j_printf("OpenMP time: %lld; Min: %lld; Max: %lld;\n", valuesX[valuesX.size() / 2], valuesX[0], valuesX[valuesX.size() - 1]);
+        sd_printf("OpenMP time: %lld; Min: %lld; Max: %lld;\n", valuesX[valuesX.size() / 2], valuesX[0],
+valuesX[valuesX.size() - 1]);
     }
 
     if (valuesY.size() > 0) {
         std::sort(valuesY.begin(), valuesY.end());
-        nd4j_printf("Threads time: %lld; Min: %lld; Max: %lld;\n", valuesY[valuesY.size() / 2], valuesY[0], valuesY[valuesY.size() - 1]);
+        sd_printf("Threads time: %lld; Min: %lld; Max: %lld;\n", valuesY[valuesY.size() / 2], valuesY[0],
+valuesY[valuesY.size() - 1]);
     }
 
-    nd4j_printf("Sum: %f\n", z.sumNumber().e<float>(0));
+    sd_printf("Sum: %f\n", z.sumNumber().e<float>(0));
 }
 
 
 TEST_F(PlaygroundTests, test_s_5) {
     auto x = NDArrayFactory::create<float>('c', {32, 1, 28, 28});
 
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
     auto iterations = 100;
 
     auto startX = 0;
@@ -934,7 +907,8 @@ TEST_F(PlaygroundTests, test_s_5) {
 
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Calculations time: [Median: %lld; Min: %lld; Max: %lld;]\n", values[values.size() / 2], values[0], values[values.size()-1]);
+    sd_printf("Calculations time: [Median: %lld; Min: %lld; Max: %lld;]\n", values[values.size() / 2], values[0],
+values[values.size()-1]);
 }
 
 
@@ -942,7 +916,7 @@ TEST_F(PlaygroundTests, test_s_6) {
     auto x = NDArrayFactory::create<float>('c', {1024 * 1024 * 64});
     auto buffer = x.bufferAsT<float>();
     auto len = x.lengthOf();
-    std::vector<Nd4jLong> values;
+    std::vector<sd::LongType> values;
     auto iterations = 1000;
 
     for (int i = 0; i < iterations; i++) {
@@ -960,7 +934,8 @@ TEST_F(PlaygroundTests, test_s_6) {
 
     std::sort(values.begin(), values.end());
 
-    nd4j_printf("Calculations time: [Median: %lld; Min: %lld; Max: %lld;]\n", values[values.size() / 2], values[0], values[values.size()-1]);
+    sd_printf("Calculations time: [Median: %lld; Min: %lld; Max: %lld;]\n", values[values.size() / 2], values[0],
+values[values.size()-1]);
 }
 
 
@@ -995,10 +970,10 @@ TEST_F(PlaygroundTests, test_relubp_1) {
     auto timeEnd = std::chrono::system_clock::now();
 
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
-    auto time = (Nd4jLong) outerTime / iterations;
+    auto time = (sd::LongType) outerTime / iterations;
     auto bw = (1000000L * (float) (x.lengthOf() * x.sizeOfT()) / time) / 1024 / 1024 / 1024;
 
-    nd4j_printf("Time: %lld; BW: %f GB/s\n", time, bw);
+    sd_printf("Time: %lld; BW: %f GB/s\n", time, bw);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1007,7 +982,8 @@ TEST_F(PlaygroundTests, my) {
     int bS=8, iD=32,iH=32,iW=32,  iC=128,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=2,dH=2,dW=2;
     int       oD,oH,oW;
 
-    sd::ops::ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, 0);
+    sd::ops::ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
+iW, 0);
 
     printf("!!%i, %i, %i\n", oD,oH,oW);
 
@@ -1036,8 +1012,8 @@ TEST_F(PlaygroundTests, my) {
     int bS=32, iD=32,iH=64,iW=64,  iC=128,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=2,dH=2,dW=2;
     int       oD,oH,oW;
 
-    // sd::ops::ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, 0);
-    sd::ops::ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW,dH, dW, iH, iW, 0);
+    // sd::ops::ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD,
+iH, iW, 0); sd::ops::ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW,dH, dW, iH, iW, 0);
 
     printf("!!%i, %i, %i\n", oD,oH,oW);
 
@@ -1075,13 +1051,13 @@ TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
     // const int nOut = 6;
 
     const float cellClip = 1.1;       // clipping value
-    const Nd4jLong gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
+    const sd::LongType gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
     const float gateAlpha = 0;      // alpha value for activation for gates, not required for sigmoid
     const float gateBeta = 0;       // beta value for activation for gates, not required for sigmoid
-    const Nd4jLong cellAct = 0;        // tanh activation for cell state
+    const sd::LongType cellAct = 0;        // tanh activation for cell state
     const float cellAlpha = 0;      // alpha value for cell state activation, not required for tanh
     const float cellBeta = 0;       // beta value for cell state activation, not required for tanh
-    const Nd4jLong outAct = 0;         // tanh activation for output
+    const sd::LongType outAct = 0;         // tanh activation for output
     const float outAlpha = 0;       // alpha value for output activation, not required for tanh
     const float outBeta = 0;        // beta value for output activation, not required for tanh
 
@@ -1119,7 +1095,7 @@ TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
     // b.assign(0.7);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {gateAct, cellAct, outAct};
 
     // std::vector<bool>     bArgs = {false, false};
     // const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &hI, &cI}, tArgs, iArgs, bArgs);
@@ -1132,7 +1108,8 @@ TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
     sd::ops::lstmLayerCell opFF;
     sd::ops::lstmLayerCellBp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, true, true, true});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true,
+true, true, true});
 }
 
 TEST_F(PlaygroundTests, my) {
@@ -1201,7 +1178,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_1) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
@@ -1259,7 +1236,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_2) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
@@ -1268,7 +1245,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_2) {
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::MEAN);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(),
+{0., 1.}, GradCheck::LossFunc::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1319,16 +1297,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_3) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs,
+bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true,
+false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1378,7 +1358,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
@@ -1438,16 +1418,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs,
+bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true,
+false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1498,11 +1480,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs,
+bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
@@ -1513,7 +1496,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true,
+false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1564,11 +1548,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs,
+bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
@@ -1579,7 +1564,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true,
+false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1630,11 +1616,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
     b.linspace(1,-0.15);
 
     std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs,
+bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
     // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
@@ -1645,7 +1632,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true,
+false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1659,7 +1647,8 @@ TEST_F(DeclarableOpsTests15, gru_bp_1) {
     const int nOut = 4;
 
 
-    NDArray x('c', {sL, bS, nIn}, {0.5,  1. ,  1.5,  2. ,  2.5, 3. ,  3.5,  4. ,  4.5,  5. ,  5.5,  6. ,  6.5,  7. ,  7.5, 8. ,  8.5,  9. ,  9.5, 10. ,  10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15.}, sd::DataType::DOUBLE);
+    NDArray x('c', {sL, bS, nIn}, {0.5,  1. ,  1.5,  2. ,  2.5, 3. ,  3.5,  4. ,  4.5,  5. ,  5.5,  6. ,  6.5,  7.
+,  7.5, 8. ,  8.5,  9. ,  9.5, 10. ,  10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15.}, sd::DataType::DOUBLE);
     NDArray hI('c', {bS, nOut}, {-3,-2,-1,0,1,2,3,4}, sd::DataType::DOUBLE);
     NDArray Wx('c', {nIn, 3*nOut}, sd::DataType::DOUBLE);
     NDArray Wh('c', {nOut, 3*nOut}, sd::DataType::DOUBLE);

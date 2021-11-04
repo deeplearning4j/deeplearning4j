@@ -23,54 +23,52 @@
 #ifndef LIBND4J_NDINDEX_H
 #define LIBND4J_NDINDEX_H
 
-#include <system/pointercast.h>
+#include <system/common.h>
+
 #include <vector>
-#include <system/dll.h>
 
 namespace sd {
-    class ND4J_EXPORT NDIndex {
-    protected:
-        std::vector<Nd4jLong> _indices;
-        Nd4jLong _stride = 1;
-    public:
-        NDIndex() = default;
-        ~NDIndex() = default;
+class SD_LIB_EXPORT NDIndex {
+ protected:
+  std::vector<sd::LongType> _indices;
+  sd::LongType _stride = 1;
 
-        bool isAll();
-        bool isPoint();
-        virtual bool isInterval();
+ public:
+  NDIndex() = default;
+  ~NDIndex() = default;
 
-        std::vector<Nd4jLong>& getIndices();
-        Nd4jLong stride();
+  bool isAll();
+  bool isPoint();
+  virtual bool isInterval();
 
-        static NDIndex* all();
-        static NDIndex* point(Nd4jLong pt);
-        static NDIndex* interval(Nd4jLong start, Nd4jLong end, Nd4jLong stride = 1);
-    };
+  std::vector<sd::LongType>& getIndices();
+  sd::LongType stride();
 
-    class ND4J_EXPORT NDIndexAll : public NDIndex {
-    public:
-        NDIndexAll();
-        virtual bool isInterval();
-        ~NDIndexAll() = default;
-    };
+  static NDIndex* all();
+  static NDIndex* point(sd::LongType pt);
+  static NDIndex* interval(sd::LongType start, sd::LongType end, sd::LongType stride = 1);
+};
 
+class SD_LIB_EXPORT NDIndexAll : public NDIndex {
+ public:
+  NDIndexAll();
+  virtual bool isInterval();
+  ~NDIndexAll() = default;
+};
 
-    class ND4J_EXPORT NDIndexPoint : public NDIndex {
-    public:
-        NDIndexPoint(Nd4jLong point);
-        virtual bool isInterval();
-        ~NDIndexPoint() = default;
-    };
+class SD_LIB_EXPORT NDIndexPoint : public NDIndex {
+ public:
+  NDIndexPoint(sd::LongType point);
+  virtual bool isInterval();
+  ~NDIndexPoint() = default;
+};
 
-    class ND4J_EXPORT NDIndexInterval : public NDIndex {
-    public:
-        NDIndexInterval(Nd4jLong start, Nd4jLong end, Nd4jLong stride = 1);
-        virtual bool isInterval();
-        ~NDIndexInterval() = default;
-    };
-}
+class SD_LIB_EXPORT NDIndexInterval : public NDIndex {
+ public:
+  NDIndexInterval(sd::LongType start, sd::LongType end, sd::LongType stride = 1);
+  virtual bool isInterval();
+  ~NDIndexInterval() = default;
+};
+}  // namespace sd
 
-
-
-#endif //LIBND4J_NDINDEX_H
+#endif  // LIBND4J_NDINDEX_H

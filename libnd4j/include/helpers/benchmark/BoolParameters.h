@@ -22,29 +22,26 @@
 
 #ifndef DEV_TESTS_BOOLPARAMETERS_H
 #define DEV_TESTS_BOOLPARAMETERS_H
-
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
+
 #include "Parameters.h"
 #include "ParametersSpace.h"
 
 namespace sd {
-    class BoolParameters : public ParametersSpace {
-    protected:
+class BoolParameters : public ParametersSpace {
+ protected:
+ public:
+  BoolParameters(std::string name) : ParametersSpace() { _name = name; }
 
-    public:
-        BoolParameters(std::string name) : ParametersSpace() {
-            _name = name;
-        }
+  std::vector<int> evaluate() override {
+    std::vector<int> result;
+    result.emplace_back(0);
+    result.emplace_back(1);
+    return result;
+  }
+};
+}  // namespace sd
 
-        std::vector<int> evaluate() override {
-            std::vector<int> result;
-            result.emplace_back(0);
-            result.emplace_back(1);
-            return result;
-        }
-    };
-}
-
-#endif //DEV_TESTS_PARAMETERSPACE_H
+#endif  // DEV_TESTS_PARAMETERSPACE_H

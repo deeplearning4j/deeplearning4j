@@ -19,54 +19,48 @@
 //
 // Created by raver on 8/29/2018.
 //
-
 #include <helpers/SimpleReadWriteLock.h>
 
-
 namespace sd {
-    SimpleReadWriteLock::SimpleReadWriteLock(const SimpleReadWriteLock& other) {
-        _read_locks.store(other._read_locks.load());
-        _write_locks.store(other._write_locks.load());
-    }
-
-    SimpleReadWriteLock::SimpleReadWriteLock(){
-        _read_locks.store(0);
-        _write_locks.store(0);
-    }
-
-    void SimpleReadWriteLock::lockRead() {
-        _mutex.lock();
-        _read_locks++;
-        while(_write_locks.load() > 0) {
-            // just loop
-        }
-        _mutex.unlock();
-    }
-
-    void SimpleReadWriteLock::unlockRead() {
-        _read_locks--;
-    }
-
-    // write lock
-    void SimpleReadWriteLock::lockWrite() {
-        _mutex.lock();
-        _write_locks++;
-        while (_read_locks.load() > 0) {
-            // just loop
-        }
-        _mutex.unlock();
-    }
-
-    void SimpleReadWriteLock::unlockWrite() {
-        _write_locks--;
-    }
-
-    SimpleReadWriteLock& SimpleReadWriteLock::operator= ( const SimpleReadWriteLock &other) {
-        if (this == &other) return *this;
-
-        this->_write_locks.store(other._write_locks.load());
-        this->_read_locks.store(other._read_locks.load());
-
-        return *this;
-    }
+SimpleReadWriteLock::SimpleReadWriteLock(const SimpleReadWriteLock& other) {
+  _read_locks.store(other._read_locks.load());
+  _write_locks.store(other._write_locks.load());
 }
+
+SimpleReadWriteLock::SimpleReadWriteLock() {
+  _read_locks.store(0);
+  _write_locks.store(0);
+}
+
+void SimpleReadWriteLock::lockRead() {
+  _mutex.lock();
+  _read_locks++;
+  while (_write_locks.load() > 0) {
+    // just loop
+  }
+  _mutex.unlock();
+}
+
+void SimpleReadWriteLock::unlockRead() { _read_locks--; }
+
+// write lock
+void SimpleReadWriteLock::lockWrite() {
+  _mutex.lock();
+  _write_locks++;
+  while (_read_locks.load() > 0) {
+    // just loop
+  }
+  _mutex.unlock();
+}
+
+void SimpleReadWriteLock::unlockWrite() { _write_locks--; }
+
+SimpleReadWriteLock& SimpleReadWriteLock::operator=(const SimpleReadWriteLock& other) {
+  if (this == &other) return *this;
+
+  this->_write_locks.store(other._write_locks.load());
+  this->_read_locks.store(other._read_locks.load());
+
+  return *this;
+}
+}  // namespace sd

@@ -22,24 +22,22 @@
 
 #ifndef DEV_TESTS_UNRESOLVED_OUTPUT_H
 #define DEV_TESTS_UNRESOLVED_OUTPUT_H
-
-#include <utility>
-#include <string>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace sd {
-    namespace graph {
-        class unresolved_output_exception : public std::runtime_error {
-        public:
-            unresolved_output_exception(std::string message);
-            ~unresolved_output_exception() = default;
+namespace graph {
+class unresolved_output_exception : public std::runtime_error {
+ public:
+  unresolved_output_exception(std::string message);
+  ~unresolved_output_exception() = default;
 
-            static unresolved_output_exception build(std::string message, int nodeId, int outputIndex);
-            static unresolved_output_exception build(std::string message, std::pair<int, int> &varIndex);
-            static unresolved_output_exception build(std::string message, std::string &varName, int outputIndex);
-        };
-    }
-}
+  static unresolved_output_exception build(std::string message, int nodeId, int outputIndex);
+  static unresolved_output_exception build(std::string message, std::pair<int, int> &varIndex);
+  static unresolved_output_exception build(std::string message, std::string &varName, int outputIndex);
+};
+}  // namespace graph
+}  // namespace sd
 
-
-#endif //DEV_TESTS_UNRESOLVED_INPUT_H
+#endif  // DEV_TESTS_UNRESOLVED_INPUT_H

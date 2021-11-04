@@ -22,7 +22,6 @@
 
 #ifndef LIBND4J_FULLPIVLU_H
 #define LIBND4J_FULLPIVLU_H
-
 #include <array/NDArray.h>
 
 namespace sd {
@@ -38,17 +37,13 @@ namespace helpers {
 
 template <typename T>
 class FullPivLU {
-
-    public:
-
-        // A{M,K} * x{K,N} = b{M,N}
-        static void solve(const NDArray& A, const NDArray& b, NDArray& x);
+ public:
+  // A{M,K} * x{K,N} = b{M,N}
+  static void solve(const NDArray& A, const NDArray& b, NDArray& x);
 };
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-}
-}
-}
-
-
-#endif //LIBND4J_FULLPIVLU_H
+#endif  // LIBND4J_FULLPIVLU_H

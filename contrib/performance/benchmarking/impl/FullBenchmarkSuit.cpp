@@ -120,7 +120,7 @@ namespace sd {
 
             auto bias = NDArrayFactory::create_<float>('c', {c});
             ctx->setInputArray(1, bias, true);
-            auto iargs = new Nd4jLong[1];
+            auto iargs = new sd::LongType[1];
             iargs[0] = axis;
             ctx->setIArguments(iargs, 1);
             delete[] iargs;
@@ -174,7 +174,7 @@ namespace sd {
                 ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {mb, chIn, dhw, dhw, dhw}), true);
             }
 
-            auto iargs = new Nd4jLong[15];
+            auto iargs = new sd::LongType[15];
             //Kernel, strides, padding, dilation - x3 each
             iargs[0] = 3;   //Kernel
             iargs[1] = 3;
@@ -245,7 +245,7 @@ namespace sd {
             ctx->setInputArray(2, NDArrayFactory::create_<float>('c', {chOut}), true);
 
 
-            auto iargs = new Nd4jLong[14];
+            auto iargs = new sd::LongType[14];
             //Kernel, strides, padding, dilation - x3 each
             iargs[0] = 3;   //Kernel
             iargs[1] = 3;
@@ -297,8 +297,8 @@ namespace sd {
             int m = p.getIntParam("mb");
             int n = p.getIntParam("nInOut");
 
-            Nd4jLong l = 0;
-            ctx->setInputArray(0, NDArrayFactory::create_<Nd4jLong>(l), true);  //Max TS length (unused)
+            sd::LongType l = 0;
+            ctx->setInputArray(0, NDArrayFactory::create_<sd::LongType>(l), true);  //Max TS length (unused)
 
 
             if (f == 0) {
@@ -339,7 +339,7 @@ namespace sd {
             ctx->setInputArray(7, Wco, true);
             ctx->setInputArray(8, b, true);
 
-            auto iargs = new Nd4jLong[2];
+            auto iargs = new sd::LongType[2];
             iargs[0] = 0;   //No peephole
             iargs[1] = f;
             ctx->setIArguments(iargs, 2);
@@ -379,7 +379,7 @@ namespace sd {
             int hw = p.getIntParam("hw");
             int ch = p.getIntParam("c");
 
-            auto args = new Nd4jLong[3];
+            auto args = new sd::LongType[3];
             args[0] = args[1] = 1; //apply scale and offset
             if (n == 0) {
                 auto input = NDArrayFactory::create_<float>('c', {32, ch, hw, hw});
@@ -459,7 +459,7 @@ namespace sd {
                 ctx->setOutputArray(0, output, true);
             }
 
-            auto args = new Nd4jLong[11];
+            auto args = new sd::LongType[11];
             args[0] = args[1] = khw; //Kernel
             args[2] = args[3] = 1;//Stride
             args[4] = args[5] = 0;  //Pad
@@ -526,7 +526,7 @@ namespace sd {
             ctx->setInputArray(1, w, true);
             ctx->setInputArray(2, b, true);
 
-            auto args = new Nd4jLong[10];
+            auto args = new sd::LongType[10];
             args[0] = args[1] = khw; //Kernel
             args[2] = args[3] = 1;//Stride
             args[4] = args[5] = 0;  //Pad
@@ -554,7 +554,7 @@ namespace sd {
 
         auto gen01 = PARAMETRIC_D() {
             auto ctx = new Context(1);
-            ctx->setInputArray(0, NDArrayFactory::create_<Nd4jLong>('c', {2},{1, p.getIntParam("length")}), true);   //Shape as NDArray
+            ctx->setInputArray(0, NDArrayFactory::create_<sd::LongType>('c', {2},{1, p.getIntParam("length")}), true);   //Shape as NDArray
             ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {1, p.getIntParam("length")}), true);
             auto d = new double[2];
             d[0] = 0.0;
@@ -566,7 +566,7 @@ namespace sd {
 
         auto gen05 = PARAMETRIC_D() {
             auto ctx = new Context(1);
-            ctx->setInputArray(0, NDArrayFactory::create_<Nd4jLong>('c', {2},{1, p.getIntParam("length")}), true);   //Shape as NDArray
+            ctx->setInputArray(0, NDArrayFactory::create_<sd::LongType>('c', {2},{1, p.getIntParam("length")}), true);   //Shape as NDArray
             ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {1, p.getIntParam("length")}), true);
             auto d = new double[1];
             d[0] = 0.5;
@@ -628,8 +628,8 @@ namespace sd {
                 //Vary A.rows:
                 auto generator = PARAMETRIC_XYZ() {
                     auto a = p.getIntParam("d");
-                    std::vector<Nd4jLong> shapeA;
-                    std::vector<Nd4jLong> shapeB;
+                    std::vector<sd::LongType> shapeA;
+                    std::vector<sd::LongType> shapeB;
                     if (tA) {
                         shapeA = {b, a};
                     } else {
@@ -664,8 +664,8 @@ namespace sd {
                     auto a = 1024;
                     auto b = p.getIntParam("d");
                     auto c = 1024;
-                    std::vector<Nd4jLong> shapeA;
-                    std::vector<Nd4jLong> shapeB;
+                    std::vector<sd::LongType> shapeA;
+                    std::vector<sd::LongType> shapeB;
                     if (tA) {
                         shapeA = {b, a};
                     } else {
@@ -700,8 +700,8 @@ namespace sd {
                     auto a = 1024;
                     auto b = 1024;
                     auto c = p.getIntParam("d");
-                    std::vector<Nd4jLong> shapeA;
-                    std::vector<Nd4jLong> shapeB;
+                    std::vector<sd::LongType> shapeA;
+                    std::vector<sd::LongType> shapeB;
                     if (tA) {
                         shapeA = {b, a};
                     } else {
@@ -749,8 +749,8 @@ namespace sd {
 
         auto generator = PARAMETRIC_D() {
             auto rank = p.getIntParam("rank");
-            std::vector<Nd4jLong> shapeA;
-            std::vector<Nd4jLong> shapeB;
+            std::vector<sd::LongType> shapeA;
+            std::vector<sd::LongType> shapeB;
             auto ctx = new Context(1);
 
             if(rank == 3){
@@ -1133,20 +1133,20 @@ namespace sd {
                 }
 
 
-                std::vector<Nd4jLong> shape({});
-                std::vector<Nd4jLong> toBcShape({});
+                std::vector<sd::LongType> shape({});
+                std::vector<sd::LongType> toBcShape({});
                 int vectorLength;
                 if(rank == 3){
-                    shape = std::vector<Nd4jLong>({64,64,64});
-                    toBcShape = std::vector<Nd4jLong>({64,64,64});
+                    shape = std::vector<sd::LongType>({64,64,64});
+                    toBcShape = std::vector<sd::LongType>({64,64,64});
                     vectorLength = 64;
                 } else if(rank == 4){
-                    shape = std::vector<Nd4jLong>({32,32,32,32});
-                    toBcShape = std::vector<Nd4jLong>({32,32,32,32});
+                    shape = std::vector<sd::LongType>({32,32,32,32});
+                    toBcShape = std::vector<sd::LongType>({32,32,32,32});
                     vectorLength = 32;
                 } else if(rank == 5){
-                    shape = std::vector<Nd4jLong>({16,16,16,16,16});
-                    toBcShape = std::vector<Nd4jLong>({16,16,16,16,16});
+                    shape = std::vector<sd::LongType>({16,16,16,16,16});
+                    toBcShape = std::vector<sd::LongType>({16,16,16,16,16});
                     vectorLength = 16;
                 }
 
@@ -1249,16 +1249,16 @@ namespace sd {
 
         for( int rank=3; rank<=5; rank++ ){
             for( int axis=1; axis<rank; axis++ ){
-                std::vector<Nd4jLong> shape({});
+                std::vector<sd::LongType> shape({});
                 int vectorLength;
                 if(rank == 3){
-                    shape = std::vector<Nd4jLong>({32,128,128});
+                    shape = std::vector<sd::LongType>({32,128,128});
                     vectorLength = 128;
                 } else if(rank == 4){
-                    shape = std::vector<Nd4jLong>({16,64,64,64});
+                    shape = std::vector<sd::LongType>({16,64,64,64});
                     vectorLength = 64;
                 } else if(rank == 5){
-                    shape = std::vector<Nd4jLong>({16,48,48,48,48});
+                    shape = std::vector<sd::LongType>({16,48,48,48,48});
                     vectorLength = 48;
                 }
 
@@ -1426,8 +1426,8 @@ namespace sd {
 
             strided->assign(1.0);
             ctx->setInputArray(0, strided, true);
-            ctx->setOutputArray(0, NDArrayFactory::create_<Nd4jLong>('c', {1}), true);
-            auto iargs = new Nd4jLong[1];
+            ctx->setOutputArray(0, NDArrayFactory::create_<sd::LongType>('c', {1}), true);
+            auto iargs = new sd::LongType[1];
             iargs[0] = 0;
             ctx->setIArguments(iargs, 1);
             delete[] iargs;
@@ -1463,7 +1463,7 @@ namespace sd {
 
 
                 x.push_back(arr);
-                y.push_back(NDArrayFactory::create_<Nd4jLong>(dim));
+                y.push_back(NDArrayFactory::create_<sd::LongType>(dim));
 
                 NDArray* result;
                 if(dim == 0){
@@ -1490,7 +1490,7 @@ namespace sd {
                 int dim = p.getIntParam("dim");
                 auto arr = NDArrayFactory::create_<float>('c', {rows, cols});
 
-                Nd4jLong* dimArg = new Nd4jLong[1];
+                sd::LongType* dimArg = new sd::LongType[1];
                 dimArg[0] = dim;
                 ctx->setIArguments(dimArg, 1);
                 delete[] dimArg;
@@ -1499,9 +1499,9 @@ namespace sd {
 
                 NDArray* result;
                 if(dim == 0){
-                    result = NDArrayFactory::create_<Nd4jLong>('c', {cols});
+                    result = NDArrayFactory::create_<sd::LongType>('c', {cols});
                 } else {
-                    result = NDArrayFactory::create_<Nd4jLong>('c', {rows});
+                    result = NDArrayFactory::create_<sd::LongType>('c', {rows});
                 }
                 ctx->setOutputArray(0, result, true);
                 return ctx;
@@ -1545,8 +1545,8 @@ namespace sd {
             auto ctx = new Context(1);
 
             ctx->setInputArray(0, NDArrayFactory::create_<float>('c', {p.getIntParam("length")}), true);
-            ctx->setInputArray(1, NDArrayFactory::create_<Nd4jLong>((Nd4jLong)0), true);
-            ctx->setOutputArray(0, NDArrayFactory::create_<Nd4jLong>(0), true);
+            ctx->setInputArray(1, NDArrayFactory::create_<sd::LongType>((sd::LongType)0), true);
+            ctx->setOutputArray(0, NDArrayFactory::create_<sd::LongType>(0), true);
 
             return ctx;
         };
@@ -1568,7 +1568,7 @@ namespace sd {
             auto arr = NDArrayFactory::create_<float>('c', {r, r+1});
             IndicesList indices({NDIndex::all(), NDIndex::interval(0,r-1)});
             auto view = new NDArray(arr->subarray(indices));
-            //nd4j_printf("VIEW ARRAY: rows=%lld, columns=%lld", view->sizeAt(0), view->sizeAt(1));
+            //sd_printf("VIEW ARRAY: rows=%lld, columns=%lld", view->sizeAt(0), view->sizeAt(1));
             x.push_back(view);
             if(p.getIntParam("inplace") == 1){
                 z.push_back(view);
@@ -1816,7 +1816,7 @@ namespace sd {
 
     static long done(long start){
         long dur = duration(start);
-        nd4j_printf("Done: %i ms\n", dur);
+        sd_printf("Done: %i ms\n", dur);
         return nowMs();
     }
 
@@ -1827,93 +1827,93 @@ namespace sd {
         long start = nowMs();
 
         // set 1
-        nd4j_printf("Running FullBenchmarkSuite.fastScalarBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastScalarBenchmark\n", "");
         result += fastScalarBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastTransformsBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastTransformsBenchmark\n", "");
         result += fastTransformsBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.intermediateTransformsBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.intermediateTransformsBenchmark\n", "");
         result += intermediateTransformsBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastPairwiseBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastPairwiseBenchmark\n", "");
         result += fastPairwiseBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.heavyTransformsBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.heavyTransformsBenchmark\n", "");
         result += heavyTransformsBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastNonEwsTransformBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastNonEwsTransformBenchmark\n", "");
         result += fastNonEwsTransformBenchmark();
         start = done(start);
 
         // set 2
-        nd4j_printf("Running FullBenchmarkSuite.fastReduceToScalarBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastReduceToScalarBenchmark\n", "");
         result += fastReduceToScalarBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastReduceAlongDimBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastReduceAlongDimBenchmark\n", "");
         result += fastReduceAlongDimBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastStridedReductionsRegular\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastStridedReductionsRegular\n", "");
         result += fastStridedReductionsRegular();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastStridedReductionIrregular\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastStridedReductionIrregular\n", "");
         result += fastStridedReductionIrregular();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.fastStridedReductionNonEws\n", "");
+        sd_printf("Running FullBenchmarkSuite.fastStridedReductionNonEws\n", "");
         result += fastStridedReductionNonEws();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.broadcastBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.broadcastBenchmark\n", "");
         result += broadcastBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.broadcast2dBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.broadcast2dBenchmark\n", "");
         result += broadcast2dBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.broadcastOpsMatrixBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.broadcastOpsMatrixBenchmark\n", "");
         result += broadcastOpsMatrixBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.mismatchedOrdersAssignBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.mismatchedOrdersAssignBenchmark\n", "");
         result += mismatchedOrdersAssignBenchmark();
         start = done(start);
 
 
         // set 3
-        nd4j_printf("Running FullBenchmarkSuite.gatherOpBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.gatherOpBenchmark\n", "");
         result += gatherOpBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.scatterOpBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.scatterOpBenchmark\n", "");
         result += scatterOpBenchmark();
         start = done(start);
 
         // set 4
-        nd4j_printf("Running FullBenchmarkSuite.gemmRegularBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.gemmRegularBenchmark\n", "");
         result += gemmRegularBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.gemmIrregularBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.gemmIrregularBenchmark\n", "");
         result += gemmIrregularBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.rngBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.rngBenchmark\n", "");
         result += rngBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.conv2dBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.conv2dBenchmark\n", "");
         result += conv2dBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.pool2dBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.pool2dBenchmark\n", "");
         result += pool2dBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.batchnormBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.batchnormBenchmark\n", "");
         result += batchnormBenchmark();
         start = done(start);
 
-        nd4j_printf("Running FullBenchmarkSuite.lstmBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.lstmBenchmark\n", "");
         result += lstmBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.conv3dBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.conv3dBenchmark\n", "");
         result += conv3dBenchmark();
         start = done(start);
-        nd4j_printf("Running FullBenchmarkSuite.maxPool3DBenchmark\n", "");
+        sd_printf("Running FullBenchmarkSuite.maxPool3DBenchmark\n", "");
         result += maxPool3DBenchmark();
         start = done(start);
-//        nd4j_printf("Running FullBenchmarkSuite.layerNormBenchmark\n", "");
+//        sd_printf("Running FullBenchmarkSuite.layerNormBenchmark\n", "");
 //        result += layerNormBenchmark();
 //        start = done(start);
 

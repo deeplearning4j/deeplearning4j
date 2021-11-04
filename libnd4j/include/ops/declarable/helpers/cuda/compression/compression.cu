@@ -20,50 +20,53 @@
 //
 //  @author sgazeos@gmail.com
 //
-#include <ops/declarable/helpers/compression.h>
-#include <loops/type_conversions.h>
 #include <helpers/DebugHelper.h>
+#include <loops/type_conversions.h>
+#include <ops/declarable/helpers/compression.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
-    ND4J_LOCAL void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
-        auto stream = context->getCudaStream();
-        NDArray::prepareSpecialUse({output}, {input});
+void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+  auto stream = context->getCudaStream();
+  NDArray::prepareSpecialUse({output}, {input});
 
-        dim3 launchDims(512, 512, 16384);
-        auto xType = output->dataType();
-        BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (launchDims, stream, input->specialBuffer(), output->lengthOf(), output->specialBuffer()), FLOAT_TYPES);
+  dim3 launchDims(512, 512, 16384);
+  auto xType = output->dataType();
+  BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric,
+                        (launchDims, stream, input->specialBuffer(), output->lengthOf(), output->specialBuffer()),
+                        SD_FLOAT_TYPES);
 
-        sd::DebugHelper::checkErrorCode(stream, "decodeBitmapFloat(...) failed");
+  sd::DebugHelper::checkErrorCode(stream, "decodeBitmapFloat(...) failed");
 
-        NDArray::registerSpecialUse({output}, {input});
-    }
-
-    ND4J_LOCAL Nd4jLong encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold) {
-        auto stream = LaunchContext::defaultContext()->getCudaStream();
-        int *resultPointer = reinterpret_cast<int *>(LaunchContext::defaultContext()->getScalarPointer());
-        int *reductionPointer = reinterpret_cast<int *>(LaunchContext::defaultContext()->getReductionPointer());
-
-        // nullify result pointer before use
-        resultPointer[0] = 0;
-
-        NDArray::prepareSpecialUse({},{output, input});
-
-        dim3 launchDims(512, 512, 32768);
-        auto xType = input->dataType();
-        BUILD_SINGLE_SELECTOR(xType, cudaEncodeBitmapGeneric,
-                              (launchDims, stream, input->specialBuffer(), input->lengthOf(), reinterpret_cast<int*>(output->specialBuffer()), resultPointer, reductionPointer, threshold),
-                              FLOAT_TYPES);
-
-        sd::DebugHelper::checkErrorCode(stream, "encodeBitmapFloat(...) failed");
-
-        Nd4jLong dZ = (Nd4jLong) resultPointer[0];
-        resultPointer[0] = 0;
-
-        NDArray::registerSpecialUse({output, input}, {});
-        return dZ;
-    }
+  NDArray::registerSpecialUse({output}, {input});
 }
+
+sd::LongType encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold) {
+  auto stream = LaunchContext::defaultContext()->getCudaStream();
+  int* resultPointer = reinterpret_cast<int*>(LaunchContext::defaultContext()->getScalarPointer());
+  int* reductionPointer = reinterpret_cast<int*>(LaunchContext::defaultContext()->getReductionPointer());
+
+  // nullify result pointer before use
+  resultPointer[0] = 0;
+
+  NDArray::prepareSpecialUse({}, {output, input});
+
+  dim3 launchDims(512, 512, 32768);
+  auto xType = input->dataType();
+  BUILD_SINGLE_SELECTOR(xType, cudaEncodeBitmapGeneric,
+                        (launchDims, stream, input->specialBuffer(), input->lengthOf(),
+                         reinterpret_cast<int*>(output->specialBuffer()), resultPointer, reductionPointer, threshold),
+                        SD_FLOAT_TYPES);
+
+  sd::DebugHelper::checkErrorCode(stream, "encodeBitmapFloat(...) failed");
+
+  sd::LongType dZ = (sd::LongType)resultPointer[0];
+  resultPointer[0] = 0;
+
+  NDArray::registerSpecialUse({output, input}, {});
+  return dZ;
 }
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

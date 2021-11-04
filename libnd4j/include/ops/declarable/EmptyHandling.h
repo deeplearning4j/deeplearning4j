@@ -24,11 +24,7 @@
 #define SAMEDIFF_EMPTYHANDLING_H
 
 namespace samediff {
-    enum EmptyHandling {
-        EMPTY_SKIP = 1,
-        EMPTY_EXCEPTION = 2,
-        EMPTY_EXECUTE = 3
-    };
+enum EmptyHandling { EMPTY_SKIP = 1, EMPTY_EXCEPTION = 2, EMPTY_EXECUTE = 3 };
 }
 
-#endif //SAMEDIFF_EMPTYHANDLING_H
+#endif  // SAMEDIFF_EMPTYHANDLING_H

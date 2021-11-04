@@ -18,46 +18,42 @@
 
 //
 // @author AbdelRauf    (rauf@konduit.ai)
-// 
+//
 
-#include <ops/declarable/headers/images.h>
-#include <ops/declarable/CustomOperations.h>  
-#include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/images.h>
 
 #if NOT_EXCLUDED(OP_hsv_to_rgb)
 namespace sd {
 namespace ops {
 
 CONFIGURABLE_OP_IMPL(hsv_to_rgb, 1, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-    auto input  = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
+  if (input->isEmpty()) return sd::Status::OK;
 
-    if (input->isEmpty())
-        return Status::OK();
+  const int rank = input->rankOf();
+  const int argSize = block.getIArguments()->size();
+  const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
 
-    const int rank = input->rankOf();
-    const int argSize = block.getIArguments()->size();
-    const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+  REQUIRE_TRUE(rank >= 1, 0, "HSVtoRGB: Fails to meet the rank requirement: %i >= 1 ", rank);
+  if (argSize > 0) {
+    REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ",
+                 INT_ARG(0), -rank, rank);
+  }
+  REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "HSVtoRGB: operation expects 3 channels (H, S, V), but got %i instead",
+               input->sizeAt(dimC));
 
-    REQUIRE_TRUE(rank >= 1, 0, "HSVtoRGB: Fails to meet the rank requirement: %i >= 1 ", rank);
-    if (argSize > 0) {
-        REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
-    }
-    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "HSVtoRGB: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));
+  helpers::transformHsvRgb(block.launchContext(), input, output, dimC);
 
-    helpers::transformHsvRgb(block.launchContext(), input, output, dimC);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-DECLARE_TYPES(hsv_to_rgb) {
-    getOpDescriptor()->setAllowedInputTypes({ ALL_FLOATS })
-        ->setSameMode(true);
-}
+DECLARE_TYPES(hsv_to_rgb) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

@@ -26,37 +26,34 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(shapes_of, -1, -1, false, 0, 0) {
-            for (int e = 0; e < block.width(); e++) {
-                auto x = INPUT_VARIABLE(e);
-                auto z = OUTPUT_VARIABLE(e);
+namespace ops {
+CUSTOM_OP_IMPL(shapes_of, -1, -1, false, 0, 0) {
+  for (int e = 0; e < block.width(); e++) {
+    auto x = INPUT_VARIABLE(e);
+    auto z = OUTPUT_VARIABLE(e);
 
-                for (int i = 0; i < x->rankOf(); i++)
-                    z->p(i, x->sizeAt(i));
-            }
+    for (int i = 0; i < x->rankOf(); i++) z->p(i, x->sizeAt(i));
+  }
 
-            return Status::OK();
-        };
-        DECLARE_SYN(shape_n, shapes_of);
+  return sd::Status::OK;
+};
+DECLARE_SYN(shape_n, shapes_of);
 
-        DECLARE_SHAPE_FN(shapes_of) {
-            auto shapeList = SHAPELIST();
+DECLARE_SHAPE_FN(shapes_of) {
+  auto shapeList = SHAPELIST();
 
-            for (int e = 0; e < inputShape->size(); e++) {
-                auto inShape = inputShape->at(e);
-                shapeList->push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(shape::rank(inShape), sd::DataType::INT64));
-            }
+  for (int e = 0; e < inputShape->size(); e++) {
+    auto inShape = inputShape->at(e);
+    shapeList->push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(shape::rank(inShape), sd::DataType::INT64));
+  }
 
-            return shapeList;
-        };
+  return shapeList;
+};
 
-        DECLARE_TYPES(shapes_of) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_INTS});
-        }
-    }
+DECLARE_TYPES(shapes_of) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
 }
+}  // namespace ops
+}  // namespace sd
 
 #endif

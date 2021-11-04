@@ -262,13 +262,13 @@ fun SDImage() =  Namespace("Image"){
                 " of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False."; defaultValue=false; }
         Arg(BOOL, "antialias") { description = "Whether to use an anti-aliasing filter when downsampling an image"; defaultValue=false;  }
         Arg(ENUM, "ImageResizeMethod") { possibleValues = listOf( "ResizeBilinear", "ResizeBicubic", "ResizeNearest", "ResizeGaussian",
-                "ResizeLanczos5", "ResizeMitchelcubic", "ResizeArea"); description = "ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.\n" +
+                "ResizeLanczos5", "ResizeMitchellcubic", "ResizeArea"); description = "ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.\n" +
                 "ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.\n" +
                 "ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.\n" +
                 "ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.\n" +
                 "ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.\n" +
                 "ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.\n" +
-                "ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp." }
+                "ResizeMitchellcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp." }
 
         Output(NUMERIC, "output"){ description = "Output image" }
 

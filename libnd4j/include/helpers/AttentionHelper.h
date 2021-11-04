@@ -24,17 +24,17 @@
 
 #ifndef LIBND4J_ATTENTIONHELPER_H
 #define LIBND4J_ATTENTIONHELPER_H
-
 #include "array/NDArray.h"
 
 namespace sd {
-    class ND4J_EXPORT AttentionHelper {
-
-    public:
-        static sd::NDArray multiHeadProject(const sd::NDArray* input, const sd::NDArray* projectionMatrix, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
-        static void multiHeadProjectBp(const sd::NDArray* input, const sd::NDArray* projectionMatrix, const sd::NDArray* eps, sd::NDArray* dLdInput, sd::NDArray* dLdProjectionMatrix, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
-    };
-}
-
+class SD_LIB_EXPORT AttentionHelper {
+ public:
+  static sd::NDArray multiHeadProject(const sd::NDArray* input, const sd::NDArray* projectionMatrix,
+                                      sd::LaunchContext* context = sd::LaunchContext ::defaultContext());
+  static void multiHeadProjectBp(const sd::NDArray* input, const sd::NDArray* projectionMatrix, const sd::NDArray* eps,
+                                 sd::NDArray* dLdInput, sd::NDArray* dLdProjectionMatrix,
+                                 sd::LaunchContext* context = sd::LaunchContext ::defaultContext());
+};
+}  // namespace sd
 
 #endif

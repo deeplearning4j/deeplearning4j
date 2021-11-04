@@ -26,30 +26,27 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(rank, 1, 1, false, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(rank, 1, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
+  REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-            output->p(0, input->rankOf());
-            output->syncToDevice();
+  output->p(0, input->rankOf());
+  output->syncToDevice();
 
-            return Status::OK();
-        }
-        DECLARE_SHAPE_FN(rank) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT32));
-        }
-
-
-        DECLARE_TYPES(rank) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
-                    ->allowOverride(true);
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SHAPE_FN(rank) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT32)); }
+
+DECLARE_TYPES(rank) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
+      ->allowOverride(true);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -23,74 +23,77 @@
 #ifndef SAMEDIFF_CALLABLEINTERFACE_H
 #define SAMEDIFF_CALLABLEINTERFACE_H
 
-#include <system/openmp_pragmas.h>
+#include <system/common.h>
+
+#include <array>
+#include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <functional>
-#include <atomic>
-#include <array>
 #include <mutex>
-#include <condition_variable>
 
 namespace samediff {
-    /**
-     * This class is suited for passing functions to execution threads without queues
-     */
-    class CallableInterface {
-    private:
-        // parallel_for functions
-        FUNC_1D _function_1d;
-        FUNC_2D _function_2d;
-        FUNC_3D _function_3d;
+/**
+ * This class is suited for passing functions to execution threads without queues
+ */
+class CallableInterface {
+ private:
+  // parallel_for functions
+  FUNC_1D _function_1d;
+  FUNC_2D _function_2d;
+  FUNC_3D _function_3d;
 
-        // parallel function
-        FUNC_DO _function_do;
+  // parallel function
+  FUNC_DO _function_do;
 
-        // reduction functions
-        FUNC_RL _function_rl;
-        FUNC_RD _function_rd;
+  // reduction functions
+  FUNC_RL _function_rl;
+  FUNC_RD _function_rd;
 
-        std::array<int64_t, 9> _arguments;
+  std::array<int64_t, 9> _arguments;
 
-        volatile int _branch = 0;
-        volatile uint32_t _thread_id = 0;
-        volatile uint32_t _num_threads = 0;
+  volatile int _branch = 0;
+  volatile uint32_t _thread_id = 0;
+  volatile uint32_t _num_threads = 0;
 
-        std::atomic<bool> _finished;
-        std::atomic<bool> _filled;
-        std::atomic<bool> _available;
+  std::atomic<bool> _finished;
+  std::atomic<bool> _filled;
+  std::atomic<bool> _available;
 
-        std::condition_variable _starter;
-        std::condition_variable _finisher;
+  std::condition_variable _starter;
+  std::condition_variable _finisher;
 
-        int64_t* _lptr = nullptr;
-        double* _dptr = nullptr;
+  int64_t *_lptr = nullptr;
+  double *_dptr = nullptr;
 
-        std::mutex _ms;
-        std::mutex _mf;
-    public:
-        CallableInterface();
-        ~CallableInterface() = default;
+  std::mutex _ms;
+  std::mutex _mf;
 
-        void waitForTask();
-        void waitForCompletion();
+ public:
+  CallableInterface();
+  ~CallableInterface() = default;
 
-        void fill(int thread_id, int num_threads, int64_t *lpt, FUNC_RL func, int64_t start_x, int64_t stop_x, int64_t inc_x);
-        void fill(int thread_id, int num_threads, double *dpt, FUNC_RD func, int64_t start_x, int64_t stop_x, int64_t inc_x);
+  void waitForTask();
+  void waitForCompletion();
 
-        void fill(int thread_id, int num_threads, FUNC_DO func);
-        void fill(int thread_id, int num_threads, FUNC_1D func, int64_t start_x, int64_t stop_x, int64_t inc_x);
-        void fill(int thread_id, int num_threads, FUNC_2D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y);
-        void fill(int thread_id, int num_threads, FUNC_3D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z);
+  void fill(int thread_id, int num_threads, int64_t *lpt, FUNC_RL func, int64_t start_x, int64_t stop_x, int64_t inc_x);
+  void fill(int thread_id, int num_threads, double *dpt, FUNC_RD func, int64_t start_x, int64_t stop_x, int64_t inc_x);
 
-        bool available();
-        void markAvailable();
-        void markUnavailable();
+  void fill(int thread_id, int num_threads, FUNC_DO func);
+  void fill(int thread_id, int num_threads, FUNC_1D func, int64_t start_x, int64_t stop_x, int64_t inc_x);
+  void fill(int thread_id, int num_threads, FUNC_2D func, int64_t start_x, int64_t stop_x, int64_t inc_x,
+            int64_t start_y, int64_t stop_y, int64_t inc_y);
+  void fill(int thread_id, int num_threads, FUNC_3D func, int64_t start_x, int64_t stop_x, int64_t inc_x,
+            int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z);
 
-        void finish();
+  bool available();
+  void markAvailable();
+  void markUnavailable();
 
-        void execute();
-    };
-}
+  void finish();
 
+  void execute();
+};
+}  // namespace samediff
 
-#endif //DEV_TESTS_CALLABLEINTERFACE_H
+#endif  // DEV_TESTS_CALLABLEINTERFACE_H

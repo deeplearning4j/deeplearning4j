@@ -21,39 +21,37 @@
 //
 // @author raver119@gmail.com
 //
-
-#include "testlayers.h"
-#include <ops/declarable/CustomOperations.h>
 #include <array/NDArray.h>
-#include <ops/ops.h>
 #include <helpers/GradCheck.h>
 #include <helpers/RandomLauncher.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/ops.h>
 
+#include "testlayers.h"
 
 using namespace sd;
 
-
 class AttentionTests : public testing::Test {
-public:
-    AttentionTests() {
-        printf("\n");
-        fflush(stdout);
-    }
+ public:
+  AttentionTests() {
+    printf("\n");
+    fflush(stdout);
+  }
 };
 
 TEST_F(AttentionTests, basic_dot_product_attention) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
 
-    sd::ops::dot_product_attention op;
-    auto result = op.evaluate({&queries, &keys, &values}, {1, 0});
-    ASSERT_EQ(Status::OK(), result.status());
+  sd::ops::dot_product_attention op;
+  auto result = op.evaluate({&queries, &keys, &values}, {1, 0});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 /*
-//Ignored: AB 2019/05/21 - Segmentation fault on on linux-ppc64le-cpu - https://github.com/deeplearning4j/deeplearning4j/issues/7657
-TEST_F(AttentionTests, basic_dot_product_attention_bp) {
+//Ignored: AB 2019/05/21 - Segmentation fault on on linux-ppc64le-cpu -
+https://github.com/deeplearning4j/deeplearning4j/issues/7657 TEST_F(AttentionTests, basic_dot_product_attention_bp) {
     auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
     auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
     auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
@@ -61,32 +59,32 @@ TEST_F(AttentionTests, basic_dot_product_attention_bp) {
 
     sd::ops::dot_product_attention_bp op;
     auto result = op.execute({&queries, &keys, &values, &eps}, {}, {1, 0}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(sd::Status::OK, result->status());
 
     delete result;
 }
 */
 
 TEST_F(AttentionTests, basic_dot_product_attention_with_weights) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
 
-    sd::ops::dot_product_attention op;
-    auto result = op.evaluate({&queries, &keys, &values}, {1, 1});
-    ASSERT_EQ(Status::OK(), result.status());
+  sd::ops::dot_product_attention op;
+  auto result = op.evaluate({&queries, &keys, &values}, {1, 1});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 TEST_F(AttentionTests, basic_dot_product_attention_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto mask = NDArrayFactory::create<float>('c', {10, 3});
-    mask.assign(1.);
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto mask = NDArrayFactory::create<float>('c', {10, 3});
+  mask.assign(1.);
 
-    sd::ops::dot_product_attention op;
-    auto result = op.evaluate({&queries, &keys, &values, &mask}, {1, 0});
-    ASSERT_EQ(Status::OK(), result.status());
+  sd::ops::dot_product_attention op;
+  auto result = op.evaluate({&queries, &keys, &values, &mask}, {1, 0});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 /*
@@ -101,22 +99,22 @@ TEST_F(AttentionTests, basic_dot_product_attention_bp_with_mask) {
 
     sd::ops::dot_product_attention_bp op;
     auto result = op.execute({&queries, &keys, &values, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(sd::Status::OK, result->status());
 
     delete result;
 }
  */
 
 TEST_F(AttentionTests, multi_head_input_dot_product_attention_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {2, 5, 4, 1});
-    auto mask = NDArrayFactory::create<float>('c', {2, 3});
-    mask.assign(1.);
+  auto keys = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
+  auto values = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
+  auto queries = NDArrayFactory::create<float>('c', {2, 5, 4, 1});
+  auto mask = NDArrayFactory::create<float>('c', {2, 3});
+  mask.assign(1.);
 
-    sd::ops::dot_product_attention op;
-    auto result = op.evaluate({&queries, &keys, &values, &mask}, {1, 0});
-    ASSERT_EQ(Status::OK(), result.status());
+  sd::ops::dot_product_attention op;
+  auto result = op.evaluate({&queries, &keys, &values, &mask}, {1, 0});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 /*
@@ -131,26 +129,25 @@ TEST_F(AttentionTests, multi_head_input_dot_product_attention_bp_with_mask) {
 
     sd::ops::dot_product_attention_bp op;
     auto result = op.execute({&queries, &keys, &values, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(sd::Status::OK, result->status());
 
     delete result;
 }
  */
 
-
 TEST_F(AttentionTests, basic_multi_head_dot_product_attention) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
 
-    auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wo = NDArrayFactory::create<float>('c', {2* 3, 4});
+  auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wo = NDArrayFactory::create<float>('c', {2 * 3, 4});
 
-    sd::ops::multi_head_dot_product_attention op;
-    auto result = op.evaluate({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo}, {1, 0});
-    ASSERT_EQ(Status::OK(), result.status());
+  sd::ops::multi_head_dot_product_attention op;
+  auto result = op.evaluate({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo}, {1, 0});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 /*
@@ -170,29 +167,28 @@ TEST_F(AttentionTests, basic_multi_head_dot_product_bp_attention) {
 
     sd::ops::multi_head_dot_product_attention_bp op;
     auto result = op.execute({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &eps}, {}, {1, 0}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(sd::Status::OK, result->status());
 
     delete result;
 }
  */
 
 TEST_F(AttentionTests, basic_multi_head_dot_product_attention_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
 
-    auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wo = NDArrayFactory::create<float>('c', {2* 3, 4});
+  auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wo = NDArrayFactory::create<float>('c', {2 * 3, 4});
 
-    auto mask = NDArrayFactory::create<float>('c', {10, 5});
-    mask.assign(1.);
+  auto mask = NDArrayFactory::create<float>('c', {10, 5});
+  mask.assign(1.);
 
-
-    sd::ops::multi_head_dot_product_attention op;
-    auto result = op.evaluate({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &mask}, {1, 0});
-    ASSERT_EQ(Status::OK(), result.status());
+  sd::ops::multi_head_dot_product_attention op;
+  auto result = op.evaluate({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &mask}, {1, 0});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 /*
@@ -215,7 +211,7 @@ TEST_F(AttentionTests, basic_multi_head_dot_product_bp_attention_with_mask) {
 
     sd::ops::multi_head_dot_product_attention_bp op;
     auto result = op.execute({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(sd::Status::OK, result->status());
 
     delete result;
 }

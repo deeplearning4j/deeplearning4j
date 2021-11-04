@@ -19,6 +19,5 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 14.03.2019
 //
-
 #include <helpers/Loops.h>
 #include <system/op_boilerplate.h>

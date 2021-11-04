@@ -30,7 +30,7 @@
 #include <array/NDArrayFactory.h>
 
 namespace sd {
-    class ND4J_EXPORT BenchmarkSuit {
+    class SD_LIB_EXPORT BenchmarkSuit {
     public:
         BenchmarkSuit() = default;
         ~BenchmarkSuit() = default;

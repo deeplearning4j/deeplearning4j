@@ -19,189 +19,182 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <ops/specials_cuda.h>
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-__global__ void execOesTadKernelKey(void *vx, Nd4jLong const* xShapeInfo,
-                                    void *vy, Nd4jLong const* yShapeInfo,
-                                 int *dimension, int dimensionLength,
-                                 Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
-                                 bool descending) {
+SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
+                                   int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                                   sd::LongType const *tadOffsets, bool descending) {
+  auto x = static_cast<X *>(vx);
+  auto y = static_cast<Y *>(vy);
 
-    auto x = static_cast<X*>(vx);
-    auto y = static_cast<Y*>(vy);
+  __shared__ int xLength;
+  __shared__ int xTadLength;
+  __shared__ int numTads;
+  if (threadIdx.x == 0) {
+    xLength = shape::length(xShapeInfo);
+    xTadLength = shape::length(tadShapeInfo);
+    numTads = xLength / xTadLength;
+  }
+  __syncthreads();
 
-    __shared__ int xLength;
-    __shared__ int xTadLength;
-    __shared__ int numTads;
-    if (threadIdx.x == 0) {
-        xLength = shape::length(xShapeInfo);
-        xTadLength = shape::length(tadShapeInfo);
-        numTads = xLength / xTadLength;
-    }
-    __syncthreads();
+  for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+    auto dx = x + tadOffsets[r];
+    auto dy = y + tadOffsets[r];
 
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-        auto dx = x + tadOffsets[r];
-        auto dy = y + tadOffsets[r];
+    // this is general loop, we go uncached
+    int iterations = xTadLength;
 
-        // this is general loop, we go uncached
-        int iterations = xTadLength;
+    for (int i = 0; i < iterations; i++) {
+      if (i % 2 == 0) {
+        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+          auto top = 2 * tid + 1;
+          if (top < xTadLength) {
+            auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
+            auto t1 = shape::getIndexOffset(top, tadShapeInfo);
 
-        for (int i = 0; i < iterations; i++) {
+            if (!descending == (dx[t0] > dx[t1])) {
+              X dt0 = dx[t0];
+              dx[t0] = dx[t1];
+              dx[t1] = dt0;
 
-            if (i % 2 == 0) {
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                    auto top = 2 * tid + 1;
-                    if (top < xTadLength) {
-                        auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
-                        auto t1 = shape::getIndexOffset(top, tadShapeInfo);
-
-                        if (!descending == (dx[t0] > dx[t1])) {
-                            X dt0 = dx[t0];
-                            dx[t0] = dx[t1];
-                            dx[t1] = dt0;
-
-                            Y dy0 = dy[t0];
-                            dy[t0] = dy[t1];
-                            dy[t1] = dy0;
-                        }
-                    }
-                }
-            } else {
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                    auto top = 2 * tid + 2;
-                    if (top < xTadLength) {
-                        auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
-                        auto t1 = shape::getIndexOffset(top, tadShapeInfo);
-
-                        if (!descending == (dx[t0] > dx[t1])) {
-                            X dt0 = dx[t0];
-                            dx[t0] = dx[t1];
-                            dx[t1] = dt0;
-
-                            Y dy0 = dy[t0];
-                            dy[t0] = dy[t1];
-                            dy[t1] = dy0;
-                        }
-                    }
-                }
+              Y dy0 = dy[t0];
+              dy[t0] = dy[t1];
+              dy[t1] = dy0;
             }
-            __syncthreads();
+          }
         }
+      } else {
+        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+          auto top = 2 * tid + 2;
+          if (top < xTadLength) {
+            auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
+            auto t1 = shape::getIndexOffset(top, tadShapeInfo);
+
+            if (!descending == (dx[t0] > dx[t1])) {
+              X dt0 = dx[t0];
+              dx[t0] = dx[t1];
+              dx[t1] = dt0;
+
+              Y dy0 = dy[t0];
+              dy[t0] = dy[t1];
+              dy[t1] = dy0;
+            }
+          }
+        }
+      }
+      __syncthreads();
     }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-__global__ void execOesTadKernel(void *vx, Nd4jLong const* xShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
-                                bool descending) {
+template <typename T>
+SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, int *dimension, int dimensionLength,
+                                sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
+  auto x = static_cast<T *>(vx);
+  const int sharedSize = 32768;
 
-    auto x = static_cast<T*>(vx);
-    const int sharedSize = 32768;
+  __shared__ int xLength;
+  __shared__ int xTadLength;
+  __shared__ int numTads;
+  __shared__ T *shmem;
+  __shared__ bool cached;
+  if (threadIdx.x == 0) {
+    xLength = shape::length(xShapeInfo);
+    xTadLength = shape::length(tadShapeInfo);
+    numTads = xLength / xTadLength;
 
-    __shared__ int xLength;
-    __shared__ int xTadLength;
-    __shared__ int numTads;
-    __shared__ T *shmem;
-    __shared__ bool cached;
-    if (threadIdx.x == 0) {
-        xLength = shape::length(xShapeInfo);
-        xTadLength = shape::length(tadShapeInfo);
-        numTads = xLength / xTadLength;
+    extern __shared__ unsigned char shrd[];
+    shmem = (T *)shrd;
 
-        extern __shared__ unsigned char shrd[];
-        shmem = (T *) shrd;
+    cached = xTadLength <= (sharedSize / sizeof(T));
+  }
+  __syncthreads();
 
-        cached = xTadLength <= (sharedSize / sizeof(T));
+  for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+    auto dx = x + tadOffsets[r];
+
+    // this is general loop, we go uncached
+    int iterations = xTadLength;
+    if (cached) {
+      for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+        auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
+        shmem[tid] = dx[t0];
+      }
+
+      __syncthreads();
+      dx = shmem;
     }
-    __syncthreads();
 
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-        auto dx = x + tadOffsets[r];
+    for (int i = 0; i < iterations; i++) {
+      if (i % 2 == 0) {
+        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+          auto top = 2 * tid + 1;
+          if (top < xTadLength) {
+            auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
+            auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
 
-        // this is general loop, we go uncached
-        int iterations = xTadLength;
-        if (cached) {
-            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
-                shmem[tid] = dx[t0];
+            if (!descending == (dx[t0] > dx[t1])) {
+              T dt0 = dx[t0];
+              dx[t0] = dx[t1];
+              dx[t1] = dt0;
             }
-
-            __syncthreads();
-            dx = shmem;
+          }
         }
+      } else {
+        for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+          auto top = 2 * tid + 2;
+          if (top < xTadLength) {
+            auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
+            auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
 
-        for (int i = 0; i < iterations; i++) {
-
-            if (i % 2 == 0) {
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                    auto top = 2 * tid + 1;
-                    if (top < xTadLength) {
-                        auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
-                        auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
-
-                        if (!descending == (dx[t0] > dx[t1])) {
-                            T dt0 = dx[t0];
-                            dx[t0] = dx[t1];
-                            dx[t1] = dt0;
-                        }
-                    }
-                }
-            } else {
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                    auto top = 2 * tid + 2;
-                    if (top < xTadLength) {
-                        auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
-                        auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
-
-                        if (!descending == (dx[t0] > dx[t1])) {
-                            T dt0 = dx[t0];
-                            dx[t0] = dx[t1];
-                            dx[t1] = dt0;
-                        }
-                    }
-                }
+            if (!descending == (dx[t0] > dx[t1])) {
+              T dt0 = dx[t0];
+              dx[t0] = dx[t1];
+              dx[t1] = dt0;
             }
-            __syncthreads();
+          }
         }
-
-
-        if (cached) {
-            dx = x + tadOffsets[r];
-            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
-                dx[t0] = shmem[tid];
-            }
-        }
+      }
+      __syncthreads();
     }
+
+    if (cached) {
+      dx = x + tadOffsets[r];
+      for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+        auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
+        dx[t0] = shmem[tid];
+      }
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-__host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream,
-                                void *vx, Nd4jLong const* xShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
-                                bool descending) {
-
-    execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+template <typename T>
+SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
+                           int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                           sd::LongType const *tadOffsets, bool descending) {
+  execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength,
+                                                                             tadShapeInfo, tadOffsets, descending);
 }
 
 template <typename X, typename Y>
-__host__ void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream,
-                            void *vx, Nd4jLong const* xShapeInfo,
-                            void *vy, Nd4jLong const* yShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
-                            bool descending) {
-
-    execOesTadKernelKey<X,Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
+                              void *vy, sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                              sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
+  execOesTadKernelKey<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      vx, xShapeInfo, vy, yShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
-BUILD_SINGLE_TEMPLATE(template void ND4J_LOCAL oesTadGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool descending), LIBND4J_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void ND4J_LOCAL oesTadGenericKey, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void oesTadGeneric,
+                      (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
+                       int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                       sd::LongType const *tadOffsets, bool descending),
+                      SD_COMMON_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void oesTadGenericKey,
+                      (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
+                       sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                       sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending),
+                      SD_COMMON_TYPES, SD_COMMON_TYPES);

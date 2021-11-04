@@ -23,45 +23,44 @@
 #ifndef DEV_TESTS_EXTRAARGUMENTS_H
 #define DEV_TESTS_EXTRAARGUMENTS_H
 
-#include <system/dll.h>
+#include <array/DataType.h>
+#include <stdlib.h>
+#include <system/common.h>
+
 #include <initializer_list>
 #include <vector>
-#include <array/DataType.h>
-#include <system/pointercast.h>
-#include <stdlib.h>
 
 namespace sd {
-    class ND4J_EXPORT ExtraArguments {
-    private:
-        std::vector<double> _fpArgs;
-        std::vector<Nd4jLong> _intArgs;
+class SD_LIB_EXPORT ExtraArguments {
+ private:
+  std::vector<double> _fpArgs;
+  std::vector<sd::LongType> _intArgs;
 
-        std::vector<Nd4jPointer> _pointers;
+  std::vector<sd::Pointer> _pointers;
 
-        template <typename T>
-        void convertAndCopy(Nd4jPointer pointer, Nd4jLong offset);
+  template <typename T>
+  void convertAndCopy(sd::Pointer pointer, sd::LongType offset);
 
-        void* allocate(size_t length, size_t elementSize);
-    public:
-        explicit ExtraArguments(std::initializer_list<double> arguments);
-        explicit ExtraArguments(std::initializer_list<Nd4jLong> arguments);
+  void *allocate(size_t length, size_t elementSize);
 
-        explicit ExtraArguments(const std::vector<double> &arguments);
-        explicit ExtraArguments(const std::vector<int> &arguments);
-        explicit ExtraArguments(const std::vector<Nd4jLong> &arguments);
+ public:
+  explicit ExtraArguments(std::initializer_list<double> arguments);
+  explicit ExtraArguments(std::initializer_list<sd::LongType> arguments);
 
-        explicit ExtraArguments();
-        ~ExtraArguments();
+  explicit ExtraArguments(const std::vector<double> &arguments);
+  explicit ExtraArguments(const std::vector<int> &arguments);
+  explicit ExtraArguments(const std::vector<sd::LongType> &arguments);
 
-        template <typename T>
-        void* argumentsAsT(Nd4jLong offset = 0);
+  explicit ExtraArguments();
+  ~ExtraArguments();
 
-        void* argumentsAsT(sd::DataType dataType, Nd4jLong offset = 0);
+  template <typename T>
+  void *argumentsAsT(sd::LongType offset = 0);
 
-        size_t length();
-    };
-}
+  void *argumentsAsT(sd::DataType dataType, sd::LongType offset = 0);
 
+  size_t length();
+};
+}  // namespace sd
 
-
-#endif //DEV_TESTS_EXTRAARGUMENTS_H
+#endif  // DEV_TESTS_EXTRAARGUMENTS_H

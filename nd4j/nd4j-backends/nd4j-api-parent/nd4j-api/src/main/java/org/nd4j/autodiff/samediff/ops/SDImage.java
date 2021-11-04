@@ -273,7 +273,7 @@ public class SDImage extends SDOps {
    * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
    * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
    * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
-   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * ResizeMitchellcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
    * @return output Output image (NUMERIC type)
    */
   public SDVariable imageResize(SDVariable input, SDVariable size, boolean preserveAspectRatio,
@@ -297,7 +297,7 @@ public class SDImage extends SDOps {
    * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
    * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
    * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
-   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * ResizeMitchellcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
    * @return output Output image (NUMERIC type)
    */
   public SDVariable imageResize(String name, SDVariable input, SDVariable size,
@@ -319,7 +319,7 @@ public class SDImage extends SDOps {
    * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
    * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
    * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
-   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * ResizeMitchellcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
    * @return output Output image (NUMERIC type)
    */
   public SDVariable imageResize(SDVariable input, SDVariable size,
@@ -341,7 +341,7 @@ public class SDImage extends SDOps {
    * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
    * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
    * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
-   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * ResizeMitchellcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
    * @return output Output image (NUMERIC type)
    */
   public SDVariable imageResize(String name, SDVariable input, SDVariable size,

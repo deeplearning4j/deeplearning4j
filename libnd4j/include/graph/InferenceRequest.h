@@ -21,42 +21,39 @@
 //
 #ifndef DEV_TESTS_INFERENCEREQUEST_H
 #define DEV_TESTS_INFERENCEREQUEST_H
-
-#include <system/op_boilerplate.h>
-#include <system/pointercast.h>
-#include <system/dll.h>
 #include <graph/Variable.h>
+#include <system/common.h>
+#include <system/op_boilerplate.h>
+
 #include "ExecutorConfiguration.h"
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT InferenceRequest {
-        private:
-            Nd4jLong _id;
-            std::vector<Variable*> _variables;
-            std::vector<Variable*> _deletables;
+namespace graph {
+class SD_LIB_EXPORT InferenceRequest {
+ private:
+  sd::LongType _id;
+  std::vector<Variable *> _variables;
+  std::vector<Variable *> _deletables;
 
-            ExecutorConfiguration *_configuration = nullptr;
+  ExecutorConfiguration *_configuration = nullptr;
 
-            void insertVariable(Variable* variable);
-        public:
+  void insertVariable(Variable *variable);
 
-            InferenceRequest(Nd4jLong graphId, ExecutorConfiguration *configuration = nullptr);
-            ~InferenceRequest();
+ public:
+  InferenceRequest(sd::LongType graphId, ExecutorConfiguration *configuration = nullptr);
+  ~InferenceRequest();
 
-            void appendVariable(int id, NDArray *array);
-            void appendVariable(int id, int index, NDArray *array);
-            void appendVariable(std::string &name, NDArray *array);
-            void appendVariable(std::string &name, int id, int index, NDArray *array);
-            void appendVariable(Variable *variable);
+  void appendVariable(int id, NDArray *array);
+  void appendVariable(int id, int index, NDArray *array);
+  void appendVariable(std::string &name, NDArray *array);
+  void appendVariable(std::string &name, int id, int index, NDArray *array);
+  void appendVariable(Variable *variable);
 
 #ifndef __JAVACPP_HACK__
-            flatbuffers::Offset<FlatInferenceRequest> asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder);
+  flatbuffers::Offset<FlatInferenceRequest> asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder);
 #endif
-        };
-    }
-}
+};
+}  // namespace graph
+}  // namespace sd
 
-
-
-#endif //DEV_TESTS_INFERENCEREQUEST_H
+#endif  // DEV_TESTS_INFERENCEREQUEST_H

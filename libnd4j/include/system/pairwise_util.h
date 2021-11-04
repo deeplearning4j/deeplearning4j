@@ -24,37 +24,22 @@
 
 #ifndef NATIVEOPERATIONS_PAIRWISE_UTIL_H
 #define NATIVEOPERATIONS_PAIRWISE_UTIL_H
-#ifdef __CUDACC__
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
-#ifndef _OPENMP
-#define omp_get_thread_num() 0
-#define omp_get_num_threads() 1
-#define omp_get_max_threads() 1
-#define omp_set_num_threads(threads)
-#endif
-
 #include <math/templatemath.h>
-#include <functional>
-#include <system/pointercast.h>
 #include <system/op_boilerplate.h>
-#include <system/dll.h>
-#include <system/nd4jmemset.h>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-//Loops adapted from:
-//https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
+
+#include <functional>
+
+// Loops adapted from:
+// https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 
 /*
 namespace shape {
 
-    Nd4jLong length(const Nd4jLong *shapeInfo);
-    Nd4jLong elementWiseStride(const Nd4jLong *shapeInfo);
-    char order(const Nd4jLong *shapeInfo);
-    bool isStrideSimple(const Nd4jLong* shapeInfo);
-    Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo);
+    sd::LongType length(const sd::LongType *shapeInfo);
+    sd::LongType elementWiseStride(const sd::LongType *shapeInfo);
+    char order(const sd::LongType *shapeInfo);
+    bool isStrideSimple(const sd::LongType* shapeInfo);
+    sd::LongType getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo);
 }
 
  */
@@ -63,9 +48,8 @@ namespace shape {
  ************************************************************/
 
 typedef struct {
-    int perm, stride;
+  int perm, stride;
 } StridePermutation;
-
 
 /**
  * Credit to:
@@ -81,111 +65,94 @@ typedef struct {
  *  We can work on optimizations later that leverage openmp,
  *  the gpu etc
  */
-#ifdef __CUDACC__
-__host__ __device__
-#endif
+SD_HOST_DEVICE
 void quickSort(StridePermutation *arr, int elements);
-
 
 /* Start raw iteration */
 #define ND4J_RAW_ITER_START(idim, ndim, coord, shape) \
-        memset((coord), 0, (ndim) * sizeof(coord[0])); \
-        do {
-
+  memset((coord), 0, (ndim) * sizeof(coord[0]));      \
+  do {
 /* Increment to the next n-dimensional coordinate for one raw array */
 #define ND4J_RAW_ITER_ONE_NEXT(idim, ndim, coord, shape, data, strides) \
-            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-                if (++(coord)[idim] == (shape)[idim]) { \
-                    (coord)[idim] = 0; \
-                    (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
-                } \
-                else { \
-                    (data) += (strides)[idim]; \
-                    break; \
-                } \
-            } \
-        } while ((idim) < (ndim))
+  for ((idim) = 0; (idim) < (ndim); (idim)++) {                         \
+    if (++(coord)[idim] == (shape)[idim]) {                             \
+      (coord)[idim] = 0;                                                \
+      (data) -= ((shape)[idim] - 1) * (strides)[idim];                  \
+    } else {                                                            \
+      (data) += (strides)[idim];                                        \
+      break;                                                            \
+    }                                                                   \
+  }                                                                     \
+  }                                                                     \
+  while ((idim) < (ndim))
 
 #define ND4J_RAW_ITER_ONE_NEXTF(idim, ndim, coord, shape, data, strides) \
-            for ((idim) = ndim - 1; (idim) >= (0); (idim)--) { \
-                if (++(coord)[idim] == (shape)[idim]) { \
-                    (coord)[idim] = 0; \
-                    (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
-                } \
-                else { \
-                    (data) += (strides)[idim]; \
-                    break; \
-                } \
-            } \
-        } while ((idim) >= (0))
-
+  for ((idim) = ndim - 1; (idim) >= (0); (idim)--) {                     \
+    if (++(coord)[idim] == (shape)[idim]) {                              \
+      (coord)[idim] = 0;                                                 \
+      (data) -= ((shape)[idim] - 1) * (strides)[idim];                   \
+    } else {                                                             \
+      (data) += (strides)[idim];                                         \
+      break;                                                             \
+    }                                                                    \
+  }                                                                      \
+  }                                                                      \
+  while ((idim) >= (0))
 
 /* Increment to the next n-dimensional coordinate for two raw arrays */
-#define ND4J_RAW_ITER_TWO_NEXT(idim, ndim, coord, shape, \
-                              dataA, stridesA, dataB, stridesB) \
-            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-                if (++(coord)[idim] == (shape)[idim]) { \
-                    (coord)[idim] = 0; \
-                    (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
-                    (dataB) -= ((shape)[idim] - 1) * (stridesB)[idim]; \
-                } \
-                else { \
-                    (dataA) += (stridesA)[idim]; \
-                    (dataB) += (stridesB)[idim]; \
-                    break; \
-                } \
-            } \
-        } while ((idim) < (ndim))
+#define ND4J_RAW_ITER_TWO_NEXT(idim, ndim, coord, shape, dataA, stridesA, dataB, stridesB) \
+  for ((idim) = 0; (idim) < (ndim); (idim)++) {                                            \
+    if (++(coord)[idim] == (shape)[idim]) {                                                \
+      (coord)[idim] = 0;                                                                   \
+      (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim];                                   \
+      (dataB) -= ((shape)[idim] - 1) * (stridesB)[idim];                                   \
+    } else {                                                                               \
+      (dataA) += (stridesA)[idim];                                                         \
+      (dataB) += (stridesB)[idim];                                                         \
+      break;                                                                               \
+    }                                                                                      \
+  }                                                                                        \
+  }                                                                                        \
+  while ((idim) < (ndim))
 
 /* Increment to the next n-dimensional coordinate for three raw arrays */
-#define ND4J_RAW_ITER_THREE_NEXT(idim, ndim, coord, shape, \
-                              dataA, stridesA, \
-                              dataB, stridesB, \
-                              dataC, stridesC) \
-            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-                if (++(coord)[idim] == (shape)[idim]) { \
-                    (coord)[idim] = 0; \
-                    (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
-                    (dataB) -= ((shape)[idim] - 1) * (stridesB)[idim]; \
-                    (dataC) -= ((shape)[idim] - 1) * (stridesC)[idim]; \
-                } \
-                else { \
-                    (dataA) += (stridesA)[idim]; \
-                    (dataB) += (stridesB)[idim]; \
-                    (dataC) += (stridesC)[idim]; \
-                    break; \
-                } \
-            } \
-        } while ((idim) < (ndim))
+#define ND4J_RAW_ITER_THREE_NEXT(idim, ndim, coord, shape, dataA, stridesA, dataB, stridesB, dataC, stridesC) \
+  for ((idim) = 0; (idim) < (ndim); (idim)++) {                                                               \
+    if (++(coord)[idim] == (shape)[idim]) {                                                                   \
+      (coord)[idim] = 0;                                                                                      \
+      (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim];                                                      \
+      (dataB) -= ((shape)[idim] - 1) * (stridesB)[idim];                                                      \
+      (dataC) -= ((shape)[idim] - 1) * (stridesC)[idim];                                                      \
+    } else {                                                                                                  \
+      (dataA) += (stridesA)[idim];                                                                            \
+      (dataB) += (stridesB)[idim];                                                                            \
+      (dataC) += (stridesC)[idim];                                                                            \
+      break;                                                                                                  \
+    }                                                                                                         \
+  }                                                                                                           \
+  }                                                                                                           \
+  while ((idim) < (ndim))
 
 /* Increment to the next n-dimensional coordinate for four raw arrays */
-#define ND4J_RAW_ITER_FOUR_NEXT(idim, ndim, coord, shape, \
-                              dataA, stridesA, \
-                              dataB, stridesB, \
-                              dataC, stridesC, \
-                              dataD, stridesD) \
-            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-                if (++(coord)[idim] == (shape)[idim]) { \
-                    (coord)[idim] = 0; \
-                    (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
-                    (dataB) -= ((shape)[idim] - 1) * (stridesB)[idim]; \
-                    (dataC) -= ((shape)[idim] - 1) * (stridesC)[idim]; \
-                    (dataD) -= ((shape)[idim] - 1) * (stridesD)[idim]; \
-                } \
-                else { \
-                    (dataA) += (stridesA)[idim]; \
-                    (dataB) += (stridesB)[idim]; \
-                    (dataC) += (stridesC)[idim]; \
-                    (dataD) += (stridesD)[idim]; \
-                    break; \
-                } \
-            } \
-        } while ((idim) < (ndim))
-
-
-
-
-
+#define ND4J_RAW_ITER_FOUR_NEXT(idim, ndim, coord, shape, dataA, stridesA, dataB, stridesB, dataC, stridesC, dataD, \
+                                stridesD)                                                                           \
+  for ((idim) = 0; (idim) < (ndim); (idim)++) {                                                                     \
+    if (++(coord)[idim] == (shape)[idim]) {                                                                         \
+      (coord)[idim] = 0;                                                                                            \
+      (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim];                                                            \
+      (dataB) -= ((shape)[idim] - 1) * (stridesB)[idim];                                                            \
+      (dataC) -= ((shape)[idim] - 1) * (stridesC)[idim];                                                            \
+      (dataD) -= ((shape)[idim] - 1) * (stridesD)[idim];                                                            \
+    } else {                                                                                                        \
+      (dataA) += (stridesA)[idim];                                                                                  \
+      (dataB) += (stridesB)[idim];                                                                                  \
+      (dataC) += (stridesC)[idim];                                                                                  \
+      (dataD) += (stridesD)[idim];                                                                                  \
+      break;                                                                                                        \
+    }                                                                                                               \
+  }                                                                                                                 \
+  }                                                                                                                 \
+  while ((idim) < (ndim))
 
 /*NUMPY_API
  *
@@ -194,21 +161,16 @@ void quickSort(StridePermutation *arr, int elements);
  * For example, the stride array (4, -2, 12) becomes
  * [(2, 12), (0, 4), (1, -2)].
  */
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-inline void  SortStrideArray(int ndim, int strides[],
-                             StridePermutation *out_strideperm) {
+SD_HOST_DEVICE
+inline void SortStrideArray(int ndim, int strides[], StridePermutation *out_strideperm) {
+  /* Set up the strideperm values */
+  for (int i = 0; i < ndim; i++) {
+    out_strideperm[i].perm = i;
+    out_strideperm[i].stride = strides[i];
+  }
 
-    /* Set up the strideperm values */
-    for (int i = 0; i < ndim; i++) {
-        out_strideperm[i].perm = i;
-        out_strideperm[i].stride = strides[i];
-    }
-
-    /* Sort them */
-    quickSort(out_strideperm,ndim);
-
+  /* Sort them */
+  quickSort(out_strideperm, ndim);
 }
 
 /*
@@ -228,20 +190,13 @@ inline void  SortStrideArray(int ndim, int strides[],
  */
 template <typename T>
 
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-inline int PrepareOneRawArrayIter(int ndim, Nd4jLong shape[],
-                                  T data[], Nd4jLong strides[],
-                                  int *out_ndim, Nd4jLong outShape[],
-                                  T **out_data, Nd4jLong *outStrides) {
-
-    for (int i = 0; i < ndim; i++) {
-        outShape[i] = shape[i];
-        outStrides[i] = strides[i];
-    }
-
-
+SD_HOST_DEVICE inline int PrepareOneRawArrayIter(int ndim, sd::LongType shape[], T data[], sd::LongType strides[],
+                                                 int *out_ndim, sd::LongType outShape[], T **out_data,
+                                                 sd::LongType *outStrides) {
+  for (int i = 0; i < ndim; i++) {
+    outShape[i] = shape[i];
+    outStrides[i] = strides[i];
+  }
 
 #if 0
     /* DEBUG */
@@ -260,44 +215,38 @@ inline int PrepareOneRawArrayIter(int ndim, Nd4jLong shape[],
     }
 #endif
 
-    *out_data = data;
-    *out_ndim = ndim;
-    return 0;
+  *out_data = data;
+  *out_ndim = ndim;
+  return 0;
 }
 
-
 class BlockInformation {
-public:
-    Nd4jLong items;
-    int threads;
-    Nd4jLong chunks;
-    Nd4jLong modulo;
-    Nd4jLong remainder;
+ public:
+  sd::LongType items;
+  int threads;
+  sd::LongType chunks;
+  sd::LongType modulo;
+  sd::LongType remainder;
 
-    BlockInformation(Nd4jLong length, int threshold) {
-
+  BlockInformation(sd::LongType length, int threshold) {
     threads = length / threshold;
-    threads = (1 < threads)?threads:1;//sd::math::nd4j_max<int>(1, threads);
-    threads = (threads < omp_get_max_threads())?threads:omp_get_max_threads();//sd::math::nd4j_min<int>(threads, omp_get_max_threads());
+    threads = (1 < threads) ? threads : 1;  // sd::math::sd_max<int>(1, threads);
+    threads = (threads < omp_get_max_threads())
+                  ? threads
+                  : omp_get_max_threads();  // sd::math::sd_min<int>(threads, omp_get_max_threads());
 
     items = length / threads;
     remainder = length % threads;
-    if(items < 1)
-        items = 1;
+    if (items < 1) items = 1;
     chunks = length / items;
     modulo = length % items;
 
-    //one left over chunk
-    if(modulo > 0)
-        chunks++;
-    }
+    // one left over chunk
+    if (modulo > 0) chunks++;
+  }
 };
 
-
-class CudaBlockInformation {
-
-};
-
+class CudaBlockInformation {};
 
 /**
  * Credit to:
@@ -313,49 +262,42 @@ class CudaBlockInformation {
  *  We can work on optimizations later that leverage openmp,
  *  the gpu etc
  */
-#ifdef __CUDACC__
-__host__ __device__
-#endif
+SD_HOST_DEVICE
 inline void quickSort(StridePermutation *arr, int elements) {
-#define  MAX_LEVELS  300
+#define MAX_LEVELS 300
 
-    int  beg[MAX_LEVELS], end[MAX_LEVELS], i= 0, L, R, swap ;
-    StridePermutation piv;
-    beg[0] = 0;
-    end[0] = elements;
-    while (i >= 0) {
-        L = beg[i];
-        R=  end[i] - 1;
-        if (L < R) {
-            piv = arr[L];
-            while (L < R) {
-                while (arr[R].stride >= piv.stride && L < R)
-                    R--;
-                if (L < R)
-                    arr[L++] = arr[R];
-                while (arr[L].stride <= piv.stride && L < R)
-                    L++;
-                if (L<R)
-                    arr[R--] = arr[L];
-            }
+  int beg[MAX_LEVELS], end[MAX_LEVELS], i = 0, L, R, swap;
+  StridePermutation piv;
+  beg[0] = 0;
+  end[0] = elements;
+  while (i >= 0) {
+    L = beg[i];
+    R = end[i] - 1;
+    if (L < R) {
+      piv = arr[L];
+      while (L < R) {
+        while (arr[R].stride >= piv.stride && L < R) R--;
+        if (L < R) arr[L++] = arr[R];
+        while (arr[L].stride <= piv.stride && L < R) L++;
+        if (L < R) arr[R--] = arr[L];
+      }
 
-            arr[L] = piv;
-            beg[i + 1]= L + 1;
-            end[i + 1]= end[i];
-            end[i++] = L;
-            if (end[i] - beg[i] > end[i - 1] - beg[i - 1]) {
-                swap = beg[i];
-                beg[i]= beg[i - 1];
-                beg[i - 1] = swap;
-                swap = end[i];
-                end[i] = end[i - 1];
-                end[i - 1] = swap;
-            }
-        }
-        else {
-            i--;
-        }
+      arr[L] = piv;
+      beg[i + 1] = L + 1;
+      end[i + 1] = end[i];
+      end[i++] = L;
+      if (end[i] - beg[i] > end[i - 1] - beg[i - 1]) {
+        swap = beg[i];
+        beg[i] = beg[i - 1];
+        beg[i - 1] = swap;
+        swap = end[i];
+        end[i] = end[i - 1];
+        end[i - 1] = swap;
+      }
+    } else {
+      i--;
     }
+  }
 }
 
 /**
@@ -375,50 +317,45 @@ inline void quickSort(StridePermutation *arr, int elements) {
  * Returns 0 on success, -1 on failure.
  */
 template <typename X, typename Y>
-int _CUDA_HD PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
-                           X *dataA, Nd4jLong *stridesA,
-                           Y *dataB, Nd4jLong *stridesB,
-                           int *out_ndim, Nd4jLong *outShape,
-                           X **out_dataA, Nd4jLong *outStridesA,
-                           Y **out_dataB, Nd4jLong *outStridesB) {
-    int i;
+int SD_HOST_DEVICE PrepareTwoRawArrayIter(int ndim, sd::LongType *shape, X *dataA, sd::LongType *stridesA, Y *dataB,
+                                          sd::LongType *stridesB, int *out_ndim, sd::LongType *outShape, X **out_dataA,
+                                          sd::LongType *outStridesA, Y **out_dataB, sd::LongType *outStridesB) {
+  int i;
 
-/* Sort the axes based on the destination strides */
-    for (i = 0; i < ndim; ++i) {
-        outShape[i] = shape[i];
-        outStridesA[i] = stridesA[i];
-        outStridesB[i] = stridesB[i];
+  /* Sort the axes based on the destination strides */
+  for (i = 0; i < ndim; ++i) {
+    outShape[i] = shape[i];
+    outStridesA[i] = stridesA[i];
+    outStridesB[i] = stridesB[i];
+  }
+
+  /* Reverse any negative strides of operand A */
+  for (i = 0; i < ndim; i++) {
+    sd::LongType stride_entryA = outStridesA[i];
+    sd::LongType stride_entryB = outStridesB[i];
+    sd::LongType shape_entry = outShape[i];
+
+    if (stride_entryA < 0) {
+      dataA += stride_entryA * (shape_entry - 1);
+      dataB += stride_entryB * (shape_entry - 1);
+      outStridesA[i] = -stride_entryA;
+      outStridesB[i] = -stride_entryB;
     }
-
-/* Reverse any negative strides of operand A */
-    for (i = 0; i < ndim; i++) {
-        Nd4jLong stride_entryA = outStridesA[i];
-        Nd4jLong stride_entryB = outStridesB[i];
-        Nd4jLong shape_entry = outShape[i];
-
-        if (stride_entryA < 0) {
-            dataA += stride_entryA * (shape_entry - 1);
-            dataB += stride_entryB * (shape_entry - 1);
-            outStridesA[i] = -stride_entryA;
-            outStridesB[i] = -stride_entryB;
-        }
-/* Detect 0-size arrays here */
-        if (shape_entry == 0) {
-            *out_ndim = 1;
-            *out_dataA = dataA;
-            *out_dataB = dataB;
-            outShape[0] = 0;
-            outStridesA[0] = 0;
-            outStridesB[0] = 0;
-            return 0;
-        }
+    /* Detect 0-size arrays here */
+    if (shape_entry == 0) {
+      *out_ndim = 1;
+      *out_dataA = dataA;
+      *out_dataB = dataB;
+      outShape[0] = 0;
+      outStridesA[0] = 0;
+      outStridesB[0] = 0;
+      return 0;
     }
+  }
 
-
-    *out_dataA = dataA;
-    *out_dataB = dataB;
-    *out_ndim = ndim;
-
+  *out_dataA = dataA;
+  *out_dataB = dataB;
+  *out_ndim = ndim;
 
 #if 0
     /* DEBUG */
@@ -446,7 +383,7 @@ int _CUDA_HD PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
     }
 #endif
 
-    return 0;
+  return 0;
 }
 
 /**
@@ -466,100 +403,89 @@ int _CUDA_HD PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
  * Returns 0 on success, -1 on failure.
  */
 template <typename X, typename Y, typename Z>
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
-                              X *dataA, Nd4jLong *stridesA,
-                              Y *dataB, Nd4jLong *stridesB,
-                              Z *dataC, Nd4jLong *stridesC,
-                              int &out_ndim, Nd4jLong *outShape,
-                              X **out_dataA, Nd4jLong outStridesA[],
-                              Y **out_dataB, Nd4jLong outStridesB[],
-                              Z **out_dataC, Nd4jLong outStridesC[])
-{
-
-    /* Special case 0 and 1 dimensions */
-    if (ndim == 0) {
-        out_ndim = 1;
-        *out_dataA = dataA;
-        *out_dataB = dataB;
-        *out_dataC = dataC;
-        outShape[0] = 1;
-        outStridesA[0] = 0;
-        outStridesB[0] = 0;
-        outStridesC[0] = 0;
-        return 0;
-    }
-    else if (ndim == 1) {
-        auto stride_entryA = stridesA[0];
-        auto stride_entryB = stridesB[0];
-        auto stride_entryC = stridesC[0];
-        auto shape_entry = shape[0];
-        out_ndim = 1;
-        outShape[0] = shape[0];
-        /* Always make a positive stride for the first operand */
-        if (stride_entryA >= 0) {
-            *out_dataA = dataA;
-            *out_dataB = dataB;
-            *out_dataC = dataC;
-            outStridesA[0] = stride_entryA;
-            outStridesB[0] = stride_entryB;
-            outStridesC[0] = stride_entryC;
-        }
-        else {
-            *out_dataA = dataA + stride_entryA * (shape_entry - 1);
-            *out_dataB = dataB + stride_entryB * (shape_entry - 1);
-            *out_dataC = dataC + stride_entryC * (shape_entry - 1);
-            outStridesA[0] = -stride_entryA;
-            outStridesB[0] = -stride_entryB;
-            outStridesC[0] = -stride_entryC;
-        }
-        return 0;
-    }
-
-    for (int i = 0; i < ndim; ++i) {
-        outShape[i] = shape[i];
-        outStridesA[i] = stridesA[i];
-        outStridesB[i] = stridesB[i];
-        outStridesC[i] = stridesC[i];
-    }
-
-    /* Reverse any negative strides of operand A */
-    for (int i = 0; i < ndim; ++i) {
-        auto stride_entryA = outStridesA[i];
-        auto stride_entryB = outStridesB[i];
-        auto stride_entryC = outStridesC[i];
-        auto shape_entry = outShape[i];
-
-        if (stride_entryA < 0) {
-            dataA += stride_entryA * (shape_entry - 1);
-            dataB += stride_entryB * (shape_entry - 1);
-            dataC += stride_entryC * (shape_entry - 1);
-            outStridesA[i] = -stride_entryA;
-            outStridesB[i] = -stride_entryB;
-            outStridesC[i] = -stride_entryC;
-        }
-        /* Detect 0-size arrays here */
-        if (shape_entry == 0) {
-            out_ndim = 1;
-            *out_dataA = dataA;
-            *out_dataB = dataB;
-            *out_dataC = dataC;
-            outShape[0] = 0;
-            outStridesA[0] = 0;
-            outStridesB[0] = 0;
-            outStridesC[0] = 0;
-            return 0;
-        }
-    }
-
-
+SD_HOST_DEVICE int PrepareThreeRawArrayIter(int ndim, sd::LongType shape[], X *dataA, sd::LongType *stridesA, Y *dataB,
+                                            sd::LongType *stridesB, Z *dataC, sd::LongType *stridesC, int &out_ndim,
+                                            sd::LongType *outShape, X **out_dataA, sd::LongType outStridesA[],
+                                            Y **out_dataB, sd::LongType outStridesB[], Z **out_dataC,
+                                            sd::LongType outStridesC[]) {
+  /* Special case 0 and 1 dimensions */
+  if (ndim == 0) {
+    out_ndim = 1;
     *out_dataA = dataA;
     *out_dataB = dataB;
     *out_dataC = dataC;
-    out_ndim = ndim;
+    outShape[0] = 1;
+    outStridesA[0] = 0;
+    outStridesB[0] = 0;
+    outStridesC[0] = 0;
     return 0;
+  } else if (ndim == 1) {
+    auto stride_entryA = stridesA[0];
+    auto stride_entryB = stridesB[0];
+    auto stride_entryC = stridesC[0];
+    auto shape_entry = shape[0];
+    out_ndim = 1;
+    outShape[0] = shape[0];
+    /* Always make a positive stride for the first operand */
+    if (stride_entryA >= 0) {
+      *out_dataA = dataA;
+      *out_dataB = dataB;
+      *out_dataC = dataC;
+      outStridesA[0] = stride_entryA;
+      outStridesB[0] = stride_entryB;
+      outStridesC[0] = stride_entryC;
+    } else {
+      *out_dataA = dataA + stride_entryA * (shape_entry - 1);
+      *out_dataB = dataB + stride_entryB * (shape_entry - 1);
+      *out_dataC = dataC + stride_entryC * (shape_entry - 1);
+      outStridesA[0] = -stride_entryA;
+      outStridesB[0] = -stride_entryB;
+      outStridesC[0] = -stride_entryC;
+    }
+    return 0;
+  }
+
+  for (int i = 0; i < ndim; ++i) {
+    outShape[i] = shape[i];
+    outStridesA[i] = stridesA[i];
+    outStridesB[i] = stridesB[i];
+    outStridesC[i] = stridesC[i];
+  }
+
+  /* Reverse any negative strides of operand A */
+  for (int i = 0; i < ndim; ++i) {
+    auto stride_entryA = outStridesA[i];
+    auto stride_entryB = outStridesB[i];
+    auto stride_entryC = outStridesC[i];
+    auto shape_entry = outShape[i];
+
+    if (stride_entryA < 0) {
+      dataA += stride_entryA * (shape_entry - 1);
+      dataB += stride_entryB * (shape_entry - 1);
+      dataC += stride_entryC * (shape_entry - 1);
+      outStridesA[i] = -stride_entryA;
+      outStridesB[i] = -stride_entryB;
+      outStridesC[i] = -stride_entryC;
+    }
+    /* Detect 0-size arrays here */
+    if (shape_entry == 0) {
+      out_ndim = 1;
+      *out_dataA = dataA;
+      *out_dataB = dataB;
+      *out_dataC = dataC;
+      outShape[0] = 0;
+      outStridesA[0] = 0;
+      outStridesB[0] = 0;
+      outStridesC[0] = 0;
+      return 0;
+    }
+  }
+
+  *out_dataA = dataA;
+  *out_dataB = dataB;
+  *out_dataC = dataC;
+  out_ndim = ndim;
+  return 0;
 }
 
-#endif //NATIVEOPERATIONS_PAIRWISE_UTIL_H
+#endif  // NATIVEOPERATIONS_PAIRWISE_UTIL_H

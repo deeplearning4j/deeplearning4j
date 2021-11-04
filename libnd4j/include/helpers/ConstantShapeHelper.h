@@ -23,78 +23,78 @@
 #ifndef DEV_TESTS_CONSTANTSHAPEHELPER_H
 #define DEV_TESTS_CONSTANTSHAPEHELPER_H
 
-#include <system/dll.h>
-#include <system/pointercast.h>
-#include <map>
-#include <mutex>
-#include <vector>
-#include <array/ShapeDescriptor.h>
 #include <array/ConstantShapeBuffer.h>
+#include <array/ShapeDescriptor.h>
 #include <memory/Workspace.h>
 #include <system/op_boilerplate.h>
 
+#include <map>
+#include <mutex>
+#include <vector>
+
 namespace sd {
 
-    class ND4J_EXPORT ConstantShapeHelper {
-    private:
-        std::mutex _mutex;
-        std::vector<MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer>> _cache;
+class SD_LIB_EXPORT ConstantShapeHelper {
+ private:
+  std::mutex _mutex;
+  std::vector<SD_MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer>> _cache;
 
+  ConstantShapeHelper();
 
-        ConstantShapeHelper();
-    public:
-        ~ConstantShapeHelper() = default;
+ public:
+  ~ConstantShapeHelper() = default;
 
-        static ConstantShapeHelper & getInstance();
+  static ConstantShapeHelper& getInstance();
 
+  ConstantShapeBuffer& bufferForShapeInfo(sd::DataType dataType, char order, const std::vector<sd::LongType>& shape);
+  ConstantShapeBuffer& bufferForShapeInfo(const ShapeDescriptor& descriptor);
+  ConstantShapeBuffer& bufferForShapeInfo(const sd::LongType* shapeInfo);
+  ConstantShapeBuffer& bufferForShapeInfo(sd::DataType dataType, char order, int rank, const sd::LongType* shape);
+  ConstantShapeBuffer& createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
+                                                              const sd::LongType* minShapeInfo,
+                                                              sd::memory::Workspace* workspace = nullptr,
+                                                              const std::vector<int>& dimensions = {});
+  ConstantShapeBuffer& createShapeInfoWithNoUnitiesForReduce(const sd::LongType* maxShapeInfo,
+                                                             const std::vector<int>& dimsWithUnities,
+                                                             sd::memory::Workspace* workspace = nullptr);
+  ConstantShapeBuffer& createSubArrShapeInfo(const sd::LongType* inShapeInfo, const int* dims, const int dimsSize,
+                                             sd::memory::Workspace* workspace = nullptr);
 
-        ConstantShapeBuffer& bufferForShapeInfo(sd::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
-        ConstantShapeBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
-        ConstantShapeBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
-        ConstantShapeBuffer& bufferForShapeInfo(sd::DataType dataType, char order, int rank, const Nd4jLong* shape);
-        ConstantShapeBuffer& createShapeInfoWithUnitiesForBroadcast(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, sd::memory::Workspace* workspace = nullptr, const std::vector<int> &dimensions = {});
-        ConstantShapeBuffer& createShapeInfoWithNoUnitiesForReduce(const Nd4jLong* maxShapeInfo, const std::vector<int> &dimsWithUnities, sd::memory::Workspace* workspace = nullptr);
-        ConstantShapeBuffer& createSubArrShapeInfo(const Nd4jLong* inShapeInfo, const int* dims, const int dimsSize, sd::memory::Workspace* workspace = nullptr);
+  const sd::LongType* emptyShapeInfo(sd::DataType dataType);
+  const sd::LongType* scalarShapeInfo(sd::DataType dataType);
+  const sd::LongType* vectorShapeInfo(sd::LongType length, sd::DataType dataType);
+  const sd::LongType* createShapeInfo(const ShapeDescriptor& descriptor);
+  const sd::LongType* createShapeInfo(sd::DataType dataType, char order, const std::vector<sd::LongType>& shape);
+  const sd::LongType* createShapeInfo(sd::DataType dataType, char order, int rank, const sd::LongType* shape);
+  const sd::LongType* createShapeInfo(sd::DataType dataType, const sd::LongType* shapeInfo);
 
+  const sd::LongType* createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
+  const sd::LongType* createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal = true);
 
-        const Nd4jLong* emptyShapeInfo(sd::DataType dataType);
-        const Nd4jLong* scalarShapeInfo(sd::DataType dataType);
-        const Nd4jLong* vectorShapeInfo(Nd4jLong length, sd::DataType dataType);
-        const Nd4jLong* createShapeInfo(const ShapeDescriptor &descriptor);
-        const Nd4jLong* createShapeInfo(sd::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
-        const Nd4jLong* createShapeInfo(sd::DataType dataType, char order, int rank, const Nd4jLong* shape);
-        const Nd4jLong* createShapeInfo(sd::DataType dataType, const Nd4jLong* shapeInfo);
+  bool checkBufferExistenceForShapeInfo(ShapeDescriptor& descriptor);
 
-        const Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, sd::memory::Workspace *workspace);
-        const Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal = true);
+  /**
+   * This method returns number of cached TAD shapes/offsets on specific device
+   * @return
+   */
+  SD_INLINE int cachedEntriesForDevice(int deviceId) {
+    if (deviceId > _cache.size()) throw std::runtime_error("deviceId > number of actual devices");
 
-        bool checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor);
+    return _cache[deviceId].size();
+  }
 
+  /**
+   * This method returns total number of cached TAD shapes/offsets on all devices
+   * @return
+   */
+  SD_INLINE int totalCachedEntries() {
+    int total = 0;
 
-        /**
-         * This method returns number of cached TAD shapes/offsets on specific device
-         * @return
-         */
-        FORCEINLINE int cachedEntriesForDevice(int deviceId) {
-            if (deviceId > _cache.size())
-                throw std::runtime_error("deviceId > number of actual devices");
+    for (int e = 0; e < _cache.size(); e++) total += _cache[e].size();
 
-            return _cache[deviceId].size();
-        }
+    return total;
+  }
+};
+}  // namespace sd
 
-        /**
-         * This method returns total number of cached TAD shapes/offsets on all devices
-         * @return
-         */
-        FORCEINLINE int totalCachedEntries() {
-            int total = 0;
-
-            for (int e = 0; e < _cache.size(); e++)
-                total += _cache[e].size();
-
-            return total;
-        }
-    };
-}
-
-#endif //DEV_TESTS_CONSTANTSHAPEHELPER_H
+#endif  // DEV_TESTS_CONSTANTSHAPEHELPER_H

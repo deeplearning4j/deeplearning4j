@@ -24,67 +24,63 @@
 #if NOT_EXCLUDED(OP_clipbynorm)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
-    CONFIGURABLE_OP_IMPL(clipbynorm, 1, 1, true, 1, 0) {
-        auto input = INPUT_VARIABLE(0);
-        auto output = OUTPUT_VARIABLE(0);
-        if(block.numT() > 0) {
-            const auto clipNorm = NDArrayFactory::create(output->dataType(), T_ARG(0), block.launchContext());
-            const bool isInplace = block.isInplace();
-            helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace, false);
-        } else {
-            const auto clipNorm = INPUT_VARIABLE(1);
-            const bool isInplace = block.isInplace();
-            helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), *clipNorm, isInplace, false);
-        }
+CONFIGURABLE_OP_IMPL(clipbynorm, 1, 1, true, 1, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
+  if (block.numT() > 0) {
+    const auto clipNorm = NDArrayFactory::create(output->dataType(), T_ARG(0), block.launchContext());
+    const bool isInplace = block.isInplace();
+    helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace, false);
+  } else {
+    const auto clipNorm = INPUT_VARIABLE(1);
+    const bool isInplace = block.isInplace();
+    helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), *clipNorm, isInplace, false);
+  }
 
-        return Status::OK();
-    }
-
-
-    CUSTOM_OP_IMPL(clipbynorm_bp, 2, 1, false, 1, 0) {
-        auto input = INPUT_VARIABLE(0);
-        auto gradO = INPUT_VARIABLE(1);
-
-        auto gradI = OUTPUT_VARIABLE(0);
-        if(block.numT() > 0) {
-            const auto clipNorm = NDArrayFactory::create(gradI->dataType(), T_ARG(0), block.launchContext());
-            helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm, false);
-        } else {
-            const auto clipNorm = INPUT_VARIABLE(1);
-            helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), *clipNorm, false);
-        }
-
-
-        return Status::OK();
-    }
-
-    DECLARE_SHAPE_FN(clipbynorm_bp) {
-        auto inShapeInfo = inputShape->at(1);
-
-        Nd4jLong *newShape = nullptr;
-        COPY_SHAPE(inShapeInfo, newShape);
-
-        return SHAPELIST(CONSTANT(newShape));
-    }
-
-    DECLARE_TYPES(clipbynorm) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
-
-    DECLARE_TYPES(clipbynorm_bp) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(0, DataType::ANY)
-                ->setAllowedInputTypes(1, {ALL_FLOATS})
-                ->setAllowedOutputTypes(0, {ALL_FLOATS});
-    }
+  return sd::Status::OK;
 }
+
+CUSTOM_OP_IMPL(clipbynorm_bp, 2, 1, false, 1, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto gradO = INPUT_VARIABLE(1);
+
+  auto gradI = OUTPUT_VARIABLE(0);
+  if (block.numT() > 0) {
+    const auto clipNorm = NDArrayFactory::create(gradI->dataType(), T_ARG(0), block.launchContext());
+    helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm, false);
+  } else {
+    const auto clipNorm = INPUT_VARIABLE(1);
+    helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), *clipNorm, false);
+  }
+
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(clipbynorm_bp) {
+  auto inShapeInfo = inputShape->at(1);
+
+  sd::LongType *newShape = nullptr;
+  COPY_SHAPE(inShapeInfo, newShape);
+
+  return SHAPELIST(CONSTANT(newShape));
+}
+
+DECLARE_TYPES(clipbynorm) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+DECLARE_TYPES(clipbynorm_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

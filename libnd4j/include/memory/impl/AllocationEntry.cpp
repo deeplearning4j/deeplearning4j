@@ -19,28 +19,21 @@
 //
 // Created by raver119 on 07.05.19.
 //
-
 #include <memory/AllocationEntry.h>
 
 namespace sd {
-    namespace memory {
-        AllocationEntry::AllocationEntry(MemoryType type, Nd4jLong ptr, Nd4jLong numBytes, std::string &stack) {
-            _pointer = ptr;
-            _numBytes = numBytes;
-            _stack = stack;
-            _memoryType = type;
-        }
-
-        std::string AllocationEntry::stackTrace() {
-            return _stack;
-        }
-
-        Nd4jLong AllocationEntry::numBytes() {
-            return _numBytes;
-        }
-
-        MemoryType AllocationEntry::memoryType() {
-            return _memoryType;
-        }
-    }
+namespace memory {
+AllocationEntry::AllocationEntry(MemoryType type, sd::LongType ptr, sd::LongType numBytes, std::string &stack) {
+  _pointer = ptr;
+  _numBytes = numBytes;
+  _stack = stack;
+  _memoryType = type;
 }
+
+std::string AllocationEntry::stackTrace() { return _stack; }
+
+sd::LongType AllocationEntry::numBytes() { return _numBytes; }
+
+MemoryType AllocationEntry::memoryType() { return _memoryType; }
+}  // namespace memory
+}  // namespace sd

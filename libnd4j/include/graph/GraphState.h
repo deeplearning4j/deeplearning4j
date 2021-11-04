@@ -23,122 +23,118 @@
 #ifndef LIBND4J_GRAPHSTATE_H
 #define LIBND4J_GRAPHSTATE_H
 
-#include <system/pointercast.h>
-#include <system/op_boilerplate.h>
-#include <system/dll.h>
-#include <vector>
-#include <unordered_map>
-#include <map>
-#include <graph/Scope.h>
-#include <graph/Status.h>
-#include <graph/VariableSpace.h>
-#include <ops/declarable/DeclarableOp.h>
-#include <types/pair.h>
 #include <graph/ArgumentsList.h>
 #include <graph/Graph.h>
+#include <graph/Scope.h>
+#include <graph/VariableSpace.h>
+#include <ops/declarable/DeclarableOp.h>
+#include <system/op_boilerplate.h>
+#include <types/pair.h>
+
+#include <map>
+#include <unordered_map>
+#include <vector>
 
 namespace sd {
 namespace graph {
 
-    class ND4J_EXPORT GraphState {
-    protected:
-        // id of this GraphState instance
-        Nd4jLong _id = 0;
+class SD_LIB_EXPORT GraphState {
+ protected:
+  // id of this GraphState instance
+  sd::LongType _id = 0;
 
-        // map of scopes. Scope id is used as key, since it's referred in calls later anyway
-        MAP_IMPL<int, Scope *> _scopes;
+  // map of scopes. Scope id is used as key, since it's referred in calls later anyway
+  SD_MAP_IMPL<int, Scope*> _scopes;
 
-        // this variable space holds temp references
-        VariableSpace _variableSpace;
+  // this variable space holds temp references
+  VariableSpace _variableSpace;
 
-        Graph *_graph;
+  Graph* _graph;
 
-    public:
-        explicit GraphState(Nd4jLong id);
-        ~GraphState();
+ public:
+  explicit GraphState(sd::LongType id);
+  ~GraphState();
 
-        /**
-         *
-         * @return
-         */
-        Nd4jLong id();
+  /**
+   *
+   * @return
+   */
+  sd::LongType id();
 
-        /**
-         * This method adds scope to this state tracker
-         *
-         * @param scopeId
-         * @return
-         */
-        Nd4jStatus registerScope(int scopeId);
+  /**
+   * This method adds scope to this state tracker
+   *
+   * @param scopeId
+   * @return
+   */
+  sd::Status registerScope(int scopeId);
 
-        /**
-         * This method cheks if scope with given ID exists
-         * 
-         * @param scopeId - ID of the scope
-         * @return - TRUE if scope exists, FALSE otherwise
-         */
-        bool hasScope(int scopeId);
+  /**
+   * This method cheks if scope with given ID exists
+   *
+   * @param scopeId - ID of the scope
+   * @return - TRUE if scope exists, FALSE otherwise
+   */
+  bool hasScope(int scopeId);
 
-        /**
-         * This method removes specified scope from this state tracker
-         *
-         * @param scopeId
-         * @return
-         */
-        Nd4jStatus forgetScope(int scopeId);
+  /**
+   * This method removes specified scope from this state tracker
+   *
+   * @param scopeId
+   * @return
+   */
+  sd::Status forgetScope(int scopeId);
 
 #ifndef __JAVACPP_HACK__
-        /**
-         * This method adds given op to the end of specified scope
-         * PLEASE NOTE: This method is used for tests mostly
-         *
-         * @param scopeId
-         * @param op
-         * @return
-         */
-        Nd4jStatus attachOpToScope(int scopeId, int nodeId, sd::ops::DeclarableOp *op, ArgumentsList inputs);
+  /**
+   * This method adds given op to the end of specified scope
+   * PLEASE NOTE: This method is used for tests mostly
+   *
+   * @param scopeId
+   * @param op
+   * @return
+   */
+  sd::Status attachOpToScope(int scopeId, int nodeId, sd::ops::DeclarableOp* op, ArgumentsList inputs);
 
-        /**
-         * This method returns pointer to the scope with given id
-         * 
-         * @param scopeId - id of the scope
-         */
-        Scope* getScope(int scopeId);
+  /**
+   * This method returns pointer to the scope with given id
+   *
+   * @param scopeId - id of the scope
+   */
+  Scope* getScope(int scopeId);
 
-        Graph* graph();
+  Graph* graph();
 #endif
-        /**
-         * This method adds given op to the end of specified scope
-         *
-         * @param scopeId
-         * @param opNum
-         * @param type
-         * @return
-         */
-        Nd4jStatus attachOpToScope(int scopeId, Nd4jLong opNum, int type, ArgumentsList inputs);
+  /**
+   * This method adds given op to the end of specified scope
+   *
+   * @param scopeId
+   * @param opNum
+   * @param type
+   * @return
+   */
+  sd::Status attachOpToScope(int scopeId, sd::LongType opNum, int type, ArgumentsList inputs);
 
-        /**
-         * This method adds return statement to specified scope
-         *
-         * PLEASE NOTE: should be used only in body scopes
-         *
-         * @param scopeId
-         * @param nodeId
-         * @param args
-         * @return
-         */
-        Nd4jStatus defineReturn(int scopeId, int nodeId, ArgumentsList args);
+  /**
+   * This method adds return statement to specified scope
+   *
+   * PLEASE NOTE: should be used only in body scopes
+   *
+   * @param scopeId
+   * @param nodeId
+   * @param args
+   * @return
+   */
+  sd::Status defineReturn(int scopeId, int nodeId, ArgumentsList args);
 
-        /**
-         * This method returns current variable space of this state holder
-         *
-         * @return
-         */
-        VariableSpace*  variableSpace();
-    };
-}
-}
+  /**
+   * This method returns current variable space of this state holder
+   *
+   * @return
+   */
+  VariableSpace* variableSpace();
+};
+}  // namespace graph
+}  // namespace sd
 
-
-
-#endif //LIBND4J_GRAPHSTATE_H
+#endif  // LIBND4J_GRAPHSTATE_H

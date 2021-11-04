@@ -24,77 +24,78 @@
 
 #ifndef NDARRAY_LIST_H
 #define NDARRAY_LIST_H
-
-#include <string>
-#include <atomic>
-#include <unordered_map>
 #include <array/NDArray.h>
 #include <memory/Workspace.h>
-#include <system/dll.h>
+#include <system/common.h>
+
+#include <atomic>
+#include <string>
+#include <unordered_map>
 
 namespace sd {
-    class ND4J_EXPORT NDArrayList {
-    private:
-        // workspace where chunks belong to
-        //sd::memory::Workspace* _workspace = nullptr;
-        sd::LaunchContext * _context = sd::LaunchContext ::defaultContext();
+class SD_LIB_EXPORT NDArrayList {
+ private:
+  // workspace where chunks belong to
+  // sd::memory::Workspace* _workspace = nullptr;
+  sd::LaunchContext *_context = sd::LaunchContext ::defaultContext();
 
-        // numeric and symbolic ids of this list
-        std::pair<int, int> _id;
-        std::string _name;
+  // numeric and symbolic ids of this list
+  std::pair<int, int> _id;
+  std::string _name;
 
-        sd::DataType _dtype;
+  sd::DataType _dtype;
 
-        // stored chunks
-        MAP_IMPL<int, sd::NDArray*> _chunks;
+  // stored chunks
+  SD_MAP_IMPL<int, sd::NDArray *> _chunks;
 
-        // just a counter, for stored elements
-        std::atomic<int> _elements;
-        std::atomic<int> _counter;
+  // just a counter, for stored elements
+  std::atomic<int> _elements;
+  std::atomic<int> _counter;
 
-        // reference shape
-        std::vector<Nd4jLong> _shape;
+  // reference shape
+  std::vector<sd::LongType> _shape;
 
-        // unstack axis
-        int _axis = 0;
+  // unstack axis
+  int _axis = 0;
 
-        //
-        bool _expandable = false;
+  //
+  bool _expandable = false;
 
-        // maximum number of elements
-        int _height = 0;
-    public:
-        NDArrayList(int height, bool expandable = false);
-        ~NDArrayList();
+  // maximum number of elements
+  int _height = 0;
 
-        sd::DataType dataType();
+ public:
+  NDArrayList(int height, bool expandable = false);
+  ~NDArrayList();
 
-        NDArray* read(int idx);
-        NDArray* readRaw(int idx);
-        Nd4jStatus write(int idx, NDArray* array);
+  sd::DataType dataType();
 
-        NDArray* pick(std::initializer_list<int> indices);
-        NDArray* pick(std::vector<int>& indices);
-        bool isWritten(int index);
+  NDArray *read(int idx);
+  NDArray *readRaw(int idx);
+  sd::Status write(int idx, NDArray *array);
 
-        std::vector<Nd4jLong>& shape();
+  NDArray *pick(std::initializer_list<int> indices);
+  NDArray *pick(std::vector<int> &indices);
+  bool isWritten(int index);
 
-        NDArray* stack();
-        void unstack(NDArray* array, int axis);
+  std::vector<sd::LongType> &shape();
 
-        std::pair<int,int>& id();
-        std::string& name();
-        //sd::memory::Workspace* workspace();
-        sd::LaunchContext * context();
-        NDArrayList* clone();
+  NDArray *stack();
+  void unstack(NDArray *array, int axis);
 
-        bool equals(NDArrayList& other);
+  std::pair<int, int> &id();
+  std::string &name();
+  // sd::memory::Workspace* workspace();
+  sd::LaunchContext *context();
+  NDArrayList *clone();
 
-        int elements();
-        int height();
+  bool equals(NDArrayList &other);
 
-        int counter();
-    };
-}
+  int elements();
+  int height();
+
+  int counter();
+};
+}  // namespace sd
 
 #endif

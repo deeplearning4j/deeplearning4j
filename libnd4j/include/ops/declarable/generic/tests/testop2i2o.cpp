@@ -26,32 +26,28 @@
 #include <ops/declarable/headers/tests.h>
 
 namespace sd {
-    namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-        // test op, non-divergent
-        OP_IMPL(testop2i2o, 2, 2, true) {
-            //nd4j_printf("CPU op used!\n","");
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
+namespace ops {
+//////////////////////////////////////////////////////////////////////////
+// test op, non-divergent
+OP_IMPL(testop2i2o, 2, 2, true) {
+  // sd_printf("CPU op used!\n","");
+  auto x = INPUT_VARIABLE(0);
+  auto y = INPUT_VARIABLE(1);
 
-            auto xO = OUTPUT_VARIABLE(0);
-            auto yO = OUTPUT_VARIABLE(1);
+  auto xO = OUTPUT_VARIABLE(0);
+  auto yO = OUTPUT_VARIABLE(1);
 
-            x->applyScalar(scalar::Add, 1.0, *xO);
-            y->applyScalar(scalar::Add, 2.0, *yO);
+  x->applyScalar(scalar::Add, 1.0, *xO);
+  y->applyScalar(scalar::Add, 2.0, *yO);
 
-            STORE_2_RESULTS(*xO, *yO);
+  STORE_2_RESULTS(*xO, *yO);
 
-            return Status::OK();
-        }
-        DECLARE_SYN(TestOp2i2o, testop2i2o);
-
-        DECLARE_TYPES(testop2i2o) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(TestOp2i2o, testop2i2o);
+
+DECLARE_TYPES(testop2i2o) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

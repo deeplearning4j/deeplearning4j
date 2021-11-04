@@ -22,81 +22,69 @@
 
 #ifndef LIBND4J_HHSEQUENCE_H
 #define LIBND4J_HHSEQUENCE_H
-
 #include "array/NDArray.h"
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 class HHsequence {
+ public:
+  /*
+   *  matrix containing the Householder vectors
+   */
+  const NDArray& _vectors;
 
-    public:
+  /*
+   *  vector containing the Householder coefficients
+   */
+  const NDArray& _coeffs;
 
-    /*
-    *  matrix containing the Householder vectors
-    */
-    const NDArray& _vectors;
+  /*
+   *  shift of the Householder sequence
+   */
+  int _shift;
 
-    /*
-    *  vector containing the Householder coefficients
-    */
-    const NDArray& _coeffs;
+  /*
+   *  length of the Householder sequence
+   */
+  int _diagSize;
 
-    /*
-    *  shift of the Householder sequence
-    */
-    int _shift;
+  /*
+   *  type of sequence, type = 'u' (acting on columns, left) or type = 'v' (acting on rows, right)
+   */
+  char _type;
 
-    /*
-    *  length of the Householder sequence
-    */
-    int _diagSize;
+  /*
+   *  constructor
+   */
+  HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type);
 
-    /*
-    *  type of sequence, type = 'u' (acting on columns, left) or type = 'v' (acting on rows, right)
-    */
-    char _type;
+  /**
+   *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
+   *
+   *  matrix - input matrix to be multiplied
+   */
+  template <typename T>
+  void mulLeft_(NDArray& matrix);
 
-    /*
-    *  constructor
-    */
-    HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type);
+  void mulLeft(NDArray& matrix);
 
-    /**
-    *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
-    *
-    *  matrix - input matrix to be multiplied
-    */
-    template <typename T>
-    void mulLeft_(NDArray& matrix);
+  NDArray getTail(const int idx) const;
 
-    void mulLeft(NDArray& matrix);
+  template <typename T>
+  void applyTo_(NDArray& dest);
 
-    NDArray getTail(const int idx) const;
+  void applyTo(NDArray& dest);
 
-    template <typename T>
-    void applyTo_(NDArray& dest);
-
-    void applyTo(NDArray& dest);
-
-    FORCEINLINE int rows() const;
-
+  SD_INLINE int rows() const;
 };
 
-
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE int HHsequence::rows() const {
+SD_INLINE int HHsequence::rows() const { return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1); }
 
-    return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1);
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-
-
-}
-}
-}
-
-
-#endif //LIBND4J_HHSEQUENCE_H
+#endif  // LIBND4J_HHSEQUENCE_H

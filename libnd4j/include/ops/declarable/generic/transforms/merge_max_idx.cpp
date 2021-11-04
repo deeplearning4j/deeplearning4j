@@ -24,43 +24,38 @@
 #if NOT_EXCLUDED(OP_mergemaxindex)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CUSTOM_OP_IMPL(mergemaxindex, -1, 1, false, 0, 0) {
+  REQUIRE_OK(this->validateInputDimensionsMatch(block));
+  auto output = OUTPUT_VARIABLE(0);
 
-    REQUIRE_OK(this->validateInputDimensionsMatch(block));
-    auto output = OUTPUT_VARIABLE(0);
+  std::vector<const NDArray*> inArrs(block.width());
 
-    std::vector<const NDArray*> inArrs(block.width());
+  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
 
-    for(int i = 0; i < block.width(); ++i)
-        inArrs[i] = INPUT_VARIABLE(i);
+  helpers::mergeMaxIndex(block.launchContext(), inArrs, *output);
 
-    helpers::mergeMaxIndex(block.launchContext(), inArrs, *output);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_SYN(MergeMaxIndex, mergemaxindex);
 
-    DECLARE_TYPES(mergemaxindex) {
-        getOpDescriptor()
-                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
-                ->setAllowedOutputTypes({ALL_INDICES});
-    }
+DECLARE_TYPES(mergemaxindex) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_INDICES});
 }
+}  // namespace ops
 DECLARE_SHAPE_FN(mergemaxindex) {
-    auto in = inputShape->at(0);
-    auto dtype = DataType::INT32;
-    if (block.getIArguments()->size()> 0)
-        dtype = (DataType)INT_ARG(0);
+  auto in = inputShape->at(0);
+  auto dtype = DataType::INT32;
+  if (block.getIArguments()->size() > 0) dtype = (DataType)INT_ARG(0);
 
-    auto resShape = ShapeBuilders::copyShapeInfoAndType(in, dtype, block.workspace());
-    return SHAPELIST(CONSTANT(resShape));
+  auto resShape = ShapeBuilders::copyShapeInfoAndType(in, dtype, block.workspace());
+  return SHAPELIST(CONSTANT(resShape));
 }
-}
+}  // namespace sd
 
 #endif

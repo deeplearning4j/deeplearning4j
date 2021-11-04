@@ -26,10 +26,10 @@ The following tools are necessary to build DL4J for Linux on Power
 Edit the CUDA, JAVA_HOME, CC, CXX environment variables according to your system
 
 ```
-export CUDA=/usr/local/cuda-7.5				# CUDA Directory
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el	# JAVA Directory
-export CC=/path/to/gcc					# gcc command for build
-export CXX=/path/to/g++					# g++ command for build
+export CUDA=/usr/local/cuda-7.5                # CUDA Directory
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el    # JAVA Directory
+export CC=/path/to/gcc                    # gcc command for build
+export CXX=/path/to/g++                    # g++ command for build
 export MAVEN_OPTS='-Xmx4096M -Dos.arch=ppc64le'
 export _JAVA_OPTIONS=-Dos.arch=ppc64le
 export LIBND4J_HOME=`/bin/pwd`/libnd4j

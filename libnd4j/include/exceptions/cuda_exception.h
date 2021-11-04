@@ -23,27 +23,19 @@
 #ifndef DEV_TESTS_CUDA_EXCEPTION_H
 #define DEV_TESTS_CUDA_EXCEPTION_H
 
-#include <string>
+#include <system/common.h>
+
 #include <stdexcept>
-#include <system/dll.h>
-
-#if defined(_MSC_VER)
-
-// we're ignoring warning about non-exportable parent class, since std::runtime_error is a part of Standard C++ Library
-#pragma warning( disable : 4275 )
-
-#endif
+#include <string>
 
 namespace sd {
-    class ND4J_EXPORT cuda_exception : public std::runtime_error {
-    public:
-        cuda_exception(std::string message);
-        ~cuda_exception() = default;
+class SD_LIB_EXPORT cuda_exception : public std::runtime_error {
+ public:
+  cuda_exception(std::string message);
+  ~cuda_exception() = default;
 
-        static cuda_exception build(std::string message, int errorCode);
-    };
-}
+  static cuda_exception build(std::string message, int errorCode);
+};
+}  // namespace sd
 
-
-
-#endif //DEV_TESTS_CUDA_EXCEPTION_H
+#endif  // DEV_TESTS_CUDA_EXCEPTION_H

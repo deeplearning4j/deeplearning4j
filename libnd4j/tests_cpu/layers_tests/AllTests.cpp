@@ -22,19 +22,19 @@
 //
 #include "testlayers.h"
 /*
+#include "ConvolutionTests.cpp"
+#include "DeclarableOpsTests.cpp"
 #include "DenseLayerTests.cpp"
+#include "FlatBuffersTests.cpp"
+#include "GraphTests.cpp"
+#include "HashUtilsTests.cpp"
 #include "NDArrayTests.cpp"
+#include "SessionLocalTests.cpp"
+#include "StashTests.cpp"
+#include "TadTests.cpp"
 #include "VariableSpaceTests.cpp"
 #include "VariableTests.cpp"
-#include "DeclarableOpsTests.cpp"
-#include "HashUtilsTests.cpp"
 #include "WorkspaceTests.cpp"
-#include "ConvolutionTests.cpp"
-#include "TadTests.cpp"
-#include "StashTests.cpp"
-#include "SessionLocalTests.cpp"
-#include "GraphTests.cpp"
-#include "FlatBuffersTests.cpp"
  */
 ///////
 
@@ -42,6 +42,6 @@
 // #include "ProtoBufTests.cpp"
 
 int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

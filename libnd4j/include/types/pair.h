@@ -22,23 +22,21 @@
 
 #ifndef LIBND4J_PAIR_H
 #define LIBND4J_PAIR_H
-
-#include <system/dll.h>
+#include <system/common.h>
 
 namespace sd {
-    class ND4J_EXPORT Pair {
-    protected:
-        int _first = 0;
-        int _second = 0;
+class SD_LIB_EXPORT Pair {
+ protected:
+  int _first = 0;
+  int _second = 0;
 
-    public:
-        Pair(int first = 0, int second = 0);
-        ~Pair() = default;
+ public:
+  Pair(int first = 0, int second = 0);
+  ~Pair() = default;
 
-        int first() const;
-        int second() const;
-    };
-}
+  int first() const;
+  int second() const;
+};
+}  // namespace sd
 
-
-#endif //LIBND4J_PAIR_H
+#endif  // LIBND4J_PAIR_H

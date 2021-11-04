@@ -26,39 +26,37 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
+  REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-            if(input->isEmpty()){
-                output->p<double>(0, std::numeric_limits<double>::quiet_NaN());
-                return Status::OK();
-            }
+  if (input->isEmpty()) {
+    output->p<double>(0, std::numeric_limits<double>::quiet_NaN());
+    return sd::Status::OK;
+  }
 
-            int numZeros = 0;
-//            for (int e = 0; e < input->lengthOf(); e++)
-//                if ((*input)(e) == T(0))
-//                    numZeros++;
-            auto countZero = input->reduceNumber(reduce::CountZero);
-            //nd4j_printf("Zero count is %f for %i elements.", countZero.e<double>(0), input->lengthOf());
-            //countZero /= double(input->lengthOf());
-            output->p<double>(0, countZero.e<Nd4jLong>(0) / double(input->lengthOf())); //printIndexedBuffer("Zero count");
+  int numZeros = 0;
+  //            for (int e = 0; e < input->lengthOf(); e++)
+  //                if ((*input)(e) == T(0))
+  //                    numZeros++;
+  auto countZero = input->reduceNumber(reduce::CountZero);
+  // sd_printf("Zero count is %f for %i elements.", countZero.e<double>(0), input->lengthOf());
+  // countZero /= double(input->lengthOf());
+  output->p<double>(0, countZero.e<sd::LongType>(0) / double(input->lengthOf()));  // printIndexedBuffer("Zero count");
 
-            return Status::OK();
-        }
-        DECLARE_SHAPE_FN(zero_fraction) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::DOUBLE));
-        }
-
-        DECLARE_TYPES(zero_fraction) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SHAPE_FN(zero_fraction) {
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::DOUBLE));
+}
+
+DECLARE_TYPES(zero_fraction) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

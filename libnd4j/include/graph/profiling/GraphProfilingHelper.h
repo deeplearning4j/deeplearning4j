@@ -23,17 +23,17 @@
 #ifndef LIBND4J_GRAPHPROFILINGHELPER_H
 #define LIBND4J_GRAPHPROFILINGHELPER_H
 
-
 #include <graph/Graph.h>
+
 #include "GraphProfile.h"
 
 namespace sd {
-    namespace graph {
-        class GraphProfilingHelper {
-        public:
-            static GraphProfile* profile(Graph *graph, int iterations);
-        };
-    }
-}
+namespace graph {
+class GraphProfilingHelper {
+ public:
+  static GraphProfile* profile(Graph* graph, int iterations);
+};
+}  // namespace graph
+}  // namespace sd
 
-#endif //LIBND4J_GRAPHPROFILINGHELPER_H
+#endif  // LIBND4J_GRAPHPROFILINGHELPER_H

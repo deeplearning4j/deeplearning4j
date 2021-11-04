@@ -24,33 +24,27 @@
 #if NOT_EXCLUDED(OP_random_shuffle)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 OP_IMPL(random_shuffle, 1, 1, true) {
-    
-    auto input  = INPUT_VARIABLE(0);
-    const bool isInplace = block.isInplace();
-    auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0);
+  const bool isInplace = block.isInplace();
+  auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
 
-//    sd::random::RandomBuffer* rng = block.getRNG();
-    sd::graph::RandomGenerator rng = block.randomGenerator();
-//    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
+  //    sd::random::RandomBuffer* rng = block.getRNG();
+  sd::graph::RandomGenerator rng = block.randomGenerator();
+  //    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
 
-    helpers::randomShuffle(block.launchContext(), *input, *output, rng, isInplace);
-    
-    return Status::OK();
+  helpers::randomShuffle(block.launchContext(), *input, *output, rng, isInplace);
+
+  return sd::Status::OK;
 }
 
-
-    DECLARE_TYPES(random_shuffle) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setSameMode(true);
-    }
-}
-}
+DECLARE_TYPES(random_shuffle) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -19,32 +19,28 @@
 //
 //  @author sgazeos@gmail.com
 //
-
 #include <ops/declarable/helpers/axis.h>
-
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    ND4J_LOCAL void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
-        output.resize(axisVector->lengthOf());
-        for (Nd4jLong e = 0; e < axisVector->lengthOf(); e++) {
-                auto ca = axisVector->e<int>(e);
-                if (ca < 0)
-                    ca += rank;
+void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<int>& output) {
+  output.resize(axisVector->lengthOf());
+  for (sd::LongType e = 0; e < axisVector->lengthOf(); e++) {
+    auto ca = axisVector->e<int>(e);
+    if (ca < 0) ca += rank;
 
-                output[e] = ca;
-        }
-    }
+    output[e] = ca;
+  }
+}
 
-    ND4J_LOCAL void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector) {
-        for (size_t e = 0; e < axisVector.size(); e++) {
-            auto a = axisVector[e];
-            if (a < 0)
-                axisVector[e] = a + rank;
-        }
-    }
+void adjustAxis(sd::LongType rank, std::vector<int>& axisVector) {
+  for (size_t e = 0; e < axisVector.size(); e++) {
+    auto a = axisVector[e];
+    if (a < 0) axisVector[e] = a + rank;
+  }
 }
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

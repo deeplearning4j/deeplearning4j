@@ -21,13 +21,12 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <loops/cpu/indexreduce.hpp>
-#cmakedefine LIBND4J_TYPE_GEN
-#if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@) && defined(INDEXING_TYPES_1)
+#cmakedefine SD_COMMON_TYPES_GEN
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@) && defined(SD_INDEXING_TYPES_1)
 namespace functions {
     namespace indexreduce {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL IndexReduce, , LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES_1);
+        BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN IndexReduce, , SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES_1);
     }
 }
 #endif

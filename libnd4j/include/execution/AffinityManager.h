@@ -23,26 +23,26 @@
 #ifndef LIBND4J_AFFINITYMANAGER_H
 #define LIBND4J_AFFINITYMANAGER_H
 
-#include <system/dll.h>
-#include <system/pointercast.h>
+#include <system/common.h>
+
 #include <atomic>
 #include <mutex>
 
 namespace sd {
-    class ND4J_EXPORT AffinityManager {
-    private:
-        static std::atomic<int> _lastDevice;
-        static int _numberOfDevices;
-        static std::mutex _currentMutex;
-        static std::mutex _numberMutex;
+class SD_LIB_EXPORT AffinityManager {
+ private:
+  static std::atomic<int> _lastDevice;
+  static int _numberOfDevices;
+  static std::mutex _currentMutex;
+  static std::mutex _numberMutex;
 
-    public:
-        static int currentNativeDeviceId();
-        static int currentDeviceId();
-        static int numberOfDevices();
-        static void setCurrentDevice(int deviceId);
-        static void setCurrentNativeDevice(int deviceId);
-    };
-}
+ public:
+  static int currentNativeDeviceId();
+  static int currentDeviceId();
+  static int numberOfDevices();
+  static void setCurrentDevice(int deviceId);
+  static void setCurrentNativeDevice(int deviceId);
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_AFFINITYMANAGER_H
+#endif  // DEV_TESTS_AFFINITYMANAGER_H

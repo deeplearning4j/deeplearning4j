@@ -127,19 +127,19 @@ If your application crashes (and you see that error more than once) then you pro
 There are a number of things that can potentially go wrong.
 First, try updating packman using the following commands:
 
-	pacman -Syy
-	pacman -Syu
-	pacman -S pacman-mirrors
+    pacman -Syy
+    pacman -Syu
+    pacman -S pacman-mirrors
 
 Note that you might need to restart the msys2 shell between/after these steps.
 
 One user has reported issues downloading packages using the default downloader (timeouts and "error: failed retrieving file" messages). If you are experiencing these issues, it may help to switch to using the wget downloader. To do this, install wget using
 
-	pacman -S wget
+    pacman -S wget
 
 then uncomment (remove the # symbol) the following line in the /etc/pacman.conf configuration file:
 
-	XferCommand = /usr/bin/wget --passive-ftp -c -O %o %u
+    XferCommand = /usr/bin/wget --passive-ftp -c -O %o %u
 
 ### "buildnativeoperations.sh blas cpu" can't find BLAS libraries
 
@@ -162,7 +162,7 @@ This is usually due to an incorrectly setup PATH (see "I'm getting other errors 
 
     public class App {
         public static void main(String[] args){
-        	System.loadLibrary("libopenblas.dll");
+            System.loadLibrary("libopenblas.dll");
         }
     }
     
@@ -175,8 +175,8 @@ To check your PATH/environment, run `where libstdc++-6.dll` and `where libgcc_s_
 
 Finally, using dumpbin (from Visual Studio) can help to show required dependencies for jniNativeOps.dll:
 
-	dumpbin /dependents [path to jniNativeOps.dll]
-	
+    dumpbin /dependents [path to jniNativeOps.dll]
+    
 ### My application crashes on the first usage of ND4J with the CUDA Backend (Windows)
 
 ```

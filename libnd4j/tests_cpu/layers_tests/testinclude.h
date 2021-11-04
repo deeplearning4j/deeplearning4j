@@ -22,33 +22,33 @@
 
 #ifndef LIBND4J_TESTINCLUDE_H
 #define LIBND4J_TESTINCLUDE_H
-#include "testlayers.h"
-#include <string>
 #include <system/op_boilerplate.h>
 
-//https://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
-FORCEINLINE std::string int_array_to_string(Nd4jLong int_array[], Nd4jLong size_of_array) {
-    std::string returnstring = "[";
-    for (int temp = 0; temp < size_of_array; temp++) {
-        returnstring += std::to_string(int_array[temp]);
-        if(temp < size_of_array - 1)
-            returnstring += ",";
-    }
-    returnstring += "]";
-    return returnstring;
+#include <string>
+
+#include "testlayers.h"
+
+// https://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
+SD_INLINE std::string int_array_to_string(sd::LongType int_array[], sd::LongType size_of_array) {
+  std::string returnstring = "[";
+  for (int temp = 0; temp < size_of_array; temp++) {
+    returnstring += std::to_string(int_array[temp]);
+    if (temp < size_of_array - 1) returnstring += ",";
+  }
+  returnstring += "]";
+  return returnstring;
 }
 
-FORCEINLINE ::testing::AssertionResult arrsEquals(Nd4jLong n, Nd4jLong *assertion,Nd4jLong *other) {
-    for(int i = 0; i < n; i++) {
-        if(assertion[i] != other[i]) {
-            std::string message = std::string("Failure at index  ") + std::to_string(i)  + std::string(" assertion: ") +  int_array_to_string(assertion,n) + std::string(" and test array ") + int_array_to_string(other,n) + std::string("  is not equal");
-            return ::testing::AssertionFailure() << message;
-        }
-
+SD_INLINE ::testing::AssertionResult arrsEquals(sd::LongType n, sd::LongType *assertion, sd::LongType *other) {
+  for (int i = 0; i < n; i++) {
+    if (assertion[i] != other[i]) {
+      std::string message = std::string("Failure at index  ") + std::to_string(i) + std::string(" assertion: ") +
+                            int_array_to_string(assertion, n) + std::string(" and test array ") +
+                            int_array_to_string(other, n) + std::string("  is not equal");
+      return ::testing::AssertionFailure() << message;
     }
-    return ::testing::AssertionSuccess();
-
+  }
+  return ::testing::AssertionSuccess();
 }
 
-
-#endif //LIBND4J_TESTINCLUDE_H
+#endif  // LIBND4J_TESTINCLUDE_H

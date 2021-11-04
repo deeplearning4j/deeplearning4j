@@ -27,44 +27,45 @@
 #include <ops/declarable/helpers/histogramFixedWidth.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto range = INPUT_VARIABLE(1);
+  auto output = OUTPUT_VARIABLE(0);
 
-    auto input  = INPUT_VARIABLE(0);
-    auto range  = INPUT_VARIABLE(1);
-    auto output = OUTPUT_VARIABLE(0);
+  const int nbins =
+      block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
 
-    const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
+  const double leftEdge = range->e<double>(0);
+  const double rightEdge = range->e<double>(1);
 
-    const double leftEdge  = range->e<double>(0);
-    const double rightEdge = range->e<double>(1);
+  REQUIRE_TRUE(leftEdge < rightEdge, 0,
+               "HISTOGRAM_FIXED_WIDTH OP: wrong content of range input array, bottom_edge must be smaller than "
+               "top_edge, but got %f and %f correspondingly !",
+               leftEdge, rightEdge);
+  REQUIRE_TRUE(nbins >= 1, 0,
+               "HISTOGRAM_FIXED_WIDTH OP: wrong nbins value, expected value should be >= 1, however got %i instead !",
+               nbins);
 
-    REQUIRE_TRUE(leftEdge < rightEdge, 0, "HISTOGRAM_FIXED_WIDTH OP: wrong content of range input array, bottom_edge must be smaller than top_edge, but got %f and %f correspondingly !", leftEdge, rightEdge);
-    REQUIRE_TRUE(nbins >= 1, 0, "HISTOGRAM_FIXED_WIDTH OP: wrong nbins value, expected value should be >= 1, however got %i instead !", nbins);
+  helpers::histogramFixedWidth(block.launchContext(), *input, *range, *output);
 
-    helpers::histogramFixedWidth(block.launchContext(), *input, *range, *output);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_TYPES(histogram_fixed_width) {
-    getOpDescriptor()
-        ->setAllowedInputTypes(sd::DataType::ANY)
-        ->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INDICES});
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(histogram_fixed_width) {
-
-    const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
-    auto outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(nbins, DataType::INT64);
-    return SHAPELIST(outShapeInfo);
+  const int nbins =
+      block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
+  auto outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(nbins, DataType::INT64);
+  return SHAPELIST(outShapeInfo);
 }
 
-
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

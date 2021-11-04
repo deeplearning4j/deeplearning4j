@@ -27,44 +27,42 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace sd {
-    namespace ops {
-        CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
-            auto first = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
+  auto first = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-            first->applyTransform(sd::transform::SoftSign, *z);
+  first->applyTransform(sd::transform::SoftSign, *z);
 
-            STORE_RESULT(*z);
+  STORE_RESULT(*z);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(softsign) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
-        }
-
-        CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto epsilon = INPUT_VARIABLE(1);
-
-            auto z = OUTPUT_VARIABLE(0);
-
-            //input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
-            helpers::softSignDerivative(block.launchContext(), input, epsilon, z);
-
-            return Status::OK();
-        }
-        DECLARE_SYN(SoftsignGrad, softsign_bp);
-
-        DECLARE_TYPES(softsign_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(softsign) {
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
+
+CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto epsilon = INPUT_VARIABLE(1);
+
+  auto z = OUTPUT_VARIABLE(0);
+
+  // input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
+  helpers::softSignDerivative(block.launchContext(), input, epsilon, z);
+
+  return sd::Status::OK;
+}
+DECLARE_SYN(SoftsignGrad, softsign_bp);
+
+DECLARE_TYPES(softsign_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

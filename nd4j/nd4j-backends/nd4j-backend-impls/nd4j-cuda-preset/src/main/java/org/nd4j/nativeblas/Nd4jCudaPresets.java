@@ -34,7 +34,7 @@ import org.nd4j.presets.OpExclusionUtils;
  * @author saudet
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda", helper = "org.nd4j.nativeblas.Nd4jCudaHelper",
-        value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+        value = {@Platform(define = "SD_ALL_OPS", include = {
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
@@ -180,8 +180,8 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
 
     @Override
     public void map(InfoMap infoMap) {
-        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
-                "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
+                "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueTadPack").pointerTypes("OpaqueTadPack"))
                 .put(new Info("OpaqueResultWrapper").pointerTypes("OpaqueResultWrapper"))
@@ -199,25 +199,27 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                         "@Cast(\"char*\") BytePointer"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",
                         "@Cast(\"char*\") String"))
-                .put(new Info("Nd4jPointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
-                .put(new Info("Nd4jLong").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
+                .put(new Info("sd::Pointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
+                .put(new Info("sd::LongType").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
                         "long[]"))
-                .put(new Info("Nd4jStatus").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
+                .put(new Info("sd::Status").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                         "int[]"))
+                .put(new Info("sd::Unsigned").cast()
+                .valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
                 .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"))
                 .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
-                .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS","__CUDABLAS__").define(true))
+                .put(new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__").define(true))
                 .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper", "sd::PointerDeallocator").skip())
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                         .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                 .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
-                .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
+                .put(new Info("std::vector<std::vector<sd::LongType> >").pointerTypes("LongVectorVector").define())
                 .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
                 .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))

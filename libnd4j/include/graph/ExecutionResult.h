@@ -22,75 +22,76 @@
 
 #ifndef LIBND4J_EXECUTION_RESULT
 #define LIBND4J_EXECUTION_RESULT
-
-#include <vector>
-#include <initializer_list>
-#include <unordered_map>
-#include <map>
-#include <string>
 #include <flatbuffers/flatbuffers.h>
 #include <graph/Variable.h>
 
+#include <initializer_list>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 namespace sd {
-    namespace graph {
-        class ExecutionResult {
-        private:
-            std::vector<Variable *> _variables;
-            MAP_IMPL<std::string, Variable *> _stringIdMap;
-            MAP_IMPL<std::pair<int, int>, Variable *> _pairIdMap;
+namespace graph {
+class ExecutionResult {
+ private:
+  std::vector<Variable *> _variables;
+  SD_MAP_IMPL<std::string, Variable *> _stringIdMap;
+  SD_MAP_IMPL<std::pair<int, int>, Variable *> _pairIdMap;
 
-            // this flag is used to optionally release variables
-            bool _releasable = false;
-        public:
-            ExecutionResult(const FlatResult* flatResult);
-            ExecutionResult(std::initializer_list<Variable *> variables);
-            ExecutionResult() = default;
-            ~ExecutionResult();
+  // this flag is used to optionally release variables
+  bool _releasable = false;
 
-            /**
-             * This method adds variable pointer to result
-             */
-            void emplace_back(Variable *variable);
+ public:
+  ExecutionResult(const FlatResult *flatResult);
+  ExecutionResult(std::initializer_list<Variable *> variables);
+  ExecutionResult() = default;
+  ~ExecutionResult();
 
-            /**
-             * This method returns Variable by its position in output
-             */
-            Variable* at(int position);
+  /**
+   * This method adds variable pointer to result
+   */
+  void emplace_back(Variable *variable);
 
-            /**
-             * This method returns Variable by its string id
-             */
-            Variable* byId(std::string &id);
+  /**
+   * This method returns Variable by its position in output
+   */
+  Variable *at(int position);
 
-            /**
-             * This method returns Variable by its string id
-             */
-            Variable* byId(const char *str);
+  /**
+   * This method returns Variable by its string id
+   */
+  Variable *byId(std::string &id);
 
-            /**
-             * This method returns Variable by its numeric id:index pair
-             */
-            Variable* byId(std::pair<int, int> &id);
+  /**
+   * This method returns Variable by its string id
+   */
+  Variable *byId(const char *str);
 
-            /**
-             * This method returns Variable by its numeric id with index 0
-             */
-            Variable* byId(int id);
+  /**
+   * This method returns Variable by its numeric id:index pair
+   */
+  Variable *byId(std::pair<int, int> &id);
 
-            /**
-             * This method returns number of elements stored in this entity
-             * @return
-             */
-            Nd4jLong size();
+  /**
+   * This method returns Variable by its numeric id with index 0
+   */
+  Variable *byId(int id);
+
+  /**
+   * This method returns number of elements stored in this entity
+   * @return
+   */
+  sd::LongType size();
 
 #ifndef __JAVACPP_HACK__
-            /**
-             * This method converts ExecutionResult entity to FlatResult
-             */
-            flatbuffers::Offset<FlatResult> asFlatResult(flatbuffers::FlatBufferBuilder &builder);
+  /**
+   * This method converts ExecutionResult entity to FlatResult
+   */
+  flatbuffers::Offset<FlatResult> asFlatResult(flatbuffers::FlatBufferBuilder &builder);
 #endif
-        };
-    }
-}
+};
+}  // namespace graph
+}  // namespace sd
 
 #endif

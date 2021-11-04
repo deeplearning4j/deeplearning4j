@@ -23,56 +23,55 @@
 #ifndef LIBND4J_CONTEXTBUFFERS_H
 #define LIBND4J_CONTEXTBUFFERS_H
 
-#include <system/dll.h>
-#include <system/pointercast.h>
 #include <execution/ErrorReference.h>
+#include <system/common.h>
 
 namespace sd {
-    class ND4J_EXPORT ContextBuffers {
-    private:
-        void* _reductionPointer = nullptr;
-        void* _scalarPointer = nullptr;
-        void* _allocationPointer = nullptr;
-        void* _execStream = nullptr;
-        void* _specialStream = nullptr;
-        sd::ErrorReference _errorReference;
-        bool _allocated = false;
-        bool _initialized = false;
+class SD_LIB_EXPORT ContextBuffers {
+ private:
+  void *_reductionPointer = nullptr;
+  void *_scalarPointer = nullptr;
+  void *_allocationPointer = nullptr;
+  void *_execStream = nullptr;
+  void *_specialStream = nullptr;
+  sd::ErrorReference _errorReference;
+  bool _allocated = false;
+  bool _initialized = false;
 
-        int _deviceId = -1;
+  int _deviceId = -1;
 
-        void initialize();
-    public:
-        ContextBuffers();
-        ContextBuffers(const ContextBuffers &other);
-        ContextBuffers(void* rPointer, void* sPointer, void* aPointer, bool isOwner = false);
-        ~ContextBuffers();
+  void initialize();
 
-        ContextBuffers& operator=(const ContextBuffers& other);
-        ContextBuffers& operator=(ContextBuffers&& other);
+ public:
+  ContextBuffers();
+  ContextBuffers(const ContextBuffers &other);
+  ContextBuffers(void *rPointer, void *sPointer, void *aPointer, bool isOwner = false);
+  ~ContextBuffers();
 
-        void release();
+  ContextBuffers &operator=(const ContextBuffers &other);
+  ContextBuffers &operator=(ContextBuffers &&other);
 
-        void* reductionBuffer();
-        void* scalarBuffer();
-        void* allocationBuffer();
+  void release();
 
-        void* execStream();
-        void* specialStream();
+  void *reductionBuffer();
+  void *scalarBuffer();
+  void *allocationBuffer();
 
-        void setReductionBuffer(void* pointer);
-        void setScalarBuffer(void* pointer);
-        void setAllocationBuffer(void* pointer);
+  void *execStream();
+  void *specialStream();
 
-        sd::ErrorReference* errorReference();
+  void setReductionBuffer(void *pointer);
+  void setScalarBuffer(void *pointer);
+  void setAllocationBuffer(void *pointer);
 
-        void triggerOwnership(bool isOwner);
+  sd::ErrorReference *errorReference();
 
-        int deviceId();
+  void triggerOwnership(bool isOwner);
 
-        bool isInitialized();
-    };
-}
+  int deviceId();
 
+  bool isInitialized();
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_CONTEXTBUFFERS_H
+#endif  // DEV_TESTS_CONTEXTBUFFERS_H

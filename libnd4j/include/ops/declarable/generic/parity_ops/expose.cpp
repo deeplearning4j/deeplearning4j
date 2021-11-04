@@ -23,52 +23,46 @@
 #include <ops/declarable/CustomOperations.h>
 #if NOT_EXCLUDED(OP_expose)
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(expose, -1, -1, true, 0, 0) {
+namespace ops {
+CUSTOM_OP_IMPL(expose, -1, -1, true, 0, 0) {
+  for (int e = 0; e < block.width(); e++) {
+    auto inVar = block.variable(e);
+    if (inVar->variableType() == VariableType::NDARRAY) {
+      auto in = INPUT_VARIABLE(e);
+      auto out = OUTPUT_VARIABLE(e);
 
-            for (int e = 0; e < block.width(); e++) {
-                auto inVar = block.variable(e);
-                if (inVar->variableType() == VariableType::NDARRAY) {
-                    auto in = INPUT_VARIABLE(e);
-                    auto out = OUTPUT_VARIABLE(e);
+      out->assign(in);
+    } else if (inVar->variableType() == VariableType::ARRAY_LIST) {
+      auto var = block.ensureVariable(e);
+      if (!var->hasNDArrayList()) {
+        auto list = inVar->getNDArrayList();
 
-                    out->assign(in);
-                } else if (inVar->variableType() == VariableType::ARRAY_LIST) {
-                    auto var = block.ensureVariable(e);
-                    if (!var->hasNDArrayList()) {
-                        auto list = inVar->getNDArrayList();
-
-                        block.pushNDArrayListToVariableSpace(block.nodeId(), e, list, false);
-                    }
-                }
-            }
-
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(Enter, expose);
-        DECLARE_SYN(enter, expose);
-
-
-        DECLARE_TYPES(expose) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-
-        DECLARE_SHAPE_FN(expose) {
-            auto shapeList = SHAPELIST();
-
-            for (int e = 0; e < block.width(); e++) {
-                auto p = block.input(e);
-                auto var = block.getVariable(e);
-                if (var->variableType() == VariableType::NDARRAY) {
-                    auto inShape = inputShape->at(e);
-                    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape)));
-                }
-            }
-
-            return shapeList;
-        }
+        block.pushNDArrayListToVariableSpace(block.nodeId(), e, list, false);
+      }
     }
+  }
+
+  return sd::Status::OK;
 }
+DECLARE_SYN(Enter, expose);
+DECLARE_SYN(enter, expose);
+
+DECLARE_TYPES(expose) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+
+DECLARE_SHAPE_FN(expose) {
+  auto shapeList = SHAPELIST();
+
+  for (int e = 0; e < block.width(); e++) {
+    auto p = block.input(e);
+    auto var = block.getVariable(e);
+    if (var->variableType() == VariableType::NDARRAY) {
+      auto inShape = inputShape->at(e);
+      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape)));
+    }
+  }
+
+  return shapeList;
+}
+}  // namespace ops
+}  // namespace sd
 #endif

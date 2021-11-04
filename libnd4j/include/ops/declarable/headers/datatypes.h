@@ -21,108 +21,107 @@
 //
 #ifndef LIBND4J_HEADERS_DTYPE_H
 #define LIBND4J_HEADERS_DTYPE_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace sd {
-    namespace ops {
-        /**
-         * This operation casts elements of input array to double data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_double)
-        DECLARE_CUSTOM_OP(to_double, 1, 1, true, 0, 0);
-        #endif
+namespace ops {
+/**
+ * This operation casts elements of input array to double data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_double)
+DECLARE_CUSTOM_OP(to_double, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to float16 data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_float16)
-        DECLARE_CUSTOM_OP(to_float16, 1, 1, true, 0, 0);
-        #endif
+/**
+ * This operation casts elements of input array to float16 data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_float16)
+DECLARE_CUSTOM_OP(to_float16, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to float data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_float32)
-        DECLARE_CUSTOM_OP(to_float32, 1, 1, true, 0, 0);
-        #endif
+/**
+ * This operation casts elements of input array to float data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_float32)
+DECLARE_CUSTOM_OP(to_float32, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to int32 data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_int32)
-        DECLARE_CUSTOM_OP(to_int32, 1, 1, true, 0, 0);
-        #endif
+/**
+ * This operation casts elements of input array to int32 data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_int32)
+DECLARE_CUSTOM_OP(to_int32, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to int64 (aka long long) data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_int64)
-        DECLARE_CUSTOM_OP(to_int64, 1, 1, true, 0, 0);
-        #endif
+/**
+ * This operation casts elements of input array to int64 (aka long long) data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_int64)
+DECLARE_CUSTOM_OP(to_int64, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to unsinged int32 data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_uint32)
-        DECLARE_CUSTOM_OP(to_uint32, 1, 1, true, 0, 0);
-        #endif
+/**
+ * This operation casts elements of input array to unsinged int32 data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_uint32)
+DECLARE_CUSTOM_OP(to_uint32, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to unsigned int64 (aka unsigned long long) data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         */
-        #if NOT_EXCLUDED(OP_to_uint64)
-        DECLARE_CUSTOM_OP(to_uint64, 1, 1, true, 0, 0);
-        #endif
+/**
+ * This operation casts elements of input array to unsigned int64 (aka unsigned long long) data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ */
+#if NOT_EXCLUDED(OP_to_uint64)
+DECLARE_CUSTOM_OP(to_uint64, 1, 1, true, 0, 0);
+#endif
 
-        /**
-         * This operation casts elements of input array to specified data type
-         * 
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         * 
-         * 
-         * Int args:
-         * 0: target DataType
-         */
-        #if NOT_EXCLUDED(OP_cast)
-        DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
-        #endif
+/**
+ * This operation casts elements of input array to specified data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ *
+ *
+ * Int args:
+ * 0: target DataType
+ */
+#if NOT_EXCLUDED(OP_cast)
+DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
+#endif
 
-            /**
-         * This operation casts elements of input array to specified data type
-         *
-         * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
-         *
-         *
-         * Int args:
-         * 0: target DataType
-         */
-        #if NOT_EXCLUDED(OP_min_max_datatype)
-        DECLARE_CUSTOM_OP(min_max_datatype, 0, 1, false, 0, 2);
-        #endif
-        /**
-         * This operation change type of input and modified shape of output to conform with given data type
-         *
-         * all as above op
-         * */
-        #if NOT_EXCLUDED(OP_bitcast)
-                DECLARE_CUSTOM_OP(bitcast, 1, 1, false, 0, 1);
-        #endif
-    }
-}
+/**
+ * This operation casts elements of input array to specified data type
+ *
+ * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
+ *
+ *
+ * Int args:
+ * 0: target DataType
+ */
+#if NOT_EXCLUDED(OP_min_max_datatype)
+DECLARE_CUSTOM_OP(min_max_datatype, 0, 1, false, 0, 2);
+#endif
+/**
+ * This operation change type of input and modified shape of output to conform with given data type
+ *
+ * all as above op
+ * */
+#if NOT_EXCLUDED(OP_bitcast)
+DECLARE_CUSTOM_OP(bitcast, 1, 1, false, 0, 1);
+#endif
+}  // namespace ops
+}  // namespace sd
 
 #endif

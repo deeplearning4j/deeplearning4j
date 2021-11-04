@@ -21,11 +21,10 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <ops/impl/specials_single.hpp> 
-#cmakedefine LIBND4J_TYPE_GEN
-#if defined(LIBND4J_TYPE_GEN) && defined(LIBND4J_TYPES_@FL_TYPE_INDEX@)
+#cmakedefine SD_COMMON_TYPES_GEN
+#if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
-    BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES_@FL_TYPE_INDEX@);
+    BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , SD_COMMON_TYPES_@FL_TYPE_INDEX@);
 }
 #endif

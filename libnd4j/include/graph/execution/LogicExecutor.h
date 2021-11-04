@@ -23,23 +23,20 @@
 #ifndef LIBND4J_LOGICEXECUTOR_H
 #define LIBND4J_LOGICEXECUTOR_H
 
-#include <system/pointercast.h>
-#include <graph/Node.h>
 #include <graph/Graph.h>
+#include <graph/Node.h>
 
 namespace sd {
-    namespace graph {
-        /**
-         * This class acts as switch for picking logic execution based on opNum, unique for each logical op
-         * @tparam T
-         */
-        class LogicExecutor {
-        public:
-            static Nd4jStatus processNode(Graph* graph, Node* node);
-        };
-    }
-}
+namespace graph {
+/**
+ * This class acts as switch for picking logic execution based on opNum, unique for each logical op
+ * @tparam T
+ */
+class LogicExecutor {
+ public:
+  static sd::Status processNode(Graph* graph, Node* node);
+};
+}  // namespace graph
+}  // namespace sd
 
-
-
-#endif //LIBND4J_LOGICEXECUTOR_H
+#endif  // LIBND4J_LOGICEXECUTOR_H

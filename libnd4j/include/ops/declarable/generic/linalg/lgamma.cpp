@@ -29,25 +29,24 @@
 #include <ops/declarable/helpers/lgamma.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 OP_IMPL(lgamma, 1, 1, true) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-    auto x = INPUT_VARIABLE(0);
-    auto z = OUTPUT_VARIABLE(0);
+  helpers::lgamma(block.launchContext(), *x, *z);
 
-    helpers::lgamma(block.launchContext(), *x, *z);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_TYPES(lgamma) {
-    getOpDescriptor()
-            ->setAllowedInputTypes({ALL_FLOATS}) // as TF says
-            ->setSameMode(true);
+  getOpDescriptor()
+      ->setAllowedInputTypes({ALL_FLOATS})  // as TF says
+      ->setSameMode(true);
 }
 
-}
-}
+}  // namespace ops
+}  // namespace sd
 
 #endif

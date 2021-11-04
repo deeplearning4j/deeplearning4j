@@ -19,20 +19,13 @@
 #ifndef LIBND4J_BUILD_INFO_H
 #define LIBND4J_BUILD_INFO_H
 
-#ifdef  _WIN32
-#define ND4J_EXPORT   __declspec( dllexport )
-#else
-#define ND4J_EXPORT
-#endif
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+#include <system/common.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-ND4J_EXPORT const char* buildInfo();
+SD_LIB_EXPORT const char *buildInfo();
 
 #ifdef __cplusplus
 }
