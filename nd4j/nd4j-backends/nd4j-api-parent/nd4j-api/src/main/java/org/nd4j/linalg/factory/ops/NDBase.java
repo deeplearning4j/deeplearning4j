@@ -914,6 +914,47 @@ public class NDBase {
   }
 
   /**
+   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+   * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
+   */
+  public INDArray mean(INDArray x, INDArray dimensions, boolean keepDims) {
+    NDValidation.validateNumerical("mean", "x", x);
+    NDValidation.validateInteger("mean", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(x, dimensions, keepDims));
+  }
+
+  /**
+   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
+   */
+  public INDArray mean(INDArray x, INDArray dimensions) {
+    NDValidation.validateNumerical("mean", "x", x);
+    NDValidation.validateInteger("mean", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(x, dimensions, false));
+  }
+
+  /**
    * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
    * the first of them becomes available. If both are available, the output is undefined (either input could<br>
    * be forwarded to the output)<br>
@@ -1327,6 +1368,47 @@ public class NDBase {
     NDValidation.validateNumerical("prod", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(x, false, dimensions));
+  }
+
+  /**
+   * Product array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+   * @return output  (NUMERIC type)
+   */
+  public INDArray prod(INDArray x, INDArray dimensions, boolean keepDims) {
+    NDValidation.validateNumerical("prod", "x", x);
+    NDValidation.validateInteger("prod", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(x, dimensions, keepDims));
+  }
+
+  /**
+   * Product array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @return output  (NUMERIC type)
+   */
+  public INDArray prod(INDArray x, INDArray dimensions) {
+    NDValidation.validateNumerical("prod", "x", x);
+    NDValidation.validateInteger("prod", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(x, dimensions, false));
   }
 
   /**
@@ -1948,6 +2030,19 @@ public class NDBase {
     NDValidation.validateNumerical("split", "input", input);
     NDValidation.validateNumerical("split", "numSplit", numSplit);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Split(input, numSplit, splitDim));
+  }
+
+  /**
+   * Split a value in to a list of ndarrays with varying sizes <br>
+   * according to the sizes parameter.<br>
+   *
+   * @param input Input to split (NDARRAY type)
+   * @param sizes The sizes to split by (NDARRAY type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public INDArray[] splitV(INDArray input, INDArray sizes, int numSplit, int splitDim) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SplitV(input, sizes, numSplit, splitDim));
   }
 
   /**
