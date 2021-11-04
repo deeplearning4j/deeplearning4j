@@ -47,14 +47,10 @@ public class SumBp extends BaseReductionBp {
     public SumBp(){}
 
     public SumBp(INDArray preReduceInput, INDArray dLdOut, INDArray dLdIn, boolean keepDims) {
-        super(null,preReduceInput,dLdIn,dLdOut,keepDims);
+        super(preReduceInput,dLdOut,dLdIn,keepDims);
         addArgs();
     }
 
-    public SumBp(INDArray preReduceInput, INDArray dLdOut_0, INDArray dLdIn, boolean keepDims, int...dimensions) {
-        super(null,preReduceInput,dLdOut_0,dLdIn,keepDims,dimensions);
-        addArgs();
-    }
 
     @Override
     public String opName() {

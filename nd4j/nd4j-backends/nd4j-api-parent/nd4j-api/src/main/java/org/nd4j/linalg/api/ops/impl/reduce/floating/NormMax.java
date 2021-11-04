@@ -133,7 +133,7 @@ public class NormMax extends BaseReduceFloatOp {
     }
 
     @Override
-    public String tensorflowName(){
+    public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 }

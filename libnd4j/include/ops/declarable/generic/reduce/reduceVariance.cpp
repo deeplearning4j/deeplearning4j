@@ -109,7 +109,6 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
         helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
-        nd4j_debug("Shape of axes vector for reduce_variance_bp %d\n",0);
         axesVector->printShapeInfo();
     }
 
@@ -139,18 +138,13 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
     const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;
     const double factor1 = 2.0 / NminusOne;
     const double factor2 = 2.0 / (N * NminusOne);
-    nd4j_debug("Before mean in variance bp %d\n",0);
     auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
-    nd4j_debug("After mean in variance bp %d\n",0);
 
     gradI->assign( (*input - mean) * (2.0f / NminusOne));                                    // automatic broadcasting happens here
-    nd4j_debug("After assign in variance bp %d\n",0);
 
     if(!keepDims) {
-        nd4j_debug("In not keep dims reduce variance bp %d\n",0);
         auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
         *gradI *= gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-        nd4j_debug("After not keep dims reduce variance bp %d\n",0);
 
     } else
         *gradI *= *gradO;           // automatic broadcasting happens here

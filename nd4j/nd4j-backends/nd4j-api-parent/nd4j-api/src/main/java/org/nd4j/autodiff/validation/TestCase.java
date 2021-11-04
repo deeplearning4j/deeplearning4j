@@ -89,9 +89,20 @@ public class TestCase {
      *
      * @param name     Name of the variable to check
      * @param expected Expected INDArray
+     * @param eps  the expected epsilon, defaults to 1e-3
+     */
+    public TestCase expectedOutput(@NonNull String name, @NonNull INDArray expected,double eps) {
+        return expected(name, new EqualityFn(expected,eps));
+    }
+
+    /**
+     * Validate the output (forward pass) for a single variable using INDArray.equals(INDArray)
+     *
+     * @param name     Name of the variable to check
+     * @param expected Expected INDArray
      */
     public TestCase expectedOutput(@NonNull String name, @NonNull INDArray expected) {
-        return expected(name, new EqualityFn(expected));
+      return expectedOutput(name,expected,1e-3);
     }
 
     /**
@@ -129,7 +140,7 @@ public class TestCase {
         return expectedOutput(name, output);
     }
 
-    public TestCase expected(SDVariable var, Function<INDArray,String> validationFn){
+    public TestCase expected(SDVariable var, Function<INDArray,String> validationFn) {
         return expected(var.name(), validationFn);
     }
 

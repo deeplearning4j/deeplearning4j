@@ -134,8 +134,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @param iArguments the input int arguments
      */
     public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
-        if (inputs != null)
+        if (inputs != null) {
+            for(int i = 0; i < inputs.length; i++) {
+                if(inputs[i] == null) {
+                    throw new IllegalArgumentException("Input "+ i + " for op " + this.getClass() + " was null!");
+                }
+            }
+            
             inputArguments = new ArrayList<>(Arrays.asList(inputs));
+        }
         if (outputs != null)
             outputArguments = new ArrayList<>(Arrays.asList(outputs));
         this.opName = opName;

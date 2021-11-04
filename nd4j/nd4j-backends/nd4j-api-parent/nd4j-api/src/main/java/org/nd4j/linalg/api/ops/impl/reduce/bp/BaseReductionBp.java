@@ -73,7 +73,7 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
      * @param keepDims     If true: reduction dimensions were kept
      * @param dimensions   Dimensions to reduce. May be null
      */
-    public BaseReductionBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
+    public BaseReductionBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
         super(null, new INDArray[]{origInput, gradAtOutput}, (output == null ? null : new INDArray[]{output}));
         this.keepDims = keepDims;
         this.dimensions = dimensions;

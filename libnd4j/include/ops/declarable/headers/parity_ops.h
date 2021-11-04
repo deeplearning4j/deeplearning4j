@@ -1774,7 +1774,7 @@ namespace sd {
          *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
          */
         #if NOT_EXCLUDED(OP_reduce_logsumexp)
-        DECLARE_CUSTOM_OP(reduce_logsumexp, -1, 1, false, 0, -1);
+        DECLARE_CUSTOM_OP(reduce_logsumexp, -1, 1, false, 0, -2);
         #endif
 
        /**

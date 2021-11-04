@@ -110,14 +110,22 @@ namespace sd    {
 
             REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
-            for(const auto& item : dimensions)
-            REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
-
+            auto dimLength = 1.0;
+            for(const auto& item : dimensions) {
+                REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0,
+                             "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
+                             input->rankOf(), input->rankOf(), item);
+                dimLength *= input->sizeAt(item);
+            }
             if(gradO->lengthOf() == 1) {
-                gradI->assign(gradO->e(0) / input->lengthOf());
+                if(dimensions.size() > 0) {
+                    gradI->assign(gradO->e(0) / (dimLength + 0.0));
+                } else {
+                    gradI->assign(gradO->e(0) / (input->lengthOf() + 0.0));
+                }
             }
             else {
-                gradI->assign((gradO->lengthOf() + 0.) / input->lengthOf());
+                gradI->assign((gradO->lengthOf() + 0.) / (input->lengthOf() + 0.0));
                 if(!keepDims) {
                     auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
                     *gradI *= gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
