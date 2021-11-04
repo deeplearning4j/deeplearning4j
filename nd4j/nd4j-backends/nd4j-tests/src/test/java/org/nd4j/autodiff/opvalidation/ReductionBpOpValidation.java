@@ -104,60 +104,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testReduceSumAlongDim0BP(Nd4jBackend backend) {
-        //Reduction along dimension
-        //Inputs/outputs as before - but note that the output is no longer a scalar
-
-        //Note: when reducing [3,4] along dimension 0 -> 4 TADs of length 3
-        //We have one epsilon/gradient for each of the 4 TADs -> dL/dOut length is 4
-
-        for (boolean keepDims : new boolean[]{false, true}) {
-            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-            INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
-            INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
-            for (int i = 0; i < 3; i++) {
-                dLdInExpected_0.putRow(i, dLdOut_0);
-            }
-
-            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-
-            String err = OpValidation.validate(new OpTestCase(new SumBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
-                    .expectedOutput(0, dLdInExpected_0));
-
-            assertNull(err);
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testReduceSumAlongDim1BP(Nd4jBackend backend) {
-        //Reduction along dimension
-        //Inputs/outputs as before - but note that the output is no longer a scalar
-
-        //Note: when reducing [3,4] along dimension 1 -> 3 TADs of length 4
-        //We have one epsilon/gradient for each of the 3 TADs -> dL/dOut length is 3
-
-        for (boolean keepDims : new boolean[]{false, true}) {
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-
-            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
-            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
-            INDArray dLdInExpected_1 = Nd4j.createUninitialized(preReduceInput.shape());
-            for (int i = 0; i < 4; i++) {
-                dLdInExpected_1.putColumn(i, dLdOut_1);
-            }
-
-            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-
-            String err = OpValidation.validate(new OpTestCase(new SumBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
-                    .expectedOutput(0, dLdInExpected_1));
-
-            assertNull(err);
-        }
-    }
 
 
     @ParameterizedTest

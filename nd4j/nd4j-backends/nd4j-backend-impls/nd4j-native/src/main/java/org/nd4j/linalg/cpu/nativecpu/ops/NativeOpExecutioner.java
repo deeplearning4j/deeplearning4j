@@ -1621,7 +1621,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val inputBuffers = new PointerPointer<>(nIn);
         val inputShapes = new PointerPointer<>(nIn);
-        val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
+        val inputArgs = opContext != null && opContext.getInputArrays() != null && !opContext.getInputArrays().isEmpty()
+                ? opContext.getInputArrays() : op.inputArguments();
         int cnt= 0;
         for (val in: inputArgs) {
             if (!in.isEmpty())
