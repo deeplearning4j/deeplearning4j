@@ -49,7 +49,6 @@ public class EuclideanDistance extends BaseReduce3Op {
     }
 
     public EuclideanDistance() {
-        System.out.println();
     }
 
 

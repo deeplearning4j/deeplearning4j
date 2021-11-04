@@ -27,7 +27,7 @@ import org.nd4j.common.function.Function;
 @AllArgsConstructor
 public class EqualityFn implements Function<INDArray,String> {
     private final INDArray expected;
-    private double eps = 1e-3;
+    private double eps = 1e-6;
 
     @Override
     public String apply(INDArray actual) {

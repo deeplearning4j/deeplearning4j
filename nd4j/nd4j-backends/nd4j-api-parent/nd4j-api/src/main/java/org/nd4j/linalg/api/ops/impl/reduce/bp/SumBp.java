@@ -51,7 +51,7 @@ public class SumBp extends BaseReductionBp {
         addArgs();
     }
 
-   
+
     @Override
     public String opName() {
         return "reduce_sum_bp";
