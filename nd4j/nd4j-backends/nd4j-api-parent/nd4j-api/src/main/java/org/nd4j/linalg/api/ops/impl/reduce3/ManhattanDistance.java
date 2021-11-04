@@ -102,7 +102,7 @@ public class ManhattanDistance extends BaseReduce3Op {
         //ddist(x,y)/dxi = sign(xi-yi)
         SDVariable difference = larg().sub(rarg());
         SDVariable gradBroadcastable;
-        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)) {
             //keepDims or full array reduction
             gradBroadcastable = i_v1.get(0);
         } else {

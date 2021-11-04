@@ -671,7 +671,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMmulGradients(){
+    public void testMmulGradients(Nd4jBackend backend){
         int[] aShape = new int[]{2,3};
         int[] bShape = new int[]{3,4};
         List<String> failed = new ArrayList<>();

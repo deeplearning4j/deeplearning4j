@@ -3354,10 +3354,10 @@ public class SameDiff extends SDBaseOps {
      * @param to   The new name for the variable - no variable with this name must already exist
      */
     public void renameVariable(SameDiffOp opToReName,String from, String to) {
-       if(!variables.containsKey(from)) {
-           log.debug("Failed to rename variable {} to {}, no variable found",from,to);
-           return;
-       }
+        if(!variables.containsKey(from)) {
+            log.debug("Failed to rename variable {} to {}, no variable found",from,to);
+            return;
+        }
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
 

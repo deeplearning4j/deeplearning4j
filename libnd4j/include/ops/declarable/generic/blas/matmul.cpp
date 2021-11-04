@@ -181,8 +181,17 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
                     dldy->assign((*eps) * x->sumNumber());
                 } else {
                     //assign all ones to shape as baseline
-                    dldx->assign(1.0);
-                    dldy->assign(1.0);
+                    auto alphaBetaBase = 1.0;
+                    if(alpha > 0.0) {
+                        alphaBetaBase *= alpha;
+                    }
+
+                    if(beta > 0.0) {
+                        alphaBetaBase += beta;
+                    }
+
+                    dldx->assign(alphaBetaBase);
+                    dldy->assign(alphaBetaBase);
                     //match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
                     //the dimensions should match the matching dimensions to compute proper gradients wrt each input
                     //core gradient for each is sum(input) * eps as scalar
