@@ -1910,6 +1910,92 @@ public class SDBaseOps {
   }
 
   /**
+   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+   * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
+   */
+  public SDVariable mean(SDVariable x, SDVariable dimensions, boolean keepDims) {
+    SDValidation.validateNumerical("mean", "x", x);
+    SDValidation.validateInteger("mean", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,x, dimensions, keepDims).outputVariable();
+  }
+
+  /**
+   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+   * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
+   */
+  public SDVariable mean(String name, SDVariable x, SDVariable dimensions, boolean keepDims) {
+    SDValidation.validateNumerical("mean", "x", x);
+    SDValidation.validateInteger("mean", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,x, dimensions, keepDims).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
+   */
+  public SDVariable mean(SDVariable x, SDVariable dimensions) {
+    SDValidation.validateNumerical("mean", "x", x);
+    SDValidation.validateInteger("mean", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,x, dimensions, false).outputVariable();
+  }
+
+  /**
+   * Mean (average) array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
+   */
+  public SDVariable mean(String name, SDVariable x, SDVariable dimensions) {
+    SDValidation.validateNumerical("mean", "x", x);
+    SDValidation.validateInteger("mean", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(sd,x, dimensions, false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
    * the first of them becomes available. If both are available, the output is undefined (either input could<br>
    * be forwarded to the output)<br>
@@ -2787,6 +2873,92 @@ public class SDBaseOps {
     SDValidation.validateNumerical("prod", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,x, false, dimensions).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Product array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+   * @return output  (NUMERIC type)
+   */
+  public SDVariable prod(SDVariable x, SDVariable dimensions, boolean keepDims) {
+    SDValidation.validateNumerical("prod", "x", x);
+    SDValidation.validateInteger("prod", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,x, dimensions, keepDims).outputVariable();
+  }
+
+  /**
+   * Product array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+   * @return output  (NUMERIC type)
+   */
+  public SDVariable prod(String name, SDVariable x, SDVariable dimensions, boolean keepDims) {
+    SDValidation.validateNumerical("prod", "x", x);
+    SDValidation.validateInteger("prod", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,x, dimensions, keepDims).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Product array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @return output  (NUMERIC type)
+   */
+  public SDVariable prod(SDVariable x, SDVariable dimensions) {
+    SDValidation.validateNumerical("prod", "x", x);
+    SDValidation.validateInteger("prod", "dimensions", dimensions);
+    return new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,x, dimensions, false).outputVariable();
+  }
+
+  /**
+   * Product array reduction operation, optionally along specified dimensions<br>
+   *
+   * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
+   * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting<br>
+   * the mean along a dimension).<br>
+   * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:<br>
+   * keepDims = true: [a,1,c]<br>
+   * keepDims = false: [a,c]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (INT type)
+   * @return output  (NUMERIC type)
+   */
+  public SDVariable prod(String name, SDVariable x, SDVariable dimensions) {
+    SDValidation.validateNumerical("prod", "x", x);
+    SDValidation.validateInteger("prod", "dimensions", dimensions);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(sd,x, dimensions, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4121,6 +4293,35 @@ public class SDBaseOps {
     SDValidation.validateNumerical("split", "input", input);
     SDValidation.validateNumerical("split", "numSplit", numSplit);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Split a value in to a list of ndarrays with varying sizes <br>
+   * according to the sizes parameter.<br>
+   *
+   * @param input Input to split (NDARRAY type)
+   * @param sizes The sizes to split by (NDARRAY type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public SDVariable[] splitV(SDVariable input, SDVariable sizes, int numSplit, int splitDim) {
+    return new org.nd4j.linalg.api.ops.impl.shape.SplitV(sd,input, sizes, numSplit, splitDim).outputVariables();
+  }
+
+  /**
+   * Split a value in to a list of ndarrays with varying sizes <br>
+   * according to the sizes parameter.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input to split (NDARRAY type)
+   * @param sizes The sizes to split by (NDARRAY type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public SDVariable[] splitV(String[] names, SDVariable input, SDVariable sizes, int numSplit,
+      int splitDim) {
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.shape.SplitV(sd,input, sizes, numSplit, splitDim).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

@@ -790,7 +790,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     }
 
     Op("mean") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
+        legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
         Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
@@ -804,7 +805,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     }
 
     Op("mean") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating.custom"
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.floating"
+        legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
         Input(INT, "dimensions") {  description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
