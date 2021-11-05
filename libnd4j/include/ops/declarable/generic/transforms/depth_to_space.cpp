@@ -31,6 +31,7 @@ namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(depth_to_space, 1, 1, false, 0, 2) {
         int block_size = INT_ARG(0);
+        REQUIRE_TRUE(block_size > 0,0, "DepthToSpace: block_size should be > 0");
         bool isNHWC = INT_ARG(1) == 1;
 
         auto input = INPUT_VARIABLE(0);
@@ -66,6 +67,8 @@ namespace ops {
     DECLARE_SHAPE_FN(depth_to_space) {
         auto in = inputShape->at(0);
         auto block_size = INT_ARG(0);
+        REQUIRE_TRUE(block_size > 0,0, "DepthToSpace: input should be > 0");
+
         bool isNHWC = INT_ARG(1) == 1;
 
         int bS = shape::sizeAt(in, 0);

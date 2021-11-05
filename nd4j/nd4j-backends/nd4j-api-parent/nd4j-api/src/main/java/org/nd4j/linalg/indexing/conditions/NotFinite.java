@@ -33,7 +33,7 @@ public class NotFinite extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 15;
     }
 

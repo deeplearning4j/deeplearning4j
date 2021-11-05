@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyWithLogitsLossBp;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 
 @NoArgsConstructor
@@ -68,9 +69,17 @@ public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //No external gradient
-        //Args: logits, weigths, label
+        //Args: logits, weights, label
         return new SoftmaxCrossEntropyWithLogitsLossBp(sameDiff, arg(0), arg(1), classesDim).outputs();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("classesDim")) {
+            Long dim = (Long) properties.get("classesDim");
+            this.classesDim = dim.intValue();
+        }
     }
 }

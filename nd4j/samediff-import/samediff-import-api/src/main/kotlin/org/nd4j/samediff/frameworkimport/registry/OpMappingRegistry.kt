@@ -95,7 +95,7 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         }
 
         //workaround for placeholder not being defined, only used in limited circumstances
-        if(name == "Placeholder")
+        if(name == "Placeholder" && !opDefList.containsKey("Placeholder"))
             return opDefList["Constant"]!!
         return  opDefList[name]!!
     }

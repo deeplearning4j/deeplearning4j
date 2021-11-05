@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.*;
 
@@ -44,13 +45,12 @@ public class CompareAndReplace extends BaseTransformSameOp {
         this.condition = condition;
         this.compare = condition.getValue();
         this.set = 0;
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionNum();
         this.eps = condition.epsThreshold();
         this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 
     public CompareAndReplace() {
-
     }
 
 
@@ -85,7 +85,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
         super(x, y, z);
         this.compare = condition.getValue();
         this.set = 0;
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionNum();
         this.eps = condition.epsThreshold();
         this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
@@ -102,7 +102,38 @@ public class CompareAndReplace extends BaseTransformSameOp {
         return ret;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("mode")) {
+            Integer mode = (Integer) properties.get("mode");
+            this.mode = mode;
+            // no comparison value, just use default
+            if(!properties.containsKey("compare")) {
+                this.condition = Conditions.fromInt(mode);
+            }
+        }
 
+        if(properties.containsKey("compare")) {
+            Double compare = (Double) properties.get("compare");
+            this.compare = compare;
+            //condition was set
+            if(properties.containsKey("mode")) {
+                this.condition = Conditions.fromInt(mode,compare);
+            }
+        }
+
+        if(properties.containsKey("set")) {
+            Double set = (Double) properties.get("set");
+            this.set = set;
+        }
+
+        if(properties.containsKey("eps")) {
+            Double eps = (Double) properties.get("eps");
+            this.eps = eps;
+        }
+
+
+    }
 
     @Override
     public int opNum() {

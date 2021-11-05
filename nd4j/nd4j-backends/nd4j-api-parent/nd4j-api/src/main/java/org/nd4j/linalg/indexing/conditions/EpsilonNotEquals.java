@@ -53,7 +53,7 @@ public class EpsilonNotEquals extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 1;
     }
 

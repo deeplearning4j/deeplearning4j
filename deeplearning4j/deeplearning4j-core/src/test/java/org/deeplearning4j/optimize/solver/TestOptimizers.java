@@ -485,7 +485,7 @@ public class TestOptimizers extends BaseDL4JTest {
             //If any parameters are outside range [-5.12,5.12]: score = infinity
             INDArray paramExceeds512 = parameters.cond(new Condition() {
                 @Override
-                public int condtionNum() {
+                public int conditionNum() {
                     return 0;
                 }
 
@@ -684,7 +684,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
             INDArray paramExceeds5 = parameters.cond(new Condition() {
                 @Override
-                public int condtionNum() {
+                public int conditionNum() {
                     return 0;
                 }
 

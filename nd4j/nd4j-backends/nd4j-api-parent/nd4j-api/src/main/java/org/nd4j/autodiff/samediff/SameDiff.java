@@ -4090,8 +4090,8 @@ public class SameDiff extends SDBaseOps {
         gradFn.setListeners(listeners);
         Map<String, INDArray> grads = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
 
-        Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<String,INDArray>();
-        Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<String,INDArray>();
+        Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<>();
+        Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<>();
         if(outputVars != null){
             for(String s : outputVars){
                 outOutputs.put(s, grads.get(s));
