@@ -46,7 +46,7 @@ OP_IMPL(scatter_add, 3, 1, true) {
     const int inRank  = input->rankOf();
     const int indRank = indices->rankOf();
     const int updRank = updates->rankOf();
-    const Nd4jLong indLen = indices->lengthOf();
+    const sd::LongType indLen = indices->lengthOf();
 
     REQUIRE_TRUE(inRank > 0, 0, "SCATTER_ADD OP: input should not be scalar !");
 
@@ -54,75 +54,21 @@ OP_IMPL(scatter_add, 3, 1, true) {
         REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_ADD OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
     }
     else if (inRank == updRank && indices->isVector()) {
-        std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
-        std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
-        std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()};
+        std::vector<sd::LongType> updShape = updates->getShapeAsVector();
+        std::vector<sd::LongType> inShape  = input->getShapeAsVector();
+        std::vector<sd::LongType> expectedUpdShape = {indices->lengthOf()};
         expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
 
-        REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
+        //REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     }
     else {
 
-  auto input = INPUT_VARIABLE(0);
-  auto indices = INPUT_VARIABLE(1);
-  auto updates = INPUT_VARIABLE(2);
+        REQUIRE_TRUE(updRank == indRank + inRank - 1, 0, "SCATTER_ADD OP: wrong rank of updates array, expected is %i, but got %i instead !", indRank + inRank - 1 , updRank);
 
-  auto output = OUTPUT_VARIABLE(0);
-
-  if (!block.isInplace()) output->assign(input);
-
-  const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
-  const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
-
-  const int inRank = input->rankOf();
-  const int indRank = indices->rankOf();
-  const int updRank = updates->rankOf();
-  const sd::LongType indLen = indices->lengthOf();
-
-  REQUIRE_TRUE(inRank > 0, 0, "SCATTER_ADD OP: input should not be scalar !");
-
-  if (inRank == 1) {
-    REQUIRE_TRUE(indices->isSameShape(updates), 0,
-                 "SCATTER_ADD OP: when input array has rank = 1 then indices and updates must have the same shapes, "
-                 "but got %s and %s correspondingly !",
-                 ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
-  } else if (inRank == updRank && indices->isVector()) {
-    std::vector<sd::LongType> updShape = updates->getShapeAsVector();
-    std::vector<sd::LongType> inShape = input->getShapeAsVector();
-    std::vector<sd::LongType> expectedUpdShape = {indices->lengthOf()};
-    expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + 1, inShape.end());
-
-    REQUIRE_TRUE(expectedUpdShape == updShape, 0,
-                 "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
-  } else {
-    REQUIRE_TRUE(updRank == indRank + inRank - 1, 0,
-                 "SCATTER_ADD OP: wrong rank of updates array, expected is %i, but got %i instead !",
-                 indRank + inRank - 1, updRank);
-
-    std::vector<sd::LongType> updShape = updates->getShapeAsVector();
-    std::vector<sd::LongType> inShape = input->getShapeAsVector();
-    std::vector<sd::LongType> expectedUpdShape = indices->getShapeAsVector();
-    expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + sd::LongType(1L), inShape.end());
-
-    REQUIRE_TRUE(expectedUpdShape == updShape, 0,
-                 "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
-  }
-
-  if (!indices->isEmpty()) {
-    if (checkIndices) {
-      const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output, 0);
-      REQUIRE_TRUE(numOfBadIndx == 0, 0,
-                   "SCATTER_ADD OP: please check elements of indices-array, total number of wrong elements is %lld!",
-                   numOfBadIndx);
-    }
-
-
-        std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
-        std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
-        std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();
-        expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + Nd4jLong(1L), inShape.end());
+        std::vector<sd::LongType> updShape = updates->getShapeAsVector();
+        std::vector<sd::LongType> inShape  = input->getShapeAsVector();
+        std::vector<sd::LongType> expectedUpdShape = indices->getShapeAsVector();
+        expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + sd::LongType(1L), inShape.end());
 
         //REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     }
@@ -137,20 +83,20 @@ OP_IMPL(scatter_add, 3, 1, true) {
         helpers::scatter(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 DECLARE_SYN(ScatterAdd, scatter_add);
 
 DECLARE_TYPES(scatter_add) {
-  getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-      ->setAllowedInputTypes(1, {ALL_INTS})
-      ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
-      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+    getOpDescriptor()
+        ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedInputTypes(1, {ALL_INTS})
+        ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
 }
 
-}  // namespace ops
-}  // namespace sd
+}
+}
 
 #endif
