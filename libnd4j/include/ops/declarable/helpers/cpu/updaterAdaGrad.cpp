@@ -21,11 +21,10 @@
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
-
-#include <ops/declarable/helpers/updatersHelpers.h>
 #include <execution/Threads.h>
 #include <math/platformmath.h>
 #include <math/templatemath.h>
+#include <ops/declarable/helpers/updatersHelpers.h>
 
 namespace sd {
 namespace ops {
@@ -33,63 +32,63 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateH, const double dLr, const double dEpsilon) {
+static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateH,
+                            const double dLr, const double dEpsilon) {
+  const T* grad = gradient.bufferAsT<T>();
+  const T* init = initState.bufferAsT<T>();
 
-    const T* grad = gradient.bufferAsT<T>();
-    const T* init = initState.bufferAsT<T>();
+  T* up = update.bufferAsT<T>();
+  T* st = stateH.bufferAsT<T>();
 
-    T* up = update.bufferAsT<T>();
-    T* st = stateH.bufferAsT<T>();
+  const T lr = static_cast<T>(dLr);
+  const T epsilon = static_cast<T>(dEpsilon);
 
-    const T lr = static_cast<T>(dLr);
-    const T epsilon = static_cast<T>(dEpsilon);
+  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateH.ews() && 1 == initState.ews();
+  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateH.ordering() &&
+                       stateH.ordering() == initState.ordering();
 
-    bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateH.ews() && 1 == initState.ews();
-    bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateH.ordering() && stateH.ordering() == initState.ordering();
-
-    if (bEws1 && bSameOrdering) {
-            
-            auto func = PRAGMA_THREADS_FOR{
-                 for (auto i = start; i < stop; i++) {
-                     st[i] = init[i] + grad[i] * grad[i];
-                     up[i] = (lr * grad[i]) / (math::nd4j_sqrt<T, T>(st[i]) + epsilon);
-                 }
-            };
-
-           samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-           return;
-    }
-    
-    bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
-    bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
-    bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateH.shapeInfo());
-
-    auto func = PRAGMA_THREADS_FOR{
-
-        int coords[MAX_RANK];
-        for (auto i = start; i < stop; i++) {
-            shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-
-            const auto xOffset =  shape::getOffset(gradient.shapeInfo(), coords);
-
-            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-            const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
-            const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateH.shapeInfo(), coords);
-            
-            st[stOffset] = init[initOffset] + grad[xOffset] * grad[xOffset];
-            up[zOffset] = (lr * grad[xOffset]) / (math::nd4j_sqrt<T, T>(st[stOffset]) + epsilon);
-        }
+  if (bEws1 && bSameOrdering) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        st[i] = init[i] + grad[i] * grad[i];
+        up[i] = (lr * grad[i]) / (math::sd_sqrt<T, T>(st[i]) + epsilon);
+      }
     };
 
     samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
     return;
+  }
+
+  bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
+  bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
+  bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateH.shapeInfo());
+
+  auto func = PRAGMA_THREADS_FOR {
+    int coords[SD_MAX_RANK];
+    for (auto i = start; i < stop; i++) {
+      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
+
+      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
+
+      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
+      const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
+      const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateH.shapeInfo(), coords);
+
+      st[stOffset] = init[initOffset] + grad[xOffset] * grad[xOffset];
+      up[zOffset] = (lr * grad[xOffset]) / (math::sd_sqrt<T, T>(st[stOffset]) + epsilon);
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
+  return;
 }
 
- void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateH,
-                       const double dLr, const double dEpsilon) {
-    BUILD_SINGLE_SELECTOR(gradient.dataType(), adaGradUpdater_, (gradient, initState, update, stateH, dLr, dEpsilon), FLOAT_TYPES);
+void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+                    NDArray& stateH, const double dLr, const double dEpsilon) {
+  BUILD_SINGLE_SELECTOR(gradient.dataType(), adaGradUpdater_, (gradient, initState, update, stateH, dLr, dEpsilon),
+                        SD_FLOAT_TYPES);
 }
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

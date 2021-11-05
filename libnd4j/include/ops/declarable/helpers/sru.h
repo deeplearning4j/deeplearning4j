@@ -22,28 +22,26 @@
 
 #ifndef LIBND4J_SRU_H
 #define LIBND4J_SRU_H
-
 #include <ops/declarable/helpers/helpers.h>
 
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
+SD_LIB_HIDDEN void sruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w,
+                           const NDArray* b, NDArray* h, NDArray* c);
 
-	void sruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
+SD_LIB_HIDDEN void sruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w,
+                               const NDArray* b, NDArray* h, NDArray* c);
 
-	void sruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
+SD_LIB_HIDDEN void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
+                         const NDArray* mask, NDArray* ht, NDArray* ct);
 
-	void sruBI(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct);
+SD_LIB_HIDDEN void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b,
+                           const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH,
+                           const NDArray* mask, NDArray* gradI, NDArray* gradWeights, NDArray* gradB, NDArray* gradC0);
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-	void sruBIBP(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask,
-                 NDArray* gradI, NDArray* gradWeights, NDArray* gradB, NDArray* gradC0);
-}
-}
-}
-
-
-#endif //LIBND4J_SRU_H
-
-
-    
+#endif  // LIBND4J_SRU_H

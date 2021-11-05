@@ -19,25 +19,24 @@
 //
 // @author raver119@gmail.com
 //
-
-#include "testlayers.h"
 #include <array/NDArray.h>
 #include <graph/Context.h>
 #include <graph/Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/convolutions.h>
-#include <ops/declarable/helpers/col2im.h>
 #include <helpers/RandomLauncher.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/convolutions.h>
+
+#include "testlayers.h"
 
 using namespace sd;
 using namespace sd::graph;
 using namespace sd::memory;
 
 class DataBufferTestsCuda : public testing::Test {
-public:
-
+ public:
 };
 
 /*

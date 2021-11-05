@@ -24,107 +24,70 @@
 
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
+#include <helpers/DebugHelper.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <helpers/TAD.h>
 #include <helpers/shape.h>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-#include <system/dll.h>
+#include <loops/legacy_ops.h>
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
-#include <helpers/OmpLaunchHelper.h>
-#include <helpers/DebugHelper.h>
-
-#ifdef __CUDACC__
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
-
-
-#include <helpers/TAD.h>
-
-
-#include "system/pairwise_util.h"
-
-#include "legacy_ops.h"
+#include <system/pairwise_util.h>
 
 namespace functions {
-	namespace indexreduce {
+namespace indexreduce {
 
-		template<typename X, typename Z>
-		class IndexReduce {
-		public:
+template <typename X, typename Z>
+class IndexReduce {
+ public:
 #ifdef __CUDABLAS__
 
-	static __device__ void transform(int opNum,
-                                     const void *x, const Nd4jLong *xShapeInfo,
-                                     void *extraParams,
-                                     void *result, const Nd4jLong *resultShapeInfo,
-                                     int *dimension,int dimensionLength,
-                                     int postProcessOrNot,
-                                     int *allocationBuffer, void *reductionBuffer,
-                                     const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset);
+  static SD_DEVICE void transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
+                                  void *result, const sd::LongType *resultShapeInfo, int *dimension,
+                                  int dimensionLength, int postProcessOrNot, int *allocationBuffer,
+                                  void *reductionBuffer, const sd::LongType *tadShapeInfo,
+                                  const sd::LongType *tadOffset);
 
-    template<typename OpType>
-	static __device__ void aggregatePartials(IndexValue<X> *sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
+  template <typename OpType>
+  static SD_DEVICE void aggregatePartials(IndexValue<X> *sPartialsRef, sd::LongType tid, sd::LongType numElements,
+                                          void *extraParams);
 
+  template <typename OpType>
+  static SD_DEVICE void transform(const void *dx, const sd::LongType *xShapeInfo, void *extraParams, void *result,
+                                  const sd::LongType *resultShapeInfo, int *dimension, int dimensionLength,
+                                  int postProcessOrNot, int *allocationBuffer, void *reductionBuffer,
+                                  const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets);
 
-    template<typename OpType>
-	static __device__ void transform(const void *dx, const Nd4jLong *xShapeInfo,
-                                     void *extraParams,
-                                     void *result, const Nd4jLong *resultShapeInfo,
-                                     int *dimension, int dimensionLength,
-                                     int postProcessOrNot,
-                                     int *allocationBuffer, void *reductionBuffer,
-                                     const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets);
+  static SD_HOST void executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, int op, const void *dx,
+                                               const sd::LongType *xShapeInfo, int xRank, void *extraParams,
+                                               void *result, const sd::LongType *resultShapeInfo, int zRank,
+                                               int *dimension, int dimensionLength, int postProcessOrNot,
+                                               int *allocationBuffer, void *reductionBuffer,
+                                               const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets);
 
-
-    static _CUDA_H void executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream,
-                                                 int op,
-                                                 const void *dx, const Nd4jLong *xShapeInfo,
-                                                 int xRank,
-                                                 void *extraParams,
-                                                 void *result, const Nd4jLong *resultShapeInfo,
-                                                 int zRank,
-                                                 int *dimension, int dimensionLength,
-                                                 int postProcessOrNot,
-                                                 int *allocationBuffer, void *reductionBuffer,
-                                                 const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets);
-
-    static _CUDA_H void executeIndexReduce(dim3 launchDims, cudaStream_t *stream,
-                                           int op,
-                                           const void *dx, const Nd4jLong *xShapeInfo,
-                                           int xRank,
-                                           void *extraParams,
-                                           void *result, const Nd4jLong *resultShapeInfo,
-                                           int zRank,
-                                           int *dimension, int dimensionLength,
-                                           int postProcessOrNot,
-                                           int *allocationBuffer, void *reductionBuffer,
-                                           const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets);
+  static SD_HOST void executeIndexReduce(dim3 launchDims, cudaStream_t *stream, int op, const void *dx,
+                                         const sd::LongType *xShapeInfo, int xRank, void *extraParams, void *result,
+                                         const sd::LongType *resultShapeInfo, int zRank, int *dimension,
+                                         int dimensionLength, int postProcessOrNot, int *allocationBuffer,
+                                         void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,
+                                         const sd::LongType *tadOffsets);
 #else
 
-		static Nd4jLong execScalar(int opNum, const void *x, const Nd4jLong *xShapeInfo, void *extraParams);
+  static sd::LongType execScalar(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams);
 
-		static void exec(int opNum,
-                         const void *x, const Nd4jLong *xShapeInfo,
-                         void *extraParams,
-                         void *result, const Nd4jLong *resultShapeInfoBuffer,
-                         int *dimension, int dimensionLength,
-                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset);
+  static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *result,
+                   const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength,
+                   const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset);
 
-		template<typename OpType>
-		static _CUDA_H Nd4jLong execScalar(const void *x, const Nd4jLong *xShapeInfo, void *extraParams);
+  template <typename OpType>
+  static SD_HOST sd::LongType execScalar(const void *x, const sd::LongType *xShapeInfo, void *extraParams);
 
-		template<typename OpType>
-		static _CUDA_H void exec(const void *x, const Nd4jLong *xShapeInfo,
-                                 void *extraParams,
-                                 void *result, const Nd4jLong *resultShapeInfoBuffer,
-                                 int *dimension, int dimensionLength,
-                                 const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset);
+  template <typename OpType>
+  static SD_HOST void exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *result,
+                           const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength,
+                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset);
 #endif
-		};
-	}
-}
+};
+}  // namespace indexreduce
+}  // namespace functions
 
 #endif /* INDEXREDUCE_H_ */
-

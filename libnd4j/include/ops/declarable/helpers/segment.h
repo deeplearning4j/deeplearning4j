@@ -23,62 +23,81 @@
 //
 #ifndef __SEGMENT_HELPERS__
 #define __SEGMENT_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    bool segmentIndicesValidate(sd::LaunchContext * context, NDArray* indices, NDArray& expected, NDArray& output);
+SD_LIB_HIDDEN bool segmentIndicesValidate(sd::LaunchContext* context, NDArray* indices, NDArray& expected,
+                                          NDArray& output);
 
-    bool unsortedSegmentIndicesValidate(sd::LaunchContext * context, NDArray* indices, Nd4jLong numOfClasses, Nd4jLong& output);
+SD_LIB_HIDDEN bool unsortedSegmentIndicesValidate(sd::LaunchContext* context, NDArray* indices,
+                                                  sd::LongType numOfClasses, sd::LongType& output);
 
-    void segmentMaxFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output);
+SD_LIB_HIDDEN void segmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentMinFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output);
+SD_LIB_HIDDEN void segmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentMeanFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output);
+SD_LIB_HIDDEN void segmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentSumFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output);
+SD_LIB_HIDDEN void segmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentProdFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output);
+SD_LIB_HIDDEN void segmentProdFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void unsortedSegmentSqrtNFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                               sd::LongType numOfClasses, NDArray* output);
 
-    void unsortedSegmentMaxFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN void unsortedSegmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                             sd::LongType numOfClasses, NDArray* output);
 
-    void unsortedSegmentMinFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN void unsortedSegmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                             sd::LongType numOfClasses, NDArray* output);
 
-    void unsortedSegmentMeanFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                              sd::LongType numOfClasses, NDArray* output);
 
-    void unsortedSegmentSumFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                             sd::LongType numOfClasses, NDArray* output);
 
-    void unsortedSegmentProdFunctor(sd::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN void unsortedSegmentProdFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                              sd::LongType numOfClasses, NDArray* output);
 
-    int segmentMaxFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+SD_LIB_HIDDEN sd::Status segmentMaxFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                             NDArray* gradOut, NDArray* output);
 
-    int segmentMinFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+SD_LIB_HIDDEN sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                             NDArray* gradOut, NDArray* output);
 
-    int segmentMeanFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+SD_LIB_HIDDEN sd::Status segmentMeanFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                              NDArray* gradOut, NDArray* output);
 
-    int segmentSumFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+SD_LIB_HIDDEN sd::Status segmentSumFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                             NDArray* gradOut, NDArray* output);
 
-    int segmentProdFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+SD_LIB_HIDDEN sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                              NDArray* gradOut, NDArray* output);
 
-    int unsortedSegmentSqrtNFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN sd::Status unsortedSegmentSqrtNFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                                       NDArray* gradOut, sd::LongType numOfClasses, NDArray* output);
 
-    int unsortedSegmentMaxFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN sd::Status unsortedSegmentMaxFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                                     NDArray* gradOut, sd::LongType numOfClasses, NDArray* output);
 
-    int unsortedSegmentMinFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN sd::Status unsortedSegmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                                     NDArray* gradOut, sd::LongType numOfClasses, NDArray* output);
 
-    int unsortedSegmentMeanFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                                      NDArray* gradOut, sd::LongType numOfClasses, NDArray* output);
 
-    int unsortedSegmentSumFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN sd::Status unsortedSegmentSumFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                                     NDArray* gradOut, sd::LongType numOfClasses, NDArray* output);
 
-    int unsortedSegmentProdFunctorBP(sd::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+SD_LIB_HIDDEN sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices,
+                                                      NDArray* gradOut, sd::LongType numOfClasses, NDArray* output);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

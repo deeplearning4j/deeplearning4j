@@ -2162,10 +2162,10 @@ public class TransformOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testImageResize(Nd4jBackend backend) {
 
-        //TODO: Methods failed ResizeLanczos5, ResizeMitchelcubic, ResizeArea
+        //TODO: Methods failed ResizeLanczos5, ResizeMitchellcubic, ResizeArea
 
         for (ImageResizeMethod method : ImageResizeMethod.values()) {
-            if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method == ImageResizeMethod.ResizeMitchelcubic)
+            if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method == ImageResizeMethod.ResizeMitchellcubic)
             {continue;}
 
             log.info("Trying {}", method);

@@ -27,30 +27,27 @@
 #include <ops/declarable/helpers/compare_elem.h>
 
 namespace sd {
-    namespace ops {
-        BOOLEAN_OP_IMPL(is_non_decreasing, 1, true) {
-            auto input = INPUT_VARIABLE(0);
+namespace ops {
+BOOLEAN_OP_IMPL(is_non_decreasing, 1, true) {
+  auto input = INPUT_VARIABLE(0);
 
-            // in case of empty input there's nothing to do
-            if (input->isEmpty())
-                return ND4J_STATUS_TRUE;
+  // in case of empty input there's nothing to do
+  if (input->isEmpty()) return sd::Status::TRUE;
 
-            bool isNonDecreasing = true;
+  bool isNonDecreasing = true;
 
-            sd::ops::helpers::compare_elem(block.launchContext(), input, false, isNonDecreasing);
+  sd::ops::helpers::compare_elem(block.launchContext(), input, false, isNonDecreasing);
 
-            if (isNonDecreasing)
-                return ND4J_STATUS_TRUE;
-            else
-                return ND4J_STATUS_FALSE;
-        }
-
-        DECLARE_TYPES(is_non_decreasing) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::BOOL);
-        }
-    }
+  if (isNonDecreasing)
+    return sd::Status::TRUE;
+  else
+    return sd::Status::FALSE;
 }
+
+DECLARE_TYPES(is_non_decreasing) {
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::BOOL);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

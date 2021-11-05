@@ -21,17 +21,19 @@
 //
 #ifndef __MIN_I_MAX_H_HELPERS__
 #define __MIN_I_MAX_H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    void minimumBPFunctor(sd::LaunchContext * context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY);
-    void maximumBPFunctor(sd::LaunchContext * context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY);
+SD_LIB_HIDDEN void minimumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext,
+                                    NDArray* gradX, NDArray* gradY);
+SD_LIB_HIDDEN void maximumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext,
+                                    NDArray* gradX, NDArray* gradY);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

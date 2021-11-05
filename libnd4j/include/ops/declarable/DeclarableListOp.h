@@ -22,37 +22,36 @@
 
 #ifndef LIBND4J_DECLARABLE_LIST_OP_H
 #define LIBND4J_DECLARABLE_LIST_OP_H
-
 #include <array/ResultSet.h>
 #include <graph/Context.h>
-#include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 using namespace sd::graph;
 
 namespace sd {
-    namespace ops {
-        class ND4J_EXPORT DeclarableListOp : public sd::ops::DeclarableOp {
-        protected:
-            Nd4jStatus validateAndExecute(Context& block) override = 0;
+namespace ops {
+class SD_LIB_EXPORT DeclarableListOp : public sd::ops::DeclarableOp {
+ protected:
+  sd::Status validateAndExecute(Context& block) override = 0;
 
-            sd::NDArray* getZ(Context& block, int inputId) ;
-            void setupResult(NDArray* array, Context& block);
-            void setupResultList(NDArrayList* arrayList, Context& block);
+  sd::NDArray* getZ(Context& block, int inputId);
+  void setupResult(NDArray* array, Context& block);
+  void setupResultList(NDArrayList* arrayList, Context& block);
 
-        public:
-            DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs);
+ public:
+  DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs);
 
-            
-            Nd4jStatus execute(Context* block) override;
-            
+  sd::Status execute(Context* block) override;
 
-            ResultSet execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs);
-            ResultSet execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs);
+  ResultSet execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs,
+                    std::initializer_list<int> iArgs);
+  ResultSet execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs,
+                    std::vector<int>& iArgs);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
-        };
-    }
-}
+  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+};
+}  // namespace ops
+}  // namespace sd
 
 #endif

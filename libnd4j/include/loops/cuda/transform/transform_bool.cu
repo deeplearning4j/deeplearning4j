@@ -19,124 +19,107 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <system/Environment.h>
-#include <loops/transform_bool.h>
-#include <types/types.h>
-#include <system/op_boilerplate.h>
-
-#include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
+#include <loops/legacy_ops.h>
+#include <loops/transform_bool.h>
+#include <system/Environment.h>
+#include <system/op_boilerplate.h>
+#include <types/types.h>
 
 using namespace simdOps;
 
-
 template <typename X, typename Z, typename OpType>
-__global__ void transformBoolSimple(
-        const void *x, const Nd4jLong *xShapeInfo, int xRank,
-        void *params,
-        void *z, const Nd4jLong *zShapeInfo, int zRank,
-        int *allocationPointer, void *reductionPointer,
-        const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
-
-	functions::transform::TransformBool<X,Z>::template transformCuda<OpType>(x,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer,tadShapeInfo, tadOffsets);
+SD_KERNEL void transformBoolSimple(const void *x, const sd::LongType *xShapeInfo, int xRank, void *params, void *z,
+                                   const sd::LongType *zShapeInfo, int zRank, int *allocationPointer,
+                                   void *reductionPointer, const sd::LongType *tadShapeInfo,
+                                   const sd::LongType *tadOffsets) {
+  functions::transform::TransformBool<X, Z>::template transformCuda<OpType>(
+      x, xShapeInfo, params, z, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 }
-
 
 namespace functions {
-    namespace transform {
+namespace transform {
 
-        template<typename X, typename Y>
-        _CUDA_H void TransformBool<X,Y>::executeTransformShaped(
-                dim3 launchDims, cudaStream_t *stream,
-                const int opNum,
-                const void *x, const Nd4jLong *xShape, int xRank,
-                void *extraParams,
-                void *z, const Nd4jLong *zShape, int zRank,
-                int *allocationPointer, void *reductionPointer,
-                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+template <typename X, typename Y>
+SD_HOST void TransformBool<X, Y>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, const int opNum,
+                                                         const void *x, const sd::LongType *xShape, int xRank,
+                                                         void *extraParams, void *z, const sd::LongType *zShape,
+                                                         int zRank, int *allocationPointer, void *reductionPointer,
+                                                         const sd::LongType *tadShapeInfo,
+                                                         const sd::LongType *tadOffsets) {
+  DISPATCH_BY_OPNUM_TT(intermediateShaped,
+                       PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer,
+                              reductionPointer, tadShapeInfo, tadOffsets),
+                       TRANSFORM_BOOL_OPS);
 
-			DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_BOOL_OPS);
-
-            DEBUG_KERNEL(stream, opNum);
-        }
-
-
-        template<typename X, typename Z>
-        template <typename OpType>
-        __device__ void TransformBool<X,Z>::transformCuda(
-                const void *vx, const Nd4jLong *xShapeInfo,
-                void *vparams,
-                void *vz, const Nd4jLong *zShapeInfo,
-                int *allocationPointer, void *vreductionPointer,
-                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
-
-        	auto x = static_cast<const X*>(vx);
-		    auto z = static_cast<Z*>(vz);
-		    auto params = static_cast<X*>(vparams);
-		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
-
-		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(x,xShapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
-			    return;
-		    }
-		    else {
-		    	__shared__ Nd4jLong xEws;
-    	        __shared__ Nd4jLong zEws;
-        	    __shared__ char xOrder;
-            	__shared__ char zOrder;
-            	__shared__ Nd4jLong length;
-
-	            if (threadIdx.x == 0) {
-
-        	        xEws = shape::elementWiseStride(xShapeInfo);
-            	    zEws = shape::elementWiseStride(zShapeInfo);
-                	xOrder = shape::order(xShapeInfo);
-					zOrder = shape::order(zShapeInfo);
-					length = shape::length(xShapeInfo);
-            	}
-            	__syncthreads();
-
-	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-				int totalThreads = gridDim.x * blockDim.x;
-
-		        if(xEws > 0 && zEws > 0 && xOrder == zOrder && xOrder == 'c') {
-
-					for (int i = tid; i < length; i += totalThreads)
-						z[i * zEws] = OpType::op(x[i * xEws], params);
-		        }
-		        else {
-					if(vx == vz) {
-						for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-							auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-	    			    	z[xOffset] = OpType::op(x[xOffset], params);
-		    	    	}
-					}
-					else {
-		    	    	for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-							auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-							auto zOffset = shape::getIndexOffset(i, zShapeInfo);
-	    			    	z[zOffset] = OpType::op(x[xOffset], params);
-		    	    	}
-		    		}
-		        }
-	        }
-	    };
-
-
-		template<typename X, typename Z>
-		template <typename OpType>
-		_CUDA_H void TransformBool<X,Z>::intermediateShaped(
-		        dim3 launchDims, cudaStream_t *stream,
-                const void *x, const Nd4jLong *xShape, int xRank,
-                void *extraParams,
-                void *z, const Nd4jLong *zShape, int zRank,
-                int *allocationPointer, void *reductionPointer,
-                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
-			transformBoolSimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
-            sd::DebugHelper::checkErrorCode(stream, "transformBool(...) failed");
-		}
-
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_LOCAL TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
-    }
+  DEBUG_KERNEL(stream, opNum);
 }
+
+template <typename X, typename Z>
+template <typename OpType>
+SD_DEVICE void TransformBool<X, Z>::transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *vparams,
+                                                  void *vz, const sd::LongType *zShapeInfo, int *allocationPointer,
+                                                  void *vreductionPointer, const sd::LongType *tadShapeInfo,
+                                                  const sd::LongType *tadOffsets) {
+  auto x = static_cast<const X *>(vx);
+  auto z = static_cast<Z *>(vz);
+  auto params = static_cast<X *>(vparams);
+  auto reductionPointer = static_cast<Z *>(vreductionPointer);
+
+  if (OpType::requiresSpecial) {
+    OpType::execSpecialCuda(x, xShapeInfo, z, zShapeInfo, params, allocationPointer, reductionPointer, tadShapeInfo,
+                            tadOffsets);
+    return;
+  } else {
+    __shared__ sd::LongType xEws;
+    __shared__ sd::LongType zEws;
+    __shared__ char xOrder;
+    __shared__ char zOrder;
+    __shared__ sd::LongType length;
+
+    if (threadIdx.x == 0) {
+      xEws = shape::elementWiseStride(xShapeInfo);
+      zEws = shape::elementWiseStride(zShapeInfo);
+      xOrder = shape::order(xShapeInfo);
+      zOrder = shape::order(zShapeInfo);
+      length = shape::length(xShapeInfo);
+    }
+    __syncthreads();
+
+    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int totalThreads = gridDim.x * blockDim.x;
+
+    if (xEws > 0 && zEws > 0 && xOrder == zOrder && xOrder == 'c') {
+      for (int i = tid; i < length; i += totalThreads) z[i * zEws] = OpType::op(x[i * xEws], params);
+    } else {
+      if (vx == vz) {
+        for (sd::LongType i = tid; i < length; i += totalThreads) {
+          auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+          z[xOffset] = OpType::op(x[xOffset], params);
+        }
+      } else {
+        for (sd::LongType i = tid; i < length; i += totalThreads) {
+          auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+          auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+          z[zOffset] = OpType::op(x[xOffset], params);
+        }
+      }
+    }
+  }
+};
+
+template <typename X, typename Z>
+template <typename OpType>
+SD_HOST void TransformBool<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,
+                                                     const sd::LongType *xShape, int xRank, void *extraParams, void *z,
+                                                     const sd::LongType *zShape, int zRank, int *allocationPointer,
+                                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
+                                                     const sd::LongType *tadOffsets) {
+  transformBoolSimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+  sd::DebugHelper::checkErrorCode(stream, "transformBool(...) failed");
+}
+
+BUILD_DOUBLE_TEMPLATE(template class TransformBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
+}  // namespace transform
+}  // namespace functions

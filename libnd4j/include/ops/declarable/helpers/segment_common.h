@@ -23,16 +23,17 @@
 //
 #ifndef __SEGMENT_COMMON_HELPERS__
 #define __SEGMENT_COMMON_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
-    void fillUpSegments(NDArray* indices, Nd4jLong numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens);
 
+SD_LIB_HIDDEN void fillUpSegments(NDArray* indices, sd::LongType numClasses, NDArray& classesRangesBegs,
+                                  NDArray& classesRangesLens);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

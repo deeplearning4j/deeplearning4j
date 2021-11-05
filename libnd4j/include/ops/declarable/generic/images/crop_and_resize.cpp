@@ -28,70 +28,74 @@
 #include <ops/declarable/helpers/crop_and_resize.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
+namespace ops {
+CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
+  auto image = INPUT_VARIABLE(0);
+  auto boxes = INPUT_VARIABLE(1);
+  auto boxIndexes = INPUT_VARIABLE(2);
 
-            auto image = INPUT_VARIABLE(0);
-            auto boxes = INPUT_VARIABLE(1);
-            auto boxIndexes = INPUT_VARIABLE(2);
-            
-            auto output = OUTPUT_VARIABLE(0);
-            int width;
-            int height;
-            int method = 0; // bilinear
-            double extrapolationVal = 0.;
+  auto output = OUTPUT_VARIABLE(0);
+  int width;
+  int height;
+  int method = 0;  // bilinear
+  double extrapolationVal = 0.;
 
-            auto newImageSize = INPUT_VARIABLE(3);
-            REQUIRE_TRUE(output->dataType() == image->dataType(), 0, "crop_and_resize: Source images and output should have the same data type.");
-            REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-            //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
-            //width = int(newImageSize->getScalar(0));
-            //height = int(newImageSize->getScalar(1));
-            if (block.numI() == 1) {
-                method = INT_ARG(0);
-            }
+  auto newImageSize = INPUT_VARIABLE(3);
+  REQUIRE_TRUE(output->dataType() == image->dataType(), 0,
+               "crop_and_resize: Source images and output should have the same data type.");
+  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.",
+               newImageSize->lengthOf());
+  // REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params
+  // are expensive."); width = int(newImageSize->getScalar(0)); height = int(newImageSize->getScalar(1));
+  if (block.numI() == 1) {
+    method = INT_ARG(0);
+  }
 
-            if (block.numT() == 1) {
-                extrapolationVal = T_ARG(0);
-            }
+  if (block.numT() == 1) {
+    extrapolationVal = T_ARG(0);
+  }
 
-            helpers::cropAndResizeFunctor(block.launchContext(), image, boxes, boxIndexes, newImageSize, method, extrapolationVal, output);
-            return ND4J_STATUS_OK;
-        }
-
-        DECLARE_SHAPE_FN(crop_and_resize) {
-            auto in = inputShape->at(0);
-            auto boxShape = inputShape->at(1);
-
-            Nd4jLong outputShape[4];
-
-            int width;
-            int height;
-            auto newImageSize = INPUT_VARIABLE(3);
-            REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-            //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
-            width = newImageSize->e<int>(0);
-            height = newImageSize->e<int>(1);
-
-            outputShape[0] = boxShape[1];
-            outputShape[1] = width;
-            outputShape[2] = height;
-            outputShape[3] = in[4];
-
-            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
-        }
-
-        DECLARE_TYPES(crop_and_resize) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-//                    ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
-                    ->setAllowedInputTypes(2, {ALL_INTS})
-                    ->setAllowedInputTypes(3, {ALL_INTS})
-                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS}); // as TF
-//                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  helpers::cropAndResizeFunctor(block.launchContext(), image, boxes, boxIndexes, newImageSize, method, extrapolationVal,
+                                output);
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(crop_and_resize) {
+  auto in = inputShape->at(0);
+  auto boxShape = inputShape->at(1);
+
+  sd::LongType outputShape[4];
+
+  int width;
+  int height;
+  auto newImageSize = INPUT_VARIABLE(3);
+  REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.",
+               newImageSize->lengthOf());
+  // REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params
+  // are expensive.");
+  width = newImageSize->e<int>(0);
+  height = newImageSize->e<int>(1);
+
+  outputShape[0] = boxShape[1];
+  outputShape[1] = width;
+  outputShape[2] = height;
+  outputShape[3] = in[4];
+
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
+      ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
+}
+
+DECLARE_TYPES(crop_and_resize) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+      //                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
+      ->setAllowedInputTypes(2, {ALL_INTS})
+      ->setAllowedInputTypes(3, {ALL_INTS})
+      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});  // as TF
+                                                        //                    ->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

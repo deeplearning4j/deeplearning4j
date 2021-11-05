@@ -211,8 +211,8 @@ namespace sd {
                 auto a = p.getIntParam("sz");
                 auto b = p.getIntParam("sz");
                 auto c = p.getIntParam("sz");
-                std::vector<Nd4jLong> shapeA;
-                std::vector<Nd4jLong> shapeB;
+                std::vector<sd::LongType> shapeA;
+                std::vector<sd::LongType> shapeB;
                 shapeA = {a, b};
                 shapeB = {b, c};
                 auto A = NDArrayFactory::create_<T>('c', shapeA);
@@ -270,8 +270,8 @@ namespace sd {
             auto ctx = new Context(1);
 
             ctx->setInputArray(0, NDArrayFactory::create_<T>('c', {p.getIntParam("length")}), true);
-            ctx->setInputArray(1, NDArrayFactory::create_<Nd4jLong>((Nd4jLong)0), true);
-            ctx->setOutputArray(0, NDArrayFactory::create_<Nd4jLong>(0), true);
+            ctx->setInputArray(1, NDArrayFactory::create_<sd::LongType>((sd::LongType)0), true);
+            ctx->setOutputArray(0, NDArrayFactory::create_<sd::LongType>(0), true);
 
             return ctx;
         };
@@ -304,7 +304,7 @@ namespace sd {
 
 
                 x.push_back(arr);
-                y.push_back(NDArrayFactory::create_<Nd4jLong>(dim));
+                y.push_back(NDArrayFactory::create_<sd::LongType>(dim));
 
                 NDArray* result;
                 if(dim == 0){
@@ -335,7 +335,7 @@ namespace sd {
                 int dim = p.getIntParam("dim");
                 auto arr = NDArrayFactory::create_<T>('c', {rows, cols});
 
-                auto dimArg = new Nd4jLong[1];
+                auto dimArg = new sd::LongType[1];
                 dimArg[0] = dim;
                 ctx->setIArguments(dimArg, 1);
                 delete[] dimArg;
@@ -344,9 +344,9 @@ namespace sd {
 
                 NDArray* result;
                 if(dim == 0){
-                    result = NDArrayFactory::create_<Nd4jLong>('c', {cols});
+                    result = NDArrayFactory::create_<sd::LongType>('c', {cols});
                 } else {
-                    result = NDArrayFactory::create_<Nd4jLong>('c', {rows});
+                    result = NDArrayFactory::create_<sd::LongType>('c', {rows});
                 }
                 ctx->setOutputArray(0, result, true);
                 return ctx;
@@ -401,7 +401,7 @@ namespace sd {
             ctx->setInputArray(1, w, true);
             ctx->setInputArray(2, b, true);
 
-            auto args = new Nd4jLong[10];
+            auto args = new sd::LongType[10];
             args[0] = args[1] = khw; //Kernel
             args[2] = args[3] = 1;//Stride
             args[4] = args[5] = 0;  //Pad
@@ -450,7 +450,7 @@ namespace sd {
                 ctx->setOutputArray(0, output, true);
             }
 
-            auto args = new Nd4jLong[11];
+            auto args = new sd::LongType[11];
             args[0] = args[1] = khw; //Kernel
             args[2] = args[3] = 1;//Stride
             args[4] = args[5] = 0;  //Pad
@@ -495,8 +495,8 @@ namespace sd {
             int f = p.getIntParam("format");
             int m = p.getIntParam("mb");
 
-            Nd4jLong l = 0;
-            ctx->setInputArray(0, NDArrayFactory::create_<Nd4jLong>(l), true);  //Max TS length (unused)
+            sd::LongType l = 0;
+            ctx->setInputArray(0, NDArrayFactory::create_<sd::LongType>(l), true);  //Max TS length (unused)
 
 
             if (f == 0) {
@@ -537,7 +537,7 @@ namespace sd {
             ctx->setInputArray(7, Wco, true);
             ctx->setInputArray(8, b, true);
 
-            auto iargs = new Nd4jLong[2];
+            auto iargs = new sd::LongType[2];
             iargs[0] = 0;   //No peephole
             iargs[1] = f;
             ctx->setIArguments(iargs, 2);

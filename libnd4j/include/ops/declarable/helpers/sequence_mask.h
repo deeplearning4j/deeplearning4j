@@ -21,16 +21,16 @@
 //
 #ifndef __SEQUENCE_MASK_HELPERS__
 #define __SEQUENCE_MASK_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex);
+SD_LIB_HIDDEN void sequenceMask(sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex);
 
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
 #endif

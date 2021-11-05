@@ -21,18 +21,20 @@
 //
 #ifndef __TOP_K_HELPERS__
 #define __TOP_K_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int topKFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort);
+SD_LIB_HIDDEN sd::Status topKFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* values,
+                                     NDArray* indices, const sd::Unsigned k, bool needSort);
 
-    int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const NDArray* targets, NDArray* output, const uint k);
+SD_LIB_HIDDEN sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* predictions, const NDArray* targets,
+                                       NDArray* output, const sd::Unsigned k);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

@@ -19,106 +19,93 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <ops/declarable/helpers/stack.h>
-#include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-
+#include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/stack.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+  const int numOfSubArrs = inArrs.size();
 
-	const int numOfSubArrs = inArrs.size();
+  if (inArrs[0]->rankOf() == 0) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) output.p<T>(i, inArrs[i]->t<T>(0));
+    };
 
-	if(inArrs[0]->rankOf() == 0) {
+    samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+  } else {
+    auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
+        output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+    auto zTadShapeInfo = zTadPack.primaryShapeInfo();
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i++)
-                output.p<T>(i, inArrs[i]->t<T>(0));
-        };
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        void* zBuff = output.bufferWithOffset(zTadPack.primaryOffsets()[i]);
 
-        samediff::Threads::parallel_for(func, 0, numOfSubArrs);
-	}
-	else {
+        NativeOpExecutioner::execTransformAny(inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(),
+                                              inArrs[i]->shapeInfo(), nullptr /*input specialBuffer*/,
+                                              nullptr /*input special*/, zBuff, zTadShapeInfo,
+                                              nullptr /*output specialBuffer*/, nullptr /*output special*/, nullptr,
+                                              nullptr, nullptr, false /*allowParallelism*/);
+      }
+    };
 
-		auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
-		auto zTadShapeInfo  = zTadPack.primaryShapeInfo();
-
-        auto func = PRAGMA_THREADS_FOR {
-
-            for (auto i = start; i < stop; i++) {
-
-                void* zBuff = output.bufferWithOffset(zTadPack.primaryOffsets()[i]);
-
-                NativeOpExecutioner::execTransformAny(inArrs[0]->getContext(), transform::Assign,
-                                                     inArrs[i]->buffer(), inArrs[i]->shapeInfo(), nullptr/*input specialBuffer*/,  nullptr/*input special*/,
-                                                     zBuff,                  zTadShapeInfo,             nullptr/*output specialBuffer*/, nullptr/*output special*/,
-                                                     nullptr, nullptr, nullptr, false/*allowParallelism*/);
-            }
-        };
-
-        samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
-    }
-
+    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void stack(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
-	BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (inArrs, output, dim), LIBND4J_TYPES);
+void stack(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+  BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (inArrs, output, dim), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void stack_ , (const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim), LIBND4J_TYPES);
-
+BUILD_SINGLE_TEMPLATE(template void stack_, (const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim),
+                      SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+  const int numOfSubArrs = outArrs.size();
 
-	const int numOfSubArrs = outArrs.size();
+  if (outArrs[0]->rankOf() == 0) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) outArrs[i]->p<T>(0, input.t<T>(i));
+    };
 
-	if(outArrs[0]->rankOf() == 0) {
+    samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+  } else {
+    auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
+        input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+    auto xTadShapeInfo = xTadPack.primaryShapeInfo();
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i++)
-                outArrs[i]->p<T>(0, input.t<T>(i));
-        };
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        auto xBuff = input.bufferWithOffset(xTadPack.primaryOffsets()[i]);
 
-        samediff::Threads::parallel_for(func, 0, numOfSubArrs);
-	}
-	else {
+        NativeOpExecutioner::execTransformAny(
+            input.getContext(), transform::Assign, xBuff, xTadShapeInfo, nullptr /*input specialBuffer*/,
+            nullptr /*input special*/, outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr /*output specialBuffer*/,
+            nullptr /*output special*/, nullptr, nullptr, nullptr, false /*allowParallelism*/);
+      }
+    };
 
-		auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
-		auto xTadShapeInfo  = xTadPack.primaryShapeInfo();
-
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i++) {
-                auto xBuff = input.bufferWithOffset(xTadPack.primaryOffsets()[i]);
-
-                NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign,
-                									 xBuff,                   xTadShapeInfo,              nullptr/*input specialBuffer*/, nullptr/*input special*/,
-                                                     outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr/*output specialBuffer*/,  nullptr/*output special*/,
-                                                     nullptr, nullptr, nullptr, false/*allowParallelism*/);
-            }
-        };
-
-        samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
-	}
+    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
-ND4J_LOCAL void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
-	BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (input, outArrs, dim), LIBND4J_TYPES);
+void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+  BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (input, outArrs, dim), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL void unstack_, (const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void unstack_,
+                      (const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim), SD_COMMON_TYPES);
 
-}
-}
-}
-
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

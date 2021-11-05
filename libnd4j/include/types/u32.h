@@ -21,22 +21,19 @@
 //
 #ifndef SD_U32_H
 #define SD_U32_H
-
 #include <cstdint>
-#include <system/pointercast.h>
-
 
 namespace sd {
-    union u32 {
-        bool _bool;
-        int8_t _s8;
-        uint8_t _u8;
-        int16_t _s16;
-        uint16_t _u16;
-        int32_t _s32;
-        uint32_t _u32;
-        float _f32;
-    };
-}
+union u32 {
+  bool _bool;
+  int8_t _s8;
+  uint8_t _u8;
+  int16_t _s16;
+  uint16_t _u16;
+  int32_t _s32;
+  uint32_t _u32;
+  float _f32;
+};
+}  // namespace sd
 
 #endif

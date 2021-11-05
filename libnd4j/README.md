@@ -60,7 +60,6 @@ Run ./setuposx.sh (Please ensure you have brew installed)
 See [macOSx10 CPU only.md](macOSx10%20%28CPU%20only%29.md)
 
 
-
 #### Ubuntu Linux 15.10
 
 ```bash
@@ -178,7 +177,6 @@ make package
 cd blasbuild/cuda
 make package
 ```
-
 
 
 ## Running tests

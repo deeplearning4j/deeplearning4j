@@ -1,0 +1,5 @@
+# Format Style Options - Created with Clang Power Tools
+---
+BasedOnStyle: Google
+ColumnLimit: 120
+...

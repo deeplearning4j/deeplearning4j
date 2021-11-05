@@ -19,21 +19,14 @@
 //
 // @author raver119@gmail.com
 //
-
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <types/float16.h>
 
 namespace sd {
-    DataType DataTypeUtils::fromInt(int val) {
-        return (DataType) val;
-    }
+DataType DataTypeUtils::fromInt(int val) { return (DataType)val; }
 
-    DataType DataTypeUtils::fromFlatDataType(sd::graph::DType dtype) {
-        return (DataType) dtype;
-    }
+DataType DataTypeUtils::fromFlatDataType(sd::graph::DType dtype) { return (DataType)dtype; }
 
-    int DataTypeUtils::asInt(DataType type) {
-        return (int) type;
-    }
-}
+int DataTypeUtils::asInt(DataType type) { return (int)type; }
+}  // namespace sd

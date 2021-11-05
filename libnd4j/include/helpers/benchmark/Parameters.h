@@ -22,33 +22,34 @@
 
 #ifndef DEV_TESTS_PARAMETERS_H
 #define DEV_TESTS_PARAMETERS_H
-
 #include <map>
 #include <string>
 #include <vector>
 
 namespace sd {
-    class Parameters {
-    private:
-        std::map<std::string, int> _intParams;
-        std::map<std::string, bool> _boolParams;
-        std::map<std::string, std::vector<int>> _arrayParams;
-    public:
-        Parameters() = default;
+class Parameters {
+ private:
+  std::map<std::string, int> _intParams;
+  std::map<std::string, bool> _boolParams;
+  std::map<std::string, std::vector<int>> _arrayParams;
 
-        Parameters* addIntParam(std::string string, int param);
-        Parameters* addIntParam(std::initializer_list<std::string> strings, std::initializer_list<int> params);
+ public:
+  Parameters() = default;
 
-        Parameters* addBoolParam(std::string string, bool param);
-        Parameters* addBoolParam(std::initializer_list<std::string> strings, std::initializer_list<bool> params);
+  Parameters* addIntParam(std::string string, int param);
+  Parameters* addIntParam(std::initializer_list<std::string> strings, std::initializer_list<int> params);
 
-        Parameters* addArrayParam(std::string string, std::initializer_list<int> param);
-        Parameters* addArrayParam(std::initializer_list<std::string> strings, std::initializer_list<std::initializer_list<int>> params);
+  Parameters* addBoolParam(std::string string, bool param);
+  Parameters* addBoolParam(std::initializer_list<std::string> strings, std::initializer_list<bool> params);
 
-        int getIntParam(std::string string) const ;
-        bool getBoolParam(std::string string) const;
-        std::vector<int> getArrayParam(std::string string) const;
-    };
-}
+  Parameters* addArrayParam(std::string string, std::initializer_list<int> param);
+  Parameters* addArrayParam(std::initializer_list<std::string> strings,
+                            std::initializer_list<std::initializer_list<int>> params);
 
-#endif //DEV_TESTS_PARAMETERS_H
+  int getIntParam(std::string string) const;
+  bool getBoolParam(std::string string) const;
+  std::vector<int> getArrayParam(std::string string) const;
+};
+}  // namespace sd
+
+#endif  // DEV_TESTS_PARAMETERS_H

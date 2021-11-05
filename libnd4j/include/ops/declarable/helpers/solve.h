@@ -23,16 +23,18 @@
 //
 #ifndef __SOLVE__H_HELPERS__
 #define __SOLVE__H_HELPERS__
-#include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int solveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output);
-    void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output);
-}
-}
-}
+SD_LIB_HIDDEN sd::Status solveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
+                                      NDArray* output);
+SD_LIB_HIDDEN void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output);
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

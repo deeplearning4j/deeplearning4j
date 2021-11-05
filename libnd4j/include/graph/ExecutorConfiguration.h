@@ -22,33 +22,31 @@
 
 #ifndef LIBND4J_EXECUTORCONFIGURATION_H
 #define LIBND4J_EXECUTORCONFIGURATION_H
-
 #include <graph/generated/config_generated.h>
-#include <system/pointercast.h>
-#include <system/dll.h>
+#include <system/common.h>
 
 namespace sd {
-    namespace graph {
-        class ND4J_EXPORT ExecutorConfiguration {
-        public:
-            sd::graph::ProfilingMode _profilingMode;
-            sd::graph::ExecutionMode _executionMode;
-            sd::graph::OutputMode _outputMode;
-            bool _timestats;
-            Nd4jLong _footprintForward = 0L;
-            Nd4jLong _footprintBackward = 0L;
-            Direction _direction = Direction_FORWARD_ONLY;
+namespace graph {
+class SD_LIB_EXPORT ExecutorConfiguration {
+ public:
+  sd::graph::ProfilingMode _profilingMode;
+  sd::graph::ExecutionMode _executionMode;
+  sd::graph::OutputMode _outputMode;
+  bool _timestats;
+  sd::LongType _footprintForward = 0L;
+  sd::LongType _footprintBackward = 0L;
+  Direction _direction = Direction_FORWARD_ONLY;
 
-            explicit ExecutorConfiguration(const sd::graph::FlatConfiguration *conf = nullptr);
-            ~ExecutorConfiguration() = default;
-            
-            ExecutorConfiguration* clone();
+  explicit ExecutorConfiguration(const sd::graph::FlatConfiguration *conf = nullptr);
+  ~ExecutorConfiguration() = default;
+
+  ExecutorConfiguration *clone();
 
 #ifndef __JAVACPP_HACK__
-            flatbuffers::Offset<FlatConfiguration> asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder);
+  flatbuffers::Offset<FlatConfiguration> asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder);
 #endif
-        };
-    }
-}
+};
+}  // namespace graph
+}  // namespace sd
 
-#endif //LIBND4J_EXECUTORCONFIGURATION_H
+#endif  // LIBND4J_EXECUTORCONFIGURATION_H

@@ -19,30 +19,21 @@
 //
 // Created by raver on 11/26/2018.
 //
+#include <helpers/CudaLaunchHelper.h>
 
 #include "testlayers.h"
-#include <helpers/CudaLaunchHelper.h>
 
 using namespace sd;
 using namespace sd::graph;
 
 class CudaLaunchHelperTests : public testing::Test {
-public:
-
+ public:
 };
 
-TEST_F(CudaLaunchHelperTests, test_reduction_blocks_1) {
-    ASSERT_EQ(1, CudaLaunchHelper::getReductionBlocks(512));
-}
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_1) { ASSERT_EQ(1, CudaLaunchHelper::getReductionBlocks(512)); }
 
-TEST_F(CudaLaunchHelperTests, test_reduction_blocks_2) {
-    ASSERT_EQ(1, CudaLaunchHelper::getReductionBlocks(121));
-}
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_2) { ASSERT_EQ(1, CudaLaunchHelper::getReductionBlocks(121)); }
 
-TEST_F(CudaLaunchHelperTests, test_reduction_blocks_3) {
-    ASSERT_EQ(2, CudaLaunchHelper::getReductionBlocks(513));
-}
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_3) { ASSERT_EQ(2, CudaLaunchHelper::getReductionBlocks(513)); }
 
-TEST_F(CudaLaunchHelperTests, test_reduction_blocks_4) {
-    ASSERT_EQ(3, CudaLaunchHelper::getReductionBlocks(1225));
-}
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_4) { ASSERT_EQ(3, CudaLaunchHelper::getReductionBlocks(1225)); }

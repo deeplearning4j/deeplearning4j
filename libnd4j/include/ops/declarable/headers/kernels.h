@@ -22,15 +22,14 @@
 
 #ifndef LIBND4J_KERNELS_H
 #define LIBND4J_KERNELS_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace sd {
-    namespace ops {
-    #if NOT_EXCLUDED(OP_knn_mindistance)
-        DECLARE_CUSTOM_OP(knn_mindistance, 3, 1, false, 0, 0);
-    #endif
-    }
-}
+namespace ops {
+#if NOT_EXCLUDED(OP_knn_mindistance)
+DECLARE_CUSTOM_OP(knn_mindistance, 3, 1, false, 0, 0);
+#endif
+}  // namespace ops
+}  // namespace sd
 
-#endif //LIBND4J_KERNELS_H
+#endif  // LIBND4J_KERNELS_H

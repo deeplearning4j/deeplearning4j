@@ -23,19 +23,16 @@
 #ifndef LIBND4J_LOGICEXPOSE_H
 #define LIBND4J_LOGICEXPOSE_H
 
-#include <system/pointercast.h>
-#include <graph/Node.h>
 #include <graph/Graph.h>
+#include <graph/Node.h>
 
 namespace sd {
-    namespace graph {
-        class LogicExpose {
-        public:
-            static Nd4jStatus processNode(Graph* graph, Node* node);
-        };
-    }
-}
+namespace graph {
+class LogicExpose {
+ public:
+  static sd::Status processNode(Graph* graph, Node* node);
+};
+}  // namespace graph
+}  // namespace sd
 
-
-
-#endif //LIBND4J_LOGICEXPOSE_H
+#endif  // LIBND4J_LOGICEXPOSE_H

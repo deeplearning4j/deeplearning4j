@@ -19,12 +19,12 @@
 //
 // Created by raver on 8/31/2018.
 //
-
-#include <helpers/StringUtils.h>
 #include <exceptions/no_results_exception.h>
+#include <helpers/StringUtils.h>
 
 namespace sd {
-    no_results_exception::no_results_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Got no results after graph execution", graphId), graphId) {
-        _graphId = graphId;
-    }
+no_results_exception::no_results_exception(sd::LongType graphId)
+    : graph_exception(StringUtils::buildGraphErrorMessage("Got no results after graph execution", graphId), graphId) {
+  _graphId = graphId;
 }
+}  // namespace sd

@@ -19,14 +19,13 @@
 //
 // Created by raver119 on 12.11.2017.
 //
-
 #include <graph/execution/LogicExpose.h>
 
 namespace sd {
-    namespace graph {
-        Nd4jStatus LogicExpose::processNode(Graph *graph, Node *node) {
-            // do we really want this?
-            return ND4J_STATUS_OK;
-        }
-    }
+namespace graph {
+sd::Status LogicExpose::processNode(Graph *graph, Node *node) {
+  // do we really want this?
+  return sd::Status::OK;
 }
+}  // namespace graph
+}  // namespace sd

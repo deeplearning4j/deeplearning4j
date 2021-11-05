@@ -25,18 +25,16 @@
 #ifndef SD_PRIMARYPOINTERDEALLOCATOR_H_
 #define SD_PRIMARYPOINTERDEALLOCATOR_H_
 
-#include <system/dll.h>
-#include <system/pointercast.h>
 #include <array/PointerDeallocator.h>
 
 namespace sd {
-class ND4J_EXPORT PrimaryPointerDeallocator : public PointerDeallocator {
+class SD_LIB_EXPORT PrimaryPointerDeallocator : public PointerDeallocator {
  public:
   PrimaryPointerDeallocator() = default;
   ~PrimaryPointerDeallocator() = default;
 
-  void release(void* ptr) override;
+  void release(void *ptr) override;
 };
-}
+}  // namespace sd
 
-#endif //SD_PRIMARYPOINTERDEALLOCATOR_H_
+#endif  // SD_PRIMARYPOINTERDEALLOCATOR_H_

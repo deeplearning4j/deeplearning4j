@@ -19,45 +19,36 @@
 //
 // Created by raver119 on 11.10.2017.
 //
-
 #include "memory/MemoryReport.h"
 
 bool sd::memory::MemoryReport::operator<(const sd::memory::MemoryReport &other) const {
-    return this->_rss < other._rss;
+  return this->_rss < other._rss;
 }
 
 bool sd::memory::MemoryReport::operator>(const sd::memory::MemoryReport &other) const {
-    return this->_rss > other._rss;
+  return this->_rss > other._rss;
 }
 
 bool sd::memory::MemoryReport::operator==(const sd::memory::MemoryReport &other) const {
-    return this->_rss == other._rss;
+  return this->_rss == other._rss;
 }
 
 bool sd::memory::MemoryReport::operator!=(const sd::memory::MemoryReport &other) const {
-    return this->_rss != other._rss;
+  return this->_rss != other._rss;
 }
 
 bool sd::memory::MemoryReport::operator<=(const sd::memory::MemoryReport &other) const {
-    return this->_rss <= other._rss;
+  return this->_rss <= other._rss;
 }
 
 bool sd::memory::MemoryReport::operator>=(const sd::memory::MemoryReport &other) const {
-    return this->_rss >= other._rss;
+  return this->_rss >= other._rss;
 }
 
-Nd4jLong sd::memory::MemoryReport::getVM() const {
-    return _vm;
-}
+sd::LongType sd::memory::MemoryReport::getVM() const { return _vm; }
 
-void sd::memory::MemoryReport::setVM(Nd4jLong _vm) {
-    MemoryReport::_vm = _vm;
-}
+void sd::memory::MemoryReport::setVM(sd::LongType _vm) { MemoryReport::_vm = _vm; }
 
-Nd4jLong sd::memory::MemoryReport::getRSS() const {
-    return _rss;
-}
+sd::LongType sd::memory::MemoryReport::getRSS() const { return _rss; }
 
-void sd::memory::MemoryReport::setRSS(Nd4jLong _rss) {
-    MemoryReport::_rss = _rss;
-}
+void sd::memory::MemoryReport::setRSS(sd::LongType _rss) { MemoryReport::_rss = _rss; }

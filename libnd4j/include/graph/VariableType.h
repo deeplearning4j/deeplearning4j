@@ -24,15 +24,15 @@
 #define ND4J_VARIABLE_TYPE_H
 
 namespace sd {
-    namespace graph {
-        enum VariableType {
-            NDARRAY = 0,
-            ARRAY_LIST = 1,
-            FLOW = 2,
-            CONSTANT = 3,
-            PLACEHOLDER = 4,
-        };
-    }
+namespace graph {
+enum VariableType {
+  NDARRAY = 0,
+  ARRAY_LIST = 1,
+  FLOW = 2,
+  CONSTANT = 3,
+  PLACEHOLDER = 4,
+};
 }
+}  // namespace sd
 
 #endif

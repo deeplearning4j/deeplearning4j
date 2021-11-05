@@ -26,47 +26,41 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        OP_IMPL(identity, 1, 1, true) {
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+OP_IMPL(identity, 1, 1, true) {
+  auto z = OUTPUT_VARIABLE(0);
 
-            if (!block.isInplace()) {
-                auto first = INPUT_VARIABLE(0);
+  if (!block.isInplace()) {
+    auto first = INPUT_VARIABLE(0);
 
-                // we hope for memcpy here
-                z->assign(first);
-            }
+    // we hope for memcpy here
+    z->assign(first);
+  }
 
-            return Status::OK();
-        }
-        DECLARE_SYN(linear, identity);
-
-        DECLARE_TYPES(identity) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setSameMode(true);
-        }
-
-
-        OP_IMPL(identity_bp, 2, 1, true) {
-            auto first = INPUT_VARIABLE(0);
-            auto epsilon = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
-
-            z->assign(epsilon);
-
-            return Status::OK();
-        }
-        DECLARE_SYN(LinearGrad, identity_bp);
-
-
-        DECLARE_TYPES(identity_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(linear, identity);
+
+DECLARE_TYPES(identity) { getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setSameMode(true); }
+
+OP_IMPL(identity_bp, 2, 1, true) {
+  auto first = INPUT_VARIABLE(0);
+  auto epsilon = INPUT_VARIABLE(1);
+  auto z = OUTPUT_VARIABLE(0);
+
+  z->assign(epsilon);
+
+  return sd::Status::OK;
+}
+DECLARE_SYN(LinearGrad, identity_bp);
+
+DECLARE_TYPES(identity_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -116,9 +116,6 @@ def tokenizer_spans(utext):
     return token_spans
 
 
-
-
-
 cdef class JsonObjXtractor:
     '''
      JsonObjXtractor that utilize cython better
@@ -166,7 +163,6 @@ cdef class JsonObjXtractor:
                         self.__resize(self.size+self.size//2)
             i += 1
         return j
-
 
 
     def try_extract_parent_obj(self, json_bytes, property_name, next_contains_value=b'', debug=False):
@@ -280,7 +276,6 @@ cdef class JsonObjXtractor:
         return (parent_objects, last_start)
 
 
-
     def __resize(self, size_t new_count):
         cdef Span* mem = <Span*> PyMem_Realloc(self.token_spans, new_count * sizeof(Span))
         if not mem:
@@ -290,7 +285,6 @@ cdef class JsonObjXtractor:
 
     def __dealloc__(self):
         PyMem_Free(self.token_spans) 
-
 
 
 import json
@@ -348,7 +342,5 @@ def json_gzip_extract_objects(filename, property_name, next_contains_value=''):
                     print("parent object is too big. please, look for better property name", file=sys.stderr)
 
                 break 
-
-
 
 

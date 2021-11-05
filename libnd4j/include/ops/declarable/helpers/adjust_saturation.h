@@ -20,22 +20,22 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <system/op_boilerplate.h>
-#include <math/templatemath.h>
 #include <array/NDArray.h>
+#include <math/templatemath.h>
+#include <system/op_boilerplate.h>
 
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
-    void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC);
+SD_LIB_HIDDEN void adjustSaturation(sd::LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr,
+                                    NDArray* output, const int dimC);
 
 /*
     template <typename T>
-    static FORCEINLINE _CUDA_HD void rgb_to_hsv(T r, T g, T b, T* h, T* s, T* v) {
-        T vv = sd::math::nd4j_max<T>(r, sd::math::nd4j_max<T>(g, b));
-        T range = vv - sd::math::nd4j_min<T>(r, sd::math::nd4j_min<T>(g, b));
+    static SD_INLINE SD_HOST_DEVICE void rgb_to_hsv(T r, T g, T b, T* h, T* s, T* v) {
+        T vv = sd::math::sd_max<T>(r, sd::math::sd_max<T>(g, b));
+        T range = vv - sd::math::sd_min<T>(r, sd::math::sd_min<T>(g, b));
         if (vv > 0) {
             *s = range / vv;
         } else {
@@ -61,7 +61,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static FORCEINLINE _CUDA_HD void hsv_to_rgb(T h, T s, T v, T* r, T* g, T* b) {
+    static SD_INLINE SD_HOST_DEVICE void hsv_to_rgb(T h, T s, T v, T* r, T* g, T* b) {
         T c = s * v;
         T m = v - c;
         T dh = h * 6;
@@ -74,7 +74,7 @@ namespace helpers {
         while (fmodu >= (T) 2.0f)
             fmodu -= (T) 2.0f;
 
-        T x = c * (1. - sd::math::nd4j_abs<T>(fmodu - 1.));
+        T x = c * (1. - sd::math::sd_abs<T>(fmodu - 1.));
         switch (h_category) {
             case 0:
                 rr = c;
@@ -118,6 +118,6 @@ namespace helpers {
     }
 */
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

@@ -26,22 +26,20 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        OP_IMPL(boolean_not, 1, 1,true) {
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
+OP_IMPL(boolean_not, 1, 1, true) {
+  auto x = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
 
-            x->applyTransform(transform::Not, *z);
+  x->applyTransform(transform::Not, *z);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(boolean_not) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::BOOL)
-                    ->setAllowedOutputTypes(0, DataType::BOOL);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(boolean_not) {
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::BOOL)->setAllowedOutputTypes(0, DataType::BOOL);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

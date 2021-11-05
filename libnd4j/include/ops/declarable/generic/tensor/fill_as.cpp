@@ -26,33 +26,28 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
+  auto output = OUTPUT_VARIABLE(0);
 
-            if (block.width() > 1) {
-                auto s = INPUT_VARIABLE(0);
-                output->assign(s);
-            } else if (block.numT() > 0) {
-                output->assign(T_ARG(0));
-            } else if (block.numI() > 0) {
-                output->assign(INT_ARG(0));
-            }
+  if (block.width() > 1) {
+    auto s = INPUT_VARIABLE(0);
+    output->assign(s);
+  } else if (block.numT() > 0) {
+    output->assign(T_ARG(0));
+  } else if (block.numI() > 0) {
+    output->assign(INT_ARG(0));
+  }
 
-            STORE_RESULT(output);
+  STORE_RESULT(output);
 
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(filllike, fill_as);
-        DECLARE_SYN(fill_like, fill_as);
-
-
-        DECLARE_TYPES(fill_as) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(filllike, fill_as);
+DECLARE_SYN(fill_like, fill_as);
+
+DECLARE_TYPES(fill_as) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

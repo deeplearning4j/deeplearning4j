@@ -19,58 +19,56 @@
 //
 // @author raver119@gmail.com
 //
-
-#include "testlayers.h"
 #include <array/ExtraArguments.h>
-#include <array>
 #include <cuda.h>
 #include <cuda_runtime.h>
+
+#include <array>
+
+#include "testlayers.h"
 
 using namespace sd;
 
 class CudaExtraArgumentsTests : public testing::Test {
-public:
-
-    CudaExtraArgumentsTests() {
-        printf("\n");
-        fflush(stdout);
-    }
+ public:
+  CudaExtraArgumentsTests() {
+    printf("\n");
+    fflush(stdout);
+  }
 };
 
 TEST_F(CudaExtraArgumentsTests, Basic_Test_1) {
-    ExtraArguments args({1.0, 2.0, 3.0});
+  ExtraArguments args({1.0, 2.0, 3.0});
 
-    float ef[] = {1.f, 2.f, 3.f};
-    double ed[] = {1., 2., 3.};
+  float ef[] = {1.f, 2.f, 3.f};
+  double ed[] = {1., 2., 3.};
 
-    auto ptrFloat = reinterpret_cast<float *>(args.argumentsAsT<float>());
-    auto ptrDouble = reinterpret_cast<double *>(args.argumentsAsT<double>());
-    ASSERT_TRUE(ptrFloat != nullptr);
-    ASSERT_TRUE(ptrDouble != nullptr);
+  auto ptrFloat = reinterpret_cast<float *>(args.argumentsAsT<float>());
+  auto ptrDouble = reinterpret_cast<double *>(args.argumentsAsT<double>());
+  ASSERT_TRUE(ptrFloat != nullptr);
+  ASSERT_TRUE(ptrDouble != nullptr);
 
-    auto tmpFloat = new float[3];
-    auto tmpDouble = new double[3];
+  auto tmpFloat = new float[3];
+  auto tmpDouble = new double[3];
 
-    cudaMemcpy(tmpFloat, ptrFloat, 3 * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(tmpDouble, ptrDouble, 3 * sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(tmpFloat, ptrFloat, 3 * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(tmpDouble, ptrDouble, 3 * sizeof(double), cudaMemcpyDeviceToHost);
 
-    for (int e = 0; e < 3; e++) {
-        ASSERT_NEAR(ef[e], tmpFloat[e], 1e-5f);
-    }
+  for (int e = 0; e < 3; e++) {
+    ASSERT_NEAR(ef[e], tmpFloat[e], 1e-5f);
+  }
 
-    for (int e = 0; e < 3; e++) {
-        ASSERT_NEAR(ed[e], tmpDouble[e], 1e-5);
-    }
+  for (int e = 0; e < 3; e++) {
+    ASSERT_NEAR(ed[e], tmpDouble[e], 1e-5);
+  }
 
-    delete[] tmpFloat;
-    delete[] tmpDouble;
+  delete[] tmpFloat;
+  delete[] tmpDouble;
 }
-
 
 TEST_F(CudaExtraArgumentsTests, Basic_Test_2) {
-    ExtraArguments args;
+  ExtraArguments args;
 
-    auto ptrInt = args.argumentsAsT<int>();
-    ASSERT_TRUE(ptrInt == nullptr);
+  auto ptrInt = args.argumentsAsT<int>();
+  ASSERT_TRUE(ptrInt == nullptr);
 }
-

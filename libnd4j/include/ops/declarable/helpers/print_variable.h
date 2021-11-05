@@ -22,15 +22,14 @@
 
 #ifndef LIBND4J_PRINT_VARIABLE_H
 #define LIBND4J_PRINT_VARIABLE_H
-
 #include <ops/declarable/helpers/helpers.h>
 
 namespace sd {
-    namespace ops {
-        namespace helpers {
-            void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message = {});
-        }
-    }
+namespace ops {
+namespace helpers {
+SD_LIB_HIDDEN void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message = {});
 }
+}  // namespace ops
+}  // namespace sd
 
-#endif //LIBND4J_PRINT_VARIABLE_H
+#endif  // LIBND4J_PRINT_VARIABLE_H

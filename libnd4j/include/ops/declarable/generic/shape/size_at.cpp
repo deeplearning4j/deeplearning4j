@@ -26,34 +26,31 @@
 #include <ops/declarable/headers/shape.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            auto dim = INT_ARG(0);
-            if (dim < 0)
-                dim += input->rankOf();
+  auto dim = INT_ARG(0);
+  if (dim < 0) dim += input->rankOf();
 
-            REQUIRE_TRUE(dim < input->rankOf(), 0, "Size_At: Dim can't be higher then input rank")
+  REQUIRE_TRUE(dim < input->rankOf(), 0, "Size_At: Dim can't be higher then input rank")
 
-            output->p(0, input->sizeAt(dim));
-            output->syncToDevice();
+  output->p(0, input->sizeAt(dim));
+  output->syncToDevice();
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(size_at) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
-        }
-
-        DECLARE_TYPES(size_at) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64)
-                    ->allowOverride(true);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(size_at) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64)); }
+
+DECLARE_TYPES(size_at) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedOutputTypes(DataType::INT64)
+      ->allowOverride(true);
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

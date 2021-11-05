@@ -21,7 +21,4 @@
 #
 
 
-
-
-
 brew install gcc5

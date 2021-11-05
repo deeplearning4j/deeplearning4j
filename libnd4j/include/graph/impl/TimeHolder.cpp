@@ -19,32 +19,25 @@
 //
 // Created by raver119 on 16/11/17.
 //
-
 #include <graph/TimeHolder.h>
 
 namespace sd {
-    namespace graph {
+namespace graph {
 
-        void TimeHolder::setOuterTime(int nodeId, Nd4jLong time) {
-            _outer[nodeId] = time;
-        }
+void TimeHolder::setOuterTime(int nodeId, sd::LongType time) { _outer[nodeId] = time; }
 
-        void TimeHolder::setInnerTime(int nodeId, Nd4jLong time) {
-            _inner[nodeId] = time;
-        }
+void TimeHolder::setInnerTime(int nodeId, sd::LongType time) { _inner[nodeId] = time; }
 
-        Nd4jLong TimeHolder::outerTime(int nodeId) {
-            if (_outer.count(nodeId) == 0)
-                return 0;
+sd::LongType TimeHolder::outerTime(int nodeId) {
+  if (_outer.count(nodeId) == 0) return 0;
 
-            return _outer[nodeId];
-        }
-
-        Nd4jLong TimeHolder::innerTime(int nodeId) {
-            if (_inner.count(nodeId) == 0)
-                return 0;
-
-            return _inner[nodeId];
-        }
-    }
+  return _outer[nodeId];
 }
+
+sd::LongType TimeHolder::innerTime(int nodeId) {
+  if (_inner.count(nodeId) == 0) return 0;
+
+  return _inner[nodeId];
+}
+}  // namespace graph
+}  // namespace sd

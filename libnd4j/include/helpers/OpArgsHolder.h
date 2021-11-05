@@ -23,85 +23,68 @@
 #ifndef LIBND4J_OPARGSHOLDER_H
 #define LIBND4J_OPARGSHOLDER_H
 
-
 #include <array/NDArray.h>
-#include <system/dll.h>
 
 namespace sd {
 
-class ND4J_EXPORT OpArgsHolder {
+class SD_LIB_EXPORT OpArgsHolder {
+ private:
+  std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
+  std::vector<double> _tArgs = std::vector<double>();
+  std::vector<sd::LongType> _iArgs = std::vector<sd::LongType>();
+  std::vector<bool> _bArgs = std::vector<bool>();
 
-private:
+  std::vector<bool> _isArrAlloc = std::vector<bool>();
 
-	std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
-    std::vector<double>   _tArgs  = std::vector<double>();
-    std::vector<Nd4jLong> _iArgs  = std::vector<Nd4jLong>();
-    std::vector<bool>     _bArgs  = std::vector<bool>();
+  int _numInArrs = _inArrs.size();
+  int _numTArgs = _tArgs.size();
+  int _numIArgs = _iArgs.size();
+  int _numBArgs = _bArgs.size();
 
-    std::vector<bool> _isArrAlloc = std::vector<bool>();
+ public:
+  // default constructor
+  OpArgsHolder();
 
-    int _numInArrs = _inArrs.size();
-    int _numTArgs  = _tArgs.size();
-    int _numIArgs  = _iArgs.size();
-    int _numBArgs  = _bArgs.size();
+  // copy constructor
+  OpArgsHolder(const OpArgsHolder& other);
 
-public:
+  // constructor
+  OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(),
+               const std::vector<sd::LongType>& iArgs = std::vector<sd::LongType>(),
+               const std::vector<bool>& bArgs = std::vector<bool>());
 
-    // default constructor
-	OpArgsHolder();
+  // move constructor
+  OpArgsHolder(OpArgsHolder&& other) noexcept;
 
-    // copy constructor
-    OpArgsHolder(const OpArgsHolder& other);
+  // assignment operator
+  OpArgsHolder& operator=(const OpArgsHolder& other);
 
-    // constructor
-    OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>(), const std::vector<bool>& bArgs = std::vector<bool>());
+  // move assignment operator
+  OpArgsHolder& operator=(OpArgsHolder&& other) noexcept;
 
-    // move constructor
-    OpArgsHolder(OpArgsHolder&& other) noexcept;
+  const std::vector<NDArray*>& getInArrs() const { return _inArrs; }
 
-    // assignment operator
-    OpArgsHolder& operator=(const OpArgsHolder& other);
+  const std::vector<double>& getTArgs() const { return _tArgs; }
 
-    // move assignment operator
-    OpArgsHolder& operator=(OpArgsHolder&& other) noexcept;
+  const std::vector<sd::LongType>& getIArgs() const { return _iArgs; }
 
-    const std::vector<NDArray*>& getInArrs() const
-    {return _inArrs; }
+  const std::vector<bool>& getBArgs() const { return _bArgs; }
 
-    const std::vector<double>& getTArgs() const
-    {return _tArgs; }
+  const std::vector<bool>& getAllocInfo() const { return _isArrAlloc; }
 
-    const std::vector<Nd4jLong>& getIArgs() const
-    {return _iArgs; }
+  int getNumInArrs() const { return _numInArrs; }
 
-    const std::vector<bool>& getBArgs() const
-    {return _bArgs; }
+  int getNumTArgs() const { return _numTArgs; }
 
-    const std::vector<bool>& getAllocInfo() const
-    {return _isArrAlloc; }
+  int getNumIArgs() const { return _numIArgs; }
 
-    int getNumInArrs() const
-    {return _numInArrs; }
+  int getNumBArgs() const { return _numBArgs; }
 
-    int getNumTArgs() const
-    {return _numTArgs; }
+  OpArgsHolder createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
 
-    int getNumIArgs() const
-    {return _numIArgs; }
-
-    int getNumBArgs() const
-    {return _numBArgs; }
-
-    OpArgsHolder createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
-
-    ~OpArgsHolder() noexcept;
-
+  ~OpArgsHolder() noexcept;
 };
 
+}  // namespace sd
 
-
-
-
-}
-
-#endif //LIBND4J_OPARGSHOLDER_H
+#endif  // LIBND4J_OPARGSHOLDER_H

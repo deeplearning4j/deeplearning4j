@@ -26,43 +26,39 @@
 #include <ops/declarable/headers/tests.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(test_scalar, 1, 1, false, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(test_scalar, 1, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            double val = input->e<double>(0) + 2.0;
-            output->p(0, val);
+  double val = input->e<double>(0) + 2.0;
+  output->p(0, val);
 
-            return Status::OK();
-        }
-
-        DECLARE_SHAPE_FN(test_scalar) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);
-
-            newShape[0] = 2;
-            newShape[1] = 1;
-            newShape[2] = 1;
-            newShape[3] = 1;
-            newShape[4] = 1;
-            newShape[5] = 0;
-            newShape[6] = 1;
-            newShape[7] = 99;
-
-            ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
-
-            auto shape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape));
-            RELEASE(newShape, block.getWorkspace());
-            return SHAPELIST(shape);
-        }
-
-        DECLARE_TYPES(test_scalar) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_SHAPE_FN(test_scalar) {
+  sd::LongType *newShape;
+  ALLOCATE(newShape, block.workspace(), shape::shapeInfoLength(2), sd::LongType);
+
+  newShape[0] = 2;
+  newShape[1] = 1;
+  newShape[2] = 1;
+  newShape[3] = 1;
+  newShape[4] = 1;
+  newShape[5] = 0;
+  newShape[6] = 1;
+  newShape[7] = 99;
+
+  ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
+
+  auto shape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape));
+  RELEASE(newShape, block.getWorkspace());
+  return SHAPELIST(shape);
+}
+
+DECLARE_TYPES(test_scalar) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

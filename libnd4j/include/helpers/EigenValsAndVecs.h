@@ -22,7 +22,6 @@
 
 #ifndef LIBND4J_EIGENVALSANDVECS_H
 #define LIBND4J_EIGENVALSANDVECS_H
-
 #include <array/NDArray.h>
 
 namespace sd {
@@ -31,66 +30,60 @@ namespace helpers {
 
 // this class calculates eigenvalues and eigenvectors of given input matrix
 template <typename T>
-class EigenValsAndVecs {
+class SD_LIB_HIDDEN EigenValsAndVecs {
+ public:
+  // suppose we got input square NxN matrix
 
-    public:
-        // suppose we got input square NxN matrix
+  NDArray _Vals;  // {N,2} matrix of eigenvalues, 2 means real and imaginary part
+  NDArray _Vecs;  // {N,N,2} matrix, whose columns are the eigenvectors (complex), 2 means real and imaginary part
 
-        NDArray _Vals;      	// {N,2} matrix of eigenvalues, 2 means real and imaginary part
-        NDArray _Vecs;      	// {N,N,2} matrix, whose columns are the eigenvectors (complex), 2 means real and imaginary part
+  explicit EigenValsAndVecs(const NDArray& matrix);
 
-        explicit EigenValsAndVecs(const NDArray& matrix);
+  //////////////////////////////////////////////////////////////////////////
+  SD_INLINE static void divideComplexNums(const T& a1, const T& b1, const T& a2, const T& b2, T& a3, T& b3) {
+    T norm2 = a2 * a2 + b2 * b2;
 
+    a3 = (a1 * a2 + b1 * b2) / norm2;
+    b3 = (a2 * b1 - a1 * b2) / norm2;
+  }
 
-		//////////////////////////////////////////////////////////////////////////
-		FORCEINLINE static void divideComplexNums(const T& a1, const T& b1, const T& a2, const T& b2, T& a3, T& b3) {
+  //////////////////////////////////////////////////////////////////////////
+  SD_INLINE static void multiplyComplexNums(const T& a1, const T& b1, const T& a2, const T& b2, T& a3, T& b3) {
+    a3 = (a1 * a2 - b1 * b2);
+    b3 = (a1 * b2 + b1 * a2);
+  }
 
-    		T norm2 = a2*a2 + b2*b2;
+  //////////////////////////////////////////////////////////////////////////
+  SD_INLINE static void sqrtComplexNum(T& a, T& b) {
+    T norm = math::sd_sqrt<T, T>(a * a + b * b);
 
-    		a3 = (a1*a2 + b1*b2) / norm2;
-    		b3 = (a2*b1 - a1*b2) / norm2;
-		}
+    if (b < (T)0)
+      b = -math::sd_sqrt<T, T>((T)0.5 * (norm - a));
+    else
+      b = math::sd_sqrt<T, T>((T)0.5 * (norm - a));
+    a = math::sd_sqrt<T, T>((T)0.5 * (norm + a));
+  }
 
-		//////////////////////////////////////////////////////////////////////////
-		FORCEINLINE static void multiplyComplexNums(const T& a1, const T& b1, const T& a2, const T& b2, T& a3, T& b3) {
-
-    		a3 = (a1*a2 - b1*b2);
-    		b3 = (a1*b2 + b1*a2);
-		}
-
-		//////////////////////////////////////////////////////////////////////////
-		FORCEINLINE static void sqrtComplexNum(T& a, T& b) {
-
-			T norm = math::nd4j_sqrt<T,T>(a*a + b*b);
-
-    		if(b < (T)0)
-                b = -math::nd4j_sqrt<T,T>((T)0.5 * (norm - a));
-            else
-                b = math::nd4j_sqrt<T,T>((T)0.5 * (norm - a));
-    		a = math::nd4j_sqrt<T,T>((T)0.5 * (norm + a));
-		}
-
-
-    private:
-
-        void calcEigenVals(const NDArray& schurMatrixT);						// calculates _Vals
-        void calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& schurMatrixU);	// makes changes both in schurMatrixT(NxN) and schurMatrixU(NxN), also calculates and stores pseudo-eigenvectors (real) in schurMatrixU columns
-        void calcEigenVecs(const NDArray& schurMatrixU);						// calculates _Vecs
-
+ private:
+  void calcEigenVals(const NDArray& schurMatrixT);  // calculates _Vals
+  void calcPseudoEigenVecs(
+      NDArray& schurMatrixT,
+      NDArray& schurMatrixU);  // makes changes both in schurMatrixT(NxN) and schurMatrixU(NxN), also calculates and
+                               // stores pseudo-eigenvectors (real) in schurMatrixU columns
+  void calcEigenVecs(const NDArray& schurMatrixU);  // calculates _Vecs
 };
 
 /**
  * @brief Compute the eigenvalues and eigenvectors of a square matrix
- * 
+ *
  * @param input square matrix {n,n}
  * @param vals eigenvalues {n,2}
  * @param vecs eigenvectors {n,n,2}
  */
-void eig(const NDArray& input, NDArray& vals, NDArray& vecs);
+SD_LIB_HIDDEN void eig(const NDArray& input, NDArray& vals, NDArray& vecs);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-
-#endif //LIBND4J_EIGENVALSANDVECS_H
+#endif  // LIBND4J_EIGENVALSANDVECS_H

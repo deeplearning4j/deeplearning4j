@@ -26,18 +26,14 @@
 #include <ops/declarable/headers/tests.h>
 
 namespace sd {
-    namespace ops {
-        OP_IMPL(noop, -2, -2, true) {
-            // Fastest op ever.
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(noop) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+namespace ops {
+OP_IMPL(noop, -2, -2, true) {
+  // Fastest op ever.
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(noop) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

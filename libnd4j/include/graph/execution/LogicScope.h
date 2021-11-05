@@ -23,25 +23,23 @@
 #ifndef LIBND4J_LOGICSCOPE_H
 #define LIBND4J_LOGICSCOPE_H
 
-#include <system/pointercast.h>
-#include <graph/Node.h>
 #include <graph/Graph.h>
+#include <graph/Node.h>
 
 namespace sd {
-    namespace graph {
-        /**
-         * This class is responsible for execution logic of Scope logical abstraction
-         *
-         * It's ultra-simple. It does nothing, and can't be executed directly.
-         *
-         * @tparam T
-         */
-        class LogicScope {
-        public:
-            static Nd4jStatus processNode(Graph* graph, Node* node);
-        };
-    }
-}
+namespace graph {
+/**
+ * This class is responsible for execution logic of Scope logical abstraction
+ *
+ * It's ultra-simple. It does nothing, and can't be executed directly.
+ *
+ * @tparam T
+ */
+class LogicScope {
+ public:
+  static sd::Status processNode(Graph* graph, Node* node);
+};
+}  // namespace graph
+}  // namespace sd
 
-
-#endif //LIBND4J_LOGICSCOPE_H
+#endif  // LIBND4J_LOGICSCOPE_H

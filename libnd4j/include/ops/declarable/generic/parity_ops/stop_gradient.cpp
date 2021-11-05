@@ -26,26 +26,22 @@
 #include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
-    namespace ops {
-        OP_IMPL(stop_gradient, 1, 1, true) {
-            auto out = OUTPUT_VARIABLE(0);
+namespace ops {
+OP_IMPL(stop_gradient, 1, 1, true) {
+  auto out = OUTPUT_VARIABLE(0);
 
-            if (!block.isInplace()) {
-                auto x = INPUT_VARIABLE(0);
-                // we hope for memcpy here
-                out->assign(x);
-            }
+  if (!block.isInplace()) {
+    auto x = INPUT_VARIABLE(0);
+    // we hope for memcpy here
+    out->assign(x);
+  }
 
-            return Status::OK();
-        }
-        DECLARE_SYN(StopGradient, stop_gradient);
-
-        DECLARE_TYPES(stop_gradient) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setSameMode(true);
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SYN(StopGradient, stop_gradient);
+
+DECLARE_TYPES(stop_gradient) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

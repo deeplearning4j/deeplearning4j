@@ -19,51 +19,47 @@
 //
 // Created by GS <sgazeos@gmail.com> on 3/21/2018.
 //
-
 #include <array/ResultSet.h>
-#include <ops/declarable/helpers/matrix_diag_part.h>
-#include <graph/Status.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/matrix_diag_part.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-
 //////////////////////////////////////////////////////////////////////////
 // Returns a batched matrix tensor with new batched diagonal values.
-// for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
+// for detailed explanations please take a look on web page:
+// https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-static int _matrixDiagPart(const NDArray* input, NDArray* output) {
+static sd::Status _matrixDiagPart(const NDArray* input, NDArray* output) {
+  auto listOut = output->allTensorsAlongDimension({output->rankOf() - 1});
+  auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
-    auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
-    auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
+  if (listOut.size() != listDiag.size()) {
+    sd_printf("matrix_diag_part: Input matrix has wrong shape.", "");
+    return sd::Status::VALIDATION;
+  }
+  int lastDimension = sd::math::sd_min(input->sizeAt(-2), input->sizeAt(-1));
+  // TODO: tune this properlys
+  int lO = listOut.size();
 
-    if (listOut.size() != listDiag. size()) {
-        nd4j_printf("matrix_diag_part: Input matrix has wrong shape.", "");
-        return ND4J_STATUS_VALIDATION;
-    }
-    int lastDimension = sd::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
-    // TODO: tune this properlys
-    int lO = listOut.size();
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++)
+      for (int j = 0; j < lastDimension; ++j) listOut.at(i)->p(j, listDiag.at(i)->e<T>(j, j));
+  };
 
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++)
-            for (int j = 0; j < lastDimension; ++j)
-                listOut.at(i)->p(j, listDiag.at(i)->e<T>(j, j));
-    };
+  samediff::Threads::parallel_tad(func, 0, lO);
 
-    samediff::Threads::parallel_tad(func, 0, lO);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
-    ND4J_LOCAL int matrixDiagPart(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), LIBND4J_TYPES);
-    }
+sd::Status matrixDiagPart(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), SD_COMMON_TYPES);
+}
 
-    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL int _matrixDiagPart, (const NDArray* input, NDArray* output), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart, (const NDArray* input, NDArray* output), SD_COMMON_TYPES);
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

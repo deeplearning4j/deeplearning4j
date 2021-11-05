@@ -24,11 +24,13 @@
 #if NOT_EXCLUDED(OP_space_to_depth)
 
 #include <ops/declarable/headers/parity_ops.h>
-#include <array>
 #include <ops/declarable/helpers/s_t_d.h>
+
+#include <array>
 
 namespace sd {
 namespace ops {
+
 
     DECLARE_TYPES(space_to_depth) {
         getOpDescriptor()
@@ -88,7 +90,11 @@ namespace ops {
         auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
-}
-}
+
+DECLARE_TYPES(space_to_depth) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

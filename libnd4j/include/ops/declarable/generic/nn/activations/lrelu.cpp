@@ -26,45 +26,43 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 namespace sd {
-    namespace ops {
-        CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, -2, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, -2, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
+  float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
 
-            input->applyScalar(sd::scalar::LeakyRELU, alpha, *output);
-            STORE_RESULT(output);
+  input->applyScalar(sd::scalar::LeakyRELU, alpha, *output);
+  STORE_RESULT(output);
 
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(lrelu) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
-        }
-
-        CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto epsilon = INPUT_VARIABLE(1);
-
-            auto z = OUTPUT_VARIABLE(0);
-
-            float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
-
-            //input->applyPairwiseTransform(pairwise::LRELUDerivativeE, epsilon, z, nullptr);
-            helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z, alpha);
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(lrelu_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
-        }
-    }
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(lrelu) {
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
+
+CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto epsilon = INPUT_VARIABLE(1);
+
+  auto z = OUTPUT_VARIABLE(0);
+
+  float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
+
+  // input->applyPairwiseTransform(pairwise::LRELUDerivativeE, epsilon, z, nullptr);
+  helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z, alpha);
+  return sd::Status::OK;
+}
+
+DECLARE_TYPES(lrelu_bp) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

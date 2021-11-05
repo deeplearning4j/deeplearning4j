@@ -22,31 +22,29 @@
 
 #ifndef DEV_TESTS_BROADCASTINTOPSTUPLE_H
 #define DEV_TESTS_BROADCASTINTOPSTUPLE_H
-
+#include <system/common.h>
 #include <system/op_enums.h>
-#include <system/dll.h>
 
 namespace sd {
-    class ND4J_EXPORT BroadcastIntOpsTuple {
-    private:
+class SD_LIB_EXPORT BroadcastIntOpsTuple {
+ private:
+ public:
+  sd::scalar::IntOps s;
+  sd::pairwise::IntOps p;
+  sd::broadcast::IntOps b;
 
-    public:
-        sd::scalar::IntOps s;
-        sd::pairwise::IntOps p;
-        sd::broadcast::IntOps b;
+  BroadcastIntOpsTuple() = default;
+  ~BroadcastIntOpsTuple() = default;
 
-        BroadcastIntOpsTuple() = default;
-        ~BroadcastIntOpsTuple() = default;
+  BroadcastIntOpsTuple(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise, sd::broadcast::IntOps broadcast) {
+    s = scalar;
+    p = pairwise;
+    b = broadcast;
+  }
 
-        BroadcastIntOpsTuple(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise, sd::broadcast::IntOps broadcast) {
-            s = scalar;
-            p = pairwise;
-            b = broadcast;
-        }
+  static BroadcastIntOpsTuple custom(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise,
+                                     sd::broadcast::IntOps broadcast);
+};
+}  // namespace sd
 
-        static BroadcastIntOpsTuple custom(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise, sd::broadcast::IntOps broadcast);
-    };
-}
-
-
-#endif //DEV_TESTS_BROADCASTOPSTUPLE_H
+#endif  // DEV_TESTS_BROADCASTOPSTUPLE_H

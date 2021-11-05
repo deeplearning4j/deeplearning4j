@@ -22,22 +22,20 @@
 
 #ifndef LIBND4J_REVERSE_H
 #define LIBND4J_REVERSE_H
-
 #include <ops/declarable/helpers/helpers.h>
 
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
-	void reverseSequence(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim);
+SD_LIB_HIDDEN void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
+                                   NDArray* output, int seqDim, const int batchDim);
 
-	void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs);
+SD_LIB_HIDDEN void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output,
+                           const std::vector<int>* intArgs);
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-
-}
-}
-}
-
-
-#endif //LIBND4J_REVERSESEQUENCE_H
+#endif  // LIBND4J_REVERSESEQUENCE_H

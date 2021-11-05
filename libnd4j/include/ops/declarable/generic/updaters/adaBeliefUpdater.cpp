@@ -18,80 +18,83 @@
  *  *****************************************************************************
  */
 
- //
- // @author Oleh Semeniv (oleg.semeniv@gmail.com)
- // @author Abdelrauf(rauf@konduit.ai)
+//
+// @author Oleh Semeniv (oleg.semeniv@gmail.com)
+// @author Abdelrauf(rauf@konduit.ai)
 
-#include <ops/declarable/headers/updaters.h>
-#include <ops/declarable/CustomOperations.h>
-#include <helpers/ConstantTadHelper.h>
-#include <execution/Threads.h>
 #include <array/NDArray.h>
+#include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/updaters.h>
 #if NOT_EXCLUDED(OP_adabelief_updater)
 namespace sd {
-    namespace ops {
+namespace ops {
 
-        CONFIGURABLE_OP_IMPL(adabelief_updater, 3, 3, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(adabelief_updater, 3, 3, true, 0, 0) {
+  const auto gradient = INPUT_VARIABLE(0);
+  const auto initStateU = INPUT_VARIABLE(1);
+  const auto initStateM = INPUT_VARIABLE(2);
 
-            const auto gradient = INPUT_VARIABLE(0);
-            const auto initStateU = INPUT_VARIABLE(1);
-            const auto initStateM = INPUT_VARIABLE(2);
+  auto update = OUTPUT_VARIABLE(0);
+  auto stateU = OUTPUT_VARIABLE(1);
+  auto stateM = OUTPUT_VARIABLE(2);
 
-            auto update = OUTPUT_VARIABLE(0);
-            auto stateU = OUTPUT_VARIABLE(1);
-            auto stateM = OUTPUT_VARIABLE(2);
+  // todo maybe we need an error like on Java side
+  if (gradient->isEmpty() || initStateU->isEmpty() || initStateM->isEmpty()) return sd::Status::OK;
 
-            // todo maybe we need an error like on Java side
-            if (gradient->isEmpty() || initStateU->isEmpty() || initStateM->isEmpty())
-                return Status::OK();
+  REQUIRE_TRUE(gradient->isSameShape(initStateU), 0,
+               "ADABELIEF UPDATER OP: input state V must have the same shape as gradient,"
+               "  expected shape %s, but got %s!",
+               ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+               ShapeUtils::shapeAsString(initStateU->shapeInfo()).c_str());
+  REQUIRE_TRUE(gradient->isSameShape(initStateM), 0,
+               "ADABELIEF UPDATER OP: input state M must have the same shape as gradient,"
+               "  expected shape %s, but got %s!",
+               ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+               ShapeUtils::shapeAsString(initStateM->shapeInfo()).c_str());
 
-            REQUIRE_TRUE(gradient->isSameShape(initStateU), 0, "ADABELIEF UPDATER OP: input state V must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateU->shapeInfo()).c_str());
-            REQUIRE_TRUE(gradient->isSameShape(initStateM), 0, "ADABELIEF UPDATER OP: input state M must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateM->shapeInfo()).c_str());
+  bool bParamsSupply = 7 == block.width() || 4 == block.getTArguments()->size();
 
-            bool bParamsSupply = 7 == block.width() || 4 == block.getTArguments()->size();
+  auto iteration = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-            auto iteration = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
+  REQUIRE_TRUE(bParamsSupply, 0, "ADABELIEF UPDATER OP: learning rate, beta 1, beta 2 and epsilon were not provided!");
 
-            REQUIRE_TRUE(bParamsSupply, 0, "ADABELIEF UPDATER OP: learning rate, beta 1, beta 2 and epsilon were not provided!");
+  double dLr, dBeta1, dBeta2, dEpsilon;
 
-            double dLr, dBeta1, dBeta2, dEpsilon;
+  if (block.width() > 3) {
+    const auto lr = INPUT_VARIABLE(3);
+    const auto beta1 = INPUT_VARIABLE(4);
+    const auto beta2 = INPUT_VARIABLE(5);
+    const auto epsilon = INPUT_VARIABLE(6);
 
-            if (block.width() > 3) {
-                const auto lr = INPUT_VARIABLE(3);
-                const auto beta1 = INPUT_VARIABLE(4);
-                const auto beta2 = INPUT_VARIABLE(5);
-                const auto epsilon = INPUT_VARIABLE(6);
+    REQUIRE_TRUE(lr->isScalar(), 0, "ADABELIEF UPDATER OP: Learning rate has to be a scalar, but instead got rank %i!",
+                 lr->rankOf());
+    REQUIRE_TRUE(beta1->isScalar(), 0, "ADABELIEF UPDATER OP: beta 1 has to be a scalar, but instead got rank %i!",
+                 beta1->rankOf());
+    REQUIRE_TRUE(beta2->isScalar(), 0, "ADABELIEF UPDATER OP: beta 2 has to be a scalar, but instead got rank %i!",
+                 beta2->rankOf());
+    REQUIRE_TRUE(epsilon->isScalar(), 0, "ADABELIEF UPDATER OP: Epsilon has to be a scalar, but instead got rank %i!",
+                 epsilon->rankOf());
 
-                REQUIRE_TRUE(lr->isScalar(), 0, "ADABELIEF UPDATER OP: Learning rate has to be a scalar, but instead got rank %i!", lr->rankOf());
-                REQUIRE_TRUE(beta1->isScalar(), 0, "ADABELIEF UPDATER OP: beta 1 has to be a scalar, but instead got rank %i!", beta1->rankOf());
-                REQUIRE_TRUE(beta2->isScalar(), 0, "ADABELIEF UPDATER OP: beta 2 has to be a scalar, but instead got rank %i!", beta2->rankOf());
-                REQUIRE_TRUE(epsilon->isScalar(), 0, "ADABELIEF UPDATER OP: Epsilon has to be a scalar, but instead got rank %i!", epsilon->rankOf());
+    dLr = lr->e<double>(0);
+    dBeta1 = beta1->e<double>(0);
+    dBeta2 = beta2->e<double>(0);
+    dEpsilon = epsilon->e<double>(0);
+  } else {
+    dLr = T_ARG(0);
+    dBeta1 = T_ARG(1);
+    dBeta2 = T_ARG(2);
+    dEpsilon = T_ARG(3);
+  }
 
-                dLr = lr->e<double>(0);
-                dBeta1 = beta1->e<double>(0);
-                dBeta2 = beta2->e<double>(0);
-                dEpsilon = epsilon->e<double>(0);
-            }
-            else {
-                dLr = T_ARG(0);
-                dBeta1 = T_ARG(1);
-                dBeta2 = T_ARG(2);
-                dEpsilon = T_ARG(3);
-            }
-
-            helpers::updaterAdaBelief(block.launchContext(), *gradient, *initStateU, *initStateM, *update, *stateU, *stateM, dLr, dBeta1, dBeta2, dEpsilon, iteration);
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(adabelief_updater) {
-            getOpDescriptor()->setAllowedInputTypes({ ALL_FLOATS })
-                ->setSameMode(true);
-        }
-
-    }
+  helpers::updaterAdaBelief(block.launchContext(), *gradient, *initStateU, *initStateM, *update, *stateU, *stateM, dLr,
+                            dBeta1, dBeta2, dEpsilon, iteration);
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(adabelief_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+
+}  // namespace ops
+}  // namespace sd
 #endif

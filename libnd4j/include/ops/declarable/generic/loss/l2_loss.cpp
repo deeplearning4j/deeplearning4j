@@ -26,29 +26,27 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {
-    namespace ops {
-        CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops {
+CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
+  auto input = INPUT_VARIABLE(0);
+  auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
+  REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-            // FIXME: output should be used directly here, to avoid sum
-            input->reduceNumber(reduce::SquaredNorm, *output);
-            (*output) /= 2.;
+  // FIXME: output should be used directly here, to avoid sum
+  input->reduceNumber(reduce::SquaredNorm, *output);
+  (*output) /= 2.;
 
-            return Status::OK();
-        }
-        DECLARE_SHAPE_FN(l2_loss) {
-            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
-        }
-
-        DECLARE_TYPES(l2_loss) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-    }
+  return sd::Status::OK;
 }
+DECLARE_SHAPE_FN(l2_loss) {
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
+}
+
+DECLARE_TYPES(l2_loss) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+}
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -140,7 +140,7 @@ file contains the following declaration:
 ```
 auto inputShapeInfo   = inputShape->at(0);
 auto weightsShapeInfo = inputShape->at(1);
-Nd4jLong const* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
+sd::LongType const* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
 
 int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0)); // filter(kernel) width
 int sW = INT_ARG(1);                                                        // strides width

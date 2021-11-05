@@ -22,92 +22,90 @@
 
 #ifndef LIBND4J_SVD_H
 #define LIBND4J_SVD_H
-
 #include <helpers/hhSequence.h>
+
 #include "array/NDArray.h"
 
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 template <typename T>
 class SVD {
+ public:
+  int _switchSize = 10;
 
-    public:
-    
-    int _switchSize = 10;
+  NDArray _m;
+  NDArray _s;
+  NDArray _u;
+  NDArray _v;
 
-    NDArray _m;
-    NDArray _s;
-    NDArray _u;
-    NDArray _v;
-    
-    int _diagSize;
+  int _diagSize;
 
-    bool _transp;
-    bool _calcU;
-    bool _calcV;
-    bool _fullUV;
+  bool _transp;
+  bool _calcU;
+  bool _calcV;
+  bool _fullUV;
 
-    /**
-    *  constructor
-    */
-    SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV);
+  /**
+   *  constructor
+   */
+  SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV);
 
-    SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV, const char t);
+  SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV, const char t);
 
-    void deflation1(int col1, int shift, int ind, int size);
-    
-    void deflation2(int col1U , int col1M, int row1W, int col1W, int ind1, int ind2, int size);
-    
-    void deflation(int col1, int col2, int ind, int row1W, int col1W, int shift);    
+  void deflation1(int col1, int shift, int ind, int size);
 
-    // FIXME: proper T support required here
-    T secularEq(const T diff, const NDArray& col0, const NDArray& diag, const NDArray &permut, const NDArray& diagShifted, const T shift);
+  void deflation2(int col1U, int col1M, int row1W, int col1W, int ind1, int ind2, int size);
 
-    void calcSingVals(const NDArray& col0, const NDArray& diag, const NDArray& permut, NDArray& singVals, NDArray& shifts, NDArray& mus);
+  void deflation(int col1, int col2, int ind, int row1W, int col1W, int shift);
 
-    void perturb(const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& singVals,  const NDArray& shifts, const NDArray& mus, NDArray& zhat);
+  // FIXME: proper T support required here
+  T secularEq(const T diff, const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& diagShifted,
+              const T shift);
 
-    void calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArray& perm, const NDArray& singVals, const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V);
+  void calcSingVals(const NDArray& col0, const NDArray& diag, const NDArray& permut, NDArray& singVals, NDArray& shifts,
+                    NDArray& mus);
 
-    void calcBlockSVD(int firstCol, int size, NDArray& U, NDArray& singVals, NDArray& V);
+  void perturb(const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& singVals,
+               const NDArray& shifts, const NDArray& mus, NDArray& zhat);
 
-    void DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift);
+  void calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArray& perm, const NDArray& singVals,
+                    const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V);
 
-    void exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray& U, const NDArray& V);
+  void calcBlockSVD(int firstCol, int size, NDArray& U, NDArray& singVals, NDArray& V);
 
-    void evalData(const NDArray& matrix);
+  void DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift);
 
-    FORCEINLINE NDArray& getS();
-    FORCEINLINE NDArray& getU();
-    FORCEINLINE NDArray& getV();
+  void exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray& U, const NDArray& V);
 
+  void evalData(const NDArray& matrix);
+
+  SD_INLINE NDArray& getS();
+  SD_INLINE NDArray& getU();
+  SD_INLINE NDArray& getV();
 };
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-FORCEINLINE NDArray& SVD<T>::getS() {
+SD_INLINE NDArray& SVD<T>::getS() {
   return _s;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-FORCEINLINE NDArray& SVD<T>::getU() {
+SD_INLINE NDArray& SVD<T>::getU() {
   return _u;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-FORCEINLINE NDArray& SVD<T>::getV() {
+SD_INLINE NDArray& SVD<T>::getV() {
   return _v;
 }
 
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 
-
-}
-}
-}
-
-#endif //LIBND4J_SVD_H
+#endif  // LIBND4J_SVD_H

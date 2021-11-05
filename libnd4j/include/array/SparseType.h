@@ -24,12 +24,12 @@
 #define LIBND4J_SPARSETYPE_H
 
 namespace sd {
-    enum SparseType {
-        CSR = 1,
-        CSC = 2,
-        COO = 3,
-        LIL = 4,
-    };
+enum SparseType {
+  CSR = 1,
+  CSC = 2,
+  COO = 3,
+  LIL = 4,
+};
 }
 
-#endif //LIBND4J_SPARSETYPE_H
+#endif  // LIBND4J_SPARSETYPE_H

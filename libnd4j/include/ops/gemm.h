@@ -26,43 +26,38 @@
 // work around conflict with OpenBLAS
 struct bfloat16;
 #define BFLOAT16 BFLOAT16
-
 #include <cblas.h>
 #include <math/templatemath.h>
 #include <system/op_boilerplate.h>
 
-
 namespace sd {
-     namespace blas {
-         template <typename T>
-         static void * transpose(int orderSource, int orderTarget, int rows, int cols, void *source);
+namespace blas {
+template <typename T>
+static void *transpose(int orderSource, int orderTarget, int rows, int cols, void *source);
 
-         static inline int linearIndexC(int rows, int cols, int r, int c);
-         static inline int linearIndexF(int rows, int cols, int r, int c);
+static inline int linearIndexC(int rows, int cols, int r, int c);
+static inline int linearIndexF(int rows, int cols, int r, int c);
 
-         template <typename X, typename Y, typename Z>
-         class GEMM {
-         protected:
-         public:
-             static void op(int Order, int TransA, int TransB, int M, int N, int K, double alpha, void *A, int lda, void *B, int ldb, double beta, void *C, int ldc);
-         };
+template <typename X, typename Y, typename Z>
+class GEMM {
+ protected:
+ public:
+  static void op(int Order, int TransA, int TransB, int M, int N, int K, double alpha, void *A, int lda, void *B,
+                 int ldb, double beta, void *C, int ldc);
+};
 
-         template <typename X, typename Y, typename Z>
-         class GEMV : public sd::blas::GEMM<X, Y, Z>{
-         public:
-             static void op(int TRANS, int M, int N, double alpha, void* vA, int lda, void* vX, int incx, double beta, void* vY, int incy );
-         };
+template <typename X, typename Y, typename Z>
+class GEMV : public sd::blas::GEMM<X, Y, Z> {
+ public:
+  static void op(int TRANS, int M, int N, double alpha, void *vA, int lda, void *vX, int incx, double beta, void *vY,
+                 int incy);
+};
 
+int SD_INLINE linearIndexC(int rows, int cols, int r, int c) { return (r * cols + c); }
 
-         int FORCEINLINE linearIndexC(int rows, int cols, int r, int c) {
-             return (r * cols + c);
-         }
+int SD_INLINE linearIndexF(int rows, int cols, int r, int c) { return (c * rows + r); }
 
-         int FORCEINLINE linearIndexF(int rows, int cols, int r, int c) {
-             return (c * rows + r);
-         }
+}  // namespace blas
+}  // namespace sd
 
-    }
-}
-
-#endif //LIBND4J_GEMM_H
+#endif  // LIBND4J_GEMM_H

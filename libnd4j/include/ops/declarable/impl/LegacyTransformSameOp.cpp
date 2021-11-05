@@ -19,58 +19,53 @@
 //
 // Created by raver119 on 16.10.2017.
 //
-
+#include <legacy/NativeOpExecutioner.h>
 #include <ops/declarable/LegacyTransformSameOp.h>
 
-#include <legacy/NativeOpExecutioner.h>
-
-
 namespace sd {
-    namespace ops {
-        LegacyTransformSameOp::LegacyTransformSameOp() : LegacyOp::LegacyOp(1) {
-            this->getOpDescriptor()->allowInplace(true);
-        }
+namespace ops {
+LegacyTransformSameOp::LegacyTransformSameOp() : LegacyOp::LegacyOp(1) { this->getOpDescriptor()->allowInplace(true); }
 
-        LegacyTransformSameOp::LegacyTransformSameOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-            this->getOpDescriptor()->allowInplace(true);
-        }
-
-        LegacyOp* LegacyTransformSameOp::clone() {
-            return new LegacyTransformSameOp(this->_opNum);
-        }
-
-        Nd4jStatus LegacyTransformSameOp::validateAndExecute(Context &block) {
-            auto input = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
-            NDArray::prepareSpecialUse({z}, {input});
-
-            int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
-
-            ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext(), "LegacyTransformSameOp");
-
-            NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, input->buffer(), input->shapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
-                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
-
-            manager.synchronize();
-            STORE_RESULT(*z);
-
-            return Status::OK();
-        }
-
-        /**
-        * For transform operations, output shape always equals to input shape. With just a few exclusions, like im2col and col2im. 
-        * But these ops already have CustomOp implementations.
-        *
-        */
-        ShapeList *LegacyTransformSameOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-            auto inShape = inputShape->at(0);
-
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-
-            return SHAPELIST(CONSTANT(newShape));
-        }
-    }
+LegacyTransformSameOp::LegacyTransformSameOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+  this->getOpDescriptor()->allowInplace(true);
 }
+
+LegacyOp *LegacyTransformSameOp::clone() { return new LegacyTransformSameOp(this->_opNum); }
+
+sd::Status LegacyTransformSameOp::validateAndExecute(Context &block) {
+  auto input = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
+
+  NDArray::prepareSpecialUse({z}, {input});
+
+  int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+
+  ExtraArguments extras(*block.getTArguments());
+  PointersManager manager(block.launchContext(), "LegacyTransformSameOp");
+
+  NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, input->buffer(), input->shapeInfo(),
+                                         input->specialBuffer(), input->specialShapeInfo(), z->buffer(), z->shapeInfo(),
+                                         z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()),
+                                         nullptr, nullptr);
+
+  manager.synchronize();
+  STORE_RESULT(*z);
+
+  return sd::Status::OK;
+}
+
+/**
+ * For transform operations, output shape always equals to input shape. With just a few exclusions, like im2col and
+ * col2im. But these ops already have CustomOp implementations.
+ *
+ */
+ShapeList *LegacyTransformSameOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+  auto inShape = inputShape->at(0);
+
+  sd::LongType *newShape;
+  COPY_SHAPE(inShape, newShape);
+
+  return SHAPELIST(CONSTANT(newShape));
+}
+}  // namespace ops
+}  // namespace sd

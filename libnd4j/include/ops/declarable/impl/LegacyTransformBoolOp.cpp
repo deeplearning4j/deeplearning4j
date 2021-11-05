@@ -19,55 +19,51 @@
 //
 // Created by raver119 on 16.10.2017.
 //
-
+#include <legacy/NativeOpExecutioner.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
 
-#include <legacy/NativeOpExecutioner.h>
-
-
 namespace sd {
-    namespace ops {
-        LegacyTransformBoolOp::LegacyTransformBoolOp() : LegacyOp::LegacyOp(1) {
-            // just a no-op
-        }
-
-        LegacyTransformBoolOp::LegacyTransformBoolOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-            // just a no-op
-        }
-
-        LegacyOp* LegacyTransformBoolOp::clone() {
-            return new LegacyTransformBoolOp(this->_opNum);
-        }
-
-        Nd4jStatus LegacyTransformBoolOp::validateAndExecute(Context &block) {
-            auto input = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
-            NDArray::prepareSpecialUse({z}, {input});
-
-            int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
-
-            ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext(),"LegacyTransformBoolOp");
-
-            NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->buffer(), input->shapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
-                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                    extras.argumentsAsT(input->dataType()), nullptr, nullptr);
-
-            manager.synchronize();
-            STORE_RESULT(*z);
-
-            return Status::OK();
-        }
-
-        /**
-        * For transform operations, output shape always equals to input shape. With just a few exclusions, like im2col and col2im. 
-        * But these ops already have CustomOp implementations.
-        *
-        */
-        ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-            auto inShape = inputShape->at(0);
-            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
-        }
-    }
+namespace ops {
+LegacyTransformBoolOp::LegacyTransformBoolOp() : LegacyOp::LegacyOp(1) {
+  // just a no-op
 }
+
+LegacyTransformBoolOp::LegacyTransformBoolOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+  // just a no-op
+}
+
+LegacyOp *LegacyTransformBoolOp::clone() { return new LegacyTransformBoolOp(this->_opNum); }
+
+sd::Status LegacyTransformBoolOp::validateAndExecute(Context &block) {
+  auto input = INPUT_VARIABLE(0);
+  auto z = OUTPUT_VARIABLE(0);
+
+  NDArray::prepareSpecialUse({z}, {input});
+
+  int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+
+  ExtraArguments extras(*block.getTArguments());
+  PointersManager manager(block.launchContext(), "LegacyTransformBoolOp");
+
+  NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->buffer(), input->shapeInfo(),
+                                         input->specialBuffer(), input->specialShapeInfo(), z->buffer(), z->shapeInfo(),
+                                         z->specialBuffer(), z->specialShapeInfo(),
+                                         extras.argumentsAsT(input->dataType()), nullptr, nullptr);
+
+  manager.synchronize();
+  STORE_RESULT(*z);
+
+  return sd::Status::OK;
+}
+
+/**
+ * For transform operations, output shape always equals to input shape. With just a few exclusions, like im2col and
+ * col2im. But these ops already have CustomOp implementations.
+ *
+ */
+ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+  auto inShape = inputShape->at(0);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
+}
+}  // namespace ops
+}  // namespace sd

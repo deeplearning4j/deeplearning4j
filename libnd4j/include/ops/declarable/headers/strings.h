@@ -22,23 +22,21 @@
 
 #ifndef SAMEDIFF_STRINGS_H
 #define SAMEDIFF_STRINGS_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace sd {
-    namespace ops {
-        /**
-         * This operation splits input string into pieces separated by delimiter
-         *
-         * Input[0] - string to split
-         * Input[1] - delimiter
-         */
-    #if NOT_EXCLUDED(OP_split_string)
-        DECLARE_CUSTOM_OP(split_string, 2, 1, true, 0, 0);
-    #endif
+namespace ops {
+/**
+ * This operation splits input string into pieces separated by delimiter
+ *
+ * Input[0] - string to split
+ * Input[1] - delimiter
+ */
+#if NOT_EXCLUDED(OP_split_string)
+DECLARE_CUSTOM_OP(split_string, 2, 1, true, 0, 0);
+#endif
 
-    }
-}
+}  // namespace ops
+}  // namespace sd
 
-
-#endif //SAMEDIFF_STRINGS_H
+#endif  // SAMEDIFF_STRINGS_H

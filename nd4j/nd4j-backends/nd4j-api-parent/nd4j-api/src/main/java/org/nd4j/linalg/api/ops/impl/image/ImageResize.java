@@ -48,21 +48,21 @@ public class ImageResize extends DynamicCustomOp {
     public ImageResize(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable size, boolean preserveAspectRatio, boolean antialias, ImageResizeMethod method) {
         super("image_resize", sameDiff, new SDVariable[]{in, size});
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
     }
 
     public ImageResize(@NonNull INDArray in, @NonNull INDArray size, boolean preserveAspectRatio, boolean antialias, ImageResizeMethod method) {
         super("image_resize", new INDArray[]{in, size}, null);
         Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
     }
 
     public ImageResize(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable size,double bicubicCoefficient, boolean preserveAspectRatio, boolean antialias) {
         super("image_resize", sameDiff, new SDVariable[]{in, size});
         ImageResizeMethod method = ImageResizeMethod.ResizeBicubic;
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
         addTArgument(bicubicCoefficient);
     }
 
@@ -71,7 +71,7 @@ public class ImageResize extends DynamicCustomOp {
         Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
         ImageResizeMethod method = ImageResizeMethod.ResizeBicubic;
         addBArgument(preserveAspectRatio, false, exclude_outside);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
         addTArgument(bicubicCoefficient);
     }
 
@@ -80,7 +80,7 @@ public class ImageResize extends DynamicCustomOp {
         Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
         ImageResizeMethod method = ImageResizeMethod.ResizeBicubic;
         addBArgument(preserveAspectRatio, false, exclude_outside);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
         addIArgument(coorMode.getIndex());
         addTArgument(bicubicCoefficient);
     }
@@ -91,7 +91,7 @@ public class ImageResize extends DynamicCustomOp {
         ImageResizeMethod method = ImageResizeMethod.ResizeNearest;
         CoordinateTransformationMode coorMode = CoordinateTransformationMode.HALF_PIXEL_NN;
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
         addIArgument(coorMode.getIndex());
         addIArgument(nearestMode.getIndex());
     }
@@ -101,7 +101,7 @@ public class ImageResize extends DynamicCustomOp {
         Preconditions.checkArgument(in.rank() == 4,"expected input message in NHWC format i.e [batchSize, height, width, channels]");
         ImageResizeMethod method = ImageResizeMethod.ResizeNearest;
         addBArgument(preserveAspectRatio, antialias);
-        addIArgument(method.ordinal());
+        addIArgument(method.methodIndex());
         addIArgument(coorMode.getIndex());
         addIArgument(nearestMode.getIndex());
     }

@@ -93,7 +93,6 @@ OP_OUTPUT_FILE="include/generated/include_ops.h"
 USE_LTO=
 
 
-
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -414,7 +413,7 @@ case "$OS" in
       # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
       if [ -z "${VCINSTALLDIR:-}" ]; then
         echo "NEED TO SET DEFAULTS FOR VISUAL STUDIO, NO VCINSTALLDIR environment variable found"
-      	export VisualStudioVersion=12.0
+          export VisualStudioVersion=12.0
         export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
         export VCINSTALLDIR="$VSINSTALLDIR\\VC"
         export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
@@ -439,8 +438,6 @@ if [ -f "$OP_OUTPUT_FILE" ]; then
 fi
 
 
-
-
 if [ -z "$BUILD" ]; then
  BUILD="release"
 
@@ -457,7 +454,6 @@ fi
 if [ -z "$PACKAGING" ]; then
  PACKAGING="none"
 fi
-
 
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
@@ -668,7 +664,6 @@ echo OP_OUTPUT_FILE ="$OP_OUTPUT_FILE"
 echo USE_LTO="$USE_LTO"
 mkbuilddir
 pwd
-
 
 
 eval "$CMAKE_COMMAND"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$OP_OUTPUT_FILE_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" "$USE_LTO" "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$DATATYPES_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..

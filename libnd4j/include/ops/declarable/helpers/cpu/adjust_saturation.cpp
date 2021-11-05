@@ -20,85 +20,82 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
-#include <ops/declarable/helpers/adjust_saturation.h>
-#include <ops/declarable/helpers/adjust_hue.h>
-#include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/helpers/adjust_hue.h>
+#include <ops/declarable/helpers/adjust_saturation.h>
 
-
-namespace sd    {
-namespace ops     {
+namespace sd {
+namespace ops {
 namespace helpers {
 
 template <typename T>
-static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
+static void adjustSaturation_(const NDArray *input, const NDArray *factorScalarArr, NDArray *output, const int dimC) {
+  const T factor = factorScalarArr->e<T>(0);
+  const int rank = input->rankOf();
 
-    const T factor = factorScalarArr->e<T>(0);
-    const int rank = input->rankOf();
+  const T *x = input->bufferAsT<T>();
+  T *z = output->bufferAsT<T>();
 
-    const T* x = input->bufferAsT<T>();
-          T* z = output->bufferAsT<T>();
+  if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' &&
+      output->ordering() == 'c') {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i += increment) {
+        T h, s, v;
 
-    if(dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+        rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
-                T h, s, v;
+        s *= factor;
+        if (s > 1.f)
+          s = 1.f;
+        else if (s < 0.f)
+          s = 0.f;
 
-                rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
+        hsvToRgb<T>(h, s, v, z[i], z[i + 1], z[i + 2]);
+      }
+    };
 
-                s *= factor;
-                if (s > 1.f)
-                    s = 1.f;
-                else if (s < 0.f)
-                    s = 0.f;
+    samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
+  } else {
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
-                hsvToRgb<T>(h, s, v, z[i], z[i + 1], z[i + 2]);
-            }
-        };
+    const sd::LongType numOfTads = packX.numberOfTads();
+    const sd::LongType xDimCstride = input->stridesOf()[dimC];
+    const sd::LongType zDimCstride = output->stridesOf()[dimC];
 
-        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
-    } else {
-        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        const T *xTad = x + packX.platformOffsets()[i];
+        T *zTad = z + packZ.platformOffsets()[i];
 
-        const Nd4jLong numOfTads   = packX.numberOfTads();
-        const Nd4jLong xDimCstride = input->stridesOf()[dimC];
-        const Nd4jLong zDimCstride = output->stridesOf()[dimC];
+        T h, s, v;
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i++) {
-                const T *xTad = x + packX.platformOffsets()[i];
-                T *zTad = z + packZ.platformOffsets()[i];
+        rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
 
-                T h, s, v;
+        s *= factor;
+        if (s > 1.f)
+          s = 1.f;
+        else if (s < 0.f)
+          s = 0.f;
 
-                rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
+        hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+      }
+    };
 
-                s *= factor;
-                if (s > 1.f)
-                    s = 1.f;
-                else if (s < 0.f)
-                    s = 0.f;
-
-                hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
-            }
-        };
-
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
-    }
+    samediff::Threads::parallel_tad(func, 0, numOfTads);
+  }
 }
 
-
- void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
-
-    BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturation_, (input, factorScalarArr, output, dimC), FLOAT_TYPES);
+void adjustSaturation(sd::LaunchContext *context, const NDArray *input, const NDArray *factorScalarArr, NDArray *output,
+                      const int dimC) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturation_, (input, factorScalarArr, output, dimC), SD_FLOAT_TYPES);
 }
 
 /*
 template <typename T>
-static void adjust_saturation_single_(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void adjust_saturation_single_(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool
+isNHWC) {
     // we're 100% sure it's 3
     const int numChannels = 3;
     int tuples = array->lengthOf() /  numChannels;
@@ -116,7 +113,7 @@ static void adjust_saturation_single_(sd::LaunchContext * context, NDArray *arra
             T h, s, v;
             // Convert the RGB color to Hue/V-range.
             helpers::rgb_to_hsv(i[0], i[1], i[2], &h, &s, &v);
-            s = sd::math::nd4j_min<T>((T) 1.0f, sd::math::nd4j_max<T>((T) 0.0f, s * delta));
+            s = sd::math::sd_min<T>((T) 1.0f, sd::math::sd_max<T>((T) 0.0f, s * delta));
             // Convert the hue and v-range back into RGB.
             helpers::hsv_to_rgb(h, s, v, o, o + 1, o + 2);
         }
@@ -145,7 +142,7 @@ static void adjust_saturation_single_(sd::LaunchContext * context, NDArray *arra
             T h, s, v;
             // Convert the RGB color to Hue/V-range.
             helpers::rgb_to_hsv(_ri[0], _gi[0], _bi[0], &h, &s, &v);
-            s = sd::math::nd4j_min<T>((T) 1.0f, sd::math::nd4j_max<T>((T) 0.0f, s * delta));
+            s = sd::math::sd_min<T>((T) 1.0f, sd::math::sd_max<T>((T) 0.0f, s * delta));
             // Convert the hue and v-range back into RGB.
             helpers::hsv_to_rgb(h, s, v, _ro, _go, _bo);
         }
@@ -167,7 +164,8 @@ void adjust_saturation(sd::LaunchContext * context, NDArray *array, NDArray *out
         // FIXME: template selector should be moved out of loop
         PRAGMA_OMP_PARALLEL_FOR
         for (int e = 0; e < tSize; e++) {
-            BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, tadsIn->at(e), tadsOut->at(e), d,
+isNHWC);, SD_FLOAT_TYPES);
         }
 
 
@@ -175,13 +173,14 @@ void adjust_saturation(sd::LaunchContext * context, NDArray *array, NDArray *out
         delete tadsOut;
     }
     else {
-        BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, array, output, d, isNHWC);, FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, array, output, d, isNHWC);, SD_FLOAT_TYPES);
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (sd::LaunchContext * context, NDArray *array, NDArray
+*output, float delta, bool isNHWC), SD_FLOAT_TYPES);
 */
 
-}
-}
-}
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

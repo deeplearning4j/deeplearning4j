@@ -25,29 +25,28 @@
 #ifndef SD_ARRAY_POINTER_H_
 #define SD_ARRAY_POINTER_H_
 
-#include <system/dll.h>
-#include <system/pointercast.h>
 #include <array/PointerDeallocator.h>
+
 #include <memory>
 
 namespace sd {
-class ND4J_EXPORT PointerWrapper {
+class SD_LIB_EXPORT PointerWrapper {
  private:
-  void* _pointer = nullptr;
+  void *_pointer = nullptr;
   std::shared_ptr<PointerDeallocator> _deallocator;
 
  public:
-  PointerWrapper(void* ptr, const std::shared_ptr<PointerDeallocator> &deallocator = {});
+  PointerWrapper(void *ptr, const std::shared_ptr<PointerDeallocator> &deallocator = {});
   PointerWrapper() = default;
   ~PointerWrapper();
 
-  void* pointer() const;
+  void *pointer() const;
 
   template <typename T>
-  T* pointerAsT() const {
-    return reinterpret_cast<T*>(pointer());
+  T *pointerAsT() const {
+    return reinterpret_cast<T *>(pointer());
   }
 };
-} // namespace sd
+}  // namespace sd
 
-#endif //SD_ARRAY_POINTER_H_
+#endif  // SD_ARRAY_POINTER_H_

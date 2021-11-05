@@ -19,17 +19,20 @@
 //
 //  @author sgazeos@gmail.com
 //
-
 #include <ops/declarable/helpers/helpers.h>
 #ifndef __HELPERS__ROLL__H__
 #define __HELPERS__ROLL__H__
 namespace sd {
 namespace ops {
 namespace helpers {
-    void rollFunctorLinear(sd::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace = false);
 
-    void rollFunctorFull(sd::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace = false);
-}
-}
-}
+SD_LIB_HIDDEN void rollFunctorLinear(sd::LaunchContext* context, NDArray* input, NDArray* output, int shift,
+                                     bool inplace = false);
+
+SD_LIB_HIDDEN void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output,
+                                   std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace = false);
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd
 #endif

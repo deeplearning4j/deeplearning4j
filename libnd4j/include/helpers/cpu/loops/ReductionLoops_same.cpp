@@ -19,34 +19,35 @@
 //
 // @author raver119@gmail.com
 //
-
 #include "ReductionLoops.hpp"
 
 using namespace simdOps;
 
 namespace sd {
 
-    template<typename X>
-    template <typename OpType>
-    ND4J_LOCAL void ReductionSameLoops<X>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
-#ifndef INLINE_LOOPS
-        ReductionLoops<X,X,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+template <typename X>
+template <typename OpType>
+void ReductionSameLoops<X>::innerloopReduce(sd::memory::Workspace *workspace, const X *x,
+                                            const sd::LongType *xShapeInfo, X *z, const sd::LongType *zShapeInfo,
+                                            const int *dims, X *extraParams) {
+#ifndef SD_LOOPS_INLINED
+  ReductionLoops<X, X, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
-    }
-
-    template<typename X>
-    ND4J_LOCAL void ReductionSameLoops<X>::wrapper(const int opNum, sd::memory::Workspace* workspace,
-                                        const X *vx, const Nd4jLong *xShapeInfo,
-                                        X *z, const Nd4jLong *zShapeInfo,
-                                        const int *dims, X *vextraParams) {
-#ifndef INLINE_LOOPS
-        auto x = reinterpret_cast<X *>(vx);
-        auto z = reinterpret_cast<X *>(vz);
-        auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-        DISPATCH_BY_OPNUM_T(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams), REDUCE_SAME_OPS);
-#endif
-    }
-
-    BUILD_SINGLE_TEMPLATE(template ND4J_LOCAL class ReductionSameLoops, , LIBND4J_TYPES);
 }
+
+template <typename X>
+void ReductionSameLoops<X>::wrapper(const int opNum, sd::memory::Workspace *workspace, const X *vx,
+                                    const sd::LongType *xShapeInfo, X *z, const sd::LongType *zShapeInfo,
+                                    const int *dims, X *vextraParams) {
+#ifndef SD_LOOPS_INLINED
+  auto x = reinterpret_cast<X *>(vx);
+  auto z = reinterpret_cast<X *>(vz);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+  DISPATCH_BY_OPNUM_T(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams),
+                      REDUCE_SAME_OPS);
+#endif
+}
+
+BUILD_SINGLE_TEMPLATE(template class ReductionSameLoops, , SD_COMMON_TYPES);
+}  // namespace sd

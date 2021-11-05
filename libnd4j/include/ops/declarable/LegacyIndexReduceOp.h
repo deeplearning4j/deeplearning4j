@@ -22,27 +22,27 @@
 
 #ifndef LIBND4J_LEGACYINDEXREDUCEOP_H
 #define LIBND4J_LEGACYINDEXREDUCEOP_H
-
 #include <ops/declarable/LegacyOp.h>
 
 namespace sd {
-    namespace ops {
-        /**
-        *   This class provides wrapper for IndexAccumulation operations. i.e. IndexMax or IndexAbsoluteMin etc
-        *
-        *   TODO: eventually we want this op class to return long long instead of T
-        */
-        class ND4J_EXPORT LegacyIndexReduceOp : public LegacyOp {
-        protected:
-            Nd4jStatus validateAndExecute(Context& block) override;
-        public:
-            LegacyIndexReduceOp();
-            LegacyIndexReduceOp(int opNum);
+namespace ops {
+/**
+ *   This class provides wrapper for IndexAccumulation operations. i.e. IndexMax or IndexAbsoluteMin etc
+ *
+ *   TODO: eventually we want this op class to return long long instead of T
+ */
+class SD_LIB_EXPORT LegacyIndexReduceOp : public LegacyOp {
+ protected:
+  sd::Status validateAndExecute(Context& block) override;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
-            LegacyOp* clone() override;
-        };
-    }
-}
+ public:
+  LegacyIndexReduceOp();
+  LegacyIndexReduceOp(int opNum);
 
-#endif //LIBND4J_LEGACYINDEXREDUCEOP_H
+  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  LegacyOp* clone() override;
+};
+}  // namespace ops
+}  // namespace sd
+
+#endif  // LIBND4J_LEGACYINDEXREDUCEOP_H

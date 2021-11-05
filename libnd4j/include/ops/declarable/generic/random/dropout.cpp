@@ -28,102 +28,94 @@
 namespace sd {
 namespace ops {
 
-
 //////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
-    auto input = INPUT_VARIABLE(0); // lookup param
+  auto input = INPUT_VARIABLE(0);  // lookup param
 
-    NDArray *reduceShape = nullptr; // this param is optional
-    auto output  = OUTPUT_NULLIFIED(0); //
-    
-    int seed = INT_ARG(0);
+  NDArray* reduceShape = nullptr;     // this param is optional
+  auto output = OUTPUT_NULLIFIED(0);  //
 
-    // FIXME: float?
-    double probValue = T_ARG(0);
-    if (block.width() > 1)
-        reduceShape = INPUT_VARIABLE(1);
+  int seed = INT_ARG(0);
 
-    REQUIRE_TRUE(probValue > 0.f && probValue <= 1.f, 0, "dropout: Probability should be with range 0 to 1.");
+  // FIXME: float?
+  double probValue = T_ARG(0);
+  if (block.width() > 1) reduceShape = INPUT_VARIABLE(1);
 
-    if (probValue == 1.0) {
-        *output = *input;
-        return Status::OK();
-    }
+  REQUIRE_TRUE(probValue > 0.f && probValue <= 1.f, 0, "dropout: Probability should be with range 0 to 1.");
 
-    return helpers::dropOutFunctor(block, input, output, reduceShape, seed, probValue);
+  if (probValue == 1.0) {
+    *output = *input;
+    return sd::Status::OK;
+  }
+
+  return helpers::dropOutFunctor(block, input, output, reduceShape, seed, probValue);
 }
 
-        DECLARE_TYPES(dropout) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setAllowedOutputTypes({ALL_FLOATS})
-                    ->setSameMode(true);
-        }
+DECLARE_TYPES(dropout) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedOutputTypes({ALL_FLOATS})
+      ->setSameMode(true);
+}
 
 //////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
-    NDArray* input   = INPUT_VARIABLE(0); // lookup param
-    NDArray* gradOut   = INPUT_VARIABLE(1); // lookup param
+  NDArray* input = INPUT_VARIABLE(0);    // lookup param
+  NDArray* gradOut = INPUT_VARIABLE(1);  // lookup param
 
-    NDArray* reduceShape = nullptr; // this param is optional
-    NDArray* output  = OUTPUT_NULLIFIED(0); //
-    
-    int seed = INT_ARG(0);
-    
-    double probValue = T_ARG(0); 
-    if (block.width() > 2)
-        reduceShape = INPUT_VARIABLE(2);
+  NDArray* reduceShape = nullptr;         // this param is optional
+  NDArray* output = OUTPUT_NULLIFIED(0);  //
 
-    REQUIRE_TRUE((probValue > 0. && probValue <= 1.), 0, "dropout_bp: Probability should be with range 0 to 1.");
-    if (probValue == 1.0) {
-        output->assign(0.f); // fill up output with 0
-        return ND4J_STATUS_OK;
-    }
+  int seed = INT_ARG(0);
 
-    REQUIRE_TRUE(helpers::dropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue) == ND4J_STATUS_OK, 0, "dropout_bp: Cannot backprop dropout." );
+  double probValue = T_ARG(0);
+  if (block.width() > 2) reduceShape = INPUT_VARIABLE(2);
 
-    return ND4J_STATUS_OK;
+  REQUIRE_TRUE((probValue > 0. && probValue <= 1.), 0, "dropout_bp: Probability should be with range 0 to 1.");
+  if (probValue == 1.0) {
+    output->assign(0.f);  // fill up output with 0
+    return sd::Status::OK;
+  }
+
+  REQUIRE_TRUE(helpers::dropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue) == sd::Status::OK,
+               0, "dropout_bp: Cannot backprop dropout.");
+
+  return sd::Status::OK;
 }
 
 DECLARE_TYPES(dropout_bp) {
-    getOpDescriptor()
-            ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
-            ->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
-    NDArray* input   = INPUT_VARIABLE(0); // lookup param
-    NDArray* gradOut   = INPUT_VARIABLE(1); // lookup param
+  NDArray* input = INPUT_VARIABLE(0);    // lookup param
+  NDArray* gradOut = INPUT_VARIABLE(1);  // lookup param
 
-    NDArray* reduceShape = nullptr; // this param is optional
-    NDArray* output  = OUTPUT_VARIABLE(0); //
+  NDArray* reduceShape = nullptr;        // this param is optional
+  NDArray* output = OUTPUT_VARIABLE(0);  //
 
-    if (block.width() > 2)
-        reduceShape = INPUT_VARIABLE(2);
+  if (block.width() > 2) reduceShape = INPUT_VARIABLE(2);
 
-    int seed = INT_ARG(0);
-    
-    double probValue   = T_ARG(0);
-    double alphaValue  = T_ARG(1);
-    double alpha1Value = T_ARG(2);
-    double betaValue   = T_ARG(3);
+  int seed = INT_ARG(0);
 
-    REQUIRE_TRUE(probValue > 0. && probValue <= 1., 0, "dropout_bp: Probability should be with range 0 to 1.");
-    if (probValue == 1.0) {
-        output->assign(0.); // fill up output with 0
-        return ND4J_STATUS_OK;
-    }
+  double probValue = T_ARG(0);
+  double alphaValue = T_ARG(1);
+  double alpha1Value = T_ARG(2);
+  double betaValue = T_ARG(3);
 
-    return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue, alpha1Value, betaValue);
+  REQUIRE_TRUE(probValue > 0. && probValue <= 1., 0, "dropout_bp: Probability should be with range 0 to 1.");
+  if (probValue == 1.0) {
+    output->assign(0.);  // fill up output with 0
+    return sd::Status::OK;
+  }
+
+  return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue,
+                                        alpha1Value, betaValue);
 }
-        DECLARE_TYPES(alpha_dropout_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_FLOATS})
-                    ->setSameMode(true);
-        }
-}
-}
+DECLARE_TYPES(alpha_dropout_bp) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+}  // namespace ops
+}  // namespace sd
 
 #endif

@@ -24,25 +24,23 @@
 #if NOT_EXCLUDED(OP_mergeadd)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 OP_IMPL(mergeadd, -1, 1, false) {
-    
-    REQUIRE_OK(this->validateInputDimensionsMatch(block));
-        
-    auto output = OUTPUT_VARIABLE(0);
+  REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-    std::vector<const NDArray*> inArrs(block.width());
-    
-    for(int i = 0; i < block.width(); ++i)
-        inArrs[i] = INPUT_VARIABLE(i);
+  auto output = OUTPUT_VARIABLE(0);
 
-    helpers::mergeAdd(block.launchContext(), inArrs, *output);
+  std::vector<const NDArray*> inArrs(block.width());
 
-    return Status::OK();
+  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+
+  helpers::mergeAdd(block.launchContext(), inArrs, *output);
+
+  return sd::Status::OK;
 }
 DECLARE_SYN(mergesum, mergeadd);
 DECLARE_SYN(add_n, mergeadd);
@@ -50,51 +48,45 @@ DECLARE_SYN(addn, mergeadd);
 DECLARE_SYN(accumulaten, mergeadd);
 DECLARE_SYN(accumulate_n, mergeadd);
 
-    DECLARE_TYPES(mergeadd) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setAllowedOutputTypes(sd::DataType::ANY);
-    }
-
-
-    CUSTOM_OP_IMPL(mergeadd_bp, 2, 1, false, 0, 0) {
-
-        auto inSize = block.width() - 1;
-
-        REQUIRE_OK(this->validateInputDimensionsMatch(block));
-
-        std::vector<NDArray*> outArrs(inSize);
-        
-        const auto gradient = INPUT_VARIABLE(inSize);
-
-        for (int i = 0; i < inSize; ++i) {
-            outArrs[i] = OUTPUT_VARIABLE(i);
-        }
-        helpers::mergeAddBp(block.launchContext(), *gradient, outArrs);
-
-        return Status::OK();
-    }
-
-    DECLARE_TYPES(mergeadd_bp) {
-        getOpDescriptor()
-            ->setAllowedInputTypes(sd::DataType::ANY)
-            ->setAllowedOutputTypes(sd::DataType::ANY);
-    }
-    DECLARE_SHAPE_FN(mergeadd_bp) {
-
-        const int numOfInArrs = block.width() - 1;
-
-        auto shapeList = SHAPELIST();
-
-        for (int e = 0; e < numOfInArrs; e++) {
-            auto inShape = inputShape->at(e);
-            shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
-        }
-
-        return shapeList;
-    }
-
+DECLARE_TYPES(mergeadd) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
 }
+
+CUSTOM_OP_IMPL(mergeadd_bp, 2, 1, false, 0, 0) {
+  auto inSize = block.width() - 1;
+
+  REQUIRE_OK(this->validateInputDimensionsMatch(block));
+
+  std::vector<NDArray*> outArrs(inSize);
+
+  const auto gradient = INPUT_VARIABLE(inSize);
+
+  for (int i = 0; i < inSize; ++i) {
+    outArrs[i] = OUTPUT_VARIABLE(i);
+  }
+  helpers::mergeAddBp(block.launchContext(), *gradient, outArrs);
+
+  return sd::Status::OK;
 }
+
+DECLARE_TYPES(mergeadd_bp) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+}
+DECLARE_SHAPE_FN(mergeadd_bp) {
+  const int numOfInArrs = block.width() - 1;
+
+  auto shapeList = SHAPELIST();
+
+  for (int e = 0; e < numOfInArrs; e++) {
+    auto inShape = inputShape->at(e);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
+        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
+  }
+
+  return shapeList;
+}
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

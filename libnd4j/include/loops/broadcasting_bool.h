@@ -25,169 +25,139 @@
 
 #ifndef BROADCASTING_BOOL_H_
 #define BROADCASTING_BOOL_H_
-#include <system/dll.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/shape.h>
 #include <math/templatemath.h>
-#include <system/pairwise_util.h>
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
-#include <helpers/DebugHelper.h>
+#include <system/pairwise_util.h>
 
-#ifdef __CUDACC__
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
 #ifdef __JNI__
 #include <jni.h>
 #endif
-
 #include <helpers/TAD.h>
-
-#include "legacy_ops.h"
+#include <loops/legacy_ops.h>
 
 namespace functions {
-    namespace broadcast {
+namespace broadcast {
 
 /**
  * Broadcast operation
  * for broadcasting a smaller tensor
  * along long a bigger one.
  */
-        template<typename X, typename Z>
-        class BroadcastBool {
-        public:
-
+template <typename X, typename Z>
+class BroadcastBool {
+ public:
 #ifdef __CUDACC__
 
-            template<typename OpType>
-			static __device__ void transformCuda(const void *x, const Nd4jLong *xShapeInfo,
-                                                 const void *y, const Nd4jLong *yShapeInfo,
-                                                 void *result, const Nd4jLong *resultShapeInfo,
-                                                 void *extraParams,
-                                                 int *dimension, int dimensionLength,
-                                                 const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
-                                                 const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
+  template <typename OpType>
+  static SD_DEVICE void transformCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,
+                                      const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
+                                      void *extraParams, int *dimension, int dimensionLength,
+                                      const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
+                                      const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
-            template<typename OpType>
-            static __device__ void transformCuda(const void *x, const Nd4jLong *xShapeInfo,
-                                                 const void *y, const Nd4jLong *yShapeInfo,
-                                                       void *z, const Nd4jLong *zShapeInfo,
-                                                       void *extraParams);
+  template <typename OpType>
+  static SD_DEVICE void transformCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,
+                                      const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
+                                      void *extraParams);
 
-            template <typename OpClass>
-            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void const* x, Nd4jLong const* xShapeInfo, void const* y, Nd4jLong const* yShapeInfo, void *result, Nd4jLong const* resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets, Nd4jLong const* tadOnlyShapeInfoZ, Nd4jLong const* tadOffsetsZ);
+  template <typename OpClass>
+  static SD_HOST void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void const *x,
+                                            sd::LongType const *xShapeInfo, void const *y,
+                                            sd::LongType const *yShapeInfo, void *result,
+                                            sd::LongType const *resultShapeInfo, void *extraParams, int *dimension,
+                                            int dimensionLength, sd::LongType const *tadOnlyShapeInfo,
+                                            sd::LongType const *tadOffsets, sd::LongType const *tadOnlyShapeInfoZ,
+                                            sd::LongType const *tadOffsetsZ);
 
-            template <typename OpClass>
-            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream,
-                                                       const void *x, const Nd4jLong *xShapeInfo,
-                                                       const void *y, const Nd4jLong *yShapeInfo,
-                                                             void *z, const Nd4jLong *zShapeInfo,
-                                                             void *extraParams);
+  template <typename OpClass>
+  static SD_HOST void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, const void *x,
+                                            const sd::LongType *xShapeInfo, const void *y,
+                                            const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
+                                            void *extraParams);
 
-            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void const* x, Nd4jLong const* xShapeInfo, void const* y, Nd4jLong const* yShapeInfo, void *result, Nd4jLong const* resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets, Nd4jLong const* tadOnlyShapeInfoZ, Nd4jLong const* tadOffsetsZ);
+  static SD_HOST void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void const *x,
+                                    sd::LongType const *xShapeInfo, void const *y, sd::LongType const *yShapeInfo,
+                                    void *result, sd::LongType const *resultShapeInfo, void *extraParams,
+                                    int *dimension, int dimensionLength, sd::LongType const *tadOnlyShapeInfo,
+                                    sd::LongType const *tadOffsets, sd::LongType const *tadOnlyShapeInfoZ,
+                                    sd::LongType const *tadOffsetsZ);
 
-            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum,
-                                               const void *x, const Nd4jLong *xShapeInfo,
-                                               const void *y, const Nd4jLong *yShapeInfo,
-                                                     void *z, const Nd4jLong *zShapeInfo,
-                                                     void *extraParams);
+  static SD_HOST void execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *x,
+                                    const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
+                                    void *z, const sd::LongType *zShapeInfo, void *extraParams);
 
-            template<typename OpType>
-			static __device__ void transformInverseCuda(const void *x, const Nd4jLong *xShapeInfo,
-                                                        const void *y, const Nd4jLong *yShapeInfo,
-                                                        void *result, const Nd4jLong *resultShapeInfo,
-                                                        void *extraParams,
-                                                        int *dimension, int dimensionLength,
-                                                        const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
-                                                        const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
+  template <typename OpType>
+  static SD_DEVICE void transformInverseCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,
+                                             const sd::LongType *yShapeInfo, void *result,
+                                             const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
+                                             int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+                                             const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
+                                             const sd::LongType *tadOffsetsZ);
 
-            template <typename OpClass>
-            static __host__ void intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream,
-                                                              const void *x, const Nd4jLong *xShapeInfo,
-                                                              const void *y, const Nd4jLong *yShapeInfo,
-                                                              void *result, const Nd4jLong *resultShapeInfo,
-                                                              void *extraParams,
-                                                              int *dimension, int dimensionLength,
-                                                              const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
-                                                              const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
+  template <typename OpClass>
+  static SD_HOST void intermediateInverseBroadcast(
+      dim3 launchDims, cudaStream_t *stream, const void *x, const sd::LongType *xShapeInfo, const void *y,
+      const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, void *extraParams,
+      int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
+      const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
-            static __host__ void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream,
-                                                      int opNum,
-                                                      const void *x, const Nd4jLong *xShapeInfo,
-                                                      const void *y, const Nd4jLong *yShapeInfo,
-                                                      void *result, const Nd4jLong *resultShapeInfo,
-                                                      void *extraParams,
-                                                      int *dimension, int dimensionLength,
-                                                      const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
-                                                      const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
+  static SD_HOST void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x,
+                                           const sd::LongType *xShapeInfo, const void *y,
+                                           const sd::LongType *yShapeInfo, void *result,
+                                           const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
+                                           int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+                                           const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
+                                           const sd::LongType *tadOffsetsZ);
 
 #else
 
-            static void exec(int opNum,
-                             const void *x, const Nd4jLong *xShapeInfo,
-                             const void *y, const Nd4jLong *yShapeInfo,
-                             void *result, const Nd4jLong *resultShapeInfo,
-                             void *extraParams,
-                             int *dimension, int dimensionLength,
-                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                             const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
-                             uint64_t start, uint64_t stop);
+  static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+                   const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, void *extraParams,
+                   int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
+                   const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
-            static void exec(int opNum,
-                             const void *x, const Nd4jLong *xShapeInfo,
-                             const void *y, const Nd4jLong *yShapeInfo,
-                                   void *z, const Nd4jLong *zShapeInfo,
-                                   void *extraParams);
+  static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+                   const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams);
 
-            static void execInverse(int opNum,
-                                    const void *x, const Nd4jLong *xShapeInfo,
-                                    const void *y, const Nd4jLong *yShapeInfo,
-                                    void *result, const Nd4jLong *resultShapeInfo,
-                                    void *extraParams,
-                                    int *dimension, int dimensionLength,
-                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                    const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
-                                    uint64_t start, uint64_t stop);
+  static void execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+                          const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
+                          void *extraParams, int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                          const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
+                          const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
-            /**
-             * CPU execution
-             * @param x the input
-             * @param xShapeInfo the x shape information
-             * @param y the y data
-             * @param yShapeInfo the y shape information
-             * @param result the result
-             * @param resultShapeInfo the result shape information
-             * @param dimension the dimension to broadcast along long
-             * @param dimensionLength the length of the dimension buffer
-             */
-            template<typename OpType>
-            static void exec(const void *x, const Nd4jLong *xShapeInfo,
-                             const void *y, const Nd4jLong *yShapeInfo,
-                             void *result, const Nd4jLong *resultShapeInfo,
-                             void *extraParams,
-                             int *dimension, int dimensionLength,
-                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                             const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
-                             uint64_t start, uint64_t stop);
+  /**
+   * CPU execution
+   * @param x the input
+   * @param xShapeInfo the x shape information
+   * @param y the y data
+   * @param yShapeInfo the y shape information
+   * @param result the result
+   * @param resultShapeInfo the result shape information
+   * @param dimension the dimension to broadcast along long
+   * @param dimensionLength the length of the dimension buffer
+   */
+  template <typename OpType>
+  static void exec(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
+                   void *result, const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
+                   int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
+                   const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
-            template<typename OpType>
-            static void exec(const void *x, const Nd4jLong *xShapeInfo,
-                             const void *y, const Nd4jLong *yShapeInfo,
-                                   void *z, const Nd4jLong *zShapeInfo,
-                                   void *extraParams);
+  template <typename OpType>
+  static void exec(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
+                   void *z, const sd::LongType *zShapeInfo, void *extraParams);
 
-            template<typename OpType>
-            static void execInverse(const void *x, const Nd4jLong *xShapeInfo,
-                                    const void *y, const Nd4jLong *yShapeInfo,
-                                    void *result, const Nd4jLong *resultShapeInfo,
-                                    void *extraParams,
-                                    int *dimension, int dimensionLength,
-                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                    const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
-                                    uint64_t start, uint64_t stop);
+  template <typename OpType>
+  static void execInverse(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
+                          void *result, const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
+                          int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
+                          const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start,
+                          uint64_t stop);
 #endif
-        };
-    }
-}
+};
+}  // namespace broadcast
+}  // namespace functions
 
 #endif /* BROADCASTING_H_ */

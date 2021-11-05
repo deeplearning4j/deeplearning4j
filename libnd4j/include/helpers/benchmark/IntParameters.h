@@ -22,36 +22,36 @@
 
 #ifndef DEV_TESTS_INTPARAMETERS_H
 #define DEV_TESTS_INTPARAMETERS_H
-
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
+
 #include "Parameters.h"
 #include "ParametersSpace.h"
 
 namespace sd {
-    class IntParameters : public ParametersSpace {
-    protected:
-        int _start;
-        int _stop;
-        int _step;
+class IntParameters : public ParametersSpace {
+ protected:
+  int _start;
+  int _stop;
+  int _step;
 
-    public:
-        IntParameters(std::string name, int start, int stop, int step = 1) : ParametersSpace() {
-            _start = start;
-            _stop = stop;
-            _step = step;
-            _name = name;
-        }
+ public:
+  IntParameters(std::string name, int start, int stop, int step = 1) : ParametersSpace() {
+    _start = start;
+    _stop = stop;
+    _step = step;
+    _name = name;
+  }
 
-        std::vector<int> evaluate() override {
-            std::vector<int> result;
-            for (int e = _start; e <= _stop; e += _step) {
-               result.emplace_back(e);
-            }
-            return result;
-        }
-    };
-}
+  std::vector<int> evaluate() override {
+    std::vector<int> result;
+    for (int e = _start; e <= _stop; e += _step) {
+      result.emplace_back(e);
+    }
+    return result;
+  }
+};
+}  // namespace sd
 
-#endif //DEV_TESTS_INTPARAMETERS_H
+#endif  // DEV_TESTS_INTPARAMETERS_H

@@ -27,48 +27,43 @@
 #include <ops/declarable/helpers/transforms.h>
 
 namespace sd {
-namespace ops  {
+namespace ops {
 
 CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
+  std::vector<NDArray*> inputs(block.width());
+  std::vector<NDArray*> outputs(block.width() + 1);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    inputs[i] = INPUT_VARIABLE(i);
+    outputs[i] = OUTPUT_VARIABLE(i);
+  }
+  outputs[inputs.size()] = OUTPUT_VARIABLE(inputs.size());
+  double clipNorm = T_ARG(0);
+  bool isInplace = block.isInplace();
+  helpers::clipByGlobalNorm(block.launchContext(), inputs, clipNorm, block.workspace(), outputs, isInplace);
 
-    std::vector<NDArray*> inputs(block.width());
-    std::vector<NDArray*> outputs(block.width() + 1);
-    for (size_t i = 0; i < inputs.size(); ++i) {
-        inputs[i] = INPUT_VARIABLE(i);
-        outputs[i] = OUTPUT_VARIABLE(i);
-    }
-    outputs[inputs.size()] = OUTPUT_VARIABLE(inputs.size());
-    double clipNorm = T_ARG(0);
-    bool isInplace = block.isInplace();
-    helpers::clipByGlobalNorm(block.launchContext(), inputs, clipNorm, block.workspace(), outputs, isInplace);
-
-    return Status::OK();
+  return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(clip_by_global_norm) {
+  auto shapeList = SHAPELIST();
 
-    auto shapeList = SHAPELIST();
-            
-    for (int e = 0; e < block.width(); e++) {
-        auto in = inputShape->at(e);
-                
-        Nd4jLong* newShape;
-        COPY_SHAPE(in, newShape);
-        shapeList->push_back(CONSTANT(newShape));
-    }
+  for (int e = 0; e < block.width(); e++) {
+    auto in = inputShape->at(e);
 
-    shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
-    return shapeList;
+    sd::LongType* newShape;
+    COPY_SHAPE(in, newShape);
+    shapeList->push_back(CONSTANT(newShape));
+  }
+
+  shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
+  return shapeList;
 }
 
-    DECLARE_TYPES(clip_by_global_norm) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
-
-
+DECLARE_TYPES(clip_by_global_norm) {
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
-}
+
+}  // namespace ops
+}  // namespace sd
 
 #endif

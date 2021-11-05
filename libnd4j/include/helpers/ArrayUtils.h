@@ -22,24 +22,23 @@
 
 #ifndef LIBND4J_ARRAYUTILS_H
 #define LIBND4J_ARRAYUTILS_H
+#include <system/common.h>
 
+#include <cstring>
 #include <initializer_list>
 #include <vector>
-#include <cstring>
-#include <system/pointercast.h>
 
 namespace sd {
-    namespace ArrayUtils {
-        void toIntPtr(std::initializer_list<int> list, int* target);
-        void toIntPtr(std::vector<int>& list, int* target);
+namespace ArrayUtils {
+void toIntPtr(std::initializer_list<int> list, int* target);
+void toIntPtr(std::vector<int>& list, int* target);
 
-        void toLongPtr(std::initializer_list<Nd4jLong> list, Nd4jLong* target);
-        void toLongPtr(std::vector<Nd4jLong>& list, Nd4jLong* target);
+void toLongPtr(std::initializer_list<sd::LongType> list, sd::LongType* target);
+void toLongPtr(std::vector<sd::LongType>& list, sd::LongType* target);
 
+std::vector<sd::LongType> toLongVector(std::vector<int> vec);
+std::vector<sd::LongType> toLongVector(std::vector<sd::LongType> vec);
+}  // namespace ArrayUtils
+}  // namespace sd
 
-        std::vector<Nd4jLong> toLongVector(std::vector<int> vec);
-        std::vector<Nd4jLong> toLongVector(std::vector<Nd4jLong> vec);
-    }
-}
-
-#endif //LIBND4J_ARRAYUTILS_H
+#endif  // LIBND4J_ARRAYUTILS_H
