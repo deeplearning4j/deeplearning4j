@@ -2288,9 +2288,7 @@
 
 #define NOT_EXCLUDED(NAME) NAME == 1 || SD_ALL_OPS == 1 || SD_ALL_OPS == true
 
-#ifdef SD_ALL_OPS
-#pragma message("ALL OPS ARE DEFINED")
-#endif
+
 
 #if defined(__JAVACPP_HACK__) || defined(SD_ALL_OPS)
 #define REGISTER_H(NAME)

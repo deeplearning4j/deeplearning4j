@@ -59,7 +59,7 @@
 #include <ops/declarable/headers/util.h>
 
 namespace sd {
-struct _loader {
+    SD_LIB_EXPORT struct _loader {
   _loader();
 };
 
