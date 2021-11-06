@@ -85,7 +85,10 @@ class TensorflowIRNode(inputNode: NodeDef, inputOpDef: OpDef,tensorflowOpMapping
     }
 
     override fun outputAt(index: Int): String {
-        return opDef.outputArgList[index].name
+        return if(index == 0)
+            nodeDef.name
+        else
+            nodeDef.name + ":$index"
     }
 
 
@@ -217,7 +220,7 @@ class TensorflowIRNode(inputNode: NodeDef, inputOpDef: OpDef,tensorflowOpMapping
     }
 
     override fun setOutputAt(index: Int, name: String) {
-       throw UnsupportedOperationException("Tensorflow does not specify outputs on nodes. Unable to set output.")
+        throw UnsupportedOperationException("Tensorflow does not specify outputs on nodes. Unable to set output.")
     }
 
     override fun setNodeName(name: String) {

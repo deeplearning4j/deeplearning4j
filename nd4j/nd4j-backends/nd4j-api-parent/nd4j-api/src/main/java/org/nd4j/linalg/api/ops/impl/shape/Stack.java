@@ -131,8 +131,24 @@ public class Stack extends DynamicCustomOp {
         return Arrays.asList(sameDiff.unstack(f1.get(0), jaxis, args().length));
     }
 
+
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public void configureFromArguments() {
+       if(!iArguments.isEmpty()) {
+           this.jaxis = iArguments.get(0).intValue();
+       }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("dimensions")) {
+            Long dimension = (Long) properties.get("dimensions");
+            this.jaxis = dimension.intValue();
+        }
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         DataType first = dataTypes.get(0);
         for( int i = 1; i < dataTypes.size(); i++) {
             DataType dt = dataTypes.get(i);

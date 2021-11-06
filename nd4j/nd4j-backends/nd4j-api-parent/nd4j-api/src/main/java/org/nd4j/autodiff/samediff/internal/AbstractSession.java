@@ -118,7 +118,7 @@ public abstract class AbstractSession<T, O> {
      * @param variables           Name of the variables we want the arrays/activations for
      * @param placeholderValues   The placeholder values (if any). May be null.
      * @param batch               The batch data, used to call Listener.opExecution
-     * @param requiredActivations Additional activations that are required.  Won't be outputed, but opExecution will be called.  May be null.
+     * @param requiredActivations Additional activations that are required.  Won't be output, but opExecution will be called.  May be null.
      * @return The specified variable values, optionally in the specified workspace
      */
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
@@ -540,7 +540,6 @@ public abstract class AbstractSession<T, O> {
             }
         }
         String s = sb.toString();
-        System.out.println(sameDiff.summary());
         throw new IllegalStateException(s);
     }
 
@@ -781,7 +780,7 @@ public abstract class AbstractSession<T, O> {
         //Note subgraph initially should include placeholders and constants
         while (!processingQueue.isEmpty()) {
             String varName = processingQueue.remove();
-            String opName = (sameDiff.getVariableOutputOp(varName) == null ? null : sameDiff.getVariableOutputOp(varName).getOwnName());
+            String opName = stripVarSuffix(sameDiff.getVariableOutputOp(varName) == null ? null : sameDiff.getVariableOutputOp(varName).getOwnName());
 
             if (!subgraph.contains(varName)) {
                 String[] opInputs = opName == null ? null : sameDiff.getInputsForOp(sameDiff.getOpById(opName));
@@ -825,8 +824,9 @@ public abstract class AbstractSession<T, O> {
                 DifferentialFunction opById = sameDiff.getOpById(opName);
                 String[] inputs = sameDiff.getInputsForOp(opById);
                 for (String s2 : inputs) {
-                    if (!subgraph.contains(s2)) {
-                        processingQueue.add(s2);
+                    String strippedSuffix = stripVarSuffix(s2);
+                    if (!subgraph.contains(strippedSuffix)) {
+                        processingQueue.add(strippedSuffix);
                     }
                 }
 

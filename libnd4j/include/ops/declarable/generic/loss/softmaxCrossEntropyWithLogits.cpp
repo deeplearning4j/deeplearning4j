@@ -110,8 +110,6 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
   softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);
 
-    NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
-    softmax /= (softmax.reduceAlongDimension(reduce::Sum, dimension, true) + 1e-6);
 
     // dEdp = softmax * sum_i(labels_i) - labels
     //note the eps is to account for exact 0s in the log calculation being nan
@@ -124,7 +122,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
     // dEdl = -log(softmax)
     softmax.applyTransform(transform::Log, *dLdl);
     dLdl->applyTransform(transform::Neg,*dLdl);
-    return Status::OK();
+    return Status::OK;
 
 }
 

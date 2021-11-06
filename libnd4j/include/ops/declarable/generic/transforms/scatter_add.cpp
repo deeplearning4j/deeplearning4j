@@ -76,7 +76,7 @@ OP_IMPL(scatter_add, 3, 1, true) {
     if (!indices->isEmpty()) {
 
         if(checkIndices) {
-            const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output, 0);
+            const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output, 0);
             REQUIRE_TRUE(numOfBadIndx == 0, 0, "SCATTER_ADD OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
         }
 

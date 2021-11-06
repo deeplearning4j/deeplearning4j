@@ -791,17 +791,17 @@ public class ShapeOpValidation extends BaseOpValidation {
         exp[0] = Nd4j.create(new double[]{3});
         exp[1] = Nd4j.create(new double[]{3,3,3,3,3});
         exp[2] = Nd4j.valueArrayOf(new long[]{3,4}, 3.0);
-        exp[3] = Nd4j.create(2*2, 2*3);
-        for( int i=0; i<2; i++ ){
+        exp[3] = Nd4j.create(2*2, 2 * 3);
+        for( int i = 0; i < 2; i++) {
             for( int j=0; j<3; j++ ){
-                exp[3].get(interval(2*i,2*(i+1)), interval(2*j,2*(j+1))).assign(orig[3]);
+                exp[3].get(interval(2 * i,2 * (i + 1)), interval(2 * j,2 *(j + 1 ))).assign(orig[3]);
             }
         }
-        exp[4] = Nd4j.create(3*2, 4*3, 5*4);
-        for( int i=0; i<2; i++ ){
-            for( int j=0; j<3; j++ ){
-                for( int k=0; k<4; k++ ) {
-                    exp[4].get(interval(3 * i, 3 * (i + 1)), interval(4 * j, 4 * (j + 1)), interval(5*k, 5*(k+1))).assign(orig[4]);
+        exp[4] = Nd4j.create(3*2, 4 * 3, 5 * 4);
+        for( int i = 0; i < 2; i++) {
+           for( int j = 0; j<3; j++) {
+                for( int k = 0; k < 4; k++ ) {
+                    exp[4].get(interval(3 * i, 3 * (i + 1)), interval(4 * j, 4 * (j + 1)), interval(5 * k, 5 *(k + 1))).assign(orig[4]);
                 }
             }
         }

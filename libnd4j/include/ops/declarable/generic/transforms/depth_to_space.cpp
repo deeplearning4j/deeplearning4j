@@ -55,7 +55,7 @@ namespace ops {
 
         STORE_RESULT(output);     
 
-        return ND4J_STATUS_OK;
+        return Status::OK;
     }
 
     DECLARE_TYPES(depth_to_space) {
@@ -82,7 +82,7 @@ namespace ops {
         int oW = iW * block_size;
 
         
-        std::array<Nd4jLong, 4> shape;
+        std::array<sd::LongType, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 
@@ -92,33 +92,7 @@ namespace ops {
         return SHAPELIST(newShape);
     }
 
-}
 
-DECLARE_TYPES(depth_to_space) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
-
-DECLARE_SHAPE_FN(depth_to_space) {
-  auto in = inputShape->at(0);
-  auto block_size = INT_ARG(0);
-  bool isNHWC = INT_ARG(1) == 1;
-
-  int bS = shape::sizeAt(in, 0);
-  int iD = isNHWC ? shape::sizeAt(in, 3) : shape::sizeAt(in, 1);
-  int iH = isNHWC ? shape::sizeAt(in, 1) : shape::sizeAt(in, 2);
-  int iW = isNHWC ? shape::sizeAt(in, 2) : shape::sizeAt(in, 3);
-
-  int oD = iD / (block_size * block_size);
-  int oH = iH * block_size;
-  int oW = iW * block_size;
-
-  std::array<sd::LongType, 4> shape;
-  if (isNHWC)
-    shape = {{bS, oH, oW, oD}};
-  else
-    shape = {{bS, oD, oH, oW}};
-
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
-  return SHAPELIST(newShape);
-}
 }  // namespace ops
 }  // namespace sd
 

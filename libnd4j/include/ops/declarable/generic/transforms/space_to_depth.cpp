@@ -62,7 +62,7 @@ namespace ops {
         else
             helpers::_spaceTodepth(block.launchContext(), input->dup(), output, block_size, isNHWC);
 
-        return Status::OK();
+        return Status::OK;
     }
     
 
@@ -81,7 +81,7 @@ namespace ops {
         int oH = iH / block_size;
         int oW = iW / block_size;
         
-        std::array<Nd4jLong, 4> shape;
+        std::array<sd::LongType, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 
@@ -90,9 +90,6 @@ namespace ops {
         auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
-
-DECLARE_TYPES(space_to_depth) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
-
 
 }  // namespace ops
 }  // namespace sd
