@@ -91,5 +91,5 @@ void Ticket::waitAndRelease() {
   ThreadPool::getInstance().release(this);
 }
 
-void Ticket::attach(uint32_t thread_id, samediff::CallableInterface *interface) { _interfaces[thread_id] = interface; }
+void Ticket::attach(uint32_t thread_id, samediff::CallableInterface *call_interface) { _interfaces[thread_id] = call_interface; }
 }  // namespace samediff

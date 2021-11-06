@@ -32,9 +32,9 @@ BOOLEAN_OP_IMPL(lt_scalar, 2, true) {
   auto y = INPUT_VARIABLE(1);
 
   if (x->e<float>(0) < y->e<float>(0))
-    return sd::Status::TRUE;
+    return sd::Status::EQ_TRUE;
   else
-    return sd::Status::FALSE;
+    return sd::Status::EQ_FALSE;
 }
 // DECLARE_SYN(Less, lt_scalar);
 // DECLARE_SYN(less, lt_scalar);

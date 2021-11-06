@@ -21,6 +21,7 @@
 
 #include <system/openmp_pragmas.h>
 #include <stdint.h>
+
 #define STRINGIZE2(x) #x
 #define STRINGIZE(x) STRINGIZE2(x)
 
@@ -177,8 +178,8 @@ namespace sd {
         DOUBLE_WRITE = 40,
         DOUBLE_READ = 45,
         KERNEL_FAILURE = 50,
-        TRUE = 100,
-        FALSE = 101,
+        EQ_TRUE = 100,
+        EQ_FALSE = 101,
         MAYBE = 119
     };
 

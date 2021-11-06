@@ -331,6 +331,11 @@ SD_INLINE SD_HOST_DEVICE double DataTypeUtils::min_positive<double>() {
 
 ///////////////////////////////////////////////////////////////////
 // returns the largest finite value of the given type
+template <typename T>
+SD_INLINE SD_HOST_DEVICE T DataTypeUtils::max() {
+  return std::numeric_limits<T>::max();
+}
+
 template <>
 SD_INLINE SD_HOST_DEVICE int DataTypeUtils::max<int>() {
   return (int)2147483647;
