@@ -210,23 +210,5 @@ namespace sd {
 #include <omp.h>
 #endif
 
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <sys/time.h>
-#endif
-
-static SD_INLINE sd::LongType microTime() {
-#ifdef WIN32
-    LARGE_INTEGER freq, count;
-  QueryPerformanceFrequency(&freq);
-  QueryPerformanceCounter(&count);
-  return (sd::LongType)count.QuadPart / freq.QuadPart;
-#else
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    return (sd::LongType)tv.tv_sec * 1000000 + tv.tv_usec;
-#endif
-}
 
 #endif
