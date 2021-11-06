@@ -23,7 +23,6 @@
 #include <execution/Ticket.h>
 #include <helpers/logger.h>
 
-#include <array>
 
 namespace samediff {
 Ticket::Ticket(const std::vector<BlockingQueue<CallableWithArguments *> *> &queues) {

@@ -20,6 +20,7 @@
 #define SD_SYSTEM_COMMON_H
 
 #include <system/openmp_pragmas.h>
+#include <stdint.h>
 #define STRINGIZE2(x) #x
 #define STRINGIZE(x) STRINGIZE2(x)
 
