@@ -35,7 +35,7 @@ public class Or implements Condition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return -1;
     }
 

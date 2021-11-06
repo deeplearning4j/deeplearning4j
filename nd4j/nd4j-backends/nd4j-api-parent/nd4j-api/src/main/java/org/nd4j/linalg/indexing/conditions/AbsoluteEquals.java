@@ -20,25 +20,35 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.factory.Nd4j;
 
-public class AbsValueLessOrEqualsThan extends BaseCondition {
-
+public class AbsoluteEquals extends BaseCondition {
+    private double eps = Nd4j.EPS_THRESHOLD;
     /**
      * Special constructor for pairwise boolean operations.
      */
-    public AbsValueLessOrEqualsThan() {
-        super(0.0);
+    public AbsoluteEquals() {
+        this(0.0);
     }
 
-    public AbsValueLessOrEqualsThan(Number value) {
+    public AbsoluteEquals(Number value) {
+        this(value, Nd4j.EPS_THRESHOLD);
+    }
+
+    public AbsoluteEquals(Number value, Number eps) {
         super(value);
+        this.eps = eps.doubleValue();
     }
-
 
     @Override
     public void setValue(Number value) {
         //no op where we can pass values in
+    }
+
+
+    @Override
+    public double epsThreshold() {
+        return this.eps;
     }
 
     /**
@@ -48,11 +58,11 @@ public class AbsValueLessOrEqualsThan extends BaseCondition {
      */
     @Override
     public int conditionNum() {
-        return 13;
+        return 10;
     }
 
     @Override
     public Boolean apply(Number input) {
-        return FastMath.abs(input.doubleValue()) <= value.doubleValue();
+        return Math.abs(input.doubleValue()) == this.value.doubleValue();
     }
 }

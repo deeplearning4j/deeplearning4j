@@ -67,7 +67,7 @@ public interface Condition extends Function<Number, Boolean> {
      *
      * @return
      */
-    int condtionNum();
+    int conditionNum();
 
     double getValue();
 

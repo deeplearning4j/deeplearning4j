@@ -32,16 +32,16 @@ BOOLEAN_OP_IMPL(is_strictly_increasing, 1, true) {
   auto input = INPUT_VARIABLE(0);
 
   // in case of empty input there's nothing to do
-  if (input->isEmpty()) return sd::Status::TRUE;
+  if (input->isEmpty()) return sd::Status::EQ_TRUE;
 
   bool isStrictlyIncreasing = true;
 
   sd::ops::helpers::compare_elem(block.launchContext(), input, true, isStrictlyIncreasing);
 
   if (isStrictlyIncreasing)
-    return sd::Status::TRUE;
+    return sd::Status::EQ_TRUE;
   else
-    return sd::Status::FALSE;
+    return sd::Status::EQ_FALSE;
 }
 
 DECLARE_TYPES(is_strictly_increasing) {

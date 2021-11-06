@@ -104,6 +104,19 @@ public class DepthToSpace extends DynamicCustomOp {
         return ret;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("block_size")) {
+            Long blockSize = (Long) properties.get("block_size");
+            this.blockSize = blockSize.intValue();
+        }
+
+        if(properties.containsKey("isNHWC")) {
+            Long isNHWC = (Long) properties.get("isNHWC");
+            this.dataFormat = isNHWC > 0 ? DataFormat.NHWC : DataFormat.NCHW;
+        }
+
+    }
 
     @Override
     public String opName() {

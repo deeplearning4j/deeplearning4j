@@ -40,7 +40,7 @@ public class NotEqualsCondition extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 11;
     }
 

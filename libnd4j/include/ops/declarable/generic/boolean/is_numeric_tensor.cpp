@@ -31,7 +31,7 @@ namespace ops {
 BOOLEAN_OP_IMPL(is_numeric_tensor, 1, true) {
   auto input = INPUT_VARIABLE(0);
 
-  return input->isR() || input->isZ() ? sd::Status::TRUE : sd::Status::FALSE;
+  return input->isR() || input->isZ() ? sd::Status::EQ_TRUE : sd::Status::EQ_FALSE;
 }
 
 DECLARE_TYPES(is_numeric_tensor) {

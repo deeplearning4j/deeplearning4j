@@ -23,6 +23,7 @@ import org.nd4j.ir.OpNamespace
 import org.nd4j.samediff.frameworkimport.ArgDescriptor
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeMappingRule
+import org.nd4j.samediff.frameworkimport.stripVarSuffix
 import org.nd4j.samediff.frameworkimport.tensorflow.process.TensorflowMappingProcess
 import org.nd4j.samediff.frameworkimport.tensorflow.rule.attribute.TensorflowArgDescriptorConstant
 import org.nd4j.samediff.frameworkimport.tensorflow.rule.tensor.NDArrayMappingRule
@@ -33,8 +34,9 @@ import org.tensorflow.framework.*
 import java.nio.charset.Charset
 
 fun GraphDef.nodeByName(name: String): NodeDef {
+    val inputName = stripVarSuffix(name)
     val nodeNames = nodeList.map { node -> node.name }
-    return nodeList.first { it.name == name }!!
+    return nodeList.first { it.name == inputName }!!
 }
 
 fun ListAttrValue(vararg i: Long): AttrValue.ListValue =

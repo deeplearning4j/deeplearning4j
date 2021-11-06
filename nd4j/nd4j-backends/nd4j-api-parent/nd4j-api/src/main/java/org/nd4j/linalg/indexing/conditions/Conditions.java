@@ -24,6 +24,29 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public class Conditions {
 
+    private Conditions() {}
+
+    public enum ConditionMode {
+        EPSILON_EQUALS, //0
+        EPSILON_NOT_EQUALS, //1
+        LESS_THAN, //2
+        GREATER_THAN, //3
+        LESS_THAN_OR_EQUAL, //4
+        GREATER_THAN_OR_EQUAL, //5
+        ABS_LESS_THAN, //6
+        ABS_GREATER_THAN, //7
+        IS_INFINITE, //8
+        IS_NAN, //9
+        ABS_EQUALS, //10
+        NOT_EQUALS, //11
+        ABS_GREATER_OR_EQUAL, //12
+        ABS_LESS_THAN_OR_EQUAL, //13
+        IS_FINITE, //14
+        NOT_FINITE, //15
+
+    }
+
+
     /**
      * This method will create Condition that checks if value is infinite
      * @return
@@ -296,6 +319,30 @@ public class Conditions {
         return absLessThan(0.0);
     }
 
+
+    /**
+     * This method will create Condition that checks if the absolute value of
+     * x is equal to 0.0
+     * PLEASE NOTE: This condition should be used only with pairwise methods, i.e. INDArray.match(...)
+     * @return
+     */
+    public static Condition absEquals() {
+        // in case of pairwise MatchCondition we don't really care about number here
+        return absEquals(0.0);
+    }
+
+    /**
+     This method will create Condition that checks if the absolute value of
+     * x is equal to the specified value.
+     * PLEASE NOTE: This condition should be used only with pairwise methods, i.e. INDArray.match(...)
+     * @return
+     */
+    public static Condition absEquals(double value) {
+        // in case of pairwise MatchCondition we don't really care about number here
+        return new AbsoluteEquals(value);
+    }
+
+
     /**
      * This method will create Condition that checks if value is value X is less than value Y in absolute values
      *
@@ -304,5 +351,55 @@ public class Conditions {
     public static Condition absLessThan(Number value) {
         return new AbsValueLessThan(value);
     }
+
+
+
+    public static Condition fromInt(int mode) {
+        return fromInt(mode,0.0);
+    }
+
+
+    public static Condition fromInt(int mode,Double value) {
+        if(value == null) value = 0.0;
+
+        switch(ConditionMode.values()[mode]) {
+            case IS_FINITE:
+                return Conditions.isFinite();
+            case IS_NAN:
+                return Conditions.isInfinite();
+            case LESS_THAN:
+                return Conditions.lessThan(value);
+            case ABS_EQUALS:
+                return Conditions.absEquals(value);
+            case NOT_EQUALS:
+                return Conditions.notEquals();
+            case NOT_FINITE:
+                return Conditions.notFinite();
+            case IS_INFINITE:
+                return Conditions.isInfinite();
+            case GREATER_THAN:
+                return Conditions.greaterThan(value);
+            case ABS_LESS_THAN:
+                return Conditions.absLessThan(value);
+            case EPSILON_EQUALS:
+                return Conditions.epsEquals(value);
+            case ABS_GREATER_THAN:
+                return Conditions.absGreaterThan(value);
+            case EPSILON_NOT_EQUALS:
+                return Conditions.epsNotEquals(value);
+            case LESS_THAN_OR_EQUAL:
+                return Conditions.lessThanOrEqual(value);
+            case ABS_GREATER_OR_EQUAL:
+                return Conditions.absGreaterThan(value);
+            case GREATER_THAN_OR_EQUAL:
+                return Conditions.greaterThanOrEqual(value);
+            case ABS_LESS_THAN_OR_EQUAL:
+                return Conditions.absLessThanOrEqual(value);
+            default:
+                throw new IllegalArgumentException("Illegal value specified " + mode);
+
+        }
+    }
+
 
 }

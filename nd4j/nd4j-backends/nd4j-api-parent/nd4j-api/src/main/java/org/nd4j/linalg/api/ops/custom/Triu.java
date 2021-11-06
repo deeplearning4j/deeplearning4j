@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class Triu extends DynamicCustomOp {
@@ -37,7 +38,7 @@ public class Triu extends DynamicCustomOp {
     public Triu(SameDiff sameDiff, SDVariable in, int diag) {
         super(sameDiff, new SDVariable[]{in});
         addIArgument(diag);
-        this.diag=diag;
+        this.diag = diag;
     }
 
     public Triu(SameDiff sameDiff, SDVariable in) {
@@ -49,7 +50,7 @@ public class Triu extends DynamicCustomOp {
     public Triu(INDArray input, int diag) {
         super(new INDArray[]{input}, null);
         addIArgument(diag);
-        this.diag=diag;
+        this.diag = diag;
 
     }
 
@@ -59,6 +60,22 @@ public class Triu extends DynamicCustomOp {
         return "triu";
     }
 
+
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.diag = iArguments.get(0).intValue();
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("diag")) {
+            Long diag = (Long) properties.get("diag");
+            this.diag = diag.intValue();
+        }
+    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {

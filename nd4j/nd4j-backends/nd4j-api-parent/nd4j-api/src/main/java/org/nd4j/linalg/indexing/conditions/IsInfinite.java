@@ -33,7 +33,7 @@ public class IsInfinite extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 8;
     }
 

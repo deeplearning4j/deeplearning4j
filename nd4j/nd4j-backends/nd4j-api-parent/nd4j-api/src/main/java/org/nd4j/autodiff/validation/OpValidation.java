@@ -629,12 +629,7 @@ public class OpValidation {
             }
         });
 
-        Collections.sort(allOps, new Comparator<Class>() {
-            @Override
-            public int compare(Class o1, Class o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
+        Collections.sort(allOps, (o1, o2) -> o1.getName().compareTo(o2.getName()));
         for (Class c : allOps) {
             gradCheckCoverageCountPerClass.put(c, 0);
             fwdPassCoverageCountPerClass.put(c, 0);

@@ -32,7 +32,7 @@ public class IsNaN extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 9;
     }
 

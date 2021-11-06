@@ -33,6 +33,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
@@ -298,6 +299,13 @@ public abstract class DifferentialFunction {
                     Double value2 = (Double) value;
                     value = value2.doubleValue() > 0;
                 }
+
+                if(target.getType().equals(DataType.class) && value instanceof Double) {
+                       Double value2 = (Double) value;
+                       int idxConverted = value2.intValue();
+                       value = DataType.values()[idxConverted];
+                }
+
 
                 target.set(this,value);
             } catch (IllegalAccessException e) {

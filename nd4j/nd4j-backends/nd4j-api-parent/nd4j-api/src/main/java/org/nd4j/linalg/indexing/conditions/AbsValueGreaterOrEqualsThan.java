@@ -47,7 +47,7 @@ public class AbsValueGreaterOrEqualsThan extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 12;
     }
 

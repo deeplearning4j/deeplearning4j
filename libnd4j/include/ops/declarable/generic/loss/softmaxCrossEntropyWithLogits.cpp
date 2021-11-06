@@ -92,7 +92,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   auto dLdp = OUTPUT_VARIABLE(0);  // dL/dlogits
   auto dLdl = OUTPUT_VARIABLE(1);  // dL/dlabels
 
-  const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf() - 1;
+  const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf()-1;
 
   // input validation
   REQUIRE_TRUE(labels->isSameShape(logits), 0,
@@ -104,18 +104,26 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
                "but got %i and %i correspondingly !",
                classesDim, logits->rankOf());
 
+
   std::vector<int> dimension = {classesDim};
 
   NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
   softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);
 
-  // dEdp = softmax * sum_i(labels_i) - labels
-  dLdp->assign(softmax * labels->reduceAlongDimension(reduce::Sum, dimension, true) - *labels);
 
-  // dEdl = -log(softmax)
-  (-softmax).applyTransform(transform::Log, *dLdl);
+    // dEdp = softmax * sum_i(labels_i) - labels
+    //note the eps is to account for exact 0s in the log calculation being nan
+    auto labelsPlusEps = *labels + 1e-6;
+    labelsPlusEps.printBuffer("Labels plus eps");
+    dLdp->assign(((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, dimension, true) - labelsPlusEps)));
+    auto negSoftmax = softmax;
 
-  return sd::Status::OK;
+
+    // dEdl = -log(softmax)
+    softmax.applyTransform(transform::Log, *dLdl);
+    dLdl->applyTransform(transform::Neg,*dLdl);
+    return Status::OK;
+
 }
 
 //////////////////////////////////////////////////////////////////////////

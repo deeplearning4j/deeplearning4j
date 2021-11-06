@@ -104,7 +104,7 @@ class RandomHelper {
    * This method returns random T in range of [0..1]
    * @return
    */
-  SD_INLINE SD_DEVICE T nextT() { return (T)nextUInt() / (T)sd::DataTypeUtils::max<sd::UnsignedLong>(); }
+  SD_INLINE SD_DEVICE T nextT() { return (T)nextUInt() / (T)sd::DataTypeUtils::max<sd::LongType>(); }
 
   /**
    * This method returns random T in range of [0..to]

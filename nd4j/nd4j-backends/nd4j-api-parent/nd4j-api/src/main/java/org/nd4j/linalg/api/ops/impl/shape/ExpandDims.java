@@ -92,6 +92,23 @@ public class ExpandDims extends DynamicCustomOp {
     }
 
     @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("axis")) {
+            Long value = (Long) properties.get("axis");
+            if(value != null) {
+                this.jaxis = value.intValue();
+            }
+        }
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.jaxis = iArguments.get(0).intValue();
+        }
+    }
+
+    @Override
     public Map<String, Object> propertiesForFunction() {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("axis", axis);

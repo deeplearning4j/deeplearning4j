@@ -30,59 +30,69 @@
 
 namespace sd {
 namespace ops {
-CUSTOM_OP_IMPL(depth_to_space, 1, 1, false, 0, 2) {
-  int block_size = INT_ARG(0);
-  bool isNHWC = INT_ARG(1) == 1;
+    CUSTOM_OP_IMPL(depth_to_space, 1, 1, false, 0, 2) {
+        int block_size = INT_ARG(0);
+        REQUIRE_TRUE(block_size > 0,0, "DepthToSpace: block_size should be > 0");
+        bool isNHWC = INT_ARG(1) == 1;
 
-  auto input = INPUT_VARIABLE(0);
+        auto input = INPUT_VARIABLE(0);
 
-  REQUIRE_TRUE(input->rankOf() == 4, 0, "DepthToSpace: input should be 4D array, but got %f instead", input->rankOf());
+        REQUIRE_TRUE(input->rankOf() == 4, 0, "DepthToSpace: input should be 4D array, but got %f instead", input->rankOf());
 
-  int bS = input->sizeAt(0);
-  int iD = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
-  int iH = isNHWC ? input->sizeAt(1) : input->sizeAt(2);
-  int iW = isNHWC ? input->sizeAt(2) : input->sizeAt(3);
+        int bS = input->sizeAt(0);
+        int iD = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
+        int iH = isNHWC ? input->sizeAt(1) : input->sizeAt(2);
+        int iW = isNHWC ? input->sizeAt(2) : input->sizeAt(3);
 
-  REQUIRE_TRUE(iD % (block_size * block_size) == 0, 0,
-               "DepthToSpace: input number of channels should be divisible by square(block_size)");
+        REQUIRE_TRUE(iD % (block_size * block_size) == 0, 0, "DepthToSpace: input number of channels should be divisible by square(block_size)");
 
-  auto output = OUTPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
 
-  if (shape::strideDescendingCAscendingF(input->shapeInfo()))
-    helpers::_depthToSpace(block.launchContext(), *input, output, block_size, isNHWC);
-  else
-    helpers::_depthToSpace(block.launchContext(), input->dup(), output, block_size, isNHWC);
+        if (shape::strideDescendingCAscendingF(input->shapeInfo()))
+            helpers::_depthToSpace(block.launchContext(), *input, output, block_size, isNHWC);
+        else
+            helpers::_depthToSpace(block.launchContext(), input->dup(), output, block_size, isNHWC);
 
-  STORE_RESULT(output);
+        STORE_RESULT(output);     
 
-  return sd::Status::OK;
-}
+        return Status::OK;
+    }
 
-DECLARE_TYPES(depth_to_space) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+    DECLARE_TYPES(depth_to_space) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(sd::DataType::ANY)
+                ->setSameMode(true);
+    }
+    
 
-DECLARE_SHAPE_FN(depth_to_space) {
-  auto in = inputShape->at(0);
-  auto block_size = INT_ARG(0);
-  bool isNHWC = INT_ARG(1) == 1;
+    DECLARE_SHAPE_FN(depth_to_space) {
+        auto in = inputShape->at(0);
+        auto block_size = INT_ARG(0);
+        REQUIRE_TRUE(block_size > 0,0, "DepthToSpace: input should be > 0");
 
-  int bS = shape::sizeAt(in, 0);
-  int iD = isNHWC ? shape::sizeAt(in, 3) : shape::sizeAt(in, 1);
-  int iH = isNHWC ? shape::sizeAt(in, 1) : shape::sizeAt(in, 2);
-  int iW = isNHWC ? shape::sizeAt(in, 2) : shape::sizeAt(in, 3);
+        bool isNHWC = INT_ARG(1) == 1;
 
-  int oD = iD / (block_size * block_size);
-  int oH = iH * block_size;
-  int oW = iW * block_size;
+        int bS = shape::sizeAt(in, 0);
+        int iD = isNHWC ? shape::sizeAt(in, 3) : shape::sizeAt(in, 1);
+        int iH = isNHWC ? shape::sizeAt(in, 1) : shape::sizeAt(in, 2);
+        int iW = isNHWC ? shape::sizeAt(in, 2) : shape::sizeAt(in, 3);
 
-  std::array<sd::LongType, 4> shape;
-  if (isNHWC)
-    shape = {{bS, oH, oW, oD}};
-  else
-    shape = {{bS, oD, oH, oW}};
+        int oD = iD / (block_size * block_size);
+        int oH = iH * block_size;
+        int oW = iW * block_size;
 
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
-  return SHAPELIST(newShape);
-}
+        
+        std::array<sd::LongType, 4> shape;
+        if (isNHWC) 
+            shape = {{bS, oH, oW, oD }};
+        else 
+            shape = {{bS, oD, oH, oW }};
+        
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
+        return SHAPELIST(newShape);
+    }
+
+
 }  // namespace ops
 }  // namespace sd
 

@@ -44,7 +44,7 @@ public class MatchCondition extends BaseReduceLongOp {
     public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition, boolean keepDims, int... dimensions) {
         super(sameDiff, in, dimensions, keepDims);
         this.compare = condition.getValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionNum();
         this.eps = Nd4j.EPS_THRESHOLD;
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
@@ -63,7 +63,7 @@ public class MatchCondition extends BaseReduceLongOp {
     public MatchCondition(INDArray x, double eps, Condition condition, int... dimensions) {
         super(x);
         this.compare = condition.getValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionNum();
         this.eps = eps;
 
         this.extraArgs = new Object[] {compare, eps, (double) mode};

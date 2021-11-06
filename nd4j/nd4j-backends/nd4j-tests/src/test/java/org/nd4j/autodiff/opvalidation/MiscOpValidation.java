@@ -505,7 +505,8 @@ public class MiscOpValidation extends BaseOpValidation {
     @Tag(TagNames.LARGE_RESOURCES)
     public void testGatherGradient(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
-
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         List<String> failed = new ArrayList<>();
 
         for (int rank = 2; rank <= 3; rank++) {

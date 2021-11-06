@@ -20,6 +20,8 @@
 #define SD_SYSTEM_COMMON_H
 
 #include <system/openmp_pragmas.h>
+#include <stdint.h>
+
 #define STRINGIZE2(x) #x
 #define STRINGIZE(x) STRINGIZE2(x)
 
@@ -39,6 +41,8 @@
 #pragma warning(disable : 4297)
 
 #endif
+
+
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
@@ -149,35 +153,35 @@
 
 namespace sd {
 
-using Pointer = void*;
-using LongType = long long;
-using UnsignedLong = uint64_t;
-using Unsigned = unsigned int;
+    using Pointer = void*;
+    using LongType = long long;
+    using UnsignedLong = uint64_t;
+    using Unsigned = unsigned int;
 
-enum class Status : int {
-  OK = 0,
-  BAD_INPUT = 1,
-  BAD_SHAPE = 2,
-  BAD_RANK = 3,
-  BAD_PARAMS = 4,
-  BAD_OUTPUT = 5,
-  BAD_RNG = 6,
-  BAD_EPSILON = 7,
-  BAD_GRADIENTS = 8,
-  BAD_BIAS = 9,
-  VALIDATION = 20,
-  BAD_GRAPH = 30,
-  BAD_LENGTH = 31,
-  BAD_DIMENSIONS = 32,
-  BAD_ORDER = 33,
-  BAD_ARGUMENTS = 34,
-  DOUBLE_WRITE = 40,
-  DOUBLE_READ = 45,
-  KERNEL_FAILURE = 50,
-  TRUE = 100,
-  FALSE = 101,
-  MAYBE = 119
-};
+    enum class Status : int {
+        OK = 0,
+        BAD_INPUT = 1,
+        BAD_SHAPE = 2,
+        BAD_RANK = 3,
+        BAD_PARAMS = 4,
+        BAD_OUTPUT = 5,
+        BAD_RNG = 6,
+        BAD_EPSILON = 7,
+        BAD_GRADIENTS = 8,
+        BAD_BIAS = 9,
+        VALIDATION = 20,
+        BAD_GRAPH = 30,
+        BAD_LENGTH = 31,
+        BAD_DIMENSIONS = 32,
+        BAD_ORDER = 33,
+        BAD_ARGUMENTS = 34,
+        DOUBLE_WRITE = 40,
+        DOUBLE_READ = 45,
+        KERNEL_FAILURE = 50,
+        EQ_TRUE = 100,
+        EQ_FALSE = 101,
+        MAYBE = 119
+    };
 
 }  // namespace sd
 
@@ -214,14 +218,14 @@ enum class Status : int {
 
 static SD_INLINE sd::LongType microTime() {
 #ifdef WIN32
-  LARGE_INTEGER freq, count;
+    LARGE_INTEGER freq, count;
   QueryPerformanceFrequency(&freq);
   QueryPerformanceCounter(&count);
   return (sd::LongType)count.QuadPart / freq.QuadPart;
 #else
-  timeval tv;
-  gettimeofday(&tv, NULL);
-  return (sd::LongType)tv.tv_sec * 1000000 + tv.tv_usec;
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    return (sd::LongType)tv.tv_sec * 1000000 + tv.tv_usec;
 #endif
 }
 

@@ -44,7 +44,7 @@ public class GreaterThan extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
+    public int conditionNum() {
         return 3;
     }
 
