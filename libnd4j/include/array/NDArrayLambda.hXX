@@ -45,6 +45,9 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *vx, const sd::LongType *x
                                            const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
                                            Lambda lambda);
 template <typename T, typename Lambda>
+static SD_KERNEL void lambdaPairwiseKernel(const void *scalarPtr, const void *vx, const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                                           Lambda lambda);
+template <typename T, typename Lambda>
 static SD_KERNEL void lambdaTriplewiseKernel(const void *vw, const sd::LongType *wShapeInfo, const void *vx,
                                              const sd::LongType *xShapeInfo, const void *vy,
                                              const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
@@ -70,11 +73,15 @@ class LambdaHelper {
   }
 
   template <typename Lambda>
-  SD_INLINE static void lambdaPairwiseLauncher(cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo,
+  SD_INLINE static void lambdaPairwiseLauncher(cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, bool otherIsScalar,
                                                const void *vy, const sd::LongType *yShapeInfo, void *vz,
                                                const sd::LongType *zShapeInfo, Lambda lambda) {
-    lambdaPairwiseKernel<T, Lambda>
-        <<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
+    if (otherIsScalar) {
+      lambdaPairwiseKernel<T, Lambda><<<256, 512, 1024, *stream>>>(vy, vx, xShapeInfo, vz, zShapeInfo, lambda);
+    } else {
+      lambdaPairwiseKernel<T, Lambda>
+          <<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
+    }
     auto err = cudaStreamSynchronize(*stream);
     if (err != 0) throw std::runtime_error("NDArray::applyPairwiseLambda execution failed");
   }
@@ -228,7 +235,37 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *vx, const sd::LongType *x
     }
   }
 }
+///////////////////////////////////////////////////////////////////////
+template <typename T, typename Lambda>
+static SD_KERNEL void lambdaPairwiseKernel(const void *scalarPtr, const void *vx, const sd::LongType *xShapeInfo,
+                                           void *vz, const sd::LongType *zShapeInfo, Lambda lambda) {
+  auto x = reinterpret_cast<const T *>(vx);
+  auto y = reinterpret_cast<const T *>(scalarPtr);
+  auto z = reinterpret_cast<T *>(vz);
 
+  auto yVal = *y;
+
+  auto xEws = shape::elementWiseStride(xShapeInfo);
+  auto zEws = shape::elementWiseStride(zShapeInfo);
+
+  auto xOrder = shape::order(xShapeInfo);
+  auto zOrder = shape::order(zShapeInfo);
+
+  auto zLength = length(zShapeInfo);
+
+  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], yVal);
+  } else {
+    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+      auto xOffset = getIndexOffset(e, xShapeInfo);
+      auto zOffset = getIndexOffset(e, zShapeInfo);
+
+      z[zOffset] = lambda(x[xOffset], yVal);
+    }
+  }
+}
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename Lambda>
 static SD_KERNEL void lambdaTriplewiseKernel(const void *vw, const sd::LongType *wShapeInfo, const void *vx,
@@ -295,11 +332,11 @@ void NDArray::applyPairwiseLambda(const NDArray &other, Lambda func, NDArray &ta
   if (dtype != target.dataType() || dtype != other.dataType())
     throw std::runtime_error("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
   // throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
-
+  bool otherIsScalar = other.isScalar();
   prepareSpecialUse({&target}, {this, &other});
   BUILD_SINGLE_SELECTOR(
       dtype, LambdaHelper,
-      ::lambdaPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(),
+      ::lambdaPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), otherIsScalar,
                                other.specialBuffer(), other.specialShapeInfo(), target.specialBuffer(),
                                target.specialShapeInfo(), func),
       SD_COMMON_TYPES);
