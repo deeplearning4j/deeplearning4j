@@ -489,7 +489,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
                 @Override
                 public Conditions.ConditionMode conditionType() {
-                    return null;
+                    return Conditions.ConditionMode.AGGREGATE;
                 }
 
                 @Override
@@ -690,7 +690,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
                 @Override
                 public Conditions.ConditionMode conditionType() {
-                    return null;
+                    return Conditions.ConditionMode.AGGREGATE;
                 }
 
                 @Override
