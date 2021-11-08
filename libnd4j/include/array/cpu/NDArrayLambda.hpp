@@ -126,7 +126,7 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std:
     throw std::runtime_error(
         "NDArray::applyPairwiseLambda<T> method: all three arrays (this, other, target) must have the same type !");
 
-  //scalar is broadcastable
+  // scalar is broadcastable
   if (this->lengthOf() != other.lengthOf() && !this->isScalar() && !other.isScalar()) {
     sd_printf("applyPairwiseLambda requires both operands to have the same shape\n", "");
     throw std::runtime_error("Shapes mismatch");
@@ -135,9 +135,39 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std:
   auto f = this->bufferAsT<T>();
   auto s = other.bufferAsT<T>();
   auto z = target.bufferAsT<T>();
+  auto isTargetOrderEws = this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1);
+  if (other.isScalar()) {
+    auto otherVal = s[other.getOffset(0)];
+    if (isTargetOrderEws) {
+      auto loop = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e++) z[e] = func(f[e], otherVal);
+      };
 
-  if (this->ordering() == other.ordering() && this->ordering() == target.ordering() &&
-      (this->ews() == 1 && target.ews() == 1) && this->ews() == other.ews()) {
+      samediff::Threads::parallel_for(loop, 0, _length);
+    } else {
+      if (f == z) {
+        auto loop = PRAGMA_THREADS_FOR {
+          for (auto e = start; e < stop; e++) {
+            auto xOffset = this->getOffset(e);
+            f[xOffset] = func(f[xOffset], otherVal);
+          }
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
+      } else {
+        auto loop = PRAGMA_THREADS_FOR {
+          for (auto e = start; e < stop; e++) {
+            auto xOffset = this->getOffset(e);
+            auto zOffset = target.getOffset(e);
+
+            z[zOffset] = func(f[xOffset], otherVal);
+          }
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
+      }
+    }
+  } else if (isTargetOrderEws && this->ordering() == other.ordering() && this->ews() == other.ews()) {
     auto loop = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) z[e] = func(f[e], s[e]);
     };
@@ -170,6 +200,7 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std:
     }
   }
 }
+
 template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other,
                                                          const std::function<double(double, double)>& func,
                                                          NDArray& target);
