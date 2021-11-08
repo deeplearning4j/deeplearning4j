@@ -23,9 +23,10 @@
 #ifndef DEV_TESTS_UTF8STRING_H
 #define DEV_TESTS_UTF8STRING_H
 #include <string>
+#include <system/common.h>
 
 namespace sd {
-struct utf8string {
+class SD_LIB_EXPORT utf8string {
  private:
   bool _allocated = false;
 

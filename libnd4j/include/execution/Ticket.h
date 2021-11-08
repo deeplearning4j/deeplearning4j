@@ -37,7 +37,7 @@ class SD_LIB_EXPORT Ticket {
   bool _acquired = false;
   std::vector<BlockingQueue<CallableWithArguments *> *> _queues;
   std::vector<CallableWithArguments *> _callables;
-  std::vector<CallableInterface *> _interfaces;
+  std::vector<samediff::CallableInterface *> _interfaces;
 
   uint32_t _acquiredThreads = 0;
 
@@ -50,7 +50,7 @@ class SD_LIB_EXPORT Ticket {
 
   void acquiredThreads(uint32_t threads);
 
-  void attach(uint32_t thread_id, CallableInterface *interface);
+  void attach(uint32_t thread_id, samediff::CallableInterface *call_interface);
 
   // deprecated one
   void enqueue(int thread_id, CallableWithArguments *callable);
