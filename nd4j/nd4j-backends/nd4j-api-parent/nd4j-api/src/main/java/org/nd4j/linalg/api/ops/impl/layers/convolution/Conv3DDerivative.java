@@ -74,7 +74,7 @@ public class Conv3DDerivative extends Conv3D {
     }
 
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
         //Fwd inputs: input, weight, optional bias
         //Bwd inputs: input, input grad, weight, optional bias
         if(args().length == 4){
@@ -85,7 +85,7 @@ public class Conv3DDerivative extends Conv3D {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;  //Original inputs + gradient at
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         List<DataType> out = new ArrayList<>(n-1);

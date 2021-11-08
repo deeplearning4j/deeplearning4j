@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class Standardize extends DynamicCustomOp {
 
@@ -63,6 +64,20 @@ public class Standardize extends DynamicCustomOp {
         return "standardize";
     }
 
+    @Override
+    public void addBArgument(boolean... arg) {
+        super.addBArgument(arg);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

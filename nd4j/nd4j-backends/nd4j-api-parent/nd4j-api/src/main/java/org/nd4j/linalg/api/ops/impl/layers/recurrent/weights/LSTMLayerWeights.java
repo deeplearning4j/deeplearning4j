@@ -73,7 +73,7 @@ public class LSTMLayerWeights extends RNNWeights {
     }
 
     @Override
-    public SDVariable[] argsWithInputs(SDVariable... inputs){
+    public SDVariable[] argsWithInputs(SDVariable... inputs) {
         Preconditions.checkArgument(inputs.length == 4, "Expected 4 inputs, got %s", inputs.length);   //Order: x, seqLen, yLast, cLast
         //lstmLayer c++ op expects: x, Wx, Wr, Wp, b, seqLen, yLast, cLast
         return ArrayUtil.filterNull(inputs[0], weights, rWeights, bias, inputs[1], inputs[2], inputs[3], peepholeWeights);
@@ -88,11 +88,11 @@ public class LSTMLayerWeights extends RNNWeights {
 
 
     public boolean hasBias() {
-        return (bias!=null||iBias!=null);
+        return (bias!=null || iBias!=null);
     }
 
     public boolean hasPH() {
-        return (peepholeWeights!=null||iPeepholeWeights!=null);
+        return (peepholeWeights!=null || iPeepholeWeights!=null);
     }
 
 }

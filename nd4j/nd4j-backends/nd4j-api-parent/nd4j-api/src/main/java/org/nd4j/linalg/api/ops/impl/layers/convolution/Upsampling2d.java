@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -99,6 +100,35 @@ public class Upsampling2d extends DynamicCustomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+
+    @Override
+    public void configureFromArguments() {
+        if(iArguments.size() >= 3) {
+            this.scaleH = iArguments.get(0).intValue();
+            this.scaleW = iArguments.get(1).intValue();
+            this.nchw = iArguments.get(2) > 0;
+
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        Long factorH = getLongValueFromProperty("factorH",properties);
+        if(factorH != null) {
+            this.scaleH = factorH.intValue();
+        }
+
+        Long factorW = getLongValueFromProperty("factorW",properties);
+        if(factorW != null) {
+            this.scaleW =  factorW.intValue();
+        }
+
+        Long isNCHW = getLongValueFromProperty("isNCHW",properties);
+        if(isNCHW != null) {
+            this.nchw = isNCHW > 0;
+        }
+
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

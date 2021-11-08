@@ -308,6 +308,76 @@ public class DeConv2D extends DynamicCustomOp {
     }
 
 
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(config == null) {
+            DeConv2DConfig.DeConv2DConfigBuilder builder =  DeConv2DConfig.builder();
+            Long dH = getLongValueFromProperty("dH",properties);
+            if(dH != null)
+                builder.dH(dH);
+            Long sW = getLongValueFromProperty("sW",properties);
+            if(sW != null)
+                builder.sW(sW);
+            Long pW = getLongValueFromProperty("pW",properties);
+            if(pW != null)
+                builder.pW(pW);
+
+
+            Long dW = getLongValueFromProperty("dW",properties);
+            if(dW != null)
+                builder.dW(dW);
+
+
+            Long sH = getLongValueFromProperty("sH",properties);
+            if(sH != null)
+                builder.sH(sH);
+
+            Long pH = getLongValueFromProperty("pH",properties);
+            if(pH != null)
+                builder.pH(pH);
+
+
+            Long kW = getLongValueFromProperty("kW",properties);
+            if(kW != null)
+                builder.kW(kW);
+
+            Long kH = getLongValueFromProperty("kH",properties);
+            if(kH != null)
+                builder.kH(kH);
+
+            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
+            if(isSameMode != null)
+                builder.isSameMode(isSameMode);
+
+            if(properties.containsKey("dataFormat")) {
+                builder.dataFormat(properties.get("dataFormat").toString());
+            }
+
+
+            this.config = builder.build();
+
+        }
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(config == null && iArguments.size() >= 10) {
+            config = DeConv2DConfig.builder()
+                    .kH(iArguments.get(0))
+                    .kW(iArguments.get(1))
+                    .sH(iArguments.get(2))
+                    .sW(iArguments.get(3))
+                    .pH(iArguments.get(4))
+                    .pW(iArguments.get(5))
+                    .dH(iArguments.get(6))
+                    .dW(iArguments.get(7))
+                    .isSameMode(iArguments.get(8) == 1)
+                    .build();
+        }
+    }
+
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         List<SDVariable> ret = new ArrayList<>();
@@ -324,7 +394,7 @@ public class DeConv2D extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));

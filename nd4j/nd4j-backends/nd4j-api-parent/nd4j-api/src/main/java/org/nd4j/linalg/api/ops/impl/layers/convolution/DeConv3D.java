@@ -91,7 +91,7 @@ public class DeConv3D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null && !iArguments.isEmpty()){
+        if(config == null && !iArguments.isEmpty()) {
             config = DeConv3DConfig.builder()
                     .kD(iArguments.get(0))
                     .kH(iArguments.get(1))
@@ -110,6 +110,94 @@ public class DeConv3D extends DynamicCustomOp {
                     .build();
         }
         return config.toProperties();
+    }
+
+
+
+    @Override
+    public void configureFromArguments() {
+        if(config == null  && iArguments.size() >= 14) {
+            DeConv3DConfig.DeConv3DConfigBuilder builder = DeConv3DConfig.builder();
+            builder.kD(getIArgument(0));
+            builder.kH(getIArgument(1));
+            builder.kW(getIArgument(2));
+            builder.sD(getIArgument(3));
+            builder.sH(getIArgument(4));
+            builder.sW(getIArgument(5));
+            builder.pD(getIArgument(6));
+            builder.pH(getIArgument(7));
+            builder.pW(getIArgument(8));
+            builder.dD(getIArgument(9));
+            builder.dH(getIArgument(10));
+            builder.dW(getIArgument(11));
+            builder.isSameMode(getIArgument(12) > 0);
+            builder.dataFormat(getIArgument(13) > 0 ? "NCDHW" : "NCHWDC");
+            this.config = builder.build();
+        }
+
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(config == null) {
+            DeConv3DConfig.DeConv3DConfigBuilder builder = DeConv3DConfig.builder();
+            Long dD = getLongValueFromProperty("dD",properties);
+            if(dD != null)
+                builder.dD(dD);
+            Long dH = getLongValueFromProperty("dH",properties);
+            if(dH != null)
+                builder.dH(dH);
+            Long sW = getLongValueFromProperty("sW",properties);
+            if(sW != null)
+                builder.sW(sW);
+            Long pW = getLongValueFromProperty("pW",properties);
+            if(pW != null)
+                builder.pW(pW);
+
+            Long sD = getLongValueFromProperty("sD",properties);
+            if(sD != null)
+                builder.sD(sD);
+
+            Long dW = getLongValueFromProperty("dW",properties);
+            if(dW != null)
+                builder.dW(dW);
+
+            Long pD = getLongValueFromProperty("pD",properties);
+            if(pD != null)
+                builder.pD(pD);
+
+            Long sH = getLongValueFromProperty("sH",properties);
+            if(sH != null)
+                builder.sH(sH);
+
+            Long pH = getLongValueFromProperty("pH",properties);
+            if(pH != null)
+                builder.pH(pH);
+
+            Long kD = getLongValueFromProperty("kD",properties);
+            if(kD != null)
+                builder.kD(kD);
+
+            Long kW = getLongValueFromProperty("kW",properties);
+            if(kW != null)
+                builder.kW(kW);
+
+            Long kH = getLongValueFromProperty("kH",properties);
+            if(kH != null)
+                builder.kH(kH);
+
+            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
+            if(isSameMode != null)
+                builder.isSameMode(isSameMode);
+
+            if(properties.containsKey("dataFormat")) {
+                builder.dataFormat(properties.get("dataFormat").toString());
+            }
+
+            this.config = builder.build();
+
+        }
+
     }
 
     private void addArgs() {

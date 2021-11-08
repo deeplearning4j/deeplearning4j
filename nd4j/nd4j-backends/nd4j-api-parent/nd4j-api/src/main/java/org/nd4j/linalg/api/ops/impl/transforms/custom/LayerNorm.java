@@ -29,9 +29,12 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.shade.guava.primitives.Ints;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @NoArgsConstructor
@@ -79,6 +82,57 @@ public class LayerNorm extends DynamicCustomOp {
     }
 
     @Override
+    public void addBArgument(boolean... arg) {
+        super.addBArgument(arg);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("noBias",noBias);
+        ret.put("channelsFirst",channelsFirst);
+        if(dimensions != null)
+            ret.put("dimensions",dimensions);
+        return ret;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(!bArguments.isEmpty() && bArguments.size() > 1) {
+            this.noBias = bArguments.get(1);
+        }
+
+        if(!bArguments.isEmpty()) {
+            this.channelsFirst = bArguments.get(0);
+        }
+
+        if(!iArguments.isEmpty()) {
+            this.dimensions = Ints.toArray(iArguments);
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        Boolean noBias = getBooleanFromProperty("noBias",properties);
+        if(noBias != null) {
+            this.noBias = noBias;
+        }
+
+        Boolean channelsFirst = getBooleanFromProperty("channelsFirst",properties);
+        if(channelsFirst != null) {
+            this.channelsFirst = channelsFirst;
+        }
+
+        if(properties.containsKey("dimensions") && properties.get("dimensions") instanceof Long) {
+            Long dimension = (Long) properties.get("dimensions");
+            this.dimensions = new int[]{dimension.intValue()};
+        } else if(properties.containsKey("dimensions") && properties.get("dimensions") instanceof int[]) {
+            int[] dimensions = (int[]) properties.get("dimensions");
+            this.dimensions = dimensions;
+        }
+    }
+
+    @Override
     public String opName() {
         return "layer_norm";
     }
@@ -104,7 +158,7 @@ public class LayerNorm extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2 && dataTypes.size() <= 3, "Expected exactly 2 or 3 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
         for (DataType dataType : dataTypes) {

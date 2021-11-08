@@ -476,6 +476,7 @@ public class FlatBuffersMapper {
             }
 
             op.setPropertiesForFunction(props);
+
             ((CustomOp) op).configureFromArguments();
             return op;
         } else {

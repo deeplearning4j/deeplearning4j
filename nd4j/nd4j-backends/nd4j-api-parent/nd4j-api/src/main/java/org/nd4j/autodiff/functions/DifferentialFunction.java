@@ -176,6 +176,10 @@ public abstract class DifferentialFunction {
         return ret;
     }
 
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        //no op on purpose, meant to be overridden
+    }
+
     public void setPropertiesForFunction(Map<String,Object> properties) {
         Map<String,Field> fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         for(String s : properties.keySet()) {
@@ -186,6 +190,42 @@ public abstract class DifferentialFunction {
             }
             setValueFor(f, properties.get(s));
         }
+    }
+
+    protected Boolean getBooleanFromProperty(String propertyName,Map<String,Object> properties) {
+        if(properties.containsKey(propertyName)) {
+            Boolean value = (Boolean) properties.get(propertyName);
+            return value;
+        }
+
+        return null;
+    }
+
+    protected String getStringFromProperty(String propertyName,Map<String,Object> properties) {
+        if(properties.containsKey(propertyName)) {
+            String value = (String) properties.get(propertyName);
+            return value;
+        }
+
+        return null;
+    }
+
+    protected Long getLongValueFromProperty(String propertyName, Map<String,Object> properties) {
+        if(properties.containsKey(propertyName)) {
+            Long value = (Long) properties.get(propertyName);
+            return value;
+        }
+
+        return null;
+    }
+
+    protected Double getDoubleValueFromProperty(String propertyName, Map<String,Object> properties) {
+        if(properties.containsKey(propertyName)) {
+            Double value = (Double) properties.get(propertyName);
+            return value;
+        }
+
+        return null;
     }
 
 

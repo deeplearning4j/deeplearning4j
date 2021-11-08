@@ -59,8 +59,9 @@
 #include <ops/declarable/headers/util.h>
 
 namespace sd {
-    SD_LIB_EXPORT struct _loader {
-  _loader();
+     class SD_LIB_EXPORT  _loader {
+     public:
+         _loader();
 };
 
 namespace ops {

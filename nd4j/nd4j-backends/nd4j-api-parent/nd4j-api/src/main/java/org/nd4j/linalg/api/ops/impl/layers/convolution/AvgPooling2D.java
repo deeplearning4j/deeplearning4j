@@ -154,6 +154,63 @@ public class AvgPooling2D extends DynamicCustomOp {
         return config.toProperties();
     }
 
+
+    @Override
+    public void configureFromArguments() {
+        initConfigFromArgs();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(config == null) {
+            Pooling2DConfig.Pooling2DConfigBuilder builder =  Pooling2DConfig.builder();
+            Long dH = getLongValueFromProperty("dH",properties);
+            if(dH != null)
+                builder.dH(dH);
+            Long sW = getLongValueFromProperty("sW",properties);
+            if(sW != null)
+                builder.sW(sW);
+            Long pW = getLongValueFromProperty("pW",properties);
+            if(pW != null)
+                builder.pW(pW);
+
+
+            Long dW = getLongValueFromProperty("dW",properties);
+            if(dW != null)
+                builder.dW(dW);
+
+
+            Long sH = getLongValueFromProperty("sH",properties);
+            if(sH != null)
+                builder.sH(sH);
+
+            Long pH = getLongValueFromProperty("pH",properties);
+            if(pH != null)
+                builder.pH(pH);
+
+
+            Long kW = getLongValueFromProperty("kW",properties);
+            if(kW != null)
+                builder.kW(kW);
+
+            Long kH = getLongValueFromProperty("kH",properties);
+            if(kH != null)
+                builder.kH(kH);
+
+            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
+            if(isSameMode != null)
+                builder.isSameMode(isSameMode);
+
+            if(properties.containsKey("type")) {
+                Pooling2D.Pooling2DType type = Pooling2D.Pooling2DType.valueOf(properties.get("type").toString());
+                builder.type(type);
+            }
+
+            this.config = builder.build();
+
+        }
+    }
+
     private void initConfigFromArgs() {
         config = Pooling2DConfig.builder()
                 .kH(iArguments.get(0))

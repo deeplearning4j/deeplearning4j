@@ -20,7 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
     public enum LSTMDataFormat {
-        //Note: ordinal (order) here matters for C++ level. Any new formats hsould be added at end
+        //Note: ordinal (order) here matters for C++ level. Any new formats should be added at end
 
 
         TNS,
