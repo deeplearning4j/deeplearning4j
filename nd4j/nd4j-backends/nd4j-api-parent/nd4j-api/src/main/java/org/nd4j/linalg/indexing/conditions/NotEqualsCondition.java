@@ -40,8 +40,8 @@ public class NotEqualsCondition extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return 11;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.NOT_EQUALS;
     }
 
     @Override

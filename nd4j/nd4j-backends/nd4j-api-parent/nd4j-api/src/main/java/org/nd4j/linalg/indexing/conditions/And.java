@@ -34,8 +34,8 @@ public class And implements Condition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return -1;
+    public Conditions.ConditionMode conditionType() {
+         return Conditions.ConditionMode.AGGREGATE;
     }
 
     @Override

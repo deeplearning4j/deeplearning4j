@@ -32,7 +32,7 @@ SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& thir
   if (this->lengthOf() != second.lengthOf() || this->lengthOf() != third.lengthOf() || !this->isSameShape(second) ||
       !this->isSameShape(third)) {
     sd_printf("applyTriplewiseLambda requires all operands to have the same shape\n", "");
-    throw std::runtime_error("Shapes mismach");
+    throw std::runtime_error("Shapes mismatch");
   }
 
   auto f = this->bufferAsT<T>();
@@ -126,9 +126,10 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std:
     throw std::runtime_error(
         "NDArray::applyPairwiseLambda<T> method: all three arrays (this, other, target) must have the same type !");
 
-  if (this->lengthOf() != other.lengthOf()) {
+  //scalar is broadcastable
+  if (this->lengthOf() != other.lengthOf() && !this->isScalar() && !other.isScalar()) {
     sd_printf("applyPairwiseLambda requires both operands to have the same shape\n", "");
-    throw std::runtime_error("Shapes mismach");
+    throw std::runtime_error("Shapes mismatch");
   }
 
   auto f = this->bufferAsT<T>();
@@ -349,7 +350,7 @@ SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std
         "NDArray::applyIndexedPairwiseLambda<T> method: types of this and target array should match !");
   if (this->lengthOf() != other.lengthOf()) {
     sd_printf("applyIndexedPairwiseLambda requires both operands to have the same shape\n", "");
-    throw std::runtime_error("Shapes mismach");
+    throw std::runtime_error("Shapes mismatch");
   }
 
   auto f = this->bufferAsT<T>();

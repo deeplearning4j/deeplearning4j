@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -42,7 +43,7 @@ public class LastIndex extends BaseIndexAccumulation {
     protected Condition condition;
     protected double compare;
     protected double eps;
-    protected int mode;
+    protected Conditions.ConditionMode mode;
 
     public LastIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, int... dimensions) {
         this(sameDiff, i_v, condition, keepDims, dimensions);
@@ -51,9 +52,9 @@ public class LastIndex extends BaseIndexAccumulation {
         super(sameDiff, i_v, keepDims, dimensions);
         this.condition = condition;
         this.compare = condition.getValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = Nd4j.EPS_THRESHOLD;
-        this.extraArgs = new Object[] {compare, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     public LastIndex(SameDiff sameDiff, SDVariable x, @NonNull Condition condition, int... dimensions) {
@@ -78,9 +79,9 @@ public class LastIndex extends BaseIndexAccumulation {
         super(x,null, dimensions);
         this.condition = condition;
         this.compare = condition.getValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = eps;
-        this.extraArgs = new Object[] {compare, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     @Override

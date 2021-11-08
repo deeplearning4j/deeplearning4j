@@ -28,7 +28,7 @@ if(SD_AURORA)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
-    SET(INFORMATIVE_FLAGS  "-fmax-errors=49999")
+    SET(INFORMATIVE_FLAGS  "-fmax-errors=3")
 endif()
 
 if (SD_CUDA AND NOT SD_AURORA)

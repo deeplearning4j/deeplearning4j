@@ -47,8 +47,8 @@ public class AbsValueLessOrEqualsThan extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return 13;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.ABS_LESS_THAN_OR_EQUAL;
     }
 
     @Override

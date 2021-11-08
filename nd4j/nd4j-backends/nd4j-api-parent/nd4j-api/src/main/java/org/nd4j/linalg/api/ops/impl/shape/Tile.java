@@ -29,14 +29,13 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Tile extends DynamicCustomOp {
 
@@ -90,6 +89,20 @@ public class Tile extends DynamicCustomOp {
 
     }
 
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.jaxis = Ints.toArray(iArguments);
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("dimensions")) {
+            Long dimension = (Long) properties.get("dimensions");
+            this.jaxis = Ints.toArray(Arrays.asList(dimension.intValue()));
+        }
+    }
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {

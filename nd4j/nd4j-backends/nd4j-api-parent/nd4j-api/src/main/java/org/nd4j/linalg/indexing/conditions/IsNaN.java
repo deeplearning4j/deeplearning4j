@@ -32,8 +32,8 @@ public class IsNaN extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return 9;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.IS_NAN;
     }
 
 

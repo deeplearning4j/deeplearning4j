@@ -54,7 +54,8 @@ public class StridedSlice extends DynamicCustomOp {
     private int newAxisMask;
     private int shrinkAxisMask;
 
-    public StridedSlice() {}
+    public StridedSlice() {
+    }
 
     public StridedSlice(SameDiff sameDiff, SDVariable in, int[] begin, int[] end, int[] strides){
         this(sameDiff, in, begin, end, strides, 0, 0, 0, 0, 0);
@@ -153,7 +154,7 @@ public class StridedSlice extends DynamicCustomOp {
     }
 
 
-    private void addArguments(){
+    private void addArguments() {
         //even without any specification java defaults to zero, we can safely call this as long as
         //the check is in place for begin, end and strides
         addIArgument(beginMask);
@@ -296,6 +297,60 @@ public class StridedSlice extends DynamicCustomOp {
         ret.put(tensorflowName(),map);
 
         return ret;
+    }
+
+
+    @Override
+    public void configureFromArguments() {
+        if(iArguments.size() >= 11) {
+            this.beginMask = iArguments.get(0).intValue();
+            this.ellipsisMask = iArguments.get(1).intValue();
+            this.endMask = iArguments.get(2).intValue();
+            this.newAxisMask = iArguments.get(3).intValue();
+            this.shrinkAxisMask = iArguments.get(4).intValue();
+      if(iArguments.size() > 12) {
+          this.begin = new long[] {iArguments.get(5),iArguments.get(6),iArguments.get(7)};
+          this.end = new long[] {iArguments.get(8),iArguments.get(9),iArguments.get(10)};
+          this.strides = new long[] {iArguments.get(11),iArguments.get(12),iArguments.get(13)};
+      } else {
+          this.begin = new long[] {iArguments.get(5),iArguments.get(6)};
+          this.end = new long[] {iArguments.get(7),iArguments.get(8)};
+          this.strides = new long[]{iArguments.get(9),iArguments.get(10)};
+      }
+
+        }
+
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("begin_mask")) {
+            Long value = (Long) properties.get("begin_mask");
+            this.beginMask = value.intValue();
+        }
+
+        if(properties.containsKey("ellipsis_mask")) {
+            Long value = (Long) properties.get("ellipsis_mask");
+            this.ellipsisMask = value.intValue();
+
+        }
+
+        if(properties.containsKey("end_mask")) {
+            Long value = (Long) properties.get("end_mask");
+            this.endMask = value.intValue();
+
+        }
+
+        if(properties.containsKey("shrink_axis_mask")) {
+            Long value = (Long) properties.get("shrink_axis_mask");
+            this.shrinkAxisMask = value.intValue();
+
+        }
+
+        if(properties.containsKey("new_axis_mask")) {
+            Long value = (Long) properties.get("new_axis_mask");
+            this.newAxisMask = value.intValue();
+        }
     }
 
     @Override

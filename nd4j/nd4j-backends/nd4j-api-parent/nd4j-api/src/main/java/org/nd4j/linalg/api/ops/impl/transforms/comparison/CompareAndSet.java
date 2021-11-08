@@ -26,11 +26,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class CompareAndSet extends BaseTransformSameOp {
 
@@ -38,20 +36,19 @@ public class CompareAndSet extends BaseTransformSameOp {
     private double compare;
     private double set;
     private double eps;
-    private int mode;
+    private Conditions.ConditionMode mode;
 
     public CompareAndSet(SameDiff sameDiff, SDVariable to, Number set, Condition condition) {
         super(sameDiff, to, false);
         this.condition = condition;
         this.compare = condition.getValue();
         this.set = set.doubleValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.index};
     }
 
     public CompareAndSet() {
-
     }
 
     public CompareAndSet(INDArray x, double compare, double set, double eps) {
@@ -64,11 +61,11 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = set;
         this.eps = eps;
         if (condition == null)
-            this.mode = 0;
+            this.mode = Conditions.fromInt(0).conditionType();
         else
-            this.mode = condition.condtionNum();
+            this.mode = condition.conditionType();
 
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.index};
     }
 
 
@@ -105,8 +102,8 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.compare = condition.getValue();
         this.set = set;
         this.eps = condition.epsThreshold();
-        this.mode = condition.condtionNum();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.mode = condition.conditionType();
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.index};
     }
 
     /**
@@ -142,8 +139,8 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.compare = condition.getValue();
         this.set = 0;
         this.eps = condition.epsThreshold();
-        this.mode = condition.condtionNum();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.mode = condition.conditionType();
+        this.extraArgs = new Object[]{compare, set, eps, (double)mode.index};
     }
 
     /**
@@ -160,8 +157,8 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.compare = compare;
         this.set = set;
         this.eps = eps;
-        this.mode = 0;
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.mode = Conditions.fromInt(0,compare).conditionType();
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.index};
     }
 
     @Override
@@ -199,12 +196,57 @@ public class CompareAndSet extends BaseTransformSameOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("mode")) {
+            if(properties.get("mode") instanceof Integer) {
+                Integer mode = (Integer) properties.get("mode");
+                this.mode = Conditions.ConditionMode.fromNumber(mode);
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode);
+                }
+            } else if(properties.get("mode") instanceof Conditions.ConditionMode) {
+                Conditions.ConditionMode mode = (Conditions.ConditionMode) properties.get("mode");
+                this.mode = mode;
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode.index);
+                }
+            }
+
+        }
+
+        if(properties.containsKey("compare")) {
+            Double compare = (Double) properties.get("compare");
+            this.compare = compare;
+            //condition was set
+            if(properties.containsKey("mode")) {
+                this.condition = Conditions.fromInt(mode.index,compare);
+            }
+        }
+
+        if(properties.containsKey("set")) {
+            Double set = (Double) properties.get("set");
+            this.set = set;
+        }
+
+        if(properties.containsKey("eps")) {
+            Double eps = (Double) properties.get("eps");
+            this.eps = eps;
+        }
+
+
+    }
+
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         //Pass through gradient where condition is NOT matched (condition matched: output replaced by scalar)
         SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).castTo(arg().dataType()).rsub(1.0);
         SDVariable gradAtIn = gradient.get(0).mul(maskNotMatched);
-        return Collections.singletonList(gradAtIn);
+        return Arrays.asList(gradAtIn, gradAtIn);
     }
 }
 
