@@ -57,8 +57,8 @@ public class EpsilonEquals extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return 0;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.EPSILON_EQUALS;
     }
 
     @Override

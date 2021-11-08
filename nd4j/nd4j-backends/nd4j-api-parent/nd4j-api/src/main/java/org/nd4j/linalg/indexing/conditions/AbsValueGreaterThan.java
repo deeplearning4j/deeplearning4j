@@ -47,8 +47,8 @@ public class AbsValueGreaterThan extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return 7;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.ABS_GREATER_THAN;
     }
 
     @Override

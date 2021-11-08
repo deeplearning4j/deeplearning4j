@@ -28,6 +28,9 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.shade.guava.primitives.Booleans;
@@ -86,18 +89,15 @@ public class LSTMLayer extends DynamicCustomOp {
         Preconditions.checkState(inputDataTypes != null && 3 <= inputDataTypes.size() && inputDataTypes.size() <= 8, "Expected amount of inputs to LSTMLayer between 3 inputs minimum (input, Wx, Wr only) or 8 maximum, got %s", inputDataTypes);
         //7 outputs, all of same type as input. Note that input 0 is max sequence length (int64), input 1 is actual input
         DataType dt = inputDataTypes.get(1);
-        ArrayList<DataType> list = new ArrayList<>();
+        List<DataType> list = new ArrayList<>();
         if (configuration.isRetFullSequence()) {
-
             list.add(dt);
         }
 
         if (configuration.isRetLastC()) {
-
             list.add(dt);
         }
-        if (configuration.isRetLastH()){
-
+        if (configuration.isRetLastH()) {
             list.add(dt);
         }
 
@@ -107,7 +107,7 @@ public class LSTMLayer extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grads) {
-        int i=0;
+        int i = 0;
         SDVariable grad0 = this.configuration.isRetFullSequence() ? grads.get(i++): null;
         SDVariable grad1 = this.configuration.isRetLastH() ? grads.get(i++): null;
         SDVariable grad2 = this.configuration.isRetLastC() ? grads.get(i++): null;
@@ -155,6 +155,94 @@ public class LSTMLayer extends DynamicCustomOp {
                 configuration.isRetLastH(),  //  retLastH: B_ARG(6)
                 configuration.isRetLastC()   // retLastC: B_ARG(7)
         };
+
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(configuration == null && !bArguments.isEmpty() && !iArguments.isEmpty() && !tArguments.isEmpty()) {
+            LSTMLayerConfig.LSTMLayerConfigBuilder builder = LSTMLayerConfig.builder();
+            builder.retLastH(bArguments.get(6));
+            builder.retFullSequence(bArguments.get(5));
+            builder.retLastC(bArguments.get(4));
+
+
+            //this.configuration.getCellClip()}; // T_ARG(0)
+            builder.cellClip(tArguments.get(0));
+
+
+            builder.lstmdataformat(LSTMDataFormat.values()[iArguments.get(0).intValue()]);
+            builder.directionMode(LSTMDirectionMode.values()[iArguments.get(1).intValue()]);
+            builder.gateAct(LSTMActivations.values()[iArguments.get(2).intValue()]);
+            builder.outAct(LSTMActivations.values()[iArguments.get(3).intValue()]);
+            builder.cellAct(LSTMActivations.values()[iArguments.get(4).intValue()]);
+            this.configuration = builder.build();
+
+        }
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        this.sameDiff = sameDiff;
+        String[] inputsForOp = sameDiff.getInputsForOp(this);
+        LSTMLayerWeights.LSTMLayerWeightsBuilder builder = LSTMLayerWeights.builder();
+        if(inputsForOp.length > 0) {
+            builder.weights(sameDiff.getVariable(inputsForOp[1]));
+        }
+        if(inputsForOp.length > 1) {
+            builder.rWeights(sameDiff.getVariable(inputsForOp[2]));
+        }
+
+        if(inputsForOp.length > 2) {
+            builder.bias(sameDiff.getVariable(inputsForOp[3]));
+        }
+
+        //peephole weights are always at the end
+        if(inputsForOp.length > 3) {
+            builder.peepholeWeights(sameDiff.getVariable(inputsForOp[inputsForOp.length - 1]));
+        }
+
+
+        this.weights = builder.build();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(configuration == null) {
+            LSTMLayerConfig.LSTMLayerConfigBuilder builder = LSTMLayerConfig.builder();
+            Boolean retFullSequence = getBooleanFromProperty("retFullSequence",properties);
+            if(retFullSequence != null)
+                builder.retFullSequence(retFullSequence);
+            String act = getStringFromProperty("outAct",properties);
+            if(act != null)
+                builder.outAct(LSTMActivations.valueOf(act));
+            String directionMode = getStringFromProperty("directionMode",properties);
+            if(directionMode != null)
+                builder.directionMode(LSTMDirectionMode.valueOf(directionMode));
+            Double cellClip = getDoubleValueFromProperty("cellClip",properties);
+            if(cellClip != null)
+                builder.cellClip(cellClip);
+            String cellAct = getStringFromProperty("cellAct",properties);
+            if(cellAct != null)
+                builder.cellAct(LSTMActivations.valueOf(cellAct));
+            Boolean retLastC = getBooleanFromProperty("retLastC",properties);
+            if(retLastC != null)
+                builder.retLastC(retLastC);
+            Boolean retLastH = getBooleanFromProperty("retLastH",properties);
+            if(retLastH != null)
+                builder.retLastH(retLastH);
+            String gateAct = getStringFromProperty("gateAct",properties);
+            if(gateAct != null)
+                builder.gateAct(LSTMActivations.valueOf(gateAct));
+            String lstmdataformat = getStringFromProperty("lstmdataformat",properties);
+            if(lstmdataformat != null)
+                builder.lstmdataformat(LSTMDataFormat.valueOf(LSTMDataFormat.class,lstmdataformat));
+
+
+            this.configuration = builder.build();
+
+
+        }
 
     }
 

@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,15 +41,15 @@ public class FirstIndex extends BaseIndexAccumulation {
     protected Condition condition;
     protected double compare;
     protected double eps;
-    protected int mode;
+    protected Conditions.ConditionMode mode;
 
     public FirstIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, boolean keepDims, int... dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
         this.condition = condition;
         this.compare = condition.getValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = eps;
-        this.extraArgs = new Object[] {compare, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     public FirstIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, int... dimensions) {
@@ -72,9 +73,9 @@ public class FirstIndex extends BaseIndexAccumulation {
         super(x, dimension);
         this.condition = condition;
         this.compare = condition.getValue();
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = eps;
-        this.extraArgs = new Object[] {compare, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     @Override

@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Upsampling3d operation
@@ -89,6 +90,22 @@ public class Upsampling3d extends DynamicCustomOp {
     }
 
 
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(!iArguments.isEmpty() && iArguments.size() >= 4) {
+            this.scaleD = iArguments.get(0).intValue();
+            this.scaleH = iArguments.get(1).intValue();
+            this.scaleW = iArguments.get(2).intValue();
+            //note that scaleD is used twice so we skip an argument
+            this.ncdhw = iArguments.get(4) > 0;
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

@@ -47,7 +47,7 @@ public class ScatterAdd extends DynamicCustomOp {
 
     public ScatterAdd(){}
 
-    public ScatterAdd(@NonNull INDArray ref, @NonNull INDArray indices, @NonNull INDArray update){
+    public ScatterAdd(@NonNull INDArray ref, @NonNull INDArray indices, @NonNull INDArray update) {
         super(new INDArray[]{ref, indices, update}, null);
     }
 
@@ -81,9 +81,9 @@ public class ScatterAdd extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradOut){
+    public List<SDVariable> doDiff(List<SDVariable> gradOut) {
         //3 args: ref, indices, updates
-        //For non-modified indices, input gradient (referenc) is same as output gradient
+        //For non-modified indices, input gradient (reference) is same as output gradient
         //For modified indices, dL/dref = dL/dOut * dOut/dRef = dL/dOut * d(ref + update)/dRef = dL/dOut
         //And for updates, dL/du = dL/dOut * dOut/du = dL/dOut * d(ref + update)/du = dL/dOut -> gather op
 

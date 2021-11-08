@@ -1666,8 +1666,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         SDVariable sdLogits = sameDiff.var("logits", logits);
         SDVariable sdLabels = sameDiff.var("labels", labels);
-        SDVariable loss = sameDiff.math().abs(sdLogits);
-
 
         SDVariable output = new SoftmaxCrossEntropyWithLogitsLoss(sameDiff, sdLogits, sdLabels, 0).outputVariable();
         sameDiff.setLossVariables(output);

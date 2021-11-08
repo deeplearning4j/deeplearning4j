@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.NoArgsConstructor;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -39,11 +38,13 @@ import java.util.*;
 /**
  * Gather op
  */
-@NoArgsConstructor
 public class Gather extends DynamicCustomOp {
 
     protected int[] indices;
     protected int jaxis = 0;
+
+    public Gather() {
+    }
 
     public Gather(SameDiff sameDiff, SDVariable df, SDVariable indices, int axis) {
         this(sameDiff, df, indices, axis, false);
@@ -105,6 +106,11 @@ public class Gather extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
@@ -136,12 +142,20 @@ public class Gather extends DynamicCustomOp {
     }
 
     @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("dimensions")) {
+            Long dimensions = (Long) properties.get("dimensions");
+            this.jaxis = dimensions.intValue();
+        }
+    }
+
+    @Override
     public String opName() {
         return "gather";
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v){
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
 

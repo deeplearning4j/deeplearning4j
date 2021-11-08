@@ -44,8 +44,8 @@ public class GreaterThanOrEqual extends BaseCondition {
      * @return
      */
     @Override
-    public int condtionNum() {
-        return 5;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.GREATER_THAN_OR_EQUAL;
     }
 
     @Override

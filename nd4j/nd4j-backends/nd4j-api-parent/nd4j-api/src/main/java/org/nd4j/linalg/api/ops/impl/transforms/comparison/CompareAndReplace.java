@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.*;
 
@@ -37,20 +38,19 @@ public class CompareAndReplace extends BaseTransformSameOp {
     private double compare;
     private double set;
     private double eps;
-    private int mode;
+    private Conditions.ConditionMode mode;
 
     public CompareAndReplace(SameDiff sameDiff, SDVariable to, SDVariable from, Condition condition) {
         super(sameDiff, to, from, false);
         this.condition = condition;
         this.compare = condition.getValue();
         this.set = 0;
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.index};
     }
 
     public CompareAndReplace() {
-
     }
 
 
@@ -85,9 +85,9 @@ public class CompareAndReplace extends BaseTransformSameOp {
         super(x, y, z);
         this.compare = condition.getValue();
         this.set = 0;
-        this.mode = condition.condtionNum();
+        this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.index};
     }
 
 
@@ -102,7 +102,48 @@ public class CompareAndReplace extends BaseTransformSameOp {
         return ret;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("mode")) {
+            if(properties.get("mode") instanceof Integer) {
+                Integer mode = (Integer) properties.get("mode");
+                this.mode = Conditions.ConditionMode.fromNumber(mode);
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode);
+                }
+            } else if(properties.get("mode") instanceof Conditions.ConditionMode) {
+                Conditions.ConditionMode mode = (Conditions.ConditionMode) properties.get("mode");
+                this.mode = mode;
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode.index);
+                }
+            }
 
+        }
+
+        if(properties.containsKey("compare")) {
+            Double compare = (Double) properties.get("compare");
+            this.compare = compare;
+            //condition was set
+            if(properties.containsKey("mode")) {
+                this.condition = Conditions.fromInt(mode.index,compare);
+            }
+        }
+
+        if(properties.containsKey("set")) {
+            Double set = (Double) properties.get("set");
+            this.set = set;
+        }
+
+        if(properties.containsKey("eps")) {
+            Double eps = (Double) properties.get("eps");
+            this.eps = eps;
+        }
+
+
+    }
 
     @Override
     public int opNum() {

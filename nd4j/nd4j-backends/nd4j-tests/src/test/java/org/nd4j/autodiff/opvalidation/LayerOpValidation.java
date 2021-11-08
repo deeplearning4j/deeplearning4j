@@ -1135,12 +1135,10 @@ public class LayerOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         INDArray wArr = Nd4j.rand(new int[]{kD, kH, kW, nIn, nOut});
-        INDArray bArr = Nd4j.rand(1, nOut);
         INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgT, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("W", wArr);
-        SDVariable b = sd.var("b", bArr);
 
         Conv3DConfig conv3DConfig = Conv3DConfig.builder()
                 .kH(kH).kW(kW).kD(kD)
@@ -1151,7 +1149,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .dataFormat(Conv3DConfig.NCDHW)
                 .build();
 
-        SDVariable out = sd.cnn().conv3d(in, w, b, conv3DConfig);
+        SDVariable out = sd.cnn().conv3d(in,w,conv3DConfig);
         out = sd.nn().tanh("loss", out).shape().rename("out");
 
         sd.setLossVariables("loss");

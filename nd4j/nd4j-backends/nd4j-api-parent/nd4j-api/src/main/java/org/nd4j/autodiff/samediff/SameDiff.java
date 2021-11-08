@@ -526,8 +526,8 @@ public class SameDiff extends SDBaseOps {
             //Clone the op
             DifferentialFunction clone = FlatBuffersMapper.cloneViaSerialize(this, function, reverseMap);
 
-            clone.setSameDiff(sameDiff);
             clone.setOwnName(function.getOwnName());
+            clone.setSameDiff(sameDiff);
             if (sameDiff.opExists(function.getOwnName()))
                 sameDiff.putOpForId(function.getOwnName(), function);
             newFunctions.put(function.getOwnName(), clone);
@@ -544,6 +544,7 @@ public class SameDiff extends SDBaseOps {
 
                 }
             }
+
             val outputsForFunction = function.outputVariables();
             for(SDVariable arg : outputsForFunction) {
                 if(!sameDiff.variables.containsKey(arg.name())) {
@@ -567,6 +568,9 @@ public class SameDiff extends SDBaseOps {
             for (val output : clone.outputVariables()) {
                 output.setSameDiff(sameDiff);
             }
+
+            clone.configureWithSameDiff(sameDiff);
+
 
         }
 
@@ -4090,8 +4094,8 @@ public class SameDiff extends SDBaseOps {
         gradFn.setListeners(listeners);
         Map<String, INDArray> grads = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
 
-        Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<String,INDArray>();
-        Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<String,INDArray>();
+        Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<>();
+        Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<>();
         if(outputVars != null){
             for(String s : outputVars){
                 outOutputs.put(s, grads.get(s));
@@ -4271,6 +4275,9 @@ public class SameDiff extends SDBaseOps {
                     initialGrad = initialGrad.castTo(v.dataType());
                     sameDiff.setGradientForVariableName(v.name(), initialGrad);
                 }
+
+
+
                 if (finalOutputs.contains(v)) {
                     log.warn("Loss function variable \"{}\" appears multiple times in list of loss variables - using only first instance", s);
                 } else {
@@ -5406,6 +5413,11 @@ public class SameDiff extends SDBaseOps {
             } else {
                 sd.ops.put(name, SameDiffOp.builder().name(name).op(df).build());
             }
+            //note we configure the samediff instance for the function after we are sure the graph
+            //knows about this op. The goal would be to configure left over variables that aren't properties
+            //like LSTM weights, but maybe suitable in other circumstances as well.
+            df.configureWithSameDiff(sd);
+
 
             int outLength = fn.outputLength();
             int[] outs = new int[outLength];

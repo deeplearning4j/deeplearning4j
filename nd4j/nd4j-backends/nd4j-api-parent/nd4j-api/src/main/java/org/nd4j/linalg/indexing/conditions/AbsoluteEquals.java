@@ -20,11 +20,35 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-public class IsInfinite extends BaseCondition {
+import org.nd4j.linalg.factory.Nd4j;
+
+public class AbsoluteEquals extends BaseCondition {
+    private double eps = Nd4j.EPS_THRESHOLD;
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public AbsoluteEquals() {
+        this(0.0);
+    }
+
+    public AbsoluteEquals(Number value) {
+        this(value, Nd4j.EPS_THRESHOLD);
+    }
+
+    public AbsoluteEquals(Number value, Number eps) {
+        super(value);
+        this.eps = eps.doubleValue();
+    }
+
+    @Override
+    public void setValue(Number value) {
+        //no op where we can pass values in
+    }
 
 
-    public IsInfinite() {
-        super(-1);
+    @Override
+    public double epsThreshold() {
+        return this.eps;
     }
 
     /**
@@ -34,11 +58,11 @@ public class IsInfinite extends BaseCondition {
      */
     @Override
     public Conditions.ConditionMode conditionType() {
-        return Conditions.ConditionMode.IS_FINITE;
+        return Conditions.ConditionMode.ABS_EQUALS;
     }
 
     @Override
     public Boolean apply(Number input) {
-        return Float.isInfinite(input.floatValue());
+        return Math.abs(input.doubleValue()) == this.value.doubleValue();
     }
 }
