@@ -48,8 +48,6 @@ CONFIGURABLE_OP_IMPL(tanh_bp, 2, 1, true, 0, 0) {
   auto epsilon = INPUT_VARIABLE(1);
 
   auto z = OUTPUT_VARIABLE(0);
-
-  // input->applyPairwiseTransform(pairwise::TanhDerivativeE, epsilon, z, nullptr);
   helpers::tanhDerivative(block.launchContext(), input, epsilon, z);
   return sd::Status::OK;
 }

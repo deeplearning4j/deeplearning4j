@@ -49,7 +49,6 @@ public class CompareAndSet extends BaseTransformSameOp {
     }
 
     public CompareAndSet() {
-        System.out.println();
     }
 
     public CompareAndSet(INDArray x, double compare, double set, double eps) {

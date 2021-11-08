@@ -59,7 +59,6 @@ OP_IMPL(scatter_add, 3, 1, true) {
         std::vector<sd::LongType> expectedUpdShape = {indices->lengthOf()};
         expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
 
-        //REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     }
     else {
 
@@ -70,7 +69,6 @@ OP_IMPL(scatter_add, 3, 1, true) {
         std::vector<sd::LongType> expectedUpdShape = indices->getShapeAsVector();
         expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + sd::LongType(1L), inShape.end());
 
-        //REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     }
 
     if (!indices->isEmpty()) {

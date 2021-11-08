@@ -55,7 +55,6 @@ public class StridedSlice extends DynamicCustomOp {
     private int shrinkAxisMask;
 
     public StridedSlice() {
-        System.out.println();
     }
 
     public StridedSlice(SameDiff sameDiff, SDVariable in, int[] begin, int[] end, int[] strides){

@@ -164,7 +164,7 @@ public class LSTMLayer extends DynamicCustomOp {
             LSTMLayerConfig.LSTMLayerConfigBuilder builder = LSTMLayerConfig.builder();
             builder.retLastH(bArguments.get(6));
             builder.retFullSequence(bArguments.get(5));
-            builder.retLastH(bArguments.get(6));
+            builder.retLastC(bArguments.get(4));
 
 
             //this.configuration.getCellClip()}; // T_ARG(0)
@@ -177,11 +177,6 @@ public class LSTMLayer extends DynamicCustomOp {
             builder.outAct(LSTMActivations.values()[iArguments.get(3).intValue()]);
             builder.cellAct(LSTMActivations.values()[iArguments.get(4).intValue()]);
             this.configuration = builder.build();
-            if(weights == null) {
-                LSTMLayerWeights.LSTMLayerWeightsBuilder weights = LSTMLayerWeights.builder();
-                SDVariable[] args = args();
-                System.out.println();
-            }
 
         }
     }
@@ -191,20 +186,22 @@ public class LSTMLayer extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         String[] inputsForOp = sameDiff.getInputsForOp(this);
         LSTMLayerWeights.LSTMLayerWeightsBuilder builder = LSTMLayerWeights.builder();
-        if(inputsForOp.length > 1) {
+        if(inputsForOp.length > 0) {
             builder.weights(sameDiff.getVariable(inputsForOp[1]));
         }
-        if(inputsForOp.length > 2) {
+        if(inputsForOp.length > 1) {
             builder.rWeights(sameDiff.getVariable(inputsForOp[2]));
         }
 
-        if(inputsForOp.length > 3) {
+        if(inputsForOp.length > 2) {
             builder.bias(sameDiff.getVariable(inputsForOp[3]));
         }
 
-        if(inputsForOp.length > 4) {
-            builder.peepholeWeights(sameDiff.getVariable(inputsForOp[4]));
+        //peephole weights are always at the end
+        if(inputsForOp.length > 3) {
+            builder.peepholeWeights(sameDiff.getVariable(inputsForOp[inputsForOp.length - 1]));
         }
+
 
         this.weights = builder.build();
     }
