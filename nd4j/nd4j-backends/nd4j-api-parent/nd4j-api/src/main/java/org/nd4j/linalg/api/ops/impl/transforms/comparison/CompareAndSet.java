@@ -36,16 +36,16 @@ public class CompareAndSet extends BaseTransformSameOp {
     private double compare;
     private double set;
     private double eps;
-    private int mode;
+    private Conditions.ConditionMode mode;
 
     public CompareAndSet(SameDiff sameDiff, SDVariable to, Number set, Condition condition) {
         super(sameDiff, to, false);
         this.condition = condition;
         this.compare = condition.getValue();
         this.set = set.doubleValue();
-        this.mode = condition.conditionNum();
+        this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.ordinal()};
     }
 
     public CompareAndSet() {
@@ -61,11 +61,11 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = set;
         this.eps = eps;
         if (condition == null)
-            this.mode = 0;
+            this.mode = Conditions.fromInt(0).conditionType();
         else
-            this.mode = condition.conditionNum();
+            this.mode = condition.conditionType();
 
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
     }
 
 
@@ -102,8 +102,8 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.compare = condition.getValue();
         this.set = set;
         this.eps = condition.epsThreshold();
-        this.mode = condition.conditionNum();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.mode = condition.conditionType();
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
     }
 
     /**
@@ -139,8 +139,8 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.compare = condition.getValue();
         this.set = 0;
         this.eps = condition.epsThreshold();
-        this.mode = condition.conditionNum();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.mode = condition.conditionType();
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
     }
 
     /**
@@ -157,8 +157,8 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.compare = compare;
         this.set = set;
         this.eps = eps;
-        this.mode = 0;
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        this.mode = Conditions.fromInt(0,compare).conditionType();
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
     }
 
     @Override
@@ -200,12 +200,22 @@ public class CompareAndSet extends BaseTransformSameOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         if(properties.containsKey("mode")) {
-            Integer mode = (Integer) properties.get("mode");
-            this.mode = mode;
-            // no comparison value, just use default
-            if(!properties.containsKey("compare")) {
-                this.condition = Conditions.fromInt(mode);
+            if(properties.get("mode") instanceof Integer) {
+                Integer mode = (Integer) properties.get("mode");
+                this.mode = Conditions.ConditionMode.values()[mode];
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode);
+                }
+            } else if(properties.get("mode") instanceof Conditions.ConditionMode) {
+                Conditions.ConditionMode mode = (Conditions.ConditionMode) properties.get("mode");
+                this.mode = mode;
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode.ordinal());
+                }
             }
+
         }
 
         if(properties.containsKey("compare")) {
@@ -213,7 +223,7 @@ public class CompareAndSet extends BaseTransformSameOp {
             this.compare = compare;
             //condition was set
             if(properties.containsKey("mode")) {
-                this.condition = Conditions.fromInt(mode,compare);
+                this.condition = Conditions.fromInt(mode.ordinal(),compare);
             }
         }
 

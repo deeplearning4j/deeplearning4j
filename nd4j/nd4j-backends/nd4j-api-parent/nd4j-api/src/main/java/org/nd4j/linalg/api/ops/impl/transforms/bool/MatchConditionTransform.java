@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,13 +38,13 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
     private Condition condition;
     private double compare;
     private double eps;
-    private int mode;
+    private Conditions.ConditionMode mode;
 
     public MatchConditionTransform(SameDiff sameDiff, SDVariable in, Condition condition) {
         super(sameDiff, in, false);
         this.condition = condition;
         this.compare = condition.getValue();
-        this.mode = condition.conditionNum();
+        this.mode = condition.conditionType();
         this.eps = Nd4j.EPS_THRESHOLD;
         this.extraArgs = new Object[] {compare, eps,  mode};
     }
@@ -67,7 +68,7 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
         super(x, null, z);
 
         this.compare = condition.getValue();
-        this.mode = condition.conditionNum();
+        this.mode = condition.conditionType();
         this.eps = eps;
 
         this.extraArgs = new Object[] {compare, eps, mode};

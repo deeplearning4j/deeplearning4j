@@ -53,8 +53,8 @@ public class EpsilonNotEquals extends BaseCondition {
      * @return
      */
     @Override
-    public int conditionNum() {
-        return 1;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.EPSILON_NOT_EQUALS;
     }
 
     @Override

@@ -45,7 +45,7 @@ public class Choose extends DynamicCustomOp {
 
         this.inPlace = true;
         this.inplaceCall = true;
-        addIArgument(condition.conditionNum());
+        addIArgument(condition.conditionType().ordinal());
         this.condition = condition;
     }
 
@@ -60,7 +60,7 @@ public class Choose extends DynamicCustomOp {
         }
 
         addInputArgument(inputs);
-        addIArgument(condition.conditionNum());
+        addIArgument(condition.conditionType().ordinal());
     }
 
     /**
@@ -96,7 +96,7 @@ public class Choose extends DynamicCustomOp {
 
         if(!tArgs.isEmpty())
             addTArgument(Doubles.toArray(tArgs));
-        addIArgument(condition.conditionNum());
+        addIArgument(condition.conditionType().ordinal());
     }
 
     public Choose(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace) {

@@ -57,8 +57,8 @@ public class AbsoluteEquals extends BaseCondition {
      * @return
      */
     @Override
-    public int conditionNum() {
-        return 10;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.ABS_EQUALS;
     }
 
     @Override

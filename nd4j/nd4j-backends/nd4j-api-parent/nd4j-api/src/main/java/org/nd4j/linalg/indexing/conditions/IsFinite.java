@@ -33,8 +33,8 @@ public class IsFinite extends BaseCondition {
      * @return
      */
     @Override
-    public int conditionNum() {
-        return 14;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.IS_FINITE;
     }
 
     @Override

@@ -43,6 +43,7 @@ public class Conditions {
         ABS_LESS_THAN_OR_EQUAL, //13
         IS_FINITE, //14
         NOT_FINITE, //15
+        AGGREGATE // this is an aggregate enum for or, and, not, and other indirect conditions that depend on others
 
     }
 

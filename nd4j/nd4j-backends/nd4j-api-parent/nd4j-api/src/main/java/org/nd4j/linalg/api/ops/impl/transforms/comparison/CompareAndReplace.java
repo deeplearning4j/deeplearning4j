@@ -38,16 +38,16 @@ public class CompareAndReplace extends BaseTransformSameOp {
     private double compare;
     private double set;
     private double eps;
-    private int mode;
+    private Conditions.ConditionMode mode;
 
     public CompareAndReplace(SameDiff sameDiff, SDVariable to, SDVariable from, Condition condition) {
         super(sameDiff, to, from, false);
         this.condition = condition;
         this.compare = condition.getValue();
         this.set = 0;
-        this.mode = condition.conditionNum();
+        this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.ordinal()};
     }
 
     public CompareAndReplace() {
@@ -85,9 +85,9 @@ public class CompareAndReplace extends BaseTransformSameOp {
         super(x, y, z);
         this.compare = condition.getValue();
         this.set = 0;
-        this.mode = condition.conditionNum();
+        this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.ordinal()};
     }
 
 
@@ -105,12 +105,22 @@ public class CompareAndReplace extends BaseTransformSameOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         if(properties.containsKey("mode")) {
-            Integer mode = (Integer) properties.get("mode");
-            this.mode = mode;
-            // no comparison value, just use default
-            if(!properties.containsKey("compare")) {
-                this.condition = Conditions.fromInt(mode);
+            if(properties.get("mode") instanceof Integer) {
+                Integer mode = (Integer) properties.get("mode");
+                this.mode = Conditions.ConditionMode.values()[mode];
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode);
+                }
+            } else if(properties.get("mode") instanceof Conditions.ConditionMode) {
+                Conditions.ConditionMode mode = (Conditions.ConditionMode) properties.get("mode");
+                this.mode = mode;
+                // no comparison value, just use default
+                if(!properties.containsKey("compare")) {
+                    this.condition = Conditions.fromInt(mode.ordinal());
+                }
             }
+
         }
 
         if(properties.containsKey("compare")) {
@@ -118,7 +128,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
             this.compare = compare;
             //condition was set
             if(properties.containsKey("mode")) {
-                this.condition = Conditions.fromInt(mode,compare);
+                this.condition = Conditions.fromInt(mode.ordinal(),compare);
             }
         }
 

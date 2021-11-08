@@ -44,8 +44,8 @@ public class LessThanOrEqual extends BaseCondition {
      * @return
      */
     @Override
-    public int conditionNum() {
-        return 4;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.LESS_THAN_OR_EQUAL;
     }
 
     @Override

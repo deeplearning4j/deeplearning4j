@@ -33,8 +33,8 @@ public class NotFinite extends BaseCondition {
      * @return
      */
     @Override
-    public int conditionNum() {
-        return 15;
+    public Conditions.ConditionMode conditionType() {
+        return Conditions.ConditionMode.NOT_FINITE;
     }
 
     @Override
