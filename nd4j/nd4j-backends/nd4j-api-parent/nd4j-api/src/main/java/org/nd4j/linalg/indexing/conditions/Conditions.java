@@ -69,7 +69,7 @@ public class Conditions {
                 case 13: return ABS_LESS_THAN_OR_EQUAL;
                 case 14: return IS_FINITE;
                 case 15: return NOT_FINITE;
-                case 16: return AGGREGATE;
+                case -1: return AGGREGATE;
                 default:throw new IllegalArgumentException("No condition number found for " + index);
             }
         }
@@ -392,7 +392,7 @@ public class Conditions {
     public static Condition fromInt(int mode,Double value) {
         if(value == null) value = 0.0;
 
-        switch(ConditionMode.values()[mode]) {
+        switch(ConditionMode.fromNumber(mode)) {
             case IS_FINITE:
                 return Conditions.isFinite();
             case IS_NAN:
