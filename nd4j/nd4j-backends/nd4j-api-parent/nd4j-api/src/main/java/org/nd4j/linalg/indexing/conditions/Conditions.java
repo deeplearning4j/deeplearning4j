@@ -27,22 +27,22 @@ public class Conditions {
     private Conditions() {}
 
     public enum ConditionMode {
-        EPSILON_EQUALS(0), //0
-        EPSILON_NOT_EQUALS(1), //1
-        LESS_THAN(2), //2
-        GREATER_THAN(3), //3
-        LESS_THAN_OR_EQUAL(4), //4
-        GREATER_THAN_OR_EQUAL(5), //5
-        ABS_LESS_THAN(6), //6
-        ABS_GREATER_THAN(7), //7
-        IS_INFINITE(8), //8
-        IS_NAN(9), //9
-        ABS_EQUALS(10), //10
-        NOT_EQUALS(11), //11
-        ABS_GREATER_OR_EQUAL(12), //12
-        ABS_LESS_THAN_OR_EQUAL(13), //13
-        IS_FINITE(14), //14
-        NOT_FINITE(15), //15
+        EPSILON_EQUALS(0),
+        EPSILON_NOT_EQUALS(1),
+        LESS_THAN(2),
+        GREATER_THAN(3),
+        LESS_THAN_OR_EQUAL(4),
+        GREATER_THAN_OR_EQUAL(5),
+        ABS_LESS_THAN(6),
+        ABS_GREATER_THAN(7),
+        IS_INFINITE(8),
+        IS_NAN(9),
+        ABS_EQUALS(10),
+        NOT_EQUALS(11),
+        ABS_GREATER_OR_EQUAL(12),
+        ABS_LESS_THAN_OR_EQUAL(13),
+        IS_FINITE(14),
+        NOT_FINITE(15), 
         AGGREGATE(-1); // this is an aggregate enum for or, and, not, and other indirect conditions that depend on others
 
 
