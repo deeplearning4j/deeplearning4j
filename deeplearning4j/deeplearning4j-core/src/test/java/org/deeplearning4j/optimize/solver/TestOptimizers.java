@@ -58,6 +58,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -484,9 +485,11 @@ public class TestOptimizers extends BaseDL4JTest {
             this.gradient = g;
             //If any parameters are outside range [-5.12,5.12]: score = infinity
             INDArray paramExceeds512 = parameters.cond(new Condition() {
+
+
                 @Override
-                public int condtionNum() {
-                    return 0;
+                public Conditions.ConditionMode conditionType() {
+                    return null;
                 }
 
                 @Override
@@ -683,9 +686,11 @@ public class TestOptimizers extends BaseDL4JTest {
             this.gradient = g;
 
             INDArray paramExceeds5 = parameters.cond(new Condition() {
+
+
                 @Override
-                public int condtionNum() {
-                    return 0;
+                public Conditions.ConditionMode conditionType() {
+                    return null;
                 }
 
                 @Override
