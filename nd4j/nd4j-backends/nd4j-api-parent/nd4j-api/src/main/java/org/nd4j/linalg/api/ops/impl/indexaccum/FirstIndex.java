@@ -49,7 +49,7 @@ public class FirstIndex extends BaseIndexAccumulation {
         this.compare = condition.getValue();
         this.mode = condition.conditionType();
         this.eps = eps;
-        this.extraArgs = new Object[] {compare, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     public FirstIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, int... dimensions) {
@@ -75,7 +75,7 @@ public class FirstIndex extends BaseIndexAccumulation {
         this.compare = condition.getValue();
         this.mode = condition.conditionType();
         this.eps = eps;
-        this.extraArgs = new Object[] {compare, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     @Override

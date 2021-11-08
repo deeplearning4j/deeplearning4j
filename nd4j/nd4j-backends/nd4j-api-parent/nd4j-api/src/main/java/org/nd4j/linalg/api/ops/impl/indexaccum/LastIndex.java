@@ -54,7 +54,7 @@ public class LastIndex extends BaseIndexAccumulation {
         this.compare = condition.getValue();
         this.mode = condition.conditionType();
         this.eps = Nd4j.EPS_THRESHOLD;
-        this.extraArgs = new Object[] {compare, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     public LastIndex(SameDiff sameDiff, SDVariable x, @NonNull Condition condition, int... dimensions) {
@@ -81,7 +81,7 @@ public class LastIndex extends BaseIndexAccumulation {
         this.compare = condition.getValue();
         this.mode = condition.conditionType();
         this.eps = eps;
-        this.extraArgs = new Object[] {compare, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
     @Override

@@ -27,25 +27,54 @@ public class Conditions {
     private Conditions() {}
 
     public enum ConditionMode {
-        EPSILON_EQUALS, //0
-        EPSILON_NOT_EQUALS, //1
-        LESS_THAN, //2
-        GREATER_THAN, //3
-        LESS_THAN_OR_EQUAL, //4
-        GREATER_THAN_OR_EQUAL, //5
-        ABS_LESS_THAN, //6
-        ABS_GREATER_THAN, //7
-        IS_INFINITE, //8
-        IS_NAN, //9
-        ABS_EQUALS, //10
-        NOT_EQUALS, //11
-        ABS_GREATER_OR_EQUAL, //12
-        ABS_LESS_THAN_OR_EQUAL, //13
-        IS_FINITE, //14
-        NOT_FINITE, //15
-        AGGREGATE // this is an aggregate enum for or, and, not, and other indirect conditions that depend on others
+        EPSILON_EQUALS(0), //0
+        EPSILON_NOT_EQUALS(1), //1
+        LESS_THAN(2), //2
+        GREATER_THAN(3), //3
+        LESS_THAN_OR_EQUAL(4), //4
+        GREATER_THAN_OR_EQUAL(5), //5
+        ABS_LESS_THAN(6), //6
+        ABS_GREATER_THAN(7), //7
+        IS_INFINITE(8), //8
+        IS_NAN(9), //9
+        ABS_EQUALS(10), //10
+        NOT_EQUALS(11), //11
+        ABS_GREATER_OR_EQUAL(12), //12
+        ABS_LESS_THAN_OR_EQUAL(13), //13
+        IS_FINITE(14), //14
+        NOT_FINITE(15), //15
+        AGGREGATE(-1); // this is an aggregate enum for or, and, not, and other indirect conditions that depend on others
 
-    }
+
+        public final int index;
+        ConditionMode(int index) {
+            this.index = index;
+        }
+
+        public static ConditionMode fromNumber(int index) {
+            switch(index) {
+                case 0: return EPSILON_EQUALS;
+                case 1: return EPSILON_NOT_EQUALS;
+                case 2: return LESS_THAN;
+                case 3: return GREATER_THAN;
+                case 4: return LESS_THAN_OR_EQUAL;
+                case 5: return GREATER_THAN_OR_EQUAL;
+                case 6: return ABS_LESS_THAN;
+                case 7: return ABS_GREATER_THAN;
+                case 8: return IS_INFINITE;
+                case 9: return IS_NAN;
+                case 10: return ABS_EQUALS;
+                case 11: return NOT_EQUALS;
+                case 12: return ABS_GREATER_OR_EQUAL;
+                case 13: return ABS_LESS_THAN_OR_EQUAL;
+                case 14: return IS_FINITE;
+                case 15: return NOT_FINITE;
+                case 16: return AGGREGATE;
+                default:throw new IllegalArgumentException("No condition number found for " + index);
+            }
+        }
+
+        }
 
 
     /**

@@ -45,7 +45,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = set.doubleValue();
         this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.index};
     }
 
     public CompareAndSet() {
@@ -65,7 +65,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         else
             this.mode = condition.conditionType();
 
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.index};
     }
 
 
@@ -103,7 +103,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = set;
         this.eps = condition.epsThreshold();
         this.mode = condition.conditionType();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.index};
     }
 
     /**
@@ -140,7 +140,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = 0;
         this.eps = condition.epsThreshold();
         this.mode = condition.conditionType();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[]{compare, set, eps, (double)mode.index};
     }
 
     /**
@@ -158,7 +158,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = set;
         this.eps = eps;
         this.mode = Conditions.fromInt(0,compare).conditionType();
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode.index};
     }
 
     @Override
@@ -202,7 +202,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         if(properties.containsKey("mode")) {
             if(properties.get("mode") instanceof Integer) {
                 Integer mode = (Integer) properties.get("mode");
-                this.mode = Conditions.ConditionMode.values()[mode];
+                this.mode = Conditions.ConditionMode.fromNumber(mode);
                 // no comparison value, just use default
                 if(!properties.containsKey("compare")) {
                     this.condition = Conditions.fromInt(mode);
@@ -212,7 +212,7 @@ public class CompareAndSet extends BaseTransformSameOp {
                 this.mode = mode;
                 // no comparison value, just use default
                 if(!properties.containsKey("compare")) {
-                    this.condition = Conditions.fromInt(mode.ordinal());
+                    this.condition = Conditions.fromInt(mode.index);
                 }
             }
 
@@ -223,7 +223,7 @@ public class CompareAndSet extends BaseTransformSameOp {
             this.compare = compare;
             //condition was set
             if(properties.containsKey("mode")) {
-                this.condition = Conditions.fromInt(mode.ordinal(),compare);
+                this.condition = Conditions.fromInt(mode.index,compare);
             }
         }
 

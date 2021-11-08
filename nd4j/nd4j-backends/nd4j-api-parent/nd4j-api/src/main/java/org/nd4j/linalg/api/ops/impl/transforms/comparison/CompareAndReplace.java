@@ -47,7 +47,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
         this.set = 0;
         this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.index};
     }
 
     public CompareAndReplace() {
@@ -87,7 +87,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
         this.set = 0;
         this.mode = condition.conditionType();
         this.eps = condition.epsThreshold();
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode.ordinal()};
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode.index};
     }
 
 
@@ -107,7 +107,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
         if(properties.containsKey("mode")) {
             if(properties.get("mode") instanceof Integer) {
                 Integer mode = (Integer) properties.get("mode");
-                this.mode = Conditions.ConditionMode.values()[mode];
+                this.mode = Conditions.ConditionMode.fromNumber(mode);
                 // no comparison value, just use default
                 if(!properties.containsKey("compare")) {
                     this.condition = Conditions.fromInt(mode);
@@ -117,7 +117,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
                 this.mode = mode;
                 // no comparison value, just use default
                 if(!properties.containsKey("compare")) {
-                    this.condition = Conditions.fromInt(mode.ordinal());
+                    this.condition = Conditions.fromInt(mode.index);
                 }
             }
 
@@ -128,7 +128,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
             this.compare = compare;
             //condition was set
             if(properties.containsKey("mode")) {
-                this.condition = Conditions.fromInt(mode.ordinal(),compare);
+                this.condition = Conditions.fromInt(mode.index,compare);
             }
         }
 
