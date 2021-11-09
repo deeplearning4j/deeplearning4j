@@ -607,15 +607,65 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   const auto Wx = INPUT_VARIABLE(1);  // input weights
   const auto Wr = INPUT_VARIABLE(2);  // recurrent weights
 
+  // evaluate dimensions
+  const sd::LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
+  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
+  const sd::LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
+  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
+
+  // continue with input
   count = 3;
   const auto b = hasBiases ? INPUT_VARIABLE(count++) : nullptr;       // biases
   const auto seqLen = hasSeqLen ? INPUT_VARIABLE(count++) : nullptr;  // seqLen vector
   const auto hI = hasInitH ? INPUT_VARIABLE(count++) : nullptr;       // initial output
   const auto cI = hasInitC ? INPUT_VARIABLE(count++) : nullptr;       // initial cell state
   const auto Wp = hasPH ? INPUT_VARIABLE(count++) : nullptr;          // peephole weights
-  const auto dLdh = retFullSeq ? INPUT_VARIABLE(count++) : nullptr;   // gradient vs. output
-  const auto dLdhL = retLastH ? INPUT_VARIABLE(count++) : nullptr;    // gradient vs. output at last time step
-  const auto dLdcL = retLastC ? INPUT_VARIABLE(count++) : nullptr;    // gradient vs. cell state at last time step
+
+  NDArray *dLdh = nullptr;
+  NDArray *dLdhL = nullptr;
+  NDArray *dLdcL = nullptr;
+  std::unique_ptr<NDArray> temp_dLdh, temp_dLdhL, temp_dLdcL;
+  std::vector<sd::LongType> expdLdhShape;
+  // gradient vs. output
+  if (retFullSeq) {
+    int factor = directionMode <= 2 ? 1 : 2;
+    if (dataFormat == 0)
+      expdLdhShape = std::vector<sd::LongType>{sL, bS, factor * nOut};
+    else if (dataFormat == 1)
+      expdLdhShape = std::vector<sd::LongType>{bS, sL, factor * nOut};
+    else if (dataFormat == 2)
+      expdLdhShape = std::vector<sd::LongType>{bS, factor * nOut, sL};
+    else
+      expdLdhShape = std::vector<sd::LongType>{sL, 2, bS, nOut};
+
+    dLdh = INPUT_VARIABLE(count++);
+    if (dLdh->isScalar()) {
+      temp_dLdh.reset(NDArrayFactory::valueOf(expdLdhShape, *dLdh, x->ordering()));
+      dLdh = temp_dLdh.get();
+    }
+  }
+  // gradient vs. output at last time step
+  if (retLastH) {
+    dLdhL = INPUT_VARIABLE(count++);
+    if (dLdhL->isScalar()) {
+      temp_dLdhL.reset(NDArrayFactory::valueOf(
+          directionMode < 2 ? std::vector<sd::LongType>{bS, nOut} : std::vector<sd::LongType>{2, bS, nOut}, *dLdhL,
+          x->ordering()));
+      // refresh
+      dLdhL = temp_dLdhL.get();
+    }
+  }
+  // gradient vs. cell state at last time step
+  if (retLastC) {
+    dLdcL = INPUT_VARIABLE(count++);
+    if (dLdcL->isScalar()) {
+      temp_dLdcL.reset(NDArrayFactory::valueOf(
+          directionMode < 2 ? std::vector<sd::LongType>{bS, nOut} : std::vector<sd::LongType>{2, bS, nOut}, *dLdcL,
+          x->ordering()));
+      // refresh
+      dLdcL = temp_dLdcL.get();
+    }
+  }
 
   count = 3;
   auto dLdx = OUTPUT_VARIABLE(0);                               // gradient vs. input
@@ -626,12 +676,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   auto dLdhI = hasInitH ? OUTPUT_NULLIFIED(count++) : nullptr;  // gradient vs. initial output
   auto dLdcI = hasInitC ? OUTPUT_NULLIFIED(count++) : nullptr;  // gradient vs. initial cell state
   auto dLdWp = hasPH ? OUTPUT_NULLIFIED(count) : nullptr;       // gradient vs. peephole weights
-
-  // evaluate dimensions
-  const sd::LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const sd::LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
-  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
   // inputs validations
   if (directionMode < 2) {  // no bidirectional
@@ -723,16 +767,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
   // gradient vs. output  validation
   if (dLdh) {
-    int factor = directionMode <= 2 ? 1 : 2;
-    std::vector<sd::LongType> expdLdhShape;
-    if (dataFormat == 0)
-      expdLdhShape = std::vector<sd::LongType>{sL, bS, factor * nOut};
-    else if (dataFormat == 1)
-      expdLdhShape = std::vector<sd::LongType>{bS, sL, factor * nOut};
-    else if (dataFormat == 2)
-      expdLdhShape = std::vector<sd::LongType>{bS, factor * nOut, sL};
-    else
-      expdLdhShape = std::vector<sd::LongType>{sL, 2, bS, nOut};
     REQUIRE_TRUE(
         dLdh->isSameShape(expdLdhShape), 0,
         "LSTM_LAYER_CELL_BP operation: wrong shape of gradient vs. output, expected is %s, but got %s instead !",
