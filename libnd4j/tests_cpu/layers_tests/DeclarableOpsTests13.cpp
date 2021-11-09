@@ -429,10 +429,10 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
        0.0072, 0.0033, 0.0021, 0.6824, 0.1345, 0.0871, 0.0429, 0.0254, 0.0169, 0.0072, 0.0019,    0.0016, 0.6426,
        0.1847, 0.1090, 0.0347, 0.0133, 0.0051, 0.0038, 0.0038, 0.0030});
   // auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000,
-  // 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+  // 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
   // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
   // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000});
+  // 0.000000, 0.000000});
   //    data.linspace(1);
   auto exp4 = NDArrayFactory::create<double>(
       'c', {1, 108},
@@ -467,10 +467,10 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
   auto width = NDArrayFactory::create<double>({0.4306, 0.3960, 0.4639, 0.5040, 0.4904});
   auto point = NDArrayFactory::create<double>({0.3000, 0.2625, 0.2674, 0.8604, 0.4803});
   // auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000,
-  // 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+  // 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
   // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
   // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000});
+  // 0.000000, 0.000000});
   //    data.linspace(1);
 
   //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
@@ -2239,6 +2239,73 @@ TEST_F(DeclarableOpsTests13, lstmLayer_13) {
 
   ASSERT_TRUE(expClast.isSameShape(cL));
   ASSERT_TRUE(expClast.equalsTo(cL));
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_ScalarCheck) {
+  const int sL = 3;
+  const int bS = 2;
+  const int nIn = 2;
+  const int nOut = 3;
+
+  const int dataFormat = 0;     // [sL,bS,nIn]
+  const int directionMode = 0;  // forward
+  const int gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
+  const int cellAct = 0;        // tanh activation for cell state
+  const int outAct = 0;         // tanh activation for output
+
+  const bool hasBiases = true;   // biases array is provided
+  const bool hasSeqLen = false;  // seqLen array is not provided
+  const auto hasInitH = true;    // initial output is provided
+  const auto hasInitC = true;    // initial cell state is provided
+  const auto hasPH = true;       // peephole connections are absent
+  const auto retFullSeq = true;  // dLdh per each time step
+  const auto retLastH = true;    // output at last time step
+  const auto retLastC = true;    // cells state at last time step
+
+  const double cellClip = 0.5;  // clipping
+
+  NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
+  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::DOUBLE);
+  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::DOUBLE);
+  NDArray b('c', {4 * nOut}, sd::DataType::DOUBLE);
+  NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
+  NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
+  NDArray Wp('c', {3 * nOut}, sd::DataType::DOUBLE);
+  NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
+  NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+  NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+  dLdh.assign(1.25);
+  dLdhL.assign(1.25);
+  dLdcL.assign(2.5);
+  NDArray dLdh_scalar = NDArrayFactory::create<double>(1.25);
+  NDArray dLdhL_scalar = NDArrayFactory::create<double>(1.25);
+  NDArray dLdcL_scalar = NDArrayFactory::create<double>(2.5);
+
+  x.linspace(-2, 0.1);
+  hI.linspace(-1.5, 0.1);
+  cI.linspace(0.7, -0.1);
+  Wx.linspace(1, -0.1);
+  Wr.linspace(-1, 0.1);
+  Wp.linspace(0.2, 0.2);
+  b.linspace(1, -0.15);
+
+  std::vector<double> tArgs = {cellClip};
+  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+  sd::ops::lstmLayer_bp op;
+  auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+  auto results_act =
+      op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh_scalar, &dLdhL_scalar, &dLdcL_scalar}, tArgs, iArgs, bArgs);
+
+  for (int j = 0; j < results.size(); j++) {
+    // sd_printf("%d_________________________\n",j);
+    // results.at(j)->printIndexedBuffer("__");
+    // results_act.at(j)->printIndexedBuffer("scalar __");
+    auto expected = results.at(j);
+    auto actual = results_act.at(j);
+    ASSERT_TRUE(expected->equalsTo(actual));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
