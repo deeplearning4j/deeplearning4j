@@ -67,11 +67,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
+@NotThreadSafe
 public class LayerOpValidation extends BaseOpValidation {
 
     @Override
@@ -1527,7 +1530,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDepthwiseConv2D(){
+    public void testDepthwiseConv2D(Nd4jBackend backend) {
 
         int bS = 10;
 
@@ -1566,7 +1569,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void LSTMLayerTestCase1(Nd4jBackend backend) {
+    public void lstmLayerTestCase1(Nd4jBackend backend) {
 
         int bS = 5;
         int nIn = 3;
@@ -1702,6 +1705,8 @@ public class LayerOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void LSTMLayerTestCase3(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         int bS = 5;
         int nIn = 3;
         int numUnits = 7;

@@ -4903,7 +4903,7 @@ NDArray NDArray::diagonal(const char type) const {
 ResultSet NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
   ResultSet result;
 
-  if (dimensions.size() == 0)
+  if (dimensions.size() == 0 || isScalar())
     return result;
   else if (dimensions.back() == rankOf()) {
     auto array = new NDArray(_buffer, this->shapeInfo(), getContext(), bufferOffset());

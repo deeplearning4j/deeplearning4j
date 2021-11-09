@@ -30,6 +30,8 @@ public class VariableUtils {
      * @return Variable name without any number suffix
      */
     public static String stripVarSuffix(String varName) {
+        if(varName == null)
+            return null;
         if (varName.matches(".*:\\d+")) {
             val idx = varName.lastIndexOf(':');
             return varName.substring(0, idx);

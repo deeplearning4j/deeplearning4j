@@ -579,6 +579,13 @@ public class FlatBuffersMapper {
                 String str = v.toString();
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
+            } else if(v instanceof SDVariable) {
+                //variables can be retrieved elsewhere, this is just to denote what variable names
+                //to retrieve when setting a field
+                SDVariable sdVariable = (SDVariable) v;
+                String str = sdVariable.name();
+                int strOffset = fbb.createString(str);
+                sIdx = new int[]{strOffset};
             } else if (v instanceof Enum) {
                 String str = v.toString();
                 int strOffset = fbb.createString(str);

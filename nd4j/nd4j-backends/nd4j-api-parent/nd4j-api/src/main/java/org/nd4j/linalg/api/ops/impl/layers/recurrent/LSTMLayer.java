@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 
 
-@NoArgsConstructor
 public class LSTMLayer extends DynamicCustomOp {
 
     @Getter
@@ -52,8 +51,13 @@ public class LSTMLayer extends DynamicCustomOp {
 
     private SDVariable cLast;
     private SDVariable yLast;
+    private String cLastName,yLastName;
     private SDVariable maxTSLength;
 
+
+    public LSTMLayer() {
+        System.out.println();
+    }
 
     public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, LSTMLayerWeights weights, LSTMLayerConfig configuration) {
         super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
@@ -124,7 +128,15 @@ public class LSTMLayer extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return configuration.toProperties(true, true);
+        Map<String,Object> base =  configuration.toProperties(true, true);
+        if(cLast != null) {
+            base.put("cLast",cLast);
+        }
+        if(yLast != null) {
+            base.put("yLast",yLast);
+        }
+
+        return base;
     }
 
 
@@ -186,24 +198,33 @@ public class LSTMLayer extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         String[] inputsForOp = sameDiff.getInputsForOp(this);
         LSTMLayerWeights.LSTMLayerWeightsBuilder builder = LSTMLayerWeights.builder();
-        if(inputsForOp.length > 0) {
-            builder.weights(sameDiff.getVariable(inputsForOp[1]));
-        }
-        if(inputsForOp.length > 1) {
-            builder.rWeights(sameDiff.getVariable(inputsForOp[2]));
-        }
+        boolean  hasBiases = bArguments.get(0);   // indicates whether biases array is provided
+        boolean  hasSeqLen = bArguments.get(1);   // indicates whether seqLen array is provided
+        boolean  hasInitH = bArguments.get(2);    // indicates whether initial output is provided
+        boolean  hasInitC =bArguments.get(3);    // indicates whether initial cell state is provided
+        boolean  hasPH = bArguments.get(4);       // indicates whether peephole connections are present
+        boolean  retFullSeq = bArguments.get(5);  // indicates whether gradient vs. outputs is given for whole time sequence dLdh
+        // {dLdh_0, dLdh_1, ... , dLdh_sL-1}
+        boolean  retLastH = bArguments.get(6);    // indicates whether gradient vs. output at last time step (dLdhL) is given
+        boolean  retLastC = bArguments.get(7);    // indicates whether gradient vs. cell state at last time step (dLdcL) is given
 
-        if(inputsForOp.length > 2) {
+        builder.weights(sameDiff.getVariable(inputsForOp[1]));
+        builder.rWeights(sameDiff.getVariable(inputsForOp[2]));
+        if(hasBiases) {
             builder.bias(sameDiff.getVariable(inputsForOp[3]));
-        }
-
-        //peephole weights are always at the end
-        if(inputsForOp.length > 3) {
-            builder.peepholeWeights(sameDiff.getVariable(inputsForOp[inputsForOp.length - 1]));
         }
 
 
         this.weights = builder.build();
+
+        if(yLastName != null) {
+            this.yLast = sameDiff.getVariable(yLastName);
+        }
+
+        if(cLastName != null) {
+            this.cLast = sameDiff.getVariable(cLastName);
+        }
+
     }
 
     @Override
@@ -238,6 +259,16 @@ public class LSTMLayer extends DynamicCustomOp {
             if(lstmdataformat != null)
                 builder.lstmdataformat(LSTMDataFormat.valueOf(LSTMDataFormat.class,lstmdataformat));
 
+            //note we can't set the property directly due to not having samediff access here yet
+            String cLast = getStringFromProperty("cLast",properties);
+            if(cLast != null) {
+                this.cLastName = cLast;
+            }
+
+            String yLast = getStringFromProperty("cLast",properties);
+            if(yLast != null) {
+                this.yLastName = yLast;
+            }
 
             this.configuration = builder.build();
 
