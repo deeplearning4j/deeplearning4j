@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -33,6 +34,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class StandardDeviation extends Variance {
     public StandardDeviation(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
@@ -51,6 +53,7 @@ public class StandardDeviation extends Variance {
 
 
     public StandardDeviation() {
+        System.out.println();
     }
 
     public StandardDeviation(boolean biasCorrected) {
@@ -295,6 +298,51 @@ public class StandardDeviation extends Variance {
         return Type.SUMMARYSTATS;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        Boolean isEmptyReduce = getBooleanFromProperty("isEmptyReduce",properties);
+        if(isEmptyReduce != null) {
+            this.isEmptyReduce = isEmptyReduce;
+        }
+
+        Boolean biasCorrected = getBooleanFromProperty("biasCorrected",properties);
+        if(biasCorrected != null) {
+            this.biasCorrected = biasCorrected;
+        }
+
+        Double mean = getDoubleValueFromProperty("mean",properties);
+        if(mean != null) {
+            this.mean = mean;
+        }
+
+        Boolean keepDims = getBooleanFromProperty("keepDims",properties);
+        if(keepDims != null) {
+            this.keepDims = keepDims;
+        }
+
+        Boolean isComplex = getBooleanFromProperty("isComplex",properties);
+        if(isComplex != null) {
+            this.isComplex = isComplex;
+        }
+
+        Double bias = getDoubleValueFromProperty("bias",properties);
+        if(bias != null) {
+            this.bias = bias;
+        }
+
+
+
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        return super.calculateOutputDataTypes(dataTypes);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

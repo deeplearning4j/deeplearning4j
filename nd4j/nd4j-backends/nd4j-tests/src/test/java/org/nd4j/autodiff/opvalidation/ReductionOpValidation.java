@@ -22,6 +22,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.junit.Ignore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -1652,6 +1653,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testSoftmaxCrossEntropyWithLogitsLoss(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
 

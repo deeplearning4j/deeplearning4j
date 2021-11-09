@@ -26,9 +26,11 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.shade.guava.primitives.Ints;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class Standardize extends DynamicCustomOp {
 
@@ -63,6 +65,27 @@ public class Standardize extends DynamicCustomOp {
         return "standardize";
     }
 
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.dimensions = Ints.toArray(iArguments);
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("dimensions")) {
+            if(properties.get("dimensions") instanceof Long) {
+                Long dimension = (Long) properties.get("dimensions");
+                this.dimensions = new int[]{dimension.intValue()};
+            }
+            if(properties.get("dimensions") instanceof int[]) {
+                int[] dimensions = (int[]) properties.get("dimensions");
+                this.dimensions = dimensions;
+            }
+        }
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

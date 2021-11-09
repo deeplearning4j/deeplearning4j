@@ -107,7 +107,9 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public void configureFromArguments() {
-        super.configureFromArguments();
+        if(!iArguments.isEmpty()) {
+            this.jaxis = iArguments.get(0).intValue();
+        }
     }
 
     @Override
