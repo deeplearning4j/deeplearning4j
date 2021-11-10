@@ -71,9 +71,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
    * Figure out differences.
    */
   if (dataFormat) {
-    xCast.printShapeInfo("x cast shape info pre permute");
     xCast = xCast.permute({0, 2, 3, 1});
-    xCast.printShapeInfo("x cast shape info post permute");
   }
   REQUIRE_TRUE(scale->rankOf() == 1 && scale->sizeAt(0) == iD, 0,
                "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD,
