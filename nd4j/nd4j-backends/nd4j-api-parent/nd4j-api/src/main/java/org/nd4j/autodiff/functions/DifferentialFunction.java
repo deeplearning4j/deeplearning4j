@@ -20,11 +20,8 @@
 
 package org.nd4j.autodiff.functions;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -45,6 +42,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
 
@@ -252,6 +250,7 @@ public abstract class DifferentialFunction {
      * @param target the target field
      * @param value the value to set
      */
+    @SneakyThrows
     public void setValueFor(Field target, Object value) {
         if(value == null && target.getType().isPrimitive()) {
             throw new ND4JIllegalStateException("Unable to set primitive field " + target + " of type " + target.getClass()
@@ -346,6 +345,17 @@ public abstract class DifferentialFunction {
                        value = DataType.values()[idxConverted];
                 }
 
+
+                if(target.getType().isEnum() && value instanceof Long || value instanceof Integer && !target.getType().equals(int.class) && !target.getType().equals(long.class)) {
+                    Class<? extends Enum> enumType = (Class<? extends Enum>) target.getType();
+                    Method method = enumType.getMethod("values");
+                    method.setAccessible(true);
+                    Object[] invoke = (Object[])method.invoke(null);
+                    Number number = (Number) value;
+                    int idx = number.intValue();
+                    Object get = invoke[idx];
+                    value = get;
+                }
 
                 target.set(this,value);
             } catch (IllegalAccessException e) {
