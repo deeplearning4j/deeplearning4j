@@ -154,6 +154,23 @@ TEST_F(DeclarableOpsTests18, test_tanh_bp) {
   op.execute({&x, &dLdz}, {&dLdx});
   ASSERT_EQ(e, dLdx);
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests18, test_tanh_bp_scalar) {
+  NDArray x('c', {2, 3, 4}, sd::DataType::FLOAT32);
+  NDArray dLdz = NDArrayFactory::create<float>(7.25f);
+  x.linspace(-1., 0.003);
+
+  NDArray exp('c', {2, 3, 4}, {3.0448139, 3.058747,  3.0727215, 3.086736,  3.1007907, 3.1148856, 3.1290195, 3.143194,
+                               3.157408,  3.1716602, 3.1859534, 3.2002847, 3.2146554, 3.229064,  3.243512,  3.2579987,
+                               3.2725236, 3.2870843, 3.3016858, 3.316324,  3.3309996, 3.345713,  3.3604617, 3.3752484},
+              sd::DataType::FLOAT32);
+
+  sd::ops::tanh_bp op;
+  auto result = op.evaluate({&x, &dLdz});
+  auto dLdxPtr = result.at(0);
+
+  ASSERT_TRUE(dLdxPtr->equalsTo(&exp));
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests18, test_tanh_bp2) {
   NDArray x('f', {2, 3, 4}, sd::DataType::FLOAT32);
