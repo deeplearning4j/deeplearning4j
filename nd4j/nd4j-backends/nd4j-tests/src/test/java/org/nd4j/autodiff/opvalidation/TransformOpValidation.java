@@ -333,7 +333,6 @@ public class TransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBatchToSpace(Nd4jBackend backend) {
-        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
         Nd4j.getRandom().setSeed(1337);
 
         int miniBatch = 4;

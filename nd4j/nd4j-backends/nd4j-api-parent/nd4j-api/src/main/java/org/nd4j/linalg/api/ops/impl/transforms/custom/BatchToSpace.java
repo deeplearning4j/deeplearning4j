@@ -29,9 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class BatchToSpace extends DynamicCustomOp {
 
@@ -84,6 +82,37 @@ public class BatchToSpace extends DynamicCustomOp {
     public String tensorflowName() {
         return "BatchToSpace";
     }
+
+
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        if(blocks != null)
+            ret.put("blocks",blocks);
+        if(crops != null)
+            ret.put("crops",crops);
+        return ret;
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("crops")) {
+            int[][] crops = (int[][]) properties.get("crops");
+            this.crops =  crops;
+        }
+        if(properties.containsKey("blocks")) {
+            int[] blocks = (int[]) properties.get("blocks");
+            this.blocks = blocks;
+        }
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

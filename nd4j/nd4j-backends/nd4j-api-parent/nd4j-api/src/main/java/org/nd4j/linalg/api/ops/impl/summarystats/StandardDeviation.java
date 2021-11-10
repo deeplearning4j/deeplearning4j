@@ -53,7 +53,6 @@ public class StandardDeviation extends Variance {
 
 
     public StandardDeviation() {
-        System.out.println();
     }
 
     public StandardDeviation(boolean biasCorrected) {

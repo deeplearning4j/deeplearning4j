@@ -913,7 +913,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshape(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4).castTo(DataType.DOUBLE);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result1 = sameDiff.reshape(x, 4, 3);
         SDVariable loss = sameDiff.standardDeviation(result1, true);

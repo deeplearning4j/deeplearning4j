@@ -42,7 +42,6 @@ public class DynamicStitch extends DynamicCustomOp {
     private SDVariable[] indices;
     private String[] indexNames;
     public DynamicStitch() {
-        System.out.println();
     }
 
     public DynamicStitch(SameDiff sameDiff, SDVariable[] indices, SDVariable[] inputs) {

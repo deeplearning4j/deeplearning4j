@@ -112,6 +112,23 @@ public class Unstack extends DynamicCustomOp {
         addArgs();
     }
 
+
+
+    @Override
+    public void configureFromArguments() {
+       if(!iArguments.isEmpty()) {
+           this.jaxis = iArguments.get(0).intValue();
+       }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("dimensions")) {
+            Long dimension = (Long) properties.get("dimensions");
+            this.jaxis = dimension.intValue();
+        }
+    }
+
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
@@ -148,7 +165,7 @@ public class Unstack extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
         //Output types are same as input type - i.e., just unpack rank R array into N rank R-1 arrays
         List<DataType> out = new ArrayList<>();

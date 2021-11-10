@@ -56,7 +56,6 @@ public class LSTMLayer extends DynamicCustomOp {
 
 
     public LSTMLayer() {
-        System.out.println();
     }
 
     public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, LSTMLayerWeights weights, LSTMLayerConfig configuration) {
