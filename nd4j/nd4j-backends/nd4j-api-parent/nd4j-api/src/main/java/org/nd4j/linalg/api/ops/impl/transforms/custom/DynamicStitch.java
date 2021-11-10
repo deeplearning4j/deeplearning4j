@@ -40,7 +40,7 @@ public class DynamicStitch extends DynamicCustomOp {
 
     private int numPartitions;
     private SDVariable[] indices;
-
+    private String[] indexNames;
     public DynamicStitch() {
     }
 
@@ -78,7 +78,52 @@ public class DynamicStitch extends DynamicCustomOp {
         this.numPartitions = (int)attributesForNode.get("N").getI();
     }
 
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if (properties.containsKey("indices")) {
+            //note we don't use the references here directly just the names
+            //we will use the names separately in configureWithSamediff to
+            //ensure the variables are from the proper samediff instance
+            if(properties.get("indices") instanceof String) {
+                indexNames = new String[1];
+                indexNames[0] = properties.get("indices").toString();
+            } else if(properties.get("indices") instanceof String[]) {
+                String[] indicesGet = (String[]) properties.get("indices");
+                indexNames = indicesGet;
+            }
+
+        }
+
+        if(properties.containsKey("numPartitions")) {
+            Integer numPartitions = (Integer) properties.get("numPartitions");
+            this.numPartitions = numPartitions;
+        }
+
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> base =  super.propertiesForFunction();
+        base.put("numPartitions",numPartitions);
+        base.put("indices",indices);
+        return base;
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+       if(indexNames != null && indices == null) {
+           indices = new SDVariable[indexNames.length];
+           for(int i = 0; i < indices.length; i++) {
+               indices[i] = sameDiff.getVariable(indexNames[i]);
+           }
+       }
+
+    }
 
     @Override
     public String opName() {
@@ -99,7 +144,7 @@ public class DynamicStitch extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 2*numPartitions, "Expected %s input datatypes for %s partitions for %s, got %s",
-                2*numPartitions, numPartitions, getClass(), dataTypes);
+                2 * numPartitions, numPartitions, getClass(), dataTypes);
         //Output type: same as (data) input type... only 1 output, however
         DataType inputType = dataTypes.get(dataTypes.size()-1);
         return Collections.singletonList(inputType);

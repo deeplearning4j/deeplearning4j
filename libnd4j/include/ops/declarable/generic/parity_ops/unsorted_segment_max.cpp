@@ -77,7 +77,6 @@ DECLARE_SHAPE_FN(unsorted_segment_max) {
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(1), sd::LongType);
     outputShape[0] = 1;
     outputShape[1] = numOfClasses;
-    shape::printShapeInfo(outputShape);
     ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
   }
 

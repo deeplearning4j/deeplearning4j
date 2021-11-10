@@ -86,6 +86,7 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
         ret.put("dH", dH);
         ret.put("type", type.toString());
         ret.put("isSameMode", isSameMode);
+        ret.put("isNCDHW",isNCDHW);
         return ret;
 
     }

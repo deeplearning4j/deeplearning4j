@@ -94,17 +94,17 @@ public class LSTMLayerOutputs {
      * T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
      */
     public SDVariable getOutput() {
-        Preconditions.checkArgument(timeSeriesOutput != null, "retFullSequence was setted as false in LSTMLayerConfig");
+        Preconditions.checkArgument(timeSeriesOutput != null, "retFullSequence was set as false in LSTMLayerConfig");
         return timeSeriesOutput;
     }
 
     public SDVariable getLastState() {
-        Preconditions.checkArgument(lastCellStateOutput != null, "retLastC was setted as false in LSTMLayerConfig");
+        Preconditions.checkArgument(lastCellStateOutput != null, "retLastC was set as false in LSTMLayerConfig");
         return lastCellStateOutput;
     }
 
     public SDVariable getLastOutput() {
-        Preconditions.checkArgument(lastTimeStepOutput != null, "retLastH was setted as false in LSTMLayerConfig");
+        Preconditions.checkArgument(lastTimeStepOutput != null, "retLastH was set as false in LSTMLayerConfig");
         return lastTimeStepOutput;
     }
 

@@ -117,6 +117,6 @@ An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
 
 
 ## Commercial Support
-Deeplearning4J is actively developed by the team at [Konduit K.K.](http://www.konduit.ai). 
+Deeplearning4J is actively developed by the team at [Konduit K.K.](https://konduit.ai). 
 
 [If you need any commercial support feel free to reach out to us. at [support@konduit.ai](mailto:support@konduit.ai)  

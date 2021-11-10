@@ -49,7 +49,6 @@ REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
       overwrite = true;
     }
   }
-  output->printShapeInfo("Output Shape Info");
   switch (mode) {
     case 0: {
       REQUIRE_TRUE(dims.size() == 2 || (input->rankOf() == 2 && dims.size() == 0), 0,

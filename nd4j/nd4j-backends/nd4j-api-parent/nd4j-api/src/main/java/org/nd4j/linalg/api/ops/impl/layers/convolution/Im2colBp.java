@@ -43,7 +43,7 @@ public class Im2colBp extends DynamicCustomOp {
         addArgs();
     }
 
-    public Im2colBp(SameDiff sd, SDVariable input, Conv2DConfig config){
+    public Im2colBp(SameDiff sd, SDVariable input, Conv2DConfig config) {
         super(null, sd, new SDVariable[]{input});
         this.conv2DConfig = config;
         addArgs();

@@ -114,7 +114,6 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
-    axesVector->printShapeInfo();
   }
 
   if (block.getBArguments()->size()) {

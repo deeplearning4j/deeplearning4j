@@ -30,6 +30,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
@@ -105,28 +106,96 @@ public abstract class Pooling3D extends DynamicCustomOp {
         return null;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(config == null) {
+            Pooling3DConfig.Pooling3DConfigBuilder builder = Pooling3DConfig.builder();
+            Long dD = getLongValueFromProperty("dD",properties);
+            if(dD != null)
+                builder.dD(dD);
+            Long dH = getLongValueFromProperty("dH",properties);
+            if(dH != null)
+                builder.dH(dH);
+
+            Long dW = getLongValueFromProperty("dW",properties);
+            if(dW != null)
+                builder.dW(dW);
+
+            Long sW = getLongValueFromProperty("sW",properties);
+            if(sW != null)
+                builder.sW(sW);
+            Long sD = getLongValueFromProperty("sD",properties);
+            if(sD != null)
+                builder.sD(sD);
+            Long sH = getLongValueFromProperty("sH",properties);
+            if(sH != null)
+                builder.sH(sH);
+
+            Long pW = getLongValueFromProperty("pW",properties);
+            if(pW != null)
+                builder.pW(pW);
+
+            Long pD = getLongValueFromProperty("pD",properties);
+            if(pD != null)
+                builder.pD(pD);
+
+            Long pH = getLongValueFromProperty("pH",properties);
+            if(pH != null)
+                builder.pH(pH);
+
+            Long kD = getLongValueFromProperty("kD",properties);
+            if(kD != null)
+                builder.kD(kD);
+
+            Long kW = getLongValueFromProperty("kW",properties);
+            if(kW != null)
+                builder.kW(kW);
+
+            Long kH = getLongValueFromProperty("kH",properties);
+            if(kH != null)
+                builder.kH(kH);
+
+            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
+            if(isSameMode != null)
+                builder.isSameMode(isSameMode);
+
+            if(properties.containsKey("type")) {
+                builder.type(Pooling3DType.valueOf(properties.get("type").toString()));
+            }
+
+            Boolean isNCDHW = getBooleanFromProperty("isNCDHW",properties);
+            if(isNCDHW != null) {
+                builder.isNCDHW(isNCDHW);
+            }
+
+            this.config = builder.build();
+
+        }
+    }
+
     protected void createConfigFromArgs(Pooling3DType type) {
-        config = Pooling3DConfig.builder()
-                .kD(getIArgument(0))
-                .kW(getIArgument(1))
-                .kH(getIArgument(2))
-                .sD(getIArgument(3))
-                .sW(getIArgument(4))
-                .sH(getIArgument(5))
-                .pD(getIArgument(6))
-                .pW(getIArgument(7))
-                .pH(getIArgument(8))
-                .dD(getIArgument(9))
-                .dW(getIArgument(10))
-                .dH(getIArgument(11))
-                .isSameMode(getIArgument(12) > 0)
-                .type(type)
-                .isNCDHW(getIArgument(14) > 0)
-                .build();
+        if(config == null && !iArguments.isEmpty())
+            config = Pooling3DConfig.builder()
+                    .kD(getIArgument(0))
+                    .kW(getIArgument(1))
+                    .kH(getIArgument(2))
+                    .sD(getIArgument(3))
+                    .sW(getIArgument(4))
+                    .sH(getIArgument(5))
+                    .pD(getIArgument(6))
+                    .pW(getIArgument(7))
+                    .pH(getIArgument(8))
+                    .dD(getIArgument(9))
+                    .dW(getIArgument(10))
+                    .dH(getIArgument(11))
+                    .isSameMode(getIArgument(12) > 0)
+                    .type(type)
+                    .isNCDHW(getIArgument(14) > 0)
+                    .build();
     }
 
     private void createConfigFromArgs() {
-       createConfigFromArgs(null);
+        createConfigFromArgs(null);
     }
 
     protected void addArgs() {
@@ -248,7 +317,7 @@ public abstract class Pooling3D extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-      throw new NoOpNameFoundException("No op opName found for op " + opName());
+        throw new NoOpNameFoundException("No op opName found for op " + opName());
     }
 
     @Override

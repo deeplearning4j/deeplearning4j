@@ -86,6 +86,72 @@ public class Col2Im extends DynamicCustomOp {
         return conv2DConfig.toProperties();
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(conv2DConfig == null) {
+            Conv2DConfig.Conv2DConfigBuilder builder =  Conv2DConfig.builder();
+            Long dH = getLongValueFromProperty("dH",properties);
+            if(dH != null)
+                builder.dH(dH);
+            Long sW = getLongValueFromProperty("sW",properties);
+            if(sW != null)
+                builder.sW(sW);
+            Long pW = getLongValueFromProperty("pW",properties);
+            if(pW != null)
+                builder.pW(pW);
+
+
+            Long dW = getLongValueFromProperty("dW",properties);
+            if(dW != null)
+                builder.dW(dW);
+
+
+            Long sH = getLongValueFromProperty("sH",properties);
+            if(sH != null)
+                builder.sH(sH);
+
+            Long pH = getLongValueFromProperty("pH",properties);
+            if(pH != null)
+                builder.pH(pH);
+
+
+            Long kW = getLongValueFromProperty("kW",properties);
+            if(kW != null)
+                builder.kW(kW);
+
+            Long kH = getLongValueFromProperty("kH",properties);
+            if(kH != null)
+                builder.kH(kH);
+
+            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
+            if(isSameMode != null)
+                builder.isSameMode(isSameMode);
+
+
+
+            this.conv2DConfig = builder.build();
+
+        }
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(conv2DConfig == null && iArguments.size() >= 10) {
+            conv2DConfig = Conv2DConfig.builder()
+                    .kH(iArguments.get(0))
+                    .kW(iArguments.get(1))
+                    .sH(iArguments.get(2))
+                    .sW(iArguments.get(3))
+                    .pH(iArguments.get(4))
+                    .pW(iArguments.get(5))
+                    .dH(iArguments.get(6))
+                    .dW(iArguments.get(7))
+                    .isSameMode(iArguments.get(8) == 1)
+                    .build();
+        }
+    }
+
+
 
 
     @Override

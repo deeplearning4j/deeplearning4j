@@ -80,6 +80,17 @@ public class ScatterAdd extends DynamicCustomOp {
             bArguments.add(false);
     }
 
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut) {
         //3 args: ref, indices, updates

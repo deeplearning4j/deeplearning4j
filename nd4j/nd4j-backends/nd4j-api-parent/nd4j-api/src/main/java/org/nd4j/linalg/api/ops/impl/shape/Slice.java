@@ -39,7 +39,8 @@ public class Slice extends DynamicCustomOp {
     private int[] begin;
     private int[] size;
 
-    public Slice() {}
+    public Slice() {
+    }
 
     public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull int[] begin, @NonNull int[] size){
         super(null, sameDiff, new SDVariable[]{input});
@@ -79,6 +80,27 @@ public class Slice extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Slice";
+    }
+
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(!iArguments.isEmpty()) {
+            int indicesSize = iArguments.size() / 2;
+            this.begin = new int[indicesSize];
+            this.size = new int[indicesSize];
+            for(int i = 0; i < indicesSize; i++) {
+                begin[i] = iArguments.get(i).intValue();
+                size[i] = iArguments.get(i + indicesSize).intValue();
+            }
+        }
+
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+             //just use configure here
     }
 
     @Override

@@ -166,6 +166,22 @@ public class Reshape extends DynamicCustomOp {
     }
 
 
+
+    @Override
+    public void configureFromArguments() {
+        if(iArguments.size() > 1) {
+            //ordering comes first followed by the actual shape
+            this.shape = new long[iArguments.size() - 1];
+            for(int i = 0; i < shape.length; i++) {
+                this.shape[i] = iArguments.get(i + 1);
+            }
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+    }
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable origShape = sameDiff.shape(arg());

@@ -913,7 +913,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshape(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4).castTo(DataType.DOUBLE);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result1 = sameDiff.reshape(x, 4, 3);
         SDVariable loss = sameDiff.standardDeviation(result1, true);
@@ -2506,13 +2506,13 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testGather2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
-        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0));
+        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0).reshape(1,1));
 
         SDVariable gathered = sd.gather(input, indices, 1);
         SDVariable loss = gathered.std(true);
 
         sd.output((Map<String,INDArray>)null, gathered.name());
-        sd.setLossVariables(gathered.name());
+        sd.setLossVariables(loss.name());
 
         String err = OpValidation.validate(new TestCase(sd)
                 .gradCheckEpsilon(1e-3)
