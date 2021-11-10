@@ -3287,8 +3287,6 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
 void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other, NDArray &target,
                                      ExtraArguments *extraParams) const {
   if (isS()) throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
-  if (other.lengthOf() != target.lengthOf())
-    throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
   if (target.dataType() != this->dataType() && target.dataType() != other.dataType())
     throw std::invalid_argument(
         "NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array "

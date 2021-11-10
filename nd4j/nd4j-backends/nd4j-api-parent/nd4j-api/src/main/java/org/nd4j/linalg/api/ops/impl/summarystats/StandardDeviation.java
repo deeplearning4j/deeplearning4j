@@ -334,10 +334,6 @@ public class StandardDeviation extends Variance {
 
     }
 
-    @Override
-    public void configureWithSameDiff(SameDiff sameDiff) {
-        super.configureWithSameDiff(sameDiff);
-    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {

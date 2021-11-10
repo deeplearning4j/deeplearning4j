@@ -223,8 +223,14 @@ public class CompareAndSet extends BaseTransformSameOp {
             this.compare = compare;
             //condition was set
             if(properties.containsKey("mode")) {
-                Integer mode2 = (Integer) properties.get("mode");
-                this.condition = Conditions.fromInt(mode2,compare);
+                if(properties.get("mode") instanceof  String) {
+                    Conditions.ConditionMode mode = Conditions.ConditionMode.valueOf(properties.get("mode").toString());
+                    this.condition = Conditions.fromInt(mode.index,compare);
+                } else {
+                    Integer mode2 = (Integer) properties.get("mode");
+                    this.condition = Conditions.fromInt(mode2,compare);
+                }
+
             }
         }
 

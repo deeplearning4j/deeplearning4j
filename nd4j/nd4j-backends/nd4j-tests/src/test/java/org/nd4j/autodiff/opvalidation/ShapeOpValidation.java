@@ -2506,13 +2506,13 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testGather2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
-        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0));
+        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0).reshape(1,1));
 
         SDVariable gathered = sd.gather(input, indices, 1);
         SDVariable loss = gathered.std(true);
 
         sd.output((Map<String,INDArray>)null, gathered.name());
-        sd.setLossVariables(gathered.name());
+        sd.setLossVariables(loss.name());
 
         String err = OpValidation.validate(new TestCase(sd)
                 .gradCheckEpsilon(1e-3)

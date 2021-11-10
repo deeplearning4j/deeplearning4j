@@ -625,7 +625,14 @@ public class FlatBuffersMapper {
                     for (int j = 0; j < arrArr.length; j++) {
                         aIdx[j] = arrArr[j].toFlatArray(fbb);
                     }
-                } else if (v.getClass().getComponentType().isArray()) {
+                } else if(v instanceof SDVariable[]) {
+                    SDVariable[] vars = (SDVariable[]) v;
+                    sIdx = new int[vars.length];
+                    for (int j = 0; j < vars.length; j++) {
+                        sIdx[j] = fbb.createString(vars[j].name());
+                    }
+                    shape = new int[]{vars.length};
+                }  else if (v.getClass().getComponentType().isArray()) {
                     shape = ArrayUtil.arrayShape(v, true);
                     //Multi-dimensional array
                     if (v instanceof boolean[][]) {
