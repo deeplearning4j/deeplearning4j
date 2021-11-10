@@ -88,7 +88,7 @@ public class LSTMLayerWeights extends RNNWeights {
 
 
     public boolean hasBias() {
-        return (bias!=null||iBias!=null);
+        return (bias!=null || iBias!=null);
     }
 
     public boolean hasPH() {

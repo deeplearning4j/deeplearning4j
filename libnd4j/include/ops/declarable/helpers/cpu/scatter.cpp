@@ -98,7 +98,6 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indice
       for (auto i = start; i < stop; i++) {
         NDArray outSubArr = output(indices.e<sd::LongType>(i), std::vector<int>({0}));
         NDArray updSubArr = updates(i, dimsToExcludeUpd);
-
         outSubArr.applyPairwiseTransform(op, updSubArr);
       }
     };

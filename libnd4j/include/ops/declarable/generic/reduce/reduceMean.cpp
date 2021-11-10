@@ -55,7 +55,6 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
   }
 
   input->reduceAlongDimension(reduce::Mean, *output, dimensions, keepDims);
-  output->printShapeInfo("Shape info for output mean is \n");
   return sd::Status::OK;
 }
 

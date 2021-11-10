@@ -34,7 +34,7 @@ public class IsInfinite extends BaseCondition {
      */
     @Override
     public Conditions.ConditionMode conditionType() {
-        return Conditions.ConditionMode.IS_INFINITE;
+        return Conditions.ConditionMode.IS_FINITE;
     }
 
     @Override

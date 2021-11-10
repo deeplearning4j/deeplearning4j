@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class Reverse extends DynamicCustomOp {
 
@@ -102,6 +103,18 @@ public class Reverse extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Reverse";
+    }
+
+
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
     }
 
     @Override

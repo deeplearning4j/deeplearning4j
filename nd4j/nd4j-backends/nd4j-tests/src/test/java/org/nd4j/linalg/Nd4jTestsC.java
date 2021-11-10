@@ -7503,9 +7503,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testWhereEmpty(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
+    public void testWhereEmpty(){
         INDArray inArray = Nd4j.zeros(2, 3);
         inArray.putScalar(0, 0, 10.0f);
         inArray.putScalar(1, 2, 10.0f);

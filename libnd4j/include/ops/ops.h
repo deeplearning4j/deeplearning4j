@@ -1941,7 +1941,7 @@ class MatchConditionBool {
     X eps = extraParams[1];
 
     auto mode = static_cast<int>(extraParams[2]);
-    sd_debug("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+    // sd_printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
 
     switch (mode) {
       case 0:  // equals

@@ -308,17 +308,19 @@ public class StridedSlice extends DynamicCustomOp {
             this.endMask = iArguments.get(2).intValue();
             this.newAxisMask = iArguments.get(3).intValue();
             this.shrinkAxisMask = iArguments.get(4).intValue();
-      if(iArguments.size() > 12) {
-          this.begin = new long[] {iArguments.get(5),iArguments.get(6),iArguments.get(7)};
-          this.end = new long[] {iArguments.get(8),iArguments.get(9),iArguments.get(10)};
-          this.strides = new long[] {iArguments.get(11),iArguments.get(12),iArguments.get(13)};
-      } else {
-          this.begin = new long[] {iArguments.get(5),iArguments.get(6)};
-          this.end = new long[] {iArguments.get(7),iArguments.get(8)};
-          this.strides = new long[]{iArguments.get(9),iArguments.get(10)};
-      }
+
+            int rankOfBeginEndStrides = (iArguments.size() - 5) / 3;
+            begin = new long[rankOfBeginEndStrides];
+            end = new long[rankOfBeginEndStrides];
+            strides = new long[rankOfBeginEndStrides];
+            for(int i = 0; i < rankOfBeginEndStrides; i++) {
+                begin[i] = iArguments.get(i + 5);
+                end[i] = iArguments.get(i + rankOfBeginEndStrides + 5);
+                strides[i] = iArguments.get(i + (rankOfBeginEndStrides * 2) + 5);
+            }
 
         }
+
 
     }
 

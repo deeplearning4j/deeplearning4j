@@ -311,7 +311,7 @@ public abstract class DifferentialFunction {
                     value = ((Double) value).floatValue();
                 }
                 //Edge case: we store char fields as integers, rather than introduce an extra property
-                if(target.getType() == char.class && value instanceof Integer){
+                if(target.getType() == char.class && value instanceof Integer) {
                     value = (char)((Integer)value).intValue();
                 }
 
@@ -334,8 +334,8 @@ public abstract class DifferentialFunction {
                     value = value2.longValue();
                 }
 
-                if(target.getType().equals(Boolean.class) || target.getType().equals(boolean.class) && value instanceof Number) {
-                    Number value2 = (Number) value;
+                if(target.getType().equals(Boolean.class) || target.getType().equals(boolean.class) && value instanceof Double) {
+                    Double value2 = (Double) value;
                     value = value2.doubleValue() > 0;
                 }
 
@@ -344,7 +344,6 @@ public abstract class DifferentialFunction {
                        int idxConverted = value2.intValue();
                        value = DataType.values()[idxConverted];
                 }
-
 
                 if(target.getType().isEnum() && value instanceof Long || value instanceof Integer && !target.getType().equals(int.class) && !target.getType().equals(long.class)) {
                     Class<? extends Enum> enumType = (Class<? extends Enum>) target.getType();
@@ -356,6 +355,8 @@ public abstract class DifferentialFunction {
                     Object get = invoke[idx];
                     value = get;
                 }
+
+
 
                 target.set(this,value);
             } catch (IllegalAccessException e) {

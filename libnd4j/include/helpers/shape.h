@@ -2084,12 +2084,14 @@ SD_INLINE SD_HOST_DEVICE void doPermuteShapeInfo(sd::LongType *shapeInfo, const 
   if (!isPermutNecessary) return;
 
   // check whether rearrange contains correct indexes
-  for (int i = 0; i < rank; ++i)
-    if (rearrange[i] >= rank || rearrange[i] < 0) {
-      printf("shape::doPermuteShapeInfo function failed: rearrange indexes are incorrect !\n");
-      return;
-    }
-
+  for (int i = 0; i < rank; ++i) {
+      if (rearrange[i] >= rank || rearrange[i] < 0) {
+          sd_printf(
+                  "shape::doPermuteShapeInfo function failed: rearrange indexes are incorrect. Given permute indices must be < rank and >= 0.  Rearrange at index %d was %d\n",
+                  i, rearrange[i]);
+          return;
+      }
+  }
   // if everything is ok then perform permute
   auto temp = new sd::LongType[shape::shapeInfoLength(rank) - 3];
   memcpy(temp, shapeInfo, sizeof(sd::LongType) * (shape::shapeInfoLength(rank) - 3));

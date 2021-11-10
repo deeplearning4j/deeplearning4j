@@ -24,10 +24,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.guava.primitives.Ints;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class Permute extends Transpose {
 
@@ -82,6 +85,28 @@ public class Permute extends Transpose {
             ret = sameDiff.permute(i_v.get(0), sameDiff.invertPermutation(arg(1)));
         }
         return Collections.singletonList(ret);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(!iArguments.isEmpty()) {
+            this.reverseDims = Ints.toArray(iArguments);
+            this.permuteDims = Ints.toArray(iArguments);
+            for (int i = 0; i < reverseDims.length; i++) {
+                reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
+            }
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        return super.calculateOutputDataTypes(dataTypes);
     }
 
     @Override

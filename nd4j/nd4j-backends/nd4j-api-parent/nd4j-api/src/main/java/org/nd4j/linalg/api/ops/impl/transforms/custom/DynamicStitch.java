@@ -116,12 +116,12 @@ public class DynamicStitch extends DynamicCustomOp {
 
     @Override
     public void configureWithSameDiff(SameDiff sameDiff) {
-        if(indexNames != null && indices == null) {
-            indices = new SDVariable[indexNames.length];
-            for(int i = 0; i < indices.length; i++) {
-                indices[i] = sameDiff.getVariable(indexNames[i]);
-            }
-        }
+       if(indexNames != null && indices == null) {
+           indices = new SDVariable[indexNames.length];
+           for(int i = 0; i < indices.length; i++) {
+               indices[i] = sameDiff.getVariable(indexNames[i]);
+           }
+       }
 
     }
 
