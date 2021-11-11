@@ -92,8 +92,11 @@
 #if _MSC_VER
 #define FILE_LINE_LINK __FILE__ "(" STRINGIZE(__LINE__) ") : "
 #define WARN(exp) (FILE_LINE_LINK "WARNING: " exp)
+
+//check if msvc cross-platform compatible preprocessor is not enabled (/Zc:preprocessor)
 #if _MSC_VER < 1915 || (defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL)
-#define OLD_MSVC
+//MSVC_OLD_PREPROCESSOR indicates that we have MSVC old preprocessor
+#define MSVC_OLD_PREPROCESSOR
 // does not work, but suppress compiler error
 #define STRINGIFY_TEST(...) (#__VA_ARGS__)
 #endif
@@ -236,8 +239,9 @@
                 _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, N, ...)                                 \
   N
 
-#if defined(OLD_MSVC)
+#if defined(MSVC_OLD_PREPROCESSOR)
 #pragma message WARN("MSVC old preprocessor")
+//workaround the bug in MSVC old preprocessor using ND_CALL macro where it improperly expands __VA_ARGS__ 
 #define COUNT_M(...)                                                                                                 \
   ND_EXPAND(COUNT_N(__VA_ARGS__, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, \
                     12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
@@ -255,9 +259,13 @@
 #define SKIP_FIRST_COMMA(...) ND_EXPAND(SKIP_FIRST_COMMA_Z(__VA_ARGS__))
 #define SKIP_FIRST_COMMA_Z(Z, ...) __VA_ARGS__
 
-#define GET_ELEMENT(N, ...) \
-  M_CONCAT(GET_ELEMENT_, N) \
-  (__VA_ARGS__)
+
+#if defined(MSVC_OLD_PREPROCESSOR)
+// workaround the bug in MSVC  old preprocessor using ND_CALL macro where it improperly expands __VA_ARGS__  
+#define GET_ELEMENT(N, ...) ND_CALL(M_CONCAT(GET_ELEMENT_, N), (__VA_ARGS__))
+#else
+#define GET_ELEMENT(N, ...) M_CONCAT(GET_ELEMENT_, N)(__VA_ARGS__)
+#endif
 #define GET_ELEMENT_0(_0, ...) _0
 #define GET_ELEMENT_1(_0, _1, ...) _1
 #define GET_ELEMENT_2(_0, _1, _2, ...) _2
