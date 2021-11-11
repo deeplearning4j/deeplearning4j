@@ -664,9 +664,6 @@ public abstract class DifferentialFunction {
 
         val outputVars = args();
         boolean copied = false;
-        if(vals.size() != outputVars.length) {
-            throw new IllegalStateException("Values passed in for differentiation was of size " + i_v1.size() + " and output variables was " + outputVars.length);
-        }
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
             SDVariable grad = var.hasGradient() ? var.getGradient() : null;
