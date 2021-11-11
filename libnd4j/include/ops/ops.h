@@ -2299,8 +2299,8 @@ class Stabilize {
       SD_OP_DEF static X
       op(X d1, X *params) {
     X k = params[0];
-    if (d1 * k > static_cast<X>(-SD_MIN_CUTFOFF))
-      return static_cast<X>(-SD_MIN_CUTFOFF) / k;
+    if (d1 * k > static_cast<X>(SD_MAX_CUTFOFF))
+      return static_cast<X>(SD_MAX_CUTFOFF) / k;
     else if (d1 * k < static_cast<X>(SD_MIN_CUTFOFF))
       return static_cast<X>(SD_MIN_CUTFOFF) / k;
     return d1;
