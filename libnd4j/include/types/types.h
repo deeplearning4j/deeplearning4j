@@ -255,9 +255,12 @@
 #define SKIP_FIRST_COMMA(...) ND_EXPAND(SKIP_FIRST_COMMA_Z(__VA_ARGS__))
 #define SKIP_FIRST_COMMA_Z(Z, ...) __VA_ARGS__
 
-#define GET_ELEMENT(N, ...) \
-  M_CONCAT(GET_ELEMENT_, N) \
-  (__VA_ARGS__)
+
+#if defined(OLD_MSVC)
+#define GET_ELEMENT(N, ...) ND_CALL(M_CONCAT(GET_ELEMENT_, N), (__VA_ARGS__))
+#else
+#define GET_ELEMENT(N, ...) M_CONCAT(GET_ELEMENT_, N)(__VA_ARGS__)
+#endif
 #define GET_ELEMENT_0(_0, ...) _0
 #define GET_ELEMENT_1(_0, _1, ...) _1
 #define GET_ELEMENT_2(_0, _1, _2, ...) _2
