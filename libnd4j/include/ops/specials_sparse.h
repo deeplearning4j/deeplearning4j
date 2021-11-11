@@ -35,7 +35,7 @@ namespace sd {
 namespace sparse {
 
 template <typename T>
-class SparseUtils {
+class SD_LIB_EXPORT SparseUtils {
  public:
   /**
    * Just simple helper for debugging :)
