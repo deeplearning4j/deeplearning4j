@@ -2335,6 +2335,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testExternalErrorsSimple(Nd4jBackend backend) {
         INDArray externalGrad = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
@@ -2429,6 +2430,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testShapeUpdating(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();

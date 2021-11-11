@@ -40,7 +40,7 @@ import java.util.List;
 @Slf4j
 public class GraphOptimizer {
 
-    public static List<OptimizerSet> defaultOptimizations(){
+    public static List<OptimizerSet> defaultOptimizations() {
         return Arrays.<OptimizerSet>asList(
                 new UnusedFunctionOptimizations(),
                 new ConstantFunctionOptimizations(),
