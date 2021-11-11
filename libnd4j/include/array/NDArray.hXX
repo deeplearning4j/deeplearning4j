@@ -4837,7 +4837,10 @@ ResultSet NDArray::allExamples() const {
 
 ////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::getOffset(const sd::LongType i) const {
-  if (i >= lengthOf()) throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
+  if (i >= lengthOf()) {
+      sd_debug("NDArray::getOffset: input index %d array length %d\n",i,lengthOf());
+      throw std::invalid_argument("NDArray::getOffset: input index %d is out of array length %d!");
+  }
 
   return shape::getIndexOffset(i, _shapeInfo);
 }

@@ -412,7 +412,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
 
-        Files.delete(tmpFile);
     }
 
     @ParameterizedTest

@@ -926,19 +926,6 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, sampled);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Tag(TagNames.LONG_TEST)
-    @Tag(TagNames.LARGE_RESOURCES)
-    public void testDeallocation1() throws Exception {
-        for(int i = 0; i < 1000; i++) {
-            Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
-            random1.nextInt();
-
-            System.gc();
-            Thread.sleep(50);
-        }
-    }
 
 
     @ParameterizedTest
@@ -1291,8 +1278,9 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         assertEquals(expCUDA, res);
     }
 
-    @Test
     @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTruncatedNormal1(Nd4jBackend backend) {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 

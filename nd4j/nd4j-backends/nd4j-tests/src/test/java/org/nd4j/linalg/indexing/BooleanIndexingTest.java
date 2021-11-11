@@ -445,7 +445,6 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChooseBasic(Nd4jBackend backend) {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
         INDArray arr = Nd4j.linspace(1,4,4, Nd4j.dataType()).reshape(2,2);
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr}, Arrays.asList(2.0), Collections.emptyList(),new GreaterThan());
@@ -464,7 +463,6 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testChooseNone(Nd4jBackend backend) {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
         INDArray arr = Nd4j.linspace(1,4,4, Nd4j.dataType()).reshape(2,2);
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr},Arrays.asList(5.0), Collections.emptyList(),new GreaterThan());

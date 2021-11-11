@@ -633,28 +633,6 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Test
-    @Disabled("raver119: This test doesn't make any sense to me these days. We're borrowing from the same workspace. Why?")
-    public void testNestedWorkspaces11(Nd4jBackend backend) {
-        for (int x = 1; x < 10; x++) {
-            try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
-                INDArray array1 = Nd4j.create(DataType.DOUBLE,100 * x);
-
-                for (int i = 1; i < 10; i++) {
-                    try (MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
-                        INDArray array2 = Nd4j.create(DataType.DOUBLE,100 * x);
-                        for (int e = 1; e < 10; e++) {
-                            try (MemoryWorkspace ws3 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfiguration, "WS_1").notifyScopeBorrowed()) {
-                                INDArray array3 = Nd4j.create(DataType.DOUBLE,100 * x);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNestedWorkspaces10(Nd4jBackend backend) {

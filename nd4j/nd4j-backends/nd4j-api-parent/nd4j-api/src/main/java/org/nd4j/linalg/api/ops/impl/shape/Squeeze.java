@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -61,7 +62,7 @@ public class Squeeze extends DynamicCustomOp {
         nodeDef.getAttrMap().get("squeeze_dims");
         List<Long> dimList = attributesForNode.get("squeeze_dims").getList().getIList();
         squeezeDims = new int[dimList.size()];
-        for( int i=0; i<dimList.size(); i++ )
+        for( int i = 0; i<dimList.size(); i++ )
             squeezeDims[i] = dimList.get(i).intValue();
         addIArgument(squeezeDims);
     }
@@ -74,6 +75,18 @@ public class Squeeze extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Squeeze";
+    }
+
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.squeezeDims = Ints.toArray(iArguments);
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
     }
 
     @Override

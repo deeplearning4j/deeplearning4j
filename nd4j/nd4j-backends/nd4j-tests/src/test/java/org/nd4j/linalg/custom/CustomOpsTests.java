@@ -992,7 +992,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, out);
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1020,8 +1019,10 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, output);
     }
 
-    @Test
+
     @Disabled("Failing with results that are close")
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFakeQuantAgainstTF_1(Nd4jBackend backend) {
         INDArray x = Nd4j.createFromArray(new double[]{ 0.7788f,    0.8012f,    0.7244f,    0.2309f,    0.7271f,
                 0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
@@ -1106,7 +1107,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{2,3,4}, out.shape());
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1567,8 +1567,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, result);
     }
 
-    // Exact copy of libnd4j test
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

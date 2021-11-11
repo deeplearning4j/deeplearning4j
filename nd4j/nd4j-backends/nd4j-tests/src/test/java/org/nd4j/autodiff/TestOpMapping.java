@@ -356,7 +356,6 @@ public class TestOpMapping extends BaseNd4jTestWithBackends {
         s.add(Assign.class);
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

@@ -824,9 +824,8 @@ public abstract class AbstractSession<T, O> {
                 DifferentialFunction opById = sameDiff.getOpById(opName);
                 String[] inputs = sameDiff.getInputsForOp(opById);
                 for (String s2 : inputs) {
-                    String strippedSuffix = stripVarSuffix(s2);
-                    if (!subgraph.contains(strippedSuffix)) {
-                        processingQueue.add(strippedSuffix);
+                    if (!subgraph.contains(s2)) {
+                        processingQueue.add(s2);
                     }
                 }
 

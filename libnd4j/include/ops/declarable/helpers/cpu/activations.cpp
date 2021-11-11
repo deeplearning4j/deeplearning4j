@@ -165,7 +165,7 @@ void preluBP(sd::LaunchContext* context, const NDArray& input, const NDArray& al
   for (sd::LongType i = 0; i < inputLen; ++i) {
     // FIXME: double
     double x = input.e<double>(i);
-    double grO = dLdO.e<double>(i);
+    double grO =  dLdO.isScalar() ?  dLdO.e<double>(0) : dLdO.e<double>(i);
     if (x < 0.0) {
       sd::LongType alphaInd = shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo);
       dLdI.p(i, grO * alpha.e<double>(alphaInd));

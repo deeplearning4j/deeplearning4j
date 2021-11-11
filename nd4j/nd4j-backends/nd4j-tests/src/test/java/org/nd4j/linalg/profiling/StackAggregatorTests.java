@@ -133,8 +133,9 @@ public class StackAggregatorTests extends BaseNd4jTestWithBackends {
         aggregator.renderTree();
     }*/
 
-    @Test
     @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarAggregator(Nd4jBackend backend) {
         INDArray x = Nd4j.create(10);
 

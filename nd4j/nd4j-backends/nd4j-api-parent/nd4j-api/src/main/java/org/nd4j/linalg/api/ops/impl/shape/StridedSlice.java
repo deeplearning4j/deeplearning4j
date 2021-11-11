@@ -302,7 +302,7 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public void configureFromArguments() {
-        if(iArguments.size() >= 11) {
+        if(!iArguments.isEmpty()) {
             this.beginMask = iArguments.get(0).intValue();
             this.ellipsisMask = iArguments.get(1).intValue();
             this.endMask = iArguments.get(2).intValue();

@@ -174,8 +174,9 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.MIXED_ORDER));
     }
 
-    @Test
     @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBadCombos6(Nd4jBackend backend) {
         INDArray x = Nd4j.create(27).reshape('f', 3, 3, 3).slice(1);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
@@ -511,7 +512,7 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testInfPanic(){
+    public void testInfPanic(Nd4jBackend backend) {
         try {
             DynamicCustomOp op = DynamicCustomOp.builder("add")
                     .addInputs(Nd4j.valueArrayOf(10, Double.POSITIVE_INFINITY).castTo(DataType.DOUBLE), Nd4j.scalar(0.0))
@@ -543,7 +544,7 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testOpProfilerOpContextLegacy(){
+    public void testOpProfilerOpContextLegacy(Nd4jBackend backend) {
 
         for(boolean nan : new boolean[]{true, false}) {
 
@@ -567,7 +568,7 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testOpProfilerOpContextCustomOp(){
+    public void testOpProfilerOpContextCustomOp(Nd4jBackend backend) {
 
         for(boolean nan : new boolean[]{true, false}) {
 

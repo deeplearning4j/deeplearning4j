@@ -1008,6 +1008,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
         WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
                 .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
                 .tempFilePath(tmp.getAbsolutePath())
                 .build();
 

@@ -50,7 +50,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     private String id;
 
 
-    public ExternalErrorsFunction(SameDiff sd, List<SDVariable> inputs, Map<String,INDArray> gradients){
+    public ExternalErrorsFunction(SameDiff sd, List<SDVariable> inputs, Map<String,INDArray> gradients) {
         super(sd, inputs.toArray(new SDVariable[inputs.size()]));
         if(gradients == null)
             gradients = new HashMap<>();
@@ -62,6 +62,28 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
 
     public String getGradPlaceholderName(){
         return arg().name() + "-grad";
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+       Map<String,Object> ret = new HashMap<>();
+
+       return ret;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
     }
 
     @Override

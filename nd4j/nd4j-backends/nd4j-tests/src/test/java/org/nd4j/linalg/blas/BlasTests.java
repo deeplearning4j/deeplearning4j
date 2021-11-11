@@ -187,7 +187,7 @@ public class BlasTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMmuli3(Nd4jBackend backend){
+    public void testMmuli3(Nd4jBackend backend) {
         final INDArray activations = Nd4j.createUninitialized(new long[]{1, 3, 2}, 'f');
         final INDArray z = activations.tensorAlongDimension(0, 1, 2);
 
@@ -222,7 +222,6 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         val c = a.mmul(b);
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
