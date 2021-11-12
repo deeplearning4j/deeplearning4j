@@ -132,6 +132,8 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
 #endif
       }
     }
+
+    sd_debug("Returning status ok for min_max_datatype\n",0);
     return sd::Status::OK;
   }
 }

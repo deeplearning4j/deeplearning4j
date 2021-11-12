@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 1
+        default: 2
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
