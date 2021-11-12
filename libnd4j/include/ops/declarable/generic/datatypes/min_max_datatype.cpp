@@ -28,11 +28,14 @@
 
 namespace sd {
 namespace ops {
-CUSTOM_OP_IMPL(min_max_datatype, 0, 1, false, 0, 2) {
+CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
   auto output = OUTPUT_VARIABLE(0);
+  sd_debug("After min_max_datatype output\n",0);
   auto dataType = INT_ARG(0);
+  sd_debug("After min_max_datatype output\n",0);
   DataType type = DataTypeUtils::fromInt(dataType);
   auto minOrMax = INT_ARG(1);
+  sd_debug("After type output\n",0);
   if (minOrMax == 0) {
     switch (type) {
       case sd::DataType::UINT8:
@@ -135,6 +138,7 @@ CUSTOM_OP_IMPL(min_max_datatype, 0, 1, false, 0, 2) {
 
 DECLARE_SHAPE_FN(min_max_datatype) {
   DataType newType = DataTypeUtils::fromInt(INT_ARG(0));
+
   return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(newType));
 }
 

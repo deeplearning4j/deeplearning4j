@@ -823,11 +823,12 @@ public abstract class AbstractSession<T, O> {
                 //To execute op - and hence get this variable: need inputs to that op
                 DifferentialFunction opById = sameDiff.getOpById(opName);
                 String[] inputs = sameDiff.getInputsForOp(opById);
-                for (String s2 : inputs) {
-                    if (!subgraph.contains(s2)) {
-                        processingQueue.add(s2);
+                if(inputs != null)
+                    for (String s2 : inputs) {
+                        if (!subgraph.contains(s2)) {
+                            processingQueue.add(s2);
+                        }
                     }
-                }
 
                 //To execute op - and hence get this variable - we also need control deps
                 List<String> opControlDeps = sameDiff.getOps().get(opName).getControlDeps();

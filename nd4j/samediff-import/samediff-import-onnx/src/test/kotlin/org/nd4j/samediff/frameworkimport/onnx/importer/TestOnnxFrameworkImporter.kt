@@ -38,6 +38,8 @@ class TestOnnxFrameworkImporter {
         val importer = OnnxFrameworkImporter()
         val file = ClassPathResource("mobilenet.onnx").file
         val result  = importer.runImport(file.absolutePath, emptyMap())
+        result.outputAll(Collections.singletonMap("input.1",Nd4j.ones(1,3,224,224)))
+        result.asFlatFile(File("mobilenet.fb"))
     }
 
     @Test

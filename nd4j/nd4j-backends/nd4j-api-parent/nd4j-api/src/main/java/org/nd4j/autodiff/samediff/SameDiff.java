@@ -689,7 +689,8 @@ public class SameDiff extends SDBaseOps {
     public SDVariable[] getInputVariablesForOp(DifferentialFunction function) {
         val inputs = getInputsForOp(function);
         if (inputs == null) {
-            throw new ND4JIllegalStateException("No inputs found for function " + function);
+            log.warn("No inputs found for function " + function);
+            return new SDVariable[0];
         }
 
         val vars = new SDVariable[inputs.length];

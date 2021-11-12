@@ -34,6 +34,7 @@
 #if defined(HAVE_ONEDNN)
 #include <vector>
 #include <string>
+#include <array/NDArray.h>
 
 namespace sd {
 class ONEDNNStream {
