@@ -32,6 +32,15 @@ import java.util.*
 class TestOnnxFrameworkImporter {
 
     @Test
+    fun testMobileNet() {
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        val importer = OnnxFrameworkImporter()
+        val file = ClassPathResource("mobilenet.onnx").file
+        val result  = importer.runImport(file.absolutePath, emptyMap())
+    }
+
+    @Test
     fun testLenet() {
         Nd4j.getExecutioner().enableDebugMode(true)
         Nd4j.getExecutioner().enableVerboseMode(true)

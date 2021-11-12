@@ -828,8 +828,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val noOpNames = sd.ops.filter { input -> input.value.op is NoOp }.keys
         sd.ops.keys.removeAll(noOpNames)
         sd.ops.forEach { (name, op) ->
-            val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
-            op.inputsToOp.removeAll(noOpNamesForInputs)
+            if(op.inputsToOp != null) {
+                val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
+                op.inputsToOp.removeAll(noOpNamesForInputs)
+            }
+
         }
 
         return sd
