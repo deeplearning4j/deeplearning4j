@@ -28,6 +28,8 @@
 #if !defined(__STANDALONE_BUILD__)
 #include "config.h"
 #endif
+#include <vector>
+#include <string>
 
 #if defined(HAVE_ONEDNN)
 
