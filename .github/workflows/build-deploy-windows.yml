@@ -153,6 +153,7 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
 
 
       - uses: msys2/setup-msys2@v2
@@ -163,11 +164,6 @@ jobs:
       - name: Setup windows path
         shell: powershell
         run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v1
-        env:
-          GPG_PRIVATE_KEY:  ${{ secrets.SONATYPE_GPG_KEY }}
-          PASSPHRASE:  ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       - name: Setup libnd4j home if a download url is specified
         shell: powershell
         run: |

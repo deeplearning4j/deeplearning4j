@@ -27,6 +27,8 @@ public class IsFinite extends BaseCondition {
         super(-1);
     }
 
+
+
     /**
      * Returns condition ID for native side
      *
@@ -39,6 +41,6 @@ public class IsFinite extends BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        return Float.isInfinite(input.floatValue());
+        return !Float.isInfinite(input.floatValue());
     }
 }
