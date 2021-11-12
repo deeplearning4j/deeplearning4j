@@ -39,8 +39,8 @@ class ONEDNNStream {
  protected:
   std::string _opName;
 
-  std::vector<const NDArray *> _inputs;
-  std::vector<const NDArray *> _outputs;
+  std::vector<NDArray *> _inputs;
+  std::vector<NDArray *> _outputs;
   std::vector<float> _floatArguments;
   std::vector<int> _intArguments;
 
@@ -63,7 +63,7 @@ class ONEDNNStream {
 
   explicit ONEDNNStream(const std::string &opName) : _opName(opName) {}
 
-  bool checkAndReset(const std::vector<const NDArray *> &inputs, const std::vector<const NDArray *> &outputs,
+  bool checkAndReset(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
                      const std::vector<float> &floatArguments, const std::vector<int> &intArguments) {
     if (inputs != _inputs || outputs != _outputs || floatArguments != _floatArguments ||
         intArguments != _intArguments) {
