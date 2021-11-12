@@ -95,6 +95,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             }
         }
 
+
+
+
         org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
         bl.validateInput(input);
 

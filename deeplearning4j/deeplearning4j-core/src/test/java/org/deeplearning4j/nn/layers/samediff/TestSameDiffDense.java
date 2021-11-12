@@ -28,6 +28,7 @@ import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -353,7 +354,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
     @Test
     public void testSameDiffDenseTraining() {
         Nd4j.getRandom().setSeed(12345);
-
+        Nd4j.EPS_THRESHOLD = 1e-4;
         int nIn = 4;
         int nOut = 3;
 
@@ -361,9 +362,10 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .trainingWorkspaceMode(wsm)
                     .inferenceWorkspaceMode(wsm)
-                    .updater(new Adam(0.1))
+                    .updater(new Adam(1e-3))
                     .list()
                     .layer(new SameDiffDense.Builder().nIn(nIn).nOut(5).activation(Activation.TANH).build())
                     .layer(new SameDiffDense.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
@@ -376,7 +378,8 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                     .seed(12345)
-                    .updater(new Adam(0.1))
+                    .dataType(DataType.DOUBLE)
+                    .updater(new Adam(1e-3))
                     .list()
                     .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(nIn).nOut(5).build())
                     .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(5).build())
@@ -405,15 +408,17 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 netSD.fit(ds);
                 netStandard.fit(ds);
                 String s = String.valueOf(i);
-                assertEquals(netStandard.getFlattenedGradients(), netSD.getFlattenedGradients(), s);
+                INDArray netStandardGrad = netStandard.getFlattenedGradients();
+                INDArray netSDGrad = netSD.getFlattenedGradients();
+                assertEquals(netStandardGrad, netSDGrad, s);
                 assertEquals(netStandard.params(), netSD.params(), s);
                 assertEquals(netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray(), s);
             }
 
             //Sanity check on different minibatch sizes:
-            INDArray newIn = Nd4j.vstack(ds.getFeatures(), ds.getFeatures());
-            INDArray outMbsd = netSD.output(newIn);
-            INDArray outMb = netStandard.output(newIn);
+            INDArray newIn = Nd4j.vstack(ds.getFeatures(), ds.getFeatures()).castTo(DataType.DOUBLE);
+            INDArray outMbsd = netSD.output(newIn).castTo(DataType.DOUBLE);
+            INDArray outMb = netStandard.output(newIn).castTo(DataType.DOUBLE);
             assertEquals(outMb, outMbsd);
         }
     }
@@ -440,7 +445,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
                         .layer(new SameDiffDense.Builder().nIn(nOut).nOut(nOut).activation(a).build())
                         .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
                                 .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        //.setInputType(InputType.feedForward(nIn))     //TODO
                         .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);

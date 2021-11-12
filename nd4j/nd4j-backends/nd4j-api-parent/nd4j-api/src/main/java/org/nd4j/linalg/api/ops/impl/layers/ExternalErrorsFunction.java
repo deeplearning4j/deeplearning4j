@@ -49,12 +49,18 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     private SDVariable out;
     private String id;
     private String outName;
+    private List<String> gradVarNames;
 
     public ExternalErrorsFunction(SameDiff sd, List<SDVariable> inputs, Map<String,INDArray> gradients) {
         super(sd, inputs.toArray(new SDVariable[inputs.size()]));
         if(gradients == null)
             gradients = new HashMap<>();
         this.gradients = gradients;
+        gradVarNames = new ArrayList<>();
+        for(SDVariable input : inputs) {
+            gradVarNames.add(input.name());
+        }
+
         this.id = UUID.randomUUID().toString();
     }
 
@@ -82,8 +88,8 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
             ret.put("out",out);
         if(id != null)
             ret.put("id",id);
-        if(gradVariables != null)
-            ret.put("gradVariables",gradVariables);
+        if(gradVarNames != null)
+            ret.put("gradVarNames",gradVarNames);
         return ret;
     }
 
@@ -101,6 +107,12 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
         if(properties.containsKey("out")) {
             this.outName = properties.get("out").toString();
         }
+
+        if(properties.containsKey("gradVarNames")) {
+            List<String> gradVarNames = (List<String>) properties.get("gradVarNames");
+            this.gradVarNames = gradVarNames;
+        }
+
     }
 
     @Override
@@ -137,6 +149,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
                 } else {
                     grad = sameDiff.var(n, VariableType.PLACEHOLDER, null, dt);
                 }
+                sameDiff.setGradientForVariableName(arg.name(),grad);
                 gradVariables.put(arg.name(), grad);
                 out.add(grad);
             }
@@ -145,7 +158,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     }
 
 
-    public void updateBeforeExecution(){
+    public void updateBeforeExecution() {
         Preconditions.checkState(gradVariables != null, "Variables list is null - doDiff has not been called?");
 
         //Update external gradients ready for execution

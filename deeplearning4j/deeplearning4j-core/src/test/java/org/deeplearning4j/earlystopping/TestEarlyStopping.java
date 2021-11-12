@@ -107,7 +107,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             ScoreCalculator sc;
             boolean min;
-            switch(i){
+            switch(i) {
                 case 0:
                     sc = new DataSetLossCalculator(irisIter, true);
                     min = true;
@@ -153,7 +153,6 @@ public class TestEarlyStopping extends BaseDL4JTest {
                     .build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
-//            net.setListeners(new ScoreIterationListener(1));
 
             EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
             EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
@@ -591,7 +590,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
 
             List<DataSet> l = new ArrayList<>();
-            for( int i=0; i<10; i++ ){
+            for( int i = 0; i < 10; i++ ){
                 DataSet ds = iter.next();
                 l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
             }
@@ -681,7 +680,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
 
             List<DataSet> l = new ArrayList<>();
-            for( int i=0; i<10; i++ ){
+            for( int i = 0; i < 10; i++ ){
                 DataSet ds = iter.next();
                 l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
             }

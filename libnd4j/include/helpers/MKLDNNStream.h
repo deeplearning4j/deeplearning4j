@@ -24,8 +24,7 @@
 
 #ifndef LIBND4J_ONEDNNSTREAM_H
 #define LIBND4J_ONEDNNSTREAM_H
-#include <vector>
-#include <string>
+
 
 #if !defined(__STANDALONE_BUILD__)
 #include "config.h"
@@ -33,6 +32,8 @@
 
 
 #if defined(HAVE_ONEDNN)
+#include <vector>
+#include <string>
 
 namespace sd {
 class ONEDNNStream {
