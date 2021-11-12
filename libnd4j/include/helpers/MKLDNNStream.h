@@ -24,12 +24,13 @@
 
 #ifndef LIBND4J_ONEDNNSTREAM_H
 #define LIBND4J_ONEDNNSTREAM_H
+#include <vector>
+#include <string>
 
 #if !defined(__STANDALONE_BUILD__)
 #include "config.h"
 #endif
-#include <vector>
-#include <string>
+
 
 #if defined(HAVE_ONEDNN)
 

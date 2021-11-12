@@ -169,10 +169,13 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 //Check per-iteration termination conditions
                 if(pretrain){
                     //TODO support for non-first-layer pretraining
-                    if(model instanceof MultiLayerNetwork){
+                    if(model instanceof MultiLayerNetwork) {
                         lastScore = (((MultiLayerNetwork) model).getLayer(0)).score();
+                        ((MultiLayerNetwork) model).setScore(lastScore);
                     } else {
-                        lastScore = (((ComputationGraph) model).getLayer(0)).score();
+                        ComputationGraph computationGraph = (ComputationGraph) model;
+                        lastScore = computationGraph.getLayer(0).score();
+                        computationGraph.setScore(lastScore);
                     }
                 } else {
                     lastScore = model.score();

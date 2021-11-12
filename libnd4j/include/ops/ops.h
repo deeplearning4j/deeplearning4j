@@ -3836,7 +3836,8 @@ class CompareAndSet {
         return d2;
       else
         return d1;
-    else if (mode == 8)  // is inf
+    //equivalent case to NOT_FINITE
+    else if (mode == 8 || mode == 15)  // is inf
       if (sd::math::sd_isinf(d2))
         return d2;
       else
@@ -3866,8 +3867,14 @@ class CompareAndSet {
         return d2;
       else
         return d1;
+    else if (mode == 14) {  // is_inf
+      if (!sd::math::sd_isinf(d1))
+        return d2;
+      else
+        return d1;
+    }
     else
-      printf("Undefined boolean operation: [%i]\n", mode);
+      sd_printf("Undefined boolean operation: [%i]\n", mode);
     return d1;
   }
 };
@@ -3958,8 +3965,14 @@ class CompareAndSetTransform {
         return set;
       else
         return d1;
+    else if (mode == 14) {  // is_inf
+      if (!sd::math::sd_isinf(d1))
+        return compare;
+      else
+        return d1;
+    }
     else
-      printf("Undefined boolean operation: [%i]\n", mode);
+      sd_printf("Undefined boolean operation: [%i]\n", mode);
     return d1;
   }
 };

@@ -738,8 +738,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
                     new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                             .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                            .iterationTerminationConditions(
-                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+
                             .scoreCalculator(new VAEReconProbScoreCalculator(iter, 20, logProb)).modelSaver(saver)
                             .build();
 
