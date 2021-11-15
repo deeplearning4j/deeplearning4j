@@ -44,8 +44,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     if (paddingMode == 0) {  // valid
       // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
       // oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
-      oH = (iH - kH * dH + 1 + 2 * pH) / sH ;
-      oW = (iW - kW * dW + 1 + 2 * pW) / sW;
+      oH = (iH - kH * dH + 1 + 2 * pH) / sH  + 1;
+      oW = (iW - kW * dW + 1 + 2 * pW) / sW + 1;
       sd_debug("valid oH: %d oW: %d\n",oH,oW);
     } else if (paddingMode == 1) {  // same
       oH = (int)math::sd_ceil<double, double>(iH * 1. / sH);

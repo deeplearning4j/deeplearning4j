@@ -286,7 +286,7 @@ class Conv : PreImportHook  {
                 val widthIdx = dataFormat.indexOf("W")
                 for(i in 0 until rank) {
                     if(i == widthIdx) {
-                        ret.add(SDIndex.interval(pads[i], - pads[i]))
+                        ret.add(SDIndex.interval(pads[i], - pads[i] - 1))
                     } else {
                         ret.add(SDIndex.all())
 
@@ -299,10 +299,10 @@ class Conv : PreImportHook  {
                 val heightIdx = dataFormat.indexOf("H")
                 for(i in 0 until rank) {
                     if(i == widthIdx) {
-                        ret.add(SDIndex.interval(pads[i], - pads[i]))
+                        ret.add(SDIndex.interval(pads[i], - pads[i] - 1))
 
                     } else if(i == heightIdx) {
-                        ret.add(SDIndex.interval(pads[i],- pads[i]))
+                        ret.add(SDIndex.interval(pads[i],- pads[i] - 1))
 
                     } else {
                         ret.add(SDIndex.all())
@@ -317,13 +317,13 @@ class Conv : PreImportHook  {
                 val depthIdx = dataFormat.indexOf("D")
                 for(i in 0 until rank) {
                     if(i == widthIdx) {
-                        ret.add(SDIndex.interval(pads[i], - pads[i]))
+                        ret.add(SDIndex.interval(pads[i], - pads[i] - 1))
 
                     } else if(i == heightIdx) {
-                        ret.add(SDIndex.interval(pads[i], - pads[i]))
+                        ret.add(SDIndex.interval(pads[i], - pads[i] - 1))
 
                     } else if(i == depthIdx) {
-                        ret.add(SDIndex.interval(pads[i], - pads[i]))
+                        ret.add(SDIndex.interval(pads[i], - pads[i] - 1))
 
                     } else {
                         ret.add(SDIndex.all())
