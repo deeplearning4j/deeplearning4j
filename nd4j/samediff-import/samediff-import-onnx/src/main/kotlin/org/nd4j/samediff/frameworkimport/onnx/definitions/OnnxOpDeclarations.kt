@@ -1036,7 +1036,7 @@ val conv2d = OnnxMappingProcess(
                 }),
                 listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4,
                         defaultValueIfNotFound = ArgDescriptor {
-                                int64Value = 1
+                                int64Value = 0
                                 name = "padding"
                                 argIndex = 4
                                 argType = OpNamespace.ArgDescriptor.ArgType.INT64

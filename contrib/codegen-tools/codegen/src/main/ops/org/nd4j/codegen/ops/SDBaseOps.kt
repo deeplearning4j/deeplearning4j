@@ -564,6 +564,21 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     }
 
 
+    Op("repeat") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        Input(NUMERIC, "input") { description = "Input value to repeat" }
+        Input(NUMERIC, "repeats") { description = "A 1d input representing the number of inputs of repeats for each element." }
+        Arg(INT, "axis") { description = "Data type of the output array" }
+        Output(NUMERIC, "output"){ description = "A tensor with the shape of input minus the specified axis" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.
+            """.trimIndent()
+        }
+    }
+
+
     Op("sparseToDense") {
         javaPackage = "org.nd4j.linalg.api.ops.compat"
         javaOpClass = "CompatSparseToDense"
@@ -1195,19 +1210,6 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
-    /*
-    Op("repeat") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "df") { description = "" }
-        Arg(INT, "axis") { description = "" }
-        Output(NUMERIC, "output"){ description = "" }
-        Doc(Language.ANY, DocScope.ALL){
-            """
-                see repeat(String, SDVariable, int)
-            """.trimIndent()
-        }
-    }
-    */
 
     Op("replaceWhere") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.comparison"

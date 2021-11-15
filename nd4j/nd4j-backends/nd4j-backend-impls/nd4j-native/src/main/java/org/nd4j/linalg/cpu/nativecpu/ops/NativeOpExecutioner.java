@@ -1690,8 +1690,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (loop.lastErrorCode() != 0) {
                 DifferentialFunction differentialFunction = (DifferentialFunction) op;
-                throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute." + opContext.toString() +  " Here is the error from c++: " + loop.lastErrorMessage());
+                if(opContext != null)
+                    throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute." +  " Here is the error from c++: " + loop.lastErrorMessage());
+                else {
+                    throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute. Here is the error from c++: " + loop.lastErrorMessage());
 
+                }
             }
         } catch (Throwable t) {
             StringBuilder sb = new StringBuilder();

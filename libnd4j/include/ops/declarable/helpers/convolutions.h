@@ -40,11 +40,13 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW,
                                        const int pH, const int pW, const int dH, const int dW, const int iH,
                                        const int iW, const int paddingMode) {
+    sd_debug("In height: %d iW: %d kH: %d kW: %d  dH %d dW %d pH %d pW %d sH %d sW %d\n",iH,iW,kH,kW,dH,dH,pH,pW,sH,sW);
     if (paddingMode == 0) {  // valid
       // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
       // oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
-      oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
-      oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
+      oH = (iH - kH * dH + 1 + 2 * pH) / sH ;
+      oW = (iW - kW * dW + 1 + 2 * pW) / sW;
+      sd_debug("valid oH: %d oW: %d\n",oH,oW);
     } else if (paddingMode == 1) {  // same
       oH = (int)math::sd_ceil<double, double>(iH * 1. / sH);
       oW = (int)math::sd_ceil<double, double>(iW * 1. / sW);

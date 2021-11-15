@@ -3056,6 +3056,36 @@ public class SDBaseOps {
   }
 
   /**
+   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.<br>
+   *
+   * @param input Input value to repeat (NUMERIC type)
+   * @param repeats A 1d input representing the number of inputs of repeats for each element. (NUMERIC type)
+   * @param axis Data type of the output array
+   * @return output A tensor with the shape of input minus the specified axis (NUMERIC type)
+   */
+  public SDVariable repeat(SDVariable input, SDVariable repeats, int axis) {
+    SDValidation.validateNumerical("repeat", "input", input);
+    SDValidation.validateNumerical("repeat", "repeats", repeats);
+    return new org.nd4j.linalg.api.ops.impl.shape.Repeat(sd,input, repeats, axis).outputVariable();
+  }
+
+  /**
+   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input value to repeat (NUMERIC type)
+   * @param repeats A 1d input representing the number of inputs of repeats for each element. (NUMERIC type)
+   * @param axis Data type of the output array
+   * @return output A tensor with the shape of input minus the specified axis (NUMERIC type)
+   */
+  public SDVariable repeat(String name, SDVariable input, SDVariable repeats, int axis) {
+    SDValidation.validateNumerical("repeat", "input", input);
+    SDValidation.validateNumerical("repeat", "repeats", repeats);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Repeat(sd,input, repeats, axis).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise replace where condition:<br>
    * out[i] = from[i] if condition(update[i]) is satisfied, or<br>
    * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>

@@ -19,11 +19,11 @@
  */
 
 package org.nd4j.enums;
-
+//  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
 public enum WeightsFormat {
-  YXIO,
+  YXIO, //[kH, kW, iC, oC]
 
-  OIYX,
+  OIYX, // [oC, iC, kH, kW]
 
-  OYXI
+  OYXI //[oC, kH, kW, iC]
 }

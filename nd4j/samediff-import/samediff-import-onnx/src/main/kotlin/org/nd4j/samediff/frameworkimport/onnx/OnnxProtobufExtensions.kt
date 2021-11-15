@@ -50,6 +50,21 @@ fun convertToOnnxTensors(inputs: Map<String,INDArray>): MutableMap<String,Onnx.T
 fun byteString(input: String): ByteString {
     return ByteString.copyFrom(input.toByteArray(Charset.defaultCharset()))
 }
+
+
+fun Onnx.AttributeProto.Builder.ListFloats(intList: List<Float>) {
+    this.addAllFloats(intList)
+}
+
+fun Onnx.AttributeProto.Builder.IntValue(inputInt: Long) {
+   this.i = inputInt
+}
+
+
+fun Onnx.AttributeProto.Builder.ListInts(intList: List<Long>) {
+   this.addAllInts(intList)
+}
+
 fun Onnx.AttributeProto.Builder.StringValue(inputValue: String) {
     this.addStrings(ByteString.copyFrom(inputValue.toByteArray(Charset.defaultCharset())))
 }
