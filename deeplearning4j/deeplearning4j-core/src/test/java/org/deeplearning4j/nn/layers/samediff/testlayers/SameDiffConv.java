@@ -139,7 +139,7 @@ public class SameDiffConv extends SameDiffLayer {
                 .pH(padding[0]).pW(padding[1])
                 .sH(stride[0]).sW(stride[1])
                 .dH(dilation[0]).dW(dilation[1])
-                .isSameMode(this.cm == ConvolutionMode.Same)
+                .paddingMode(ConvolutionMode.mapToMode(this.cm))
                 .build();
 
         SDVariable conv = null;

@@ -37,6 +37,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -118,7 +119,7 @@ public class Pooling2D extends DynamicCustomOp {
         addIArgument(config.getPW());
         addIArgument(config.getDH());
         addIArgument(config.getDW());
-        addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
+        addIArgument(config.getPaddingMode().index);
         addIArgument((t == Pooling2DType.AVG) ? config.getDivisor().ordinal() : (int)config.getExtra());
         addIArgument(ArrayUtil.fromBoolean(config.isNHWC()));
     }
@@ -169,7 +170,7 @@ public class Pooling2D extends DynamicCustomOp {
                 .pW(iArguments.get(5))
                 .dH(iArguments.get(6))
                 .dW(iArguments.get(7))
-                .isSameMode(iArguments.get(8) > 0)
+                .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                 .type(null)
                 .build();
     }
@@ -202,7 +203,7 @@ public class Pooling2D extends DynamicCustomOp {
                 .sH(sH.intValue())
                 .sW(sW.intValue())
                 .type(null)
-                .isSameMode(isSameMode)
+                .paddingMode(PaddingMode.valueOf(paddingMode))
                 .kH(kH.intValue())
                 .kW(kW.intValue())
                 .pH(padding.get(0).intValue())
@@ -217,7 +218,7 @@ public class Pooling2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val isSameNode = attributesForNode.get("auto_pad").getS().equals("SAME");
+        val paddingMode = attributesForNode.get("auto_pad").getS().toStringUtf8();
         val kernelShape = attributesForNode.get("kernel_shape").getIntsList();
         val padding = attributesForNode.get("pads").getIntsList();
         val strides = attributesForNode.get("strides").getIntsList();
@@ -226,7 +227,7 @@ public class Pooling2D extends DynamicCustomOp {
                 .sW(strides.get(0).intValue())
                 .sH(strides.get(1).intValue())
                 .type(null)
-                .isSameMode(isSameNode)
+                .paddingMode(PaddingMode.valueOf(paddingMode))
                 .kH(kernelShape.get(0).intValue())
                 .kW(kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())

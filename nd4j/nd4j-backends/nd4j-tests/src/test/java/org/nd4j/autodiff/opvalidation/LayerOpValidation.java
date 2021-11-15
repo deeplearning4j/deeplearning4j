@@ -27,7 +27,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,7 +41,6 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
@@ -203,7 +201,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                         out = sd.cnn().conv2d(in, w0, b0, Conv2DConfig.builder()
                                 .dataFormat(Conv2DConfig.NCHW)
-                                .isSameMode(true)
+                                .paddingMode(PaddingMode.SAME)
                                 .kH(3).kW(3)
                                 .sH(1).sW(1)
                                 .build());
@@ -217,7 +215,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         SDVariable b1 = sd.var("b1", Nd4j.rand(new long[]{3}).muli(10));
                         out = sd.cnn().conv2d(in, w1, b1, Conv2DConfig.builder()
                                 .dataFormat(Conv2DConfig.NHWC)
-                                .isSameMode(false)
+                                .paddingMode(PaddingMode.VALID)
                                 .kH(2).kW(4)
                                 .sH(2).sW(2)
                                 .build());
@@ -230,7 +228,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         SDVariable w2 = sd.var("w0", Nd4j.rand(new int[]{1, 3, inSizeNCHW[1], 3}).muli(10));  ////kH,kW,iC,oC
                         out = sd.cnn().conv2d(in, w2, Conv2DConfig.builder()
                                 .dataFormat(Conv2DConfig.NCHW)
-                                .isSameMode(true)
+                                .paddingMode(PaddingMode.SAME)
                                 .kH(1).kW(3)
                                 .sH(1).sW(2)
                                 .build());
@@ -242,7 +240,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         in = sd.var("in", inSize);
                         out = sd.cnn().avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
-                                .isSameMode(true)
+                                .paddingMode(PaddingMode.SAME)
                                 .kH(2).kW(2)
                                 .sH(1).sW(1)
                                 .build());
@@ -254,7 +252,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         in = sd.var("in", inSize);
                         out = sd.cnn().avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
-                                .isSameMode(false)
+                                .paddingMode(PaddingMode.VALID)
                                 .kH(3).kW(2)
                                 .sH(2).sW(2)
                                 .build());
@@ -266,7 +264,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         in = sd.var("in", inSize);
                         out = sd.cnn().maxPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(false)
-                                .isSameMode(true)
+                                .paddingMode(PaddingMode.SAME)
                                 .kH(2).kW(2)
                                 .sH(1).sW(1)
                                 .build());
@@ -278,7 +276,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         in = sd.var("in", inSize);
                         out = sd.cnn().maxPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
-                                .isSameMode(false)
+                                .paddingMode(PaddingMode.VALID)
                                 .kH(3).kW(2)
                                 .sH(2).sW(2)
                                 .build());
@@ -371,7 +369,7 @@ public class LayerOpValidation extends BaseOpValidation {
             SDVariable im2col = sd.cnn().im2Col(var, Conv2DConfig.builder()
                     .kH(2).kW(2)
                     .sH(1).sW(1)
-                    .isSameMode(true)
+                    .paddingMode(PaddingMode.SAME)
                     .build());
 
             SDVariable loss = sd.standardDeviation("loss", im2col, true);
@@ -412,7 +410,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Pooling2DConfig conf = Pooling2DConfig.builder()
                 .isNHWC(true)   //***NHWC
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .kH(3).kW(2)
                 .sH(2).sW(2)
                 .build();
@@ -452,7 +450,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Pooling2DConfig conf = Pooling2DConfig.builder()
                 .isNHWC(true)   //***NHWC
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .kH(3).kW(2)
                 .sH(2).sW(2)
                 .type(Pooling2D.Pooling2DType.AVG)
@@ -519,7 +517,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                             out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isSameMode(true)
+                                    .paddingMode(PaddingMode.SAME)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
                                     .build());
@@ -530,7 +528,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                             out = sd.cnn().conv3d(in, w1, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isSameMode(false)
+                                    .paddingMode(PaddingMode.VALID)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
                                     .build());
@@ -620,7 +618,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable out = sd.cnn().separableConv2d(in, dW, null, b, c);
@@ -664,7 +662,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .dataFormat(Conv2DConfig.NCHW)
                 .build();
 
@@ -763,7 +761,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable out = sd.cnn().conv2d("conv", in, w, b, c);
@@ -798,7 +796,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(true)
+                .paddingMode(PaddingMode.SAME)
                 .build();
 
         SDVariable[] results = sd.cnn().maxPoolWithArgmax(new String[]{"out", "idx"}, in, pooling2DConfig);
@@ -828,7 +826,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable outPool = sd.cnn().maxPooling2d(in, pooling2DConfig);
@@ -887,7 +885,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable outPool = sd.cnn().avgPooling2d(in, pooling2DConfig);
@@ -1147,7 +1145,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .kH(kH).kW(kW).kD(kD)
                 .sD(1).sH(1).sW(1)
                 .dH(1).dW(1).dD(1)
-                .isSameMode(true)
+                .paddingMode(PaddingMode.SAME)
                 .biasUsed(false)
                 .dataFormat(Conv3DConfig.NCDHW)
                 .build();
@@ -1406,7 +1404,7 @@ public class LayerOpValidation extends BaseOpValidation {
             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
             SDVariable out = sd.cnn().conv2d(in, w0, b0, Conv2DConfig.builder()
                     .dataFormat(Conv2DConfig.NCHW)
-                    .isSameMode(true)
+                    .paddingMode(PaddingMode.SAME)
                     .kH(3).kW(-3)
                     .sH(1).sW(0)
                     .build());
@@ -1439,7 +1437,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                 out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
                         .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                        .isSameMode(true)
+                        .paddingMode(PaddingMode.VALID)
                         .kH(2).kW(2).kD(2)
                         .sD(1).sH(1).sW(-1).dW(-1)
                         .build());

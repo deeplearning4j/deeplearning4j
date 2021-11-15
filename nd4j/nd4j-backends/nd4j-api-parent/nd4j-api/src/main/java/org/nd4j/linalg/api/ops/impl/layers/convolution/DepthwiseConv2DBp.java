@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -73,7 +74,7 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
                 config.getPW(),
                 config.getDH(),
                 config.getDW(),
-                ArrayUtil.fromBoolean(config.isSameMode()),
+                config.getPaddingMode().index,
                 config.getDataFormat().equalsIgnoreCase(Conv2DConfig.NCHW) ? 0 : 1);
 
     }
@@ -104,7 +105,7 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
                     .pW(iArguments.get(5))
                     .dH(iArguments.get(6))
                     .dW(iArguments.get(7))
-                    .isSameMode(iArguments.get(8) == 1)
+                    .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                     .dataFormat(iArguments.get(9) == 1 ? Conv2DConfig.NHWC : Conv2DConfig.NCHW)
                     .build();
         }

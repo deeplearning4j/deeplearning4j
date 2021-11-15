@@ -66,7 +66,7 @@ fun Onnx.AttributeProto.Builder.ListInts(intList: List<Long>) {
 }
 
 fun Onnx.AttributeProto.Builder.StringValue(inputValue: String) {
-    this.addStrings(ByteString.copyFrom(inputValue.toByteArray(Charset.defaultCharset())))
+    this.s = ByteString.copyFrom(inputValue.toByteArray(Charset.defaultCharset()))
 }
 
 fun Onnx.NodeProto.Builder.Attribute(attribute: Onnx.AttributeProto) {

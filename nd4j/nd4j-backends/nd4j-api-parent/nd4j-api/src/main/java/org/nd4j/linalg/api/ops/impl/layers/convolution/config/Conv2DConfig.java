@@ -36,6 +36,10 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     public static final String NCHW = "NCHW";
     public static final String NHWC = "NHWC";
 
+    public static final int VALID = 0;
+    public final static int SAME = 1;
+    public final static int CAUSAL = 2;
+
     @Builder.Default
     private long kH = -1L;
     @Builder.Default
@@ -52,13 +56,13 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     private long dH = 1;
     @Builder.Default
     private long dW = 1;  // dilations >= 1
-    private boolean isSameMode;
+    private PaddingMode paddingMode;
     @Builder.Default
     private String dataFormat = NCHW;
     @Builder.Default
     private WeightsFormat weightsFormat = WeightsFormat.YXIO;
 
-    public Conv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, boolean isSameMode,
+    public Conv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, PaddingMode paddingMode,
             String dataFormat, WeightsFormat weightsFormat) {
 
         this.kH = kH;
@@ -69,7 +73,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         this.pW = pW;
         this.dH = dH;
         this.dW = dW;
-        this.isSameMode = isSameMode;
+        this.paddingMode = paddingMode;
         this.dataFormat = dataFormat;
         this.weightsFormat = weightsFormat;
 
@@ -101,7 +105,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         ret.put("pW", pW);
         ret.put("dH", dH);
         ret.put("dW", dW);
-        ret.put("isSameMode", isSameMode);
+        ret.put("isSameMode", paddingMode);
         ret.put("dataFormat", dataFormat);
         return ret;
     }

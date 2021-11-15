@@ -27,9 +27,9 @@ import org.nd4j.enums.DataFormat
 import org.nd4j.enums.WeightsFormat
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
-import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
@@ -68,7 +68,7 @@ class GroupConvPreProcessingRule: PreImportHook {
             .pW(intArgs[5].int64Value)
             .dH(intArgs[6].int64Value)
             .dW(intArgs[7].int64Value)
-            .isSameMode(intArgs[8].int64Value > 0)
+            .paddingMode(PaddingMode.fromNumber(intArgs[8].int64Value.toInt()))
             .weightsFormat(WeightsFormat.values()[intArgs[10].int64Value.toInt()])
             .dataFormat(DataFormat.values()[intArgs[9].int64Value.toInt()].name)
             .build()

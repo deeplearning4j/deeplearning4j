@@ -32,13 +32,10 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.linalg.indexing.INDArrayIndex
-import org.nd4j.linalg.indexing.NDArrayIndex
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.ImportUtils
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
-import org.nd4j.samediff.frameworkimport.onnx.definitions.pad
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
@@ -116,7 +113,7 @@ class Conv : PreImportHook  {
         if(!attributes.containsKey("auto_pad") || attributes["auto_pad"] == "NOTSET") {
             if(pads != defaultPads2) {
                 inputVariable = paddingOp(sd,inputVariable,pads)
-                padMode = "VALID"
+                padMode = "NOTSET"
             }
         } else if(padMode == "SAME_UPPER") {
             padMode = "SAME"
@@ -186,7 +183,7 @@ class Conv : PreImportHook  {
                 .dW(dilations[1])
                 .dataFormat("NWHC")
                 .weightsFormat(WeightsFormat.YXIO)
-                .isSameMode(padMode == "SAME")
+                .paddingMode(padModeForName(padMode!!))
                 .build()
 
             for(i in 0 until groups) {
@@ -197,45 +194,77 @@ class Conv : PreImportHook  {
                 convolvedList.add(depthWiseConv2d)
             }
         } else {
-            //TODO: populate config, potentially remove code that fully populates strides
-
             for(i in 0 until groups) {
                 if(xShape.size == 3) {
+                    //notset => valid
+                    //valid => valid + pads zeroed
+                    var totalPad = if(padMode == "NOTSET") {
+                        0
+                    } else {
+                        pads[0]
+                    }
                     val oneDConfig = Conv1DConfig.builder()
                         .k(kernelShape[0].toLong())
-                        .dataFormat("NWHC")
+                        .dataFormat("NWC")
                         .d(dilations[0])
-                        .p(pads[0])
+                        .p(totalPad)
                         .s(strides[0])
                         .paddingMode(PaddingMode.valueOf(padMode!!))
                         .build()
                     var convolved = sd.cnn().conv1d(xs[i.toInt()],weightGroupsList[i.toInt()], oneDConfig)
                     if(pads[0] > 0) {
-                        convolved = convolved.get(*indicesForPads("NHWC",pads).toTypedArray())
+                        convolved = convolved.get(*indicesForPads("NWC",pads).toTypedArray())
                     }
                     convolvedList.add(convolved)
 
                 } else if(xShape.size == 4) {
+                    //notset => valid
+                    //valid => valid + pads zeroed
+                    var totalPadHeight = if(padMode == "NOTSET") {
+                        0
+                    } else {
+                        pads[1]
+                    }
+                    var totalPadWidth = if(padMode == "NOTSET") {
+                        0
+                    } else {
+                        pads[2]
+                    }
+
                     val convConfig = Conv2DConfig.builder()
                         .kH(kernelShape[0].toLong())
                         .kW(kernelShape[1].toLong())
                         .sH(strides[0])
                         .sW(strides[1])
-                        .pH(pads[0])
-                        .pW(pads[1])
+                        .pH(totalPadHeight)
+                        .pW(totalPadWidth)
                         .dH(dilations[0])
                         .dW(dilations[1])
                         .dataFormat("NHWC")
                         .weightsFormat(WeightsFormat.YXIO)
-                        .isSameMode(padMode == "SAME")
+                        .paddingMode(padModeForName(padMode!!))
                         .build()
                     var conv2d = sd.cnn().conv2d(xs[i.toInt()], weightGroupsList[i.toInt()], convConfig)
-                   if(padsGreaterThanZero)  {
-                       conv2d = conv2d.get(*indicesForPads("NHWC",pads).toTypedArray())
-                   }
                     convolvedList.add(conv2d)
 
                 } else if(xShape.size == 5) {
+                    var totalPadHeight = if(padMode == "NOTSET") {
+                        0
+                    } else {
+                        pads[1]
+                    }
+                    var totalPadWidth = if(padMode == "NOTSET") {
+                        0
+                    } else {
+                        pads[2]
+                    }
+
+                    var totalPadDepth = if(padMode == "NOTSET") {
+                        0
+                    } else {
+                        pads[2]
+                    }
+
                     val threeDConfig = Conv3DConfig.builder()
                         .kD(kernelShape[0].toLong())
                         .kH(kernelShape[1].toLong())
@@ -243,11 +272,11 @@ class Conv : PreImportHook  {
                         .dD(dilations[0])
                         .dH(dilations[1])
                         .dW(dilations[2])
-                        .pD(pads[0]).pH(pads[1])
-                        .pW(pads[2])
+                        .pD(totalPadDepth).pH(totalPadHeight)
+                        .pW(totalPadWidth)
                         .biasUsed(false)
                         .dataFormat("NWHDC")
-                        .isSameMode(padMode == "SAME")
+                        .paddingMode(padModeForName(padMode!!))
                         .build()
                     var conv3d = sd.cnn().conv3d(xs[i.toInt()],weightGroupsList[i.toInt()], threeDConfig)
                     if(padsGreaterThanZero) {
@@ -276,6 +305,14 @@ class Conv : PreImportHook  {
 
 
 
+    fun padModeForName(name: String): PaddingMode {
+        return when(name) {
+            "VALID" -> PaddingMode.VALID
+            "SAME" -> PaddingMode.SAME
+            "NOTSET" -> PaddingMode.VALID
+            else -> PaddingMode.CAUSAL
+        }
+    }
 
     fun indicesForPads(dataFormat: String,pads: List<Long>): List<SDIndex> {
         val ret = ArrayList<SDIndex>()

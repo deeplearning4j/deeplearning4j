@@ -21,7 +21,6 @@
 package org.nd4j.autodiff.samediff;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 import com.google.common.collect.Maps;
@@ -1206,7 +1205,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .isSameMode(false)
+                .paddingMode(Conv2DConfig.VALID)
                 .build();
 
         SDVariable out = sd.cnn().depthWiseConv2d(in, dW, b, c);
@@ -3759,7 +3758,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .isSameMode(false)
+                .paddingMode(Conv2DConfig.VALID)
                 .weightsFormat(format)
                 .build();
 
@@ -3789,7 +3788,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .isSameMode(false)
+                .paddingMode(Conv2DConfig.VALID)
                 .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
@@ -3809,7 +3808,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .isSameMode(false)
+                .paddingMode(Conv2DConfig.VALID)
                 .weightsFormat(WeightsFormat.OYXI)
                 .build();
 

@@ -31,7 +31,6 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -42,7 +41,6 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.common.util.MathUtils;
 import org.nd4j.enums.WeightsFormat;
-import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -6230,7 +6228,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                         .pW(pX)
                         .dH(dY)
                         .dW(dX)
-                        .isSameMode(isSameMode)
+                        .paddingMode(Conv2DConfig.VALID)
                         .build())
 
                 .build();
@@ -8715,7 +8713,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .isSameMode(false)
+                .paddingMode(Conv2DConfig.VALID)
                 .weightsFormat(format)
                 .build();
 
@@ -8744,7 +8742,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .isSameMode(true)
+                .paddingMode(Conv2DConfig.SAME)
                 .dataFormat("NHWC")
                 .weightsFormat(format)
                 .build();

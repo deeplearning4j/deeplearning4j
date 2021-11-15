@@ -20,8 +20,24 @@
 
 package org.deeplearning4j.nn.conf;
 
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+
 public enum ConvolutionMode {
 
-    Strict, Truncate, Same, Causal
+    Strict, Truncate, Same, Causal;
+
+
+    public static PaddingMode mapToMode(ConvolutionMode convolutionMode) {
+        switch(convolutionMode) {
+            case Strict:
+                return PaddingMode.VALID;
+            case Truncate:
+                return PaddingMode.SAME;
+            case Causal:
+                return PaddingMode.CAUSAL;
+            default:throw new IllegalArgumentException("No convolution mode found!");
+        }
+    }
 
 }

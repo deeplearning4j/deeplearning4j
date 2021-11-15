@@ -24,6 +24,7 @@ package org.nd4j.samediff.frameworkimport.onnx
 import onnx.Onnx
 import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nd4j.common.util.ArrayUtil
 import org.nd4j.ir.OpNamespace
@@ -102,6 +103,67 @@ class TestOnnxIR {
 
 
     @Test
+    fun testConvPaddingSame() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,25,25).reshape(1,1,5,5).castTo(DataType.FLOAT)
+        val w = Nd4j.ones(1,1,3,3).castTo(DataType.FLOAT)
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            //Initializer(convertedTensor)
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "Conv"
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "kernel_shape"
+                    ListInts(listOf(3,3))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "pads"
+                    ListInts(listOf(1,1,1,1))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "strides"
+                    ListInts(listOf(1,1))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "dilations"
+                    ListInts(listOf(1,1))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INT
+                    name = "group"
+                    IntValue(1)
+                })
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"y",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
+        val inputs = mapOf("x" to inputTensor,"W" to w)
+        val assertion = onnxGraphRunner.run(inputs)
+        val result = importedGraph.output(inputs,"y")
+        assertEquals(assertion,result)
+
+    }
+
+
+
+    @Test
     fun testConvPadding() {
         Nd4j.getExecutioner().enableVerboseMode(true)
         Nd4j.getExecutioner().enableDebugMode(true)
@@ -156,25 +218,6 @@ class TestOnnxIR {
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
-    //onednn:
-        /**
-         * {y=[[[[         0,    1.0417,    3.1250,    6.2500,    9.3750,    7.2917,    4.1667],
-        [    5.2083,   12.5000,   21.8750,   28.1250,   34.3750,   25.0000,   13.5417],
-        [   15.6250,   34.3750,   56.2500,   65.6250,   75.0000,   53.1250,   28.1250],
-        [   31.2500,   65.6250,  103.1250,  112.5000,  121.8750,   84.3750,   43.7500],
-        [   46.8750,   96.8750,  150.0000,  159.3750,  168.7500,  115.6250,   59.3750],
-        [   36.4583,   75.0000,  115.6250,  121.8750,  128.1250,   87.5000,   44.7917],
-        [   20.8333,   42.7083,   65.6250,   68.7500,   71.8750,   48.9583,   25.0000]]]]}
-
-
-        {y=[[[[         0,    1.0417,    3.1250,    6.2500,    9.3750,    7.2917,    4.1667],
-        [    5.2083,   12.5000,   21.8750,   28.1250,   34.3750,   25.0000,   13.5417],
-        [   15.6250,   34.3750,   56.2500,   65.6250,   75.0000,   53.1250,   28.1250],
-        [   31.2500,   65.6250,  103.1250,  112.5000,  121.8750,   84.3750,   43.7500],
-        [   46.8750,   96.8750,  150.0000,  159.3750,  168.7500,  115.6250,   59.3750],
-        [   36.4583,   75.0000,  115.6250,  121.8750,  128.1250,   87.5000,   44.7917],
-        [   20.8333,   42.7083,   65.6250,   68.7500,   71.8750,   48.9583,   25.0000]]]]}
-         */
         assertEquals(assertion,result)
 
     }
@@ -236,6 +279,124 @@ class TestOnnxIR {
         assertEquals(assertion,result)
 
     }
+
+
+    @Test
+    fun testConvStridesPadding() {
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,34,35).reshape(1,1,7,5)
+        val w = Nd4j.ones(1,1,3,3)
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            //Initializer(convertedTensor)
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "Conv"
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "kernel_shape"
+                    ListInts(listOf(3,3))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "pads"
+                    ListInts(listOf(1,1,1,1))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "strides"
+                    ListInts(listOf(2,2))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "dilations"
+                    ListInts(listOf(1,1))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INT
+                    name = "group"
+                    IntValue(1)
+                })
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"y",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
+        val inputs = mapOf("x" to inputTensor,"W" to w)
+        val assertion = onnxGraphRunner.run(inputs)
+        val result = importedGraph.output(inputs,"y")
+        assertEquals(assertion,result)
+
+    }
+
+
+    @Test
+    @Disabled("See: https://github.com/eclipse/deeplearning4j/issues/9525 we need to support asymmetrics padding")
+    fun testConvStridesAsymmetricPadding() {
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,34,35).reshape(1,1,7,5)
+        val w = Nd4j.ones(1,1,3,3)
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            //Initializer(convertedTensor)
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "Conv"
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "kernel_shape"
+                    ListInts(listOf(3,3))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "pads"
+                    ListInts(listOf(1,0,1,0))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "strides"
+                    ListInts(listOf(2,2))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INTS
+                    name = "dilations"
+                    ListInts(listOf(1,1))
+                })
+                Attribute(AttributeProto {
+                    type = Onnx.AttributeProto.AttributeType.INT
+                    name = "group"
+                    IntValue(1)
+                })
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"y",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
+        val inputs = mapOf("x" to inputTensor,"W" to w)
+        val assertion = onnxGraphRunner.run(inputs)
+        val result = importedGraph.output(inputs,"y")
+        assertEquals(assertion,result)
+
+    }
+
 
 
     @Test

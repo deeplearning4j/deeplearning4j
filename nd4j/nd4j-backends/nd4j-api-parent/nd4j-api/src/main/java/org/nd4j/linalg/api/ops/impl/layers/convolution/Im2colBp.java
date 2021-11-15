@@ -60,7 +60,7 @@ public class Im2colBp extends DynamicCustomOp {
         addIArgument(conv2DConfig.getPW());
         addIArgument(conv2DConfig.getDH());
         addIArgument(conv2DConfig.getDW());
-        addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
+        addIArgument(conv2DConfig.getPaddingMode().index);
     }
 
 
