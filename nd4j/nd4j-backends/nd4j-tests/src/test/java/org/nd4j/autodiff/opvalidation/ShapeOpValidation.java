@@ -2668,7 +2668,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriuOp(Nd4jBackend backend) {
-
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         SameDiff sd = SameDiff.create();
         SDVariable input = sd.var(Nd4j.createFromArray(new double[][]{{1,2,3}, {4,5,6}, {7,8,9},{10,11,12}}));
         SDVariable out = new Triu(sd, input,-1).outputVariable();

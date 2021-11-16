@@ -31,6 +31,10 @@ namespace helpers {
 template <typename T>
 static void triuBP_(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
                     const int diagonal) {
+  if(gradO.isScalar()) {
+    gradI.assign(gradO);
+    return;
+  }
   auto dOdI = NDArray(&gradO);  // dO/dI
   const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), dOdI, 'b');
   int dLen = dOdI.lengthOf();
