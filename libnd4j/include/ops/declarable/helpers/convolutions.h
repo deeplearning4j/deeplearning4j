@@ -40,21 +40,17 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW,
                                        const int pH, const int pW, const int dH, const int dW, const int iH,
                                        const int iW, const int paddingMode) {
-    sd_debug("calcOutSizePool2D inputs: iW %d kW %d dW %d sW %d pW %d\n",iW,kW,dW,sW,pW);
     if (paddingMode == 0) {  // valid
       // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
       // oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
       oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
       oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
-      sd_debug("Valid case oH oW %d %d\n",oH,oW);
     } else if (paddingMode == 1) {  // same
       oH = (int)math::sd_ceil<double, double>(iH * 1. / sH);
       oW = (int)math::sd_ceil<double, double>(iW * 1. / sW);
-      sd_debug("Same case oH oW %d %d\n",oH,oW);
     } else {                   // causal
       oH = (iH - 1) / sH + 1;  // 2*pH = (kH-1)*dH
       oW = (iW - 1) / sW + 1;
-      sd_debug("Causal case oH oW %d %d\n",oH,oW);
     }
   }
 

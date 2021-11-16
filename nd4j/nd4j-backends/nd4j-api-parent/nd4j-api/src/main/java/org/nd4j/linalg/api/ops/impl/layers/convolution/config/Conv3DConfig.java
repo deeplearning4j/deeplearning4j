@@ -127,7 +127,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         ret.put("dH", dH);
         ret.put("biasUsed", biasUsed);
         ret.put("dataFormat", dataFormat);
-        ret.put("isSameMode", paddingMode);
+        ret.put("paddingMode", paddingMode);
 
         return ret;
     }

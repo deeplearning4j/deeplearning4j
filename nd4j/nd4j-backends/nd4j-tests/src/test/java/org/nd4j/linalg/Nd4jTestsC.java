@@ -77,6 +77,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
@@ -6209,7 +6210,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         int inY = 28;
         int inX = 28;
 
-        boolean isSameMode = true;
 
         val input = Nd4j.linspace(1, 2 * inY * inX, 2 * inY * inX, DataType.DOUBLE).reshape(2, 1, inY, inX);
         val output = Nd4j.create(2, 1, 5, 5, 28, 28);
@@ -6228,7 +6228,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                         .pW(pX)
                         .dH(dY)
                         .dW(dX)
-                        .paddingMode(Conv2DConfig.VALID)
+                        .paddingMode(PaddingMode.SAME)
                         .build())
 
                 .build();
@@ -7515,7 +7515,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertArrayEquals(new int[] {0, 1}, matchIndexes[0].toIntVector());
         assertArrayEquals(new int[] {0, 2}, matchIndexes[1].toIntVector());
 
-        INDArray mask2 = inArray.match(1, Conditions.greaterThanOrEqual(11));
+        INDArray mask2 = inArray.match(11, Conditions.greaterThanOrEqual(11));
 
         assertEquals(0, mask2.castTo(DataType.INT).maxNumber().intValue());
 
@@ -8713,7 +8713,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .paddingMode(Conv2DConfig.VALID)
+                .paddingMode(PaddingMode.VALID)
                 .weightsFormat(format)
                 .build();
 
@@ -8742,7 +8742,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .paddingMode(Conv2DConfig.SAME)
+                .paddingMode(PaddingMode.SAME)
                 .dataFormat("NHWC")
                 .weightsFormat(format)
                 .build();

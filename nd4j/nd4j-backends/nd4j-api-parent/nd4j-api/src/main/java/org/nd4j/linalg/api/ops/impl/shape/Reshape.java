@@ -56,13 +56,15 @@ public class Reshape extends DynamicCustomOp {
         //note it has to be negative for the long array case only
         //to flag the difference between an ordering being specified
         //and a dimension.
-        addIArgument(C_ORDER);
+        if(iArguments.isEmpty())
+            addIArgument(C_ORDER);
         addIArgument(shape);
     }
 
     public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
-        addIArgument(C_ORDER);
+        if(iArguments.isEmpty())
+            addIArgument(C_ORDER);
     }
 
     public Reshape(INDArray in, long... shape) {
@@ -72,20 +74,20 @@ public class Reshape extends DynamicCustomOp {
         //note it has to be negative for the long array case only
         //to flag the difference between an ordering being specified
         //and a dimension.
-        addIArgument(C_ORDER);
+        if(iArguments.isEmpty())
+            addIArgument(C_ORDER);
         addIArgument(shape);
     }
 
 
     public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out) {
         super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Integer>)null);
-        addIArgument(C_ORDER);
+        if(iArguments.isEmpty())
+            addIArgument(C_ORDER);
     }
 
-    public Reshape(INDArray in, INDArray shape){
+    public Reshape(INDArray in, INDArray shape) {
         this(in, shape, null);
-        addIArgument(C_ORDER);
-
     }
 
 

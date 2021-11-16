@@ -118,9 +118,9 @@ public class Im2col extends DynamicCustomOp {
                 builder.kH(kH);
 
 
-            Long paddingMode = getLongValueFromProperty("paddingMode",properties);
+            String paddingMode = getStringFromProperty("paddingMode",properties);
             if(paddingMode != null)
-                builder.paddingMode(PaddingMode.fromNumber(paddingMode.intValue()));
+                builder.paddingMode(PaddingMode.valueOf(paddingMode));
 
 
 

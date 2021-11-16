@@ -56,14 +56,14 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     private long dH = 1;
     @Builder.Default
     private long dW = 1;  // dilations >= 1
-    private PaddingMode paddingMode;
+    private PaddingMode paddingMode = PaddingMode.VALID;
     @Builder.Default
     private String dataFormat = NCHW;
     @Builder.Default
     private WeightsFormat weightsFormat = WeightsFormat.YXIO;
 
     public Conv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, PaddingMode paddingMode,
-            String dataFormat, WeightsFormat weightsFormat) {
+                        String dataFormat, WeightsFormat weightsFormat) {
 
         this.kH = kH;
         this.kW = kW;
@@ -73,9 +73,12 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         this.pW = pW;
         this.dH = dH;
         this.dW = dW;
-        this.paddingMode = paddingMode;
-        this.dataFormat = dataFormat;
-        this.weightsFormat = weightsFormat;
+        if(paddingMode != null)
+            this.paddingMode = paddingMode;
+        if(dataFormat != null)
+            this.dataFormat = dataFormat;
+        if(weightsFormat != null)
+            this.weightsFormat = weightsFormat;
 
         validate();
     }
@@ -86,7 +89,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         return dataFormat.equalsIgnoreCase(NHWC);
     }
 
-    public void isNHWC(boolean isNHWC){
+    public void isNHWC(boolean isNHWC) {
         if(isNHWC){
             dataFormat = NHWC;
         } else {
@@ -105,7 +108,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         ret.put("pW", pW);
         ret.put("dH", dH);
         ret.put("dW", dW);
-        ret.put("isSameMode", paddingMode);
+        ret.put("paddingMode", paddingMode);
         ret.put("dataFormat", dataFormat);
         return ret;
     }
@@ -114,6 +117,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     protected void validate() {
         ConvConfigUtil.validate2D(kH, kW, sH, sW, pH, pW, dH, dW);
         Preconditions.checkArgument(dataFormat != null, "Data format can't be null");
+        Preconditions.checkArgument(paddingMode != null, "Padding mode can't be null");
     }
 
 

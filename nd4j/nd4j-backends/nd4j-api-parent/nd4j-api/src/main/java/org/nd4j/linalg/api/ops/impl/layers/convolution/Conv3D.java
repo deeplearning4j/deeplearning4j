@@ -168,9 +168,6 @@ public class Conv3D extends DynamicCustomOp {
             if(kH != null)
                 builder.kH(kH);
 
-            Long paddingMode = getLongValueFromProperty("paddingMode",properties);
-            if(paddingMode != null)
-                builder.paddingMode(PaddingMode.fromNumber(paddingMode.intValue()));
 
             Boolean biasUsed = getBooleanFromProperty("biasUsed",properties);
             if(biasUsed != null)
@@ -178,6 +175,10 @@ public class Conv3D extends DynamicCustomOp {
 
             if(properties.containsKey("dataFormat")) {
                 builder.dataFormat(properties.get("dataFormat").toString());
+            }
+
+            if(properties.containsKey("paddingMode")) {
+                builder.paddingMode(PaddingMode.VALID.valueOf(properties.get("paddingMode").toString()));
             }
 
             this.config = builder.build();

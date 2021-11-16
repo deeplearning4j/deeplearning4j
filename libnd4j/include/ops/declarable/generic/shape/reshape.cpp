@@ -105,9 +105,9 @@ DECLARE_SHAPE_FN(reshape) {
     if (block.numI() > 0) {
       // Note here that the ordering for this case can not be negative.
       // Negative is used in the long array case to be used as a flag to
-      // differntiate between a 99 or 102 shaped array and
+      // differentiate between a 99 or 102 shaped array and
       // the ordering. You can't have a -99 or -102 shaped array.
-      char potentialOrdering = (char)reshapeArgs[0];
+      char potentialOrdering = (char) I_ARG(0);
       if (!handleOptionalOrder(reshapeArgs, orderNew)) {
         throw std::runtime_error(
             "reshape:: Value passed in must be -99 or -102 for the ordering if "
@@ -117,9 +117,11 @@ DECLARE_SHAPE_FN(reshape) {
             "being specified.");
       };
 
-      orderNew = potentialOrdering;
+      orderNew = -potentialOrdering;
     } else
       orderNew = 'c';
+
+
   }
 
   REQUIRE_TRUE(!reshapeArgs.empty() || x->lengthOf() == 1, 0, "Reshape buffer should have at least 1 dimension !");

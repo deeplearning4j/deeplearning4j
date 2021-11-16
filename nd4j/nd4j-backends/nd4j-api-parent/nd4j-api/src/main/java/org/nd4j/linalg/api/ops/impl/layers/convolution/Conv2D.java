@@ -151,9 +151,9 @@ public class Conv2D extends DynamicCustomOp {
             if(kH != null)
                 builder.kH(kH);
 
-            Long paddingMode = getLongValueFromProperty("paddingMode",properties);
+            String paddingMode = getStringFromProperty("paddingMode",properties);
             if(paddingMode != null)
-                builder.paddingMode(PaddingMode.fromNumber(paddingMode.intValue()));
+                builder.paddingMode(PaddingMode.valueOf(paddingMode));
 
             if(properties.containsKey("dataFormat")) {
                 builder.dataFormat(properties.get("dataFormat").toString());

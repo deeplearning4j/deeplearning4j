@@ -187,7 +187,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    public int getAligned(int requiredMemory){
+    public int getAligned(int requiredMemory) {
         long div = requiredMemory % Nd4jWorkspace.alignmentBase;
         if (div != 0) requiredMemory += (Nd4jWorkspace.alignmentBase - div);
         return requiredMemory;

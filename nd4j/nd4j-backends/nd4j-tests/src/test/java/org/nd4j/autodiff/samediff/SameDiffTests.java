@@ -63,6 +63,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
@@ -1205,7 +1206,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(0).pW(0)
                 .sH(1).sW(1)
                 .dH(1).dW(1)
-                .paddingMode(Conv2DConfig.VALID)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable out = sd.cnn().depthWiseConv2d(in, dW, b, c);
@@ -3758,7 +3759,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .paddingMode(Conv2DConfig.VALID)
+                .paddingMode(PaddingMode.VALID)
                 .weightsFormat(format)
                 .build();
 
@@ -3788,7 +3789,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .paddingMode(Conv2DConfig.VALID)
+                .paddingMode(PaddingMode.VALID)
                 .weightsFormat(WeightsFormat.OIYX)
                 .build();
 
@@ -3808,7 +3809,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .pH(pH).pW(pW)
                 .sH(sH).sW(sW)
                 .dH(dH).dW(dW)
-                .paddingMode(Conv2DConfig.VALID)
+                .paddingMode(PaddingMode.VALID)
                 .weightsFormat(WeightsFormat.OYXI)
                 .build();
 
