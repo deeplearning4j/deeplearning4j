@@ -193,6 +193,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriu(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray input = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(4,3);
         int k = -1;
         INDArray test = Nd4j.triu(input,k);
@@ -203,7 +205,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 {0,0,12}
         });
 
-        assertEquals(test,create);
+        assertEquals(create,test);
     }
 
     @ParameterizedTest
@@ -4047,7 +4049,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
                 //Broadcast on dimensions 1,2
                 INDArray bc12 = Nd4j.create(
-                        new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}, {1, 0, 0, 1, 1}, {1, 1, 1, 0, 0}})
+                                new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}, {1, 0, 0, 1, 1}, {1, 1, 1, 0, 0}})
                         .dup(orderbc);
 
                 INDArray result12 = arrOrig.dup(orderArr);
@@ -4117,7 +4119,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
                 //Broadcast on dimensions 1,2
                 INDArray bc12 = Nd4j.create(
-                        new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}, {1, 0, 0, 1, 1}, {1, 1, 1, 0, 0}})
+                                new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}, {1, 0, 0, 1, 1}, {1, 1, 1, 0, 0}})
                         .dup(orderbc);
 
                 INDArray result12 = arrOrig.dup(orderArr);
@@ -4828,8 +4830,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadDup_1(Nd4jBackend backend) {
         INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
-                -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
-                0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247})
+                        -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
+                        0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247})
                 .reshape(3, 5).castTo(DataType.DOUBLE);
         INDArray needle = Nd4j.create(new double[] {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673}).castTo(DataType.DOUBLE);
 
@@ -4844,8 +4846,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTadReduce3_0(Nd4jBackend backend) {
         INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527,
-                -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
-                -1.25485503673, 0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247})
+                        -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
+                        -1.25485503673, 0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247})
                 .reshape(3, 5).castTo(DataType.DOUBLE);
         INDArray needle = Nd4j.create(new double[] {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
                 -1.25485503673}).castTo(DataType.DOUBLE);
@@ -8701,9 +8703,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
         INDArray weights = Nd4j.createFromArray(new float[]{
-                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
-                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
-                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                        -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                        2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                        2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
                 reshape(new long[]{oC, iC, kH, kW});
 
         INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
@@ -8730,9 +8732,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iH, iW, iC});
         INDArray weights = Nd4j.createFromArray(new float[]{
-                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
-                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
-                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                        -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                        2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                        2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
                 reshape(new long[]{oC, kH, kW, iC});
 
         INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});

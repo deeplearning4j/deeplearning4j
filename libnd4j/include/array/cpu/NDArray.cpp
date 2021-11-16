@@ -75,10 +75,6 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
     throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
 
-  if (direction == 'u')
-    lower = -target.sizeAt(-2);
-  else if (direction == 'l')
-    upper = target.sizeAt(-1);
 
   const T value = static_cast<T>(val);
   const auto x = reinterpret_cast<const T*>(buffer());
@@ -97,10 +93,10 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
       const auto zOffset = shape::getOffset(target.shapeInfo(), coords);
-
       // if( (row + upper < col) || (row + lower > col) )
-      if ((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
+      if (coords[0] > (coords[1] - lower)) {
         z[zOffset] = value;
+      }
       else if (this != &target) {  // when this and target are different arrays
         if (xRank != zRank) {
           temp = coords[0];

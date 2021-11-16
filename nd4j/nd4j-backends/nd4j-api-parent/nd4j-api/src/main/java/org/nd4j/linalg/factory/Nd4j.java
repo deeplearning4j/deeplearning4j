@@ -5447,6 +5447,9 @@ public class Nd4j {
     /**
      *   Upper triangle of an array.
 
+
+     Referenced from the numpy docs:
+
      Return a copy of a matrix with the elements below the `k`-th diagonal
      zeroed.
 

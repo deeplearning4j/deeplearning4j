@@ -36,11 +36,8 @@ namespace sd {
                          input->rankOf());
 
             int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-            if(diag < 0) {
-              diag += input->rankOf();
-            }
 
-            BUILD_SINGLE_SELECTOR(input->dataType(), input->fillAsTriangular, (0, diag, 0, *output, 'l'), SD_COMMON_TYPES);
+            BUILD_SINGLE_SELECTOR(input->dataType(), input->fillAsTriangular, (0, diag, diag, *output, 'l'), SD_COMMON_TYPES);
 
             return sd::Status::OK;
         }
