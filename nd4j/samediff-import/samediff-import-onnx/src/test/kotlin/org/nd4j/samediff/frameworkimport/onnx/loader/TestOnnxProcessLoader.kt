@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcessLoader
@@ -37,7 +38,10 @@ class TestOnnxProcessLoader {
     fun testMobileNet() {
         val importer = OnnxFrameworkImporter()
         val resource = ClassPathResource("mobilenet.onnx").file
-        importer.runImport(resource.absolutePath)
+        val runImport = importer.runImport(resource.absolutePath)
+        val inputs = Nd4j.ones(1,3,224,224)
+        val inputDict = mapOf("input.1" to inputs)
+        runImport.outputAll(inputDict)
     }
 
     @Test

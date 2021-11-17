@@ -125,12 +125,6 @@ class Conv : PreImportHook  {
             throw IllegalArgumentException("Unable to convert model running SAME_LOWER")
         }
 
-        var padsGreaterThanZero = false
-        for(i in 0 until pads.size) {
-            if(pads[i] > 0) {
-                padsGreaterThanZero = true
-            }
-        }
 
         var groups = attributes.getOrDefault("group",1) as Long
         var depthWise = (rank == 4 && weightsRank == 4 && groups.toInt() != 1)
@@ -189,9 +183,6 @@ class Conv : PreImportHook  {
 
             for(i in 0 until xs.size) {
                 var depthWiseConv2d = sd.cnn().depthWiseConv2d(xs[i.toInt()], weightGroupsList[i.toInt()], convConfig)
-                if(padsGreaterThanZero) {
-                    depthWiseConv2d = depthWiseConv2d.get(*indicesForPads("NHWC", pads).toTypedArray())
-                }
                 convolvedList.add(depthWiseConv2d)
             }
         } else {
@@ -280,9 +271,6 @@ class Conv : PreImportHook  {
                         .paddingMode(padModeForName(padMode!!))
                         .build()
                     var conv3d = sd.cnn().conv3d(xs[i.toInt()],weightGroupsList[i.toInt()], threeDConfig)
-                    if(padsGreaterThanZero) {
-                        conv3d = conv3d.get(*indicesForPads("NWHDC",pads).toTypedArray())
-                    }
                     convolvedList.add(conv3d)
 
                 }
