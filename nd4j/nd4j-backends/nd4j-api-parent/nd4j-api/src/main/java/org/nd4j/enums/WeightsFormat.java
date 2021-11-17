@@ -19,11 +19,21 @@
  */
 
 package org.nd4j.enums;
-//  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
+
+/**
+ * WeightsFormat reflects the possible formats for a convolution weight matrix.
+ * The following are available:
+ *   YXIO: [kH, kW, iC, oC]
+ *
+ *   OIYX:  [oC, iC, kH, kW]
+ *
+ *   OYXI: [oC, kH, kW, iC]
+ *
+ */
 public enum WeightsFormat {
-  YXIO, //[kH, kW, iC, oC]
+  YXIO,
 
-  OIYX, // [oC, iC, kH, kW]
+  OIYX,
 
-  OYXI //[oC, kH, kW, iC]
+  OYXI
 }
