@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.common.util.ArrayUtil
 import org.nd4j.enums.Mode
 import org.nd4j.enums.WeightsFormat
 import org.nd4j.linalg.api.buffer.DataType
@@ -57,15 +58,17 @@ class Conv : PreImportHook  {
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
+        val inWeights = sd.getVariable(op.inputsToOp[1])
+        val weightsRank = inWeights.shape.size
+
         var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rank = inputVariable.shape.size
+        val rank = weightsRank
         val xShape = inputVariable.shape
         val spatialSize = rank - 2
         val storageComputeFormat = ImportUtils.getDataFormat(rank)
         val computeIndex = storageComputeFormat.second.indexOf('C')
         val spatialFormat = StringUtils.join(storageComputeFormat.second.filter { input -> input == 'C' || input == 'W' })
-        val inWeights = sd.getVariable(op.inputsToOp[1])
-        val weightsRank = inWeights.shape.size
+
         val perm = (2 to weightsRank - 1).toList() + listOf(1,0)
         val kernelShape = if(attributes.containsKey("kernel_shape")) {
             val kernelShapeList = attributes["kernel_shape"] as List<Int>
@@ -76,7 +79,7 @@ class Conv : PreImportHook  {
         }
 
         var weights = sd.permute(inWeights,*perm.toIntArray())
-
+        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(inWeights.shape),perm.toIntArray())
         val dilations = if(attributes.containsKey("dilations")) {
             val dilationsList = attributes["dilations"] as List<Int>
             val dilationsArr = dilationsList
@@ -130,8 +133,7 @@ class Conv : PreImportHook  {
         }
 
         var groups = attributes.getOrDefault("group",1) as Long
-        val weightsShape = weights.shape
-        var depthWise = (xShape.size == 4 && weightsRank == 4 && groups.toInt() != 1)
+        var depthWise = (rank == 4 && weightsRank == 4 && groups.toInt() != 1)
         /*  if depthwise and x.get_shape().as_list()[1] != None:
       depthwise = bool(group == x.get_shape().as_list()[1])
         * */
@@ -139,14 +141,13 @@ class Conv : PreImportHook  {
         var weightGroupsList = mutableListOf<SDVariable>()
         if(depthWise) {
             val depthWiseFilterShape = mutableListOf<Int>()
-            for(i in 0 until 2) depthWiseFilterShape.add(weightsShape[i].toInt())
+            for(i in 0 until 2) depthWiseFilterShape.add(inWeightsShape[i].toInt())
             depthWiseFilterShape.add(-1)
-            depthWiseFilterShape.add(Math.floorDiv(weightsShape[3].toInt(),groups.toInt()))
+            depthWiseFilterShape.add(Math.floorDiv(inWeightsShape[3].toInt(),groups.toInt()))
             weights = weights.reshape(*depthWiseFilterShape.toIntArray())
-            val weightGroups = sd.split(weights,groups.toInt(),-1)
             inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
             xs.add(inputVariable)
-            weightGroupsList.addAll(weightGroups)
+            weightGroupsList.add(weights)
 
         } else {
             val weightGroups = sd.split(weights,groups.toInt(),-1)
@@ -186,7 +187,7 @@ class Conv : PreImportHook  {
                 .paddingMode(padModeForName(padMode!!))
                 .build()
 
-            for(i in 0 until groups) {
+            for(i in 0 until xs.size) {
                 var depthWiseConv2d = sd.cnn().depthWiseConv2d(xs[i.toInt()], weightGroupsList[i.toInt()], convConfig)
                 if(padsGreaterThanZero) {
                     depthWiseConv2d = depthWiseConv2d.get(*indicesForPads("NHWC", pads).toTypedArray())
@@ -195,7 +196,7 @@ class Conv : PreImportHook  {
             }
         } else {
             for(i in 0 until groups) {
-                if(xShape.size == 3) {
+                if(rank == 3) {
                     //notset => valid
                     //valid => valid + pads zeroed
                     var totalPad = if(padMode == "NOTSET") {
@@ -217,7 +218,7 @@ class Conv : PreImportHook  {
                     }
                     convolvedList.add(convolved)
 
-                } else if(xShape.size == 4) {
+                } else if(rank == 4) {
                     //notset => valid
                     //valid => valid + pads zeroed
                     var totalPadHeight = if(padMode == "NOTSET") {
@@ -247,7 +248,7 @@ class Conv : PreImportHook  {
                     var conv2d = sd.cnn().conv2d(xs[i.toInt()], weightGroupsList[i.toInt()], convConfig)
                     convolvedList.add(conv2d)
 
-                } else if(xShape.size == 5) {
+                } else if(rank == 5) {
                     var totalPadHeight = if(padMode == "NOTSET") {
                         0
                     } else {

@@ -1441,6 +1441,7 @@ public class ArrayUtil {
     }
 
 
+
     public static long[] permute(long[] shape, int[] dimensions) {
         val ret = new long[shape.length];
         for (int i = 0; i < shape.length; i++) {
@@ -3620,4 +3621,5 @@ public class ArrayUtil {
         }
         return out;
     }
+
 }
