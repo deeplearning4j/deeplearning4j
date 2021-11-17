@@ -59,7 +59,7 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  sd_debug("MKL-DNN is not used for conv2d!\n", 0);
+  sd_debug("ONEDNN is not used for conv2d!\n", 0);
 
   std::vector<int> permutForOutput;
 

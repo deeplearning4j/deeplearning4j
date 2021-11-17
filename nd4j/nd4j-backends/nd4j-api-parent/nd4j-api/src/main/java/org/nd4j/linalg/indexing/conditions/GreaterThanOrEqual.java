@@ -35,7 +35,7 @@ public class GreaterThanOrEqual extends BaseCondition {
 
     @Override
     public void setValue(Number value) {
-        //no op where we can pass values in
+       this.value = value;
     }
 
     /**

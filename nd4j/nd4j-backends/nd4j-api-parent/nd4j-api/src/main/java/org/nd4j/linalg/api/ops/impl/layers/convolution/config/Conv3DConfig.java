@@ -70,13 +70,13 @@ public class Conv3DConfig extends BaseConvolutionConfig {
 
     @Builder.Default
     private boolean biasUsed = false;
-    private boolean isSameMode;
+    private PaddingMode paddingMode;
 
     @Builder.Default
     private String dataFormat = NDHWC;
 
     public Conv3DConfig(long kD, long kW, long kH, long sD, long sW, long sH, long pD, long pW, long pH, long dD,
-            long dW, long dH, boolean biasUsed, boolean isSameMode, String dataFormat) {
+                        long dW, long dH, boolean biasUsed, PaddingMode paddingMode, String dataFormat) {
         this.kD = kD;
         this.kW = kW;
         this.kH = kH;
@@ -90,7 +90,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         this.dW = dW;
         this.dH = dH;
         this.biasUsed = biasUsed;
-        this.isSameMode = isSameMode;
+        this.paddingMode = paddingMode;
         this.dataFormat = dataFormat;
 
         validate();
@@ -127,7 +127,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         ret.put("dH", dH);
         ret.put("biasUsed", biasUsed);
         ret.put("dataFormat", dataFormat);
-        ret.put("isSameMode", isSameMode);
+        ret.put("paddingMode", paddingMode);
 
         return ret;
     }

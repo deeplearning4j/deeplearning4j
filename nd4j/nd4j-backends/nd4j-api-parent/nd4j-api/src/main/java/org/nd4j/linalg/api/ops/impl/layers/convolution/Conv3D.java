@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -111,7 +112,7 @@ public class Conv3D extends DynamicCustomOp {
             builder.dD(getIArgument(9));
             builder.dH(getIArgument(10));
             builder.dW(getIArgument(11));
-            builder.isSameMode(getIArgument(12) > 0);
+            builder.paddingMode(PaddingMode.fromNumber(getIArgument(12).intValue()));
             builder.dataFormat(getIArgument(13) > 0 ? "NCDHW" : "NCHDWC");
             this.config = builder.build();
         }
@@ -167,9 +168,6 @@ public class Conv3D extends DynamicCustomOp {
             if(kH != null)
                 builder.kH(kH);
 
-            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
-            if(isSameMode != null)
-                builder.isSameMode(isSameMode);
 
             Boolean biasUsed = getBooleanFromProperty("biasUsed",properties);
             if(biasUsed != null)
@@ -177,6 +175,10 @@ public class Conv3D extends DynamicCustomOp {
 
             if(properties.containsKey("dataFormat")) {
                 builder.dataFormat(properties.get("dataFormat").toString());
+            }
+
+            if(properties.containsKey("paddingMode")) {
+                builder.paddingMode(PaddingMode.VALID.valueOf(properties.get("paddingMode").toString()));
             }
 
             this.config = builder.build();
@@ -205,7 +207,7 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDH(),
                 getConfig().getDW(),
 
-                getConfig().isSameMode() ? 1 : 0,
+                getConfig().getPaddingMode().index,
                 getConfig().isNCDHW() ? 0 : 1
         );
     }
@@ -235,7 +237,7 @@ public class Conv3D extends DynamicCustomOp {
                 .dD(iArguments.get(9))
                 .dH(iArguments.get(10))
                 .dW(iArguments.get(11))
-                .isSameMode(iArguments.get(12) == 1)
+                .paddingMode(PaddingMode.fromNumber(iArguments.get(12).intValue()))
                 .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                 .build();
     }

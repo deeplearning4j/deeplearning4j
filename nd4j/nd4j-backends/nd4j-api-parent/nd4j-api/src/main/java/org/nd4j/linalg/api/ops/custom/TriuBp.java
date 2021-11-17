@@ -48,7 +48,6 @@ public class TriuBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-
         return Collections.singletonList(arg(0).dataType());
     }
 

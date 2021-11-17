@@ -31,6 +31,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
 @Slf4j
@@ -40,15 +41,7 @@ public class SmokeTest {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBasic() {
-        Nd4j.getEnvironment().setDebug(true);
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                .checkForNAN(true)
-                .checkForINF(true)
-                .checkLocality(true)
-                .checkElapsedTime(true)
-                .checkWorkspaces(true)
-                .build());
+    public void testBasic(Nd4jBackend backend) {
         INDArray arr = Nd4j.randn(2,2);
         INDArray arr2 = Nd4j.randn(2,2);
         for(DataType dataType : DataType.values()) {

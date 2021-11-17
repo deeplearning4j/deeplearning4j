@@ -50,7 +50,8 @@ public class Switch extends BaseCompatOp {
         addInputArgument(input, predicate);
     }
 
-    public Switch(){ }
+    public Switch(){
+    }
 
     /**
      * WARNING: do not change without changing serialization methods
@@ -80,9 +81,29 @@ public class Switch extends BaseCompatOp {
         return Type.LOGIC;
     }
 
+
+
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+        //samediff instance should already be set at this point
+        if(args() != null && args().length > 1)
+            this.predicate = arg(1);
     }
 
     @Override

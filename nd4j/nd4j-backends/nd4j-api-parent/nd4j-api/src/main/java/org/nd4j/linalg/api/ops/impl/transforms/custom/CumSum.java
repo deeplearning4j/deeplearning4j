@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.CumSumBp;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -134,6 +135,31 @@ public class CumSum extends DynamicCustomOp {
         for (val a: jaxis)
             addIArgument(jaxis);
     }
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.jaxis = Ints.toArray(iArguments.subList(1,iArguments.size()));
+            this.exclusive = iArguments.get(0) > 0;
+        }
+
+
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("jaxis")) {
+            Long dimensions = getLongValueFromProperty("jaxis",properties);
+            this.jaxis = new int[] {dimensions.intValue()};
+        }
+
+        if(properties.containsKey("exclusive")) {
+            Long exclusive = getLongValueFromProperty("exclusive",properties);
+            this.exclusive = exclusive > 0;
+        }
+    }
+
+
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {

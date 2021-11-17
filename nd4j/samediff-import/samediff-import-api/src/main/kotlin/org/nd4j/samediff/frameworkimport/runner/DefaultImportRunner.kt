@@ -175,6 +175,7 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                 val customOp = df as CustomOp
                 //important to call this as we may not have configured all fields
                 customOp.configureFromArguments()
+                df.configureWithSameDiff(sd)
 
             }
             Op.Type.SCALAR -> {

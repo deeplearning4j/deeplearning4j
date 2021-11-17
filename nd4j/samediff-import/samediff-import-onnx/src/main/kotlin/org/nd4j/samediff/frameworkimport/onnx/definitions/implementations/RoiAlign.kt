@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.enums.Mode
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
@@ -87,7 +88,7 @@ class RoiAlign : PreImportHook  {
                 .sH(samplingRatio)
                 .sW(samplingRatio)
                 .pH(1).pW(1).isNHWC(true)
-                .isSameMode(true).build())
+                .paddingMode(PaddingMode.SAME).build())
         val outputVar = sd.permute(outputNames[0],pooled,0,3,1,2)
         return mapOf(outputVar.name() to listOf(outputVar))
     }

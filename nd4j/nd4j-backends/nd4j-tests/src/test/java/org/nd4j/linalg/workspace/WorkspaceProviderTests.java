@@ -246,14 +246,14 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
             INDArray array = Nd4j.create(new double[] {6f, 3f, 1f, 9f, 21f});
             INDArray array3 = null;
 
-            long reqMem = 5 * Nd4j.sizeOfDataType(DataType.DOUBLE);
+            long reqMem = getAligned(5 * Nd4j.sizeOfDataType(DataType.DOUBLE));
             assertEquals(reqMem + reqMem % 16, ws1.getPrimaryOffset());
             try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                     .notifyScopeEntered()) {
 
                 INDArray array2 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
-                reqMem = 5 * Nd4j.sizeOfDataType(DataType.DOUBLE);
+                reqMem = getAligned(5 * Nd4j.sizeOfDataType(DataType.DOUBLE));
                 assertEquals(reqMem + reqMem % 16, ws1.getPrimaryOffset());
                 assertEquals(reqMem + reqMem % 16, ws2.getPrimaryOffset());
 
@@ -354,7 +354,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testWorkspacesSerde2() throws Exception {
-        INDArray array = Nd4j.create(10).assign(1.0);
+        INDArray array = Nd4j.create(10).assign(1.0).castTo(DataType.DOUBLE);
         INDArray restored = null;
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -369,7 +369,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
             DataInputStream dis = new DataInputStream(bis);
             restored = Nd4j.read(dis);
 
-            long requiredMemory = 10 * Nd4j.sizeOfDataType();
+            long requiredMemory = getAligned(10 * DataType.DOUBLE.width());
             assertEquals(requiredMemory + requiredMemory % 8, workspace.getPrimaryOffset());
 
             assertEquals(array.length(), restored.length());
@@ -923,9 +923,9 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                 .notifyScopeEntered()) {
 
-            INDArray array1 = Nd4j.create(100);
+            INDArray array1 = Nd4j.create(100).castTo(DataType.DOUBLE);
 
-            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
+            assertEquals(100 * DataType.DOUBLE.width(), ws1.getPrimaryOffset());
 
             for (int x = 1; x <= 100; x++) {
                 try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(loopConfiguration, "WS2").notifyScopeEntered()) {
@@ -933,13 +933,13 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
                 }
 
                 Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2");
-                long reqMemory = x * Nd4j.sizeOfDataType();
+                long reqMemory = getAligned(x *  DataType.DOUBLE.width());
                 assertEquals(reqMemory + reqMemory % 16, ws2.getLastCycleAllocations());
             }
 
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").initializeWorkspace();
 
-            assertEquals(100 * Nd4j.sizeOfDataType(), Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").getCurrentSize());
+            assertEquals(getAligned(100 * DataType.DOUBLE.width()), Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").getCurrentSize());
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1039,6 +1039,13 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
         workspace.notifyScopeLeft();
 
+    }
+
+
+    public int getAligned(int requiredMemory) {
+        long div = requiredMemory % Nd4jWorkspace.alignmentBase;
+        if (div != 0) requiredMemory += (Nd4jWorkspace.alignmentBase - div);
+        return requiredMemory;
     }
 
     @Override

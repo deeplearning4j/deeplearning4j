@@ -32,6 +32,17 @@ import java.util.*
 class TestOnnxFrameworkImporter {
 
     @Test
+    fun testMobileNet() {
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        val importer = OnnxFrameworkImporter()
+        val file = ClassPathResource("mobilenet.onnx").file
+        val result  = importer.runImport(file.absolutePath, emptyMap())
+        result.outputAll(Collections.singletonMap("input.1",Nd4j.ones(1,3,224,224)))
+        result.asFlatFile(File("mobilenet.fb"))
+    }
+
+    @Test
     fun testLenet() {
         Nd4j.getExecutioner().enableDebugMode(true)
         Nd4j.getExecutioner().enableVerboseMode(true)

@@ -213,6 +213,9 @@ public class LSTMLayer extends DynamicCustomOp {
             builder.bias(sameDiff.getVariable(inputsForOp[3]));
         }
 
+        if(hasPH) {
+            builder.peepholeWeights(sameDiff.getVariable(inputsForOp[inputsForOp.length - 1]));
+        }
 
         this.weights = builder.build();
 

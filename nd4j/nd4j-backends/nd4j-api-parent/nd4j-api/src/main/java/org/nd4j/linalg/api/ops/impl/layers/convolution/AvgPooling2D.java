@@ -34,6 +34,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -164,7 +165,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .pW(iArguments.get(5))
                 .dH(iArguments.get(6))
                 .dW(iArguments.get(7))
-                .isSameMode(iArguments.get(8) == 1)
+                .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                 .extra(iArguments.get(9))
                 .isNHWC(iArguments.get(10) == 1)
                 .type(Pooling2D.Pooling2DType.AVG)
@@ -180,7 +181,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 config.getPW(),
                 config.getDH(),
                 config.getDW(),
-                ArrayUtil.fromBoolean(config.isSameMode()),
+                config.getPaddingMode().index,
                 (int) config.getExtra(),
                 ArrayUtil.fromBoolean(config.isNHWC()));
 
@@ -263,7 +264,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .sH(sH)
                 .sW(sW)
                 .type(Pooling2D.Pooling2DType.AVG)
-                .isSameMode(isSameMode)
+                .paddingMode(PaddingMode.valueOf(paddingMode))
                 .kH(kH)
                 .kW(kW)
                 .pH(pH)
@@ -287,7 +288,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .sH(strides.get(0).intValue())
                 .sW(strides.get(1).intValue())
                 .type(Pooling2D.Pooling2DType.AVG)
-                .isSameMode(paddingVal.equalsIgnoreCase("SAME"))
+                .paddingMode(PaddingMode.valueOf(paddingVal))
                 .kH(kernelShape.get(0).intValue())
                 .kW(kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())

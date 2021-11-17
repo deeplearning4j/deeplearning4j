@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 
 import java.util.Collections;
 import java.util.List;
@@ -77,7 +78,7 @@ public class Col2Im extends DynamicCustomOp {
         addIArgument(conv2DConfig.getKW());
         addIArgument(conv2DConfig.getDH());
         addIArgument(conv2DConfig.getDW());
-        addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
+        addIArgument(conv2DConfig.getPaddingMode().index);
 
     }
 
@@ -123,9 +124,9 @@ public class Col2Im extends DynamicCustomOp {
             if(kH != null)
                 builder.kH(kH);
 
-            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
-            if(isSameMode != null)
-                builder.isSameMode(isSameMode);
+            Long paddingMode = getLongValueFromProperty("paddingMode",properties);
+            if(paddingMode != null)
+                builder.paddingMode(PaddingMode.fromNumber(paddingMode.intValue()));
 
 
 
@@ -146,7 +147,7 @@ public class Col2Im extends DynamicCustomOp {
                     .pW(iArguments.get(5))
                     .dH(iArguments.get(6))
                     .dW(iArguments.get(7))
-                    .isSameMode(iArguments.get(8) == 1)
+                    .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                     .build();
         }
     }

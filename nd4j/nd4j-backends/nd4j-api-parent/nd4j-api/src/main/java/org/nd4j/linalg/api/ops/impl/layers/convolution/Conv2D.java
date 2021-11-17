@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -106,7 +107,7 @@ public class Conv2D extends DynamicCustomOp {
                 config.getPW(),
                 config.getDH(),
                 config.getDW(),
-                ArrayUtil.fromBoolean(config.isSameMode()),
+                config.getPaddingMode().index,
                 config.getDataFormat().equalsIgnoreCase("NCHW") ? 0 : 1,
                 config.getWeightsFormat().ordinal());
     }
@@ -150,9 +151,9 @@ public class Conv2D extends DynamicCustomOp {
             if(kH != null)
                 builder.kH(kH);
 
-            Boolean isSameMode = getBooleanFromProperty("isSameMode",properties);
-            if(isSameMode != null)
-                builder.isSameMode(isSameMode);
+            String paddingMode = getStringFromProperty("paddingMode",properties);
+            if(paddingMode != null)
+                builder.paddingMode(PaddingMode.valueOf(paddingMode));
 
             if(properties.containsKey("dataFormat")) {
                 builder.dataFormat(properties.get("dataFormat").toString());
@@ -176,7 +177,7 @@ public class Conv2D extends DynamicCustomOp {
                     .pW(iArguments.get(5))
                     .dH(iArguments.get(6))
                     .dW(iArguments.get(7))
-                    .isSameMode(iArguments.get(8) == 1)
+                    .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                     .build();
         }
     }
@@ -371,7 +372,7 @@ public class Conv2D extends DynamicCustomOp {
                 .pW(iArguments.get(5))
                 .dH(iArguments.get(6))
                 .dW(iArguments.get(7))
-                .isSameMode(iArguments.size() < 9 ? true : iArguments.get(8) > 0)
+                .paddingMode(iArguments.size() < 9 ? PaddingMode.VALID : PaddingMode.fromNumber(iArguments.get(8).intValue()))
                 .dataFormat(iArguments.size() < 10 ? "NCHW" : iArguments.get(9) > 0 ? "NHWC" : "NCHW")
                 .weightsFormat(iArguments.size() < 11 ? YXIO : WeightsFormat.values()[iArguments.get(10).intValue()])
                 .build();

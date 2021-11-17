@@ -64,6 +64,14 @@ public class Repeat extends DynamicCustomOp {
         this.jaxis = axis;
     }
 
+    public Repeat(SameDiff sd, SDVariable input, SDVariable repeats, int axis) {
+        this(sd,new SDVariable[]{input,repeats},axis);
+    }
+
+    public Repeat(INDArray input, INDArray repeats, int axis) {
+        this(new INDArray[]{input,repeats},null,axis);
+    }
+
 
     @Override
     public Map<String, Object> propertiesForFunction() {

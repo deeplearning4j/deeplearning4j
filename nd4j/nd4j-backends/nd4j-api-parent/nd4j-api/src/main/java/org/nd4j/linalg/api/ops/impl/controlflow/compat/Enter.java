@@ -93,7 +93,26 @@ public class Enter extends BaseCompatOp {
         isConstant = attributesForNode.get("is_constant").getB();
     }
 
+    @Override
+    public void configureFromArguments() {
+        if(!bArguments.isEmpty()) {
+            this.isConstant = bArguments.get(0);
+        }
+    }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("frameName")) {
+            String frameName = getStringFromProperty("frameName",properties);
+            this.frameName = frameName;
+        }
+
+        if(properties.containsKey("isConstant")) {
+            Boolean isConstant = getBooleanFromProperty("isConstant",properties);
+            this.isConstant = isConstant;
+        }
+
+    }
 
     @Override
     public int getNumOutputs(){

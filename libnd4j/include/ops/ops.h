@@ -460,15 +460,15 @@ class FloorMod {
   SD_OP_DEF static Z op(X d1, Y d2) {
     auto m = sd::math::sd_fmod<X, Y, Z>(d1, d2);
     return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0))
-               ? m
-               : sd::math::sd_fmod<Z, Y, Z>(m + static_cast<Z>(d2), d2);
+           ? m
+           : sd::math::sd_fmod<Z, Y, Z>(m + static_cast<Z>(d2), d2);
   }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) {
     auto m = sd::math::sd_fmod<X, Y, Z>(d1, d2);
     return (d1 < static_cast<X>(0.0f)) == (d2 < static_cast<Y>(0))
-               ? m
-               : sd::math::sd_fmod<Z, Y, Z>(m + static_cast<Z>(d2), d2);
+           ? m
+           : sd::math::sd_fmod<Z, Y, Z>(m + static_cast<Z>(d2), d2);
   }
 
   SD_OP_DEF static Z op(X d1) { return d1; }
@@ -507,8 +507,8 @@ class Copy {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1;
   }
 };
@@ -543,8 +543,8 @@ class Assign {
  public:
   no_op_exec_special_any no_op_exec_special_any_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return static_cast<Z>(d1);
   }
 };
@@ -554,8 +554,8 @@ class And {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, X d2) {
+  SD_OP_DEF static Z
+  op(X d1, X d2) {
     return d2 + d1;
   }
 
@@ -638,8 +638,8 @@ class Or {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, X d2) {
+  SD_OP_DEF static Z
+  op(X d1, X d2) {
     return d2 + d1;
   }
 
@@ -667,8 +667,8 @@ class Xor {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, X d2) {
+  SD_OP_DEF static Z
+  op(X d1, X d2) {
     return d2 + d1;
   }
 
@@ -693,8 +693,8 @@ class Not {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, X d2) {
+  SD_OP_DEF static Z
+  op(X d1, X d2) {
     return static_cast<Z>(0);
   }
 
@@ -879,8 +879,8 @@ class Abs {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_abs<X>(d1);
   }
 };
@@ -890,8 +890,8 @@ class Ceiling {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_ceil<X, X>(d1);
   }
 };
@@ -901,8 +901,8 @@ class Cosine {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_cos<X, X>(d1);
   }
 };
@@ -912,8 +912,8 @@ class Exp {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_exp<X, X>(d1);
   }
 };
@@ -923,8 +923,8 @@ class HardTanhDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return ((d1 >= static_cast<X>(-1.f) && d1 <= static_cast<X>(1.f)) ? static_cast<X>(1.f) : static_cast<X>(0.f));
   }
 };
@@ -934,8 +934,8 @@ class HardTanh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     if (d1 < static_cast<X>(-1))
       return static_cast<X>(-1);
     else if (d1 > static_cast<X>(1))
@@ -950,8 +950,8 @@ class Floor {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_floor<X, X>(d1);
   }
 };
@@ -961,8 +961,8 @@ class Log {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_log<X, X>(d1);
   }
 };
@@ -972,8 +972,8 @@ class Log1p {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_log<X, X>(1 + d1);
   }
 };
@@ -989,8 +989,8 @@ class StabilizeFP16 {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     if (d1 <= static_cast<X>(0))
       return static_cast<X>(sd::DataTypeUtils::min<float16>());
     else
@@ -1003,8 +1003,8 @@ class StabilizeX {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     if (d1 <= static_cast<X>(0))
       return sd::DataTypeUtils::min<X>();
     else
@@ -1017,8 +1017,8 @@ class SpecialDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * (static_cast<X>(1.f) - d1);
   }
 };
@@ -1028,8 +1028,8 @@ class Neg {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return -d1;
   }
 };
@@ -1039,8 +1039,8 @@ class Erf {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_erf<X, X>(d1);
   }
 };
@@ -1050,8 +1050,8 @@ class Erfc {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_erfc<X, X>(d1);
   }
 };
@@ -1060,12 +1060,12 @@ template <typename X>
 class Reciprocal {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
-      //        SD_OP_DEF static T op(T d1) {
-      //            return (T(1.0f) / d1);
-      //        }
-      // op for MetaOps
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  //        SD_OP_DEF static T op(T d1) {
+  //            return (T(1.0f) / d1);
+  //        }
+  // op for MetaOps
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return (static_cast<X>(1) / d1);
   }
 };
@@ -1075,8 +1075,8 @@ class Sqr {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return sd::math::sd_pow<X, X, Z>(d1, static_cast<X>(2));
   }
 
@@ -1088,8 +1088,8 @@ class RelativeError {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2) {
     return sd::math::sd_re<X>(d1, d2);
   }
 
@@ -1103,8 +1103,8 @@ class BinaryRelativeError {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     X threshold = params[0];
     return sd::math::sd_re<X>(d1, d2) > threshold ? static_cast<Z>(1) : static_cast<Z>(0);
   }
@@ -1117,24 +1117,24 @@ class BinaryMinimumAbsoluteRelativeError {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     X d2 = params[0];
     X thresholdRelative = params[1];
     X thresholdAbsolute = params[2];
     return sd::math::sd_re<X>(d1, d2) > thresholdRelative
-               ? (sd::math::sd_abs<X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
-                                                                                   : static_cast<Z>(1))
-               : static_cast<Z>(0);
+           ? (sd::math::sd_abs<X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
+                                                                               : static_cast<Z>(1))
+           : static_cast<Z>(0);
   }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) {
     X thresholdRelative = params[0];
     X thresholdAbsolute = params[1];
     return sd::math::sd_re<X>(d1, d2) > thresholdRelative
-               ? (sd::math::sd_abs<X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
-                                                                                   : static_cast<Z>(1))
-               : static_cast<Z>(0);
+           ? (sd::math::sd_abs<X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
+                                                                               : static_cast<Z>(1))
+           : static_cast<Z>(0);
   }
 
   SD_OP_DEF static Z op(X d1) { return static_cast<Z>(0); }
@@ -1145,8 +1145,8 @@ class ReversePow {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return sd::math::sd_pow<X, X, Z>(params[0], d1);
   }
 
@@ -1162,8 +1162,8 @@ class Pow {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return sd::math::sd_pow<X, X, Z>(d1, params[0]);
   }
 
@@ -1179,8 +1179,8 @@ class PowDerivative {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return params[0] * sd::math::sd_pow<X, Z, Z>(d1, static_cast<Z>(params[0]) - static_cast<Z>(1.f));
   }
 
@@ -1200,8 +1200,8 @@ class IGamma {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return sd::math::sd_igamma<X, X, Z>(d1, params[0]);
   }
 
@@ -1217,8 +1217,8 @@ class IGammac {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return sd::math::sd_igammac<X, X, Z>(d1, params[0]);
   }
 
@@ -1234,8 +1234,8 @@ class Round {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_round<X, X>(d1);
   }
 };
@@ -1245,10 +1245,10 @@ class IsNan {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return sd::math::sd_isnan(d1) ? static_cast<X>(1) : static_cast<X>(0);
   }
 
@@ -1266,8 +1266,8 @@ class Expm1 {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_exp<X, X>(d1) - static_cast<X>(1);
   }
 };
@@ -1277,10 +1277,10 @@ class IsPositive {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return d1 > (X)0.f;
   }
 
@@ -1298,10 +1298,10 @@ class IsNegative {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return d1 < (X)0.f;
   }
 
@@ -1319,10 +1319,10 @@ class IsInf {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return sd::math::sd_isinf<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
   }
 
@@ -1340,10 +1340,10 @@ class IsInfOrNan {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return sd::math::sd_isfin<X>(d1) ? static_cast<Z>(0) : static_cast<Z>(1);
   }
 
@@ -1365,10 +1365,10 @@ class IsFinite {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          op(X d1, X *params) {
+  SD_OP_DEF static Z
+  op(X d1, X *params) {
     return sd::math::sd_isfin<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
   }
 
@@ -1390,8 +1390,8 @@ class ClipByValue {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     if (d1 > params[1]) return params[1];
     if (d1 < params[0]) return params[0];
     return d1;
@@ -1403,8 +1403,8 @@ class LstmClip {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     X _v = (X)d2;
     if (d1 > _v)
       return _v;
@@ -1420,8 +1420,8 @@ class Swish {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * sd::math::sd_sigmoid<X, X>(d1);
   }
 };
@@ -1431,8 +1431,8 @@ class Mish {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * sd::math::sd_tanh<X, X>(sd::math::sd_softplus<X, X>(d1));
   }
 };
@@ -1442,8 +1442,8 @@ class MishDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto ex = sd::math::sd_exp<X, X>(d1);
     auto e2x = ex * ex;
     auto e3x = ex * ex * ex;
@@ -1458,8 +1458,8 @@ class GELU {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * sd::math::sd_sigmoid<X, X>(static_cast<X>(1.702f) * d1);
   }
 };
@@ -1469,8 +1469,8 @@ class PreciseGELU {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto sp = sd::math::sd_sqrt<X, X>(static_cast<X>(2) / static_cast<X>(M_PI));
     auto xp = d1 + sd::math::sd_pow<X, X, X>(static_cast<X>(0.044715) * d1, static_cast<X>(3));
     return (d1 / static_cast<X>(2)) * (static_cast<X>(1) + sd::math::sd_tanh<X, X>(sp * xp));
@@ -1482,8 +1482,8 @@ class GELUDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto x17 = static_cast<X>(1.702f) * d1;
     auto ep = sd::math::sd_pow<X, X, X>(static_cast<X>(M_E), x17);
     // (E^(1.702 x) (1. + E^(1.702 x) + 1.702 x))/(1. + E^(1.702 x))^2
@@ -1496,8 +1496,8 @@ class PreciseGELUDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto x79 = static_cast<X>(0.797885) * d1;
     auto x03 = sd::math::sd_pow<X, int, X>(static_cast<X>(0.0356774) * d1, 3);
     auto x39 = static_cast<X>(0.398942) * d1;
@@ -1513,8 +1513,8 @@ class SwishDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     X ex = sd::math::sd_pow<X, X, X>(static_cast<X>(M_E), d1);
     return (ex * (d1 + ex + static_cast<X>(1.f))) /
            sd::math::sd_pow<X, X, X>((ex + static_cast<X>(1.f)), static_cast<X>(2.f));
@@ -1526,8 +1526,8 @@ class LogSigmoid {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_log<X, X>(sd::math::sd_sigmoid<X, X>(d1));
   }
 };
@@ -1537,8 +1537,8 @@ class LogSigmoidDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     X ex = sd::math::sd_pow<X, X, X>(M_E, d1);
     return static_cast<X>(1.f) / (ex + static_cast<X>(1.f));
   }
@@ -1549,8 +1549,8 @@ class Sigmoid {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_sigmoid<X, X>(d1);
   }
 };
@@ -1560,8 +1560,8 @@ class Affine {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return params[0] * d1 + params[1];
   }
 };
@@ -1571,8 +1571,8 @@ class SigmoidDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_sigmoidderivative<X, X>(d1);
   }
 };
@@ -1582,8 +1582,8 @@ class HardSigmoid {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_min<X>(
         static_cast<X>(1), sd::math::sd_max<X>(static_cast<X>(0), (static_cast<X>(0.2f)) * d1 + static_cast<X>(0.5f)));
   }
@@ -1594,8 +1594,8 @@ class HardSigmoidDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<X>(0.f) : static_cast<X>(0.2f);
   }
 };
@@ -1608,8 +1608,8 @@ class SetRange {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto min = params[0];
     auto max = params[1];
     if (static_cast<X>(d1) >= min && static_cast<X>(d1) <= max) return d1;
@@ -1627,8 +1627,8 @@ class Sin {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_sin<X, X>(d1);
   }
 };
@@ -1638,8 +1638,8 @@ class Square {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * d1;
   }
 };
@@ -1649,8 +1649,8 @@ class Sqrt {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return sd::math::sd_sqrt<X, Z>(d1);
   }
 };
@@ -1660,8 +1660,8 @@ class RSqrt {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Z *params) {
     return static_cast<Z>(1) / sd::math::sd_sqrt<X, Z>(d1);
   }
 };
@@ -1671,8 +1671,8 @@ class Rint {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_rint<X, X>(d1);
   }
 };
@@ -1682,8 +1682,8 @@ class SoftPlus {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_softplus<X, X>(d1);
   }
 };
@@ -1693,8 +1693,8 @@ class Sign {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0));
   }
 };
@@ -1704,8 +1704,8 @@ class TimesOneMinus {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * (static_cast<X>(1) - d1);
   }
 };
@@ -1715,8 +1715,8 @@ class RationalTanh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     // keep 2/3 as runtime variable, to match precision
     auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
@@ -1734,8 +1734,8 @@ class RationalTanhDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto dis = (static_cast<X>(2.f) / static_cast<X>(3.f)) * d1;
 
     auto a = static_cast<X>(1.f) + sd::math::sd_abs<X>(dis) + sd::math::sd_pow<X, X, X>(dis, static_cast<X>(2.f)) +
@@ -1744,7 +1744,7 @@ class RationalTanhDerivative {
     auto tDeriv =
         (static_cast<X>(1.f) + sd::math::sd_sign<X, X>(dis) * (static_cast<X>(2.f) * dis +
                                                                static_cast<X>(4.f) * static_cast<X>(1.41645f) *
-                                                                   sd::math::sd_pow<X, X, X>(dis, static_cast<X>(3)))) /
+                                                               sd::math::sd_pow<X, X, X>(dis, static_cast<X>(3)))) /
         (a * a);
 
     return static_cast<X>(1.7159f) * (static_cast<X>(2.f) / static_cast<X>(3.f)) * tDeriv;
@@ -1756,8 +1756,8 @@ class Tanh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_tanh<X, X>(d1);
   }
 };
@@ -1767,8 +1767,8 @@ class ScaledTanh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return params[0] * sd::math::sd_tanh<X, X>(params[1] * d1);
   }
 };
@@ -1778,8 +1778,8 @@ class RectifiedTanh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_max<X>(static_cast<X>(0), sd::math::sd_tanh<X, X>(d1));
   }
 };
@@ -1789,8 +1789,8 @@ class RectifiedTanhDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 > static_cast<X>(0.f) ? sd::math::sd_tanhderivative<X, X>(d1) : static_cast<X>(0.f);
   }
 };
@@ -1800,8 +1800,8 @@ class ATanh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_atanh<X, X>(d1);
   }
 };
@@ -1811,8 +1811,8 @@ class TanhDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_tanhderivative<X, X>(d1);
   }
 };
@@ -1822,8 +1822,8 @@ class Cube {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 * d1 * d1;
   }
 };
@@ -1833,8 +1833,8 @@ class CubeDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return static_cast<X>(3) * d1 * d1;
   }
 };
@@ -1844,8 +1844,8 @@ class ACos {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_acos<X, X>(d1);
   }
 };
@@ -1855,8 +1855,8 @@ class ASinh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_asinh<X, X>(d1);
   }
 };
@@ -1866,8 +1866,8 @@ class ASinhDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return static_cast<X>(1.f) /
            (sd::math::sd_sqrt<X, X>(sd::math::sd_pow<X, X, X>(d1, static_cast<X>(2.f)) + static_cast<X>(1.f)));
   }
@@ -1878,8 +1878,8 @@ class ACosh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_acosh<X, X>(d1);
   }
 };
@@ -1889,8 +1889,8 @@ class ACoshDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return static_cast<X>(1.f) /
            (sd::math::sd_sqrt<X, X>(d1 - static_cast<X>(1.f)) * sd::math::sd_sqrt<X, X>(d1 + static_cast<X>(1.f)));
   }
@@ -1901,8 +1901,8 @@ class Ones {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return static_cast<X>(1.0f);
   }
 };
@@ -1912,8 +1912,8 @@ class SoftSign {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_softsign<X, X>(d1);
   }
 };
@@ -1923,8 +1923,8 @@ class SoftSignDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_softsignderivative<X, X>(d1);
   }
 };
@@ -1934,9 +1934,9 @@ class MatchConditionBool {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda
 
-      // this op return 1.0 if condition met, 0.0 otherwise
-      SD_OP_DEF static Z
-      op(X d1, X *extraParams) {
+  // this op return 1.0 if condition met, 0.0 otherwise
+  SD_OP_DEF static Z
+  op(X d1, X *extraParams) {
     X compare = extraParams[0];
     X eps = extraParams[1];
 
@@ -1991,10 +1991,10 @@ class MatchCondition {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda
+  no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda
 
-          SD_OP_DEF static Z
-          startingValue(const X *input) {
+  SD_OP_DEF static Z
+  startingValue(const X *input) {
     return static_cast<Z>(0);
   }
 
@@ -2072,8 +2072,8 @@ class ELU {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     return sd::math::sd_elu<X, Z>(d1, static_cast<X>(d2));
   }
 };
@@ -2083,8 +2083,8 @@ class ELUDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     return sd::math::sd_eluderivative<X, Z>(d1, static_cast<X>(d2));
   }
 };
@@ -2094,8 +2094,8 @@ class RELU {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     auto xt = static_cast<Z>(d1);
     auto xf = static_cast<Z>(d2);
     return xt < xf ? xf : xt;
@@ -2107,8 +2107,8 @@ class RELUDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     auto xt = static_cast<Z>(d1);
     auto xf = static_cast<Z>(d2);
     return xt > xf ? static_cast<Z>(1.f) : static_cast<Z>(0.f);
@@ -2126,8 +2126,8 @@ class RELU6 {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     auto relu = simdOps::RELU<X, Y, Z>::op(d1, d2, params);
     return relu < static_cast<Z>(6) ? relu : static_cast<Z>(6);
   }
@@ -2138,8 +2138,8 @@ class LeakyRELU {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     auto val = static_cast<Z>(d1);
     auto alpha = static_cast<Z>(d2);
     return val < 0.0f ? alpha * val : val;
@@ -2151,12 +2151,12 @@ class SELU {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 > static_cast<X>(0.0f)
-               ? static_cast<X>(SELU_LAMBDA) * static_cast<X>(d1)
-               : static_cast<X>(SELU_LAMBDA) *
-                     (static_cast<X>(SELU_ALPHA) * sd::math::sd_exp<X, X>(d1) - static_cast<X>(SELU_ALPHA));
+           ? static_cast<X>(SELU_LAMBDA) * static_cast<X>(d1)
+           : static_cast<X>(SELU_LAMBDA) *
+             (static_cast<X>(SELU_ALPHA) * sd::math::sd_exp<X, X>(d1) - static_cast<X>(SELU_ALPHA));
   }
 };
 
@@ -2165,11 +2165,11 @@ class SELUDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1 > static_cast<X>(0.f)
-               ? static_cast<X>(SELU_LAMBDA)
-               : static_cast<X>(SELU_ALPHA) * static_cast<X>(SELU_LAMBDA) * sd::math::sd_exp<X, X>(d1);
+           ? static_cast<X>(SELU_LAMBDA)
+           : static_cast<X>(SELU_ALPHA) * static_cast<X>(SELU_LAMBDA) * sd::math::sd_exp<X, X>(d1);
   }
 };
 
@@ -2178,8 +2178,8 @@ class LeakyRELUDerivative {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     if (d1 >= static_cast<X>(0))
       return static_cast<Z>(1);
     else
@@ -2192,8 +2192,8 @@ class ASin {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_asin<X, X>(d1);
   }
 };
@@ -2203,8 +2203,8 @@ class Sinh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_sinh<X, X>(d1);
   }
 };
@@ -2214,8 +2214,8 @@ class SinhDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_cosh<X, X>(d1);
   }
 };
@@ -2225,8 +2225,8 @@ class Cosh {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_cosh<X, X>(d1);
   }
 };
@@ -2236,8 +2236,8 @@ class Tan {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_tan<X, X>(d1);
   }
 };
@@ -2247,8 +2247,8 @@ class TanDerivative {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return static_cast<X>(1.f) / sd::math::sd_pow<X, X, X>(sd::math::sd_cos<X, X>(d1), static_cast<X>(2.0f));
   }
 };
@@ -2258,8 +2258,8 @@ class ATan {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return sd::math::sd_atan<X, X>(d1);
   }
 };
@@ -2269,8 +2269,8 @@ class Atan2 {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2) {
     return sd::math::sd_atan2<X, Z>(d2, d1);
   }
 
@@ -2285,8 +2285,8 @@ class Identity {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return d1;
   }
 };
@@ -2296,8 +2296,8 @@ class Stabilize {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     X k = params[0];
     if (d1 * k > static_cast<X>(SD_MAX_CUTFOFF))
       return static_cast<X>(SD_MAX_CUTFOFF) / k;
@@ -2312,8 +2312,8 @@ class Step {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     return (d1 > static_cast<X>(d2) ? static_cast<Z>(1) : static_cast<Z>(0));
   }
 };
@@ -2323,8 +2323,8 @@ class OneMinus {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     return static_cast<X>(1) - d1;
   }
 };
@@ -2334,8 +2334,8 @@ class Sum {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      SD_OP_DEF static X
-      startingValue(const X *input) {
+  SD_OP_DEF static X
+  startingValue(const X *input) {
     return static_cast<X>(0.0f);
   }
 
@@ -2353,7 +2353,7 @@ class ReduceSameBenchmarkOp {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0.0f); }
 
@@ -2365,8 +2365,8 @@ class ReduceSameBenchmarkOp {
     auto f1 = static_cast<float>(d1);
     return static_cast<X>(sd::math::sd_pow<float, float, float>(f1, 3) +
                           sd::math::sd_log<float, float>(f1) * sd::math::sd_sin<float, float>(f1) /
-                              sd::math::sd_tanh<float, float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1) *
-                              sd::math::sd_sqrt<float, float>(static_cast<float>(M_PI) / f1) -
+                          sd::math::sd_tanh<float, float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1) *
+                          sd::math::sd_sqrt<float, float>(static_cast<float>(M_PI) / f1) -
                           sd::math::sd_atan<float, float>(static_cast<float>(M_E) / f1));
   }
 
@@ -2394,7 +2394,7 @@ class ShannonEntropy {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2414,7 +2414,7 @@ template <typename X, typename Z>
 class LogEntropy {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType =
-      typename AggregateType<Z>::type;
+  typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
@@ -2438,7 +2438,7 @@ class Entropy {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2460,7 +2460,7 @@ class ASum {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2482,7 +2482,7 @@ class CountNonZero {
  public:
   no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static Z startingValue(const X *input) { return static_cast<Z>(0); }
 
@@ -2503,7 +2503,7 @@ template <typename X, typename Z>
 class CountZero {
  public:
   no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda using InterType =
-      typename AggregateType<Z>::type;
+  typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static Z startingValue(const X *input) { return static_cast<Z>(0.0f); }
@@ -2526,7 +2526,7 @@ class Prod {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
+  const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(1); }
 
@@ -2582,7 +2582,7 @@ class Mean {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      using InterType = typename AggregateType<Z>::type;
+  using InterType = typename AggregateType<Z>::type;
 
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
@@ -2604,7 +2604,7 @@ class ReduceFloatBenchmarkOp {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2617,8 +2617,8 @@ class ReduceFloatBenchmarkOp {
     return static_cast<InterType>(
         sd::math::sd_pow<float, float, float>(f1, 3) +
         sd::math::sd_log<float, float>(f1) * sd::math::sd_sin<float, float>(f1) /
-            sd::math::sd_tanh<float, float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1) *
-            sd::math::sd_sqrt<float, float>(static_cast<float>(M_PI) / f1) -
+        sd::math::sd_tanh<float, float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1) *
+        sd::math::sd_sqrt<float, float>(static_cast<float>(M_PI) / f1) -
         sd::math::sd_atan<float, float>(static_cast<float>(M_E) / f1));
   }
 
@@ -2632,7 +2632,7 @@ class AMean {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2654,7 +2654,7 @@ class Max {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::MAX;
+  const static functions::ReduceType reduceType = functions::ReduceType::MAX;
 
   SD_OP_DEF static X startingValue(const X *input) { return -sd::DataTypeUtils::infOrMax<X>(); }
 
@@ -2725,7 +2725,7 @@ class AMax {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::AMAX;
+  const static functions::ReduceType reduceType = functions::ReduceType::AMAX;
 
   SD_OP_DEF static X startingValue(const X *input) { return input[0]; }
 
@@ -2754,7 +2754,7 @@ class AMin {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::AMIN;
+  const static functions::ReduceType reduceType = functions::ReduceType::AMIN;
 
   SD_OP_DEF static X startingValue(const X *input) { return input[0]; }
 
@@ -2783,7 +2783,7 @@ class Min {
  public:
   no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::MIN;
+  const static functions::ReduceType reduceType = functions::ReduceType::MIN;
 
   SD_OP_DEF static X startingValue(const X *input) { return sd::DataTypeUtils::infOrMax<X>(); }
 
@@ -2806,7 +2806,7 @@ class Norm1 {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2823,7 +2823,7 @@ template <typename X, typename Z>
 class Norm2 {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType =
-      typename AggregateType<Z>::type;
+  typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
@@ -2846,7 +2846,7 @@ class SquaredNorm {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2866,7 +2866,7 @@ class NormFrobenius {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2889,7 +2889,7 @@ class NormP {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2911,7 +2911,7 @@ class NormMax {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = Z;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2933,7 +2933,7 @@ class Variance {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0.0f); }
 
@@ -2961,7 +2961,7 @@ template <typename X, typename Z>
 class StandardDeviation {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType =
-      typename AggregateType<Z>::type;
+  typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0.0f); }
@@ -3645,8 +3645,8 @@ class DropOut {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      inline SD_DEVICE static X
-      op(X d1, X *params) {
+  inline SD_DEVICE static X
+  op(X d1, X *params) {
     X prob = params[0];
 
 #ifdef __CUDACC__
@@ -3666,10 +3666,10 @@ class DropOutInverted {
  public:
   no_op_exec_special no_op_exec_special_cuda
 #ifdef __CUDACC__
-      SD_DEVICE
+  SD_DEVICE
 #endif
-      inline static Z
-      op(X d1, Y d2, Z *params) {
+  inline static Z
+  op(X d1, Y d2, Z *params) {
     Y prob = d2;
 #ifdef __CUDACC__
     X length = params[1];
@@ -3688,8 +3688,8 @@ class ReplaceNans {
  public:
   no_op_exec_special no_op_exec_special_cuda
 
-      SD_OP_DEF static Z
-      op(X d1, Y d2, Z *params) {
+  SD_OP_DEF static Z
+  op(X d1, Y d2, Z *params) {
     return sd::math::sd_isnan(d1) ? static_cast<Z>(d2) : static_cast<Z>(d1);
   }
 };
@@ -3745,7 +3745,8 @@ class CompareAndReplace {
         return zd2;
       else
         return zd1;
-    else if (mode == 8)  // is inf
+      //equivalent case to NOT_FINITE
+    else if (mode == 8 || mode == 15)  // is inf
       if (sd::math::sd_isinf(zd1))
         return zd2;
       else
@@ -3770,13 +3771,17 @@ class CompareAndReplace {
         return zd2;
       else
         return zd1;
-    else if (mode == 13)  // abs_less_or_equals_than
-      if (sd::math::sd_abs<Z>(zd1) <= compare)
+    else if (mode == 13) {  // abs_less_or_equals_than
+      if (sd::math::sd_abs<Z>(zd1) <= compare) return zd2;
+    }
+    else if (mode == 14) {  // is_inf
+      if (!sd::math::sd_isinf(zd1))
         return zd2;
       else
         return zd1;
+    }
     else
-      printf("Undefined boolean operation: [%i]\n", mode);
+      sd_printf("Undefined boolean operation: [%i]\n", mode);
     return zd1;
   }
 };
@@ -3831,7 +3836,8 @@ class CompareAndSet {
         return d2;
       else
         return d1;
-    else if (mode == 8)  // is inf
+    //equivalent case to NOT_FINITE
+    else if (mode == 8 || mode == 15)  // is inf
       if (sd::math::sd_isinf(d2))
         return d2;
       else
@@ -3861,8 +3867,14 @@ class CompareAndSet {
         return d2;
       else
         return d1;
+    else if (mode == 14) {  // is_inf
+      if (!sd::math::sd_isinf(d1))
+        return d2;
+      else
+        return d1;
+    }
     else
-      printf("Undefined boolean operation: [%i]\n", mode);
+      sd_printf("Undefined boolean operation: [%i]\n", mode);
     return d1;
   }
 };
@@ -3872,9 +3884,9 @@ class CompareAndSetTransform {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
 
-      // op definition for Transform
-      SD_OP_DEF static X
-      op(X d1, X *params) {
+  // op definition for Transform
+  SD_OP_DEF static X
+  op(X d1, X *params) {
     auto compare = params[0];
     auto set = params[1];
     auto eps = params[2];
@@ -3886,13 +3898,13 @@ class CompareAndSetTransform {
         return set;
       else
         return d1;
-    // return sd::math::sd_abs<T>(d1 - compare) <= eps ? set : d1;
+      // return sd::math::sd_abs<T>(d1 - compare) <= eps ? set : d1;
     else if (mode == 1)  // not equals
       if (sd::math::sd_abs<X>(d1 - compare) > eps)
         return set;
       else
         return d1;
-    // return sd::math::sd_abs<T>(d1 - compare) > eps ? set : d1;
+      // return sd::math::sd_abs<T>(d1 - compare) > eps ? set : d1;
     else if (mode == 2)  // less_than
       if (d1 < compare)
         return set;
@@ -3953,8 +3965,14 @@ class CompareAndSetTransform {
         return set;
       else
         return d1;
+    else if (mode == 14) {  // is_inf
+      if (!sd::math::sd_isinf(d1))
+        return compare;
+      else
+        return d1;
+    }
     else
-      printf("Undefined boolean operation: [%i]\n", mode);
+      sd_printf("Undefined boolean operation: [%i]\n", mode);
     return d1;
   }
 };

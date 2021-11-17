@@ -27,12 +27,9 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Arrays;
-import java.util.List;
 
 
 public class Convolution {
@@ -184,7 +181,7 @@ public class Convolution {
                         .kW(kw)
                         .dH(1)
                         .dW(1)
-                        .isSameMode(isSameMode)
+                        .paddingMode(isSameMode ? PaddingMode.SAME : PaddingMode.VALID)
                         .build()).build();
 
         Nd4j.getExecutioner().execAndReturn(im2col);
@@ -221,7 +218,7 @@ public class Convolution {
                         .kH(kh)
                         .dW(dW)
                         .dH(dH)
-                        .isSameMode(isSameMode)
+                        .paddingMode(isSameMode ? PaddingMode.SAME : PaddingMode.VALID)
                         .build()).build();
 
         Nd4j.getExecutioner().execAndReturn(im2col);
@@ -259,7 +256,7 @@ public class Convolution {
                 .kW(kw)
                 .pH(ph)
                 .pW(pw)
-                .isSameMode(isSameMode)
+                .paddingMode(isSameMode ? PaddingMode.SAME : PaddingMode.VALID)
                 .sH(sy)
                 .sW(sx)
                 .type(type)
@@ -311,7 +308,7 @@ public class Convolution {
                         .kH(kh)
                         .dW(1)
                         .dH(1)
-                        .isSameMode(isSameMode)
+                        .paddingMode(isSameMode ? PaddingMode.SAME : PaddingMode.VALID)
                         .build()).build();
 
         Nd4j.getExecutioner().execAndReturn(im2col);

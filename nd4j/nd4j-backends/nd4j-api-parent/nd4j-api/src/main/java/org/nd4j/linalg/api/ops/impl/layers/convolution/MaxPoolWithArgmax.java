@@ -33,6 +33,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -97,7 +98,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
                     .pW(iArguments.get(5))
                     .dH(iArguments.get(6))
                     .dW(iArguments.get(7))
-                    .isSameMode(iArguments.get(8) == 1)
+                    .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                     .extra(iArguments.get(9))
                     .isNHWC(iArguments.get(10) == 1)
                     .type(Pooling2D.Pooling2DType.MAX)
@@ -115,7 +116,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
                 config.getPW(),
                 config.getDH(),
                 config.getDW(),
-                ArrayUtil.fromBoolean(config.isSameMode()),
+                config.getPaddingMode().index,
                 (int) config.getExtra(),
                 ArrayUtil.fromBoolean(config.isNHWC())
         );
@@ -197,7 +198,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
                 .sH(sH)
                 .sW(sW)
                 .type(Pooling2D.Pooling2DType.MAX)
-                .isSameMode(isSameMode)
+                .paddingMode(isSameMode ? PaddingMode.SAME : PaddingMode.VALID)
                 .kH(kH)
                 .kW(kW)
                 .pH(pH)

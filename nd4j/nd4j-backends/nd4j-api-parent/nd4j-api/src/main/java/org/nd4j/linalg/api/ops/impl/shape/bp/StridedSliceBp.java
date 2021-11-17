@@ -72,7 +72,7 @@ public class StridedSliceBp extends DynamicCustomOp {
         addArguments();
     }
 
-    private void addArguments(){
+    private void addArguments() {
         addIArgument(beginMask);
         addIArgument(ellipsisMask);
         addIArgument(endMask);

@@ -22,7 +22,20 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
 
 public enum PaddingMode {
-    VALID,
-    SAME,
-    CAUSAL
+    VALID(0),
+    SAME(1),
+    CAUSAL(2);
+
+    public final int index;
+    PaddingMode(int index) { this.index = index; }
+
+    public static PaddingMode fromNumber(int index) {
+        switch(index) {
+            case 0: return VALID;
+            case 1: return SAME;
+            case 2: return CAUSAL;
+            default:throw new IllegalArgumentException("Illegal index passed in: " + index);
+        }
+
+    }
 }

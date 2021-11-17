@@ -48,13 +48,19 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     private Map<String,SDVariable> gradVariables;
     private SDVariable out;
     private String id;
+    private String outName;
+    private List<String> gradVarNames;
 
-
-    public ExternalErrorsFunction(SameDiff sd, List<SDVariable> inputs, Map<String,INDArray> gradients){
+    public ExternalErrorsFunction(SameDiff sd, List<SDVariable> inputs, Map<String,INDArray> gradients) {
         super(sd, inputs.toArray(new SDVariable[inputs.size()]));
         if(gradients == null)
             gradients = new HashMap<>();
         this.gradients = gradients;
+        gradVarNames = new ArrayList<>();
+        for(SDVariable input : inputs) {
+            gradVarNames.add(input.name());
+        }
+
         this.id = UUID.randomUUID().toString();
     }
 
@@ -62,6 +68,51 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
 
     public String getGradPlaceholderName(){
         return arg().name() + "-grad";
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+        if(outName != null) {
+            this.out = sameDiff.getVariable(outName);
+        }
+
+        gradients = new HashMap<>();
+
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        if(out != null)
+            ret.put("out",out);
+        if(id != null)
+            ret.put("id",id);
+        if(gradVarNames != null)
+            ret.put("gradVarNames",gradVarNames);
+        return ret;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("id")) {
+            this.id = properties.get("id").toString();
+        }
+
+        if(properties.containsKey("out")) {
+            this.outName = properties.get("out").toString();
+        }
+
+        if(properties.containsKey("gradVarNames")) {
+            List<String> gradVarNames = (List<String>) properties.get("gradVarNames");
+            this.gradVarNames = gradVarNames;
+        }
+
     }
 
     @Override
@@ -98,6 +149,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
                 } else {
                     grad = sameDiff.var(n, VariableType.PLACEHOLDER, null, dt);
                 }
+                sameDiff.setGradientForVariableName(arg.name(),grad);
                 gradVariables.put(arg.name(), grad);
                 out.add(grad);
             }
@@ -106,7 +158,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     }
 
 
-    public void updateBeforeExecution(){
+    public void updateBeforeExecution() {
         Preconditions.checkState(gradVariables != null, "Variables list is null - doDiff has not been called?");
 
         //Update external gradients ready for execution

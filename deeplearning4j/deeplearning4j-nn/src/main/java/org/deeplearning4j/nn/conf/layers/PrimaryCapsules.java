@@ -102,7 +102,7 @@ public class PrimaryCapsules extends SameDiffLayer {
                 .sH(stride[0]).sW(stride[1])
                 .pH(padding[0]).pW(padding[1])
                 .dH(dilation[0]).dW(dilation[1])
-                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .paddingMode(ConvolutionMode.mapToMode(convolutionMode))
                 .build();
 
         SDVariable conved;

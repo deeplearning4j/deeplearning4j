@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.profiler.ProfilerConfig;
@@ -47,10 +48,10 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
 
     @BeforeEach
     public void setUp() {
-       Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-               .checkForINF(true)
-               .checkForNAN(true)
-               .build());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                .checkForINF(true)
+                .checkForNAN(true)
+                .build());
     }
 
     @AfterEach
@@ -62,10 +63,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                    .checkForNAN(true)
-                    .checkForINF(true)
-                    .build());
             INDArray x = Nd4j.create(100);
 
             x.putScalar(2, Float.NEGATIVE_INFINITY);
@@ -80,15 +77,13 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                    .checkForNAN(true)
-                    .checkForINF(true)
-                    .build());
             INDArray x = Nd4j.create(100);
 
             x.putScalar(2, Float.NEGATIVE_INFINITY);
 
             OpExecutionerUtil.checkForAny(x);
+
+
         });
 
     }
@@ -97,8 +92,12 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf3(Nd4jBackend backend) {
         INDArray x = Nd4j.create(100);
+        assertThrows(ND4JOpProfilerException.class,() -> {
+            OpExecutionerUtil.checkForAny(x);
 
-        OpExecutionerUtil.checkForAny(x);
+        });
+
+
     }
 
     @ParameterizedTest
@@ -115,9 +114,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN1(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                    .checkForNAN(true)
-                    .build());
             INDArray x = Nd4j.create(100);
 
             x.putScalar(2, Float.NaN);
@@ -132,10 +128,6 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN2(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                    .checkForINF(true)
-                    .checkForNAN(true)
-                    .build());
             INDArray x = Nd4j.create(100);
 
             x.putScalar(2, Float.NaN);
@@ -148,23 +140,23 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN3(Nd4jBackend backend) {
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                .checkForINF(true)
-                .checkForNAN(true)
-                .build());
         INDArray x = Nd4j.create(100);
+        assertThrows(ND4JOpProfilerException.class,() -> {
+            OpExecutionerUtil.checkForAny(x);
 
-        OpExecutionerUtil.checkForAny(x);
+        });
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN4(Nd4jBackend backend) {
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                .build());
+
         INDArray x = Nd4j.create(100);
 
-        OpExecutionerUtil.checkForAny(x);
+        assertThrows(ND4JOpProfilerException.class,() -> {
+            OpExecutionerUtil.checkForAny(x);
+
+        });
     }
 
     @Override

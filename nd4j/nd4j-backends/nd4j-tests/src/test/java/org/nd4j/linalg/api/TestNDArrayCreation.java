@@ -114,16 +114,6 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
         assertEquals(arrCreate.data().address(), pointer.address());
     }
 
-    @Disabled // this is endless test
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testEndlessAllocation(Nd4jBackend backend) {
-        Nd4j.getEnvironment().setMaxSpecialMemory(1);
-        while (true) {
-            val arr = Nd4j.createUninitialized(DataType.FLOAT, 100000000);
-            arr.assign(1.0f);
-        }
-    }
 
     @Disabled("This test is designed to run in isolation. With parallel gc it makes no real sense since allocated amount changes at any time")
     @ParameterizedTest

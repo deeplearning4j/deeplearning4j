@@ -256,7 +256,7 @@ public abstract class AbstractSession<T, O> {
                 execFailed(userRequestedUnique, out, allRequired, allExecuted, step);
             }
 
-            //Get variable in the current frame/iteration and execute it's corresponding op
+            //G et variable in the current frame/iteration and execute it's corresponding op
             //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
             //The idea is to not mix the order of execution of ops in different frames/iters - i.e., finish the current
             // frame/iter before starting the next one
@@ -823,12 +823,12 @@ public abstract class AbstractSession<T, O> {
                 //To execute op - and hence get this variable: need inputs to that op
                 DifferentialFunction opById = sameDiff.getOpById(opName);
                 String[] inputs = sameDiff.getInputsForOp(opById);
-                for (String s2 : inputs) {
-                    String strippedSuffix = stripVarSuffix(s2);
-                    if (!subgraph.contains(strippedSuffix)) {
-                        processingQueue.add(strippedSuffix);
+                if(inputs != null)
+                    for (String s2 : inputs) {
+                        if (!subgraph.contains(s2)) {
+                            processingQueue.add(s2);
+                        }
                     }
-                }
 
                 //To execute op - and hence get this variable - we also need control deps
                 List<String> opControlDeps = sameDiff.getOps().get(opName).getControlDeps();

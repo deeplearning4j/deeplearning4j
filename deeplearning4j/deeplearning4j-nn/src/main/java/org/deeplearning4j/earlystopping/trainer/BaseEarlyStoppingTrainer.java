@@ -159,6 +159,8 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     T bestModel;
                     try {
                         bestModel = esConfig.getModelSaver().getBestModel();
+                        bestModelScore = bestModel.score();
+                        
                     } catch (IOException e2) {
                         throw new RuntimeException(e2);
                     }
@@ -169,10 +171,13 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 //Check per-iteration termination conditions
                 if(pretrain){
                     //TODO support for non-first-layer pretraining
-                    if(model instanceof MultiLayerNetwork){
+                    if(model instanceof MultiLayerNetwork) {
                         lastScore = (((MultiLayerNetwork) model).getLayer(0)).score();
+                        ((MultiLayerNetwork) model).setScore(lastScore);
                     } else {
-                        lastScore = (((ComputationGraph) model).getLayer(0)).score();
+                        ComputationGraph computationGraph = (ComputationGraph) model;
+                        lastScore = computationGraph.getLayer(0).score();
+                        computationGraph.setScore(lastScore);
                     }
                 } else {
                     lastScore = model.score();
@@ -218,6 +223,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 T bestModel;
                 try {
                     bestModel = esConfig.getModelSaver().getBestModel();
+                    bestModelScore = bestModel.score();
                 } catch (IOException e2) {
                     throw new RuntimeException(e2);
                 }
@@ -294,16 +300,18 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 }
                 if (epochTerminate) {
                     log.info("Hit epoch termination condition at epoch {}. Details: {}", epochCount,
-                            termReason.toString());
+                            termReason);
                     T bestModel;
                     try {
                         bestModel = esConfig.getModelSaver().getBestModel();
+                        bestModelScore = bestModel.score();
                     } catch (IOException e2) {
                         //Best model does not exist. Just save the current model
                         if(esConfig.isSaveLastModel()) {
                             try {
                                 esConfig.getModelSaver().saveBestModel(model,0.0);
                                 bestModel = model;
+                                bestModelScore = bestModel.score();
                             } catch (IOException e) {
                                 log.error("Unable to save model.",e);
                                 throw new RuntimeException(e);

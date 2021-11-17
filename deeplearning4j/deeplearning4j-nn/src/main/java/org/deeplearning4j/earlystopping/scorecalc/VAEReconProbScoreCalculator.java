@@ -94,13 +94,13 @@ public class VAEReconProbScoreCalculator extends BaseScoreCalculator<Model> {
             l = network.getLayer(0);
         }
 
-        if(!(l instanceof VariationalAutoencoder)){
+        if(!(l instanceof VariationalAutoencoder)) {
             throw new UnsupportedOperationException("Can only score networks with VariationalAutoencoder layers as first layer -" +
                     " got " + l.getClass().getSimpleName());
         }
         VariationalAutoencoder vae = (VariationalAutoencoder)l;
         //Reconstruction prob
-        if(logProb){
+        if(logProb) {
             return -vae.reconstructionLogProbability(features, reconstructionProbNumSamples).sumNumber().doubleValue();
         } else {
             return vae.reconstructionProbability(features, reconstructionProbNumSamples).sumNumber().doubleValue();

@@ -111,7 +111,7 @@ DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
  * 0: target DataType
  */
 #if NOT_EXCLUDED(OP_min_max_datatype)
-DECLARE_CUSTOM_OP(min_max_datatype, 0, 1, false, 0, 2);
+DECLARE_CUSTOM_OP(min_max_datatype, -2, 1, false, 0, 2);
 #endif
 /**
  * This operation change type of input and modified shape of output to conform with given data type

@@ -347,15 +347,6 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
 
     }
 
-    @Disabled
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNumpyBoolean(Nd4jBackend backend) {
-        INDArray out = Nd4j.createFromNpyFile(new File("c:/Users/raver/Downloads/error2.npy"));
-//        System.out.println(ArrayUtil.toList(ArrayUtil.toInts(out.shape())));
-//        System.out.println(out);
-    }
-
     @Override
     public char ordering() {
         return 'c';

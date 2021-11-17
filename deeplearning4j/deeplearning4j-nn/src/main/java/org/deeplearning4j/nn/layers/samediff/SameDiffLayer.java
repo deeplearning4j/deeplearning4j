@@ -95,6 +95,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             }
         }
 
+
+
+
         org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
         bl.validateInput(input);
 
@@ -295,7 +298,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         return paramTable;
     }
 
-    protected void doInit(){
+    protected void doInit() {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
             sameDiff = SameDiff.create();

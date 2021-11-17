@@ -1615,8 +1615,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
                 input = input2;
 
-                for( int i=0; i<3; i++){
-                    for( int j=0; j<3; j++ ){
+                for( int i = 0; i < 3; i++){
+                    for( int j = 0; j < 3; j++ ){
                         System.out.print(input.getDouble(0,0,i,j) + ",");
                     }
                     System.out.println();

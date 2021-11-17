@@ -22,6 +22,8 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -33,6 +35,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.PReluBp;
+import org.nd4j.shade.guava.primitives.Ints;
 
 /**
  * Parameterized ReLU op
@@ -71,6 +74,16 @@ public class PRelu extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+
+    @Override
+    public void configureFromArguments() {
+        this.sharedAxes = Ints.toArray(iArguments);
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
     }
 
     @Override

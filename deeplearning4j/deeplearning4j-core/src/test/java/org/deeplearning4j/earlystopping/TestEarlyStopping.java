@@ -107,7 +107,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             ScoreCalculator sc;
             boolean min;
-            switch(i){
+            switch(i) {
                 case 0:
                     sc = new DataSetLossCalculator(irisIter, true);
                     min = true;
@@ -153,7 +153,6 @@ public class TestEarlyStopping extends BaseDL4JTest {
                     .build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
-//            net.setListeners(new ScoreIterationListener(1));
 
             EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
             EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
@@ -591,7 +590,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
 
             List<DataSet> l = new ArrayList<>();
-            for( int i=0; i<10; i++ ){
+            for( int i = 0; i < 10; i++ ){
                 DataSet ds = iter.next();
                 l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
             }
@@ -681,7 +680,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
 
             List<DataSet> l = new ArrayList<>();
-            for( int i=0; i<10; i++ ){
+            for( int i = 0; i < 10; i++ ){
                 DataSet ds = iter.next();
                 l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
             }
@@ -711,9 +710,11 @@ public class TestEarlyStopping extends BaseDL4JTest {
         for(boolean logProb : new boolean[]{false, true}) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE)
                     .list()
                     .layer(new VariationalAutoencoder.Builder()
-                            .nIn(784).nOut(32)
+                            .nIn(784).nOut(64)
+                            .updater(new Adam())
                             .encoderLayerSizes(64)
                             .decoderLayerSizes(64)
                             .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID))
@@ -724,10 +725,10 @@ public class TestEarlyStopping extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
+            DataSetIterator iter = new MnistDataSetIterator(32, true, 12345);
 
             List<DataSet> l = new ArrayList<>();
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 100; i++) {
                 DataSet ds = iter.next();
                 l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
             }
@@ -737,10 +738,10 @@ public class TestEarlyStopping extends BaseDL4JTest {
             EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
             EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
                     new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                             .iterationTerminationConditions(
                                     new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                            .scoreCalculator(new VAEReconProbScoreCalculator(iter, 20, logProb)).modelSaver(saver)
+                            .scoreCalculator(new VAEReconProbScoreCalculator(iter, 128, logProb)).modelSaver(saver)
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);

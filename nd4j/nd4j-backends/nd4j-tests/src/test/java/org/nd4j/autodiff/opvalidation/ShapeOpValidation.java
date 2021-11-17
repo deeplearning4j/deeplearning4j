@@ -2505,7 +2505,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGather2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
-        SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
+        SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.DOUBLE).reshape(2,3));
         SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0).reshape(1,1));
 
         SDVariable gathered = sd.gather(input, indices, 1);
@@ -2668,7 +2668,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTriuOp(Nd4jBackend backend) {
-
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         SameDiff sd = SameDiff.create();
         SDVariable input = sd.var(Nd4j.createFromArray(new double[][]{{1,2,3}, {4,5,6}, {7,8,9},{10,11,12}}));
         SDVariable out = new Triu(sd, input,-1).outputVariable();

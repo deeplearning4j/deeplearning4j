@@ -47,6 +47,7 @@ static void conv2dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
+  sd_debug("Running conv2d onednn with strides: %d %d padding: %d %d dilation: %d %d paddingMode %d weightFormat %d\n",sH,sW,pH,pW,dH,dW,paddingMode,wFormat);
   const int pWSame = (paddingMode == 2 && dW > 1) ? ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2
                                                   : pW;  // dH == 1 for causal mode in conv1d
 
@@ -72,19 +73,26 @@ static void conv2dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
 
   // memory descriptors for arrays
 
+  sd_debug("Creating input descriptor\n",0);
   // input
   dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, type, xzFormatMkl);
   onednnUtils::setBlockStrides(*input, x_user_md);
+
+  sd_debug("Creating weight descriptor\n",0);
 
   // weights
   dnnl::memory::desc w_mkl_md = dnnl::memory::desc(wDims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, type, wFormatMkl);
   onednnUtils::setBlockStrides(*weights, w_user_md, permut);
 
+  sd_debug("Creating bias descriptor\n",0);
+
   // bias
   dnnl::memory::desc b_mkl_md;
   if (bias != nullptr) b_mkl_md = dnnl::memory::desc({oC}, type, dnnl::memory::format_tag::x);
+
+  sd_debug("Creating output\n",0);
 
   // output
   dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zDims, type, dnnl::memory::format_tag::any);
@@ -93,11 +101,17 @@ static void conv2dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
+  sd_debug("Creating op descriptor\n",0);
+
   // operation primitive description
   dnnl::convolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
                                           x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md, strides, dilation, padding,
                                           padding_r);
+
+  sd_debug("Creating prim  descriptor\n",0);
+
   dnnl::convolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+  sd_debug("Created engine\n",0);
 
   // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;

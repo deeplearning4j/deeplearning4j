@@ -214,7 +214,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>): SameDiff {
 
 
-      
+
 
         /*
         First, build an in-memory representation of the graph that allows us to build the graph incrementally
@@ -426,7 +426,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             if(!sd.hasVariable(inName) && inName.contains(':')) {
                                 val knownBaseName = stripVarSuffix(inName)
                                 if(!sd.hasVariable(knownBaseName)) {
-                                    throw IllegalArgumentException("No variable name found for $inName")
+                                    throw IllegalArgumentException("No variable name found for $knownBaseName")
                                 }
                                 else {
                                     val knownBaseVar = sd.getVariable(stripVarSuffix(inName))
@@ -617,15 +617,25 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                                 outSDVars[i] = if(sd.hasVariable(varName)) sd.getVariable(varName) else sd.`var`(varName, VariableType.ARRAY, null, dt)
                                 outNames.add(varName)
-                                outVars[i] = Variable.builder()
-                                    .name(varName)
-                                    .variable(outSDVars[i])
-                                    .inputsForOp(null) //This is updated incrementally as other ops are added
-                                    .controlDepsForOp(null) //Control deps are handled later
-                                    .controlDepsForVar(null)
-                                    .outputOfOp(name)
-                                    .build()
-                                sd.variables[varName] = outVars[i]
+                                if(sd.variables.containsKey(varName)) {
+                                    outVars[i] = sd.variables[varName]
+                                  if(outVars[i]!!.variable == null)
+                                      outVars[i]!!.variable = outSDVars[i]
+                                    if(outVars[i]!!.outputOfOp == null) {
+                                        outVars[i]!!.outputOfOp = name
+                                    }
+                                }
+                                else {
+                                    outVars[i] = Variable.builder()
+                                        .name(varName)
+                                        .variable(outSDVars[i])
+                                        .inputsForOp(null) //This is updated incrementally as other ops are added
+                                        .controlDepsForOp(null) //Control deps are handled later
+                                        .controlDepsForVar(null)
+                                        .outputOfOp(name)
+                                        .build()
+                                    sd.variables[varName] = outVars[i]
+                                }
                                 println("Added variable to graph: $varName (output of op $name)")
                                 variablesAdded.add("$varName,$name")
                             }
@@ -714,7 +724,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     val nextOpDef = remainingNodes[nextOp]
 
                     if (nextOpDef == null) {
-                        val opSet = setOf("noop","assert","while","identity","const","merge")
+                        val opSet = setOf("noop","assert","const","merge")
                         if (sd.ops.containsKey(nextOp) || opSet.contains(importInfoForNode!!.first.nd4jOpName())) {
                             //Already processed this.
                             //Almost certainly the close of a loop - like NextIteration -> Merge case
@@ -828,8 +838,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val noOpNames = sd.ops.filter { input -> input.value.op is NoOp }.keys
         sd.ops.keys.removeAll(noOpNames)
         sd.ops.forEach { (name, op) ->
-            val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
-            op.inputsToOp.removeAll(noOpNamesForInputs)
+            if(op.inputsToOp != null) {
+                val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
+                op.inputsToOp.removeAll(noOpNamesForInputs)
+            }
+
         }
 
         return sd

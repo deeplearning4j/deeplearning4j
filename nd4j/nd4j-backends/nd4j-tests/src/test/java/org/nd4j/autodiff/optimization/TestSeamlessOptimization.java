@@ -31,6 +31,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -72,6 +73,8 @@ public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
 
         SDVariable out = sd.nn.softmax("out", sd.identity(i1.mmul(i2).add(i3)));
 
+        sd = GraphOptimizer.optimize(sd,"out");
+
         RecordOpsListener l = new RecordOpsListener();
         sd.setListeners(new AssertNoOpsOfTypeListener(Identity.class), l);
 
@@ -104,19 +107,6 @@ public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDifferentOutputs(Nd4jBackend nd4jBackend) {
-        //Test when the user requests different outputs instead
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGraphModification(Nd4jBackend nd4jBackend) {
-        //User modifies the graph -> should reoptimize?
-
-        fail("Not yet implemented");
-    }
 
     public static class AssertNoOpsOfTypeListener extends BaseListener {
         private List<Class<?>> list;
@@ -133,7 +123,7 @@ public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
 
         @Override
         public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
-            if(list.contains(op.getOp().getClass())){
+            if(list.contains(op.getOp().getClass())) {
                 throw new IllegalStateException("Encountered unexpected class: " + op.getOp().getClass().getName());
             }
         }

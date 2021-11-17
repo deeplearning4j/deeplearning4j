@@ -361,7 +361,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         log.info("Starting unsupervised training on layer " + layerIdx + " for " + numEpochs + " epochs");
-        for(int i=0; i<numEpochs; i++ ) {
+        for(int i = 0; i < numEpochs; i++ ) {
             if(i > 0)
                 iter.reset();
 

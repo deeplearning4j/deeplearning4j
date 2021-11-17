@@ -1455,6 +1455,20 @@ public class NDBase {
   }
 
   /**
+   * A tensor with the shape of input minus the specified axis with elements repeated along the specified axis.<br>
+   *
+   * @param input Input value to repeat (NUMERIC type)
+   * @param repeats A 1d input representing the number of inputs of repeats for each element. (NUMERIC type)
+   * @param axis Data type of the output array
+   * @return output A tensor with the shape of input minus the specified axis (NUMERIC type)
+   */
+  public INDArray repeat(INDArray input, INDArray repeats, int axis) {
+    NDValidation.validateNumerical("repeat", "input", input);
+    NDValidation.validateNumerical("repeat", "repeats", repeats);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Repeat(input, repeats, axis))[0];
+  }
+
+  /**
    * Element-wise replace where condition:<br>
    * out[i] = from[i] if condition(update[i]) is satisfied, or<br>
    * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>

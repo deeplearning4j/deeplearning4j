@@ -61,7 +61,7 @@ public class SameDiffDense extends SameDiffLayer {
         activation = builder.activation;
     }
 
-    private SameDiffDense(){
+    private SameDiffDense() {
         //No op constructor for Jackson
     }
 
@@ -90,9 +90,9 @@ public class SameDiffDense extends SameDiffLayer {
     }
 
     @Override
-    public void initializeParameters(Map<String,INDArray> params){
+    public void initializeParameters(Map<String,INDArray> params) {
         for(Map.Entry<String,INDArray> e : params.entrySet()){
-            if(paramWeightInit != null && paramWeightInit.containsKey(e.getKey())){
+            if(paramWeightInit != null && paramWeightInit.containsKey(e.getKey())) {
                 paramWeightInit.get(e.getKey()).init(nIn, nOut, e.getValue().shape(), 'c', e.getValue());
             } else {
                 if(DefaultParamInitializer.BIAS_KEY.equals(e.getKey())){
@@ -122,7 +122,7 @@ public class SameDiffDense extends SameDiffLayer {
         }
     }
 
-    public char paramReshapeOrder(String param){
+    public char paramReshapeOrder(String param) {
         //To match DL4J for easy comparison
         return 'f';
     }
@@ -139,12 +139,12 @@ public class SameDiffDense extends SameDiffLayer {
             return this;
         }
 
-        public Builder nOut(int nOut){
+        public Builder nOut(int nOut) {
             this.nOut = nOut;
             return this;
         }
 
-        public Builder activation(Activation activation){
+        public Builder activation(Activation activation) {
             this.activation = activation;
             return this;
         }

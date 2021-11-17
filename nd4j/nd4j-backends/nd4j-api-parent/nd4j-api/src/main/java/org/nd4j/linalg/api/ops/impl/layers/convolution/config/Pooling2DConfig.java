@@ -48,7 +48,7 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     private Pooling2DType type = Pooling2DType.MAX;
     @Builder.Default
     private Divisor divisor = Divisor.EXCLUDE_PADDING;
-    private boolean isSameMode;
+    private PaddingMode paddingMode;
     @Builder.Default
     private long dH = 1;
     @Builder.Default
@@ -57,7 +57,7 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     private boolean isNHWC = false;
 
     public Pooling2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, double extra, Pooling2DType type,
-            Divisor divisor, boolean isSameMode, long dH, long dW, boolean isNHWC) {
+            Divisor divisor, PaddingMode paddingMode, long dH, long dW, boolean isNHWC) {
         this.kH = kH;
         this.kW = kW;
         this.sH = sH;
@@ -67,7 +67,7 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
         this.extra = extra;
         this.type = type;
         this.divisor = divisor;
-        this.isSameMode = isSameMode;
+        this.paddingMode = paddingMode;
         this.dH = dH;
         this.dW = dW;
         this.isNHWC = isNHWC;
@@ -86,7 +86,7 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
         ret.put("pW", pW);
         ret.put("extra", extra);
         ret.put("type", type.toString());
-        ret.put("isSameMode", isSameMode);
+        ret.put("paddingMode", paddingMode);
         ret.put("dH", dH);
         ret.put("dW", dW);
         ret.put("isNHWC", isNHWC);

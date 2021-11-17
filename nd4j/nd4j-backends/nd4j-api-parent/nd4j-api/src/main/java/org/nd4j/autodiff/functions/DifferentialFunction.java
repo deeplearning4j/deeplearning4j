@@ -334,8 +334,8 @@ public abstract class DifferentialFunction {
                     value = value2.longValue();
                 }
 
-                if(target.getType().equals(Boolean.class) || target.getType().equals(boolean.class) && value instanceof Double) {
-                    Double value2 = (Double) value;
+                if(target.getType().equals(Boolean.class) || target.getType().equals(boolean.class) && value instanceof Number) {
+                    Number value2 = (Number) value;
                     value = value2.doubleValue() > 0;
                 }
 

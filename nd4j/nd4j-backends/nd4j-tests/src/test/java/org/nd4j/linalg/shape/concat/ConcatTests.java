@@ -179,7 +179,6 @@ public class ConcatTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, concat2);
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
