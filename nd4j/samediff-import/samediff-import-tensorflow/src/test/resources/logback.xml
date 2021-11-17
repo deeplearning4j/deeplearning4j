@@ -39,8 +39,8 @@
 
     <logger name="org.apache.catalina.core" level="DEBUG" />
 	<logger name="org.springframework" level="WARN" />
-	<logger name="org.nd4j" level="TRACE" />
-	<logger name="org.deeplearning4j" level="TRACE" />
+	<logger name="org.nd4j" level="INFO" />
+	<logger name="org.deeplearning4j" level="INFO" />
 
 
 	<root level="ERROR">
