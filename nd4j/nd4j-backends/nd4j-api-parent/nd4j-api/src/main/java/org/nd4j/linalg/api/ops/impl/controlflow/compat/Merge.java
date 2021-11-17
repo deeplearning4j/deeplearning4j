@@ -37,7 +37,7 @@ import java.util.Map;
 
 public class Merge extends BaseCompatOp {
 
-    public Merge(SameDiff sd, SDVariable ... inputs){
+    public Merge(SameDiff sd, SDVariable ... inputs) {
         super(sd, inputs);
     }
 
@@ -45,7 +45,8 @@ public class Merge extends BaseCompatOp {
         super(inputs);
     }
 
-    public Merge(){ }
+    public Merge() {
+    }
 
     /**
      * WARNING: do not change without changing serialization methods
@@ -92,7 +93,7 @@ public class Merge extends BaseCompatOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 1, "Expected at least 1  input data types for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
     }

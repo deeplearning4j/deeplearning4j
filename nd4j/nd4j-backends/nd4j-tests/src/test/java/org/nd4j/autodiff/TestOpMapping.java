@@ -147,57 +147,6 @@ public class TestOpMapping extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testOpMappingCoverage() throws Exception {
-        Map<String, DifferentialFunction> opNameMapping = ImportClassMapping.getOpNameMapping();
-        Map<String, DifferentialFunction> tfOpNameMapping = ImportClassMapping.getTFOpMappingFunctions();
-        Map<String, DifferentialFunction> onnxOpNameMapping = ImportClassMapping.getOnnxOpMappingFunctions();
-
-
-        for(Class<? extends DifferentialFunction> c : subTypes) {
-
-            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || ILossFunction.class.isAssignableFrom(c))
-                continue;
-
-            DifferentialFunction df;
-            try {
-                df = c.newInstance();
-            } catch (Throwable t){
-                //All differential functions should have a no-arg constructor
-                throw new RuntimeException("Error instantiating new instance - op class " + c.getName() + " likely does not have a no-arg constructor", t);
-            }
-            String opName = df.opName();
-
-            assertTrue( opNameMapping.containsKey(opName),"Op is missing - not defined in ImportClassMapping: " + opName +
-                    "\nInstructions to fix: Add class to org.nd4j.imports.converters.ImportClassMapping"
-            );
-
-            try{
-                String[] tfNames = df.tensorflowNames();
-
-                for(String s : tfNames ) {
-                    assertTrue( tfOpNameMapping.containsKey(s),"Tensorflow mapping not found: " + s);
-                    assertEquals(df.getClass(), tfOpNameMapping.get(s).getClass(),"Tensorflow mapping: " + s);
-                }
-            } catch (NoOpNameFoundException e){
-                //OK, skip
-            }
-
-
-            try{
-                String[] onnxNames = df.onnxNames();
-
-                for(String s : onnxNames ){
-                    assertTrue( onnxOpNameMapping.containsKey(s),"Onnx mapping not found: " + s);
-                    assertEquals(df.getClass(), onnxOpNameMapping.get(s).getClass(),"Onnx mapping: " + s);
-                }
-            } catch (NoOpNameFoundException e){
-                //OK, skip
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOpsInNamespace(Nd4jBackend backend) throws Exception {
         //Ensure that every op is either in a namespace, OR it's explicitly marked as ignored (i.e., an op that we don't
         // want to add to a namespace for some reason)

@@ -2505,7 +2505,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGather2(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
-        SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
+        SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.DOUBLE).reshape(2,3));
         SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0).reshape(1,1));
 
         SDVariable gathered = sd.gather(input, indices, 1);

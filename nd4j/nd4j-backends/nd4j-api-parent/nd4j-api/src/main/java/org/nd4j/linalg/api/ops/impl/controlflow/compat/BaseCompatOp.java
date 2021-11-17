@@ -70,6 +70,33 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
     }
 
     @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        if(frameName != null)
+            ret.put("frameName",frameName);
+        return ret;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+        if(properties.containsKey("frameName")) {
+            String frameName = getStringFromProperty("frameName",properties);
+            this.frameName = frameName;
+        }
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+    }
+
+    @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();

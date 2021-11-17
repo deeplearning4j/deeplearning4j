@@ -27,6 +27,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -82,6 +83,32 @@ public class ClipByNorm extends DynamicCustomOp {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("clipValue")) {
+            Double clip = getDoubleValueFromProperty("clipValue",properties);
+            this.clipValue = clip;
+        }
+
+        if(properties.containsKey("dimensions")) {
+            Long dimension = getLongValueFromProperty("dimensions",properties);
+            this.dimensions = new int[]{dimension.intValue()};
+        }
+
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(!iArguments.isEmpty()) {
+            this.dimensions = Ints.toArray(iArguments);
+        }
+
+        if(!tArguments.isEmpty()) {
+            this.clipValue = tArguments.get(0);
+        }
+
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

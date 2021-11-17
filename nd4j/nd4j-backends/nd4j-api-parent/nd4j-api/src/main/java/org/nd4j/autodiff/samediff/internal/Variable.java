@@ -40,4 +40,20 @@ public class Variable {
     protected List<String> controlDeps;     //Control dependencies: name of ops that must be available before this variable is considered available for execution
     protected SDVariable gradient;      //Variable corresponding to the gradient of this variable
     protected int variableIndex = -1;
+
+    public List<String> getInputsForOp() {
+        return inputsForOp;
+    }
+
+    public void setInputsForOp(List<String> inputsForOp) {
+        this.inputsForOp = inputsForOp;
+    }
+
+    public String getOutputOfOp() {
+        return outputOfOp;
+    }
+
+    public void setOutputOfOp(String outputOfOp) {
+        this.outputOfOp = outputOfOp;
+    }
 }

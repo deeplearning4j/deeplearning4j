@@ -94,7 +94,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
       shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
       const auto zOffset = shape::getOffset(target.shapeInfo(), coords);
       // if( (row + upper < col) || (row + lower > col) )
-      if (coords[0] > (coords[1] - lower)) {
+      if (coords[zRank - 2] > (coords[zRank - 1] - lower)) {
         z[zOffset] = value;
       }
       else if (this != &target) {  // when this and target are different arrays

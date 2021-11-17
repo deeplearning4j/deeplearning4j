@@ -256,7 +256,7 @@ public abstract class AbstractSession<T, O> {
                 execFailed(userRequestedUnique, out, allRequired, allExecuted, step);
             }
 
-            //Get variable in the current frame/iteration and execute it's corresponding op
+            //G et variable in the current frame/iteration and execute it's corresponding op
             //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
             //The idea is to not mix the order of execution of ops in different frames/iters - i.e., finish the current
             // frame/iter before starting the next one

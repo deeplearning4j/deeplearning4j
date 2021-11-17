@@ -8254,9 +8254,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceMatrix(){
         INDArray arr = Nd4j.arange(4).reshape(2,2);
-//        System.out.println(arr.slice(0));
-//        System.out.println();
-//        System.out.println(arr.slice(1));
         arr.slice(0);
         arr.slice(1);
     }

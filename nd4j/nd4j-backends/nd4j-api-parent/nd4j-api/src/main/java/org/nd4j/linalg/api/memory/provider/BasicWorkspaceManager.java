@@ -351,7 +351,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         log.info("Number of workspaces in current thread: {}", map.size());
         log.info("Workspace name: Allocated / external (spilled) / external (pinned)");
         for (String key : map.keySet()) {
-            long current = ((Nd4jWorkspace) map.get(key)).getCurrentSize();
+            long current = map.get(key).getCurrentSize();
             long spilled = ((Nd4jWorkspace) map.get(key)).getSpilledSize();
             long pinned = ((Nd4jWorkspace) map.get(key)).getPinnedSize();
             log.info(String.format("%-26s %8s / %8s / %8s (%11d / %11d / %11d)", (key + ":"),

@@ -38,7 +38,6 @@ import java.util.List;
  */
 public class MinMaxDataType extends DynamicCustomOp {
     public MinMaxDataType() {
-        System.out.println();
     }
 
     public MinMaxDataType(SameDiff sd, int datatype, int minOrMax) {

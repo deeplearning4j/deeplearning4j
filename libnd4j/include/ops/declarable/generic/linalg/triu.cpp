@@ -78,10 +78,6 @@ CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
   pass.reset(gradOPass);
 
   auto gradI = OUTPUT_VARIABLE(0);  // dLoss/dI
-  if(gradI->isScalar()) {
-    gradI->p(0,0.0);
-    return sd::Status::OK;
-  }
   REQUIRE_TRUE(input->rankOf() > 0, 0, "TRIU_BP OP: the rank of input array must be > 0, but got %i instead !",
                input->rankOf());
 

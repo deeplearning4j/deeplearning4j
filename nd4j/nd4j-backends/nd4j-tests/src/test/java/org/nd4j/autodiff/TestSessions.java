@@ -234,16 +234,62 @@ public class TestSessions extends BaseNd4jTestWithBackends {
         for( int numIter : new int[]{1,3}) {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
             TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-            SameDiff sd = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap());
-
-
+            /**
+             * o.n.a.s.i.AbstractSession - Beginning execution step 0: ExecStep(CONSTANT,name="in_0",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 1: ExecStep(CONSTANT,name="while/Const",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 2: ExecStep(OP,name="in_0/read",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 3: ExecStep(OP,name="while/Enter",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 4: ExecStep(OP,name="while/Enter_1",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 5: ExecStep(OP,name="while/Merge",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 6: ExecStep(OP,name="while/Merge_1",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 7: ExecStep(OP,name="while/Less",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 8: ExecStep(OP,name="while/LoopCond",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 9: ExecStep(OP,name="while/Switch",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 10: ExecStep(OP,name="while/Switch_1",("while/while_context",0,parent=("main",0)))
+             */
+            SameDiff sd2 = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap());
+            /**
+             * o.n.a.s.i.AbstractSession - Beginning execution step 0: ExecStep(CONSTANT,name="in_0",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 1: ExecStep(CONSTANT,name="while/Const",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 2: ExecStep(OP,name="in_0/read",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 3: ExecStep(OP,name="while/Enter",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 4: ExecStep(OP,name="while/Enter_1",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 5: ExecStep(OP,name="while/Merge",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 6: ExecStep(OP,name="while/Merge_1",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 7: ExecStep(OP,name="while/Less",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 8: ExecStep(OP,name="while/LoopCond",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 9: ExecStep(OP,name="while/Switch",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 10: ExecStep(OP,name="while/Switch_1",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 11: ExecStep(OP,name="while/Identity",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 12: ExecStep(OP,name="while/Identity_1",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 13: ExecStep(CONSTANT,name="while/add/y",("main",0))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 14: ExecStep(OP,name="while/NextIteration_1",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 15: ExecStep(OP,name="while/Merge_1",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 16: ExecStep(OP,name="while/add",("while/while_context",0,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 17: ExecStep(OP,name="while/NextIteration",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 18: ExecStep(OP,name="while/Merge",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 19: ExecStep(OP,name="while/Less",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 20: ExecStep(OP,name="while/LoopCond",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 21: ExecStep(OP,name="while/Switch",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 22: ExecStep(OP,name="while/Switch_1",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 23: ExecStep(OP,name="while/Exit",("while/while_context",1,parent=("main",0)))
+             * o.n.a.s.i.AbstractSession - Beginning execution step 24: ExecStep(OP,name="while/Exit_1",("while/while_context",1,parent=("main",0)))
+             */
+            SameDiff sd = SameDiff.importFrozenTF(f);
+            String n = "while/Exit";
+            String n2 = "while/Exit_1";
+            InferenceSession is2 = new InferenceSession(sd);
+            Map<String, INDArray> m2 = is2.output(Arrays.asList(n, n2), Collections.emptyMap(), null,
+                    Collections.emptyList(), null, At.defaultAt(Operation.TRAINING));
 
 //            System.out.println("----------------------------------");
             //This particular test/graph doesn't use placeholders
-            InferenceSession is = new InferenceSession(sd);
+            InferenceSession is = new InferenceSession(sd2);
             is.setMmgr(new NoOpMemoryMgr());    //So arrays aren't deallocated during execution
-            String n = "while/Exit";
-            String n2 = "while/Exit_1";
+
+            for(int i = 0; i < 5; i++) {
+                System.out.println();
+            }
 
             Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null,
                     Collections.emptyList(), null, At.defaultAt(Operation.TRAINING));
@@ -257,7 +303,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             Map<AbstractSession.VarId,INDArray> outputs = is.getNodeOutputs();
             //Some sanity checks on the internal state:
             //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit
-            for( int i = 0; i < numIter + 1; i++ ){
+            for( int i = 0; i < numIter + 1; i++) {
                 AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expLessVal = Nd4j.scalar(i != numIter);
                 assertTrue(outputs.containsKey(expVarId));
@@ -269,7 +315,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             //Check 2: Add should be executed numIter times...
             for( int i = 0; i < numIter; i++) {
                 expVarId = new AbstractSession.VarId("while/add","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
-                INDArray expAddVal = Nd4j.scalar((float)(i+1));  //Starts at 0, so post exec it's 1 higher than iter number
+                INDArray expAddVal = Nd4j.scalar((float)(i + 1));  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));
                 assertEquals(expAddVal, outputs.get(expVarId));
             }

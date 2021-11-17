@@ -142,10 +142,6 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
 
         Nd4j.shuffle(list, 1);
 
-//        System.out.println(features);
-//        System.out.println();
-//        System.out.println(labels);
-
         ArrayUtil.argMin(new int[] {});
 
         assertTrue(scanner.compareRow(features));
