@@ -29,6 +29,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.graph.OpType;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -269,12 +270,44 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
 
             SDVariable[] newVars = sameDiff.generateOutputVariableForOp(this, baseName, false);
+            computeVariables(newVars);
             if (sameDiff.getOutputsForOp(this) == null)
                 sameDiff.addOutgoingFor(newVars, this);
             return newVars;
         }
 
         return new SDVariable[]{sameDiff.getVariable(zVertexId)};
+    }
+
+    /**
+     * Compute the output vars using this op
+     * and store them in the samediff instance.
+     * @param newVars the new variables to compute arrays for
+     */
+    public void computeVariables(SDVariable[] newVars) {
+        if(sameDiff.isEagerMode()) {
+            SDVariable[] args = args();
+            if(args.length == 1) {
+                x = args[0].getArr();
+            } else if(args.length > 1) {
+                x = args[0].getArr();
+                if(this.opType()  == Type.REDUCE3 ||
+                        this.opType() == Type.PAIRWISE_BOOL
+                        || this.opType() == Type.TRANSFORM_SAME ||
+                        this.opType() == Type.REDUCE_SAME)
+                    y = args[1].getArr();
+                else if(opType() == Type.REDUCE_FLOAT || opType() == Type.REDUCE_LONG || opType() == Type.REDUCE_BOOL) {
+                    this.dimensionz = args[1].getArr();
+                    this.dimensions = args[1].getArr().toIntVector();
+                }
+            }
+
+            INDArray exec = Nd4j.getExecutioner().exec(this);
+            for (int i = 0; i < newVars.length; i++) {
+                newVars[i].setShape(exec.shape());
+                sameDiff.setEagerArrForVarName(newVars[i].name(),exec);
+            }
+        }
     }
 
 

@@ -44,7 +44,7 @@ public class AddOp extends BaseDynamicTransformOp {
         super(sameDiff, new SDVariable[]{x, y}, false);
     }
 
-    public AddOp(INDArray first, INDArray second, INDArray result){
+    public AddOp(INDArray first, INDArray second, INDArray result) {
         this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
     }
 

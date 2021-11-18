@@ -33,6 +33,7 @@ import org.nd4j.imports.converters.DifferentialFunctionClassHolder
 import org.nd4j.imports.graphmapper.OpImportFilter
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.api.ops.BaseOp
 import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.NoOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
@@ -641,6 +642,16 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             }
 
                             sd.ops[name]!!.outputsOfOp = outNames
+                            if(sd.isEagerMode) {
+                                if(op.op is DynamicCustomOp) {
+                                    val dynamicOp = op.op as DynamicCustomOp
+                                    dynamicOp.outputVariables = outSDVars
+                                    dynamicOp.computeArrays()
+                                } else if(op.op is BaseOp) {
+                                    val baseOp = op.op as BaseOp
+                                    baseOp.computeVariables(outSDVars)
+                                }
+                            }
                             println("Imported op: $opName (name=$name)")
                             opsImported.add("$opName,$name")
 

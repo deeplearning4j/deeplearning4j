@@ -45,6 +45,7 @@ public class Split extends DynamicCustomOp {
     private int splitDim;
 
     public Split() {
+        System.out.println();
     }
 
     public Split(SameDiff sameDiff, SDVariable input, int numSplit, int splitDim) {
@@ -84,6 +85,16 @@ public class Split extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Split";
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
     }
 
     @Override

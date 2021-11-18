@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -47,7 +48,6 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
-import org.nd4j.imports.VariableUtils;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -108,7 +108,7 @@ public class SameDiff extends SDBaseOps {
 
     //Fields for graph structure and execution
     @Getter
-    private final Map<String, Variable> variables = new LinkedHashMap<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
+    private final PatriciaTrie<Variable> variables = new PatriciaTrie<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
     @Getter
     private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
@@ -119,6 +119,11 @@ public class SameDiff extends SDBaseOps {
     @Getter
     @Setter
     private ArrayHolder variablesArrays = new ThreadSafeArrayHolder(true);
+    @Getter
+    @Setter
+    private ArrayHolder eagerArrays = new ThreadSafeArrayHolder(true);
+
+
     private final Map<Long, Map<String, INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     private final List<String> lossVariables = new ArrayList<>();
@@ -128,6 +133,10 @@ public class SameDiff extends SDBaseOps {
     private final List<NameScope> nameScopes = new ArrayList<>();  //Used as a stack
 
     private List<String> outputs;       //Names of the output variables, set by the user.
+
+    @Getter
+    @Setter
+    private boolean eagerMode = true;
 
     ///////////////////////////////////////
     //Fields related to training
@@ -140,7 +149,6 @@ public class SameDiff extends SDBaseOps {
 
     ////////////////////////////////////////
 
-//    private DifferentialFunctionFactory functionFactory;
 
     // counter for auto-naming variables
     private int variableId = 0;
@@ -251,7 +259,6 @@ public class SameDiff extends SDBaseOps {
 
     private Map<String, SameDiff> sameDiffFunctionInstances;
 
-    private Table<String, String, String> fieldVariableResolutionMapping;
 
     // flag, shows if graph was already registered with libnd4j
     private transient AtomicBoolean wasRegistered = new AtomicBoolean(false);
@@ -278,6 +285,36 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private SameDiff child;
 
+
+    /**
+     * Enables eager mode.
+     * Eager mode means variables will be computed as soon as they are created
+     * and stored in {@link #eagerArrays}
+     * Note this is experimental and mainly meant
+     * for internal use at the moment.
+     *  Eager mode is mainly useful in the context of model import
+     *  for dynamically obtaining shapes and other information for use in a model import context.
+     * @return
+     */
+    public SameDiff enableEagerMode() {
+        eagerMode = true;
+        return this;
+    }
+
+    /**
+     * Disables eager mode.
+     * Eager mode means variables will be computed as soon as they are created
+     * and stored in {@link #eagerArrays}
+     * Note this is experimental and mainly meant
+     * for internal use at the moment.
+     *  Eager mode is mainly useful in the context of model import
+     *  for dynamically obtaining shapes and other information for use in a model import context.
+     * @return
+     */
+    public SameDiff disableEagerMode() {
+        eagerMode = false;
+        return this;
+    }
 
     /**
      * Clears debugging state and disables debug mode.
@@ -753,6 +790,35 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+
+    /**
+     * Sets an array for the given variable name in the
+     * eager session.
+     * @param varName the variable name to set for
+     */
+    public void setEagerArrForVarName(@NonNull String varName,INDArray arr) {
+        if(!isEagerMode()) {
+            throw new IllegalStateException("Unable to set eager arrays when not in eager mode. Please use enableEagerMode() to use eager arrays");
+        }
+
+        eagerArrays.setArray(varName,arr);
+    }
+
+    /**
+     * Note this is a special getter for the eager holder.
+     * Eager mode is meant to mainly be used in only very special cases right now.
+     * Normal array retrieval should be done by {@link #getArrForVarName}
+     * @param varName
+     * @return
+     */
+    public INDArray getEagerArrForVarName(@NonNull String varName) {
+        if(!isEagerMode()) {
+            throw new IllegalStateException("Unable to obtain eager arrays when not in eager mode. Please use enableEagerMode() to use eager arrays");
+        }
+        Preconditions.checkState(variables.containsKey(varName), "No variable found with name \"%s\"", varName);
+        return eagerArrays.getArray(varName);
+    }
+
     /**
      * Get an {@link INDArray} for a given vertex id, or null if none exists
      *
@@ -846,7 +912,7 @@ public class SameDiff extends SDBaseOps {
 
                 long tid = Thread.currentThread().getId();
                 if (!placeholdersPerThread.containsKey(tid)) {
-                    placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
+                    placeholdersPerThread.put(tid, new HashMap<>());
                 }
                 placeholdersPerThread.get(tid).put(variable.name(), arr);
                 break;
@@ -934,7 +1000,6 @@ public class SameDiff extends SDBaseOps {
         super(null);
         super.sd = this;
         sameDiffFunctionInstances = new LinkedHashMap<>();
-        fieldVariableResolutionMapping = HashBasedTable.create();
     }
 
 
@@ -3498,6 +3563,11 @@ public class SameDiff extends SDBaseOps {
             int idx = lossVariables.indexOf(from);
             lossVariables.set(idx, to);
         }
+
+        if(eagerMode && eagerArrays.hasArray(from)) {
+            eagerArrays.rename(from,to);
+        }
+
     }
 
 
@@ -3866,31 +3936,33 @@ public class SameDiff extends SDBaseOps {
                     inputDataTypes.add(variables.get(var).getVariable().dataType());
                 }
             }
+
             outputDataTypes = function.calculateOutputDataTypes(inputDataTypes);
         }
 
         //Determine number of output variables
         if (function instanceof CustomOp) {
             CustomOp customOp = (CustomOp) function;
-            int num_outputs = function.getNumOutputs(); //Use this in preference - if set. Descriptor might specify 2, but it can sometimes be 2+
-            if (num_outputs <= 0) {
+            int numOutputs = function.getNumOutputs(); //Use this in preference - if set. Descriptor might specify 2, but it can sometimes be 2+
+            if (numOutputs <= 0) {
                 val descriptor = customOp.getDescriptor();
                 if (descriptor != null) {
-                    num_outputs = descriptor.getNumOutputs();
+                    numOutputs = descriptor.getNumOutputs();
                 }
-                if (num_outputs <= 0) {
+                if (numOutputs <= 0) {
                     throw new ND4UnresolvedOutputVariables("Could not determine number of output variables for op "
                             + function.getOwnName() + " - " + function.getClass().getSimpleName() + ". Ops can override" +
                             " getNumOutputs() to specify number of outputs if required");
                 }
             }
-            SDVariable[] ret = new SDVariable[num_outputs];
+
+            SDVariable[] ret = new SDVariable[numOutputs];
 
             //Infer the output types: we can always determine datatype but not always shapes
-            if(isImport || (outputDataTypes != null && outputDataTypes.size() == num_outputs))
+            if(isImport || (outputDataTypes != null && outputDataTypes.size() == numOutputs))
                 log.trace(
                         "Incorrect number of output datatypes: got %s but expected datatypes for %s outputs - %s (op: %s), could be due to variable input types.",
-                        (outputDataTypes == null ? null : outputDataTypes.size()), num_outputs, outputDataTypes, function.getClass().getSimpleName());
+                        (outputDataTypes == null ? null : outputDataTypes.size()), numOutputs, outputDataTypes, function.getClass().getSimpleName());
 
             //dynamic shapes
             //When importing from TF: convention is "unstack", "unstack:1", "unstack:2", ...
@@ -3903,7 +3975,9 @@ public class SameDiff extends SDBaseOps {
                     org.nd4j.linalg.api.buffer.DataType dataType = isImport ? null : outputDataTypes.get(i);
                     var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[]) null);
                 }
+
                 var.setCreator(function);
+
                 ret[i] = var;
             }
 
@@ -5973,7 +6047,6 @@ public class SameDiff extends SDBaseOps {
      * @param force Whether to force the result name to be the same as base.
      */
     public String getOpName(String base, boolean force) {
-
         base = nameWithScope(base);
 
         if (force && ops.containsKey(base))
@@ -5999,9 +6072,8 @@ public class SameDiff extends SDBaseOps {
 
             // ensure that there are no variables that look like they are outputs of this op
             boolean varWithName = false;
-            for (String varName : variables.keySet())
-                if (varName.startsWith(name + ":") || varName.equals(name))
-                    varWithName = true;
+            if(!variables.prefixMap(name).isEmpty())
+                varWithName = true;
 
             if (!ops.containsKey(name) && !varWithName)
                 break;

@@ -99,7 +99,6 @@ class Conv : PreImportHook  {
             List<Long>(spatialSize) { _ -> 1}
         }
 
-        var defaultPads = !attributes.containsKey("pads")
         val pads = if(attributes.containsKey("pads")) {
             val padsList = attributes["pads"] as List<Int>
             padsList.map { input -> input.toLong() }
@@ -116,11 +115,14 @@ class Conv : PreImportHook  {
         if(!attributes.containsKey("auto_pad") || attributes["auto_pad"] == "NOTSET") {
             if(pads != defaultPads2) {
                 inputVariable = paddingOp(sd,inputVariable,pads)
+                //note our padding is not quite the same is onnx
+                //our valid is equivalent to NOTSET and paddings should not be modified
                 padMode = "NOTSET"
             }
         } else if(padMode == "SAME_UPPER") {
             padMode = "SAME"
         } else if(padMode == "VALID") {
+            padMode = "VALID"
         } else if(padMode == "SAME_LOWER") {
             throw IllegalArgumentException("Unable to convert model running SAME_LOWER")
         }
@@ -128,6 +130,9 @@ class Conv : PreImportHook  {
 
         var groups = attributes.getOrDefault("group",1) as Long
         var depthWise = (rank == 4 && weightsRank == 4 && groups.toInt() != 1)
+        if(depthWise && xShape != null && xShape[1].toInt() != -1) {
+            depthWise = depthWise && groups == xShape[1]
+        }
         /*  if depthwise and x.get_shape().as_list()[1] != None:
       depthwise = bool(group == x.get_shape().as_list()[1])
         * */
@@ -137,7 +142,7 @@ class Conv : PreImportHook  {
             val depthWiseFilterShape = mutableListOf<Int>()
             for(i in 0 until 2) depthWiseFilterShape.add(inWeightsShape[i].toInt())
             depthWiseFilterShape.add(-1)
-            depthWiseFilterShape.add(Math.floorDiv(inWeightsShape[3].toInt(),groups.toInt()))
+            depthWiseFilterShape.add(Math.floorDiv(weights.shape[3].toInt(),groups.toInt()))
             weights = weights.reshape(*depthWiseFilterShape.toIntArray())
             inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
             xs.add(inputVariable)
@@ -172,8 +177,6 @@ class Conv : PreImportHook  {
                 .kW(kernelShape[1].toLong())
                 .sH(strides[0])
                 .sW(strides[1])
-                .pH(pads[0])
-                .pW(pads[1])
                 .dH(dilations[0])
                 .dW(dilations[1])
                 .dataFormat("NWHC")
@@ -282,7 +285,7 @@ class Conv : PreImportHook  {
             val bias = sd.getVariable(op.inputsToOp[2])
             var output = sd.concat(-1,*convolvedList.toTypedArray())
             output = output.add(bias)
-            output = sd.permute(outputNames[0],output,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
+            output = sd.permute(outputNames[0],output,*ImportUtils.getPermFromFormats(storageComputeFormat.second,storageComputeFormat.first))
             return mapOf(output.name() to listOf(output))
         } else {
             var output = sd.concat(-1,*convolvedList.toTypedArray())
@@ -363,7 +366,7 @@ class Conv : PreImportHook  {
     }
 
     fun defaultPads(spatialSize : Int): List<Int> {
-        val newPadsList = mutableListOf<Int>(0,0)
+        val newPadsList = mutableListOf(0,0)
         for(i in 0 until spatialSize) {
             newPadsList.add(0)
         }
