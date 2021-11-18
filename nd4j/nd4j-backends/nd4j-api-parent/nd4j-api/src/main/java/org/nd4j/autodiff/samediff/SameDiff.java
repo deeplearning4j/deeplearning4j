@@ -21,8 +21,11 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import lombok.*;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -40,10 +43,17 @@ import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
 import org.nd4j.autodiff.samediff.config.EvaluationConfig;
 import org.nd4j.autodiff.samediff.config.FitConfig;
 import org.nd4j.autodiff.samediff.config.OutputConfig;
-import org.nd4j.autodiff.samediff.internal.*;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.TrainingSession;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -77,13 +87,7 @@ import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.common.primitives.AtomicBoolean;
-import org.nd4j.common.primitives.Pair;
-import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.common.util.ND4JFileUtils;
-import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Sets;
-import org.nd4j.shade.guava.collect.Table;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -107,8 +111,10 @@ public class SameDiff extends SDBaseOps {
     protected static final String GRAD_FN_KEY = "grad";
 
     //Fields for graph structure and execution
+    //Use trie to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde, a trie also
+    // handles prefix lookups for ops when creating new ones and we need to determine prefixes
     @Getter
-    private final PatriciaTrie<Variable> variables = new PatriciaTrie<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
+    private final PatriciaTrie<Variable> variables = new PatriciaTrie<>();
     @Getter
     private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
@@ -134,9 +140,10 @@ public class SameDiff extends SDBaseOps {
 
     private List<String> outputs;       //Names of the output variables, set by the user.
 
+    //used mainly in model import
     @Getter
     @Setter
-    private boolean eagerMode = true;
+    private boolean eagerMode = false;
 
     ///////////////////////////////////////
     //Fields related to training

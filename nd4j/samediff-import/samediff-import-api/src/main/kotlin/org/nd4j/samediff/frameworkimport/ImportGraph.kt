@@ -236,7 +236,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         var nNodes: Int
         val importInfo = irGraph.importInfoForEachNode(dynamicVariables = dynamicVariables)
         //First, add any constants, placeholders, and zero-input ops
-        val sd = SameDiff.create()
+        //note: we enable eager mode here for dynamic variable resolution
+        val sd = SameDiff.create().enableEagerMode()
+
         if(dynamicVariables != null) {
             //declare as variables
             dynamicVariables.forEach { (name, ndarray) ->
