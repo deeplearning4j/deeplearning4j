@@ -645,15 +645,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                             sd.ops[name]!!.outputsOfOp = outNames
                             if(sd.isEagerMode) {
-                               when(op.op)  {
+                               when(val operation = op.op)  {
                                    is DynamicCustomOp -> {
-                                       val dynamicOp = op.op as DynamicCustomOp
-                                       dynamicOp.outputVariables = outSDVars
-                                       dynamicOp.computeArrays()
+                                       operation.outputVariables = outSDVars
+                                       operation.computeArrays()
                                    }
                                    is BaseOp -> {
-                                       val baseOp = op.op as BaseOp
-                                       baseOp.computeVariables(outSDVars)
+                                       operation.computeVariables(outSDVars)
                                    }
                                }
                             }
