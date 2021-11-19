@@ -881,7 +881,7 @@ public class ConvolutionUtils {
                 .sH(s[0]).sW(s[1])
                 .pH(pad == null ? 0 : pad[0]).pW(pad == null ? 0 : pad[1])
                 .dH(d[0]).dW(d[1])
-                .isSameMode(cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal)
+                .paddingMode(ConvolutionMode.mapToMode(cm))
                 .isNHWC(false)
                 .build());
 
@@ -969,7 +969,7 @@ public class ConvolutionUtils {
                 .sH(s[0]).sW(s[1])
                 .pH(p[0]).pW(p[1])
                 .dH(d[0]).dW(d[1])
-                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .paddingMode(ConvolutionMode.mapToMode(convolutionMode))
                 .isNHWC(false)
                 .build());
 
