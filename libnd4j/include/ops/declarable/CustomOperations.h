@@ -90,7 +90,7 @@ DECLARE_LOGIC_OP(Return);
  * PLEASE NOTE: This operation is internal graph operation, and shouldn't be used directly usually.
  */
 #if NOT_EXCLUDED(OP_expose)
-DECLARE_CUSTOM_OP(expose, -1, -1, true, 0, 0);
+DECLARE_CUSTOM_OP(expose, -2, -2, true, 0, 0);
 #endif
 }  // namespace ops
 }  // namespace sd

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.loss.bp.LogPoissonLossBp;
 
 import java.util.List;
+import java.util.Map;
 
 public class LogPoissonLoss extends BaseLoss {
     private boolean full;
@@ -58,6 +59,21 @@ public class LogPoissonLoss extends BaseLoss {
         super.addArgs();
         if(full){
             iArguments.add((long) 1);
+        }
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.full = iArguments.get(0) > 0;
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("reductionMode")) {
+            Long reductionMode = getLongValueFromProperty("reductionMode",properties);
+            this.full = reductionMode > 0;
         }
     }
 

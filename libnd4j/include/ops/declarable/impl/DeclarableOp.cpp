@@ -622,7 +622,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // if we don't have platform-specific helper - invoke generic implementation
   if (!hasHelper) status = this->validateAndExecute(*block);
-
   // optionally saving execution time
   if (Environment::getInstance().isProfiling()) {
     timeEnd = std::chrono::system_clock::now();
@@ -645,6 +644,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       }
     }
   }
+
 
   // now we print out all outputs for this node
   if (sd::Environment::getInstance().isDebugAndVerbose()) {
@@ -675,6 +675,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
                 type.c_str(), first.c_str());
     }
   }
+
 
   return status;
 }

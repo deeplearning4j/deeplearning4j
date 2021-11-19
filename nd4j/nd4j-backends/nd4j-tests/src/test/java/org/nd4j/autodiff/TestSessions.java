@@ -218,7 +218,10 @@ public class TestSessions extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
-    public void testSwitchWhile(Nd4jBackend backend) throws Exception{
+    public void testSwitchWhile(Nd4jBackend backend) throws Exception {
+
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
 
         /*
         Test case:
@@ -247,6 +250,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
              * o.n.a.s.i.AbstractSession - Beginning execution step 9: ExecStep(OP,name="while/Switch",("while/while_context",0,parent=("main",0)))
              * o.n.a.s.i.AbstractSession - Beginning execution step 10: ExecStep(OP,name="while/Switch_1",("while/while_context",0,parent=("main",0)))
              */
+            SameDiff sd = SameDiff.importFrozenTF(f);
             SameDiff sd2 = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap());
             /**
              * o.n.a.s.i.AbstractSession - Beginning execution step 0: ExecStep(CONSTANT,name="in_0",("main",0))
@@ -275,7 +279,6 @@ public class TestSessions extends BaseNd4jTestWithBackends {
              * o.n.a.s.i.AbstractSession - Beginning execution step 23: ExecStep(OP,name="while/Exit",("while/while_context",1,parent=("main",0)))
              * o.n.a.s.i.AbstractSession - Beginning execution step 24: ExecStep(OP,name="while/Exit_1",("while/while_context",1,parent=("main",0)))
              */
-            SameDiff sd = SameDiff.importFrozenTF(f);
             String n = "while/Exit";
             String n2 = "while/Exit_1";
             InferenceSession is2 = new InferenceSession(sd);

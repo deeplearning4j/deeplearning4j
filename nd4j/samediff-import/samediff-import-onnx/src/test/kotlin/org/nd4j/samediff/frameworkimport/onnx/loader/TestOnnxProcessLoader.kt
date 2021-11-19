@@ -23,7 +23,10 @@ package org.nd4j.samediff.frameworkimport.onnx.loader
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.nd4j.common.io.ClassPathResource
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxTensor
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcessLoader
@@ -31,7 +34,18 @@ import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 
 class TestOnnxProcessLoader {
-    
+
+    @Test
+    fun testMobileNet() {
+        val importer = OnnxFrameworkImporter()
+        val resource = ClassPathResource("mobilenet.onnx").file
+        val inputs = Nd4j.ones(1,3,224,224)
+        val inputDict = mapOf("input.1" to inputs)
+        val runImport = importer.runImport(resource.absolutePath,inputDict)
+
+        runImport.outputAll(inputDict)
+    }
+
     @Test
     fun testLoader() {
         val onnxOpMappingRegistry = OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto,

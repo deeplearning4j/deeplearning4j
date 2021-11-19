@@ -85,6 +85,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     protected boolean inplaceCall;
     @Getter
     private long hash;
+    @Getter
+    @Setter
     protected SDVariable[] outputVariables;
     private List<LongShapeDescriptor> outputShapes;
 
@@ -140,7 +142,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     throw new IllegalArgumentException("Input "+ i + " for op " + this.getClass() + " was null!");
                 }
             }
-            
+
             inputArguments = new ArrayList<>(Arrays.asList(inputs));
         }
         if (outputs != null)
@@ -264,12 +266,31 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
             outputVariables = newVars;
+
+            computeArrays();
             if (sameDiff.getOutputsForOp(this) == null)
                 sameDiff.addOutgoingFor(outputVariables, this);
             return newVars;
         }
 
         return outputVariables;
+    }
+
+    public void computeArrays() {
+        if(sameDiff.isEagerMode()) {
+            SDVariable[] args = args();
+            if(inputArguments.isEmpty())
+                for(SDVariable arg : args) {
+                    if(arg.getArr() != null)
+                        addInputArgument(arg.getArr());
+                }
+
+            INDArray[] exec = Nd4j.getExecutioner().exec(this);
+            for (int i = 0; i < outputVariables.length; i++) {
+                outputVariables[i].setShape(exec[i].shape());
+                sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+            }
+        }
     }
 
     /**

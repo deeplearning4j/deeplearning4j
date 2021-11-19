@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.common.util.ArrayUtil
 import org.nd4j.enums.Mode
 import org.nd4j.enums.WeightsFormat
 import org.nd4j.linalg.api.buffer.DataType
@@ -57,15 +58,17 @@ class Conv : PreImportHook  {
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
+        val inWeights = sd.getVariable(op.inputsToOp[1])
+        val weightsRank = inWeights.shape.size
+
         var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rank = inputVariable.shape.size
+        val rank = weightsRank
         val xShape = inputVariable.shape
         val spatialSize = rank - 2
         val storageComputeFormat = ImportUtils.getDataFormat(rank)
         val computeIndex = storageComputeFormat.second.indexOf('C')
         val spatialFormat = StringUtils.join(storageComputeFormat.second.filter { input -> input == 'C' || input == 'W' })
-        val inWeights = sd.getVariable(op.inputsToOp[1])
-        val weightsRank = inWeights.shape.size
+
         val perm = (2 to weightsRank - 1).toList() + listOf(1,0)
         val kernelShape = if(attributes.containsKey("kernel_shape")) {
             val kernelShapeList = attributes["kernel_shape"] as List<Int>
@@ -76,7 +79,7 @@ class Conv : PreImportHook  {
         }
 
         var weights = sd.permute(inWeights,*perm.toIntArray())
-
+        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(inWeights.shape),perm.toIntArray())
         val dilations = if(attributes.containsKey("dilations")) {
             val dilationsList = attributes["dilations"] as List<Int>
             val dilationsArr = dilationsList
@@ -96,7 +99,6 @@ class Conv : PreImportHook  {
             List<Long>(spatialSize) { _ -> 1}
         }
 
-        var defaultPads = !attributes.containsKey("pads")
         val pads = if(attributes.containsKey("pads")) {
             val padsList = attributes["pads"] as List<Int>
             padsList.map { input -> input.toLong() }
@@ -113,25 +115,24 @@ class Conv : PreImportHook  {
         if(!attributes.containsKey("auto_pad") || attributes["auto_pad"] == "NOTSET") {
             if(pads != defaultPads2) {
                 inputVariable = paddingOp(sd,inputVariable,pads)
+                //note our padding is not quite the same is onnx
+                //our valid is equivalent to NOTSET and paddings should not be modified
                 padMode = "NOTSET"
             }
         } else if(padMode == "SAME_UPPER") {
             padMode = "SAME"
         } else if(padMode == "VALID") {
+            padMode = "VALID"
         } else if(padMode == "SAME_LOWER") {
             throw IllegalArgumentException("Unable to convert model running SAME_LOWER")
         }
 
-        var padsGreaterThanZero = false
-        for(i in 0 until pads.size) {
-            if(pads[i] > 0) {
-                padsGreaterThanZero = true
-            }
-        }
 
         var groups = attributes.getOrDefault("group",1) as Long
-        val weightsShape = weights.shape
-        var depthWise = (xShape.size == 4 && weightsRank == 4 && groups.toInt() != 1)
+        var depthWise = (rank == 4 && weightsRank == 4 && groups.toInt() != 1)
+        if(depthWise && xShape != null && xShape[1].toInt() != -1) {
+            depthWise = depthWise && groups == xShape[1]
+        }
         /*  if depthwise and x.get_shape().as_list()[1] != None:
       depthwise = bool(group == x.get_shape().as_list()[1])
         * */
@@ -139,14 +140,13 @@ class Conv : PreImportHook  {
         var weightGroupsList = mutableListOf<SDVariable>()
         if(depthWise) {
             val depthWiseFilterShape = mutableListOf<Int>()
-            for(i in 0 until 2) depthWiseFilterShape.add(weightsShape[i].toInt())
+            for(i in 0 until 2) depthWiseFilterShape.add(inWeightsShape[i].toInt())
             depthWiseFilterShape.add(-1)
-            depthWiseFilterShape.add(Math.floorDiv(weightsShape[3].toInt(),groups.toInt()))
+            depthWiseFilterShape.add(Math.floorDiv(weights.shape[3].toInt(),groups.toInt()))
             weights = weights.reshape(*depthWiseFilterShape.toIntArray())
-            val weightGroups = sd.split(weights,groups.toInt(),-1)
             inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
             xs.add(inputVariable)
-            weightGroupsList.addAll(weightGroups)
+            weightGroupsList.add(weights)
 
         } else {
             val weightGroups = sd.split(weights,groups.toInt(),-1)
@@ -177,8 +177,6 @@ class Conv : PreImportHook  {
                 .kW(kernelShape[1].toLong())
                 .sH(strides[0])
                 .sW(strides[1])
-                .pH(pads[0])
-                .pW(pads[1])
                 .dH(dilations[0])
                 .dW(dilations[1])
                 .dataFormat("NWHC")
@@ -186,16 +184,13 @@ class Conv : PreImportHook  {
                 .paddingMode(padModeForName(padMode!!))
                 .build()
 
-            for(i in 0 until groups) {
+            for(i in 0 until xs.size) {
                 var depthWiseConv2d = sd.cnn().depthWiseConv2d(xs[i.toInt()], weightGroupsList[i.toInt()], convConfig)
-                if(padsGreaterThanZero) {
-                    depthWiseConv2d = depthWiseConv2d.get(*indicesForPads("NHWC", pads).toTypedArray())
-                }
                 convolvedList.add(depthWiseConv2d)
             }
         } else {
             for(i in 0 until groups) {
-                if(xShape.size == 3) {
+                if(rank == 3) {
                     //notset => valid
                     //valid => valid + pads zeroed
                     var totalPad = if(padMode == "NOTSET") {
@@ -217,7 +212,7 @@ class Conv : PreImportHook  {
                     }
                     convolvedList.add(convolved)
 
-                } else if(xShape.size == 4) {
+                } else if(rank == 4) {
                     //notset => valid
                     //valid => valid + pads zeroed
                     var totalPadHeight = if(padMode == "NOTSET") {
@@ -247,7 +242,7 @@ class Conv : PreImportHook  {
                     var conv2d = sd.cnn().conv2d(xs[i.toInt()], weightGroupsList[i.toInt()], convConfig)
                     convolvedList.add(conv2d)
 
-                } else if(xShape.size == 5) {
+                } else if(rank == 5) {
                     var totalPadHeight = if(padMode == "NOTSET") {
                         0
                     } else {
@@ -279,9 +274,6 @@ class Conv : PreImportHook  {
                         .paddingMode(padModeForName(padMode!!))
                         .build()
                     var conv3d = sd.cnn().conv3d(xs[i.toInt()],weightGroupsList[i.toInt()], threeDConfig)
-                    if(padsGreaterThanZero) {
-                        conv3d = conv3d.get(*indicesForPads("NWHDC",pads).toTypedArray())
-                    }
                     convolvedList.add(conv3d)
 
                 }
@@ -293,7 +285,7 @@ class Conv : PreImportHook  {
             val bias = sd.getVariable(op.inputsToOp[2])
             var output = sd.concat(-1,*convolvedList.toTypedArray())
             output = output.add(bias)
-            output = sd.permute(outputNames[0],output,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
+            output = sd.permute(outputNames[0],output,*ImportUtils.getPermFromFormats(storageComputeFormat.second,storageComputeFormat.first))
             return mapOf(output.name() to listOf(output))
         } else {
             var output = sd.concat(-1,*convolvedList.toTypedArray())
@@ -374,7 +366,7 @@ class Conv : PreImportHook  {
     }
 
     fun defaultPads(spatialSize : Int): List<Int> {
-        val newPadsList = mutableListOf<Int>(0,0)
+        val newPadsList = mutableListOf(0,0)
         for(i in 0 until spatialSize) {
             newPadsList.add(0)
         }

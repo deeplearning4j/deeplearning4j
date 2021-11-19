@@ -73,18 +73,20 @@ DECLARE_SHAPE_FN(triu) {
 CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);  // dLoss/dO
-  auto gradOPass = gradO;
-  std::unique_ptr<NDArray> pass;
-  pass.reset(gradOPass);
+
 
   auto gradI = OUTPUT_VARIABLE(0);  // dLoss/dI
+  if(gradI->isScalar()) {
+    gradI->p(0,0.0);
+    return sd::Status::OK;
+  }
+
   REQUIRE_TRUE(input->rankOf() > 0, 0, "TRIU_BP OP: the rank of input array must be > 0, but got %i instead !",
                input->rankOf());
 
   const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-  helpers::triuBP(block.launchContext(), *input, *pass, *gradI, diag);
-
+  helpers::triuBP(block.launchContext(), *input, *gradO, *gradI, diag);
   return sd::Status::OK;
 }
 

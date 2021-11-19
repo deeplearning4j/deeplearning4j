@@ -116,11 +116,11 @@ sd::graph::Variable* sd::graph::VariableSpace::getVariable(int id, int index) {
 }
 
 sd::graph::Variable* sd::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
-  if (pair.first < 0)
+  if (pair.first < 0) {
     return getVariable(pair.first);
-  else
+  } else {
     return _paired.at(pair);
-
+  }
   sd_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
   throw std::runtime_error("Unknown variable requested");
 }
@@ -290,9 +290,12 @@ void sd::graph::VariableSpace::putVariable(int id, NDArray* array) {
 }
 
 sd::graph::Variable* sd::graph::VariableSpace::getVariable(int id) {
+  sd_debug("Getting variable with id %d\n",id);
   if (id < 0) {
+    sd_debug("Getting the variables at %d\n",id);
     return _variables.at(id);
   } else {
+    sd_debug("Returning temporary id %d\n",id);
     return _temporary.at(id);
   }
 }

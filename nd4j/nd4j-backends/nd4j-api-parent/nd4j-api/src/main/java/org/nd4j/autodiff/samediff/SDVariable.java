@@ -140,6 +140,9 @@ public class SDVariable implements Serializable {
         if(variableType == VariableType.ARRAY && enforceExistence) {
             throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
         } else if(variableType == VariableType.ARRAY) {
+            if(sameDiff.isEagerMode()) {
+                return sameDiff.getEagerArrForVarName(name());
+            }
             return null;
         }
 
@@ -184,7 +187,7 @@ public class SDVariable implements Serializable {
      * @return Shape of the variable
      */
     public long[] getShape() {
-        if (variableType == VariableType.PLACEHOLDER ) {
+        if (variableType == VariableType.PLACEHOLDER  || sameDiff.isEagerMode() && shape != null) {
             return shape;
         } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
             if(getArr() != null)

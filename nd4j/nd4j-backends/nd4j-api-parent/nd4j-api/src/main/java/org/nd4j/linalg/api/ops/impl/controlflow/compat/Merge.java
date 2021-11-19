@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.Op.Type;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -67,10 +68,7 @@ public class Merge extends BaseCompatOp {
         return 60L;
     }
 
-    @Override
-    public SDVariable[] outputVariables() {
-        return super.outputVariables();
-    }
+
     //rnn/TensorArrayStack/TensorArrayGatherV3
     @Override
     public String tensorflowName() {
@@ -90,6 +88,17 @@ public class Merge extends BaseCompatOp {
     @Override
     public int getNumOutputs(){
         return 1;
+    }
+
+    @Override
+    public void computeArrays() {
+        if(sameDiff.isEagerMode()) {
+            SDVariable[] args = args();
+            //special work around for non existing arrays like nextiteration that aren't computed till last
+            outputVariables[0].setShape(args[0].getArr().shape());
+            sameDiff.setEagerArrForVarName(outputVariables[0].name(),args[0].getArr());
+
+        }
     }
 
     @Override

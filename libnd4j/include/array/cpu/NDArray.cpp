@@ -89,12 +89,11 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   auto func = PRAGMA_THREADS_FOR {
     int coords[SD_MAX_RANK], temp;
-
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
       const auto zOffset = shape::getOffset(target.shapeInfo(), coords);
       // if( (row + upper < col) || (row + lower > col) )
-      if (coords[zRank - 2] > (coords[zRank - 1] - lower)) {
+      if (lower < 0 && coords[0] > (coords[1] - lower) || lower > 0 && coords[0] >= coords[1] - lower) {
         z[zOffset] = value;
       }
       else if (this != &target) {  // when this and target are different arrays
@@ -172,7 +171,7 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwap,
                       (void* xBuffer, void* yBuffer, const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
-                       sd::LongType length),
+                          sd::LongType length),
                       SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
