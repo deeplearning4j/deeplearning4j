@@ -34,8 +34,8 @@
     <artifactId>deeplearning4j-core</artifactId>
 
     <properties>
-        <test.offheap.size>1g</test.offheap.size>
-        <test.heap.size>1g</test.heap.size>
+        <test.offheap.size>14g</test.offheap.size>
+        <test.heap.size>14g</test.heap.size>
     </properties>
 
     <dependencyManagement>

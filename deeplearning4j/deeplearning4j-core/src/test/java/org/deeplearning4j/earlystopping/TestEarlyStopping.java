@@ -51,6 +51,7 @@ import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -705,6 +706,8 @@ public class TestEarlyStopping extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled
+    @Tag(TagNames.LARGE_RESOURCES)
     public void testVAEScoreFunctionReconstructionProbSimple() throws Exception {
 
         for(boolean logProb : new boolean[]{false, true}) {
