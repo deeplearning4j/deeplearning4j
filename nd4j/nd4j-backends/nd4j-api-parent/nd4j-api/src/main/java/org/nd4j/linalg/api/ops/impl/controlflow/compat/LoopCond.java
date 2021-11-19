@@ -62,6 +62,17 @@ public class LoopCond extends BaseCompatOp {
     }
 
     @Override
+    public void computeArrays() {
+        if(sameDiff.isEagerMode()) {
+            SDVariable[] args = args();
+            //special work around for loop condition ad it doesn't exist in c++
+            outputVariables[0].setShape(args[0].getArr().shape());
+            sameDiff.setEagerArrForVarName(outputVariables[0].name(),args[0].getArr());
+
+        }
+    }
+
+    @Override
     public int getNumOutputs(){
         return 1;
     }

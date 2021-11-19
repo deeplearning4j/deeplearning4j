@@ -210,7 +210,6 @@ Variable *Context::variable(int idx) { return getVariable(idx); }
 Variable *Context::variable(std::initializer_list<int> p) {
   if (p.size() != 2) throw std::runtime_error("Variable address should have size of 2");
 
-  // FIXME: lol
   std::vector<int> vec(p);
   std::pair<int, int> pair(vec[0], vec[1]);
   return variable(pair);

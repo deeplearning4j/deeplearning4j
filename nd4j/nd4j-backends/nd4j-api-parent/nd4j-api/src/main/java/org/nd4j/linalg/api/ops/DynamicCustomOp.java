@@ -281,7 +281,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             SDVariable[] args = args();
             if(inputArguments.isEmpty())
                 for(SDVariable arg : args) {
-                    addInputArgument(arg.getArr());
+                    if(arg.getArr() != null)
+                        addInputArgument(arg.getArr());
                 }
 
             INDArray[] exec = Nd4j.getExecutioner().exec(this);

@@ -24,22 +24,30 @@
 #if NOT_EXCLUDED(OP_expose)
 namespace sd {
 namespace ops {
-CUSTOM_OP_IMPL(expose, -1, -1, true, 0, 0) {
+CUSTOM_OP_IMPL(expose, -2, -2, true, 0, 0) {
   for (int e = 0; e < block.width(); e++) {
-    auto inVar = block.variable(e);
-    if (inVar->variableType() == VariableType::NDARRAY) {
+   //omit for eager computation, normally array size should be equal to block size
+    if(block.getVariableSpace() == nullptr || block.getVariableSpace()->getVariables().size() != block.width()) {
       auto in = INPUT_VARIABLE(e);
       auto out = OUTPUT_VARIABLE(e);
-
       out->assign(in);
-    } else if (inVar->variableType() == VariableType::ARRAY_LIST) {
-      auto var = block.ensureVariable(e);
-      if (!var->hasNDArrayList()) {
-        auto list = inVar->getNDArrayList();
+    } else {
+      auto inVar = block.variable(e);
+      if (inVar->variableType() == VariableType::NDARRAY) {
+        auto in = INPUT_VARIABLE(e);
+        auto out = OUTPUT_VARIABLE(e);
 
-        block.pushNDArrayListToVariableSpace(block.nodeId(), e, list, false);
+        out->assign(in);
+      } else if (inVar->variableType() == VariableType::ARRAY_LIST) {
+        auto var = block.ensureVariable(e);
+        if (!var->hasNDArrayList()) {
+          auto list = inVar->getNDArrayList();
+
+          block.pushNDArrayListToVariableSpace(block.nodeId(), e, list, false);
+        }
       }
     }
+
   }
 
   return sd::Status::OK;
