@@ -79,7 +79,7 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
         }
 
         Pooling2DConfig conf = Pooling2DConfig.builder()
-                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .paddingMode(ConvolutionMode.mapToMode(convolutionMode))
                 .kH(kernel[0]).kW(kernel[1])
                 .sH(strides[0]).sW(strides[1])
                 .dH(dilation[0]).dW(dilation[1])
