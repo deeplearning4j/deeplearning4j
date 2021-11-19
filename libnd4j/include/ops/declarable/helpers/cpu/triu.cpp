@@ -32,23 +32,25 @@ template <typename T>
 static void triuBP_(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
                     const int diagonal) {
   if(gradO.isScalar()) {
-    gradI.assign(gradO);
-    return;
+    auto firstElement = gradO.e(0);
+    gradI.assign(firstElement);
+  } else {
+    auto dOdI = NDArray(&gradO);  // dO/dI
+    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), dOdI, 'b');
+    int dLen = dOdI.lengthOf();
+
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        if (dOdI.t<T>(i) != static_cast<T>(0.f)) dOdI.r<T>(i) = static_cast<T>(1.f);
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, dLen);
+
+    // FIXME: !!!
+    gradI.assign(dOdI * gradO);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
   }
 
-  auto dOdI = NDArray(&gradO);  // dO/dI
-  const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), dOdI, 'b');
-  int dLen = dOdI.lengthOf();
 
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      if (dOdI.t<T>(i) != static_cast<T>(0.f)) dOdI.r<T>(i) = static_cast<T>(1.f);
-    }
-  };
-  samediff::Threads::parallel_for(func, 0, dLen);
-
-  // FIXME: !!!
-  gradI.assign(dOdI * gradO);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
 }
 
 void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
