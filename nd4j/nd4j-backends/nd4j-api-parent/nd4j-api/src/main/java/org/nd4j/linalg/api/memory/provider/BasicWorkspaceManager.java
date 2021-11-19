@@ -54,8 +54,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     public BasicWorkspaceManager() {
         this(WorkspaceConfiguration.builder().initialSize(0).maxSize(0).overallocationLimit(0.3)
-                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.FIRST_LOOP)
-                        .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build());
+                .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build());
     }
 
     public BasicWorkspaceManager(@NonNull WorkspaceConfiguration defaultConfiguration) {
@@ -352,13 +352,16 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         log.info("Workspace name: Allocated / external (spilled) / external (pinned)");
         for (String key : map.keySet()) {
             long current = map.get(key).getCurrentSize();
-            long spilled = ((Nd4jWorkspace) map.get(key)).getSpilledSize();
-            long pinned = ((Nd4jWorkspace) map.get(key)).getPinnedSize();
-            log.info(String.format("%-26s %8s / %8s / %8s (%11d / %11d / %11d)", (key + ":"),
-                    BinaryByteUnit.format(current, "#.00"),
-                    BinaryByteUnit.format(spilled, "#.00"),
-                    BinaryByteUnit.format(pinned, "#.00"),
-                    current, spilled, pinned));
+            if(map.get(key) instanceof Nd4jWorkspace) {
+                long spilled = ((Nd4jWorkspace) map.get(key)).getSpilledSize();
+                long pinned = ((Nd4jWorkspace) map.get(key)).getPinnedSize();
+                log.info(String.format("%-26s %8s / %8s / %8s (%11d / %11d / %11d)", (key + ":"),
+                        BinaryByteUnit.format(current, "#.00"),
+                        BinaryByteUnit.format(spilled, "#.00"),
+                        BinaryByteUnit.format(pinned, "#.00"),
+                        current, spilled, pinned));
+            }
+
         }
     }
 
