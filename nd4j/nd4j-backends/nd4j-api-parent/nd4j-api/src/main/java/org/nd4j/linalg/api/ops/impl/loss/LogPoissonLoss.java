@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.loss.bp.LogPoissonLossBp;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public class LogPoissonLoss extends BaseLoss {
     }
 
     public LogPoissonLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
-                        LossReduce lossReduce, boolean full) {
+                          LossReduce lossReduce, boolean full) {
         this(sameDiff, lossReduce, predictions, weights, labels, full);
     }
 
@@ -65,16 +66,30 @@ public class LogPoissonLoss extends BaseLoss {
     @Override
     public void configureFromArguments() {
         if(!iArguments.isEmpty()) {
-            this.full = iArguments.get(0) > 0;
+            this.lossReduce = LossReduce.values()[iArguments.get(0).intValue()];
         }
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("full",full);
+        ret.put("reductionMode",lossReduce.ordinal());
+        return ret;
     }
 
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         if(properties.containsKey("reductionMode")) {
-            Long reductionMode = getLongValueFromProperty("reductionMode",properties);
-            this.full = reductionMode > 0;
+            Integer reductionMode = getIntValueFromProperty("reductionMode",properties);
+            this.lossReduce = LossReduce.values()[reductionMode];
         }
+
+        if(properties.containsKey("full")) {
+            Boolean full = getBooleanFromProperty("full",properties);
+            this.full = full;
+        }
+
     }
 
     @Override
