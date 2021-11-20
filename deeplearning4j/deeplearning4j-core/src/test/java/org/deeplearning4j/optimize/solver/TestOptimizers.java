@@ -685,29 +685,7 @@ public class TestOptimizers extends BaseDL4JTest {
             g.gradientForVariable().put("W", gradient);
             this.gradient = g;
 
-            INDArray paramExceeds5 = parameters.cond(new Condition() {
-
-
-                @Override
-                public Conditions.ConditionMode conditionType() {
-                    return Conditions.ConditionMode.AGGREGATE;
-                }
-
-                @Override
-                public double getValue() {
-                    return 0;
-                }
-
-                @Override
-                public double epsThreshold() {
-                    return 0;
-                }
-
-                @Override
-                public Boolean apply(Number input) {
-                    return Math.abs(input.doubleValue()) > 5.0;
-                }
-            });
+            INDArray paramExceeds5 = parameters.cond(Conditions.absGreaterThanOrEqual(5.0));
 
             int nExceeds5 = paramExceeds5.castTo(DataType.DOUBLE).sum(Integer.MAX_VALUE).getInt(0);
             if (nExceeds5 > 0)

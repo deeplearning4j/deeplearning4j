@@ -322,7 +322,7 @@ public class NativeImageLoader extends BaseImageLoader {
             int numReadCurrent = numReadTotal;
             while(numReadCurrent != -1){
                 byte[] oldBuffer = buffer;
-                if(oldBuffer.length == Integer.MAX_VALUE){
+                if(oldBuffer.length == Integer.MAX_VALUE) {
                     throw new IllegalStateException("Cannot read more than Integer.MAX_VALUE bytes");
                 }
                 //Double buffer, but allocate at least 1MB more
@@ -338,6 +338,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
 
             bufferMat = new Mat(buffer);
+            buffer = null;
             return bufferMat;
         }
 
@@ -373,6 +374,7 @@ public class NativeImageLoader extends BaseImageLoader {
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
+
             image = convert(pix);
             pixDestroy(pix);
         }

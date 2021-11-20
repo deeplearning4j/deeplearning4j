@@ -142,7 +142,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             try {
                 ret = helper.backpropGradient(in, eps, shape, gamma, beta, dGammaView, dBetaView,
                         layerConf.getEps(), format, workspaceMgr);
-            } catch (ND4JOpProfilerException e){
+            } catch (ND4JOpProfilerException e) {
                 throw e;    //NaN panic etc for debugging
             } catch (Throwable t){
                 if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
@@ -150,7 +150,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     throw t;
                 }
 
-                if(layerConf().isCudnnAllowFallback()){
+                if(layerConf().isCudnnAllowFallback()) {
                     helperCountFail++;
                     log.warn("CuDNN BatchNormalization backprop execution failed - falling back on built-in implementation",t);
                 } else {
@@ -191,9 +191,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 INDArray batchVar = helper.getVarCache(dataType);
 
                 Nd4j.getExecutioner().exec(new SubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
-                dGlobalMeanView.muli(1-layerConf().getDecay());
+                dGlobalMeanView.muli(1 - layerConf().getDecay());
 
-                if(layerConf().isUseLogStd()){
+                if(layerConf().isUseLogStd()) {
                     //Use log10(std) parameterization. This is more numerically stable for FP16 and better for distributed training
                     //First: we have log10(var[i]) from last iteration, hence can calculate var[i] and stdev[i]
                     //Need to calculate log10{std[i]) - log10(std[i+1]) as the "update"
@@ -220,7 +220,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray batchMean;
         INDArray batchVar;
         if (epsilon.rank() == 2) {
-            if(xHat == null && helper != null){
+            if(xHat == null && helper != null) {
                 INDArray mean = helper.getMeanCache(dataType);
                 std = Transforms.sqrt(helper.getVarCache(dataType).addi(layerConf().getEps()));
                 xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
@@ -270,14 +270,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             int hIdx = nchw ? 2 : 1;
             int wIdx = nchw ? 3 : 2;
 
-            if(xHat == null && helper != null){
+            if(xHat == null && helper != null) {
                 INDArray mean = helper.getMeanCache(dataType);
-                std = Transforms.sqrt(helper.getVarCache(dataType).addi(layerConf().getEps()));
-                xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
-                xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, chIdx));
-                xHat =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
-                xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, chIdx));
+                std = Transforms.sqrt(helper.getVarCache(dataType).addi(layerConf().getEps())).detach();
+                xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering()).detach();
+                xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, chIdx)).detach();
+                xHat =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering()).detach();
+                xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, chIdx)).detach();
             }
+
 
             INDArray dBeta = epsilon.sum(nonChDims);
             INDArray dGamma = epsilon.mul(xHat).sum(nonChDims);
@@ -333,7 +334,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
          */
 
         Nd4j.getExecutioner().exec(new SubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
-        dGlobalMeanView.muli(1-layerConf().getDecay());
+        dGlobalMeanView.muli(1 - layerConf().getDecay());
 
         if(layerConf().isUseLogStd()){
             //Use log10(std) parameterization. This is more numerically stable for FP16 and better for distributed training
@@ -585,8 +586,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
          */
 
         activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
+        //need to detach and retain for backprop caching
+        xHat = xHat.detach();
+        xMu = xMu.detach();
+
         if(rnnInput) {
-           //change back the output to rank 3 after running batch norm for rnn inputs
+            //change back the output to rank 3 after running batch norm for rnn inputs
             activations = activations.reshape(activations.size(1),activations.size(2),activations.size(3));
         }
         return activations;
