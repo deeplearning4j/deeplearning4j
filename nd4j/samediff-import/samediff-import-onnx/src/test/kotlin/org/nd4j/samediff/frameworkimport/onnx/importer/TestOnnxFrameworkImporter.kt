@@ -20,6 +20,8 @@
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
 import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.nd4j.autodiff.samediff.TrainingConfig
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.linalg.api.buffer.DataType
@@ -32,14 +34,22 @@ import java.util.*
 class TestOnnxFrameworkImporter {
 
     @Test
-    fun testMobileNet() {
-        Nd4j.getExecutioner().enableDebugMode(true)
-        Nd4j.getExecutioner().enableVerboseMode(true)
+    fun testSuggestedVariables() {
         val importer = OnnxFrameworkImporter()
         val file = ClassPathResource("mobilenet.onnx").file
-        val result  = importer.runImport(file.absolutePath, emptyMap())
+        val suggestedVariables = importer.suggestDynamicVariables(file.absolutePath)
+        assertTrue(suggestedVariables.containsKey("input.1"))
+        val shape = suggestedVariables["input.1"]!!.shape()
+        assertArrayEquals(longArrayOf(1,3,224,224),shape)
+
+    }
+
+    @Test
+    fun testMobileNet() {
+        val importer = OnnxFrameworkImporter()
+        val file = ClassPathResource("mobilenet.onnx").file
+        val result  = importer.runImport(file.absolutePath, emptyMap(),suggestDynamicVariables = true)
         result.outputAll(Collections.singletonMap("input.1",Nd4j.ones(1,3,224,224)))
-        result.asFlatFile(File("mobilenet.fb"))
     }
 
     @Test

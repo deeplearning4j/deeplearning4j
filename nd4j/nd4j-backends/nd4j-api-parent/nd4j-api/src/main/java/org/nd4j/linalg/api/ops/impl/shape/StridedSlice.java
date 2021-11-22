@@ -38,10 +38,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class StridedSlice extends DynamicCustomOp {
@@ -372,6 +369,9 @@ public class StridedSlice extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 4),
                 "Expected 1 or 4 input datatypes for %s, got %s", getClass(), dataTypes);
+        if(!dArguments.isEmpty()) {
+            return Arrays.asList(dArguments.get(0));
+        }
         //Output type is same as input type. 1 or 4 depending on whether using iargs or arrays (for TF import etc)
         return Collections.singletonList(dataTypes.get(0));
     }

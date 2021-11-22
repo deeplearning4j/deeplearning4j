@@ -30,12 +30,9 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
   auto output = OUTPUT_VARIABLE(0);
-  sd_debug("After min_max_datatype output\n",0);
   auto dataType = INT_ARG(0);
-  sd_debug("After min_max_datatype output\n",0);
   DataType type = DataTypeUtils::fromInt(dataType);
   auto minOrMax = INT_ARG(1);
-  sd_debug("After type output\n",0);
   if (minOrMax == 0) {
     switch (type) {
       case sd::DataType::UINT8:
@@ -133,7 +130,6 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
       }
     }
 
-    sd_debug("Returning status ok for min_max_datatype\n",0);
     return sd::Status::OK;
   }
 }

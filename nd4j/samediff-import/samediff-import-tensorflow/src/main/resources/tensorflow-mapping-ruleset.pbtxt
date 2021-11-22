@@ -13404,6 +13404,18 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "Reshape"
   }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "T"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Reshape"
+  }
 }
 mappings {
   frameworkName: "tensorflow"

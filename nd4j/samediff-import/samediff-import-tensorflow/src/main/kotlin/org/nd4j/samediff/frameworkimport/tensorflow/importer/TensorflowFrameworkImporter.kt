@@ -22,7 +22,9 @@ package org.nd4j.samediff.frameworkimport.tensorflow.importer
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.FrameworkImporter
+import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.tensorflow.TensorflowImportGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
@@ -30,6 +32,8 @@ import org.nd4j.samediff.frameworkimport.tensorflow.definitions.gruCell
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.tensorflowOpRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.opdefs.TensorflowOpDescriptorLoader
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import org.tensorflow.framework.*
 import java.io.File
 import java.nio.file.Files
@@ -51,7 +55,7 @@ class TensorflowFrameworkImporter: FrameworkImporter {
 
     fun importFromGraph(graphDef: GraphDef, dynamicVariables: Map<String, INDArray>): SameDiff {
         val dynamicVariablesConverted = HashMap<String, TensorProto>()
-        dynamicVariables.forEach { name, array ->
+        dynamicVariables.forEach { (name, array) ->
             dynamicVariablesConverted[name] = convertNDArrayToTensorflowTensor(array)
         }
         val irGraph = TensorflowIRGraph(graphDef, opDefList, registry)
@@ -59,8 +63,35 @@ class TensorflowFrameworkImporter: FrameworkImporter {
 
     }
 
-    override fun runImport(fileName: String, dynamicVariables: Map<String, INDArray>): SameDiff {
+    override fun runImport(fileName: String, dynamicVariables: Map<String, INDArray>,suggestDynamicVariables: Boolean): SameDiff {
         val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
-        return importFromGraph(graphDef = loadGraph, dynamicVariables = dynamicVariables)
+        val irGraph = TensorflowIRGraph(loadGraph,opDefList,registry)
+        return if(suggestDynamicVariables) {
+            val newDynamicVariables  = suggestDynamicVariables(irGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
+            importFromGraph(graphDef = loadGraph, dynamicVariables = newDynamicVariables)
+        } else {
+            importFromGraph(graphDef = loadGraph, dynamicVariables = dynamicVariables)
+
+        }
+    }
+
+    override fun suggestDynamicVariables(fileName: String): Map<String, INDArray> {
+        val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
+        val irGraph = TensorflowIRGraph(loadGraph,opDefList,registry)
+        return suggestDynamicVariables(irGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
+
+    }
+
+    override fun suggestDynamicVariables(irGraph: IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>): Map<String, INDArray> {
+        val irGraph = irGraph as TensorflowIRGraph
+        val ret = HashMap<String,INDArray>()
+        for(i in 0 until irGraph.inputs.size) {
+            val shape = irGraph.shapeOfInput(irGraph.inputs[i])
+            if(shape != null) {
+                val dtype = irGraph.dataTypeForVariable(irGraph.inputAt(i))
+                ret[irGraph.inputAt(i)] = Nd4j.ones(dtype.nd4jDataType(),*shape)
+            }
+        }
+        return ret
     }
 }

@@ -520,7 +520,8 @@ DECLARE_SHAPE_FN(strided_slice) {
       _preprocess_strided_slice(&indices, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask,
                                 new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
   if (indices.size()) {
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
+    auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inShape);
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', shape);
     //                if (inputLen > 1) {
     //                    newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape),
     //                    'c',
@@ -671,10 +672,10 @@ DECLARE_SHAPE_FN(strided_slice_bp) {
   return SHAPELIST(CONSTANT(newShape));
 }
 
-DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY); }
 
 DECLARE_TYPES(strided_slice_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY);
 }
 }  // namespace ops
 }  // namespace sd
