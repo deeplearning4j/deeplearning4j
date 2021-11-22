@@ -50,12 +50,11 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 public class NativeImageLoader extends BaseImageLoader {
     private static final int MIN_BUFFER_STEP_SIZE = 64 * 1024;
-    private byte[] buffer = null;
-    private Mat bufferMat = null;
+
 
     public static final String[] ALLOWED_FORMATS = {"bmp", "gif", "jpg", "jpeg", "jp2", "pbm", "pgm", "ppm", "pnm",
-                    "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
-                    "PNG", "TIF", "TIFF", "EXR", "WEBP"};
+            "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
+            "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
     protected OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
@@ -71,7 +70,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * height and width
      * @param height the height to load
      * @param width  the width to load
-    
+
      */
     public NativeImageLoader(long height, long width) {
         this.height = height;
@@ -117,7 +116,7 @@ public class NativeImageLoader extends BaseImageLoader {
         this(height, width, channels);
         this.imageTransform = imageTransform;
     }
-    
+
     /**
      * Instantiate an image with the given
      * height and width
@@ -295,52 +294,13 @@ public class NativeImageLoader extends BaseImageLoader {
      * @throws IOException
      */
     private Mat streamToMat(InputStream is) throws IOException {
-        if(buffer == null){
-            buffer = IOUtils.toByteArray(is);
-            if(buffer.length <= 0){
-                throw new IOException("Could not decode image from input stream: input stream was empty (no data)");
-            }
-            bufferMat = new Mat(buffer);
-            return bufferMat;
-        } else {
-            int numReadTotal = is.read(buffer);
-            //Need to know if all data has been read.
-            //(a) if numRead < buffer.length - got everything
-            //(b) if numRead >= buffer.length: we MIGHT have got everything (exact right size buffer) OR we need more data
-
-            if(numReadTotal <= 0){
-                throw new IOException("Could not decode image from input stream: input stream was empty (no data)");
-            }
-
-            if(numReadTotal < buffer.length){
-                bufferMat.data().put(buffer, 0, numReadTotal);
-                bufferMat.cols(numReadTotal);
-                return bufferMat;
-            }
-
-            //Buffer is full; reallocate and keep reading
-            int numReadCurrent = numReadTotal;
-            while(numReadCurrent != -1){
-                byte[] oldBuffer = buffer;
-                if(oldBuffer.length == Integer.MAX_VALUE){
-                    throw new IllegalStateException("Cannot read more than Integer.MAX_VALUE bytes");
-                }
-                //Double buffer, but allocate at least 1MB more
-                long increase = Math.max(buffer.length, MIN_BUFFER_STEP_SIZE);
-                int newBufferLength = (int)Math.min(Integer.MAX_VALUE, buffer.length + increase);
-
-                buffer = new byte[newBufferLength];
-                System.arraycopy(oldBuffer, 0, buffer, 0, oldBuffer.length);
-                numReadCurrent = is.read(buffer, oldBuffer.length, buffer.length - oldBuffer.length);
-                if(numReadCurrent > 0){
-                    numReadTotal += numReadCurrent;
-                }
-            }
-
-            bufferMat = new Mat(buffer);
-            return bufferMat;
+        byte[] buffer = IOUtils.toByteArray(is);
+        Mat bufferMat = null;
+        if (buffer.length <= 0) {
+            throw new IOException("Could not decode image from input stream: input stream was empty (no data)");
         }
-
+        bufferMat = new Mat(buffer);
+        return bufferMat;
     }
 
     public Image asImageMatrix(String filename) throws IOException {
@@ -373,6 +333,7 @@ public class NativeImageLoader extends BaseImageLoader {
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
+
             image = convert(pix);
             pixDestroy(pix);
         }
@@ -419,7 +380,7 @@ public class NativeImageLoader extends BaseImageLoader {
 
         if (ret.length() != rows * cols * channels) {
             throw new ND4JIllegalStateException("INDArray provided to store image not equal to image: {channels: "
-                            + channels + ", rows: " + rows + ", columns: " + cols + "}");
+                    + channels + ", rows: " + rows + ", columns: " + cols + "}");
         }
 
         Indexer idx = image.createIndexer(direct);
@@ -427,11 +388,11 @@ public class NativeImageLoader extends BaseImageLoader {
         long[] stride = ret.stride();
         boolean done = false;
         PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels,
-                        ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
+                ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
 
         if (pointer instanceof FloatPointer) {
             FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(),
-                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
+                    new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (long k = 0; k < channels; k++) {
@@ -476,7 +437,7 @@ public class NativeImageLoader extends BaseImageLoader {
             retidx.release();
         } else if (pointer instanceof DoublePointer) {
             DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(),
-                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
+                    new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (long k = 0; k < channels; k++) {
@@ -905,5 +866,5 @@ public class NativeImageLoader extends BaseImageLoader {
 
         return data;
     }
-    
+
 }

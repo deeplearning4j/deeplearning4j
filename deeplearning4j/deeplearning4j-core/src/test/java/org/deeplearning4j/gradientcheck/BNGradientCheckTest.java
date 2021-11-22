@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -117,7 +118,20 @@ class BNGradientCheckTest extends BaseDL4JTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
         for (boolean useLogStd : new boolean[] { true, false }) {
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).seed(12345L).dist(new NormalDistribution(0, 2)).list().layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(hw, hw, depth));
+            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration
+                    .Builder().dataType(DataType.DOUBLE)
+                    .trainingWorkspaceMode(WorkspaceMode.NONE)
+                    .updater(new NoOp()).seed(12345L)
+                    .dist(new NormalDistribution(0, 2))
+                    .list().layer(0, new ConvolutionLayer.Builder()
+                            .kernelSize(2, 2).stride(1, 1)
+                            .nIn(depth).nOut(2).activation(Activation.IDENTITY)
+                            .build())
+                    .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).build())
+                    .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
+                    .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                            .activation(Activation.SOFTMAX).nOut(nOut).build())
+                    .setInputType(InputType.convolutional(hw, hw, depth));
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
             // for (int j = 0; j < mln.getnLayers(); j++)

@@ -305,10 +305,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected void checkForWorkspaces(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
-
-        for (val input: inArgs)
+        int count = 0;
+        for (val input: inArgs) {
             checkWorkspace(op.opName(), input);
-
+            count++;
+        }
         for (val output: outArgs)
             checkWorkspace(op.opName(), output);
     }
@@ -462,7 +463,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             return System.nanoTime();
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
-            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+                OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
             OpProfiler.getInstance().processOpCall(op);
         }
 
@@ -490,7 +491,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             return System.nanoTime();
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
-            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+                OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
             OpProfiler.getInstance().processOpCall(op);
         }
 

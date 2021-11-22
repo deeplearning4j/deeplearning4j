@@ -208,6 +208,17 @@ public abstract class DifferentialFunction {
         return null;
     }
 
+
+    protected Integer getIntValueFromProperty(String propertyName, Map<String,Object> properties) {
+        if(properties.containsKey(propertyName)) {
+            Integer value = (Integer) properties.get(propertyName);
+            return value;
+        }
+
+        return null;
+    }
+
+
     protected Long getLongValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
             Long value = (Long) properties.get(propertyName);

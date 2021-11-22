@@ -33,10 +33,13 @@ public enum ConvolutionMode {
             case Strict:
                 return PaddingMode.VALID;
             case Truncate:
+            case Same:
+
                 return PaddingMode.SAME;
             case Causal:
                 return PaddingMode.CAUSAL;
-            default:throw new IllegalArgumentException("No convolution mode found!");
+            default:
+                throw new IllegalArgumentException("No convolution mode found!");
         }
     }
 
