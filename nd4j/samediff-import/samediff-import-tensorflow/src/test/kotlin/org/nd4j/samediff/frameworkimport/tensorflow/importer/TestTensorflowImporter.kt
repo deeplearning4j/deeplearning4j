@@ -19,21 +19,22 @@
  */
 package org.nd4j.samediff.frameworkimport.tensorflow.importer
 
-import junit.framework.Assert
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.nd4j.common.io.ClassPathResource
+import org.nd4j.linalg.factory.Nd4j
 
 class TestTensorflowImporter {
 
     @Test
-    @Disabled
     fun testImporter() {
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
         val tfFrameworkImport = TensorflowFrameworkImporter()
         val tfFile = ClassPathResource("lenet_frozen.pb").file
-        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath)
+        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath,mapOf("input" to  Nd4j.ones(1,784)))
         //note this is just a test to make sure everything runs, we test the underlying import elsewhere
-        Assert.assertNotNull(graph)
+        assertNotNull(graph)
     }
 
 }

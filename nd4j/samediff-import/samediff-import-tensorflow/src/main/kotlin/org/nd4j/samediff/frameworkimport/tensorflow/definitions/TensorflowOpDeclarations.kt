@@ -1766,7 +1766,7 @@ val relu = mapTensorNamesWithOp(inputFrameworkOpName = "Relu",opName = "relu",te
 
 val reshape = multipleNameMapping(inputFrameworkOpNames = listOf("Reshape"),opName = "reshape",
         tensorNames = mutableMapOf("input" to "tensor","shape" to "shape"),
-        attributeMappingRules = listOf(),tensorflowOpRegistry = tensorflowOpRegistry)
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T"))),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeArea = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeArea"),opName = "resize_area",
         attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners"))),

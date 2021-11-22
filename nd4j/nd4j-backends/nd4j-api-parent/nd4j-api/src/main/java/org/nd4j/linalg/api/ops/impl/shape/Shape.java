@@ -104,13 +104,27 @@ public class Shape extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        if(!dArguments.isEmpty()) {
+            this.dataType = dArguments.get(0);
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        if(!dArguments.isEmpty())
+            return Collections.singletonList(dataTypes.get(0));
         return Collections.singletonList(dataType == null ? DataType.LONG : dataType);
     }
 }
