@@ -1525,7 +1525,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             try {
                 val list = this.calculateOutputShape(op);
                 if (list.isEmpty())
-                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to calculate output datatypes");
+                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to calculate output shape and data types.");
 
                 for (LongShapeDescriptor shape : list)
                     op.addOutputArgument(Nd4j.create(shape, false));
