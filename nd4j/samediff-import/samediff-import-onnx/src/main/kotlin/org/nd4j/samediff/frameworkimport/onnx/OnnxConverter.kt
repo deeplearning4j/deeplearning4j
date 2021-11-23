@@ -39,7 +39,7 @@ class OnnxConverter {
         val converter = DefaultVersionConverter()
         val bytes = ByteBuffer.wrap(IOUtils.toByteArray(BufferedInputStream(FileInputStream(inputModel))))
         val bytePointer = BytePointer(bytes)
-        val proto = org.bytedeco.onnx.ModelProto(bytes.capacity().toLong())
+        val proto = ModelProto()
         //val operatorSet = Onnx.OperatorSetIdProto()
         proto.ParseFromString(bytePointer)
         val initialId = OpSetID(0)
