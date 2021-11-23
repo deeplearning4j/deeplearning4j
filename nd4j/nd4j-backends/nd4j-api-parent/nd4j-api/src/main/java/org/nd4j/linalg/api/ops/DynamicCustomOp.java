@@ -279,12 +279,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public void computeArrays() {
         if(sameDiff.isEagerMode()) {
             SDVariable[] args = args();
-            if(inputArguments.isEmpty())
-                for(SDVariable arg : args) {
-                    if(arg.getArr() != null)
+            if(inputArguments.isEmpty()) {
+                for (SDVariable arg : args) {
+                    if (arg.getArr() != null)
                         addInputArgument(arg.getArr());
+                    else {
+                        throw new IllegalStateException("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation.");
+                    }
                 }
-
+            }
             INDArray[] exec = Nd4j.getExecutioner().exec(this);
             for (int i = 0; i < outputVariables.length; i++) {
                 outputVariables[i].setShape(exec[i].shape());

@@ -46,6 +46,8 @@ class TestOnnxFrameworkImporter {
 
     @Test
     fun testMobileNet() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
         val importer = OnnxFrameworkImporter()
         val file = ClassPathResource("mobilenet.onnx").file
         val result  = importer.runImport(file.absolutePath, emptyMap(),suggestDynamicVariables = true)
@@ -76,5 +78,15 @@ class TestOnnxFrameworkImporter {
         result.fit(inputData)
     }
 
+
+    @Test
+    fun testV9() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val importer = OnnxFrameworkImporter()
+        val file = File("C:\\Users\\agibs\\Downloads\\V9\\V9\\best_bracket.onnx")
+        val result  = importer.runImport(file.absolutePath, emptyMap(),suggestDynamicVariables = true)
+        //result.outputAll(Collections.singletonMap("input.1",Nd4j.ones(1,3,224,224)))
+    }
 
 }

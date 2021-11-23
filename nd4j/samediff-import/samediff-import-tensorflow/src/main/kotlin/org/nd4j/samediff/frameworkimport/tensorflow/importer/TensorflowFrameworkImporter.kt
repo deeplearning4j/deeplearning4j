@@ -37,6 +37,8 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import org.tensorflow.framework.*
 import java.io.File
 import java.nio.file.Files
+import java.util.*
+import kotlin.collections.HashMap
 
 class TensorflowFrameworkImporter: FrameworkImporter {
 
@@ -86,7 +88,7 @@ class TensorflowFrameworkImporter: FrameworkImporter {
         val irGraph = irGraph as TensorflowIRGraph
         val ret = HashMap<String,INDArray>()
         for(i in 0 until irGraph.inputs.size) {
-            val shape = irGraph.shapeOfInput(irGraph.inputs[i])
+            val shape = irGraph.shapeOfInput(irGraph.inputs[i])!!.map { input -> if(input < 0) 1 else input }.toLongArray()
             if(shape != null) {
                 val dtype = irGraph.dataTypeForVariable(irGraph.inputAt(i))
                 ret[irGraph.inputAt(i)] = Nd4j.ones(dtype.nd4jDataType(),*shape)

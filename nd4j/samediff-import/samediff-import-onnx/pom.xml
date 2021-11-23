@@ -36,8 +36,8 @@
   <name>samediff-import-onnx</name>
   <properties>
     <jgit.version>5.10.0.202012080955-r</jgit.version>
-    <test.offheap.size>3g</test.offheap.size>
-    <test.heap.size>3g</test.heap.size>
+    <test.offheap.size>8g</test.offheap.size>
+    <test.heap.size>8g</test.heap.size>
   </properties>
 
   <build>
@@ -83,6 +83,12 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>onnx-platform</artifactId>
+      <version>1.9.0-1.5.6</version>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>

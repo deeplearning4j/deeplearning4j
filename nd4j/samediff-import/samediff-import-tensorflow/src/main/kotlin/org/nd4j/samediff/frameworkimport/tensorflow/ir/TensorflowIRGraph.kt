@@ -130,8 +130,7 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
         val shapeAvailable = attrMap.containsKey("shape")
         var shape: LongArray?
         shape = if (shapeAvailable) {
-            attrMap["shape"]!!.list.iList.toLongArray()
-
+            attrMap["shape"]!!.shape.dimList.map { input -> input.size }.toLongArray()
         } else {
             //Some placeholders don't have any shape restrictions - i.e., accept anything...
             null
