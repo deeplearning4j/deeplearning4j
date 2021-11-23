@@ -76,9 +76,10 @@ class OnnxFrameworkImporter: FrameworkImporter {
         val graph = irGraph as OnnxIRGraph
         val ret = HashMap<String,INDArray>()
         for(i in 0 until graph.inputList.size) {
-            val inputShape = graph.shapeOfInput(graph.inputAt(i))
+            var inputShape = graph.shapeOfInput(graph.inputAt(i))
             val dType = graph.dataTypeForVariable(graph.inputAt(i))
             if(inputShape != null) {
+                graph.shapeOfInput(graph.inputAt(i))!!.map { input -> if(input < 0) 1 else input }.toLongArray()
                 ret[graph.inputAt(i)] = Nd4j.ones(dType.nd4jDataType(),*inputShape)
             }
         }

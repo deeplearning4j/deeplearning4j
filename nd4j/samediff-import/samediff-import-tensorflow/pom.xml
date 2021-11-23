@@ -36,6 +36,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <test.offheap.size>8g</test.offheap.size>
+    <test.heap.size>8g</test.heap.size>
   </properties>
 
   <build>
