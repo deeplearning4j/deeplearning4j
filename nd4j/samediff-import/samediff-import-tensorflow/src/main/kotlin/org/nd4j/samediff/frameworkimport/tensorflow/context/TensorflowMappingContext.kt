@@ -27,7 +27,10 @@ import org.nd4j.samediff.frameworkimport.ir.IRNode
 import org.nd4j.samediff.frameworkimport.ir.IRTensor
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.tensorflow.*
+import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.*
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import org.tensorflow.framework.*
 import kotlin.math.min
 
@@ -144,6 +147,17 @@ class TensorflowMappingContext(opDef: OpDef, node: NodeDef, graph: IRGraph<Graph
     override fun hasInput(name: String): Boolean {
         val inputNameIdx  = opDef.inputArgList.map { input -> input.name  }.indexOf(name)
         return inputNameIdx >= 0 && inputNameIdx < node.inputCount
+    }
+
+    override fun preProcessNode() {
+        val tensorflowIRNode = TensorflowIRNode(node,opDef, registry())
+        relevantNodePreProcessingHooks.forEach { hook ->
+            hook.modifyNode(tensorflowIRNode,graph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
+        }
+
+        //post processed, we need to update the references in the node
+        this.node = tensorflowIRNode.internalValue()
+        this.graph.updateNode(tensorflowIRNode)
     }
 
 

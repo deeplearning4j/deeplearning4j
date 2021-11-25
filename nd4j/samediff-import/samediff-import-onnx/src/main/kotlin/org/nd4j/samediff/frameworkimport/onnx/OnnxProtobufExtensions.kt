@@ -57,12 +57,12 @@ fun Onnx.AttributeProto.Builder.ListFloats(intList: List<Float>) {
 }
 
 fun Onnx.AttributeProto.Builder.IntValue(inputInt: Long) {
-   this.i = inputInt
+    this.i = inputInt
 }
 
 
 fun Onnx.AttributeProto.Builder.ListInts(intList: List<Long>) {
-   this.addAllInts(intList)
+    this.addAllInts(intList)
 }
 
 fun Onnx.AttributeProto.Builder.StringValue(inputValue: String) {
@@ -107,8 +107,15 @@ fun TensorDefinition(block: Onnx.TypeProto.Tensor.Builder.() -> Unit) : Onnx.Typ
 }
 
 fun TypeProto(block: Onnx.TypeProto.Builder.() -> Unit): Onnx.TypeProto {
-    return Onnx.TypeProto.newBuilder().apply(block).build()
+    return Onnx.TypeProto.newBuilder()
+        .apply(block).build()
 }
+
+fun TensorTypeProto(block: Onnx.TypeProto.Tensor.Builder.() -> Unit): Onnx.TypeProto.Tensor {
+    return Onnx.TypeProto.Tensor.newBuilder()
+        .apply(block).build()
+}
+
 
 fun GraphProto(block: Onnx.GraphProto.Builder.() -> Unit): Onnx.GraphProto {
     return Onnx.GraphProto.newBuilder()
@@ -129,6 +136,14 @@ fun Onnx.TensorShapeProto.Builder.OnnxShape(dims: List<Long>) {
 
 fun OnnxShapeProto(block: Onnx.TensorShapeProto.Builder.() -> Unit): Onnx.TensorShapeProto {
     return Onnx.TensorShapeProto.newBuilder().apply(block).build()
+}
+
+
+
+
+fun Onnx.ValueInfoProto.Builder.Type(type: Onnx.TypeProto) {
+    this.type =type
+
 }
 
 fun ValueInfoProto(block: Onnx.ValueInfoProto.Builder.() -> Unit): Onnx.ValueInfoProto {

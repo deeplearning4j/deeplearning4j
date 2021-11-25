@@ -1746,10 +1746,10 @@ public class SameDiff extends SDBaseOps {
         listenersWitHistory.add(history);
 
 
-        SameDiff gradInstance = getFunction("grad");
+        SameDiff gradInstance = getFunction(GRAD_FN_KEY);
         if(gradInstance == null){
             createGradFunction();
-            gradInstance = getFunction("grad");
+            gradInstance = getFunction(GRAD_FN_KEY);
         }
         TrainingSession ts = new TrainingSession(gradInstance);
         gradInstance.setTrainingConfig(trainingConfig);     //In case any listeners want to use it
@@ -4245,7 +4245,7 @@ public class SameDiff extends SDBaseOps {
                 } else if(lossInferred.isEmpty()){
                     //Check for external errors function
                     for(SameDiffOp o : ops.values()){
-                        if(o.getOp() instanceof ExternalErrorsFunction){
+                        if(o.getOp() instanceof ExternalErrorsFunction) {
                             List<String> l = o.getOutputsOfOp();
                             lossVariables.add(l.get(0));
                         }

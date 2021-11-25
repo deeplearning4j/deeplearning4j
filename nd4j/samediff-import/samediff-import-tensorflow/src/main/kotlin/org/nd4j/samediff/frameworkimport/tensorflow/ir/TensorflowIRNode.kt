@@ -228,4 +228,16 @@ class TensorflowIRNode(inputNode: NodeDef, inputOpDef: OpDef,tensorflowOpMapping
         this.nodeDef = nodeBuilder.build()
     }
 
+    override fun removeAttribute(attributeName: String): AttrValue {
+        if(nodeDef.containsAttr(attributeName)) {
+            val newNode = nodeDef.toBuilder()
+            val attrValue = nodeDef.getAttrOrThrow(attributeName)
+            newNode.removeAttr(attributeName)
+            this.nodeDef = newNode.build()
+            return attrValue
+        }
+
+        return AttrValue.getDefaultInstance()
+    }
+
 }

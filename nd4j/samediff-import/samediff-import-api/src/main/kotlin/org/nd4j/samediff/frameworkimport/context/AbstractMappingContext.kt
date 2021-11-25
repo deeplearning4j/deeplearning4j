@@ -21,6 +21,7 @@ package org.nd4j.samediff.frameworkimport.context
 
 import org.nd4j.ir.OpNamespace
 import org.nd4j.samediff.frameworkimport.findOp
+import org.nd4j.samediff.frameworkimport.hooks.NodePreProcessorHook
 import org.nd4j.samediff.frameworkimport.hooks.PostImportHook
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -49,15 +50,25 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
     MappingContext<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE> {
 
     val opDef = opDef
-    val node = node
+    var node = node
     val graph = graph
     val dynamicVariables: MutableMap<String,TENSOR_TYPE> = dynamicVariables
     val descriptorsSoFar = ArrayList<OpNamespace.ArgDescriptor>()
     val relevantPreProcessingHooks = ArrayList<PreImportHook>()
     val relevantPostProcessingHooks = ArrayList<PostImportHook>()
+    val relevantNodePreProcessingHooks = ArrayList<NodePreProcessorHook<NODE_TYPE,TENSOR_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,DATA_TYPE>>()
     init {
         discoverHooks()
+        preProcessNode()
     }
+
+
+    /**
+     * This handles pre processing the node to be
+     * stored in the context.
+     */
+    abstract fun preProcessNode()
+
 
     fun discoverHooks() {
         ImportReflectionCache.preProcessRuleImplementationsByNode.filterKeys { input -> input == irNode().nodeName() }.values.forEach { hooks ->
@@ -76,6 +87,11 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
         ImportReflectionCache.postProcessRuleImplementationsByNode.filterKeys { input -> input == irNode().nodeName() }.values.forEach { hooks ->
             relevantPostProcessingHooks.addAll(hooks)
         }
+
+        ImportReflectionCache.nodePreProcessorRuleImplementationByOp.filterKeys { input -> input == irNode().opName() }.values.forEach {
+            relevantNodePreProcessingHooks.addAll(it.map{ input -> input as NodePreProcessorHook<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>})
+        }
+
     }
 
     override fun nodeAttributesAsMap(): Map<String, Any> {
