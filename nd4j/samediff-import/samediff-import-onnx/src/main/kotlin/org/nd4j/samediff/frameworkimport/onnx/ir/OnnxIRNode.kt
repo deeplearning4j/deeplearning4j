@@ -178,7 +178,28 @@ class OnnxIRNode(inputNode: Onnx.NodeProto, inputOpDef: Onnx.NodeProto,opMapping
     override fun setNodeName(name: String) {
         val nodeBuilder = nodeDef.toBuilder()
         nodeBuilder.name = name
-        this.nodeDef= nodeBuilder.build()
+        this.nodeDef = nodeBuilder.build()
+    }
+
+    override fun removeAttribute(attributeName: String): Onnx.AttributeProto {
+        val nodeBuilder = nodeDef.toBuilder()
+        var index = -1
+        for(i in 0 until nodeDef.attributeCount) {
+            if(nodeDef.attributeList[i].name == attributeName) {
+                index = i
+                break
+            }
+        }
+
+        if(index >= 0) {
+            val attrValue = nodeBuilder.attributeList[index]
+            nodeBuilder.removeAttribute(index)
+            this.nodeDef = nodeBuilder.build()
+            return attrValue
+        }
+
+        return Onnx.AttributeProto.getDefaultInstance()
+
     }
 
 }

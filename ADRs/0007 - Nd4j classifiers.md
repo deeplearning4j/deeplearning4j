@@ -1,4 +1,4 @@
-# Nd4j Versioning
+# Nd4j Classifiers
 
 ## Status
 Accepted

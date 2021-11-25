@@ -29,6 +29,12 @@ interface IRNode<NODE_TYPE : GeneratedMessageV3,
         where  DATA_TYPE: ProtocolMessageEnum {
 
 
+    /**
+     * Removes the attribute with the specified name
+     * from this node. Returns the attribute value that was removed.
+     */
+    fun removeAttribute(attributeName: String): ATTRIBUTE_VALUE_TYPE
+
     fun nd4jInputs(tensorMappings: Map<String, String>): List<String>
 
     fun computeAdjustedOffsetForInput(

@@ -20,10 +20,14 @@
 package org.nd4j.samediff.frameworkimport.reflect
 
 import io.github.classgraph.ClassGraph
+import org.nd4j.samediff.frameworkimport.hooks.NodePreProcessorHook
 import org.nd4j.samediff.frameworkimport.hooks.PostImportHook
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
+import org.nd4j.samediff.frameworkimport.hooks.annotations.NodePreProcessor
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PostHookRule
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 object ImportReflectionCache {
 
@@ -36,7 +40,7 @@ object ImportReflectionCache {
     //all relevant op names hook should be useful for
     val preProcessRuleImplementationsByOp = HashMap<String,MutableList<PreImportHook>>()
     val postProcessRuleImplementationsByOp = HashMap<String,MutableList<PostImportHook>>()
-
+    val nodePreProcessorRuleImplementationByOp = HashMap<String,MutableList<NodePreProcessorHook<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>>>()
     init {
         scannedClasses.getClassesImplementing(PreImportHook::class.java.name).filter { input -> input.hasAnnotation(PreHookRule::class.java.name) }.forEach {
             val instance = Class.forName(it.name).getDeclaredConstructor().newInstance() as PreImportHook
@@ -84,6 +88,22 @@ object ImportReflectionCache {
 
         }
 
+
+
+        scannedClasses.getClassesImplementing(NodePreProcessorHook::class.java.name).filter { input -> input.hasAnnotation(NodePreProcessor::class.java.name) }.forEach {
+            val instance = Class.forName(it.name).getDeclaredConstructor().newInstance() as NodePreProcessorHook<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>
+            val rule = it.annotationInfo.first { input -> input.name == NodePreProcessor::class.java.name }
+            val nodeTypes = rule.parameterValues["nodeTypes"].value as Array<String>
+            nodeTypes.forEach { nodeType ->
+                if(!nodePreProcessorRuleImplementationByOp.containsKey(nodeType)) {
+                    nodePreProcessorRuleImplementationByOp[nodeType] = ArrayList()
+                }
+
+                nodePreProcessorRuleImplementationByOp[nodeType]!!.add(instance)
+            }
+
+
+        }
 
     }
 

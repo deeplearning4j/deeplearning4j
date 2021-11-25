@@ -28,11 +28,14 @@ import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.ir.IRNode
 import org.nd4j.samediff.frameworkimport.ir.IRTensor
 import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxTensor
+import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRAttr
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRNode
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
+import org.nd4j.shade.protobuf.GeneratedMessageV3
+import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 
@@ -150,6 +153,20 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
     override fun hasInput(name: String): Boolean {
         var foundIndex = opDef.inputList.map { input -> input.toString() }.indexOf(name)
         return foundIndex >= 0 && foundIndex < node.inputCount
+    }
+
+    override fun preProcessNode() {
+        val onnxIRNode = OnnxIRNode(node,opDef, registry())
+        relevantNodePreProcessingHooks.forEach { hook ->
+            hook.modifyNode(onnxIRNode,graph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
+        }
+
+        //post processed, we need to update the references in the node
+       if(relevantNodePreProcessingHooks.isNotEmpty()) {
+           this.node = onnxIRNode.internalValue()
+           this.graph.updateNode(onnxIRNode)
+       }
+
     }
 
 }

@@ -307,13 +307,32 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val graphBuilder = graphDef.toBuilder()
         val converted = convertToOnnxTensor(value,name)
         graphBuilder.addInitializer(converted)
+
+        val tensorShapeInfo = TensorTypeProto {
+            shape = OnnxShapeProto {
+                OnnxShape(value.shape().toList())
+            }
+
+        }
+
+        val valueType = TypeProto {
+            tensorType = tensorShapeInfo
+        }
+
+        val newValueInfo = ValueInfoProto {
+            Type(valueType)
+        }
+
+        graphBuilder.addValueInfo(newValueInfo)
         this.graphDef = graphBuilder.build()
     }
 
     override fun updateNode(node: IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>) {
-        val nodeByName = nodeByName(node.nodeName())
         val graphBuilder = graphDef.toBuilder()
-        val indexOfNode = graphBuilder.nodeList.indexOf(nodeByName)
+        val indexOfNode = graphBuilder.nodeList.map { input -> input.name }.indexOf(node.nodeName())
+        if(indexOfNode < 0) {
+            throw IllegalStateException("No node of name ${node.nodeName()} was found")
+        }
         graphBuilder.setNode(indexOfNode,node.internalValue())
         this.graphDef = graphBuilder.build()
     }

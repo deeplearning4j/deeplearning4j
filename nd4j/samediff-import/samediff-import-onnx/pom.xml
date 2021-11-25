@@ -83,11 +83,6 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.bytedeco</groupId>
-      <artifactId>onnx-platform</artifactId>
-      <version>1.9.0-1.5.6</version>
-    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>

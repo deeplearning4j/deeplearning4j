@@ -21,6 +21,7 @@
 package org.nd4j.samediff.frameworkimport.onnx
 
 
+import GraphPreProcessRunner
 import onnx.Onnx
 import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -547,19 +548,7 @@ class TestOnnxIR {
         runAssertion(graph,input,outputs)
     }
 
-    fun runAssertion(graph: Onnx.GraphProto,input: Map<String,INDArray>,outputs: List<String>) {
-        val declarations = OnnxOpDeclarations
-        val onnxOpRegistry = registry()
 
-        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
-        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
-        val assertion = onnxGraphRunner.run(input)
-        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
-
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
-        val result = importedGraph.output(input,outputs)
-        assertEquals(assertion,result)
-    }
 
 
     @Test
@@ -907,73 +896,6 @@ class TestOnnxIR {
 
     }
 
-    fun createSingleNodeGraph(inputs: Map<String,INDArray>,op: String,attributes: Map<String,Any>,outputs: List<String>,inputNames: List<String>,templateTensor: INDArray = inputs.values.first()): Onnx.GraphProto {
-
-        val op = NodeProto {
-            inputNames.forEach { t ->
-                Input(t)
-            }
-
-            name = op.toLowerCase()
-
-            outputs.forEach {
-                Output(it)
-            }
-            attributes.forEach { (t, u) ->
-                val attr = AttributeProto {
-                    name = t
-                }
-                val toBuilder = attr.toBuilder()
-                when(u.javaClass.name) {
-                    "onnx.Onnx\$TensorProto" -> {
-                        toBuilder.t = (u as Onnx.TensorProto)
-                        toBuilder.type = Onnx.AttributeProto.AttributeType.TENSOR
-                    }
-                    "java.lang.Double" -> {
-                        toBuilder.f = (u as Double).toFloat()
-                        toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
-                    }
-                    "java.lang.Float" -> {
-                        toBuilder.f = u as Float
-                        toBuilder.type = Onnx.AttributeProto.AttributeType.FLOAT
-                    }
-                    "java.lang.Integer" -> {
-                        toBuilder.i = (u as Integer).toLong()
-                        toBuilder.type = Onnx.AttributeProto.AttributeType.INT
-                    }
-                    "java.lang.Long" -> {
-                        toBuilder.i = u as Long
-                        toBuilder.type = Onnx.AttributeProto.AttributeType.INT
-                    }
-                    "java.lang.String" -> {
-                        toBuilder.s = byteString(u as String)
-                        toBuilder.type = Onnx.AttributeProto.AttributeType.STRING
-                    }
-                }
-
-                toBuilder.name = t
-                Attribute(toBuilder.build())
-            }
-            opType = op
-        }
-
-        val graphRet = GraphProto {
-            Node(op)
-            name = op.opType.toLowerCase()
-            inputs.forEach { (t, u) ->
-                if(!t.isEmpty())
-                    Input(createValueInfoFromTensor(u,t,false))
-            }
-            outputs.forEach {
-                Output(createValueInfoFromTensor(templateTensor,it,false))
-            }
-
-
-        }
-
-        return graphRet
-
-    }
 
 
     @Test
