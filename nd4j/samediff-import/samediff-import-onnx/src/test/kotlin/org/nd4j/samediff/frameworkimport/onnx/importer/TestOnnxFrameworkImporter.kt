@@ -105,6 +105,6 @@ class TestOnnxFrameworkImporter {
         val inputData = DataSet(arr,labels)
         result.fit(inputData)
     }
-    
+
 
 }
