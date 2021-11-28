@@ -26,12 +26,14 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.guava.primitives.Ints
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
@@ -65,7 +67,8 @@ class Split : PreImportHook  {
             return retOutput(splitOutput)
         } else if(attributes.containsKey("split")) {
             val numSplits = attributes["split"] as List<Long>
-            val splitOutput = sd.split(outputNames.toTypedArray(),inputVariable,numSplits[0].toInt(),splitDim.toInt())
+            val splitConst = sd.constant(Nd4j.create(Nd4j.createBuffer(Ints.toArray(numSplits)))).castTo(DataType.INT64)
+            val splitOutput = sd.splitV(outputNames.toTypedArray(),inputVariable,splitConst,numSplits.size,splitDim.toInt())
             return retOutput(splitOutput)
         } else {
             val inputShape = sd.shape(inputVariable)

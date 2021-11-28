@@ -45,7 +45,6 @@ public class Split extends DynamicCustomOp {
     private int splitDim;
 
     public Split() {
-        System.out.println();
     }
 
     public Split(SameDiff sameDiff, SDVariable input, int numSplit, int splitDim) {

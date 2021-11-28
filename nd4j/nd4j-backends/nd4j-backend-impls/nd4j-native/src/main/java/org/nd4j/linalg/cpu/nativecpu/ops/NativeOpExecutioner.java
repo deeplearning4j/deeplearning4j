@@ -594,7 +594,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(ScalarOp op, OpContext oc) {
         long st = profilingConfigurableHookIn(op);
-
         //validateDataType(Nd4j.dataType(), op);
 
         if((oc != null && oc.getOutputArray(0) == null) || getZ(op, oc) == null){
@@ -613,11 +612,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 //        if (op.x().length() != op.z().length())
-        if (getX(op, oc).length() != getZ(op, oc).length())
-            throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
-                    "x.length()=" + getX(op, oc).length() + ", z.length()=" + getZ(op, oc).length() + " - x shape info = ["
-                    + Arrays.toString(getX(op, oc).shapeInfoDataBuffer().asInt()) + "], z shape info = ["
-                    + Arrays.toString(getZ(op, oc).shapeInfoDataBuffer().asInt()) + "]");
 
         if (op.dimensions() != null) {
             invokeScalarAlongDimension(op);
@@ -1490,7 +1484,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        String ownName = differentialFunction.getOwnName();
         boolean shapeOverride = false;
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {

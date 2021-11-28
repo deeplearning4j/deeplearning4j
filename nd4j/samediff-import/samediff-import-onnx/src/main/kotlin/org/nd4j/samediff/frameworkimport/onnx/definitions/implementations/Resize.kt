@@ -176,8 +176,7 @@ class Resize : PreImportHook  {
             val scaled = sd.castTo(sd.math.mul(heightWidthScale,heightWidthShape),DataType.INT32)
             scaled
         } else {
-            sd.setShape(sizes,input.shape())
-            sd.castTo(sizes.get(SDIndex.interval(2, -1)),DataType.INT32)
+            sizes.get(SDIndex.interval(2, 1,input.rank().arr.getInt(0)))
         }
         return ret.castTo(DataType.INT32)
     }

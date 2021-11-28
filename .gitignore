@@ -36,7 +36,8 @@ pom.xml.versionsBackup
 pom.xml.next
 release.properties
 *dependency-reduced-pom.xml
-
+Test Results*.xml
+Test Results*.html
 # Specific for Nd4j
 *.md5
 *.pom

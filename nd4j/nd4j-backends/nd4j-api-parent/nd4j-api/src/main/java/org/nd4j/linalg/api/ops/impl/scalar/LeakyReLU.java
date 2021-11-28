@@ -36,6 +36,8 @@ public class LeakyReLU extends BaseScalarOp {
     public static final double DEFAULT_ALPHA = 0.01;
     private double alpha = DEFAULT_ALPHA;
 
+
+
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double alpha) {
         super(sameDiff, i_v, alpha, inPlace);
         this.alpha = alpha;
@@ -98,6 +100,15 @@ public class LeakyReLU extends BaseScalarOp {
         return "LeakyRelu";
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
+
+
+    public LeakyReLU(SameDiff sameDiff, SDVariable i_v, Number scalar) {
+        super(sameDiff, i_v, scalar);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

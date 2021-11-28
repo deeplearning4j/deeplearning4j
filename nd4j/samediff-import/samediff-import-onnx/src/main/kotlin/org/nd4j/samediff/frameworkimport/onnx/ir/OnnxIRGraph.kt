@@ -20,7 +20,6 @@
 package org.nd4j.samediff.frameworkimport.onnx.ir
 
 import onnx.Onnx
-import org.apache.commons.lang3.StringUtils
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.context.MappingContext
@@ -32,6 +31,7 @@ import org.nd4j.samediff.frameworkimport.onnx.*
 import org.nd4j.samediff.frameworkimport.onnx.context.OnnxMappingContext
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.samediff.frameworkimport.stripVarSuffix
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 
@@ -55,10 +55,12 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
 
     override fun nodeByName(input: String): Onnx.NodeProto {
-        if(!cachedNodeList.map { input -> input.nodeName() }.contains(input)) {
+        //sometimes models exported from onnx will have tensorflow's var suffix
+        val input2 = stripVarSuffix(input)
+        if(!cachedNodeList.map { input -> input.nodeName() }.contains(input2)) {
             throw IllegalStateException("No input found for node name $input")
         }
-        return cachedNodeList.first { inputNode -> inputNode.nodeName() == input }.internalValue()
+        return cachedNodeList.first { inputNode -> inputNode.nodeName() == input2 }.internalValue()
     }
 
     init {
@@ -257,26 +259,34 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val firstOrNull = graphDef.initializerList.firstOrNull { inputNode -> inputNode.name == varName }
         if(firstOrNull != null)
             return firstOrNull.dimsList.toLongArray()
-        else if(nodeIsPlaceHolder(varName)) {
-            val placeHolder = irNodeByName(varName)
+        else if(nodeIsPlaceHolder(stripVarSuffix(varName))) {
+            val placeHolder = irNodeByName(stripVarSuffix(varName))
             val attrValue = placeHolder.attributeMap()["value"]!!.tensorValue().shape()
-            return attrValue.toLongArray()
+            val ret =  attrValue.toLongArray()
+            for(i in ret.indices) {
+                //missing dimension, probably dynamic, infer as -1 to match dynamic shape behavior in samediff
+                if(ret[i] == 0L) {
+                    ret[i] = -1
+                }
+            }
+
+            return ret
         }
         return null
     }
 
     override fun dataTypeForVariable(varName: String): IRDataType<Onnx.TensorProto.DataType> {
+       val varNameStripped = stripVarSuffix(varName)
         val firstOrNull = graphDef.initializerList.firstOrNull {
-                inputNode -> inputNode.name == varName }
+                inputNode -> inputNode.name == varNameStripped }
         val input = graphDef.inputList.firstOrNull { input2 ->
-            input2.name == varName
+            input2.name == varNameStripped
         }
         if(firstOrNull != null)
             return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType.ordinal])
-        else if(nodeIsPlaceHolder(varName)) {
-            val placeHolder = irNodeByName(varName)
-            val attrValue = placeHolder.attributeMap()["value"]!!.tensorValue().dataType()
-            return attrValue
+        else if(nodeIsPlaceHolder(varNameStripped)) {
+            val placeHolder = irNodeByName(varNameStripped)
+            return placeHolder.attributeMap()["value"]!!.tensorValue().dataType()
         }
         else if(input != null)
             return OnnxIRDataType(input.type.tensorType.elemType)
