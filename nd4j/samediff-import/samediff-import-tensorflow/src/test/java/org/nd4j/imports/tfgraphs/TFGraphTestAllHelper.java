@@ -106,7 +106,7 @@ public class TFGraphTestAllHelper {
             else
                 System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
 
-            return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap(),false);
+            return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap(),true);
         }
     }
 

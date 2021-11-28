@@ -75,6 +75,11 @@ public class NoOp extends DynamicCustomOp {
     }
 
     @Override
+    public void computeArrays() {
+
+    }
+
+    @Override
     public String onnxName() {
         return "NoOp";
     }

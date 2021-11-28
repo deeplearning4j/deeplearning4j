@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.onnx.process
 
 import onnx.Onnx
+import org.nd4j.ir.MapperNamespace
 
 import org.nd4j.samediff.frameworkimport.onnx.attributeValueTypeForOnnxAttribute
 import org.nd4j.samediff.frameworkimport.process.AbstractMappingProcess
@@ -44,7 +45,8 @@ open class OnnxMappingProcess(inputFramework: String = "onnx",
                                       Onnx.TensorProto, Onnx.TensorProto.DataType>> = emptyList(),
                               inputIndexOverrides: Map<Int,Int> = emptyMap(),
                               attributeMappingRules: List<out AttributeMappingRule<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.AttributeProto, Onnx.AttributeProto,
-                                      Onnx.TensorProto, Onnx.TensorProto.DataType>> = emptyList())
+                                      Onnx.TensorProto, Onnx.TensorProto.DataType>> = emptyList(),
+                              variableResolutionType: MapperNamespace.VariableResolutionType = MapperNamespace.VariableResolutionType.DIRECT)
     : AbstractMappingProcess<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>(
     inputFramework,
     frameworkVersion,
@@ -53,12 +55,13 @@ open class OnnxMappingProcess(inputFramework: String = "onnx",
     opName,
     opMappingRegistry,
     tensorMappingRules,
-    attributeMappingRules) {
+    attributeMappingRules,
+    variableResolutionType) {
     override fun inputOpDefValueTypes(): Map<String, AttributeValueType> {
         val opDef = opMappingRegistry.lookupInputFrameworkOpDef(inputFrameworkOpName)
         val ret = HashMap<String,AttributeValueType>()
         opDef.attributeList.forEach { attributeProto ->
-              ret[attributeProto.name] = attributeValueTypeForOnnxAttribute(attributeProto)
+            ret[attributeProto.name] = attributeValueTypeForOnnxAttribute(attributeProto)
         }
 
         return ret

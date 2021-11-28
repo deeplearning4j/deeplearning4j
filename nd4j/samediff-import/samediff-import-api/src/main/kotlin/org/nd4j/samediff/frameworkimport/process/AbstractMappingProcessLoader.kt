@@ -112,32 +112,31 @@ abstract class AbstractMappingProcessLoader<
                         transformerArgs[arg.key] = arg.transformerArgsList
                     }
 
-                    val constructor = attributeRuleRegistry()[rule.ruleName]!!.constructors.firstOrNull {
-                            constructor -> constructor.parameterCount == 1 || constructor.parameterCount == 2
-                    }
+                    val constructor = attributeRuleRegistry()[rule.ruleName]!!.constructors.firstOrNull { constructor -> constructor.parameterCount == 1 || constructor.parameterCount == 2
+                    } ?: throw IllegalArgumentException("No constructor found with parameter count < 3! Rule name ${rule.ruleName}")
 
 
-                    if(constructor == null) {
-                        throw IllegalArgumentException("No constructor found with parameter count < 3! Rule name ${rule.ruleName}")
-                    }
+                    when (constructor!!.parameterCount) {
+                        1 -> {
+                            val instance = constructor!!.newInstance(rule.inputToOutputMap) as AttributeMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_DEF_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>
+                            instance.setMappingTransformerArgs(transformerArgs)
+                            instance.setMappingTransformerArgs(transformerArgs)
+                            instance.modifyName(rule.ruleName)
+                            instance.modifyInputFrameworkOpName(rule.inputFrameworkOpName)
+                            listOfAttributeRules.add(instance)
+                        }
+                        2 -> {
+                            val instance = constructor.newInstance(rule.inputToOutputMap,transformerArgs) as AttributeMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_DEF_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>
 
-                    if(constructor!!.parameterCount == 1) {
-                        val instance = constructor!!.newInstance(rule.inputToOutputMap) as AttributeMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_DEF_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>
-                        instance.setMappingTransformerArgs(transformerArgs)
-                        instance.setMappingTransformerArgs(transformerArgs)
-                        instance.modifyName(rule.ruleName)
-                        instance.modifyInputFrameworkOpName(rule.inputFrameworkOpName)
-                        listOfAttributeRules.add(instance)
-                    } else if(constructor!!.parameterCount == 2) {
-                        val instance = constructor.newInstance(rule.inputToOutputMap,transformerArgs) as AttributeMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_DEF_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>
+                            instance.setMappingTransformerArgs(transformerArgs)
+                            instance.modifyName(rule.ruleName)
+                            instance.modifyInputFrameworkOpName(rule.inputFrameworkOpName)
 
-                        instance.setMappingTransformerArgs(transformerArgs)
-                        instance.modifyName(rule.ruleName)
-                        instance.modifyInputFrameworkOpName(rule.inputFrameworkOpName)
-
-                        listOfAttributeRules.add(instance)
-                    } else {
-                        throw IllegalArgumentException("No constructor found with parameter count < 3 for op " + declaration.opName)
+                            listOfAttributeRules.add(instance)
+                        }
+                        else -> {
+                            throw IllegalArgumentException("No constructor found with parameter count < 3 for op " + declaration.opName)
+                        }
                     }
 
 
@@ -148,7 +147,7 @@ abstract class AbstractMappingProcessLoader<
         }
 
         val indexOverridesConverted = HashMap<Int,Int>()
-        declaration.indexOverridesMap.forEach { input, output ->
+        declaration.indexOverridesMap.forEach { (input, output) ->
             indexOverridesConverted[input.toInt()] = output.toInt()
         }
 
@@ -158,14 +157,16 @@ abstract class AbstractMappingProcessLoader<
             attributeMappingRules = listOfAttributeRules,
             tensorMappingRules = listOfTensorRules,
             opMappingRegistry = opMappingRegistry,
-            indexOverrides = indexOverridesConverted)
+            indexOverrides = indexOverridesConverted,
+            variableResolutionType = declaration.variableResolutionType)
     }
 
     abstract fun instantiateMappingProcess(inputFrameworkOpName: String,opName:String,
                                            attributeMappingRules: List<AttributeMappingRule<GRAPH_TYPE,OP_DEF_TYPE,NODE_DEF_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,TENSOR_TYPE,DATA_TYPE>>,
                                            tensorMappingRules: List<TensorMappingRule<GRAPH_TYPE,OP_DEF_TYPE,NODE_DEF_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,TENSOR_TYPE,DATA_TYPE>>,
                                            opMappingRegistry: OpMappingRegistry<GRAPH_TYPE, NODE_DEF_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE>,
-                                           indexOverrides: Map<Int,Int>
+                                           indexOverrides: Map<Int,Int>,
+                                           variableResolutionType: MapperNamespace.VariableResolutionType
     ): MappingProcess<GRAPH_TYPE,OP_DEF_TYPE,NODE_DEF_TYPE,TENSOR_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,DATA_TYPE>
 
     override fun tensorRuleRegistry(): Map<String, Class<TensorMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_DEF_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>>> {

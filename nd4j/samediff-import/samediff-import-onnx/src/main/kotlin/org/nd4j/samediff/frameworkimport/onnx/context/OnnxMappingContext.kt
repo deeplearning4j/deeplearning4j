@@ -117,18 +117,15 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
          */
         val graphNode = if(node.opType == "Constant") name else node.getInput(foundIndex)
         val attemptedTensor = graphDef.initializerList.firstOrNull { it.name == graphNode }
+            ?: return if(!dynamicVariables.containsKey(graphNode))
+                OnnxIRTensor(Onnx.TensorProto.getDefaultInstance())
+            else {
+                val toConvert = dynamicVariables[graphNode]!!
+                OnnxIRTensor(toConvert)
+            }
 
         //no value to be found on placeholder, return default instance
         //if no value exists it's an output from another node
-        if(attemptedTensor == null) {
-            println("Value for node $graphNode is not a constant! This method only works for constants. Consider replacing the Placeholder node with a Constant node. This will return an empty tensor.")
-            if(!dynamicVariables.containsKey(graphNode))
-                return OnnxIRTensor(Onnx.TensorProto.getDefaultInstance())
-            else {
-                val toConvert = dynamicVariables[graphNode]!!
-                return OnnxIRTensor(toConvert)
-            }
-        }
 
         //value nodes are the values of attributes that are input nodes in a frozen graph
         if(attemptedTensor == null) {

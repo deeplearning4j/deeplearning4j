@@ -25,6 +25,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -66,6 +67,23 @@ public class SpaceToBatchND extends DynamicCustomOp {
     public String tensorflowName() {
         return "SpaceToBatchND";
     }
+
+    @Override
+    public void configureFromArguments() {
+        SDVariable[] args = args();
+        if(args != null && args.length > 1) {
+            INDArray blocks = args[1].getArr();
+            if(blocks != null) {
+                this.blocks = blocks.toIntVector();
+            }
+            if(args.length > 2) {
+                INDArray crops = args[2].getArr();
+                this.padding = crops.toIntMatrix();
+            }
+
+        }
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

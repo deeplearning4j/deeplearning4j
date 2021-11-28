@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 @Slf4j
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
+@Disabled
 public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
@@ -133,7 +134,9 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
     @MethodSource("data")
     public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
         Nd4j.create(1);
-        for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES) {
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
                 assumeFalse(true);

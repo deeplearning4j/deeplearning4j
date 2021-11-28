@@ -74,19 +74,6 @@ public class Exit extends BaseCompatOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
     }
 
-    @Override
-    public void computeArrays() {
-        if(sameDiff.isEagerMode()) {
-            SDVariable[] args = args();
-            //special work around for next_iteration as shapes don't matter, just number of outputs
-            for(int i = 0; i < 1; i++) {
-                outputVariables[i].setShape(args[i].getArr().shape());
-                sameDiff.setEagerArrForVarName(outputVariables[i].name(), args[i].getArr());
-            }
-
-        }
-    }
-
 
     @Override
     public int getNumOutputs(){

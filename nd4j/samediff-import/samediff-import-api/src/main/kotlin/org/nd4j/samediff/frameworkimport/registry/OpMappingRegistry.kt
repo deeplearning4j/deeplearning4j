@@ -192,7 +192,7 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
     fun saveProcessesAndRuleSet() {
         val mapperDeclarations = ArrayList<MapperNamespace.MapperDeclaration>()
         val bufferToWrite = StringBuilder()
-        registeredOps.asMap().forEach { name, listOfMappingProcesses ->
+        registeredOps.asMap().forEach { (_, listOfMappingProcesses) ->
             listOfMappingProcesses.forEach { mappingProcess ->
                 mapperDeclarations.add(mappingProcess.serialize())
             }

@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.onnx.definitions
 
 import onnx.Onnx
+import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
 import org.nd4j.samediff.frameworkimport.ArgDescriptor
 import org.nd4j.samediff.frameworkimport.onnx.*
@@ -197,7 +198,6 @@ val batchNorm = OnnxMappingProcess(
 //TODO: CastMap
 //TODO: CategoryMapper
 //TODO: Celu
-//TODO: Clip
 //TODO: Compress
 val concat = OnnxMappingProcess(
         opName = "concat",
@@ -205,7 +205,8 @@ val concat = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "inputs"))),
         attributeMappingRules = listOf(valueMappings(mapOf("concatDimension" to "axis")),
-                booleanConstant(inputName = "isDynamicAxis",constantValue = false,argumentIndex = 0)[0])
+                booleanConstant(inputName = "isDynamicAxis",constantValue = false,argumentIndex = 0)[0]),
+        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT
 
 )
 //TODO: ConcatFromSequence

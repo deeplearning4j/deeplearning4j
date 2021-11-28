@@ -263,14 +263,22 @@ void Context::pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList 
 }
 
 void Context::pushNDArrayListToVariableSpace(std::pair<int, int> &pair, NDArrayList *list, bool track) {
+  sd_debug("Pre push variable list\n",0);
   if (!_variableSpace->hasVariable(pair)) {
+    sd_debug("Context::pushNDArrayListToVariableSpace: Pre create variable when none exists\n",0);
     auto var = new Variable(nullptr, nullptr, pair.first, pair.second);
+    sd_debug("Context::pushNDArrayListToVariableSpace: Created when none exists\n",0);
     var->setNDArrayList(list);
     _variableSpace->putVariable(pair, var);
+    sd_debug("Context::pushNDArrayListToVariableSpace: Put variable\n",0);
   } else {
+    sd_debug("Context::pushNDArrayListToVariableSpace: In else: Getting variable\n",0);
     auto var = _variableSpace->getVariable(pair);
+    sd_debug("Context::pushNDArrayListToVariableSpace: Got variable setting list\n",0);
     var->setNDArrayList(list);
   }
+
+  sd_debug("Context::pushNDArrayListToVariableSpace: pre tracking\n",0);
 
   if (track) _variableSpace->trackList(list);
 }

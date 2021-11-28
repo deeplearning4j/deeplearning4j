@@ -32,7 +32,7 @@ public class OptimizedGraphArrayHolder implements ArrayHolder {
     private final ArrayHolder underlyingHolder;
     private final Map<String, Supplier<INDArray>> functions;
 
-    public OptimizedGraphArrayHolder(ArrayHolder underlyingHolder){
+    public OptimizedGraphArrayHolder(ArrayHolder underlyingHolder) {
         this.underlyingHolder = underlyingHolder;
         this.functions = new HashMap<>();
     }

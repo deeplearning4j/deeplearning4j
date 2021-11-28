@@ -43,15 +43,20 @@ LIST_OP_IMPL(create_list, 1, 2, 0, -2) {
     expandable = true;
   }
 
+  sd_debug("Creating list\n",0);
   auto list = new NDArrayList(height, expandable);
-
-  // we recieve input array for graph integrity purposes only
+  sd_debug("Created list\n",0);
+  // we receive input array for graph integrity purposes only
   auto input = INPUT_VARIABLE(0);
+  sd_debug("Setup input\n",0);
   setupResultList(list, block);
+  sd_debug("Setup result list\n",0)
   //            OVERWRITE_RESULT(list);
-
+  sd_debug("Creating result\n",0);
   auto scalar = NDArrayFactory::create_(list->counter());
+  sd_debug("Created result\n",0);
   block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
+  sd_debug("Pushed variable\n",0);
 
   return sd::Status::OK;
 }

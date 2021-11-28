@@ -284,15 +284,32 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     if (arg.getArr() != null)
                         addInputArgument(arg.getArr());
                     else {
-                        throw new IllegalStateException("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation.");
+                        INDArray add = Nd4j.scalar(1.0f);
+                        sameDiff.setEagerArrForVarName(arg.name(),add);
+                        addInputArgument(add);
+                        log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
                     }
                 }
             }
-            INDArray[] exec = Nd4j.getExecutioner().exec(this);
-            for (int i = 0; i < outputVariables.length; i++) {
-                outputVariables[i].setShape(exec[i].shape());
-                sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+
+            if(outputVariables.length > 0) {
+                INDArray[] exec = Nd4j.getExecutioner().exec(this);
+                if(outputVariables.length != exec.length) {
+                    log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
+                }
+                for (int i = 0; i < outputVariables.length; i++) {
+                    if(i >= exec.length) {
+                        INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
+                        outputVariables[i].setShape(stub.shape());
+                        sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
+                    }  else {
+                        outputVariables[i].setShape(exec[i].shape());
+                        sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                    }
+
+                }
             }
+
         }
     }
 
@@ -452,22 +469,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         inputArguments.addAll(Arrays.asList(arg));
 
-        val args = sameDiff != null ? args() : null;
-        val arrsSoFar = inputArguments();
-        //validate arrays passed in, keep in mind that
-        //this is a cumulative algorithm so we should always
-        //refresh the current list
-        if (args != null) {
-            for (int i = 0; i < args.length; i++) {
-
-                // it's possible to get into situation where number of args > number of arrays AT THIS MOMENT
-                if (i >= arrsSoFar.size())
-                    continue;
-
-                if (!Arrays.equals(args[i].getShape(), arrsSoFar.get(i).shape()))
-                    throw new ND4JIllegalStateException("Illegal array passed in as argument [" + i + "]. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
-            }
-        }
     }
 
     @Override
@@ -603,7 +604,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         //not fully initialized: missing INDArray input args
         int nIn = oc != null ? oc.numInputArguments() : numInputArguments();
-        if(descriptor.getNumInputs() >= 0 && nIn < descriptor.getNumInputs()){
+        if(descriptor.getNumInputs() >= 0 && nIn < descriptor.getNumInputs()) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: not fully initialized ({} input (INDArray) args specified, " +
                         "{} required)", getClass().getName(), nIn, descriptor.getNumInputs());
@@ -735,15 +736,16 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return in == null ? null : new INDArray[]{in};
     }
 
-    protected static <T> T[] wrapFilterNull(T... in){
+    protected static <T> T[] wrapFilterNull(T... in) {
         int count = 0;
-        for( int i=0; i<in.length; i++ ) {
+        for( int i = 0; i < in.length; i++) {
             if (in[i] != null) count++;
         }
+
         T[] out = (T[]) Array.newInstance(in.getClass().getComponentType(), count);
-        int j=0;
-        for( int i=0; i<in.length; i++ ){
-            if(in[i] != null){
+        int j = 0;
+        for( int i = 0; i < in.length; i++) {
+            if(in[i] != null) {
                 out[j++] = in[i];
             }
         }

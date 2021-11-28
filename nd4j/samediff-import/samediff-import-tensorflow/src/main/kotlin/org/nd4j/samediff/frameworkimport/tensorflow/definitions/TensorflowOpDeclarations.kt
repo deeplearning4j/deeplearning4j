@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.definitions
 
 
+import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ArgDescriptor
@@ -317,8 +318,6 @@ val batchToSpaceND = TensorflowMappingProcess(
         opName = "batch_to_space_nd",
         inputFrameworkOpName = "BatchToSpaceND",
         opMappingRegistry = tensorflowOpRegistry,
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("blocks" to "block_shape")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]),
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","crop" to "crops","blockShape" to "block_shape")))
 )
 
@@ -503,6 +502,7 @@ val compareAndBitPack = TensorflowMappingProcess(
 val concat = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "concat",
+        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
         inputFrameworkOpName = "Concat",
         tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("input" to "values","concatDimension" to "concat_dim"))),
         attributeMappingRules = listOf(convertNDArrayInputToNumericalAttr(mutableMapOf("concatDimension" to "concat_dim")),
@@ -512,6 +512,7 @@ val concat = TensorflowMappingProcess(
 val parallelConcat = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "concat",
+        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
         inputFrameworkOpName = "ParallelConcat",
         tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("input" to "values"))),
         attributeMappingRules = listOf(
@@ -533,6 +534,7 @@ val mergeadd = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "mergeadd",
         inputFrameworkOpName = "AccumulateNV2",
+        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
         tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("inArrs" to "inputs"))),
         attributeMappingRules = listOf( booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]))
 
@@ -549,7 +551,8 @@ val mergeadd = TensorflowMappingProcess(
 val mergeAdd = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "concat",
-        inputFrameworkOpName = "ConcatV2",
+        variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
+                inputFrameworkOpName = "ConcatV2",
         tensorMappingRules = listOf(passThroughNDArrayInputs()),
         attributeMappingRules = listOf(convertNDArrayInputToNumericalAttr(mutableMapOf("concatDimension" to "axis")),
                 booleanConstant(inputName = "isDynamicAxis",constantValue = true,argumentIndex = 0)[0]))
@@ -1383,7 +1386,7 @@ val maxPoolArgmax = multipleNameMapping(
                 intConstant(inputName = "dW",constantValue = 1 ,argumentIndex = 7)[0],
                 intConstant(inputName = "extraParam0",constantValue = 0 ,argumentIndex = 9)[0],
                 intConstant(inputName = "isNHWC",argumentIndex = 10,constantValue = 1 )[0],
-                intConstant(inputName = "sameMode",argumentIndex = 8,constantValue = 8 )[0],
+                intConstant(inputName = "sameMode",argumentIndex = 8,constantValue = 1 )[0],
                 valueMapping(mutableMapOf("dtype" to "Targmax"))
         )
         ,tensorflowOpRegistry = tensorflowOpRegistry
@@ -2027,7 +2030,6 @@ val spaceToBatchNd = TensorflowMappingProcess(
         inputFrameworkOpName = "SpaceToBatchND",
         opMappingRegistry = tensorflowOpRegistry,
         attributeMappingRules = listOf(
-                ndarrayToIntList(mutableMapOf("blocks" to "block_shape")),
                 argDescriptorConstant(listOf(
                         ArgDescriptor {
                                 name = "inPlace"

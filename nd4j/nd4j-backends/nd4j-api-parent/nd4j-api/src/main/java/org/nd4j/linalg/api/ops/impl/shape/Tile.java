@@ -150,9 +150,6 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //2nd isput is dynamic repeat
-        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || (jaxis == null && dataTypes.size() == 2)),
-                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type
         return Collections.singletonList(dataTypes.get(0));
     }

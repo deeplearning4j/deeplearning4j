@@ -39,6 +39,21 @@ interface MappingProcess<
         DATA_TYPE: ProtocolMessageEnum> {
 
 
+    /**
+     * Returns the array resolution type.
+     * This configures how a mapping process should resolve variables.
+     * Sometimes there are differences between the number of input variables
+     * in an nd4j op and the op that is being imported from.
+     * This could include things like attributes being converted to inputs, the reverse
+     * or other situations like multiple variables.
+     *
+     * There are 3 values:
+     * DIRECT: map as is. This means import the inputs exactly as described.
+     * OVERRIDE: use nd4j's descriptor and prioritize the variables resolved from the op descriptor
+     * ERROR_ON_NOT_EQUAL: throw an exception if the resolved and the import aren't an exact match.
+     * This can be used when debugging or just as an assertion about an ops state upon import.
+     */
+    fun arrayResolutionType(): MapperNamespace.VariableResolutionType
 
     fun inputOpDefValueTypes(): Map<String, AttributeValueType>
 

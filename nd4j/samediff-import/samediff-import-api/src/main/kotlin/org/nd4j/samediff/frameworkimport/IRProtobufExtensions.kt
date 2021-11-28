@@ -440,18 +440,32 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
             return Nd4j.empty(dtype)
     }
 
-    val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
-    byteBuffer.put(byteArray)
-    //See: https://github.com/apache/felix/pull/114
-    val castBuffer = byteBuffer as Buffer
-    castBuffer.rewind()
-    val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen, 0)
-    if(shape.isNotEmpty() && totalLen > 0) {
-        if(rawDataBuffer.length() > 0)
-            return Nd4j.create(rawDataBuffer).reshape('c',*shape)
-        return Nd4j.empty(dtype)
+    if(dtype == DataType.UTF8) {
+        val rawDataBuffer =  Nd4j.getDataBufferFactory().createUtf8Buffer(byteArray,byteArray.size.toLong())
+        if(shape.isNotEmpty() && totalLen > 0) {
+            if(rawDataBuffer.length() > 0) {
+                val stringInput = java.lang.String(byteArray).toString()
+                return Nd4j.create(stringInput)
+            }
+            return Nd4j.empty(dtype)
+        }
+        return Nd4j.create(rawDataBuffer)
+    } else {
+        val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
+        byteBuffer.put(byteArray)
+        //See: https://github.com/apache/felix/pull/114
+        val castBuffer = byteBuffer as Buffer
+        castBuffer.rewind()
+        val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen, 0)
+        if(shape.isNotEmpty() && totalLen > 0) {
+            if(rawDataBuffer.length() > 0)
+                return Nd4j.create(rawDataBuffer).reshape('c',*shape)
+            return Nd4j.empty(dtype)
+        }
+        return Nd4j.create(rawDataBuffer)
     }
-    return Nd4j.create(rawDataBuffer)
+
+
 }
 
 fun nameSpaceTensorFromNDarray(ndarray: INDArray): TensorNamespace.TensorProto {

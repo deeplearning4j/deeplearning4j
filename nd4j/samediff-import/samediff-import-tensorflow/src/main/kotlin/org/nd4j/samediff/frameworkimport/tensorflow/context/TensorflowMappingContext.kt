@@ -123,12 +123,11 @@ class TensorflowMappingContext(opDef: OpDef, node: NodeDef, graph: IRGraph<Graph
         //no value to be found on placeholder, return default instance
         //if no value exists it's an output from another node
         if("Placeholder" in searchedNode.op || !searchedNode.containsAttr("value")) {
-            println("Value for node $name is not a constant! This method only works for constants. Consider replacing the Placeholder node with a Constant node. This will return an empty tensor.")
-            if(!dynamicVariables.containsKey(name))
-                return TensorflowIRTensor(TensorProto.getDefaultInstance())
+            return if(!dynamicVariables.containsKey(name))
+                TensorflowIRTensor(TensorProto.getDefaultInstance())
             else {
                 val toConvert = dynamicVariables[name]!!
-                return TensorflowIRTensor(toConvert)
+                TensorflowIRTensor(toConvert)
             }
         }
 

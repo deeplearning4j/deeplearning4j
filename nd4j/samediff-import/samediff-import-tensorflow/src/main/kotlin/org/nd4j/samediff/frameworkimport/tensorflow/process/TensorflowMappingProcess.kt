@@ -21,6 +21,7 @@ package org.nd4j.samediff.frameworkimport.tensorflow.process
 
 
 import org.nd4j.common.base.Preconditions
+import org.nd4j.ir.MapperNamespace
 import org.nd4j.samediff.frameworkimport.process.AbstractMappingProcess
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeMappingRule
@@ -45,7 +46,8 @@ open class TensorflowMappingProcess(inputFramework: String = "tensorflow",
                                             OpDef.AttrDef,
                                             AttrValue,
                                             TensorProto, DataType>> = emptyList(),
-                                    inputIndexOverrides: Map<Int,Int> = emptyMap())
+                                    inputIndexOverrides: Map<Int,Int> = emptyMap(),
+                                    variableResolutionType: MapperNamespace.VariableResolutionType = MapperNamespace.VariableResolutionType.DIRECT)
     : AbstractMappingProcess<GraphDef, OpDef, NodeDef, TensorProto, OpDef.AttrDef,
         AttrValue, DataType>(
     inputFramework,
@@ -55,7 +57,8 @@ open class TensorflowMappingProcess(inputFramework: String = "tensorflow",
     opName,
     opMappingRegistry,
     tensorMappingRules,
-    attributeMappingRules) {
+    attributeMappingRules,
+    variableResolutionType) {
     override fun inputOpDefValueTypes(): Map<String, AttributeValueType> {
         Preconditions.checkNotNull(inputFrameworkOpName,"No input framework op def name found!")
         val opDef = opMappingRegistry.lookupInputFrameworkOpDef(inputFrameworkOpName)

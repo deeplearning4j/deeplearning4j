@@ -45,7 +45,8 @@ class OnnxMappingProcessLoader(opMappingRegistry:
         attributeMappingRules: List<AttributeMappingRule<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto, Onnx.TensorProto.DataType>>,
         tensorMappingRules: List<TensorMappingRule<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto, Onnx.TensorProto.DataType>>,
         opMappingRegistry: OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>,
-        indexOverrides: Map<Int, Int>
+        indexOverrides: Map<Int, Int>,
+        variableResolutionType: MapperNamespace.VariableResolutionType
     ): MappingProcess<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType> {
        return OnnxMappingProcess(
            inputFrameworkOpName = inputFrameworkOpName,
@@ -53,7 +54,8 @@ class OnnxMappingProcessLoader(opMappingRegistry:
            attributeMappingRules = attributeMappingRules,
            tensorMappingRules = tensorMappingRules,
            opMappingRegistry = opMappingRegistry,
-           inputIndexOverrides = indexOverrides
+           inputIndexOverrides = indexOverrides,
+           variableResolutionType = variableResolutionType
        )
     }
 

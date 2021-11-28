@@ -105,6 +105,7 @@ public class Concat extends DynamicCustomOp {
     public Map<String, Object> propertiesForFunction() {
         Map<String,Object> ret = new LinkedHashMap<>();
         ret.put("concatDimension",concatDimension);
+        ret.put("isDynamicAxis",isDynamicAxis);
         return ret;
     }
 

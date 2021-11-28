@@ -32,6 +32,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -123,6 +124,22 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
         }
 
         return ret;
+    }
+
+    @Override
+    public void computeArrays() {
+        if(sameDiff.isEagerMode()) {
+            SDVariable[] args = args();
+            //special work around for non existing arrays like nextiteration that aren't computed till last
+            //note we do this in case shape related ops are impacted by the stub arrays during calculation
+            //usually in this situation shapes can be disregarded and won't impact normal compute
+            long[] shape = new long[6];
+            for(int i = 0; i < shape.length; i++)
+                shape[i] = 1;
+            INDArray arr = Nd4j.scalar(1.0f).reshape(shape);
+            outputVariables[0].setShape(arr.shape());
+            sameDiff.setEagerArrForVarName(outputVariables[0].name(),arr);
+        }
     }
 
 

@@ -150,7 +150,8 @@ class Conv : PreImportHook  {
 
         } else {
             val weightGroups = sd.split(weights,groups.toInt(),-1)
-            inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
+            val permuteFormat = ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second)
+            inputVariable = sd.permute(inputVariable,*permuteFormat)
             if(groups.toInt() == 1)
                 xs.add(inputVariable)
             else {
