@@ -171,7 +171,7 @@ public class TFGraphMapper {
         List<String> opsAdded = new ArrayList<>();
         List<String> opsImported = new ArrayList<>();
         List<String> opsRemoved = new ArrayList<>();
-        Set<String> availableToAddSet = new HashSet<>();            //TODO maybe unnecessary?
+        Set<String> availableToAddSet = new LinkedHashSet<>();            //TODO maybe unnecessary?
         Queue<NodeDef> availableToAdd = new LinkedList<>();
 
         Map<String, NodeDef> remainingNodes = new HashMap<>();          //All other nodes, not in availableToAdd
@@ -218,7 +218,6 @@ public class TFGraphMapper {
             int nIn = nd.getInputCount();
 
             availableToAddSet.remove(name);
-
             log.trace("Adding operation to graph: {} (name={})", opName, name);
             opsAdded.add(opName + "," + name);
             boolean skipCase = false;
@@ -302,7 +301,7 @@ public class TFGraphMapper {
 
                             if(inName.endsWith(":0")) {
                                 //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
-                                inName = inName.substring(0, inName.length()-2);
+                                inName = inName.substring(0, inName.length() - 2);
                             }
 
                             boolean isControlDep = isControlDep(origInName);

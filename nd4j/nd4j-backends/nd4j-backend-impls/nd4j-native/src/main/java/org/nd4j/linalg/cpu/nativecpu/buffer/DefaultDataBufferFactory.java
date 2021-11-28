@@ -1004,6 +1004,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         return DoubleBuffer.class;
     }
 
+    @Override
     public DataBuffer createUtf8Buffer(byte[] data, long product) {
         return new Utf8Buffer(data, product);
     }

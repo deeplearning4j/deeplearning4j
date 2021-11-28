@@ -69,6 +69,7 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Tests old functionality. Needs to be updated.")
     public void testBert(Nd4jBackend backend) throws Exception {
 
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
@@ -279,6 +280,7 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Tests old model import")
     public void testBertTraining(Nd4jBackend backend) throws Exception {
         String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");

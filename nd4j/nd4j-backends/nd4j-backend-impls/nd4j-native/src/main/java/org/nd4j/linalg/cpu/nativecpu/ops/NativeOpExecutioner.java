@@ -32,6 +32,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JEnvironmentVars;
+import org.nd4j.graph.OpType;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -310,7 +311,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     Arrays.toString(x.shape()) + ", y shape = " + Arrays.toString(y.shape()) +
                                     ", dimension = " + Arrays.toString(dimension) + ")");
                         }
-                    } else {
+                        //reduce ops can have second inputs as axes
+                    } else if(!(op instanceof ReduceOp)) {
                         //Every X TAD vs. entirety of Y
                         val xTADSize = x.length() / x.tensorsAlongDimension(dimension);
 
@@ -356,38 +358,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          */
         Pair<DataBuffer, DataBuffer> tadBuffers = x.isEmpty() ? Pair.<DataBuffer, DataBuffer>makePair(x.data(), null): tadManager.getTADOnlyShapeInfo(x, dimension);
         Pair<DataBuffer, DataBuffer> yTadBuffers = null;
-        /**
-         * Note that we use addresses in libnd4j.
-         * We use reinterpret cast in c to take the long
-         * we pass to JNI. This manages overhead.
-         */
-        Pointer hostTadShapeInfo = x.isEmpty() ? x.shapeInfoDataBuffer().addressPointer() : tadBuffers.getFirst().addressPointer();
 
-        DataBuffer offsets = x.isEmpty() ? null : tadBuffers.getSecond();
-        Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
-
-        // we're going to check, if that's TAD vs TAD comparison or TAD vs full array. if later - we're going slightly different route
-        boolean tvf = false;
-        if (y != null) {
-            if (x.tensorAlongDimension(0, dimension).length() == y.length()) {
-                tvf = true;
-            }
-        }
-
-        if (op.isComplexAccumulation()) {
-            yTadBuffers = tadManager.getTADOnlyShapeInfo(y, dimension);
-
-            if (x.tensorAlongDimension(0, dimension).length() != y.tensorAlongDimension(0, dimension).length())
-                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension: " +
-                        "x TAD length = " + x.tensorAlongDimension(0, dimension).length() + ", y TAD length " +
-                        y.tensorAlongDimension(0, dimension).length());
-        }
-
-        /**
-         * This is a pointer to a pointer in c.
-         */
-        //  FIXME: we need something better then 3rd element being non-null here...
-        //PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
 
         long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
@@ -623,7 +594,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(ScalarOp op, OpContext oc) {
         long st = profilingConfigurableHookIn(op);
-
         //validateDataType(Nd4j.dataType(), op);
 
         if((oc != null && oc.getOutputArray(0) == null) || getZ(op, oc) == null){
@@ -642,11 +612,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 //        if (op.x().length() != op.z().length())
-        if (getX(op, oc).length() != getZ(op, oc).length())
-            throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
-                    "x.length()=" + getX(op, oc).length() + ", z.length()=" + getZ(op, oc).length() + " - x shape info = ["
-                    + Arrays.toString(getX(op, oc).shapeInfoDataBuffer().asInt()) + "], z shape info = ["
-                    + Arrays.toString(getZ(op, oc).shapeInfoDataBuffer().asInt()) + "]");
 
         if (op.dimensions() != null) {
             invokeScalarAlongDimension(op);
@@ -1519,7 +1484,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        String ownName = differentialFunction.getOwnName();
         boolean shapeOverride = false;
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {

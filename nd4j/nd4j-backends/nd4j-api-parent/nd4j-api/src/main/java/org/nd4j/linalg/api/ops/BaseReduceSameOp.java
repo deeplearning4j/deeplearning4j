@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -124,9 +125,6 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     public boolean validateDataTypes(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         INDArray y = oc != null ? oc.getInputArray(1) : y();
-        if (y != null)
-            Preconditions.checkArgument(x.dataType() == y.dataType(),"Op.X type must be the same as Op.Y type:" +
-                    " x.dataType=%s, y.dataType=%s, op=%s", x.dataType(), y.dataType(), getClass().getName());
 
         INDArray z = oc != null ? oc.getOutputArray(0) : z();
         if (z != null)
@@ -134,6 +132,16 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
                     "Op.Z.datatype=%s", x.dataType(), z.dataType());
 
         return true;
+    }
+
+    @Override
+    public INDArray dimensions() {
+        if(dimensionz == null && dimensions != null) {
+            this.dimensionz = Nd4j.create(Nd4j.createBuffer(dimensions));
+        } else if(dimensionz == null && y != null) {
+            this.dimensionz = y;
+        }
+        return dimensionz;
     }
 
     @Override

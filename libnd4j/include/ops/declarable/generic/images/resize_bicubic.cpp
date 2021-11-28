@@ -131,7 +131,7 @@ DECLARE_TYPES(resize_bicubic) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, DataType::INT32)
-      ->setAllowedOutputTypes({DataType::FLOAT32});
+      ->setAllowedOutputTypes({DataType::FLOAT32,DataType::DOUBLE});
 }
 
 }  // namespace ops

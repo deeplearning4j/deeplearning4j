@@ -114,9 +114,9 @@ public class TensorArray extends  BaseTensorOp {
     }
 
     @Override
-    public SameDiff getSameDiff(){
+    public SameDiff getSameDiff() {
         val sd = this.sameDiff;
-        if (sd.getChild() != null){
+        if (sd.getChild() != null) {
             return sd.getChild();
         }
         return sd;
@@ -180,8 +180,9 @@ public class TensorArray extends  BaseTensorOp {
                         value, flow}).outputVariable();
     }
 
+
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType) {
         //The SDVariable that is the output of this "function" is just a dummy variable anyway...
         //Usually 2 outputs... seems like first one is dummy, second one is a float??
         //TODO work out exactly what this second output is for (it's used in TensorArrayWrite for example...

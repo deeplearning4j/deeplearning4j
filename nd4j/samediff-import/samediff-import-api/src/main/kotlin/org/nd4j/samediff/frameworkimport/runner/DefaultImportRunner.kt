@@ -193,7 +193,7 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                                 scalarField.isAccessible = true
                                 //access the first input (should have been set) and make sure the scalar type is the
                                 //the same
-                                val firstValue = sd.variables().first()
+                                val firstValue = df.arg(0)
                                 val dtype = firstValue.dataType()
                                 when (argDescriptor.argType) {
                                     OpNamespace.ArgDescriptor.ArgType.DOUBLE -> {

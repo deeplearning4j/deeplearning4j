@@ -48,6 +48,7 @@ message MapperDeclaration {
   //the rules to apply for attributes
   repeated MappingRule rule = 4;
   map<int64,int64> indexOverrides = 5;
+  VariableResolutionType variableResolutionType = 6;
 
 }
 
@@ -59,4 +60,10 @@ enum OpListType {
   INPUTARG = 4;
   OUTPUTARG = 5;
   AXISARG = 6;
+}
+
+enum VariableResolutionType {
+ DIRECT = 0;
+ OVERRIDE = 1;
+ ERROR_ON_NOT_EQUAL = 2;
 }

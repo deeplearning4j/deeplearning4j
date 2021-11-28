@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
 import GraphPreProcessRunner
+import onnx.Onnx
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -31,10 +32,13 @@ import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.learning.config.Adam
 import org.nd4j.samediff.frameworkimport.onnx.NodeProto
 import org.nd4j.samediff.frameworkimport.onnx.createSingleNodeGraph
+import org.nd4j.samediff.frameworkimport.onnx.definitions.onnxOpRegistry
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
 import org.nd4j.samediff.frameworkimport.onnx.runAssertion
 import java.io.File
+import java.io.FileInputStream
 import java.util.*
 
 class TestOnnxFrameworkImporter {
@@ -102,15 +106,5 @@ class TestOnnxFrameworkImporter {
         result.fit(inputData)
     }
 
-
-    @Test
-    fun testV9() {
-        Nd4j.getExecutioner().enableVerboseMode(true)
-        Nd4j.getExecutioner().enableDebugMode(true)
-        val importer = OnnxFrameworkImporter()
-        val file = File("C:\\Users\\agibs\\Downloads\\V9\\V9\\best_bracket.onnx")
-        val result  = importer.runImport(file.absolutePath, emptyMap(),suggestDynamicVariables = true)
-        //result.outputAll(Collections.singletonMap("input.1",Nd4j.ones(1,3,224,224)))
-    }
 
 }

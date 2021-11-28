@@ -26,12 +26,14 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
+import org.nd4j.shade.guava.primitives.Ints
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
@@ -61,21 +63,31 @@ class Split : PreImportHook  {
 
         if(op.inputsToOp.size > 1) {
             val split = sd.getVariable(op.inputsToOp[1])
-            val splitOutput = sd.split(inputVariable,split,splitDim.toInt())
-            return mapOf(splitOutput[0].name() to splitOutput.toList())
+            val splitOutput = sd.split(outputNames.toTypedArray(),inputVariable,split,splitDim.toInt())
+            return retOutput(splitOutput)
         } else if(attributes.containsKey("split")) {
             val numSplits = attributes["split"] as List<Long>
-            val splitOutput = sd.split(inputVariable,numSplits[0].toInt(),splitDim.toInt())
-            return mapOf(splitOutput[0].name() to splitOutput.toList())
+            val splitConst = sd.constant(Nd4j.create(Nd4j.createBuffer(Ints.toArray(numSplits)))).castTo(DataType.INT64)
+            val splitOutput = sd.splitV(outputNames.toTypedArray(),inputVariable,splitConst,numSplits.size,splitDim.toInt())
+            return retOutput(splitOutput)
         } else {
             val inputShape = sd.shape(inputVariable)
-            val numSplits = inputShape.get(SDIndex.point(splitDim.toLong())).div(outputNames.size.toDouble()).castTo(
+            val numSplits = inputShape.get(SDIndex.point(splitDim)).div(outputNames.size.toDouble()).castTo(
                 DataType.INT64)
-            val splitOutput = sd.split(inputVariable,numSplits,splitDim.toInt())
+            val splitOutput = sd.split(outputNames.toTypedArray(),inputVariable,numSplits,splitDim.toInt())
             val retMap = mutableMapOf<String,List<SDVariable>>()
             splitOutput.toList().forEach { retMap[it.name()] = listOf(it) }
             return retMap
         }
+    }
+
+    fun retOutput(vars: Array<SDVariable>): Map<String,List<SDVariable>> {
+        val ret = HashMap<String,List<SDVariable>>()
+        for(sdVar in vars) {
+            ret[sdVar.name()] = listOf(sdVar)
+        }
+
+        return ret
     }
 
 

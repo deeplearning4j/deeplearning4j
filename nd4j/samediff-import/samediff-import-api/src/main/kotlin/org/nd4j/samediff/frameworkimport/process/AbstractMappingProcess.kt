@@ -47,7 +47,8 @@ abstract  class AbstractMappingProcess<
                                                                                    opName: String,
                                                                                    opMappingRegistry: OpMappingRegistry<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE>,
                                                                                    tensorMappingRules: List<out TensorMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>>,
-                                                                                   attributeMappingRules: List<out AttributeMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>>):
+                                                                                   attributeMappingRules: List<out AttributeMappingRule<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, TENSOR_TYPE, DATA_TYPE>>,
+                                                                                   variableResolutionType: MapperNamespace.VariableResolutionType = MapperNamespace.VariableResolutionType.DIRECT):
     MappingProcess<GRAPH_TYPE, OP_DEF_TYPE,
             NODE_TYPE, TENSOR_TYPE,
             ATTRIBUTE_TYPE,
@@ -62,6 +63,7 @@ abstract  class AbstractMappingProcess<
     protected var opDef: IROpDef<GRAPH_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, DATA_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE>? = null
     protected val opMappingRegistry = opMappingRegistry
     protected val inputIndexOverrides = inputIndexOverrides
+    protected val variableResolutionType = variableResolutionType
     val nd4jOpDescriptors =  OpDescriptorLoaderHolder.nd4jOpDescriptor
 
 
@@ -118,6 +120,10 @@ abstract  class AbstractMappingProcess<
         )
 
 
+    }
+
+    override fun arrayResolutionType(): MapperNamespace.VariableResolutionType {
+        return variableResolutionType
     }
 
     override fun indexOverrides(): Map<Int, Int> {
@@ -198,8 +204,8 @@ abstract  class AbstractMappingProcess<
         retBuilder.frameworkName = inputFramework()
         retBuilder.opName = opName()
         retBuilder.inputFrameworkOpName = inputFrameworkOpName()
-
-        indexOverrides().forEach { indexToOverride, replacementIndex ->
+        retBuilder.variableResolutionType = variableResolutionType
+        indexOverrides().forEach { (indexToOverride, replacementIndex) ->
             retBuilder.putIndexOverrides(indexToOverride.toLong(),replacementIndex.toLong())
         }
 
@@ -226,7 +232,7 @@ abstract  class AbstractMappingProcess<
         if (attributeMappingRules != other.attributeMappingRules) return false
         if (opDef != other.opDef) return false
         if (inputIndexOverrides != other.inputIndexOverrides) return false
-
+       if(variableResolutionType != other.arrayResolutionType()) return false
         return true
     }
 
@@ -239,10 +245,11 @@ abstract  class AbstractMappingProcess<
         result = 31 * result + attributeMappingRules.hashCode()
         result = 31 * result + (opDef?.hashCode() ?: 0)
         result = 31 * result + inputIndexOverrides.hashCode()
+        result = 31 * result + variableResolutionType.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "AbstractMappingProcess(inputFramework='$inputFramework', frameworkVersion='$frameworkVersion', inputFrameworkOpName='$inputFrameworkOpName', opName='$opName', tensorMappingRules=$tensorMappingRules, attributeMappingRules=$attributeMappingRules, opDef=$opDef, inputIndexOverrides=$inputIndexOverrides, nd4jOpDescriptors=$nd4jOpDescriptors)"
+        return "AbstractMappingProcess(inputFramework='$inputFramework', frameworkVersion='$frameworkVersion', inputFrameworkOpName='$inputFrameworkOpName', opName='$opName', tensorMappingRules=$tensorMappingRules, attributeMappingRules=$attributeMappingRules, opDef=$opDef, inputIndexOverrides=$inputIndexOverrides, nd4jOpDescriptors=$nd4jOpDescriptors,variableResolutionType=$variableResolutionType)"
     }
 }

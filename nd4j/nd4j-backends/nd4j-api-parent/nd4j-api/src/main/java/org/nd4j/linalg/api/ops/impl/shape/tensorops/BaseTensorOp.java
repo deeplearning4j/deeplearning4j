@@ -28,6 +28,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -82,6 +83,11 @@ public abstract class BaseTensorOp extends DynamicCustomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         throw new UnsupportedOperationException("calculateOutputShape() is not supported for tensor ops.");
+    }
+
+    @Override
+    public void computeArrays() {
+        addOutputArgument(Nd4j.scalar(1.0f));
     }
 
     @Override

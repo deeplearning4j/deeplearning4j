@@ -81,7 +81,11 @@ class OnnxFrameworkImporter: FrameworkImporter {
             if(inputShape != null) {
                 inputShape = graph.shapeOfInput(graph.inputAt(i))!!.map { input -> if(input < 0) 1 else input }.toLongArray()
                 ret[graph.inputAt(i)] = Nd4j.ones(dType.nd4jDataType(),*inputShape)
+            } else {
+                ret[graph.inputAt(i)] = Nd4j.ones(dType.nd4jDataType())
+
             }
+
         }
 
         return ret

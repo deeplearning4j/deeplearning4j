@@ -146,6 +146,47 @@ public class OneHot extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.jaxis = iArguments.get(0).intValue();
+            this.depth = iArguments.get(1).intValue();
+        }
+
+        if(!tArguments.isEmpty()) {
+            this.on = tArguments.get(0);
+            this.off = tArguments.get(1);
+        }
+
+
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("depth")) {
+            Long depth = getLongValueFromProperty("depth",properties);
+            this.depth = depth;
+        }
+
+        if(properties.containsKey("off")) {
+            Double off = getDoubleValueFromProperty("off",properties);
+            this.off = off;
+        }
+
+        if(properties.containsKey("on")) {
+            Double on = getDoubleValueFromProperty("on",properties);
+            this.on = on;
+        }
+
+        if(properties.containsKey("dimensions")) {
+            Long dimension = getLongValueFromProperty("dimensions",properties);
+            this.dimensions = new int[] {dimension.intValue()};
+            this.jaxis = dimension.intValue();
+        }
+
+
+    }
+
+    @Override
     public String tensorflowName() {
         return "OneHot";
     }

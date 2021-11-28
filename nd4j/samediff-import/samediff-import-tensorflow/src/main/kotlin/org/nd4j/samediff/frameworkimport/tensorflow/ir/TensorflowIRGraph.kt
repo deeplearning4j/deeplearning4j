@@ -256,7 +256,7 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
     }
 
     override fun addGraphOutputsAsProcessingNodes(): Boolean {
-        return true
+        return false
     }
 
     override fun convertToNDArray(tensorTypeInput: TensorProto): INDArray {

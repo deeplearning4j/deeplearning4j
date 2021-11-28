@@ -29,6 +29,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -195,13 +196,20 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
         try {
             // TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,TFGraphTestAllHelper.LOADER,maxRE,minAbs,localTestDir,true);
-
+            Nd4j.getExecutioner().enableDebugMode(true);
+            Nd4j.getExecutioner().enableVerboseMode(true);
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
             throw t;
         }
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
+    }
+
+
+    @Test
+    public void testOther() {
+        SameDiff importAssertion = SameDiff.importFrozenTF(new File("C:\\Users\\agibs\\AppData\\Local\\Temp\\frozen_model.pb1052249717728562635tmp"));
     }
 
 }

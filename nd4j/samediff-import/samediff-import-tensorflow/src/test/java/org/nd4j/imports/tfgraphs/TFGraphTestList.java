@@ -91,7 +91,7 @@ public class TFGraphTestList {
 
 
     @ParameterizedTest
-    @MethodSource("#data")
+    @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestList#data")
     public void testOutputOnly(@TempDir Path testDir,String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();
@@ -107,7 +107,7 @@ public class TFGraphTestList {
 
     @Test @Disabled
     @ParameterizedTest
-    @MethodSource("#data")
+    @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestList#data")
     public void testAlsoIntermediate(@TempDir Path testDir,String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();

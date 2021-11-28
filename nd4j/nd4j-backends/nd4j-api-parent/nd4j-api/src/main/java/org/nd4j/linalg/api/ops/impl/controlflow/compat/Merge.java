@@ -90,16 +90,7 @@ public class Merge extends BaseCompatOp {
         return 1;
     }
 
-    @Override
-    public void computeArrays() {
-        if(sameDiff.isEagerMode()) {
-            SDVariable[] args = args();
-            //special work around for non existing arrays like nextiteration that aren't computed till last
-            outputVariables[0].setShape(args[0].getArr().shape());
-            sameDiff.setEagerArrForVarName(outputVariables[0].name(),args[0].getArr());
 
-        }
-    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {

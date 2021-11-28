@@ -157,6 +157,113 @@ public final class MapperNamespace {
     // @@protoc_insertion_point(enum_scope:org.nd4j.ir.OpListType)
   }
 
+  /**
+   * Protobuf enum {@code org.nd4j.ir.VariableResolutionType}
+   */
+  public enum VariableResolutionType
+      implements org.nd4j.shade.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>DIRECT = 0;</code>
+     */
+    DIRECT(0),
+    /**
+     * <code>OVERRIDE = 1;</code>
+     */
+    OVERRIDE(1),
+    /**
+     * <code>ERROR_ON_NOT_EQUAL = 2;</code>
+     */
+    ERROR_ON_NOT_EQUAL(2),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>DIRECT = 0;</code>
+     */
+    public static final int DIRECT_VALUE = 0;
+    /**
+     * <code>OVERRIDE = 1;</code>
+     */
+    public static final int OVERRIDE_VALUE = 1;
+    /**
+     * <code>ERROR_ON_NOT_EQUAL = 2;</code>
+     */
+    public static final int ERROR_ON_NOT_EQUAL_VALUE = 2;
+
+
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        throw new java.lang.IllegalArgumentException(
+            "Can't get the number of an unknown enum value.");
+      }
+      return value;
+    }
+
+    /**
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static VariableResolutionType valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static VariableResolutionType forNumber(int value) {
+      switch (value) {
+        case 0: return DIRECT;
+        case 1: return OVERRIDE;
+        case 2: return ERROR_ON_NOT_EQUAL;
+        default: return null;
+      }
+    }
+
+    public static org.nd4j.shade.protobuf.Internal.EnumLiteMap<VariableResolutionType>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final org.nd4j.shade.protobuf.Internal.EnumLiteMap<
+        VariableResolutionType> internalValueMap =
+          new org.nd4j.shade.protobuf.Internal.EnumLiteMap<VariableResolutionType>() {
+            public VariableResolutionType findValueByNumber(int number) {
+              return VariableResolutionType.forNumber(number);
+            }
+          };
+
+    public final org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(ordinal());
+    }
+    public final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return org.nd4j.ir.MapperNamespace.getDescriptor().getEnumTypes().get(1);
+    }
+
+    private static final VariableResolutionType[] VALUES = values();
+
+    public static VariableResolutionType valueOf(
+        org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      if (desc.getIndex() == -1) {
+        return UNRECOGNIZED;
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int value;
+
+    private VariableResolutionType(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:org.nd4j.ir.VariableResolutionType)
+  }
+
   public interface MappingRuleOrBuilder extends
       // @@protoc_insertion_point(interface_extends:org.nd4j.ir.MappingRule)
       org.nd4j.shade.protobuf.MessageOrBuilder {
@@ -6459,6 +6566,15 @@ public final class MapperNamespace {
 
     long getIndexOverridesOrThrow(
         long key);
+
+    /**
+     * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+     */
+    int getVariableResolutionTypeValue();
+    /**
+     * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+     */
+    org.nd4j.ir.MapperNamespace.VariableResolutionType getVariableResolutionType();
   }
   /**
    * Protobuf type {@code org.nd4j.ir.MapperDeclaration}
@@ -6477,6 +6593,7 @@ public final class MapperNamespace {
       opName_ = "";
       inputFrameworkOpName_ = "";
       rule_ = java.util.Collections.emptyList();
+      variableResolutionType_ = 0;
     }
 
     @java.lang.Override
@@ -6548,6 +6665,12 @@ public final class MapperNamespace {
                   IndexOverridesDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
               indexOverrides_.getMutableMap().put(
                   indexOverrides__.getKey(), indexOverrides__.getValue());
+              break;
+            }
+            case 48: {
+              int rawValue = input.readEnum();
+
+              variableResolutionType_ = rawValue;
               break;
             }
             default: {
@@ -6830,6 +6953,23 @@ public final class MapperNamespace {
       return map.get(key);
     }
 
+    public static final int VARIABLERESOLUTIONTYPE_FIELD_NUMBER = 6;
+    private int variableResolutionType_;
+    /**
+     * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+     */
+    public int getVariableResolutionTypeValue() {
+      return variableResolutionType_;
+    }
+    /**
+     * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+     */
+    public org.nd4j.ir.MapperNamespace.VariableResolutionType getVariableResolutionType() {
+      @SuppressWarnings("deprecation")
+      org.nd4j.ir.MapperNamespace.VariableResolutionType result = org.nd4j.ir.MapperNamespace.VariableResolutionType.valueOf(variableResolutionType_);
+      return result == null ? org.nd4j.ir.MapperNamespace.VariableResolutionType.UNRECOGNIZED : result;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -6862,6 +7002,9 @@ public final class MapperNamespace {
           internalGetIndexOverrides(),
           IndexOverridesDefaultEntryHolder.defaultEntry,
           5);
+      if (variableResolutionType_ != org.nd4j.ir.MapperNamespace.VariableResolutionType.DIRECT.getNumber()) {
+        output.writeEnum(6, variableResolutionType_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -6894,6 +7037,10 @@ public final class MapperNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
             .computeMessageSize(5, indexOverrides__);
       }
+      if (variableResolutionType_ != org.nd4j.ir.MapperNamespace.VariableResolutionType.DIRECT.getNumber()) {
+        size += org.nd4j.shade.protobuf.CodedOutputStream
+          .computeEnumSize(6, variableResolutionType_);
+      }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
@@ -6919,6 +7066,7 @@ public final class MapperNamespace {
           .equals(other.getRuleList())) return false;
       if (!internalGetIndexOverrides().equals(
           other.internalGetIndexOverrides())) return false;
+      if (variableResolutionType_ != other.variableResolutionType_) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -6944,6 +7092,8 @@ public final class MapperNamespace {
         hash = (37 * hash) + INDEXOVERRIDES_FIELD_NUMBER;
         hash = (53 * hash) + internalGetIndexOverrides().hashCode();
       }
+      hash = (37 * hash) + VARIABLERESOLUTIONTYPE_FIELD_NUMBER;
+      hash = (53 * hash) + variableResolutionType_;
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -7113,6 +7263,8 @@ public final class MapperNamespace {
           ruleBuilder_.clear();
         }
         internalGetMutableIndexOverrides().clear();
+        variableResolutionType_ = 0;
+
         return this;
       }
 
@@ -7154,6 +7306,7 @@ public final class MapperNamespace {
         }
         result.indexOverrides_ = internalGetIndexOverrides();
         result.indexOverrides_.makeImmutable();
+        result.variableResolutionType_ = variableResolutionType_;
         onBuilt();
         return result;
       }
@@ -7242,6 +7395,9 @@ public final class MapperNamespace {
         }
         internalGetMutableIndexOverrides().mergeFrom(
             other.internalGetIndexOverrides());
+        if (other.variableResolutionType_ != 0) {
+          setVariableResolutionTypeValue(other.getVariableResolutionTypeValue());
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -7913,6 +8069,51 @@ public final class MapperNamespace {
             .putAll(values);
         return this;
       }
+
+      private int variableResolutionType_ = 0;
+      /**
+       * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+       */
+      public int getVariableResolutionTypeValue() {
+        return variableResolutionType_;
+      }
+      /**
+       * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+       */
+      public Builder setVariableResolutionTypeValue(int value) {
+        variableResolutionType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+       */
+      public org.nd4j.ir.MapperNamespace.VariableResolutionType getVariableResolutionType() {
+        @SuppressWarnings("deprecation")
+        org.nd4j.ir.MapperNamespace.VariableResolutionType result = org.nd4j.ir.MapperNamespace.VariableResolutionType.valueOf(variableResolutionType_);
+        return result == null ? org.nd4j.ir.MapperNamespace.VariableResolutionType.UNRECOGNIZED : result;
+      }
+      /**
+       * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+       */
+      public Builder setVariableResolutionType(org.nd4j.ir.MapperNamespace.VariableResolutionType value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        
+        variableResolutionType_ = value.getNumber();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>.org.nd4j.ir.VariableResolutionType variableResolutionType = 6;</code>
+       */
+      public Builder clearVariableResolutionType() {
+        
+        variableResolutionType_ = 0;
+        onChanged();
+        return this;
+      }
       @java.lang.Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
@@ -8026,17 +8227,20 @@ public final class MapperNamespace {
       "nsformerArgs\030\002 \003(\0132\032.org.nd4j.ir.ArgDesc" +
       "riptor\"V\n\024MappingDefinitionSet\0220\n\010mappin" +
       "gs\030\001 \003(\0132\036.org.nd4j.ir.MapperDeclaration" +
-      "\022\014\n\004name\030\002 \003(\t\"\203\002\n\021MapperDeclaration\022\025\n\r" +
+      "\022\014\n\004name\030\002 \003(\t\"\310\002\n\021MapperDeclaration\022\025\n\r" +
       "frameworkName\030\001 \001(\t\022\016\n\006opName\030\002 \001(\t\022\034\n\024i" +
       "nputFrameworkOpName\030\003 \001(\t\022&\n\004rule\030\004 \003(\0132" +
       "\030.org.nd4j.ir.MappingRule\022J\n\016indexOverri" +
       "des\030\005 \003(\01322.org.nd4j.ir.MapperDeclaratio" +
-      "n.IndexOverridesEntry\0325\n\023IndexOverridesE" +
-      "ntry\022\013\n\003key\030\001 \001(\003\022\r\n\005value\030\002 \001(\003:\0028\001*b\n\n" +
-      "OpListType\022\010\n\004TARG\020\000\022\010\n\004IARG\020\001\022\010\n\004BARG\020\002" +
-      "\022\014\n\010DTYPEARG\020\003\022\014\n\010INPUTARG\020\004\022\r\n\tOUTPUTAR" +
-      "G\020\005\022\013\n\007AXISARG\020\006B\021B\017MapperNamespaceb\006pro" +
-      "to3"
+      "n.IndexOverridesEntry\022C\n\026variableResolut" +
+      "ionType\030\006 \001(\0162#.org.nd4j.ir.VariableReso" +
+      "lutionType\0325\n\023IndexOverridesEntry\022\013\n\003key" +
+      "\030\001 \001(\003\022\r\n\005value\030\002 \001(\003:\0028\001*b\n\nOpListType\022" +
+      "\010\n\004TARG\020\000\022\010\n\004IARG\020\001\022\010\n\004BARG\020\002\022\014\n\010DTYPEAR" +
+      "G\020\003\022\014\n\010INPUTARG\020\004\022\r\n\tOUTPUTARG\020\005\022\013\n\007AXIS" +
+      "ARG\020\006*J\n\026VariableResolutionType\022\n\n\006DIREC" +
+      "T\020\000\022\014\n\010OVERRIDE\020\001\022\026\n\022ERROR_ON_NOT_EQUAL\020" +
+      "\002B\021B\017MapperNamespaceb\006proto3"
     };
     descriptor = org.nd4j.shade.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -8072,7 +8276,7 @@ public final class MapperNamespace {
     internal_static_org_nd4j_ir_MapperDeclaration_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_MapperDeclaration_descriptor,
-        new java.lang.String[] { "FrameworkName", "OpName", "InputFrameworkOpName", "Rule", "IndexOverrides", });
+        new java.lang.String[] { "FrameworkName", "OpName", "InputFrameworkOpName", "Rule", "IndexOverrides", "VariableResolutionType", });
     internal_static_org_nd4j_ir_MapperDeclaration_IndexOverridesEntry_descriptor =
       internal_static_org_nd4j_ir_MapperDeclaration_descriptor.getNestedTypes().get(0);
     internal_static_org_nd4j_ir_MapperDeclaration_IndexOverridesEntry_fieldAccessorTable = new

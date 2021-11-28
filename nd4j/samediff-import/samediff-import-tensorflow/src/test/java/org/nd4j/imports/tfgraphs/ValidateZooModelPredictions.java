@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.LARGE_RESOURCES)
 public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
 
+    @TempDir Path testDir;
 
     @Override
     public char ordering() {
@@ -75,7 +76,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMobilenetV1(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testMobilenetV1(Nd4jBackend backend) throws Exception {
         TFGraphTestZooModels.currentTestDir = testDir.toFile();
 
         //Load model
@@ -130,7 +131,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testResnetV2(@TempDir Path testDir,Nd4jBackend backend) throws Exception {
+    public void testResnetV2(Nd4jBackend backend) throws Exception {
         if(TFGraphTestZooModels.isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI

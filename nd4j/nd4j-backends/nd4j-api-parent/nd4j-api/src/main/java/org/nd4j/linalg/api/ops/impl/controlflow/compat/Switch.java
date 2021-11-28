@@ -98,18 +98,6 @@ public class Switch extends BaseCompatOp {
         super.setPropertiesForFunction(properties);
     }
 
-    @Override
-    public void computeArrays() {
-        if(sameDiff.isEagerMode()) {
-            SDVariable[] args = args();
-            //special work around for switch as shapes don't matter, just number of outputs
-            for(int i = 0; i < 2; i++) {
-                outputVariables[i].setShape(args[i].getArr().shape());
-                sameDiff.setEagerArrForVarName(outputVariables[i].name(), args[i].getArr());
-            }
-
-        }
-    }
 
     @Override
     public void configureWithSameDiff(SameDiff sameDiff) {

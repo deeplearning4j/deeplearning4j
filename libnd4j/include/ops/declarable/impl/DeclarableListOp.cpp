@@ -54,7 +54,6 @@ ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, sd::gra
 }
 
 sd::NDArray* sd::ops::DeclarableListOp::getZ(Context& block, int inputId) {
-  // sd_printf("wow\n","");
   return nullptr;
 }
 

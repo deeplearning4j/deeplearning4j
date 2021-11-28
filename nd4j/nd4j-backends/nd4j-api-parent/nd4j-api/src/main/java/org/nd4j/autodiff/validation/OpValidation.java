@@ -236,7 +236,7 @@ public class OpValidation {
         } catch (IOException e){
             throw new RuntimeException("IOException deserializing from FlatBuffers", e);
         }
-
+        
         //Check variables:
         List<SDVariable> vars = original.variables();
         List<SDVariable> varsDe = deserialized.variables();

@@ -10115,17 +10115,6 @@ mappings {
     inputFrameworkOpName: "SpaceToBatchND"
   }
   rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "blocks"
-    inputToOutput {
-      key: "blocks"
-      value: "block_shape"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "SpaceToBatchND"
-  }
-  rule {
     ruleName: "argdescriptorconstant"
     functionName: "argdescriptorconstant"
     inputBooleanName: "inPlace"
@@ -12158,7 +12147,7 @@ mappings {
       key: "value"
       transformerArgs {
         name: "sameMode"
-        int64Value: 8
+        int64Value: 1
         argType: INT64
         argIndex: 8
       }
@@ -14350,31 +14339,6 @@ mappings {
       value: "input"
     }
     ruleType: "tensor"
-    inputFrameworkOpName: "BatchToSpaceND"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "blocks"
-    inputToOutput {
-      key: "blocks"
-      value: "block_shape"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "BatchToSpaceND"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
     inputFrameworkOpName: "BatchToSpaceND"
   }
 }

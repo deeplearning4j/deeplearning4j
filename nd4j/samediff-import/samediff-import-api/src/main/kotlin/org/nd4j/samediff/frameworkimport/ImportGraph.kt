@@ -31,12 +31,15 @@ import org.nd4j.common.base.Preconditions
 import org.nd4j.common.io.ReflectionUtils
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder
 import org.nd4j.imports.graphmapper.OpImportFilter
+import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.BaseOp
 import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.NoOp
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
+import org.nd4j.linalg.api.ops.impl.transforms.same.Identity
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.ir.IRNode
@@ -68,6 +71,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         ATTR_DEF_TYPE : GeneratedMessageV3,
         ATTR_VALUE_TYPE : GeneratedMessageV3,
         DATA_TYPE: ProtocolMessageEnum> {
+
+    val defaultRunner =
+        DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
+
 
 
     fun <GRAPH_TYPE: GeneratedMessageV3,
@@ -166,8 +173,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             .getInstance(nd4jOpName)
         else DynamicCustomOp.builder(nd4jOpName).build()
         Preconditions.checkState(dfInstance != null, "Could not find class for input framework Ops: %s", opName)
-        var df: DifferentialFunction
-        df = try {
+        var df: DifferentialFunction = try {
             dfInstance.javaClass.newInstance()
         } catch (t: Throwable) {
             //Should never happen because function was already created via no-arg constructor earlier
@@ -227,7 +233,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val opsImported: MutableList<String> = ArrayList()
         val opsRemoved: MutableList<String> = ArrayList()
 
-        val availableToAddSet = HashSet<String>() //TODO maybe unnecessary?
+        val availableToAddSet = LinkedHashSet<String>() //TODO maybe unnecessary?
         val availableToAdd: Queue<IRNode<NODE_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>> = LinkedList()
         val remainingNodes: MutableMap<String, IRNode<NODE_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>> =
             HashMap() //All other nodes, not in availableToAdd
@@ -235,6 +241,15 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             HashMap() // For op x -> y, x is key, y is value. Note that these are OP names not VARIABLE names
         var nNodes: Int
         val importInfo = irGraph.importInfoForEachNode(dynamicVariables = dynamicVariables)
+        var containsControlflow = false
+        val controlflowOps = setOf("while","enter","if","switch","next_iteration","merge","exit","loop_cond")
+        for (it in importInfo.values) {
+            if (controlflowOps.contains(it.second.name)) {
+                containsControlflow = true
+                break
+
+            }
+        }
         //First, add any constants, placeholders, and zero-input ops
         //note: we enable eager mode here for dynamic variable resolution
         val sd = SameDiff.create().enableEagerMode()
@@ -249,8 +264,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         }
 
 
-        val defaultRunner =
-            DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
 
         /**
          * Now the nodes in the graph may change after running an import process.
@@ -282,6 +295,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             if (irGraph.isConstantOpName(op)|| numInputs == 0) {
                 availableToAdd.add(nd)
                 availableToAddSet.add(name)
+                println("Added $name")
             } else {
                 remainingNodes[name] = nd
 
@@ -323,13 +337,40 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val mergeOpsPostProcess: MutableMap<String, String> = HashMap()
         //Go through ops in order, and add to the graph
         val constControlDeps: MutableMap<String, List<String>> = HashMap() //Key: constant name. Value: control dependencies
+
+
         while (!availableToAdd.isEmpty()) {
             val nd = availableToAdd.remove()
             val name = nd.nodeName()
+            availableToAddSet.remove(name)
+            println("Removed $name")
             val opName = nd.opName()
             val importInfoForNode = importInfo[name]
+            val opMappingProcess = OpRegistryHolder.lookupOpMappingProcess<
+                    GRAPH_TYPE,
+                    NODE_TYPE,
+                    OP_DEF_TYPE,
+                    TENSOR_TYPE,
+                    DATA_TYPE,
+                    ATTR_DEF_TYPE,
+                    ATTR_VALUE_TYPE>(inputFrameworkOpName = opName, inputFrameworkName = irGraph.frameworkName())
 
-            availableToAddSet.remove(name)
+            val funcContextResult = nodeNameToFuncContext[nd.nodeName()]
+            /*
+                Normal ops. Process in the following order:
+                1. Create the op instance
+                2. Add op to graph
+                3. Import from TF (to set attributes)
+                4. Calculate output dtypes
+                5. Create and add output variables to graph
+                 */
+
+            var df = funcContextResult?.dfInstance ?: Identity()
+            val mappingContext = funcContextResult?.mappingContext
+            val nd4jOpName = df.opName()
+
+
+
             println("Adding operation to graph: $opName (name=$name)")
             opsAdded.add("$opName,$name")
             var skipCase = false
@@ -385,20 +426,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             sd.`var`(name, dt,-1)
                     }
                     else if(nodeNameToFuncContext.containsKey(nd.nodeName())) {
-                        val funcContextResult = nodeNameToFuncContext[nd.nodeName()]!!
-                        /*
-                            Normal ops. Process in the following order:
-                            1. Create the op instance
-                            2. Add op to graph
-                            3. Import from TF (to set attributes)
-                            4. Calculate output dtypes
-                            5. Create and add output variables to graph
-                             */
 
-                        var df = funcContextResult.dfInstance
-                        val mappingContext = funcContextResult.mappingContext
-                        val tensorInputMappings = funcContextResult.tensorInputMappings
-                        val nd4jOpName = df.opName()
                         //Process inputs
                         var controlDeps: MutableList<String?>? = null
                         val numInputs = nd.numInputs()
@@ -450,11 +478,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //This can happen in certain frameworks. Sometimes frameworks will have auto sorted
                             //DAGS, this may not be true for all situations though.
                             //note, we only want variables being auto declared if they are actually inputs or outputs not only nodes
-                            if(!sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName) && irGraph.isInputOrOutput(inName)) {
+                            if(!isControlDep && !sd.hasVariable(inName) && !irGraph.hasConstantInitializer(inName) && irGraph.isInputOrOutput(inName)) {
                                 val otherInputs = nd.inputs().filter { input -> sd.hasVariable(input) }
                                 var dataType = DataType.FLOAT
                                 //guess input from other data types
-                                if(!otherInputs.isEmpty()) {
+                                if(otherInputs.isNotEmpty()) {
                                     dataType = sd.getVariable(otherInputs[0]).dataType()
                                 }
                                 sd.`var`(
@@ -466,11 +494,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                         dataType
                                     )
                                 )
-                            } else if(!sd.hasVariable(inName) && irGraph.hasConstantInitializer(inName)) {
+                            } else if(!isControlDep && !sd.hasVariable(inName) && irGraph.hasConstantInitializer(inName)) {
                                 val const = irGraph.getConstantArrayForName(inName)
                                 sd.constant(inName,const)
-                            } else if(!sd.hasVariable(inName)){
-                                throw IllegalStateException("Input variable at index ${i} named ${inName} of node $name was not assigned to any variable")
+                            } else if(!isControlDep && !sd.hasVariable(inName)) {
+                                throw IllegalStateException("Input variable at index $i named $inName of node $name was not assigned to any variable")
                             }
 
                             val v = sd.variables[inName]
@@ -495,7 +523,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                         }
 
-                        val inputNames = nd.nd4jInputs(tensorInputMappings)
                         //ensure every function has an op name set (mainly for debugging)
                         if(df is DynamicCustomOp) {
                             val opField = DynamicCustomOp::class.java.getDeclaredField("opName")
@@ -519,41 +546,54 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         val numInputsToTake = resolvedArgInputs.size
 
                         if(numInputsToTake != inNames.size) {
-                            // See NO OP NOTE below for an explanation for this exception
-                            if(numInputsToTake < inNames.size && op.op.opName() != "noop")
-                                op.inputsToOp = inNames.subList(0, numInputsToTake)
-                            else if(numInputsToTake > inNames.size && op.op.opName() != "noop") {
-                                op.inputsToOp = resolvedArgInputs.map { input -> input.name }
-                            }  else if(op.op.opName() == "noop")
-                                op.inputsToOp = inNames
+                            when(opMappingProcess.arrayResolutionType()) {
+                                MapperNamespace.VariableResolutionType.DIRECT -> {
+                                    op.inputsToOp = inNames
+                                }
+                                MapperNamespace.VariableResolutionType.OVERRIDE -> {
+                                    if(numInputsToTake < inNames.size && op.op.opName() != "noop")
+                                        op.inputsToOp = inNames.subList(0, numInputsToTake)
+                                    else if(numInputsToTake > inNames.size && op.op.opName() != "noop") {
+                                        op.inputsToOp = resolvedArgInputs.map { input -> input.name }
+                                    }  else if(op.op.opName() == "noop")
+                                        op.inputsToOp = inNames
+
+                                    //clear out inputs for variables as well to reflect the actual graph structure
+                                    //NO OP NOTE: we make an exception for no op mappings. No op mappings are a potential
+                                    //signal that we are using  pre hook rules as substitutions for operations
+                                    //without a mapping process. This can happen when we don't have an exact mapping
+                                    //for an op and need a way of substituting the op with an equivalent set of samediff
+                                    //op calls. Specifying no nop as a way of handling mapping processes allows a special
+                                    //sentinel value  that , in combination with pre hook rules, can be used
+                                    //to substitute ops when they may not otherwise be supported.
+                                    //The reason we can't take away the inputs is the user may specify the inputs
+                                    //to the op and the hook rule may need those inputs to use as a base for calculations.
+                                    if(numInputsToTake < numInputs && op.op.opName() != "noop") {
+                                        for(i in numInputsToTake until numInputs) {
+                                            if(sd.hasVariable(nd.inputAt(i))) {
+                                                val currInputVar = sd.variables[nd.inputAt(i)]!!
+                                                currInputVar.inputsForOp.remove(op.name)
+                                            }
+                                        }
+                                    }
+
+                                }
+                                MapperNamespace.VariableResolutionType.ERROR_ON_NOT_EQUAL -> {
+                                    throw java.lang.IllegalStateException("Number of variable names for node ${mappingContext!!.nodeName()} not exact equal to number of inputs resolved from nd4j op descriptor which was ${resolvedArgInputs.size}")
+                                }
+                            }
+
                             //we want the default names used for no op or other situations
                         } else
                             op.inputsToOp = inNames
                         //add nodes/other pre processing in order for this node to work
                         sd.ops[name] = op
-                        //clear out inputs for variables as well to reflect the actual graph structure
-                        //NO OP NOTE: we make an exception for no op mappings. No op mappings are a potential
-                        //signal that we are using  pre hook rules as substitutions for operations
-                        //without a mapping process. This can happen when we don't have an exact mapping
-                        //for an op and need a way of substituting the op with an equivalent set of samediff
-                        //op calls. Specifying no nop as a way of handling mapping processes allows a special
-                        //sentinel value  that , in combination with pre hook rules, can be used
-                        //to substitute ops when they may not otherwise be supported.
-                        //The reason we can't take away the inputs is the user may specify the inputs
-                        //to the op and the hook rule may need those inputs to use as a base for calculations.
-                        if(numInputsToTake < numInputs && op.op.opName() != "noop") {
-                            for(i in numInputsToTake until numInputs) {
-                                if(sd.hasVariable(nd.inputAt(i))) {
-                                    val currInputVar = sd.variables[nd.inputAt(i)]!!
-                                    currInputVar.inputsForOp.remove(op.name)
-                                }
-                            }
-                        }
+
 
                         //cache attributes just in case we have any rules so we don't create the rules more than once
-                        val attributes = mappingContext.nodeAttributesAsMap()
+                        val attributes = mappingContext!!.nodeAttributesAsMap()
                         var proceedWithInit = true
-                        mappingContext.relevantPrehookRules().forEach { rule ->
+                        mappingContext!!.relevantPrehookRules().forEach { rule ->
                             proceedWithInit = proceedWithInit && rule.preProcess(
                                 op,
                                 sd,
@@ -621,8 +661,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 outNames.add(varName)
                                 if(sd.variables.containsKey(varName)) {
                                     outVars[i] = sd.variables[varName]
-                                  if(outVars[i]!!.variable == null)
-                                      outVars[i]!!.variable = outSDVars[i]
+                                    if(outVars[i]!!.variable == null)
+                                        outVars[i]!!.variable = outSDVars[i]
                                     if(outVars[i]!!.outputOfOp == null) {
                                         outVars[i]!!.outputOfOp = name
                                     }
@@ -643,16 +683,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             }
 
                             sd.ops[name]!!.outputsOfOp = outNames
-                            if(sd.isEagerMode) {
-                               when(val operation = op.op)  {
-                                   is DynamicCustomOp -> {
-                                       operation.outputVariables = outSDVars
-                                       operation.computeArrays()
-                                   }
-                                   is BaseOp -> {
-                                       operation.computeVariables(outSDVars)
-                                   }
-                               }
+
+                            //don't run computeArrays if graph contains control flow, too many edge cases
+                            if(sd.isEagerMode && !containsControlflow && df !is BaseCompatOp) {
+                                when(val operation = op.op)  {
+                                    is DynamicCustomOp -> {
+                                        operation.outputVariables = outSDVars
+                                        operation.computeArrays()
+                                    }
+                                    is BaseOp -> {
+                                        operation.computeVariables(outSDVars)
+                                    }
+                                }
                             }
                             println("Imported op: $opName (name=$name)")
                             opsImported.add("$opName,$name")
@@ -665,16 +707,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         println("Node ${nd.nodeName()} not found in import context, skipping!")
                     }
                 } else {
-
-                    val opMappingProcess = OpRegistryHolder.lookupOpMappingProcess<
-                            GRAPH_TYPE,
-                            NODE_TYPE,
-                            OP_DEF_TYPE,
-                            TENSOR_TYPE,
-                            DATA_TYPE,
-                            ATTR_DEF_TYPE,
-                            ATTR_VALUE_TYPE>(inputFrameworkOpName = opName, inputFrameworkName = irGraph.frameworkName())
-
 
 
                     val dfInstance = if( DifferentialFunctionClassHolder.getInstance()
@@ -696,7 +728,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     df.sameDiff = sd
                     df.ownName = name
 
-                    val opDefLookup = opMappingRegistry.lookupInputFrameworkOpDef(opName) as OP_DEF_TYPE
 
 
                     //Import override case
@@ -752,7 +783,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                     for (i in 0 until nInNext) {
                         val s = nextOpDef.inputAt(i)
-                        var inName = stripControl(stripVarSuffix((nextOpDef.inputAt(i))))
+                        var inName = stripControl((nextOpDef.inputAt(i)))
                         if (inName.endsWith(":0")) {
                             //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
                             inName = inName.substring(0, inName.length - 2)
@@ -762,7 +793,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         //note on initializers, sometimes ops mentions pre initialized constants
                         //that haven't been seen by import yet. In this case, we need to allow the
                         //op to be added, otherwise no further import can happen
-                        if (!sd.hasVariable(inName) && !skipCase && !irGraph.hasConstantInitializer(inName) && !irGraph.hasConstantInitializer(inName) && irGraph.isConstantOpName(name)) {
+                        if (!sd.hasVariable(inName) && !skipCase && !irGraph.hasConstantInitializer(inName) && !irGraph.hasConstantInitializer(inName)) {
 //                            log.info("Not found: {} for op {}", inName, nextOpDef.getName());
                             allAlreadyInGraph = false
                             break
@@ -780,6 +811,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         if (!availableToAddSet.contains(nextOp)) {
                             //Avoid processing same op multiple times, for repeated inputs to one op, etc
                             availableToAdd.add(nextOpDef)
+                            println("Added ${nextOpDef.nodeName()}")
                             availableToAddSet.add(nextOp)
                             println("Added to processing queue: ${nextOpDef.opName()} (name=$nextOp)")
                         }
@@ -826,37 +858,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         FileUtils.writeLines(File("ops-removed-new.txt"),opsRemoved)
 
 
-        //see if there are any node names that are just purely outputs and not actual nodes
-        //if so remove those and throw an exception for what's left
-        if(remainingNodes.isNotEmpty()) {
-            val toRemove = HashSet<String>()
-            remainingNodes.keys.forEach {
-                if(!irGraph.hasNode(it)) {
-                    toRemove.add(it)
-                }
-            }
-            toRemove.forEach {
-                remainingNodes.remove(it)
-            }
-        }
-
         Preconditions.checkState(
             remainingNodes.isEmpty(),
             "%s Unprocessed nodes: %s",
             remainingNodes.size,
             remainingNodes.keys
         )
-
-        //purge presence of no ops
-        val noOpNames = sd.ops.filter { input -> input.value.op is NoOp }.keys
-        sd.ops.keys.removeAll(noOpNames)
-        sd.ops.forEach { (name, op) ->
-            if(op.inputsToOp != null) {
-                val noOpNamesForInputs = op.inputsToOp.filter { input -> noOpNames.contains(input) }
-                op.inputsToOp.removeAll(noOpNamesForInputs)
-            }
-
-        }
 
         return sd
     }

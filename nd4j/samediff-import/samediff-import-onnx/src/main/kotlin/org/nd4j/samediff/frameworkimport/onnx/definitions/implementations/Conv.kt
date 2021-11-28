@@ -128,7 +128,8 @@ class Conv : PreImportHook  {
         }
 
 
-        var groups = attributes.getOrDefault("group",1) as Long
+        var groups = attributes.getOrDefault("group",1) as Number
+        groups = groups.toLong()
         var depthWise = (rank == 4 && weightsRank == 4 && groups.toInt() != 1)
         if(depthWise && xShape != null && xShape[1].toInt() != -1) {
             depthWise = depthWise && groups == xShape[1]
@@ -150,7 +151,8 @@ class Conv : PreImportHook  {
 
         } else {
             val weightGroups = sd.split(weights,groups.toInt(),-1)
-            inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
+            val permuteFormat = ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second)
+            inputVariable = sd.permute(inputVariable,*permuteFormat)
             if(groups.toInt() == 1)
                 xs.add(inputVariable)
             else {
@@ -373,6 +375,15 @@ class Conv : PreImportHook  {
         return ret
     }
 
+
+    fun adaptPads(inputPads: List<Long>): List<Long> {
+        if(inputPads.size == 4) {
+            return listOf(inputPads[0], inputPads[2], inputPads[1], inputPads[3])
+        }
+
+        return inputPads
+    }
+
     fun defaultPads(spatialSize : Int): List<Int> {
         val newPadsList = mutableListOf(0,0)
         for(i in 0 until spatialSize) {
@@ -382,8 +393,9 @@ class Conv : PreImportHook  {
     }
 
     fun paddingOp(sd: SameDiff,x: SDVariable,pads: List<Long>): SDVariable {
-        val numDim = pads.size / 2
-        val newPads = Nd4j.create(Nd4j.createBuffer(pads.toLongArray())).transpose().reshape('c',2,numDim)
+        val adaptedPads = adaptPads(pads)
+        val numDim = adaptedPads.size / 2
+        val newPads = Nd4j.create(Nd4j.createBuffer(adaptedPads.toLongArray())).transpose().reshape('c',2,numDim)
         val newPads2 = Nd4j.concat(0,Nd4j.create(Nd4j.createBuffer(longArrayOf(0,0,0,0))).reshape(4),newPads.ravel().reshape(newPads.length()))
         val inputPadding = sd.constant(newPads2.reshape('c',numDim + 2,2).castTo(DataType.INT32))
         return sd.image().pad(x,inputPadding,Mode.CONSTANT,0.0)

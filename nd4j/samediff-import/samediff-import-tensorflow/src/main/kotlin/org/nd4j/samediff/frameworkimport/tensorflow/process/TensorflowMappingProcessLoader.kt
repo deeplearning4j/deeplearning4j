@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.tensorflow.process
 
+import org.nd4j.ir.MapperNamespace
 import org.nd4j.samediff.frameworkimport.process.AbstractMappingProcessLoader
 import org.nd4j.samediff.frameworkimport.process.MappingProcess
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
@@ -40,7 +41,8 @@ class TensorflowMappingProcessLoader(opMappingRegistry: OpMappingRegistry<GraphD
         attributeMappingRules: List<AttributeMappingRule<GraphDef, OpDef, NodeDef, OpDef.AttrDef, AttrValue, TensorProto, DataType>>,
         tensorMappingRules: List<TensorMappingRule<GraphDef, OpDef, NodeDef, OpDef.AttrDef, AttrValue, TensorProto, DataType>>,
         opMappingRegistry: OpMappingRegistry<GraphDef, NodeDef, OpDef, TensorProto, DataType, OpDef.AttrDef, AttrValue>,
-        indexOverrides: Map<Int, Int>
+        indexOverrides: Map<Int, Int>,
+        variableResolutionType: MapperNamespace.VariableResolutionType
     ): MappingProcess<GraphDef, OpDef, NodeDef, TensorProto, OpDef.AttrDef, AttrValue, DataType> {
         return TensorflowMappingProcess(
             inputFrameworkOpName = inputFrameworkOpName,
@@ -48,7 +50,8 @@ class TensorflowMappingProcessLoader(opMappingRegistry: OpMappingRegistry<GraphD
             attributeMappingRules = attributeMappingRules,
             tensorMappingRules = tensorMappingRules,
             opMappingRegistry = opMappingRegistry,
-            inputIndexOverrides = indexOverrides)
+            inputIndexOverrides = indexOverrides,
+            variableResolutionType = variableResolutionType)
 
     }
 }

@@ -44,12 +44,10 @@ LIST_OP_IMPL(create_list, 1, 2, 0, -2) {
   }
 
   auto list = new NDArrayList(height, expandable);
-
-  // we recieve input array for graph integrity purposes only
+  // we receive input array for graph integrity purposes only
   auto input = INPUT_VARIABLE(0);
   setupResultList(list, block);
   //            OVERWRITE_RESULT(list);
-
   auto scalar = NDArrayFactory::create_(list->counter());
   block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
 
