@@ -29,24 +29,18 @@
 namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(realdiv, 0, 0) {
-  sd_printf("realdiv: Pre variables\n",0);
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  sd_printf("realdiv: Obtained variables\n",0);
   BROADCAST_CHECK_EMPTY(x, y, z);
-  sd_printf("realdiv: Checked empty\n",0);
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
-  sd_printf("Ran divide\n",0);
   if (tZ == nullptr) {
     sd_printf("Failed to execute, null pointer \n",0);
     return sd::Status::KERNEL_FAILURE;
   }
   else if (tZ != z) {
-    sd_printf("Pre overwrite\n",0);
     OVERWRITE_RESULT(tZ);
-    sd_printf("Overrwrote result\n",0);
   }
 
   return sd::Status::OK;

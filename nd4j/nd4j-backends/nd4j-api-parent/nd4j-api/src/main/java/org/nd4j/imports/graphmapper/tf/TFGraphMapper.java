@@ -192,7 +192,6 @@ public class TFGraphMapper {
             if ("Const".equals(op) || "Placeholder".equals(op) || nInputs == 0) {
                 availableToAdd.add(nd);
                 availableToAddSet.add(name);
-                System.out.println("Old Added " + name);
             } else {
                 remainingNodes.put(name, nd);
                 for (int in = 0; in < nInputs; in++) {
