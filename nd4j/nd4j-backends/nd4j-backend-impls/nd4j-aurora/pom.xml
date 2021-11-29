@@ -169,6 +169,7 @@
           </propertyKeysAndValues>
           <classPaths>
             <classPath>${project.build.outputDirectory}</classPath>
+            <classPath>${project.build.outputDirectory}../../nd4j-aurora-presets/target/classes</classPath>
           </classPaths>
           <includePaths>
             <includePath>${libnd4jhome}/blasbuild/aurora/include</includePath>
