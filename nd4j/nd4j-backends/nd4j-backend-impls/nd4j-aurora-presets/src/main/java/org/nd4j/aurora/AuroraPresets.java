@@ -72,12 +72,7 @@ public class AuroraPresets implements InfoMapper, BuildEnabled, LoadEnabled {
         if(!Loader.isLoadLibraries()) {
             return;
         }
-
-        List<String> resources = properties.get("platform.preloadresource");
-        resources.add("org/nd4j/aurora");
-
-        logger.info( "PRINTING FROM INIT " + properties);
-
+        
 
     }
 }
