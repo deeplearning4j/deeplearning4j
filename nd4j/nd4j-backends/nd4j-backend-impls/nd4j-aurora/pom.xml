@@ -188,6 +188,7 @@
           </includePaths>
 
 
+          <linkPath>${libnd4jhome}/blasbuild/aurora/blas</linkPath>
           <resourcePath>${libnd4jhome}/blasbuild/aurora/blas</resourcePath>
 
 
