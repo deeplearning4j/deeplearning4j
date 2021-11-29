@@ -127,7 +127,7 @@
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
                                 <include>
-                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                    org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/*
                                 </include>
                                 <include>lib/**</include>
                                 <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
@@ -150,7 +150,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/**.java</include>
+                                <include>org/nd4j/aurora/**.java</include>
                             </includes>
                         </configuration>
                     </execution>
