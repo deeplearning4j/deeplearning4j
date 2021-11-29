@@ -238,6 +238,7 @@
               <skip>${javacpp.compiler.skip}</skip>
               <classOrPackageName>org.nd4j.aurora.Aurora</classOrPackageName>
               <copyLibs>true</copyLibs>
+              <copyResources>true</copyResources>
               <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
               <outputDirectory>${javacpp.build.output.path}</outputDirectory>
             </configuration>
