@@ -731,6 +731,49 @@ public abstract class BaseAuroraDataBuffer extends BaseDataBuffer implements Dea
     }
 
     @Override
+    public void setData(int[] data) {
+        IntPointer temp = new IntPointer(data);
+        nativeOps.memcpySync(pointer, temp, data.length * 4, 1, null);
+
+    }
+
+    @Override
+    public void setData(float[] data) {
+        FloatPointer temp = new FloatPointer(data);
+        nativeOps.memcpySync(pointer, temp, data.length * 4, 1, null);
+
+    }
+
+    @Override
+    public void setData(double[] data) {
+        DoublePointer temp = new DoublePointer(data);
+        nativeOps.memcpySync(pointer, temp, data.length * 8, 1, null);
+
+    }
+
+    @Override
+    public void setData(long[] data) {
+        LongPointer temp = new LongPointer(data);
+        nativeOps.memcpySync(pointer, temp, data.length * 8, 1, null);
+
+    }
+
+    @Override
+    public void setData(byte[] data) {
+        super.setData(data);
+    }
+
+    @Override
+    public void setData(short[] data) {
+        super.setData(data);
+    }
+
+    @Override
+    public void setData(boolean[] data) {
+        super.setData(data);
+    }
+
+    @Override
     public Pointer addressPointer() {
         // we're fetching actual pointer right from C++
         val tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());

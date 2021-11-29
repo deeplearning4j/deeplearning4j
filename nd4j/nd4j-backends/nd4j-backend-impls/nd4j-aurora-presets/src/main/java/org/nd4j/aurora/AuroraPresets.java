@@ -72,7 +72,7 @@ public class AuroraPresets implements InfoMapper, BuildEnabled, LoadEnabled {
         if(!Loader.isLoadLibraries()) {
             return;
         }
-        
+
 
     }
 }

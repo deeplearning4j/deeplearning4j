@@ -34,9 +34,9 @@ import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
  * @author Adam Gibson
  */
 @Slf4j
-public class AUroraWorkspaceManager extends BasicWorkspaceManager {
+public class AuroraWorkspaceManager extends BasicWorkspaceManager {
 
-    public AUroraWorkspaceManager() {
+    public AuroraWorkspaceManager() {
         super();
     }
 
