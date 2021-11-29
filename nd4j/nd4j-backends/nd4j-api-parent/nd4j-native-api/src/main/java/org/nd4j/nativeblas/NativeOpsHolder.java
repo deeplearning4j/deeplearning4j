@@ -104,7 +104,7 @@ public class NativeOpsHolder {
                     deviceNativeOps.setOmpNumThreads(
                                     getCores(Runtime.getRuntime().availableProcessors()));
             }
-            //deviceNativeOps.setOmpNumThreads(4);
+            deviceNativeOps.setOmpNumThreads(4);
 
             String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
             boolean logInit = Boolean.parseBoolean(logInitProperty);
