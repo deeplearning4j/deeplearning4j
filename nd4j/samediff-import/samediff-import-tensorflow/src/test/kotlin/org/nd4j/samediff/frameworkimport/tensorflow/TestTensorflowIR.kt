@@ -52,6 +52,7 @@ import kotlin.collections.HashSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
+import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.tests.tags.TagNames
 
 
@@ -1156,6 +1157,13 @@ class TestTensorflowIR {
         println("Note we skipped ${resourceOps.size} testing resource ops named $resourceOps due to resources being handled differently than normal tensors")
         println("Note we skipped ${refOps.size} testing resource ops named $refOps due to references being handled differently than normal tensors")
         println("Note we skipped ${randomOps.size} testing resource ops named $randomOps due to random not being consistently testable. This may change in the short term.")
+
+    }
+
+
+    @Test
+    fun loadModel() {
+        val load = SameDiff.load(File("C:\\Users\\agibs\\Documents\\GitHub\\ve-training\\benchmark-models\\output-bert.fb"),true)
 
     }
 
