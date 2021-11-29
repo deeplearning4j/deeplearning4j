@@ -186,9 +186,7 @@
             <includePath>${libnd4jhome}/include/memory</includePath>
             <includePath>${libnd4jhome}/include/performance</includePath>
           </includePaths>
-          <linkPaths>
-            <linkPath>${libnd4jhome}/blasbuild/aurora/blas</linkPath>
-          </linkPaths>
+
 
           <resourcePath>${libnd4jhome}/blasbuild/aurora/blas</resourcePath>
 
