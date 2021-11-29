@@ -18,11 +18,12 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.nativeblas;
+package org.nd4j.aurora;
 
 import lombok.Getter;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.nativeblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
