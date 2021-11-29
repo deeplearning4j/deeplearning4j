@@ -581,7 +581,7 @@ public class Nd4jAuroraOps implements NativeOps {
 
     @Override
     public void initializeDevicesAndFunctions() {
-       // call("initializeDevicesAndFunctions");
+        call("initializeDevicesAndFunctions");
     }
 
     @Override
