@@ -55,10 +55,20 @@ public class Nd4jAuroraOps implements NativeOps {
             if (s != null) {
                 deviceId = Integer.parseInt(s);
             }
-            File f = Loader.cacheResource("org/nd4j/aurora/"  + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
-            if(f == null) {
-                throw new IllegalArgumentException("Unable to load shared library libaurora.so, resource path was " + "org/nd4j/aurora/" + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
+
+            String veoFilePath = System.getenv("LIB_FILE_PATH");
+            File f = null;
+            if(veoFilePath != null) {
+                f = new File(veoFilePath);
+                f.setExecutable(true);
+                log.trace("Using LIB_FILE_PATH " + veoFilePath);
+            } else {
+                f = Loader.cacheResource("org/nd4j/aurora/"  + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
+                if(f == null) {
+                    throw new IllegalArgumentException("Unable to load shared library libaurora.so, resource path was " + "org/nd4j/aurora/" + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
+                }
             }
+
             f.setExecutable(true);
             veobin = f.getAbsolutePath();
             setDevice(deviceId);
