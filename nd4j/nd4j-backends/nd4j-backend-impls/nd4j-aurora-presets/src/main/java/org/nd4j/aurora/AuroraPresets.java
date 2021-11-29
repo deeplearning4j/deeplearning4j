@@ -38,7 +38,7 @@ import org.bytedeco.javacpp.tools.*;
                         includepath = "/opt/nec/ve/veos/include/",
                         linkpath = "/opt/nec/ve/veos/lib64/",
                         library = "aurora",
-                        resource = {"aurora", "libaurora.so"}
+                        resource = {"aurora", "libaurora.so","nd4jaurora"}
                 )
         },
         target = "org.nd4j.aurora.Aurora"
