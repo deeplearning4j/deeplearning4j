@@ -22,7 +22,7 @@
 #include <array/NDArrayList.h>
 #include <system/op_boilerplate.h>
 
-#if NOT_EXCLUDED(OP_where)
+#if NOT_EXCLUDED(OP_Where)
 #include <ops/declarable/helpers/where.h>
 
 namespace sd {
