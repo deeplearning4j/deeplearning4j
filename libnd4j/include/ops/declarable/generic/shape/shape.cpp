@@ -82,7 +82,9 @@ DECLARE_TYPES(set_shape) {
       ->setAllowedInputTypes(1, sd::DataType::INT64)
       ->setAllowedOutputTypes({sd::DataType::ANY});
 }
-}  // namespace ops
-}  // namespace sd
+
 
 #endif
+
+}  // namespace ops
+}  // namespace sd
