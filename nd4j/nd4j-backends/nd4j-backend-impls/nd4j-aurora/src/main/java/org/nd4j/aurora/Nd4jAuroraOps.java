@@ -151,7 +151,7 @@ public class Nd4jAuroraOps implements NativeOps {
 
         long sym = veo_get_sym(proc, handle, symname);
         if (sym == 0) {
-            throw new RuntimeException("veo_get_sym(): failed to find symbol");
+            throw new RuntimeException("veo_get_sym(): failed to find symbol " + symname);
         }
         veo_args argp = veo_args_alloc();
         if (argp == null) {

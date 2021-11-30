@@ -89,7 +89,7 @@ public class NativeOpsHolder {
                     .asSubclass(NativeOps.class);
             deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
 
-            //deviceNativeOps.initializeDevicesAndFunctions();
+            deviceNativeOps.initializeDevicesAndFunctions();
             int numThreads;
             String numThreadsString = System.getenv(ND4JEnvironmentVars.OMP_NUM_THREADS);
             if (numThreadsString != null && !numThreadsString.isEmpty()) {

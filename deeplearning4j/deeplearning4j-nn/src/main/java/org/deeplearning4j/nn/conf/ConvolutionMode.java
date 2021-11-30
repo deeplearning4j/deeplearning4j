@@ -31,10 +31,9 @@ public enum ConvolutionMode {
     public static PaddingMode mapToMode(ConvolutionMode convolutionMode) {
         switch(convolutionMode) {
             case Strict:
-                return PaddingMode.VALID;
             case Truncate:
+                return PaddingMode.VALID;
             case Same:
-
                 return PaddingMode.SAME;
             case Causal:
                 return PaddingMode.CAUSAL;
