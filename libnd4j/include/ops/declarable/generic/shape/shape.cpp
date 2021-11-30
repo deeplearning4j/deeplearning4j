@@ -54,7 +54,7 @@ DECLARE_TYPES(shape_of) {
 }
 #endif
 
-#if NOT_EXCLUDED(set_shape)
+#if NOT_EXCLUDED(OP_set_shape)
 CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto shape = INPUT_VARIABLE(1);
