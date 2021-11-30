@@ -1749,6 +1749,7 @@ TEST_F(MultiDataTypeTests, tile_test1) {
 }
 */
 
+#if defined(HAS_INT) && defined(HAS_DOUBLE) && defined(HAS_FLOAT32)
 //////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, asT_test1) {
   NDArray x1('c', {2}, {1.5, 2.5}, sd::DataType::FLOAT32);
@@ -1772,7 +1773,7 @@ TEST_F(MultiDataTypeTests, asT_test1) {
   ASSERT_EQ(*result, exp2);
   delete result;
 }
-
+#endif
 //////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, assign_test2) {
   NDArray x1('c', {2, 3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5}, sd::DataType::FLOAT32);
