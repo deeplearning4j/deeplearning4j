@@ -1929,12 +1929,8 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
             }
 */
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
-
-            if (loop.lastErrorCode() != 0)
-                throw new RuntimeException(loop.lastErrorMessage());
-
             if (status != 0)
-                throw new RuntimeException("Op [" + op.opName() + "] execution failed");
+                throw new RuntimeException("Op [" + op.opName() + "] " +  "execution failed with message " + loop.lastErrorMessage());
 
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
