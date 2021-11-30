@@ -57,9 +57,11 @@ TEST_F(ExtraArgumentsTests, Basic_Test_1) {
   }
 }
 
+#if defined(HAS_INT)
 TEST_F(ExtraArgumentsTests, Basic_Test_2) {
   ExtraArguments args;
 
   auto ptrInt = args.argumentsAsT<int>();
   ASSERT_TRUE(ptrInt == nullptr);
 }
+#endif
