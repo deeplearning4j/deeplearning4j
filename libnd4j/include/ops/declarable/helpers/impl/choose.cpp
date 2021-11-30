@@ -19,6 +19,12 @@
 //
 //  @author sgazeos@gmail.com
 //
+
+
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_choose)
+
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/choose.h>
 #include <ops/ops.h>
@@ -144,3 +150,4 @@ void chooseFunctorScalar(sd::LaunchContext* context, NDArray* arg, double scalar
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

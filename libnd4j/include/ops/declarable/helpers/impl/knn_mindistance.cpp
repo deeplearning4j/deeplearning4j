@@ -19,6 +19,11 @@
 //
 //  @author raver119@gmail.com
 //
+
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_knn_mindistance)
+
 #include <ops/declarable/helpers/knn.h>
 
 namespace sd {
@@ -62,3 +67,4 @@ void knn_mindistance(const NDArray &input, const NDArray &lowest, const NDArray 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

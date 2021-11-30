@@ -20,6 +20,9 @@
 // Created by raver119 on 24/09/18.
 //
 #include <array/NDArrayList.h>
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_where)
 #include <ops/declarable/helpers/where.h>
 
 namespace sd {
@@ -60,3 +63,5 @@ void _where(sd::LaunchContext *context, NDArray &condition, NDArray &output, mem
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

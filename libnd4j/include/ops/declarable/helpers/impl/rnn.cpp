@@ -20,6 +20,10 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 16.04.2018
 //
 
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_rnn)
+
 // function nnCell implements an Elman RNN cell: output = activation(Wx*x + bx  +  Wh*ht  + bh)
 #include <helpers/BlasHelper.h>
 #include <ops/declarable/helpers/rnn.h>
@@ -91,3 +95,5 @@ void rnnTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* Wx
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

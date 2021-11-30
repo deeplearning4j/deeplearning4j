@@ -74,7 +74,7 @@ public class Hdf5Archive implements Closeable {
         }
     }
 
-    private Group[] openGroups(String... groups) {
+    public Group[] openGroups(String... groups) {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             Group[] groupArray = new Group[groups.length];
             groupArray[0] = this.file.openGroup(groups[0]);
@@ -85,7 +85,7 @@ public class Hdf5Archive implements Closeable {
         }
     }
 
-    private void closeGroups(Group[] groupArray) {
+    public void closeGroups(Group[] groupArray) {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             for (int i = groupArray.length - 1; i >= 0; i--) {
                 groupArray[i].deallocate();

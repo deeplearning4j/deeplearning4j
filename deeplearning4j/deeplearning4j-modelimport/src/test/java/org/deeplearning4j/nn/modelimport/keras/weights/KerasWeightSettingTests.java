@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
@@ -60,6 +61,14 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
     @Override
     public long getTimeoutMilliseconds() {
         return 9999999L;
+    }
+
+
+    @Test
+    public void testWeights() throws Exception {
+        MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights("C:\\Users\\agibs\\Downloads\\model (1).h5");
+        System.out.println(multiLayerNetwork.summary());
+
     }
 
     @Test

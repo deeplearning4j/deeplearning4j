@@ -183,7 +183,7 @@ void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray const* input, N
 template <typename T>
 static sd::Status _dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
                                           NDArray const* gradInput, std::vector<NDArray*>& outputList) {
-  throw std::runtime_error("Not umplemented yet");
+  throw std::runtime_error("Not implemented yet");
 }
 
 sd::Status dynamicStitchFunctor(sd::LaunchContext* context, std::vector<NDArray*> const& inputs,
