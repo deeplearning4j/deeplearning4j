@@ -52,7 +52,9 @@ DECLARE_SHAPE_FN(shape_of) {
 DECLARE_TYPES(shape_of) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
 }
+#endif
 
+#if NOT_EXCLUDED(set_shape)
 CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto shape = INPUT_VARIABLE(1);
