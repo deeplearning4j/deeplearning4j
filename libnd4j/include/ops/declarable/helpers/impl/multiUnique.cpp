@@ -21,7 +21,7 @@
 //
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_concat)
+#if NOT_EXCLUDED(OP_unique)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/multiUnique.h>

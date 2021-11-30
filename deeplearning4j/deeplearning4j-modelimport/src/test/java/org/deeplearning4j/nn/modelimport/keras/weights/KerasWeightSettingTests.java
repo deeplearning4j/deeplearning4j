@@ -67,7 +67,6 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
     @Test
     public void testWeights() throws Exception {
         File file = Resources.asFile("modelimport/keras/weights/keras_2.7_issue.h5");
-        //"C:\Users\agibs\Documents\GitHub\dl4j-test-resources\src\main\resources\modelimport\keras\weights\keras_2.7_issue.h5"
         MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(file.getAbsolutePath());
         System.out.println(multiLayerNetwork.summary());
 
