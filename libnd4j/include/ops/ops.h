@@ -1941,7 +1941,7 @@ class MatchConditionBool {
     X eps = extraParams[1];
 
     auto mode = static_cast<int>(extraParams[2]);
-    // sd_printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+    sd_debug("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
 
     switch (mode) {
       case 0:  // equals
@@ -1979,7 +1979,7 @@ class MatchConditionBool {
         // isInfinite
         return sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1);
       default:
-        printf("Undefined match condition: [%i]\n", mode);
+        sd_printf("Undefined match condition: [%i]\n", mode);
     }
 
     return d1;
@@ -2003,6 +2003,7 @@ class MatchCondition {
   SD_OP_DEF static Z update(Z old, Z opOutput, X *extraParams) { return old + opOutput; }
 
   SD_OP_DEF static Z op(X d1, X compare, X eps, int mode) {
+    sd_debug("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
     switch (mode) {
       case 0:  // equals
         return sd::math::sd_abs<X>(d1 - compare) <= eps ? 1 : 0;
@@ -2039,7 +2040,7 @@ class MatchCondition {
         // isInfinite
         return sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1) ? 1 : 0;
       default:
-        printf("Undefined match condition: [%i]\n", mode);
+        sd_printf("Undefined match condition: [%i]\n", mode);
     }
 
     return d1;

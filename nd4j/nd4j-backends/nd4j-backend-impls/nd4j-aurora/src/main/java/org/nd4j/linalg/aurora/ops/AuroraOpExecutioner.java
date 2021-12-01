@@ -806,6 +806,11 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, z.dataType()));
                         break;
                     case TRANSFORM_BOOL:
+                        loop.execTransformBool(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, x.dataType()));
+                        break;
                     case PAIRWISE_BOOL:
                         loop.execPairwiseTransformBool(dummy, op.opNum(),
                                 xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,

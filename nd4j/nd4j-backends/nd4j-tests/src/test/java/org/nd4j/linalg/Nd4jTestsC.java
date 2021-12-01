@@ -168,6 +168,41 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void after() throws Exception {
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPutWhereWithMask(Nd4jBackend backend) {
+        double[][] arr = new double[][]{{1., 2.}, {1., 4.}, {1., 6}};
+        double[][] expected = new double[][] {
+                {2,2},
+                {2,4},
+                {2,6}
+        };
+        INDArray assertion = Nd4j.create(expected);
+        INDArray dataMatrix = Nd4j.createFromArray(arr);
+        INDArray compareTo = Nd4j.valueArrayOf(dataMatrix.shape(), 1.);
+        INDArray replacement = Nd4j.valueArrayOf(dataMatrix.shape(), 2);
+        INDArray mask = dataMatrix.match(compareTo, Conditions.equals(1));
+        INDArray out = dataMatrix.putWhereWithMask(mask, replacement);
+        assertEquals(assertion,out);
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConditions(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        double[][] arr = new double[][]{{1., 2.}, {1., 4.}, {1., 6}};
+        INDArray dataMatrix = Nd4j.createFromArray(arr);
+        INDArray compareTo = Nd4j.valueArrayOf(dataMatrix.shape(), 1.);
+        INDArray mask1 = dataMatrix.dup().match(compareTo, Conditions.epsNotEquals(1));
+        INDArray mask2 = dataMatrix.dup().match(compareTo, Conditions.epsEquals(1));
+        assertNotEquals(mask1,mask2);
+    }
+
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArangeNegative(Nd4jBackend backend) {
