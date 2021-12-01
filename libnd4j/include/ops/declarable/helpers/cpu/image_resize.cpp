@@ -182,22 +182,23 @@ void resizeNeighborImpl(ImageResizerState const& st, NDArray const* images, Near
   Scaler scaler;
   constexpr bool halfPixelCenter =
       std::is_same<Scaler, HalfPixelScaler>::value || std::is_same<Scaler, HalfPixelScalerNN>::value;
+
   float (*modeFunc)(float);
   switch (nearestMode) {
     case NearestMode::FLOOR:
-      modeFunc = &sd::math::p_floor<float>;
+      modeFunc = [](float x){return sd::math::p_floor<float>(x);};
       break;
     case NearestMode::ROUND_PREFER_FLOOR:
-      modeFunc = &sd::math::p_round_prefer_floor<float>;
+      modeFunc = [](float x){return sd::math::p_round_prefer_floor<float>(x);};
       break;
     case NearestMode::ROUND_PREFER_CEIL:
-      modeFunc = &sd::math::p_round_prefer_ceil<float>;
+      modeFunc = [](float x){return sd::math::p_round_prefer_ceil<float>(x);};
       break;
     case NearestMode::CEIL:
-      modeFunc = &sd::math::p_ceil<float>;
+      modeFunc = [](float x){return sd::math::p_ceil<float>(x);};
       break;
     default:
-      modeFunc = sd::math::p_floor<float>;
+      modeFunc = [](float x){return sd::math::p_floor<float>(x);};
   }
 
   auto func = PRAGMA_THREADS_FOR_2D {
