@@ -133,33 +133,25 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
 
   return result;
 }
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<double>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<float>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<float16>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<bfloat16>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<sd::LongType>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<uint64_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<int>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<unsigned int>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<int16_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<int8_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<uint8_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::vector<bool>& data, sd::LaunchContext* context);
 
+#define TMPL_INSTANTIATE_CREATE_A(TYPE) \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
+                                                      const std::vector<TYPE>& data, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_A(double)
+TMPL_INSTANTIATE_CREATE_A(float)
+TMPL_INSTANTIATE_CREATE_A(float16)
+TMPL_INSTANTIATE_CREATE_A(bfloat16)
+TMPL_INSTANTIATE_CREATE_A(sd::LongType)
+TMPL_INSTANTIATE_CREATE_A(int)
+TMPL_INSTANTIATE_CREATE_A(unsigned int)
+TMPL_INSTANTIATE_CREATE_A(int8_t)
+TMPL_INSTANTIATE_CREATE_A(int16_t)
+TMPL_INSTANTIATE_CREATE_A(uint8_t)
+TMPL_INSTANTIATE_CREATE_A(uint64_t)
+TMPL_INSTANTIATE_CREATE_A(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_A
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape, sd::LaunchContext* context) {
@@ -181,14 +173,22 @@ void SD_LIB_EXPORT NDArrayFactory::memcpyFromVector(void* ptr, const std::vector
   for (sd::LongType e = 0; e < vector.size(); e++) p[e] = vector[e];
 }
 
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<double>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<float>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<float16>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<sd::LongType>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<int>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<int16_t>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<uint8_t>& vector);
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<int8_t>& vector);
+
+#define TMPL_INSTANTIATE_MEMCPY(TYPE) \
+template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector<TYPE>(void* ptr, const std::vector<TYPE>& vector);
+
+TMPL_INSTANTIATE_MEMCPY(double)
+TMPL_INSTANTIATE_MEMCPY(float)
+TMPL_INSTANTIATE_MEMCPY(float16)
+TMPL_INSTANTIATE_MEMCPY(bfloat16)
+TMPL_INSTANTIATE_MEMCPY(sd::LongType)
+TMPL_INSTANTIATE_MEMCPY(int)
+TMPL_INSTANTIATE_MEMCPY(int16_t)
+TMPL_INSTANTIATE_MEMCPY(int8_t)
+TMPL_INSTANTIATE_MEMCPY(uint8_t)
+TMPL_INSTANTIATE_MEMCPY(bool)
+
+#undef TMPL_INSTANTIATE_MEMCPY
 
 #ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////
@@ -197,34 +197,24 @@ NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shap
                                  sd::LaunchContext* context) {
   return valueOf(std::vector<sd::LongType>(shape), value, order);
 }
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const double value, const char order,
+
+#define TMPL_INSTANTIATE_VALUEOF_A(TYPE) \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf<TYPE>(const std::initializer_list<sd::LongType>& shape, \
+                                                        const TYPE value, const char order, \
                                                         sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const float value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const float16 value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const bfloat16 value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const sd::LongType value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const int value, const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const uint8_t value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const int8_t value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const int16_t value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::initializer_list<sd::LongType>& shape,
-                                                        const bool value, const char order, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_VALUEOF_A(double)
+TMPL_INSTANTIATE_VALUEOF_A(float)
+TMPL_INSTANTIATE_VALUEOF_A(float16)
+TMPL_INSTANTIATE_VALUEOF_A(bfloat16)
+TMPL_INSTANTIATE_VALUEOF_A(sd::LongType)
+TMPL_INSTANTIATE_VALUEOF_A(int)
+TMPL_INSTANTIATE_VALUEOF_A(int16_t)
+TMPL_INSTANTIATE_VALUEOF_A(int8_t)
+TMPL_INSTANTIATE_VALUEOF_A(uint8_t)
+TMPL_INSTANTIATE_VALUEOF_A(bool)
+
+#undef TMPL_INSTANTIATE_VALUEOF_A
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -233,42 +223,28 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
   std::vector<T> vec(data);
   return create<T>(order, shape, vec, context);
 }
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<double>& data,
+
+
+#define TMPL_INSTANTIATE_CREATE_B(TYPE) \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
+                                                      const std::initializer_list<TYPE>& data, \
                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<float>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<float16>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<bfloat16>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<sd::LongType>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<uint64_t>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<int>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<unsigned int>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<int16_t>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<int8_t>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<uint8_t>& data,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape,
-                                                      const std::initializer_list<bool>& data,
-                                                      sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_B(double)
+TMPL_INSTANTIATE_CREATE_B(float)
+TMPL_INSTANTIATE_CREATE_B(float16)
+TMPL_INSTANTIATE_CREATE_B(bfloat16)
+TMPL_INSTANTIATE_CREATE_B(sd::LongType)
+TMPL_INSTANTIATE_CREATE_B(int)
+TMPL_INSTANTIATE_CREATE_B(unsigned int)
+TMPL_INSTANTIATE_CREATE_B(int8_t)
+TMPL_INSTANTIATE_CREATE_B(int16_t)
+TMPL_INSTANTIATE_CREATE_B(uint8_t)
+TMPL_INSTANTIATE_CREATE_B(uint16_t)
+TMPL_INSTANTIATE_CREATE_B(uint64_t)
+TMPL_INSTANTIATE_CREATE_B(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_B
 
 #endif
 
@@ -287,19 +263,25 @@ NDArray* NDArrayFactory::create_(const T scalar, sd::LaunchContext* context) {
 
   return res;
 }
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const double scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const float scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const float16 scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const bfloat16 scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const sd::LongType scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const int scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const bool scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const int8_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const uint8_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const uint16_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const uint32_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const uint64_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const int16_t scalar, sd::LaunchContext* context);
+
+#define TMPL_INSTANTIATE_CREATE_C(TYPE) \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<TYPE>(const TYPE scalar, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_C(double)
+TMPL_INSTANTIATE_CREATE_C(float)
+TMPL_INSTANTIATE_CREATE_C(float16)
+TMPL_INSTANTIATE_CREATE_C(bfloat16)
+TMPL_INSTANTIATE_CREATE_C(sd::LongType)
+TMPL_INSTANTIATE_CREATE_C(int)
+TMPL_INSTANTIATE_CREATE_C(unsigned int)
+TMPL_INSTANTIATE_CREATE_C(int8_t)
+TMPL_INSTANTIATE_CREATE_C(int16_t)
+TMPL_INSTANTIATE_CREATE_C(uint8_t)
+TMPL_INSTANTIATE_CREATE_C(uint16_t)
+TMPL_INSTANTIATE_CREATE_C(uint64_t)
+TMPL_INSTANTIATE_CREATE_C(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_C
 
 template <typename T>
 NDArray NDArrayFactory::create(sd::DataType type, const T scalar, sd::LaunchContext* context) {
@@ -313,23 +295,25 @@ NDArray NDArrayFactory::create(sd::DataType type, const T scalar, sd::LaunchCont
 }
 //    BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT NDArray NDArrayFactory::create, (DataType type, const T scalar,
 //    sd::LaunchContext * context), SD_COMMON_TYPES_ALL);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const double scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const float scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const float16 scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const bfloat16 scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const sd::LongType scalar,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const int scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const int8_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const uint8_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const uint16_t scalar,
-                                                      sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const uint32_t scalar,
-                                                      sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const uint64_t scalar,
-                                                      sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const int16_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(DataType type, const bool scalar, sd::LaunchContext* context);
+
+#define TMPL_INSTANTIATE_CREATE_D(TYPE) \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(DataType type, const TYPE scalar, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_D(double)
+TMPL_INSTANTIATE_CREATE_D(float)
+TMPL_INSTANTIATE_CREATE_D(float16)
+TMPL_INSTANTIATE_CREATE_D(bfloat16)
+TMPL_INSTANTIATE_CREATE_D(sd::LongType)
+TMPL_INSTANTIATE_CREATE_D(int)
+TMPL_INSTANTIATE_CREATE_D(unsigned int)
+TMPL_INSTANTIATE_CREATE_D(int8_t)
+TMPL_INSTANTIATE_CREATE_D(int16_t)
+TMPL_INSTANTIATE_CREATE_D(uint8_t)
+TMPL_INSTANTIATE_CREATE_D(uint16_t)
+TMPL_INSTANTIATE_CREATE_D(uint64_t)
+TMPL_INSTANTIATE_CREATE_D(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_D
 
 template <typename T>
 NDArray NDArrayFactory::create(const T scalar, sd::LaunchContext* context) {
@@ -345,19 +329,25 @@ NDArray NDArrayFactory::create(const T scalar, sd::LaunchContext* context) {
 
   return res;
 }
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const double scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const float scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const float16 scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const bfloat16 scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const sd::LongType scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const int scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const int8_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const uint8_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const int16_t scalar, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const uint16_t scalar, sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const uint32_t scalar, sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const uint64_t scalar, sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const bool scalar, sd::LaunchContext* context);
+
+#define TMPL_INSTANTIATE_CREATE_E(TYPE) \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const TYPE scalar, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_E(double)
+TMPL_INSTANTIATE_CREATE_E(float)
+TMPL_INSTANTIATE_CREATE_E(float16)
+TMPL_INSTANTIATE_CREATE_E(bfloat16)
+TMPL_INSTANTIATE_CREATE_E(sd::LongType)
+TMPL_INSTANTIATE_CREATE_E(int)
+TMPL_INSTANTIATE_CREATE_E(unsigned int)
+TMPL_INSTANTIATE_CREATE_E(int8_t)
+TMPL_INSTANTIATE_CREATE_E(int16_t)
+TMPL_INSTANTIATE_CREATE_E(uint8_t)
+TMPL_INSTANTIATE_CREATE_E(uint16_t)
+TMPL_INSTANTIATE_CREATE_E(uint64_t)
+TMPL_INSTANTIATE_CREATE_E(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_E
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -365,35 +355,26 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongTyp
                                  sd::LaunchContext* context) {
   return new NDArray(NDArrayFactory::create<T>(order, shape, data, context));
 }
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<double>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<float>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<float16>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<bfloat16>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<int>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<unsigned int>& data,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<unsigned long>& data,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<sd::LongType>& data,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<int8_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<uint8_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<int16_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<uint16_t>& data, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongType>& shape,
-                                                        const std::vector<bool>& data, sd::LaunchContext* context);
+
+#define TMPL_INSTANTIATE_CREATE_F(TYPE) \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
+                                                        const std::vector<TYPE>& data, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_F(double)
+TMPL_INSTANTIATE_CREATE_F(float)
+TMPL_INSTANTIATE_CREATE_F(float16)
+TMPL_INSTANTIATE_CREATE_F(bfloat16)
+TMPL_INSTANTIATE_CREATE_F(sd::LongType)
+TMPL_INSTANTIATE_CREATE_F(int)
+TMPL_INSTANTIATE_CREATE_F(unsigned int)
+TMPL_INSTANTIATE_CREATE_F(int8_t)
+TMPL_INSTANTIATE_CREATE_F(int16_t)
+TMPL_INSTANTIATE_CREATE_F(uint8_t)
+TMPL_INSTANTIATE_CREATE_F(uint16_t)
+TMPL_INSTANTIATE_CREATE_F(uint64_t)
+TMPL_INSTANTIATE_CREATE_F(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_F
 
 ////////////////////////////////////////////////////////////////////////
 template <>
@@ -420,27 +401,23 @@ NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const T
   return result;
 }
 
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const double value,
+#define TMPL_INSTANTIATE_VALUEOF(TYPE) \
+template SD_LIB_EXPORT NDArray* \
+NDArrayFactory::valueOf<TYPE>(const std::vector<sd::LongType>& shape, const TYPE value, \
                                                         const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const float value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const float16 value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const bfloat16 value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape,
-                                                        const sd::LongType value, const char order,
-                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const int value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const int16_t value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const int8_t value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const uint8_t value,
-                                                        const char order, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(const std::vector<sd::LongType>& shape, const bool value,
-                                                        const char order, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_VALUEOF(double)
+TMPL_INSTANTIATE_VALUEOF(float)
+TMPL_INSTANTIATE_VALUEOF(float16)
+TMPL_INSTANTIATE_VALUEOF(bfloat16)
+TMPL_INSTANTIATE_VALUEOF(sd::LongType)
+TMPL_INSTANTIATE_VALUEOF(int)
+TMPL_INSTANTIATE_VALUEOF(int16_t)
+TMPL_INSTANTIATE_VALUEOF(int8_t)
+TMPL_INSTANTIATE_VALUEOF(uint8_t)
+TMPL_INSTANTIATE_VALUEOF(bool)
+
+#undef TMPL_INSTANTIATE_VALUEOF
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -455,32 +432,24 @@ NDArray* NDArrayFactory::linspace(const T from, const T to, const sd::LongType n
 
   return result;
 }
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const double from, const double to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const float from, const float to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const float16 from, const float16 to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const bfloat16 from, const bfloat16 to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const sd::LongType from, const sd::LongType to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const int from, const int to, const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const int16_t from, const int16_t to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const uint8_t from, const uint8_t to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const uint16_t from, const uint16_t to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const uint32_t from, const uint32_t to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const uint64_t from, const uint64_t to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const int8_t from, const int8_t to,
-                                                         const sd::LongType numElements);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace(const bool from, const bool to,
+
+#define TMPL_INSTANTIATE_LINSPACE(TYPE) \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace<TYPE>(const TYPE from, const TYPE to, \
                                                          const sd::LongType numElements);
 
+
+TMPL_INSTANTIATE_LINSPACE(double)
+TMPL_INSTANTIATE_LINSPACE(float)
+TMPL_INSTANTIATE_LINSPACE(float16)
+TMPL_INSTANTIATE_LINSPACE(bfloat16)
+TMPL_INSTANTIATE_LINSPACE(sd::LongType)
+TMPL_INSTANTIATE_LINSPACE(int)
+TMPL_INSTANTIATE_LINSPACE(int16_t)
+TMPL_INSTANTIATE_LINSPACE(int8_t)
+TMPL_INSTANTIATE_LINSPACE(uint8_t)
+TMPL_INSTANTIATE_LINSPACE(bool)
+
+#undef TMPL_INSTANTIATE_LINSPACE
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::vector(sd::LongType length, const T value, sd::LaunchContext* context) {
@@ -496,32 +465,23 @@ NDArray* NDArrayFactory::vector(sd::LongType length, const T value, sd::LaunchCo
 
   return res;
 }
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const double startingValue,
+
+#define TMPL_INSTANTIATE_VECTOR(TYPE) \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::vector<TYPE>(sd::LongType length, const TYPE startingValue, \
                                                        sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const float startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const float16 startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const bfloat16 startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const sd::LongType startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const int startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const uint8_t startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const uint16_t startingValue,
-                                                       sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const uint32_t startingValue,
-                                                       sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const uint64_t startingValue,
-                                                       sd::LaunchContext* workspace);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const int8_t startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const int16_t startingValue,
-                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector(sd::LongType length, const bool startingValue,
-                                                       sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_VECTOR(double)
+TMPL_INSTANTIATE_VECTOR(float)
+TMPL_INSTANTIATE_VECTOR(float16)
+TMPL_INSTANTIATE_VECTOR(bfloat16)
+TMPL_INSTANTIATE_VECTOR(sd::LongType)
+TMPL_INSTANTIATE_VECTOR(int)
+TMPL_INSTANTIATE_VECTOR(int16_t)
+TMPL_INSTANTIATE_VECTOR(int8_t)
+TMPL_INSTANTIATE_VECTOR(uint8_t)
+TMPL_INSTANTIATE_VECTOR(bool)
+
+#undef TMPL_INSTANTIATE_VECTOR
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -595,18 +555,24 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, sd::LaunchContext* 
   return res;
 }
 
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<double>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<float>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<float16>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<bfloat16>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<sd::LongType>& values,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<int>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<int16_t>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<uint16_t>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<int8_t>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<uint8_t>& values, sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(const std::vector<bool>& values, sd::LaunchContext* context);
+#define TMPL_INSTANTIATE_CREATE_G(TYPE) \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const std::vector<TYPE>& values, sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_G(double)
+TMPL_INSTANTIATE_CREATE_G(float)
+TMPL_INSTANTIATE_CREATE_G(float16)
+TMPL_INSTANTIATE_CREATE_G(bfloat16)
+TMPL_INSTANTIATE_CREATE_G(sd::LongType)
+TMPL_INSTANTIATE_CREATE_G(int)
+TMPL_INSTANTIATE_CREATE_G(unsigned int)
+TMPL_INSTANTIATE_CREATE_G(int8_t)
+TMPL_INSTANTIATE_CREATE_G(int16_t)
+TMPL_INSTANTIATE_CREATE_G(uint8_t)
+TMPL_INSTANTIATE_CREATE_G(uint16_t)
+TMPL_INSTANTIATE_CREATE_G(uint64_t)
+TMPL_INSTANTIATE_CREATE_G(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_G
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -685,36 +651,27 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
   return result;
 }
 
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(double* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
+#define TMPL_INSTANTIATE_CREATE_H(TYPE) \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(TYPE* buffer, const char order, \
+                                                      const std::initializer_list<sd::LongType>& shape,  \
                                                       sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(float* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(float16* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(bfloat16* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(sd::LongType* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(int* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(bool* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(uint8_t* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(int8_t* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
-template SD_LIB_EXPORT NDArray NDArrayFactory::create(int16_t* buffer, const char order,
-                                                      const std::initializer_list<sd::LongType>& shape,
-                                                      sd::LaunchContext* context);
+
+TMPL_INSTANTIATE_CREATE_H(double)
+TMPL_INSTANTIATE_CREATE_H(float)
+TMPL_INSTANTIATE_CREATE_H(float16)
+TMPL_INSTANTIATE_CREATE_H(bfloat16)
+TMPL_INSTANTIATE_CREATE_H(sd::LongType)
+TMPL_INSTANTIATE_CREATE_H(int)
+TMPL_INSTANTIATE_CREATE_H(unsigned int)
+TMPL_INSTANTIATE_CREATE_H(int8_t)
+TMPL_INSTANTIATE_CREATE_H(int16_t)
+TMPL_INSTANTIATE_CREATE_H(uint8_t)
+TMPL_INSTANTIATE_CREATE_H(uint16_t)
+TMPL_INSTANTIATE_CREATE_H(uint64_t)
+TMPL_INSTANTIATE_CREATE_H(bool)
+
+#undef TMPL_INSTANTIATE_CREATE_H
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::string(const char16_t* u16string, sd::DataType dtype, sd::LaunchContext* context) {
