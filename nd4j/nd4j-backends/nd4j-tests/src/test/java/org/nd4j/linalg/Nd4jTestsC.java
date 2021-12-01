@@ -169,6 +169,24 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPutWhereWithMask(Nd4jBackend backend) {
+        double[][] arr = new double[][]{{1., 2.}, {1., 4.}, {1., 6}};
+        double[][] expected = new double[][] {
+                {2,2},
+                {2,4},
+                {2,6}
+        };
+        INDArray assertion = Nd4j.create(expected);
+        INDArray dataMatrix = Nd4j.createFromArray(arr);
+        INDArray compareTo = Nd4j.valueArrayOf(dataMatrix.shape(), 1.);
+        INDArray replacement = Nd4j.valueArrayOf(dataMatrix.shape(), 2);
+        INDArray mask = dataMatrix.match(compareTo, Conditions.equals(1));
+        INDArray out = dataMatrix.putWhereWithMask(mask, replacement);
+        assertEquals(assertion,out);
+
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

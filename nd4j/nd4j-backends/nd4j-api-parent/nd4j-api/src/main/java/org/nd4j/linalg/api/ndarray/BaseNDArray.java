@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -1925,7 +1926,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putWhereWithMask(INDArray mask, INDArray put) {
         INDArray output = dup();
-        Nd4j.getExecutioner().execAndReturn(new Where(new INDArray[]{mask,this,put},new INDArray[]{output}));
+        Nd4j.getExecutioner().execAndReturn(new WhereNumpy(new INDArray[]{mask,this,put},new INDArray[]{output}));
         return output;
     }
 
