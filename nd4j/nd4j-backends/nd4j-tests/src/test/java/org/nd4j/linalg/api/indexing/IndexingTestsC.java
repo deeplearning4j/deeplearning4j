@@ -51,6 +51,15 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
 
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpecifiedIndexPut(Nd4jBackend backend) {
+        INDArray arr = Nd4j.arange(12.0).reshape(2,3,2);
+        INDArrayIndex[] indices = {NDArrayIndex.all(),NDArrayIndex.indices(0,2),NDArrayIndex.point(1)};
+        INDArray put  = arr.put(indices,Nd4j.onesLike(arr.muli(-1)));
+        assertNotEquals(arr,put);
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
