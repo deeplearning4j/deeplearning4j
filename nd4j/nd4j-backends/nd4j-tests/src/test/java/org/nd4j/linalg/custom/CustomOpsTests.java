@@ -111,6 +111,31 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConfusionMatrix(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
+        INDArray classes = Nd4j.createFromArray(0, 0, 0, 1, 1, 2);
+        INDArray clusters = Nd4j.createFromArray(0, 0, 0, 1, 1, 1);
+
+        INDArray confMatrix = Nd4j.math().confusionMatrix(
+              classes,clusters,3
+        );
+
+        INDArray assertion = Nd4j.create(new double[][]{
+                {3,0,0},
+                {0,2,0},
+                {0,1,0}
+        }).castTo(DataType.INT32);
+        assertEquals(assertion,confMatrix);
+
+    }
+
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNonInplaceOp1(Nd4jBackend backend) {
