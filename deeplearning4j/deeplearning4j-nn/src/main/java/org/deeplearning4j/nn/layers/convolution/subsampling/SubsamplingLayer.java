@@ -196,70 +196,15 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
 
         INDArray input = this.input.castTo(dataType);
-
-        int chIdx = 1;
-        int hIdx = 2;
-        int wIdx = 3;
-        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC){
-            chIdx = 3;
-            hIdx = 1;
-            wIdx = 2;
-        }
-
-        CNN2DFormat dataFormat = layerConf().getCnn2dDataFormat();
-        long miniBatch = input.size(0);
-        long inDepth = input.size(chIdx);
-        int inH = (int)input.size(hIdx);
-        int inW = (int)input.size(wIdx);
-
+        boolean same = convolutionMode == ConvolutionMode.Same;
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
         int[] dilation = layerConf().getDilation();
-        int[] pad;
-        int[] outSize;
-        boolean same = convolutionMode == ConvolutionMode.Same;
-        if (same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, layerConf().getCnn2dDataFormat()); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-        } else {
-            pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, layerConf().getCnn2dDataFormat()); //Also performs validation
-        }
+        int[] pad = layerConf().getPadding();
 
-        long outH = outSize[0];
-        long outW = outSize[1];
-
-
-        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
-            INDArray ret = null;
-            try {
-                ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                        convolutionMode, dilation, dataFormat, workspaceMgr);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(layerConf().isCudnnAllowFallback()){
-                    helperCountFail++;
-                    if(helper instanceof MKLDNNSubsamplingHelper){
-                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
-                    } else {
-                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
-                    }
-                } else {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (ret != null) {
-                return ret;
-            }
-        }
-
-        long[] outShape = (layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW) ? new long[]{miniBatch, inDepth, outH, outW} : new long[]{miniBatch, outH, outW, inDepth};
-
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
         DynamicCustomOp.DynamicCustomOpsBuilder b;
         int extra = 0;
-        switch (layerConf().getPoolingType()){
+        switch (layerConf().getPoolingType()) {
             case MAX:
                 b = DynamicCustomOp.builder("maxpool2d");
                 break;
@@ -282,12 +227,17 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
 
         b.addInputs(input)
-                .addOutputs(output)
                 .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
                         (same ? 1 : 0), extra,
                         layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW ? 0 : 1);  //0: NCHW, 1=NHWC
 
-        Nd4j.exec(b.build());
+        DynamicCustomOp build = b.build();
+        long[] shape = build.calculateOutputShape().get(0).getShape();
+
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), shape, 'c');
+        build.addOutputArgument(output);
+
+        Nd4j.exec(build);
 
         return output;
     }

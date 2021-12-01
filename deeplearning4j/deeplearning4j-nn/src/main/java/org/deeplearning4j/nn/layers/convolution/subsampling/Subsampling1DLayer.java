@@ -22,7 +22,9 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.common.base.Preconditions;
@@ -43,9 +45,9 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
-                            + " array as epsilon for Subsampling1DLayer backprop with shape "
-                            + Arrays.toString(epsilon.shape())
-                            + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
+                    + " array as epsilon for Subsampling1DLayer backprop with shape "
+                    + Arrays.toString(epsilon.shape())
+                    + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
         if(maskArray != null){
             INDArray maskOut = feedForwardMaskArray(maskArray, MaskState.Active, (int)epsilon.size(0)).getFirst();
             Preconditions.checkState(epsilon.size(0) == maskOut.size(0) && epsilon.size(2) == maskOut.size(1),
@@ -57,7 +59,15 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         // add singleton fourth dimension to input and next layer's epsilon
         INDArray origInput = input;
         input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
-        epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW) {
+            input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
+            epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
+        }  else {
+            input = input.castTo(dataType).reshape(input.size(0), input.size(1),1, input.size(2));
+            epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1),1, epsilon.size(2));
+
+        }
+
 
         // call 2D SubsamplingLayer's backpropGradient method
         Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon, workspaceMgr);
@@ -66,6 +76,11 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         // remove singleton fourth dimension from input and current epsilon
         input = origInput;
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW)
+            epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
+        else {
+            epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(3));
+        }
 
         return new Pair<>(gradientEpsNext.getFirst(), epsNext);
     }
@@ -74,27 +89,39 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                            + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
-                            + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
+                    + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
+                    + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
+
+
 
         // add singleton fourth dimension to input
         INDArray origInput = input;
-        input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
-
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW)
+            input = input.castTo(dataType).reshape(input.size(0),input.size(1),input.size(2),1);
+        else {
+            input = input.castTo(dataType).reshape(input.size(0), input.size(1),1, input.size(2));
+        }
         // call 2D SubsamplingLayer's activate method
         INDArray acts = super.activate(training, workspaceMgr);
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW)
+            acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
+        else {
+            acts = acts.reshape(acts.size(0), acts.size(1), acts.size(3));
+        }
+
 
         // remove singleton fourth dimension from input and output activations
         input = origInput;
-        acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
 
-        if(maskArray != null){
+
+        if(maskArray != null) {
             INDArray maskOut = feedForwardMaskArray(maskArray, MaskState.Active, (int)acts.size(0)).getFirst();
             Preconditions.checkState(acts.size(0) == maskOut.size(0) && acts.size(2) == maskOut.size(1),
                     "Activations dimensions (0,2) and mask dimensions (0,1) don't match: Activations %s, Mask %s",
                     acts.shape(), maskOut.shape());
             Broadcast.mul(acts, maskOut, acts, 0, 2);
         }
+
 
         return acts;
     }
