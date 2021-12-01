@@ -653,7 +653,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private Pointer getPointerForExtraArgs(Op op, DataType type) {
-        if (op.extraArgs() != null){
+        if (op.extraArgs() != null) {
             val eadb = op.extraArgsDataBuff(type);
             if (eadb != null)
                 return eadb.addressPointer();
@@ -760,6 +760,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, z.dataType()));
                     break;
                 case TRANSFORM_BOOL:
+                    loop.execTransformBool(dummy, op.opNum(),
+                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                            getPointerForExtraArgs(op, x.dataType()));
+                    break;
                 case PAIRWISE_BOOL:
                     loop.execPairwiseTransformBool(dummy, op.opNum(),
                             xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
@@ -1572,6 +1577,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+        DifferentialFunction func = (DifferentialFunction) op;
+        String opName = func.getOwnName();
         val lc = op.opName().toLowerCase();
         val hash = op.opHash();
 
