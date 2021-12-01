@@ -2204,7 +2204,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             NdIndexIterator iter = new NdIndexIterator(counts);
             while(iter.hasNext()) {
                 long[] iterationIdxs = iter.next();
-                for(int i=0; i<iterationIdxs.length; i++ ){
+                for(int i = 0; i < iterationIdxs.length; i++) {
                     long[] indicesForDim = specifiedIdxs.get(i);
                     destinationIndices[dims[i]] = NDArrayIndex.point(indicesForDim[(int)iterationIdxs[i]]);
                     sourceIndices[dims[i]] = NDArrayIndex.point(iterationIdxs[i]);
