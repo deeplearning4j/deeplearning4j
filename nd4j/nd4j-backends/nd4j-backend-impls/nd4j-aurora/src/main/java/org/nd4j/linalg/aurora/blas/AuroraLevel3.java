@@ -30,7 +30,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.Nd4jAuroraOps;
+import org.nd4j.aurora.Nd4jAuroraOps;
 import org.nd4j.nativeblas.Nd4jBlas;
 import org.nd4j.nativeblas.NativeOpsHolder;
 

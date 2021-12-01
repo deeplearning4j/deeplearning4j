@@ -19,6 +19,10 @@
 //
 //  @author sgazeos@gmail.com
 //
+
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_listdiff)
 #include <ops/declarable/helpers/listdiff.h>
 
 #include <vector>
@@ -126,3 +130,4 @@ BUILD_SINGLE_TEMPLATE(template sd::Status listDiffFunctor_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

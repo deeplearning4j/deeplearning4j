@@ -52,6 +52,7 @@ import kotlin.collections.HashSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
+import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.tests.tags.TagNames
 
 
@@ -76,7 +77,7 @@ class TestTensorflowIR {
     fun manualTest() {
         val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
         val parsedGraph = GraphDef.newBuilder()
-       //C:\Users\agibs\.nd4jtests\resnetv2_imagenet_frozen_graph
+        //C:\Users\agibs\.nd4jtests\resnetv2_imagenet_frozen_graph
         TextFormat.merge(manualGraph,parsedGraph)
         val textGraph = parsedGraph.build()
         println(textGraph)
@@ -186,7 +187,7 @@ class TestTensorflowIR {
         //Load data
         //Because we don't have DataVec NativeImageLoader in ND4J tests due to circular dependencies, we'll load the image previously saved...
         var imgFile =
-         File("goldenretriever_rgb224_unnormalized_nchw_INDArray.bin")
+            File("goldenretriever_rgb224_unnormalized_nchw_INDArray.bin")
         var img = Nd4j.readBinary(imgFile).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
         img = img.permute(0, 2, 3, 1).dup() //to NHWC
 
@@ -1068,7 +1069,7 @@ class TestTensorflowIR {
                         }
                         assertEquals(tfResults.values.first(), results.values.first(),"Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames} " +
                                 "with tfValue of shape ${tfResults.values.first().shapeInfoToString()} and nd4j ${results.values.first().shapeInfoToString()} and ${graphInput}"
-                            )
+                        )
                     } else if(mappingProcess.opName() == "unique_with_counts" || mappingProcess.opName() == "unique") {
                         //note: this is a separate case since the results are equal, minus dimensions
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
@@ -1158,5 +1159,9 @@ class TestTensorflowIR {
         println("Note we skipped ${randomOps.size} testing resource ops named $randomOps due to random not being consistently testable. This may change in the short term.")
 
     }
+
+
+
+
 
 }

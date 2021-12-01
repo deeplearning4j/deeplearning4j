@@ -19,6 +19,10 @@
 //
 //  @author sgazeos@gmail.com
 //
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_unique)
+
 #include <execution/Threads.h>
 #include <graph/Variable.h>
 #include <ops/declarable/helpers/unique.h>
@@ -105,3 +109,5 @@ BUILD_SINGLE_TEMPLATE(template sd::Status uniqueFunctor_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

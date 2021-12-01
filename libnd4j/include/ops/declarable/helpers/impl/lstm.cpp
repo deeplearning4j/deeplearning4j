@@ -30,6 +30,10 @@
 // Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for
 // large scale acoustic modeling." INTERSPEECH, 2014.
 
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_lstm)
+
 #include <array/NDArrayList.h>
 #include <graph/VariableSpace.h>
 #include <helpers/MmulHelper.h>
@@ -138,3 +142,5 @@ void lstmTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* h
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

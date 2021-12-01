@@ -47,5 +47,7 @@ public class KerasModelConfiguration {
     private final String trainingModelConfigAttribute = "model_config";
     private final String trainingTrainingConfigAttribute = "training_config";
     private final String optimizerConfig = "optimizer_config";
+    //The model weight values as dictionaries. Introduced with keras 2.7.0
+    public final  static String topLevelModelWeights = "top_level_model_weights";
 
 }

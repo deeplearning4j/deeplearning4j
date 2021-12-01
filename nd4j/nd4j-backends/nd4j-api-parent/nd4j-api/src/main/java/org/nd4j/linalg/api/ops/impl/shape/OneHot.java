@@ -163,8 +163,15 @@ public class OneHot extends DynamicCustomOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         if(properties.containsKey("depth")) {
-            Long depth = getLongValueFromProperty("depth",properties);
-            this.depth = depth;
+            if(properties.get("depth") instanceof Integer) {
+                Integer depth = getIntValueFromProperty("depth",properties);
+                this.depth = depth;
+            }
+            else if(properties.get("depth") instanceof Long) {
+                Long depth = getLongValueFromProperty("depth",properties);
+                this.depth = depth;
+            }
+
         }
 
         if(properties.containsKey("off")) {

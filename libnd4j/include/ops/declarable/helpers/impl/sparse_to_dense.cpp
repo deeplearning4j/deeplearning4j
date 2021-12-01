@@ -22,6 +22,9 @@
 // @author raver119@gmail.com
 //
 
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_compat_sparse_to_dense)
 #include <helpers/ShapeUtils.h>
 #include <helpers/StringUtils.h>
 #include <ops/declarable/helpers/sparse_to_dense.h>
@@ -127,3 +130,5 @@ void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArr
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

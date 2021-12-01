@@ -20,10 +20,15 @@
 
 package org.nd4j.aurora;
 
+import org.bytedeco.javacpp.ClassProperties;
+import org.bytedeco.javacpp.LoadEnabled;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.annotation.NoException;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
+
+import java.util.List;
 
 /**
  *
@@ -38,13 +43,13 @@ import org.bytedeco.javacpp.tools.*;
                         includepath = "/opt/nec/ve/veos/include/",
                         linkpath = "/opt/nec/ve/veos/lib64/",
                         library = "aurora",
-                        resource = {"aurora", "libaurora.so"}
+                        resource = {"aurora", "libaurora.so","nd4jaurora"}
                 )
         },
         target = "org.nd4j.aurora.Aurora"
 )
 @NoException
-public class AuroraPresets implements InfoMapper, BuildEnabled {
+public class AuroraPresets implements InfoMapper, BuildEnabled, LoadEnabled {
 
     private Logger logger;
     private java.util.Properties properties;
@@ -60,5 +65,14 @@ public class AuroraPresets implements InfoMapper, BuildEnabled {
     @Override
     public void map(InfoMap infoMap) {
         infoMap.put(new Info("char").cast().valueTypes("byte").pointerTypes("BytePointer", "ByteBuffer", "byte[]", "String"));
+    }
+
+    @Override
+    public void init(ClassProperties properties) {
+        if(!Loader.isLoadLibraries()) {
+            return;
+        }
+
+
     }
 }

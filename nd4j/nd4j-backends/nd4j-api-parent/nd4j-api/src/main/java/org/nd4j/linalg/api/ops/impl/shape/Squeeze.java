@@ -87,10 +87,7 @@ public class Squeeze extends DynamicCustomOp {
 
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
-        if(properties.containsKey("squeezeDims")) {
-            Long squeezeProp = getLongValueFromProperty("squeezeDims",properties);
-            this.squeezeDims = new int[] {squeezeProp.intValue()};
-        }
+        //squeezeDims are mapped in arguments
     }
 
     @Override

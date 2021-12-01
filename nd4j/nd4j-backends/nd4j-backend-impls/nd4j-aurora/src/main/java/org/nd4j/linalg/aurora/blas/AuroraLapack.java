@@ -28,7 +28,7 @@ import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.nativeblas.Nd4jAuroraOps;
+import org.nd4j.aurora.Nd4jAuroraOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;

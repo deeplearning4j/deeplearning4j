@@ -22,6 +22,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 15.02.2018, Alex Black
 //
 
+#include <system/op_boilerplate.h>
+
+
+#if NOT_EXCLUDED(OP_gru)
+
 // implementation of gated Recurrent Unit cell
 // (cf. https://arxiv.org/abs/1406.1078).
 // Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio
@@ -525,3 +530,5 @@ void gruTimeLoopBp(sd::LaunchContext* context, const NDArray* x, const NDArray* 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

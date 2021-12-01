@@ -15,6 +15,10 @@
  * SPDX-License-Identifier: Apache-2.0
  *******************************************************************************/
 
+
+#include <system/op_boilerplate.h>
+
+#if NOT_EXCLUDED(OP_ctcBeam)
 //
 // @author AbdelRauf
 //
@@ -653,3 +657,5 @@ BUILD_DOUBLE_TEMPLATE(template void beamSearch_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 project(tests_cpu)
 
+
+if (SD_AURORA)
+  set(GTEST_PATCH_COMMAND "patch -Np1 < ${CMAKE_SOURCE_DIR}/tests_cpu/gtest_aurora.patch || true")
+else()
+  set(GTEST_PATCH_COMMAND "")
+endif()
+
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
