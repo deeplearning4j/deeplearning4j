@@ -28,14 +28,14 @@ import org.nd4j.common.io.Resource;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
- * Cpu backend
+ * Aurora backend
  *
  * @author Adam Gibson
  */
 public class AuroraBackend extends Nd4jBackend {
 
 
-    private final static String LINALG_PROPS = "/nd4j-native.properties";
+    private final static String LINALG_PROPS = "/nd4j-aurora.properties";
 
     @Override
     public boolean isAvailable() {
@@ -55,7 +55,7 @@ public class AuroraBackend extends Nd4jBackend {
 
     @Override
     public int getPriority() {
-        return BACKEND_PRIORITY_CPU;
+        return BACKEND_PRIORITY_GPU;
     }
 
     @Override

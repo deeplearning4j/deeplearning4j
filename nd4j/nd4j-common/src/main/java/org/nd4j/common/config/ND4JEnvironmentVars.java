@@ -37,6 +37,17 @@ public class ND4JEnvironmentVars {
      * by default, the CUDA backend will be loaded when both it and the CPU/native backend are on the classpath
      */
     public static final String BACKEND_PRIORITY_GPU = "BACKEND_PRIORITY_GPU";
+
+
+    /**
+     * Applicability: nd4j-aurora-xx, when multiple backends are on classpath<br>
+     * Description: Defines the priority that the CUDA (GPU) backend should be loaded (or attempt to be loaded). If this
+     * is set to a higher value than {@link #BACKEND_PRIORITY_CPU} (which has default value 0) the Aurora backend
+     * will be loaded in preference to the AURORA backend, when both are on the classpath. Default value: 100 - hence
+     * by default, the AURORA backend will be loaded when both it and the CPU/native backend are on the classpath
+     */
+    public static final String BACKEND_PRIORITY_AURORA = "BACKEND_PRIORITY_AURORA";
+
     /**
      * Applicability: always - but only if an ND4J backend cannot be found/loaded via standard ServiceLoader mechanisms<br>
      * Description: Set this environment variable to a set fully qualified JAR files to attempt to load before failing on

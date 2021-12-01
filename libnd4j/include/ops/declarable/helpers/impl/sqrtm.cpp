@@ -19,6 +19,8 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_sqrtm)
 
 #include <helpers/Sqrtm.h>
 #include <ops/declarable/CustomOperations.h>
@@ -54,3 +56,5 @@ void sqrtm(sd::LaunchContext* context, const NDArray* x, NDArray* z) {
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

@@ -33,9 +33,11 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -205,6 +207,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                 throw new IllegalStateException(
                                 "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
             }
+
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 

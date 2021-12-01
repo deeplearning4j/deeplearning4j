@@ -24,13 +24,9 @@ package org.nd4j.samediff.frameworkimport.tensorflow
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.io.ClassPathResource
-import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -51,6 +47,13 @@ import java.io.File
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
+import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.common.tests.tags.TagNames
 
 
 data class GraphInput(val graphDef: GraphDef,val inputNames: List<String>,val outputNames: List<String>,
@@ -1157,15 +1160,6 @@ class TestTensorflowIR {
 
     }
 
-    @Test
-    fun testOp() {
-        val load = SameDiff.load(
-            File("C:\\Users\\agibs\\Documents\\GitHub\\ve-training\\benchmark-models\\yolov4-aurora.fb"),
-            true
-        )
-        load.outputAll(Collections.singletonMap("input_1", Nd4j.ones(1, 416, 416, 3)))
-
-    }
 
 
 

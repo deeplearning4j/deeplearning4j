@@ -21,6 +21,7 @@
 package org.deeplearning4j.nn.layers.pooling;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -50,6 +51,31 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
 public class GlobalPoolingMaskingTests extends BaseDL4JTest {
+
+
+    @Test
+    public void testSubsampling1dNCHWShapeTest() {
+
+        Subsampling1DLayer layer = new Subsampling1DLayer.Builder().poolingType(PoolingType.MAX)
+                .kernelSize(3)
+                .padding(0)
+                .stride(3)
+                .convolutionMode(ConvolutionMode.Truncate)
+                .dataFormat(CNN2DFormat.NCHW).build();
+        MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(layer).
+                build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(config);
+        network.init();
+        INDArray input = Nd4j.ones(1,122,265);
+        long[] expectedShape = {1,122,88};
+        INDArray output = network.output(input);
+        assertArrayEquals(expectedShape,output.shape());
+
+    }
+
 
     @Test
     public void testMaskingRnn() {

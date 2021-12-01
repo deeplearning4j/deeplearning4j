@@ -19,9 +19,12 @@
 //
 //  @author sgazeos@gmail.com
 //
+
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_unique)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/multiUnique.h>
-#if NOT_EXCLUDED(OP_concat)
 
 namespace sd {
 namespace ops {

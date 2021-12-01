@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>nd4j-aurora</artifactId>
@@ -65,7 +65,7 @@
             <configuration>
               <excludes>
                 <exclude>
-                  org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                  org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/*
                 </exclude>
                 <exclude>lib/**</exclude>
                 <exclude>*.dll</exclude>
@@ -86,7 +86,7 @@
               <skipIfEmpty>true</skipIfEmpty>
               <includes>
                 <include>
-                  org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                  org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/*
                 </include>
                 <include>lib/**</include>
                 <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
@@ -110,7 +110,7 @@
             <configuration>
               <skipMain>${javacpp.parser.skip}</skipMain>
               <includes>
-                <include>org/nd4j/nativeblas/*.java</include>
+                <include>org/nd4j/aurora/*.java</include>
               </includes>
             </configuration>
           </execution>
@@ -169,6 +169,7 @@
           </propertyKeysAndValues>
           <classPaths>
             <classPath>${project.build.outputDirectory}</classPath>
+            <classPath>${project.build.outputDirectory}../../nd4j-aurora-presets/target/classes</classPath>
           </classPaths>
           <includePaths>
             <includePath>${libnd4jhome}/blasbuild/aurora/include</includePath>
@@ -186,14 +187,17 @@
             <includePath>${libnd4jhome}/include/memory</includePath>
             <includePath>${libnd4jhome}/include/performance</includePath>
           </includePaths>
-          <linkPaths>
-            <linkPath>${libnd4jhome}/blasbuild/aurora/blas</linkPath>
-          </linkPaths>
+
+
+          <linkPath>${libnd4jhome}/blasbuild/aurora/blas</linkPath>
+          <resourcePath>${libnd4jhome}/blasbuild/aurora/blas</resourcePath>
+
 
           <buildResources>
             <buildResource>/${javacpp.platform.library.path}/</buildResource>
             <buildResource>/lib/</buildResource>
             <buildResource>/</buildResource>
+            <buildResource>${libnd4jhome}/blasbuild/aurora/blas</buildResource>
           </buildResources>
           <includeResources>
             <includeResource>/${javacpp.platform.library.path}/include/
@@ -235,6 +239,7 @@
               <skip>${javacpp.compiler.skip}</skip>
               <classOrPackageName>org.nd4j.aurora.Aurora</classOrPackageName>
               <copyLibs>true</copyLibs>
+              <copyResources>true</copyResources>
               <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
               <outputDirectory>${javacpp.build.output.path}</outputDirectory>
             </configuration>
@@ -299,7 +304,7 @@
               <artifactId>${project.artifactId}</artifactId>
               <groupId>${project.groupId}</groupId>
               <version>${project.version}</version>
-              <sources>${project.build.directory}/nd4j-native-${project.version}.jar</sources>
+              <sources>${project.build.directory}/nd4j-aurora-${project.version}.jar</sources>
             </configuration>
           </execution>
 
@@ -312,7 +317,7 @@
               <groupId>${project.groupId}</groupId>
               <version>${project.version}</version>
               <classifier>${javacpp.platform}</classifier>
-              <sources>${project.build.directory}/nd4j-native-${project.version}-${javacpp.platform}.jar</sources>
+              <sources>${project.build.directory}/nd4j-aurora-${project.version}-${javacpp.platform}.jar</sources>
             </configuration>
           </execution>
         </executions>

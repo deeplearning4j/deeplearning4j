@@ -18,11 +18,12 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.nativeblas;
+package org.nd4j.aurora;
 
 import lombok.Getter;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.nativeblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,20 @@ public class Nd4jAuroraOps implements NativeOps {
             if (s != null) {
                 deviceId = Integer.parseInt(s);
             }
-            File f = Loader.cacheResource(Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
+
+            String veoFilePath = System.getenv("LIB_FILE_PATH");
+            File f = null;
+            if(veoFilePath != null) {
+                f = new File(veoFilePath);
+                f.setExecutable(true);
+                log.trace("Using LIB_FILE_PATH " + veoFilePath);
+            } else {
+                f = Loader.cacheResource("org/nd4j/aurora/"  + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
+                if(f == null) {
+                    throw new IllegalArgumentException("Unable to load shared library libaurora.so, resource path was " + "org/nd4j/aurora/" + Loader.getPlatform() + (LOAD_SHARED_LIBRARY ? "/libaurora.so" : "/nd4jaurora"));
+                }
+            }
+
             f.setExecutable(true);
             veobin = f.getAbsolutePath();
             setDevice(deviceId);
@@ -137,7 +151,7 @@ public class Nd4jAuroraOps implements NativeOps {
 
         long sym = veo_get_sym(proc, handle, symname);
         if (sym == 0) {
-            throw new RuntimeException("veo_get_sym(): failed to find symbol");
+            throw new RuntimeException("veo_get_sym(): failed to find symbol " + symname);
         }
         veo_args argp = veo_args_alloc();
         if (argp == null) {

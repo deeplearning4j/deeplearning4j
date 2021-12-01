@@ -38,6 +38,7 @@ public abstract class Nd4jBackend {
 
     public static final int BACKEND_PRIORITY_CPU;
     public static final int BACKEND_PRIORITY_GPU;
+    public static final int BACKEND_PRIORITY_AURORA;
     /**
      * @deprecated Use {@link ND4JEnvironmentVars#BACKEND_DYNAMIC_LOAD_CLASSPATH}
      */
@@ -75,6 +76,22 @@ public abstract class Nd4jBackend {
         }
         BACKEND_PRIORITY_GPU = n;
     }
+
+
+    static {
+        int n = 100;
+        String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_AURORA);
+        if (s != null && s.length() > 0) {
+            try {
+                n = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        
+        BACKEND_PRIORITY_AURORA = n;
+    }
+
 
     /**
      * Returns true if the

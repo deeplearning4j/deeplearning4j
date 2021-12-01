@@ -155,7 +155,7 @@
                                 <argument>--operations</argument>
                                 <argument>${libnd4j.operations}</argument>
                                 <argument>--datatypes</argument>
-                                <argument>"${libnd4j.datatypes}"</argument>
+                                <argument>${libnd4j.datatypes}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>

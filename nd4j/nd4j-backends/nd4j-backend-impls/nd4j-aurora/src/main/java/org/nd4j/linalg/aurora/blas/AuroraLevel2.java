@@ -27,7 +27,7 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.Nd4jAuroraOps;
+import org.nd4j.aurora.Nd4jAuroraOps;
 import org.nd4j.nativeblas.Nd4jBlas;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
