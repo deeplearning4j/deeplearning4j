@@ -22,7 +22,7 @@
 
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#include <helpers/LoopsCoordsHelper.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -45,37 +45,41 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
     const T padVal = padValue.e<T>(0);
 
-    auto func = PRAGMA_THREADS_FOR {
-      int zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+    auto xShapes = input.shapeOf();
+    auto outShapes = output.shapeOf();
+    auto xStrides = input.stridesOf();
+    auto zStrides = output.stridesOf();
+    sd::LongType coords[SD_MAX_RANK] = {};
+    sd::LongType paddingOffsetCoords[SD_MAX_RANK] = {};
+    sd::LongType* prtCoords = (sd::LongType*)&coords; 
+    sd::LongType* prtPaddingCoords = (sd::LongType*)&paddingOffsetCoords; 
 
-      for (auto i = start; i < stop; i++) {
-        shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
-        const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
+    for (int j = 0 ; j<rank ;j++) { 
+        paddingOffsetCoords[j]= paddings.e<sd::LongType>(j, 0);
+    }
+    auto paddingOffset = sd::offset_from_coords(zStrides, prtPaddingCoords, rank);
+    auto lastStrideX = xStrides[rank-1];
+    auto lastStrideZ = zStrides[rank-1];
+    auto inputLastSize = xShapes[rank-1];
 
-        memcpy(xCoords, zCoords, rank * sizeof(int));
+    //fill everything with padding Value
+    output.assign(padVal);
 
-        bool within = true;
-
-        for (int j = rankMinusOne; j >= 0; --j) {
-          if (xShape[j] == zShape[j]) continue;
-
-          const auto left = paddings.e<sd::LongType>(j, 0);
-
-          if (zCoords[j] < left || zCoords[j] >= left + xShape[j]) {
-            within = false;
-            break;
-          } else
-            xCoords[j] = zCoords[j] - left;
+    //fill the core from input
+    zip_size_t offset = {};
+    auto coreZ = &(z[paddingOffset]);
+    //iterate over core
+    auto len = input.lengthOf();
+    for (auto k = 0; k < len/inputLastSize; k++) {
+        auto xPtr = &(x[offset.first]);
+        auto zPtr = &(coreZ[offset.second]);
+        for(int i=0;i<inputLastSize;i++){
+          zPtr[i*lastStrideZ] = xPtr[i*lastStrideX];
         }
+        offset = inc_coords(xShapes, xStrides, zStrides, prtCoords, offset, rank-1);
+    }
 
-        if (within)
-          z[zOffset] = x[shape::getOffset(input.shapeInfo(), xCoords)];
-        else
-          z[zOffset] = padVal;
-      }
-    };
 
-    samediff::Threads::parallel_tad(func, 0, zLen);
   } else {  // REFLECT and SYMMETRIC cases
 
     const sd::LongType shift1 = mode == 1 ? 0 : 1;  // REFLECT : SYMMETRIC

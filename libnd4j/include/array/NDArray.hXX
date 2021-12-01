@@ -102,7 +102,7 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const
   for (sd::LongType i = 0; i < lengthOf(); ++i) {
     BUILD_SINGLE_PARTIAL_SELECTOR(
         dtype, templatedDoubleAssign<, double>(buffer(), i, reinterpret_cast<const void *>(data.data()), i),
-        SD_COMMON_TYPES);
+        SD_COMMON_TYPES_ALL);
   }
   tickWriteHost();
   syncToDevice();
@@ -3659,7 +3659,7 @@ T NDArray::e(const sd::LongType i) const {
 
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, NDArray::e(const sd::LongType) const, SD_COMMON_TYPES_ALL);
 
@@ -3675,7 +3675,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j) const {
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
 
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
 }
@@ -3694,7 +3694,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k) c
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
 
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
 }
@@ -3714,7 +3714,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
 
-  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES);
+  BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
 }
