@@ -168,6 +168,23 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void after() throws Exception {
     }
 
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConditions(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        double[][] arr = new double[][]{{1., 2.}, {1., 4.}, {1., 6}};
+        INDArray dataMatrix = Nd4j.createFromArray(arr);
+        INDArray compareTo = Nd4j.valueArrayOf(dataMatrix.shape(), 1.);
+        INDArray mask1 = dataMatrix.dup().match(compareTo, Conditions.epsNotEquals(1));
+        INDArray mask2 = dataMatrix.dup().match(compareTo, Conditions.epsEquals(1));
+        assertNotEquals(mask1,mask2);
+    }
+
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArangeNegative(Nd4jBackend backend) {
