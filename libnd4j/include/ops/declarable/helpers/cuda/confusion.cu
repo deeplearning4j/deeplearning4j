@@ -63,7 +63,9 @@ SD_KERNEL static void confusionFunctorKernel(sd::LongType* labelsBuffer, sd::Lon
     T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
 
     auto idx = shape::getIndexOffset(pred, tadShape);
-    tZ[idx] = val;
+    //increment the value by the weight
+    tZ[idx] += val;
+
   }
 }
 
