@@ -366,12 +366,12 @@ if (${HELPERS_vednn})
         message(FATAL_ERROR "Build step for vednn failed: ${result}")
     endif()
 
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/vednn-src
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/gen-dnn
             ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
             EXCLUDE_FROM_ALL)
 
     set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
-    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-src)
+    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen-dnn)
     set(VEDNN_PATH "${vednn_SOURCE_DIR}")
     include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
     set(VEDNN dnnl)
