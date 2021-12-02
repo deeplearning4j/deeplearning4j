@@ -413,7 +413,7 @@ namespace samediff {
 		}
 #else
 
-		sd::Environment::getInstance()->maxThreads();
+		sd::Environment::getInstance().maxThreads();
 		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
 		if (ticket != nullptr) {
 			// if we got our threads - we'll run our jobs here
