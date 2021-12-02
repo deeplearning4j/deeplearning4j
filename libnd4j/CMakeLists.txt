@@ -374,7 +374,7 @@ if (${HELPERS_vednn})
     set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-src)
     set(VEDNN_PATH "${vednn_SOURCE_DIR}")
     include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
-    set(ONEDNN dnnl)
+    set(VEDNN dnnl)
 endif()
 
 
