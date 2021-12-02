@@ -784,7 +784,7 @@ namespace samediff {
 
 #else
 
-		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
 		if (ticket == nullptr)
 			return function(0, start, stop, increment);
 
