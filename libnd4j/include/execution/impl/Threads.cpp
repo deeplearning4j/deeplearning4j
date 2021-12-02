@@ -873,7 +873,7 @@ namespace samediff {
 		sd::LongType end = 0;
 
 		//we will try enqueue bigger parts first
-		decltype(span) span1, span2;
+		decltype(span) span1 = 0, span2 = 0;
 		int last = 0;
 		if (tail_add >= 0) {
 			//for span == 1  , tail_add is  0
