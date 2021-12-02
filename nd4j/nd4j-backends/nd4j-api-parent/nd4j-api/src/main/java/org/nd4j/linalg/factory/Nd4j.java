@@ -4276,7 +4276,7 @@ public class Nd4j {
      */
     public static INDArray create(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
         if(shape.length == 0)
-            return Nd4j.scalar(dataType, 0.0);
+            return Nd4j.empty(dataType);
 
         checkShapeValues(shape);
         return INSTANCE.create(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4974,7 +4974,7 @@ public class Nd4j {
                 return INSTANCE.create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType, ws);
 
             default:
-                throw new UnsupportedOperationException("Unsupported data type used: " + dataType);
+                throw new UnsupportedOperationException("Unsupported data type used: " + dataType + " only numerical data types supported for this method.");
         }
     }
 

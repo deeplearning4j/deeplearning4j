@@ -414,7 +414,7 @@ namespace samediff {
 #else
 
 		sd::Environment::getInstance()->maxThreads();
-		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
 		if (ticket != nullptr) {
 			// if we got our threads - we'll run our jobs here
 			auto span = delta / numThreads;
@@ -530,7 +530,7 @@ namespace samediff {
 
 #else
 
-			auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+			auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
 			if (ticket != nullptr) {
 
 				for (int e = 0; e < numThreads; e++) {
@@ -606,7 +606,7 @@ namespace samediff {
 		}
 #else
 
-		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
 		if (ticket != nullptr) {
 			auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
 
@@ -659,7 +659,7 @@ namespace samediff {
 			return numThreads;
 		}
 #else
-		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
 		if (ticket != nullptr) {
 
 			// submit tasks one by one
@@ -715,11 +715,11 @@ namespace samediff {
 			freeThreads(numThreads);
 		}
 		else {
-			// if there were no thre ads available - we'll execute function right within current thread
+			// if there were no threads available - we'll execute function right within current thread
 			return	function(0, start, stop, increment);
 		}
 #else
-		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
 		if (ticket == nullptr)
 			return function(0, start, stop, increment);
 
@@ -784,7 +784,7 @@ namespace samediff {
 
 #else
 
-		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
 		if (ticket == nullptr)
 			return function(0, start, stop, increment);
 
@@ -873,7 +873,7 @@ namespace samediff {
 		sd::LongType end = 0;
 
 		//we will try enqueue bigger parts first
-		decltype(span) span1, span2;
+		decltype(span) span1 = 0, span2 = 0;
 		int last = 0;
 		if (tail_add >= 0) {
 			//for span == 1  , tail_add is  0
@@ -920,7 +920,7 @@ namespace samediff {
 			return 1;
 		}
 #else
-		auto ticket = samediff::ThreadPool::getInstance()->tryAcquire(numThreads);
+		auto ticket = samediff::ThreadPool::getInstance().tryAcquire(numThreads);
 		if (ticket != nullptr) {
 
 			for (size_t j = 0; j < numThreads; j++) {

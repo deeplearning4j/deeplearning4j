@@ -169,6 +169,13 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEmptyStringScalar(Nd4jBackend backend) {
+        INDArray arr = Nd4j.empty(DataType.UTF8);
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutWhereWithMask(Nd4jBackend backend) {

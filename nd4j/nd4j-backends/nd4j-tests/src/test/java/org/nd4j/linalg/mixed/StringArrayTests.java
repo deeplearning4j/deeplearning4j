@@ -45,6 +45,14 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCreateUtf8EmptyArray(Nd4jBackend backend) {
+        long[] shape = {};
+        Nd4j.create(DataType.UTF8, shape, null /*irrelevant*/, 'c' /*irrelevant*/);
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_1(Nd4jBackend backend) {

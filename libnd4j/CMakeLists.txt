@@ -345,6 +345,39 @@ if(${HELPERS_armcompute})
 endif()
 
 
+
+# new one-dnn entry
+if (${HELPERS_vednn})
+    message("Going to pull & build vednn")
+    set(HAVE_VEDNN 1)
+    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
+
+    configure_file(./CMakeLists.txt.vednn.in vednn-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
+    if(result)
+        message(FATAL_ERROR "CMake step for vednn failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
+    if(result)
+        message(FATAL_ERROR "Build step for vednn failed: ${result}")
+    endif()
+
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/gen-dnn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
+            EXCLUDE_FROM_ALL)
+
+    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
+    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen-dnn-src)
+    set(VEDNN_PATH "${vednn_SOURCE_DIR}")
+    include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
+    set(VEDNN dnnl)
+endif()
+
+
 # new one-dnn entry
 if (${HELPERS_onednn})
     message("Going to pull & build onednn")
