@@ -355,9 +355,9 @@ if (${HELPERS_vednn})
     configure_file(./CMakeLists.txt.vednn.in vednn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
     if(result)
-        message(FATAL_ERROR "CMake step for onednn failed: ${result}")
+        message(FATAL_ERROR "CMake step for vednn failed: ${result}")
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
             RESULT_VARIABLE result
