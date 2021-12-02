@@ -273,5 +273,5 @@ fun SDLoss() =  Namespace("Loss"){
             """.trimIndent()
         }
     }
-    
+
 }
