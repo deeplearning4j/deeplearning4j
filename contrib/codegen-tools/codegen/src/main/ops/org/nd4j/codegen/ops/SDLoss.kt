@@ -273,20 +273,5 @@ fun SDLoss() =  Namespace("Loss"){
             """.trimIndent()
         }
     }
-
-
-    Op("weightedCrossEntropyWithLogits") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.loss"
-        javaOpClass = "WeightedCrossEntropyLoss"
-        Input(NUMERIC, "targets") { description = "targets array" }
-        Input(NUMERIC, "inputs") { description = "input array" }
-        Input(NUMERIC, "weights") { description = "eights array. May be null. If null, a weight of 1.0 is used" }
-        Output(NUMERIC, "output"){ description = "Loss variable" }
-
-        Doc(Language.ANY, DocScope.ALL){
-        """
-            Weighted cross entropy loss with logits
-        """.trimIndent()
-        }
-    }
+    
 }
