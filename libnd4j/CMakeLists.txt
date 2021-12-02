@@ -348,7 +348,7 @@ endif()
 
 # new one-dnn entry
 if (${HELPERS_vednn})
-    message("Going to pull & build onednn")
+    message("Going to pull & build vednn")
     set(HAVE_VEDNN 1)
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
@@ -361,17 +361,17 @@ if (${HELPERS_vednn})
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
     if(result)
-        message(FATAL_ERROR "Build step for onednn failed: ${result}")
+        message(FATAL_ERROR "Build step for vednn failed: ${result}")
     endif()
 
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/onednn-src
-            ${CMAKE_CURRENT_BINARY_DIR}/onednn-build
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/vednn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
             EXCLUDE_FROM_ALL)
 
-    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-build)
-    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/onednn-src)
+    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
+    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-src)
     set(VEDNN_PATH "${vednn_SOURCE_DIR}")
     include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
     set(ONEDNN dnnl)
