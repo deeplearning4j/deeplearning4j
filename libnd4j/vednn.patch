@@ -1,0 +1,96 @@
+--- src/cpu/CMakeLists.txt	2021-12-03 07:34:32.322352295 +0900
++++ src/cpu/CMakeLists_new.txt	2021-12-03 05:13:24.026579909 +0900
+@@ -146,6 +146,10 @@
+     # nc++ "compiler error" if use -mvector-intrinsic-check option [append default option]
+     set_source_files_properties(${FILES_NO_VECTOR_INTRINSIC_CHECK}
+         PROPERTIES COMPILE_FLAGS "-mno-vector-intrinsic-check")
++
++    #disable inlining for certain files
++    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/ve/ref_lrn.cpp 
++        PROPERTIES COMPILE_FLAGS "-fno-inline-functions")
+ endif()
+ 
+ if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+--- build.sh	2021-12-03 13:45:29.576602937 +0900
++++ build_new.sh	2021-12-03 14:13:59.736201248 +0900
+@@ -41,6 +41,7 @@
+ #
+ CPU=-1
+ ISA="ALL"
++
+ usage() {
+     echo "$0 usage:"
+     #head -n 30 "$0" | grep "^[^#]*.)\ #"
+@@ -225,8 +226,8 @@
+ if [ ${DOJUSTDOC} -gt 0 ]; then
+     echo " JUST building doxygen docs"
+ fi
+-INSTALLDIR=install
+-BUILDDIR=build
++INSTALLDIR=${VEDNN_INSTALL_DIR:-install}
++BUILDDIR=${VEDNN_BUILD_DIR:-build}
+ #
+ # I have not yet tried icc.
+ # we MUST avoid the full MKL (omp issues) (mkldnn uses the mkl subset in external/)
+@@ -246,8 +247,14 @@
+ #
+ if [ "$DOTARGET" == "s" ]; then DODOC="n"; DOTEST=0; INSTALLDIR='install-sx'; BUILDDIR='build-sx';
+ elif [ "$DOTARGET" == "a" ]; then
+-    if [ "$ISA" == "VANILLA" ]; then BUILDDIR="${BUILDDIR}-ve"; INSTALLDIR="${INSTALLDIR}-ve";
+-    else BUILDDIR="${BUILDDIR}-vej"; INSTALLDIR="${INSTALLDIR}-vej";
++    if [[ -z "$VEDNN_INSTALL_DIR" ]]; then
++        if [ "$ISA" == "VANILLA" ]; then BUILDDIR="${BUILDDIR}-ve"; INSTALLDIR="${INSTALLDIR}-ve";
++        else BUILDDIR="${BUILDDIR}-vej"; INSTALLDIR="${INSTALLDIR}-vej";
++        fi
++    else
++        DOTEST=0
++        DODOC="n"
++        QUICK=1
+     fi
+ else #if [ "$DOTARGET" != "a" ]; then
+     if [ "$DOGCC_VER" == "icc" ]; then
+@@ -305,7 +312,7 @@
+         if [ ! -d build ]; then mkdir build; fi
+         if [ ! -f build/Doxyfile ]; then
+             # doxygen does not much care HOW to build, just WHERE
+-            (cd build && cmake -DCMAKE_INSTALL_PREFIX=../${INSTALLDIR} -DFAIL_WITHOUT_MKL=OFF ..)
++            (cd build && cmake -DCMAKE_INSTALL_PREFIX=${INSTALLDIR} -DFAIL_WITHOUT_MKL=OFF ..)
+         fi
+         echo "Doxygen (please be patient) logging to doxygen.log"
+         rm -f build/doc*stamp
+@@ -336,7 +343,7 @@
+         if [ ! -d build ]; then mkdir build; fi
+         if [ ! -f build/Doxyfile ]; then
+             # doxygen does not much care HOW to build, just WHERE
+-            (cd build && cmake -DCMAKE_INSTALL_PREFIX=../${INSTALLDIR} -DFAIL_WITHOUT_MKL=OFF ..)
++            (cd build && cmake -DCMAKE_INSTALL_PREFIX=${INSTALLDIR} -DFAIL_WITHOUT_MKL=OFF ..)
+         fi
+         echo "Doxygen (please be patient) logging to doxygen-full.log"
+         rm -f build/doc*stamp-full
+@@ -499,7 +506,7 @@
+         ccxx_flags "${DOWARNFLAGS}"
+     fi
+     OPT_FLAGS=
+-    CMAKEOPT="${CMAKEOPT} -DCMAKE_INSTALL_PREFIX=../${INSTALLDIR}"
++    CMAKEOPT="${CMAKEOPT} -DCMAKE_INSTALL_PREFIX=${INSTALLDIR}"
+     if [ $DODEBUG -eq 0 ]; then
+         CMAKEOPT="${CMAKEOPT} -DCMAKE_BUILD_TYPE=Release"
+     elif [ $DODEBUG -eq 1 ]; then
+@@ -647,7 +654,7 @@
+ 
+         # adjust here for VE shared library and Openmp use
+         #CMAKEOPT="${CMAKEOPT} -DUSE_SHAREDLIB=OFF" # deprecated
+-        #CMAKEOPT="${CMAKEOPT} -DDNNL_LIBRARY_TYPE=STATIC"
++        CMAKEOPT="${CMAKEOPT} -DDNNL_LIBRARY_TYPE=STATIC -DDNNL_BUILD_TESTS=0 "
+         #CMAKEOPT="${CMAKEOPT} -DDNNL_LIBRARY_TYPE=SHARED" # default
+ 
+         # USE_OPENMP defaults to off, so force it on (VE openmp has improved)
+@@ -802,7 +809,7 @@
+     #        ve_validate_binary -d "${BUILDDIR}/${d}"
+     #    done
+     #fi
+-    if [ "$BUILDOK" == "y" -a ! "$DOTARGET" == "s" ]; then
++    if [ "$BUILDOK" == "y" -a ! "$DOTARGET" == "s" -a ! "$DOTARGET" == "a"]; then
+         echo "DOTARGET  $DOTARGET"
+         echo "ISA       $ISA"
+         echo "DOTEST    $DOTEST"

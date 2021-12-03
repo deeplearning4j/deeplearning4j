@@ -344,37 +344,33 @@ if(${HELPERS_armcompute})
 
 endif()
 
-
-
-# new one-dnn entry
+# new ve-dnn entry
 if (${HELPERS_vednn})
-    message("Going to pull & build vednn")
+    message("Adds Vednn into dependency projects using ExternalProject_Add")
     set(HAVE_VEDNN 1)
-    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
-
-    configure_file(./CMakeLists.txt.vednn.in vednn-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
-    if(result)
-        message(FATAL_ERROR "CMake step for vednn failed: ${result}")
-    endif()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
-    if(result)
-        message(FATAL_ERROR "Build step for vednn failed: ${result}")
-    endif()
-
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/gen-dnn-src
-            ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
-            EXCLUDE_FROM_ALL)
-
-    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
-    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen-dnn-src)
-    set(VEDNN_PATH "${vednn_SOURCE_DIR}")
-    include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
-    set(VEDNN dnnl)
+    include(ExternalProject)
+    set(VEDNN_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/vednn-install")
+    set(VEDNN_STATIC_LIB
+        "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  
+    set(VEDNN_BUILD_COMMAND NLC_HOME=$ENV{NLC_ROOT} VEDNN_INSTALL_DIR=${VEDNN_PREFIX} bash build.sh -aq)
+    set(VEDNN_PATCH_COMMAND "patch" "-Np0" < ${CMAKE_SOURCE_DIR}/vednn.patch "||" true)
+    ExternalProject_Add(vednn_project
+        GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
+        GIT_TAG           ve-v1.4
+        SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
+        PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
+        CONFIGURE_COMMAND ""
+        BUILD_IN_SOURCE   1
+        BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
+        BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
+        INSTALL_COMMAND ""
+        )
+ 
+    set(VEDNN_INCLUDE "${VEDNN_PREFIX}/include")
+    include_directories(${VEDNN_INCLUDE})
+    list(APPEND EXTERNAL_DEPENDENCY_PROJECTS vednn_project)
+    list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDNN_STATIC_LIB} )
 endif()
 
 

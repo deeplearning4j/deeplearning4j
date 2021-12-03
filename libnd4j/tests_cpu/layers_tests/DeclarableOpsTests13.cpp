@@ -1616,7 +1616,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_7) {
-#ifndef HAVE_ONEDNN
+#if !defined(HAVE_ONEDNN) && !defined(HAVE_VEDNN)
 
   const int sL = 5;
   const int bS = 2;
@@ -1694,7 +1694,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_7) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_8) {
-  //    #ifndef HAVE_ONEDNN
+  //    #if !defined(HAVE_ONEDNN) && !defined(HAVE_VEDNN)
 
   const int sL = 5;
   const int bS = 2;
@@ -1775,7 +1775,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_9) {
-  //    #ifndef HAVE_ONEDNN
+  //    #if !defined(HAVE_ONEDNN) && !defined(HAVE_VEDNN)
 
   const int sL = 5;
   const int bS = 2;
@@ -1869,7 +1869,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_10) {
-  //    #ifndef HAVE_ONEDNN
+  //    #if !defined(HAVE_ONEDNN) && !defined(HAVE_VEDNN)
 
   const int sL = 6;
   const int bS = 5;
@@ -1960,7 +1960,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_11) {
-  //    #ifndef HAVE_ONEDNN
+  //    #if !defined(HAVE_ONEDNN) && !defined(HAVE_VEDNN)
 
   const int sL = 6;
   const int bS = 5;
@@ -2051,7 +2051,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_12) {
-  //    #ifndef HAVE_ONEDNN
+  //    #if !defined(HAVE_ONEDNN) && !defined(HAVE_VEDNN)
 
   const int sL = 6;
   const int bS = 5;

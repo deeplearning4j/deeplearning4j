@@ -403,6 +403,10 @@ elseif(SD_CPU OR SD_AURORA)
             ${CUSTOMOPS_VEDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
 
+    foreach(external_dependency ${EXTERNAL_DEPENDENCY_PROJECTS})
+        message("@external ${external_dependency}")
+        add_dependencies(samediff_obj ${external_dependency})
+    endforeach()
     if(IOS)
         add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
     else()
@@ -445,13 +449,13 @@ elseif(SD_CPU OR SD_AURORA)
 
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
-        target_link_libraries(${SD_LIBRARY_NAME} ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(${SD_LIBRARY_NAME} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
 endif()
 
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier samediff_obj ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(minifier samediff_obj ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
