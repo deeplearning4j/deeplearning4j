@@ -196,8 +196,7 @@ endif()
 
 if(SD_CUDA)
     message("Build cublas")
-
-    find_package(CUDA REQUIRED)
+     
     add_definitions(-D__CUDABLAS__=true)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         set (CMAKE_CXX_FLAGS "")

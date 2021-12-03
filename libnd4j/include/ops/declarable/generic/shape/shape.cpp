@@ -21,9 +21,10 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <ops/declarable/CustomOperations.h>
+
 #if NOT_EXCLUDED(OP_shape_of)
 
-#include <ops/declarable/CustomOperations.h>
 
 namespace sd {
 namespace ops {
@@ -51,7 +52,7 @@ DECLARE_SHAPE_FN(shape_of) {
 
 DECLARE_TYPES(shape_of) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
-}
+};
 #endif
 
 #if NOT_EXCLUDED(OP_set_shape)
@@ -81,7 +82,7 @@ DECLARE_TYPES(set_shape) {
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, sd::DataType::INT64)
       ->setAllowedOutputTypes({sd::DataType::ANY});
-}
+};
 
 
 #endif

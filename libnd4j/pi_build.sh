@@ -408,6 +408,10 @@ else
     fix_pi_linker "${BINUTILS_BIN}"
 fi
 
+# ensure cpu profile is added for building nd4j-native modules
+if [ "${CURRENT_TARGET}" != "jetson-arm64" ]; then
+       XTRA_MVN_ARGS="${XTRA_ARGS} -Pcpu "
+fi
 
 #because of the toolchain passive detection we have to delete build folder manually
 detect=$(cat "${BASE_DIR}"/blasbuild/cpu/CMakeCache.txt | grep -o ${PREFIX})

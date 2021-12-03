@@ -846,7 +846,7 @@ namespace samediff {
 #ifdef _OPENMP
 		int adjusted_numThreads = max_thread_count;
 #else
-		int adjusted_numThreads = (!adjust) ? req_numThreads : samediff::ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
+		int adjusted_numThreads =  samediff::ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
 #endif
 
 		if (adjusted_numThreads > delta)
