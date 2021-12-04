@@ -85,7 +85,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/ResultWrapper.h",
                 "helpers/shape.h",
                 "array/ShapeList.h",
-                //"system/op_boilerplate.h",
+                "system/op_boilerplate.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
                 "ops/declarable/PlatformHelper.h",

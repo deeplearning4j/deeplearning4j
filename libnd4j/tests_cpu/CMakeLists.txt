@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(tests_cpu)
 
+set(SD_ALL_OPS 1)
 
 if (SD_AURORA)
   set(GTEST_PATCH_COMMAND "patch -Np1 < ${CMAKE_SOURCE_DIR}/tests_cpu/gtest_aurora.patch || true")
