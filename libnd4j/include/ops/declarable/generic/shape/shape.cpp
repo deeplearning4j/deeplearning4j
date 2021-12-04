@@ -90,7 +90,6 @@ DECLARE_TYPES(set_shape) {
 }
 
 
-#endif
-
 }  // namespace ops
 }  // namespace sd
+#endif
