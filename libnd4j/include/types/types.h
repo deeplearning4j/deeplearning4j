@@ -94,7 +94,7 @@
 #define WARN(exp) (FILE_LINE_LINK "WARNING: " exp)
 
 //check if msvc cross-platform compatible preprocessor is not enabled (/Zc:preprocessor)
-#if _MSC_VER < 1915 || (defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL)
+#if (defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL)
 //MSVC_OLD_PREPROCESSOR indicates that we have MSVC old preprocessor
 #define MSVC_OLD_PREPROCESSOR
 // does not work, but suppress compiler error
