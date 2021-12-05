@@ -64,6 +64,18 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
     }
 
 
+
+    @Test
+    public void testOtherWeights() throws Exception {
+        File modelFile = new File("modelimport/keras/weights/issue_9560.h5");
+        MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(modelFile.getAbsolutePath());
+        INDArray output = multiLayerNetwork.output(Nd4j.ones(1,2048,1));
+        INDArray params = multiLayerNetwork.params();
+        assertEquals(267590,params.length());
+        assertArrayEquals(new long[] {1,10},output.shape());
+    }
+
+
     @Test
     public void testWeights() throws Exception {
         File file = Resources.asFile("modelimport/keras/weights/keras_2.7_issue.h5");

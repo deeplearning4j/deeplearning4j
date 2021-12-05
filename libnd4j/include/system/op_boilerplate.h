@@ -2286,7 +2286,12 @@
   template struct SD_LIB_EXPORT __registratorSynonymDouble<NAME<double>>; \
   template struct SD_LIB_EXPORT __registratorSynonymFloat<NAME<float>>;
 
-#define NOT_EXCLUDED(NAME) NAME == 1 || defined(SD_ALL_OPS)
+#if defined(SD_ALL_OPS)
+#define SD_ALL_OPS_ACTIVATED 1
+#else
+#define SD_ALL_OPS_ACTIVATED 0
+#endif
+#define NOT_EXCLUDED(NAME) SD_ALL_OPS_ACTIVATED == 1 || NAME == 1 || NAME == true
 
 
 

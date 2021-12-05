@@ -5,7 +5,7 @@ if(LINUX)
     link_directories(/usr/lib)
     link_directories(/lib)
 endif()
-
+set(SD_ALL_OPS 1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(APPLE)

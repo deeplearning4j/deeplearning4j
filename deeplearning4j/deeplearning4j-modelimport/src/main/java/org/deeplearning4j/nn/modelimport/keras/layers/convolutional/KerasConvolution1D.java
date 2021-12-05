@@ -84,9 +84,9 @@ public class KerasConvolution1D extends KerasConvolution {
      */
     public KerasConvolution1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        //verify against python
         super(layerConfig, enforceTrainingConfig);
         hasBias = getHasBiasFromConfig(layerConfig, conf);
-        //dl4j weights are 128,20,3,1 keras are 128,100,3,1
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 1, conf, false);
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -117,14 +117,6 @@ public class KerasConvolution1D extends KerasConvolution {
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
-        if(inputShape != null) {
-            if(dimOrder == DimOrder.THEANO) {
-                builder.nIn(inputShape[0]);
-            }
-            else {
-                builder.nIn(inputShape[1]);
-            }
-        }
 
         this.layer = builder.build();
         //set this in order to infer the dimensional format

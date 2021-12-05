@@ -21,12 +21,14 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <ops/declarable/CustomOperations.h>
+
 #if NOT_EXCLUDED(OP_shape_of)
 
-#include <ops/declarable/CustomOperations.h>
 
 namespace sd {
 namespace ops {
+
 CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
@@ -36,7 +38,8 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   STORE_RESULT(z);
 
   return sd::Status::OK;
-};
+}
+
 DECLARE_SYN(shape, shape_of);
 
 DECLARE_SHAPE_FN(shape_of) {
@@ -47,14 +50,17 @@ DECLARE_SHAPE_FN(shape_of) {
   if (block.numI() > 0) dtype = DataTypeUtils::fromInt(INT_ARG(0));
 
   return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(shape::rank(inShape), dtype));
-};
+}
 
 DECLARE_TYPES(shape_of) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
 }
+
 #endif
 
 #if NOT_EXCLUDED(OP_set_shape)
+
+
 CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto shape = INPUT_VARIABLE(1);
@@ -69,12 +75,12 @@ CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
     z->assign(x, true);
   }
   return sd::Status::OK;
-};
+}
 
 DECLARE_SHAPE_FN(set_shape) {
   auto inShape = INPUT_VARIABLE(1);
   return SHAPELIST(inShape->shapeInfo());
-};
+}
 
 DECLARE_TYPES(set_shape) {
   getOpDescriptor()
@@ -84,7 +90,6 @@ DECLARE_TYPES(set_shape) {
 }
 
 
-#endif
-
 }  // namespace ops
 }  // namespace sd
+#endif
