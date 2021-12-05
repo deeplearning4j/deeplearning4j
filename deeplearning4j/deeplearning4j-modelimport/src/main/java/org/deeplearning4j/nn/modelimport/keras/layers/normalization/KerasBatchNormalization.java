@@ -130,6 +130,12 @@ public class KerasBatchNormalization extends KerasLayer {
             if(dimOrderFromConfig == DimOrder.NONE || dimOrderFromConfig == DimOrder.TENSORFLOW)
                 cnn2DFormat = CNN2DFormat.NHWC;
 
+        } else if(!previousLayers.isEmpty()) {
+           KerasLayer prevLayer = previousLayers.values().stream().findFirst().get();
+           if(prevLayer.getDimOrder() != null) {
+               this.dimOrder = prevLayer.getDimOrder();
+               cnn2DFormat = CNN2DFormat.NHWC;
+           }
         }
 
         this.scale = getScaleParameter(layerConfig);

@@ -146,15 +146,31 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         Map<String, INDArray> out = new LinkedHashMap<>();
         if(layerConf.hasBias()){
             //Standard case
-            INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
-            INDArray weightGradientView =
-                    gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
-                            .reshape('c', nOut, nIn, kernel[0], kernel[1]);
-            out.put(BIAS_KEY, biasGradientView);
-            out.put(WEIGHT_KEY, weightGradientView);
+            if(layerConf instanceof Convolution1DLayer) {
+                INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+                INDArray weightGradientView =
+                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
+                                .reshape('c', nOut, nIn, kernel[0]);
+                out.put(BIAS_KEY, biasGradientView);
+                out.put(WEIGHT_KEY, weightGradientView);
+            } else {
+                INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+                INDArray weightGradientView =
+                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
+                                .reshape('c', nOut, nIn, kernel[0], kernel[1]);
+                out.put(BIAS_KEY, biasGradientView);
+                out.put(WEIGHT_KEY, weightGradientView);
+            }
+
         } else {
-            INDArray weightGradientView = gradientView.reshape('c', nOut, nIn, kernel[0], kernel[1]);
-            out.put(WEIGHT_KEY, weightGradientView);
+            if(layerConf instanceof Convolution1DLayer) {
+                INDArray weightGradientView = gradientView.reshape('c', nOut, nIn, kernel[0]);
+                out.put(WEIGHT_KEY, weightGradientView);
+            } else {
+                INDArray weightGradientView = gradientView.reshape('c', nOut, nIn, kernel[0], kernel[1]);
+                out.put(WEIGHT_KEY, weightGradientView);
+            }
+
         }
         return out;
     }
