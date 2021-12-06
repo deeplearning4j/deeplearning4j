@@ -24,7 +24,7 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 if(SD_AURORA)
     set(SD_CUDA false)
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 14)
 else()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
@@ -353,19 +353,26 @@ if (${HELPERS_vednn})
     set(VEDNN_STATIC_LIB
         "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
   
-    set(VEDNN_BUILD_COMMAND NLC_HOME=$ENV{NLC_ROOT} VEDNN_INSTALL_DIR=${VEDNN_PREFIX} bash build.sh -aq)
+    if(SD_AURORA)
+        set (BASH_CMD_VE  bash build.sh -aq$<$<CONFIG:Debug>:d>)
+    else()
+        set (BASH_CMD_VE  bash build.sh -vjq$<$<CONFIG:Debug>:dddd>)
+    endif()
+    set(VEDNN_BUILD_COMMAND NLC_HOME=$ENV{NLC_ROOT} VEDNN_INSTALL_DIR=${VEDNN_PREFIX} ${BASH_CMD_VE})
     set(VEDNN_PATCH_COMMAND "patch" "-Np0" < ${CMAKE_SOURCE_DIR}/vednn.patch "||" true)
     ExternalProject_Add(vednn_project
         GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
         GIT_TAG           ve-v1.4
+        UPDATE_DISCONNECTED 1
         SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
         PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
         CONFIGURE_COMMAND ""
         BUILD_IN_SOURCE   1
         BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
         BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
-        INSTALL_COMMAND ""
+        INSTALL_COMMAND cmake -E echo "Skipping install step as its already inside build."
         )
+
  
     set(VEDNN_INCLUDE "${VEDNN_PREFIX}/include")
     include_directories(${VEDNN_INCLUDE})
