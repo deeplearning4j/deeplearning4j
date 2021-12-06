@@ -20,7 +20,7 @@
 // @author raver119@gmail.com
 //
 
-#ifdef HAVE_ONEDNN
+#if defined(HAVE_ONEDNN) || defined(HAVE_VEDNN)
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/PlatformHelper.h>

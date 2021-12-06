@@ -35,7 +35,7 @@
 
 #include "testlayers.h"
 
-#ifdef HAVE_ONEDNN
+#if defined(HAVE_ONEDNN) || defined(HAVE_VEDNN)
 #include <ops/declarable/platform/mkldnn/mkldnnUtils.h>
 #endif
 

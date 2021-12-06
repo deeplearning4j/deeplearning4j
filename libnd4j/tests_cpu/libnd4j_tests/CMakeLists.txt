@@ -298,5 +298,5 @@ add_executable(runtests ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${EXEC_SOURCES} ${HEL
     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
-target_link_libraries(runtests gtest ${ONEDNN} ${ARMCOMPUTE_LIBRARIES} gtest_main ${BLAS_LIBRARIES})
+target_link_libraries(runtests gtest ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${ARMCOMPUTE_LIBRARIES} gtest_main ${BLAS_LIBRARIES})
 
