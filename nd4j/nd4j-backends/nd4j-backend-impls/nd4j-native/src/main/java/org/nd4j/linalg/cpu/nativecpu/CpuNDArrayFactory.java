@@ -849,7 +849,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      */
     @Override
     public void shuffle(Collection<INDArray> array, Random rnd, int... dimension) {
-        shuffle(new ArrayList<INDArray>(array), rnd, Collections.singletonList(dimension));
+        shuffle(new ArrayList<>(array), rnd, Collections.singletonList(dimension));
     }
 
     /**

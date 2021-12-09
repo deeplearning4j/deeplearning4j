@@ -48,9 +48,9 @@ public abstract class AbstractSession<T, O> {
 
     protected final SameDiff sameDiff;
     @Getter
-    protected final Map<VarId, T> nodeOutputs = new HashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
+    protected final Map<VarId, T> nodeOutputs = new LinkedHashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
     @Getter
-    protected final Map<VarId, List<T>> tensorArrays = new HashMap<>(); //Stores the underlying arrays for TensorArray ops
+    protected final Map<VarId, List<T>> tensorArrays = new LinkedHashMap<>(); //Stores the underlying arrays for TensorArray ops
     /*
     The dependency tracker is responsible for determining what ops (at what frame/iteration) can be executed next, given
     what has been executed so far.
@@ -136,7 +136,7 @@ public abstract class AbstractSession<T, O> {
             Preconditions.checkState(sameDiff.variableMap().containsKey(s), "Requested output variable %s does not exist in SameDiff instance", s);
         }
 
-        Set<String> reqOutputVariablesSet = new HashSet<>(variables);
+        Set<String> reqOutputVariablesSet = new LinkedHashSet<>(variables);
 
         placeholderValues = preprocessPlaceholders(placeholderValues, at);
 
@@ -151,8 +151,8 @@ public abstract class AbstractSession<T, O> {
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
         // we actually need to execute
         //TODO we'll optimize this and cache the results, only recalculating if the graph structure changes
-        Set<String> userRequestedUnique = new HashSet<>(variables);
-        Set<String> allRequired = new HashSet<>(requiredActivations);
+        Set<String> userRequestedUnique = new LinkedHashSet<>(variables);
+        Set<String> allRequired = new LinkedHashSet<>(requiredActivations);
         allRequired.addAll(variables);
         initSubgraph(allRequired);
 
@@ -242,8 +242,8 @@ public abstract class AbstractSession<T, O> {
         switch ops may cause entire branches of the graph to be skipped.
          */
 
-        Map<String, T> out = new HashMap<>();       //Outputs, returned to the user
-        Set<String> allExecuted = new HashSet<>();
+        Map<String, T> out = new LinkedHashMap<>();       //Outputs, returned to the user
+        Set<String> allExecuted = new LinkedHashSet<>();
         int step = 0;                               //Number of execution steps
         //Next 3: current execution frame
         String currentFrame = OUTER_FRAME;

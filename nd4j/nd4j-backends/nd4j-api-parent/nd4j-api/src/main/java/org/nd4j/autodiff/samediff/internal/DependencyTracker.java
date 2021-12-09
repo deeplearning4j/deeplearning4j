@@ -29,12 +29,12 @@ public class DependencyTracker<T, D> extends AbstractDependencyTracker<T,D> {
 
     @Override
     protected Map<T, ?> newTMap() {
-        return new HashMap<>();
+        return new LinkedHashMap<>();
     }
 
     @Override
     protected Set<T> newTSet() {
-        return new HashSet<>();
+        return new LinkedHashSet<>();
     }
 
     @Override

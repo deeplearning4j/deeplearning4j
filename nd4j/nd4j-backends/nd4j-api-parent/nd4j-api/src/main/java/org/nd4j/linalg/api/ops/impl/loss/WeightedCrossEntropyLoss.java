@@ -20,32 +20,40 @@
 
 package org.nd4j.linalg.api.ops.impl.loss;
 
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Collections;
 import java.util.List;
 
 
-@NoArgsConstructor
-public class WeightedCrossEntropyLoss extends DynamicCustomOp {
+public class WeightedCrossEntropyLoss extends BaseLoss {
 
 
-    public WeightedCrossEntropyLoss(SameDiff sameDiff, SDVariable targets, SDVariable inputs, SDVariable weights) {
-        super(null, sameDiff, new SDVariable[]{targets, inputs, weights}, false);
-        this.sameDiff = sameDiff;
+    public WeightedCrossEntropyLoss(@NonNull SameDiff sameDiff, @NonNull LossReduce lossReduce, @NonNull SDVariable predictions, SDVariable weights, @NonNull SDVariable labels) {
+        super(sameDiff, lossReduce, predictions, weights, labels);
     }
 
-    public WeightedCrossEntropyLoss(@NonNull INDArray targets, @NonNull INDArray inputs, @NonNull INDArray weights){
-        super(new INDArray[] {targets, inputs, weights}, null);
+    public WeightedCrossEntropyLoss(@NonNull LossReduce lossReduce, @NonNull INDArray predictions, INDArray weights, @NonNull INDArray labels) {
+        super(lossReduce, predictions, weights, labels);
+    }
+
+    public WeightedCrossEntropyLoss() {
+    }
+
+    public WeightedCrossEntropyLoss(SameDiff sd, SDVariable targets, SDVariable inputs, SDVariable weights) {
+        this(sd,LossReduce.SUM,inputs,weights,targets);
+    }
+
+    public WeightedCrossEntropyLoss(INDArray targets, INDArray inputs, INDArray weights) {
+        this(LossReduce.SUM,inputs,targets,weights);
     }
 
     @Override

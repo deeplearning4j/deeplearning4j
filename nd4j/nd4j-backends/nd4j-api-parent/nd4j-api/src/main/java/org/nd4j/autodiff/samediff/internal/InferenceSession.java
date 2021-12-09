@@ -211,6 +211,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
+        if(sameDiff.isDebugMode()) {
+            log.info("Executing samediff op: " + op.getName());
+        }
+
         INDArray[] out = doExec(op.getOp(), opPair.getRight(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
 
         if (log.isTraceEnabled()) {
@@ -806,7 +810,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (numArgs != (numNonConstIns + numConstPhIns + numNonConstInsAllIters)) {
             if (numArgs > 1) {
                 //Might be due to repeated inputs
-                Set<String> uniqueArgNames = new HashSet<>();
+                Set<String> uniqueArgNames = new LinkedHashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
              /*   Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
