@@ -54,11 +54,12 @@ static void fill_(const void *vvalues, const void *vindices, void *voutput, cons
 
 void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArray *def, NDArray &output) {
   // make sure host buffer is updated
-   NDArray::preparePrimaryUse({&output}, {&values, &indices, def});
+
 
   auto rank = output.rankOf();
 
   if (output.isS()) {
+    NDArray::preparePrimaryUse({&output}, {&values, &indices, def});
     // string case is not so trivial, since elements might, and probably will, have different sizes
     auto numValues = values.lengthOf();
     auto numElements = output.lengthOf();
@@ -105,6 +106,7 @@ void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArr
       // writing down offset
       offsetsBuffer[e + 1] = cLength;
     }
+    NDArray::registerPrimaryUse({&output}, {&values, &indices, def});
   } else {
     // numeric case is trivial, since all elements have equal sizes
 
@@ -113,14 +115,14 @@ void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArr
       output.assign(def);
  
     }
-
+    NDArray::preparePrimaryUse({&output}, {&values, &indices});
     // write out values
     BUILD_DOUBLE_SELECTOR(
         values.dataType(), indices.dataType(), fill_,
         (values.buffer(), indices.buffer(), output.buffer(), output.shapeInfo(), rank, values.lengthOf()),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
-    NDArray::registerPrimaryUse({&output}, {&values, &indices, def});
+    NDArray::registerPrimaryUse({&output}, {&values, &indices});
   }
  
 }
