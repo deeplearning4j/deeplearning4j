@@ -54,9 +54,7 @@ static void fill_(const void *vvalues, const void *vindices, void *voutput, cons
 
 void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArray *def, NDArray &output) {
   // make sure host buffer is updated
-  values.syncToHost();
-  indices.syncToHost();
-  output.syncToHost();
+   NDArray::preparePrimaryUse({&output}, {&values, &indices, def});
 
   auto rank = output.rankOf();
 
@@ -113,9 +111,7 @@ void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArr
     // write out default values, if they are present
     if (def != nullptr) {
       output.assign(def);
-
-      // make sure output is synced back
-      output.syncToHost();
+ 
     }
 
     // write out values
@@ -123,9 +119,10 @@ void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArr
         values.dataType(), indices.dataType(), fill_,
         (values.buffer(), indices.buffer(), output.buffer(), output.shapeInfo(), rank, values.lengthOf()),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
+
+    NDArray::registerPrimaryUse({&output}, {&values, &indices, def});
   }
-  // copy back to device, if there's any
-  output.syncToDevice();
+ 
 }
 }  // namespace helpers
 }  // namespace ops
