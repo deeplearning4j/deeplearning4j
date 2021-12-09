@@ -272,7 +272,7 @@ if(SD_CUDA)
         file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/impl/*.cpp ../include/loops/*.h)
         file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
-
+        file(GLOB_RECURSE HELPERS_CPP ../include/helpers/impl/shape.cpp )
 
         file(GLOB_RECURSE COMPILATION_UNITS false ../include/loops/cuda/compilation_units/*.cu.in
                 ../include/ops/impl/compilation_units/*.cpp.in)
@@ -286,7 +286,7 @@ if(SD_CUDA)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
-        add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
+        add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
@@ -402,6 +402,10 @@ elseif(SD_CPU OR SD_AURORA)
             ${CUSTOMOPS_VEDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
 
+    foreach(external_dependency ${EXTERNAL_DEPENDENCY_PROJECTS})
+        message("@external ${external_dependency}")
+        add_dependencies(samediff_obj ${external_dependency})
+    endforeach()
     if(IOS)
         add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
     else()
@@ -444,13 +448,13 @@ elseif(SD_CPU OR SD_AURORA)
 
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
-        target_link_libraries(${SD_LIBRARY_NAME} ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(${SD_LIBRARY_NAME} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
 endif()
 
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier samediff_obj ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(minifier samediff_obj ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
