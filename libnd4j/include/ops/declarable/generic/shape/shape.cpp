@@ -56,10 +56,15 @@ DECLARE_TYPES(shape_of) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
 }
 
+}  // namespace ops
+}  // namespace sd
+
 #endif
 
 #if NOT_EXCLUDED(OP_set_shape)
 
+namespace sd {
+namespace ops {
 
 CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);

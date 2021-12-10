@@ -91,8 +91,6 @@ DECLARE_CONFIGURABLE_OP(lrn_bp, 2, 1, true, 3, 0);
  */
 #if NOT_EXCLUDED(OP_batchnorm)
 DECLARE_CUSTOM_OP(batchnorm, 3, 1, false, 1, 2);
-#endif
-
 /**
  * back prop in batch normalization
  *
@@ -118,7 +116,6 @@ DECLARE_CUSTOM_OP(batchnorm, 3, 1, false, 1, 2);
  * dL/dGamma, optional
  * dL/dBeta, optional
  */
-#if NOT_EXCLUDED(OP_batchnorm)
 DECLARE_CUSTOM_OP(batchnorm_bp, 4, 3, false, 1, 2);
 #endif
 

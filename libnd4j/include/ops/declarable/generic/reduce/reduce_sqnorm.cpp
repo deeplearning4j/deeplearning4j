@@ -23,10 +23,11 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace sd {
-namespace ops {
+
 #if NOT_EXCLUDED(OP_reduce_sqnorm)
 
+namespace sd {
+namespace ops {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sqnorm, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
@@ -96,10 +97,6 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
 DECLARE_TYPES(reduce_sqnorm) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
-
-#endif
-
-#if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
@@ -179,7 +176,8 @@ DECLARE_TYPES(reduce_sqnorm_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif
 
 }  // namespace ops
 }  // namespace sd
+
+#endif

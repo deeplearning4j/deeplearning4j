@@ -24,9 +24,10 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
+#if NOT_EXCLUDED(OP_reduce_sum)
 namespace sd {
 namespace ops {
-#if NOT_EXCLUDED(OP_reduce_sum)
+
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
@@ -90,9 +91,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
 }
 
 DECLARE_TYPES(reduce_sum) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
-#endif
 
-#if NOT_EXCLUDED(OP_reduce_sum_bp)
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
@@ -166,7 +165,7 @@ DECLARE_TYPES(reduce_sum_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif
 
 }  // namespace ops
 }  // namespace sd
+#endif

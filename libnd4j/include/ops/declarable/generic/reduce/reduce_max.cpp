@@ -25,10 +25,11 @@
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/transforms.h>
 
+#if NOT_EXCLUDED(OP_reduce_max)
+
 namespace sd {
 namespace ops {
 
-#if NOT_EXCLUDED(OP_reduce_max)
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_max, -1, 1, false, 0, 0) {
@@ -95,8 +96,6 @@ DECLARE_SHAPE_FN(reduce_max) {
 
 DECLARE_TYPES(reduce_max) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
 
-#endif
-#if NOT_EXCLUDED(OP_reduce_max_bp)
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
@@ -168,7 +167,8 @@ DECLARE_TYPES(reduce_max_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif
 
 }  // namespace ops
 }  // namespace sd
+
+#endif

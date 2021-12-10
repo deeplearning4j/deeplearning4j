@@ -24,9 +24,9 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
+#if NOT_EXCLUDED(OP_reduce_prod)
 namespace sd {
 namespace ops {
-#if NOT_EXCLUDED(OP_reduce_prod)
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
@@ -93,8 +93,6 @@ DECLARE_TYPES(reduce_prod) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif
-#if NOT_EXCLUDED(OP_reduce_prod_bp)
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
@@ -178,7 +176,8 @@ DECLARE_TYPES(reduce_prod_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif
 
 }  // namespace ops
 }  // namespace sd
+
+#endif
