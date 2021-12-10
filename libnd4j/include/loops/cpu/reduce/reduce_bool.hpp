@@ -24,7 +24,7 @@
 #include <helpers/Loops.h>
 #include <helpers/OmpLaunchHelper.h>
 #include <loops/legacy_ops.h>
-#include <loops/reduce_long.h>
+#include <loops/reduce_bool.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
@@ -34,7 +34,7 @@ namespace functions {
 namespace reduce {
 template <typename X, typename Z>
 template <typename OpType>
-void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams,
+void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams,
                                                   void *vz, const sd::LongType *zShapeInfo) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
@@ -62,33 +62,19 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
     auto startingValue = OpType::startingValue(x);
     sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-    int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-    Z intermediate[64];
 
-    PRAGMA_OMP_SIMD
-    for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+    for (sd::LongType i = 0; i < length; i++)
+      startingValue = OpType::update(
+          startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
+          extraParams);
 
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++)
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
-    };
-
-    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
-    // merge results
-    for (int e = 1; e < maxThreads; e++)
-      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
-
-    // write out results
-    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+    z[0] = OpType::postProcess(startingValue, length, extraParams);
   }
 }
 
 template <typename X, typename Z>
 template <typename OpType>
-Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
+Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -112,20 +98,20 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
 }
 
 template <typename X, typename Y>
-Y ReduceLongFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+Y ReduceBoolFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                        void *extraParams) {
-  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_LONG_OPS);
+  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_BOOL_OPS);
 }
 
 template <typename X, typename Y>
-void ReduceLongFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+void ReduceBoolFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                           void *extraParams, void *z, const sd::LongType *zShapeInfo) {
-  DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_LONG_OPS);
+  DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_BOOL_OPS);
 }
 
 template <typename X, typename Z>
 template <typename OpType>
-void SD_HOST ReduceLongFunction<X, Z>::exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams,
+void SD_HOST ReduceBoolFunction<X, Z>::exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                             void *vresult, const sd::LongType *resultShapeInfo) {
   auto z = reinterpret_cast<Z *>(vresult);
   z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
@@ -133,7 +119,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(const void *x, const sd::LongType *x
 
 template <typename X, typename Z>
 template <typename OpType>
-Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws, sd::LongType length,
+Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws, sd::LongType length,
                                                void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
@@ -166,7 +152,7 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
+void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
                                             const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                             const sd::LongType *zShapeInfo, const int *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
@@ -189,28 +175,21 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
     return;
   }
 
-  if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<int *>(dims) + zRank, xRank - zRank,
-                        nullptr, nullptr);
-    return;
-  }
-
 #ifdef SD_LOOPS_INLINED
   sd::ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #else
-  sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims,
+  sd::ReductionBoolLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims,
                                                                  extraParams);
 #endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void ReduceLongFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
+void ReduceBoolFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                     const sd::LongType *zShapeInfo, const int *dims) {
-  DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_LONG_OPS);
+  DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_BOOL_OPS);
 }
 
-BUILD_DOUBLE_TEMPLATE(template class ReduceLongFunction, , SD_COMMON_TYPES, SD_LONG_TYPES);
 }  // namespace reduce
 }  // namespace functions
