@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 project(libnd4j)
-set(CMAKE_VERBOSE_MAKEFILE OFF CACHE BOOL "OFF")
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
@@ -37,9 +36,10 @@ if (SD_CUDA AND NOT SD_AURORA)
     message("Enabling cuda")
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -v -allow-unsupported-compiler")
-    set(CUDA_NVCC_FLAGS  "${CUDA_NVCC_FLAGS} -v -allow-unsupported-compiler")
-
+    # Add a platform agnostic way of showing we are compiling for cuda
+    # The normal way of using __NVCC__ and __CUDACC__ does not show up
+    # for cpp files which makes it difficult to add guards for specific functions.
+    add_compile_definitions(SD_CUDA=true)
 
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
         add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>")

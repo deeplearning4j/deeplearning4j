@@ -143,7 +143,7 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, int 
  * Again: this may not preserve ordering of the tad
  * but maybe used for reductions.
  */
-SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength);
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength);
 
 SD_LIB_EXPORT SD_HOST bool canReshape(const int oldRank, sd::LongType *oldShape, const int newRank,
                                              sd::LongType *newShape, bool isFOrder);
@@ -323,7 +323,7 @@ SD_LIB_EXPORT SD_HOST void doPermuteShapeInfo(sd::LongType *shapeBuffer, const i
  * you need to permute the indexes to be:
  * 2,0,1
  *
- * which will give us the ability to ierate along an element
+ * which will give us the ability to iterate along an element
  * wise stride.
  */
 
@@ -332,12 +332,6 @@ SD_LIB_EXPORT SD_HOST sd::LongType *createPermuteIndexes(int originalRank, int *
 SD_LIB_EXPORT SD_HOST sd::LongType *computeResultShape(const sd::LongType *originalShapeBuffer, int *dimension,
                                                               int dimensionLength);
 
-/**
- * This method does inplace transpose of given shapeBuffer
- *
- * @param shapeBuffer
- */
-SD_LIB_EXPORT SD_HOST_DEVICE void transpose(sd::LongType *shapeBuffer);
 
 /**
  * Get the ordering for the device
@@ -2535,15 +2529,30 @@ SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *mes
 }
 
 //host device codes which were duplicated in shape.cpp but guarded from inclusion
-#if defined(__CUDACC__)
-SD_INLINE SD_DEVICE bool isEmpty(const sd::LongType *shapeInfo) {
+#if defined(SD_CUDA)
+
+//////////////////////////////////////////////////////////////////////
+SD_LIB_EXPORT SD_INLINE  SD_HOST_DEVICE sd::LongType subArrayIndex(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+                                                 const sd::LongType *minShapeInfo, const int *dimsToExclude,
+                                                 const int dimsLen) {
+  int maxIdxs[SD_MAX_RANK];
+  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
+
+  int minIdxs[SD_MAX_RANK];
+  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
+
+  return shape::coords2index(minShapeInfo, minIdxs);
+}
+
+
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isEmpty(const sd::LongType *shapeInfo) {
   return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
 }
 
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
-SD_INLINE SD_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
                                              const sd::LongType *minShapeInfo, const int *dimsToExclude, int dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
@@ -2615,7 +2624,7 @@ SD_INLINE SD_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::Lo
   }
 }
 
-SD_INLINE SD_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
                                                      const sd::LongType *minShapeInfo, const int *dimsToExclude,
                                                      const int dimsLen) {
   int maxIdxs[SD_MAX_RANK];
@@ -2627,15 +2636,12 @@ SD_INLINE SD_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx, const
   return getOffset(minShapeInfo, minIdxs);
 }
 
-SD_INLINE SD_DEVICE int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
+SD_LIB_EXPORT SD_INLINE SD_DEVICE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                                                const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
                                                int *memBuff, const int *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 
-  // if(rankMin >= rankMax)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max
-  //     array!");
 
   const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
 
@@ -2695,7 +2701,7 @@ SD_INLINE SD_DEVICE int outerArrayOffsets(sd::LongType *maxOffsets, const sd::Lo
   return N;
 }
 
-SD_INLINE SD_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
   int rank = shape::rank(shapeBuffer);
   sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
   char order = shape::order(shapeBuffer);
@@ -2714,6 +2720,76 @@ SD_INLINE SD_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBu
     printf("Unknown order for array!\n");
     return false;
   }
+}
+
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+  return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
+}
+
+
+//////////////////////////////////////////////////////////////////////
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
+                                            const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
+                                            const int *dimsToExclude) {
+  const auto rankMin = shape::rank(minShapeInfo);
+  const auto rankMax = shape::rank(maxShapeInfo);
+
+
+  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
+
+  int indices[SD_MAX_RANK], increment[SD_MAX_RANK];
+
+  int N, minI, maxI;
+
+  // calculate min per-dim-indices which corresponds to absolute minIdx index
+  shape::index2coords(minIdx, minShapeInfo, indices);
+
+  // transform storage indices to contain per-dim max indices, purpose - memory saving
+  // fill increment array as well
+  if (dimsToExclude == nullptr) {  // means dimsToExclude == {0,1,2,...,diff-1}
+    for (minI = rankMin - 1, maxI = rankMax - 1; maxI >= diff; --maxI, --minI) {
+      increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
+      indices[maxI] = indices[minI];
+    }
+    for (maxI = 0; maxI < diff; ++maxI) {
+      increment[maxI] = 1;
+      indices[maxI] = 0;
+    }
+  } else {
+    for (N = diff - 1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
+      if (N >= 0 && dimsToExclude[N] == maxI) {
+        increment[maxI] = 1;
+        indices[maxI] = 0;
+        --N;
+      } else {
+        increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
+        indices[maxI] = indices[minI--];
+      }
+    }
+  }
+
+  maxI = rankMax - 1;
+  N = 0;
+  int step;
+  maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
+
+  // nested loops - producing of absolute indices for max array
+  while (maxI >= 0) {
+    if (increment[maxI] != 0) {
+      indices[maxI] += increment[maxI];
+      if (indices[maxI] >= maxShapeInfo[maxI + 1]) {
+        indices[maxI] %= increment[maxI];  // restore initial value of indices[maxI]
+        step = -1;
+      } else {
+        maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
+        step = rankMax - 1 - maxI;
+      }
+    } else if (maxI == rankMax - 1)
+      step = -1;
+
+    maxI += step;
+  }
+  return N;
 }
 
 #endif

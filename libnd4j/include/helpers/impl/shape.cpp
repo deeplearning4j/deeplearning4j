@@ -23,17 +23,6 @@
 
 namespace shape {
 
-/**
- * @brief checks if shape is empty.
- * 
- * @param shapeInfo 
- * @return SD_HOST 
- * 
- * @note Though it is good candidate for the inlining, we were facing segfaults in Nec
- */
-SD_HOST bool isEmpty(const sd::LongType *shapeInfo) {
-  return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
-}
 
 /**
  * Length of a tad given
@@ -177,6 +166,266 @@ SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride,
 
   return buffer;
 }
+
+
+#ifndef SD_CUDA
+
+SD_LIB_EXPORT SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+  return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
+}
+
+
+SD_LIB_EXPORT SD_HOST bool isEmpty(const sd::LongType *shapeInfo) {
+  return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
+}
+
+
+SD_LIB_EXPORT SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
+  int rank = shape::rank(shapeBuffer);
+  sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
+  char order = shape::order(shapeBuffer);
+
+  if (shape::isRowVector(shapeBuffer) && strides[0] == 1 && strides[1] == 1) return true;
+
+  if (order == 'c') {
+    for (int i = 1; i < rank; i++)
+      if (strides[i - 1] <= strides[i]) return false;
+    return true;
+  } else if (order == 'f') {
+    for (int i = 1; i < rank; i++)
+      if (strides[i - 1] >= strides[i]) return false;
+    return true;
+  } else {
+    printf("Unknown order for array!\n");
+    return false;
+  }
+}
+
+// max array is outer for min array, min array is sub-array of max array
+// function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
+// (already stored in maxIdxs)
+SD_LIB_EXPORT SD_HOST void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
+                            const sd::LongType *minShapeInfo, const int *dimsToExclude, int dimsLen) {
+  const auto maxRank = shape::rank(maxShapeInfo);
+  const auto minRank = shape::rank(minShapeInfo);
+
+  // if(minRank >= maxRank)
+  //     throw std::runtime_error("shape::maxIndToMinInd method: rank of min array should be smaller then rank of max
+  //     array!");
+
+  if (dimsLen == -1) dimsLen = maxRank - minRank;  // if size is not given (= -1) then it is equal to ranks difference
+
+  if (maxRank == minRank) {
+    if (dimsToExclude == nullptr) {  // --> means dimsToExclude == {0,1,2,...,dimsLen-1}
+
+      for (int i = 0; i < maxRank; ++i) {
+        if (i < dimsLen)
+          minIdxs[i] = maxIdxs[i];
+        else {
+          if (maxIdxs[i] > minShapeInfo[i + 1])
+            minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
+          else if (maxIdxs[i] == minShapeInfo[i + 1])
+            minIdxs[i] = 0;
+          else
+            minIdxs[i] = maxIdxs[i];
+        }
+      }
+    } else {
+      for (int i = 0, dim = 0; i < maxRank; ++i) {
+        if (dim < dimsLen && dimsToExclude[dim] == i) {
+          minIdxs[i] = maxIdxs[i];
+          ++dim;
+          continue;
+        }
+
+        if (maxIdxs[i] > minShapeInfo[i + 1])
+          minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
+        else if (maxIdxs[i] == minShapeInfo[i + 1])
+          minIdxs[i] = 0;
+        else
+          minIdxs[i] = maxIdxs[i];
+      }
+    }
+  } else {
+    if (dimsToExclude == nullptr) {  // --> means dimsToExclude == {0,1,2,...,dimsLen-1}
+
+      for (int i = 0; i < minRank; ++i) {
+        if (maxIdxs[i + dimsLen] > minShapeInfo[i + 1])
+          minIdxs[i] = maxIdxs[i + dimsLen] % minShapeInfo[i + 1];
+        else if (maxIdxs[i + dimsLen] == minShapeInfo[i + 1])
+          minIdxs[i] = 0;
+        else
+          minIdxs[i] = maxIdxs[i + dimsLen];
+      }
+    } else {
+      for (int minI = 0, maxI = 0, dim = 0; maxI < maxRank; ++maxI) {
+        if (dim < dimsLen && dimsToExclude[dim] == maxI) {
+          ++dim;
+          continue;
+        }
+
+        if (maxIdxs[maxI] == minShapeInfo[minI + 1])
+          minIdxs[minI] = 0;
+        else if (maxIdxs[maxI] > minShapeInfo[minI + 1])
+          minIdxs[minI] = maxIdxs[maxI] % minShapeInfo[minI + 1];
+        else
+          minIdxs[minI] = maxIdxs[maxI];
+        ++minI;
+      }
+    }
+  }
+}
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+SD_LIB_EXPORT SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+                                    const sd::LongType *minShapeInfo, const int *dimsToExclude,
+                                    const int dimsLen) {
+  int maxIdxs[SD_MAX_RANK];
+  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
+
+  int minIdxs[SD_MAX_RANK];
+  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
+
+  return getOffset(minShapeInfo, minIdxs);
+}
+
+//////////////////////////////////////////////////////////////////////
+SD_LIB_EXPORT SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
+                              const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
+                              int *memBuff, const int *dimsToExclude) {
+  const auto rankMin = shape::rank(minShapeInfo);
+  const auto rankMax = shape::rank(maxShapeInfo);
+
+
+  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
+
+  int *indices = memBuff;
+  int *increment = memBuff + rankMax;
+
+  int N, minI, maxI;
+
+  // calculate min per-dim-indices which corresponds to absolute minIdx index
+  shape::index2coords(minIdx, minShapeInfo, indices);
+
+  // transform storage indices to contain per-dim max indices, purpose - memory saving
+  // fill increment array as well
+  if (dimsToExclude == nullptr) {  // means dimsToExclude == {0,1,2,...,diff-1}
+    for (minI = rankMin - 1, maxI = rankMax - 1; maxI >= diff; --maxI, --minI) {
+      increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
+      indices[maxI] = indices[minI];
+    }
+    for (maxI = 0; maxI < diff; ++maxI) {
+      increment[maxI] = 1;
+      indices[maxI] = 0;
+    }
+  } else {
+    for (N = diff - 1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
+      if (N >= 0 && dimsToExclude[N] == maxI) {
+        increment[maxI] = 1;
+        indices[maxI] = 0;
+        --N;
+      } else {
+        increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
+        indices[maxI] = indices[minI--];
+      }
+    }
+  }
+
+  maxI = rankMax - 1;
+  N = 0;
+  int step;
+  maxOffsets[N++] = shape::getOffset(maxShapeInfo, indices);
+
+  // nested loops - producing of absolute indices for max array
+  while (maxI >= 0) {
+    if (increment[maxI] != 0) {
+      indices[maxI] += increment[maxI];
+      if (indices[maxI] >= maxShapeInfo[maxI + 1]) {
+        indices[maxI] %= increment[maxI];  // restore initial value of indices[maxI]
+        step = -1;
+      } else {
+        maxOffsets[N++] = shape::getOffset(maxShapeInfo, indices);
+        step = rankMax - 1 - maxI;
+      }
+    } else if (maxI == rankMax - 1)
+      step = -1;
+
+    maxI += step;
+  }
+  return N;
+}
+
+//////////////////////////////////////////////////////////////////////
+SD_LIB_EXPORT SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
+                              const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
+                              const int *dimsToExclude) {
+  const auto rankMin = shape::rank(minShapeInfo);
+  const auto rankMax = shape::rank(maxShapeInfo);
+
+
+  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
+
+  int indices[SD_MAX_RANK], increment[SD_MAX_RANK];
+
+  int N, minI, maxI;
+
+  // calculate min per-dim-indices which corresponds to absolute minIdx index
+  shape::index2coords(minIdx, minShapeInfo, indices);
+
+  // transform storage indices to contain per-dim max indices, purpose - memory saving
+  // fill increment array as well
+  if (dimsToExclude == nullptr) {  // means dimsToExclude == {0,1,2,...,diff-1}
+    for (minI = rankMin - 1, maxI = rankMax - 1; maxI >= diff; --maxI, --minI) {
+      increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
+      indices[maxI] = indices[minI];
+    }
+    for (maxI = 0; maxI < diff; ++maxI) {
+      increment[maxI] = 1;
+      indices[maxI] = 0;
+    }
+  } else {
+    for (N = diff - 1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
+      if (N >= 0 && dimsToExclude[N] == maxI) {
+        increment[maxI] = 1;
+        indices[maxI] = 0;
+        --N;
+      } else {
+        increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
+        indices[maxI] = indices[minI--];
+      }
+    }
+  }
+
+  maxI = rankMax - 1;
+  N = 0;
+  int step;
+  maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
+
+  // nested loops - producing of absolute indices for max array
+  while (maxI >= 0) {
+    if (increment[maxI] != 0) {
+      indices[maxI] += increment[maxI];
+      if (indices[maxI] >= maxShapeInfo[maxI + 1]) {
+        indices[maxI] %= increment[maxI];  // restore initial value of indices[maxI]
+        step = -1;
+      } else {
+        maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
+        step = rankMax - 1 - maxI;
+      }
+    } else if (maxI == rankMax - 1)
+      step = -1;
+
+    maxI += step;
+  }
+  return N;
+}
+
+#endif
+
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -881,9 +1130,7 @@ SD_HOST sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, int *
   }
 }
 
-SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
-  return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
-}
+
 
 SD_HOST sd::LongType *everyIndexBut(const sd::LongType *indexes, int indexesLength, int begin,
                                                      int end) {
@@ -1336,26 +1583,7 @@ SD_HOST sd::LongType *shapeBufferOfNpy(int rank, unsigned int *shape, bool fortr
   }
 }
 
-SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
-  int rank = shape::rank(shapeBuffer);
-  sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
-  char order = shape::order(shapeBuffer);
 
-  if (shape::isRowVector(shapeBuffer) && strides[0] == 1 && strides[1] == 1) return true;
-
-  if (order == 'c') {
-    for (int i = 1; i < rank; i++)
-      if (strides[i - 1] <= strides[i]) return false;
-    return true;
-  } else if (order == 'f') {
-    for (int i = 1; i < rank; i++)
-      if (strides[i - 1] >= strides[i]) return false;
-    return true;
-  } else {
-    printf("Unknown order for array!\n");
-    return false;
-  }
-}
 
 //////////////////////////////////////////////////////////////////////////
 // copy-past from java hasDefaultStridesForShape function
@@ -1583,245 +1811,10 @@ SD_HOST bool canReshape(const int oldRank, sd::LongType *oldShape, const int new
 
   return true;
 }
-// max array is outer for min array, min array is sub-array of max array
-// function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
-// (already stored in maxIdxs)
-SD_HOST void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
-                                             const sd::LongType *minShapeInfo, const int *dimsToExclude, int dimsLen) {
-  const auto maxRank = shape::rank(maxShapeInfo);
-  const auto minRank = shape::rank(minShapeInfo);
 
-  // if(minRank >= maxRank)
-  //     throw std::runtime_error("shape::maxIndToMinInd method: rank of min array should be smaller then rank of max
-  //     array!");
 
-  if (dimsLen == -1) dimsLen = maxRank - minRank;  // if size is not given (= -1) then it is equal to ranks difference
 
-  if (maxRank == minRank) {
-    if (dimsToExclude == nullptr) {  // --> means dimsToExclude == {0,1,2,...,dimsLen-1}
 
-      for (int i = 0; i < maxRank; ++i) {
-        if (i < dimsLen)
-          minIdxs[i] = maxIdxs[i];
-        else {
-          if (maxIdxs[i] > minShapeInfo[i + 1])
-            minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
-          else if (maxIdxs[i] == minShapeInfo[i + 1])
-            minIdxs[i] = 0;
-          else
-            minIdxs[i] = maxIdxs[i];
-        }
-      }
-    } else {
-      for (int i = 0, dim = 0; i < maxRank; ++i) {
-        if (dim < dimsLen && dimsToExclude[dim] == i) {
-          minIdxs[i] = maxIdxs[i];
-          ++dim;
-          continue;
-        }
-
-        if (maxIdxs[i] > minShapeInfo[i + 1])
-          minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
-        else if (maxIdxs[i] == minShapeInfo[i + 1])
-          minIdxs[i] = 0;
-        else
-          minIdxs[i] = maxIdxs[i];
-      }
-    }
-  } else {
-    if (dimsToExclude == nullptr) {  // --> means dimsToExclude == {0,1,2,...,dimsLen-1}
-
-      for (int i = 0; i < minRank; ++i) {
-        if (maxIdxs[i + dimsLen] > minShapeInfo[i + 1])
-          minIdxs[i] = maxIdxs[i + dimsLen] % minShapeInfo[i + 1];
-        else if (maxIdxs[i + dimsLen] == minShapeInfo[i + 1])
-          minIdxs[i] = 0;
-        else
-          minIdxs[i] = maxIdxs[i + dimsLen];
-      }
-    } else {
-      for (int minI = 0, maxI = 0, dim = 0; maxI < maxRank; ++maxI) {
-        if (dim < dimsLen && dimsToExclude[dim] == maxI) {
-          ++dim;
-          continue;
-        }
-
-        if (maxIdxs[maxI] == minShapeInfo[minI + 1])
-          minIdxs[minI] = 0;
-        else if (maxIdxs[maxI] > minShapeInfo[minI + 1])
-          minIdxs[minI] = maxIdxs[maxI] % minShapeInfo[minI + 1];
-        else
-          minIdxs[minI] = maxIdxs[maxI];
-        ++minI;
-      }
-    }
-  }
-}
-
-//////////////////////////////////////////////////////////////////////
-SD_HOST sd::LongType subArrayIndex(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
-                                                    const sd::LongType *minShapeInfo, const int *dimsToExclude,
-                                                    const int dimsLen) {
-  int maxIdxs[SD_MAX_RANK];
-  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
-
-  int minIdxs[SD_MAX_RANK];
-  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
-
-  return shape::coords2index(minShapeInfo, minIdxs);
-}
-
-//////////////////////////////////////////////////////////////////////
-SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
-                                                     const sd::LongType *minShapeInfo, const int *dimsToExclude,
-                                                     const int dimsLen) {
-  int maxIdxs[SD_MAX_RANK];
-  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
-
-  int minIdxs[SD_MAX_RANK];
-  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
-
-  return getOffset(minShapeInfo, minIdxs);
-}
-
-//////////////////////////////////////////////////////////////////////
-SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
-                                               const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
-                                               int *memBuff, const int *dimsToExclude) {
-  const auto rankMin = shape::rank(minShapeInfo);
-  const auto rankMax = shape::rank(maxShapeInfo);
-
-  // if(rankMin >= rankMax)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max
-  //     array!");
-
-  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
-
-  int *indices = memBuff;
-  int *increment = memBuff + rankMax;
-
-  int N, minI, maxI;
-
-  // calculate min per-dim-indices which corresponds to absolute minIdx index
-  shape::index2coords(minIdx, minShapeInfo, indices);
-
-  // transform storage indices to contain per-dim max indices, purpose - memory saving
-  // fill increment array as well
-  if (dimsToExclude == nullptr) {  // means dimsToExclude == {0,1,2,...,diff-1}
-    for (minI = rankMin - 1, maxI = rankMax - 1; maxI >= diff; --maxI, --minI) {
-      increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
-      indices[maxI] = indices[minI];
-    }
-    for (maxI = 0; maxI < diff; ++maxI) {
-      increment[maxI] = 1;
-      indices[maxI] = 0;
-    }
-  } else {
-    for (N = diff - 1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
-      if (N >= 0 && dimsToExclude[N] == maxI) {
-        increment[maxI] = 1;
-        indices[maxI] = 0;
-        --N;
-      } else {
-        increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
-        indices[maxI] = indices[minI--];
-      }
-    }
-  }
-
-  maxI = rankMax - 1;
-  N = 0;
-  int step;
-  maxOffsets[N++] = shape::getOffset(maxShapeInfo, indices);
-
-  // nested loops - producing of absolute indices for max array
-  while (maxI >= 0) {
-    if (increment[maxI] != 0) {
-      indices[maxI] += increment[maxI];
-      if (indices[maxI] >= maxShapeInfo[maxI + 1]) {
-        indices[maxI] %= increment[maxI];  // restore initial value of indices[maxI]
-        step = -1;
-      } else {
-        maxOffsets[N++] = shape::getOffset(maxShapeInfo, indices);
-        step = rankMax - 1 - maxI;
-      }
-    } else if (maxI == rankMax - 1)
-      step = -1;
-
-    maxI += step;
-  }
-  return N;
-}
-
-//////////////////////////////////////////////////////////////////////
-SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
-                                               const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
-                                               const int *dimsToExclude) {
-  const auto rankMin = shape::rank(minShapeInfo);
-  const auto rankMax = shape::rank(maxShapeInfo);
-
-  // if(rankMin >= rankMax)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max
-  //     array!");
-  // if(rankMax > SD_MAX_RANK/2)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of max array should be <= SD_MAX_RANK/2 !");
-
-  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
-
-  int indices[SD_MAX_RANK], increment[SD_MAX_RANK];
-
-  int N, minI, maxI;
-
-  // calculate min per-dim-indices which corresponds to absolute minIdx index
-  shape::index2coords(minIdx, minShapeInfo, indices);
-
-  // transform storage indices to contain per-dim max indices, purpose - memory saving
-  // fill increment array as well
-  if (dimsToExclude == nullptr) {  // means dimsToExclude == {0,1,2,...,diff-1}
-    for (minI = rankMin - 1, maxI = rankMax - 1; maxI >= diff; --maxI, --minI) {
-      increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
-      indices[maxI] = indices[minI];
-    }
-    for (maxI = 0; maxI < diff; ++maxI) {
-      increment[maxI] = 1;
-      indices[maxI] = 0;
-    }
-  } else {
-    for (N = diff - 1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
-      if (N >= 0 && dimsToExclude[N] == maxI) {
-        increment[maxI] = 1;
-        indices[maxI] = 0;
-        --N;
-      } else {
-        increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
-        indices[maxI] = indices[minI--];
-      }
-    }
-  }
-
-  maxI = rankMax - 1;
-  N = 0;
-  int step;
-  maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
-
-  // nested loops - producing of absolute indices for max array
-  while (maxI >= 0) {
-    if (increment[maxI] != 0) {
-      indices[maxI] += increment[maxI];
-      if (indices[maxI] >= maxShapeInfo[maxI + 1]) {
-        indices[maxI] %= increment[maxI];  // restore initial value of indices[maxI]
-        step = -1;
-      } else {
-        maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
-        step = rankMax - 1 - maxI;
-      }
-    } else if (maxI == rankMax - 1)
-      step = -1;
-
-    maxI += step;
-  }
-  return N;
-}
 //////////////////////////////////////////////////////////////////////
 void calcOffsets(const sd::LongType *shapeInfo, sd::LongType *offsets, const char order) {
   // firstly consider simple case when ews > 0
