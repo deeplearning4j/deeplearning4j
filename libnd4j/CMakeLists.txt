@@ -36,6 +36,9 @@ if (SD_CUDA AND NOT SD_AURORA)
     message("Enabling cuda")
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
+    # Add a platform agnostic way of showing we are compiling for cuda
+    # The normal way of using __NVCC__ and __CUDACC__ does not show up
+    # for cpp files which makes it difficult to add guards for specific functions.
     add_compile_definitions(SD_CUDA=true)
 
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
