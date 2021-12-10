@@ -168,14 +168,19 @@ SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride,
 }
 
 
-//#ifndef __CUDACC__
+#ifndef SD_CUDA
 
-SD_HOST bool isEmpty(const sd::LongType *shapeInfo) {
+SD_LIB_EXPORT SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+  return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
+}
+
+
+SD_LIB_EXPORT SD_HOST bool isEmpty(const sd::LongType *shapeInfo) {
   return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
 }
 
 
-SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
+SD_LIB_EXPORT SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
   int rank = shape::rank(shapeBuffer);
   sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
   char order = shape::order(shapeBuffer);
@@ -199,7 +204,7 @@ SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
-SD_HOST void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_HOST void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
                             const sd::LongType *minShapeInfo, const int *dimsToExclude, int dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
@@ -274,21 +279,9 @@ SD_HOST void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxS
 
 
 
-//////////////////////////////////////////////////////////////////////
-SD_HOST sd::LongType subArrayIndex(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
-                                   const sd::LongType *minShapeInfo, const int *dimsToExclude,
-                                   const int dimsLen) {
-  int maxIdxs[SD_MAX_RANK];
-  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
-
-  int minIdxs[SD_MAX_RANK];
-  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
-
-  return shape::coords2index(minShapeInfo, minIdxs);
-}
 
 //////////////////////////////////////////////////////////////////////
-SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
                                     const sd::LongType *minShapeInfo, const int *dimsToExclude,
                                     const int dimsLen) {
   int maxIdxs[SD_MAX_RANK];
@@ -301,15 +294,12 @@ SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongTyp
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
+SD_LIB_EXPORT SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                               const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
                               int *memBuff, const int *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 
-  // if(rankMin >= rankMax)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max
-  //     array!");
 
   const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
 
@@ -370,17 +360,12 @@ SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minId
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
+SD_LIB_EXPORT SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
                               const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
                               const int *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 
-  // if(rankMin >= rankMax)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max
-  //     array!");
-  // if(rankMax > SD_MAX_RANK/2)
-  //     throw std::runtime_error("shape::subArrayIndex method: rank of max array should be <= SD_MAX_RANK/2 !");
 
   const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
 
@@ -439,7 +424,7 @@ SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
   return N;
 }
 
-//#endif
+#endif
 
 
 /**
@@ -1145,9 +1130,7 @@ SD_HOST sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, int *
   }
 }
 
-SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
-  return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
-}
+
 
 SD_HOST sd::LongType *everyIndexBut(const sd::LongType *indexes, int indexesLength, int begin,
                                                      int end) {
