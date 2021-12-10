@@ -62,7 +62,6 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
