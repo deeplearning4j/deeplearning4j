@@ -29,6 +29,7 @@ import lombok.var;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
@@ -257,14 +258,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
-                context.getOldStream(),
+                (Pointer) context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
                 context.getBufferSpecial(),
-                hostYShapeInfo,
-                hostZShapeInfo,
+                (Pointer) hostYShapeInfo,
+                (Pointer) hostZShapeInfo,
                 hostTadShapeInfo,
                 devTadShapeInfo,
                 devTadOffsets);
@@ -363,70 +364,70 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
             }
         } else {
-                if (ret.isScalar()) {
-                    switch (op.getOpType()) {
-                        case REDUCE_FLOAT:
-                            nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo,(LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
-                            break;
-                        case REDUCE_BOOL:
-                            nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
-                            break;
-                        case REDUCE_LONG:
-                            nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
-                            break;
-                        case REDUCE_SAME:
-                            nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo,(LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
-                            break;
-                        default:
-                            throw new UnsupportedOperationException();
-                    }
-                } else {
-                    switch (op.getOpType()) {
-                        case REDUCE_FLOAT:
-                            nativeOps.execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
-                            break;
-                        case REDUCE_BOOL:
-                            nativeOps.execReduceBool2(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
-                            break;
-                        case REDUCE_SAME:
-                            nativeOps.execReduceSame2(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
-                            break;
-                        case REDUCE_LONG:
-                            nativeOps.execReduceLong2(xShapeInfoHostPointer, op.opNum(),
-                                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                    extraArgs,
-                                    z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
-                            break;
-                        default:
-                            throw new UnsupportedOperationException();
-                    }
+            if (ret.isScalar()) {
+                switch (op.getOpType()) {
+                    case REDUCE_FLOAT:
+                        nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo,(LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                        break;
+                    case REDUCE_BOOL:
+                        nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                        break;
+                    case REDUCE_LONG:
+                        nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                        break;
+                    case REDUCE_SAME:
+                        nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo,(LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
+                }
+            } else {
+                switch (op.getOpType()) {
+                    case REDUCE_FLOAT:
+                        nativeOps.execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        break;
+                    case REDUCE_BOOL:
+                        nativeOps.execReduceBool2(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        break;
+                    case REDUCE_SAME:
+                        nativeOps.execReduceSame2(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        break;
+                    case REDUCE_LONG:
+                        nativeOps.execReduceLong2(xShapeInfoHostPointer, op.opNum(),
+                                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                                extraArgs,
+                                z, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
                 }
             }
+        }
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -579,10 +580,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
+                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), (Pointer) context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
+                (Pointer) hostYShapeInfo, (Pointer) hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, (Pointer) devTadOffsets);
         Pointer extraArgs = op.extraArgs() != null
                 ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.x().dataType()), context) : null;
         //Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
@@ -594,10 +595,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val z = op.z() == null ? null : ((BaseCudaDataBuffer) op.z().data()).getOpaqueDataBuffer();
 
         nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
-                    x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                    extraArgs,
-                    z, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
-                    ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                x, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                extraArgs,
+                z, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
+                ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -616,25 +617,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(Op op, OpContext oc) {
         checkForCompression(op);
-
-        /*
-        //TODO this never would have worked
-        //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
-        if ( op instanceof CopyOp) {
-            // we dont' care about op.Z sync state, since it'll be overwritten
-            if (op.x() != null)
-                AtomicAllocator.getInstance().synchronizeHostData(op.x());
-            if (op.y() != null)
-                AtomicAllocator.getInstance().synchronizeHostData(op.y());
-
-            super.exec(op);
-
-            if (op.z() != null)
-                throw new UnsupportedOperationException("Pew-pew");
-                //AtomicAllocator.getInstance().tickHostWrite(op.z());
-
-            return null;
-        }*/
 
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
@@ -719,14 +701,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), // 0
-                context.getOldStream(), // 1
+                (Pointer) context.getOldStream(), // 1
                 AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
                 context.getBufferAllocation(), // 3
                 context.getBufferReduction(),  // 4
                 context.getBufferScalar(),  // 5
                 context.getBufferSpecial(), // 6
-                hostYShapeInfo,  // 7
-                hostZShapeInfo,  // 8
+                (Pointer) hostYShapeInfo,  // 7
+                (Pointer) hostZShapeInfo,  // 8
                 hostTadShapeInfo,  // 9
                 devTadShapeInfo,  // 10
                 devTadOffsets, // 11
@@ -843,16 +825,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val zb = z == null ? null : ((BaseCudaDataBuffer) z.data()).getOpaqueDataBuffer();
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), context.getOldStream(),
+                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), (Pointer) context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
+                (Pointer) hostYShapeInfo, (Pointer) hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
         if (z.isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
-                nativeOps.execIndexReduceScalar(xShapeInfoHostPointer, op.opNum(),
-                        xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                        extraArgs,
-                        zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo);
+            nativeOps.execIndexReduceScalar(xShapeInfoHostPointer, op.opNum(),
+                    xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                    extraArgs,
+                    zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo);
         } else {
             if (dimension != null && dimension.length > 1)
                 Arrays.sort(dimension);
@@ -863,7 +845,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                     xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                     extraArgs,
+                    extraArgs,
                     zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
                     ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
         }
@@ -943,7 +925,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
         val offsets = x.isEmpty() ? null : tadBuffers.getSecond();
-        val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
+        val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer((DataBuffer) offsets, context);
 
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context);
 
@@ -992,10 +974,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hostZShapeInfo = z == null ? null : AddressRetriever.retrieveHostPointer(z.shapeInfoDataBuffer());
 
         val xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), context.getOldStream(),
+                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), (Pointer) context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
+                (Pointer) hostYShapeInfo, (Pointer) hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, (Pointer) devTadOffsets);
 
         val yTadBuffers = y == null ? null : tadManager.getTADOnlyShapeInfo(y, dimension);
 
@@ -1004,8 +986,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
         if (y != null) {
-            xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
-            xShapeInfoHostPointer.put(13, yDevTadOffsets);
+            xShapeInfoHostPointer.put(12L, (Pointer) yDevTadShapeInfo);
+            xShapeInfoHostPointer.put(13L, (Pointer) yDevTadOffsets);
         }
 
         val zShapeInfo = AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context);
@@ -1019,17 +1001,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (z.isScalar()) {
             if (op instanceof Variance) {
                 nativeOps.execSummaryStatsScalar(xShapeInfoHostPointer, op.opNum(),
-                            xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                            extraArgs,
-                            zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
-                            ((Variance) op).isBiasCorrected());
+                        xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                        extraArgs,
+                        zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
+                        ((Variance) op).isBiasCorrected());
             } else if (y != null) {
                 Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(y.shapeInfoDataBuffer(), context);
-                    nativeOps.execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
-                            xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                            extraArgs,
-                            yb, (LongPointer) hostYShapeInfo, (LongPointer) yShapeInfo,
-                            zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo);
+                nativeOps.execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
+                        xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                        extraArgs,
+                        yb, (LongPointer) hostYShapeInfo, (LongPointer) yShapeInfo,
+                        zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo);
             } else {
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
@@ -1066,21 +1048,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (y != null) {
                 val yShapeInfo = AtomicAllocator.getInstance().getPointer(y.shapeInfoDataBuffer(), context);
                 nativeOps.execReduce3Tad(xShapeInfoHostPointer, op.opNum(),
-                            xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                            extraArgs,
-                            yb, (LongPointer) hostYShapeInfo, (LongPointer) yShapeInfo,
-                            zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
-                            ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
-                            (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
+                        xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                        extraArgs,
+                        yb, (LongPointer) hostYShapeInfo, (LongPointer) yShapeInfo,
+                        zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
+                        ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                        (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
             } else {
                 if (op instanceof Variance) {
                     nativeOps.execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
-                                xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                                extraArgs,
-                                zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
-                                ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
-                                ((Variance) op).isBiasCorrected(),
-                                (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets);
+                            xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                            extraArgs,
+                            zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
+                            ((BaseCudaDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                            ((Variance) op).isBiasCorrected(),
+                            (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets);
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
@@ -1166,10 +1148,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         PointerPointer extraPointers = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
+                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), (Pointer) context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
+                (Pointer) hostYShapeInfo, (Pointer) hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
                 devTadShapeInfoZ, devTadOffsetsZ);
 
         val extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
@@ -1273,10 +1255,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context);
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), context.getOldStream(),
+                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), (Pointer) context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, null, null);
+                (Pointer) hostYShapeInfo, (Pointer) hostZShapeInfo, null, null);
 
         val xb = x == null ? null : ((BaseCudaDataBuffer) x.data()).getOpaqueDataBuffer();
         val yb = op.scalar() == null ? null : ((BaseCudaDataBuffer) op.scalar().data()).getOpaqueDataBuffer();
@@ -1374,14 +1356,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer =
                 extraz.get().put(AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), // 0
-                        context.getOldStream(), // 1
+                        (Pointer) context.getOldStream(), // 1
                         allocator.getDeviceIdPointer(), // 2
                         context.getBufferAllocation(), // 3
                         context.getBufferReduction(), // 4
                         context.getBufferScalar(), // 5
                         context.getBufferSpecial(), // 6
-                        hostYShapeInfo, // 7
-                        hostZShapeInfo, // 8
+                        (Pointer) hostYShapeInfo, // 7
+                        (Pointer) hostZShapeInfo, // 8
                         hostTadShapeInfo, // 9
                         devTadShapeInfo, // 10
                         devTadOffsets, // 11
@@ -1391,7 +1373,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dimensionDevPointer, // special pointer for IsMax  // 15
                         dimensionHostPointer, // special pointer for IsMax  // 16
                         retPointer, // special pointer for IsMax // 17
-                        new CudaPointer(dimension == null ? 0 : dimension.length),
+                        (Pointer) new CudaPointer(dimension == null ? 0 : dimension.length),
                         retHostShape);
 
 
@@ -1416,10 +1398,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     break;
                 default:
                     nativeOps.execPairwiseTransform(xShapeInfoHostPointer, op.opNum(),
-                        xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
-                        yb, (LongPointer) hostYShapeInfo, (LongPointer) yShapeInfo,
-                        zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
-                        extraArgs);
+                            xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
+                            yb, (LongPointer) hostYShapeInfo, (LongPointer) yShapeInfo,
+                            zb, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
+                            extraArgs);
                     break;
             }
         } else {
@@ -1520,7 +1502,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return exec(op, null, rng);
     }
 
-    public INDArray exec(RandomOp op, OpContext oc, Random rng){
+    public INDArray exec(RandomOp op, OpContext oc, Random rng) {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
@@ -1564,24 +1546,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (x != null && y != null && z != null) {
             // triple arg call
             nativeOps.execRandom3(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        xb, (LongPointer) hostXShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
-                        yb, (LongPointer) hostYShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(y.shapeInfoDataBuffer(), context),
-                        zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
-                        AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
+                    xb, (LongPointer) hostXShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    yb, (LongPointer) hostYShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(y.shapeInfoDataBuffer(), context),
+                    zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
+                    AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
 
         } else if (x != null && z != null) {
             //double arg call
             nativeOps.execRandom2(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        xb, (LongPointer) hostXShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
-                        zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
-                        AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()),context));
+                    xb, (LongPointer) hostXShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
+                    AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()),context));
 
 
         } else {
             // single arg call
             nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
-                         AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
+                    zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
+                    AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
         }
 
         if (nativeOps.lastErrorCode() != 0)
@@ -1728,7 +1710,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext){
+    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
 
         Nd4j.getExecutioner().commit();
 
@@ -1749,12 +1731,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val inputShapes = new PointerPointer<>(nIn);
 
         val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
-        int cnt= 0;
+        int cnt = 0;
         for (val in: inputArgs) {
             // TODO: once we implement Context-based shape function call this method should be removed
             val loc = Nd4j.getAffinityManager().getActiveLocation(in);
-            if (loc != AffinityManager.Location.DEVICE && loc != AffinityManager.Location.EVERYWHERE)
+            if (loc != AffinityManager.Location.DEVICE && loc != AffinityManager.Location.EVERYWHERE) {
                 Nd4j.getAffinityManager().ensureLocation(in, AffinityManager.Location.DEVICE);
+                AtomicAllocator.getInstance().tickDeviceWrite(in);
+            }
 
             // NOT A TYPO: shape functions work on host side only
             if (!in.isEmpty()) {
@@ -1769,7 +1753,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int nIArgs = opContext != null ? opContext.numIArguments() : op.numIArguments();
         val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
         cnt = 0;
-        if(opContext != null){
+        if(opContext != null) {
             for (val i: opContext.getIArguments())
                 iArgs.put(cnt++, i);
         } else {
@@ -1863,11 +1847,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        val ctx = AtomicAllocator.getInstance().getDeviceContext();
+
 
         val name = op.opName();
         try (val context = (CudaOpContext) buildContext()) {
-
             // optionally skip shape validation on op execution
             if (shapeOverride)
                 context.shapeFunctionOverride(true);
@@ -1890,16 +1873,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val result = exec(op, context);
             val states = context.getRngStates();
 
-            // check if input && output needs update
-            for (val in:op.inputArguments()) {
-                if (!in.isEmpty())
-                    ((BaseCudaDataBuffer) in.data()).actualizePointerAndIndexer();
-            }
-
-            for (val out:op.outputArguments()) {
-                if (!out.isEmpty())
-                    ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();
-            }
 
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
@@ -1942,7 +1915,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ptrIndices = new IntPointer(map.size());
 
         int cnt = 0;
-        val keySet = new ArrayList<String>(map.keySet());
+        val keySet = new ArrayList<>(map.keySet());
         for (val key: keySet) {
             val array = map.get(key);
 
@@ -1983,7 +1956,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val order = Shape.order(jshape);
             val array = Nd4j.create(shapeOf, stridesOf, 0, order);
 
-            Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
+            Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * array.dataType().width());
             //AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
             if (1 > 0)
                 throw new UnsupportedOperationException("Pew-pew");
@@ -2074,7 +2047,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         nativeOps.scatterUpdate(stuff, op.ordinal(), (int) indices.length(),
                 null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadX.getFirst()), null, AtomicAllocator.getInstance().getPointer(array, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadX.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadX.getSecond()),
                 null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadY.getFirst()), null, AtomicAllocator.getInstance().getPointer(updates, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getSecond()),
-                 AtomicAllocator.getInstance().getHostPointer(indices), (LongPointer) AtomicAllocator.getInstance().getHostPointer(indices.shapeInfoDataBuffer()), AtomicAllocator.getInstance().getPointer(indices, context), (LongPointer) AtomicAllocator.getInstance().getPointer(indices.shapeInfoDataBuffer(), context));
+                AtomicAllocator.getInstance().getHostPointer(indices), (LongPointer) AtomicAllocator.getInstance().getHostPointer(indices.shapeInfoDataBuffer()), AtomicAllocator.getInstance().getPointer(indices, context), (LongPointer) AtomicAllocator.getInstance().getPointer(indices.shapeInfoDataBuffer(), context));
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -2087,10 +2060,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
+        Nd4j.getExecutioner().commit();
         long st = profilingConfigurableHookIn(op, context);
-
         val ctx = AtomicAllocator.getInstance().getDeviceContext();
-        ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
+
 
         val status = nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
         if (nativeOps.lastErrorCode() != 0)
@@ -2098,6 +2071,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (status != 0)
             throw new RuntimeException("Op [" + op.opName() + "] execution failed");
+
+        // check if input && output needs update
+        for (val in:op.inputArguments()) {
+            if (!in.isEmpty())
+                ((BaseCudaDataBuffer) in.data()).actualizePointerAndIndexer();
+        }
+
+        for (val out:op.outputArguments()) {
+            if (!out.isEmpty()) {
+                ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();
+            }
+
+            AtomicAllocator.getInstance().tickDeviceWrite(out);
+        }
+
 
         profilingConfigurableHookOut(op, context, st);
 
