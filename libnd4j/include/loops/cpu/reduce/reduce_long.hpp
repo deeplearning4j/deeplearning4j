@@ -24,27 +24,24 @@
 #include <helpers/Loops.h>
 #include <helpers/OmpLaunchHelper.h>
 #include <loops/legacy_ops.h>
-#include <loops/reduce_same.h>
+#include <loops/reduce_long.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-
-#include <chrono>
 
 using namespace simdOps;
 
 namespace functions {
 namespace reduce {
-template <typename X>
+template <typename X, typename Z>
 template <typename OpType>
-void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams,
-                                               void *vz, const sd::LongType *zShapeInfo) {
+void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams,
+                                                  void *vz, const sd::LongType *zShapeInfo) {
   auto x = reinterpret_cast<const X *>(vx);
-  auto z = reinterpret_cast<X *>(vz);
+  auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-  const auto length = shape::length(xShapeInfo);
-  const auto xEws = shape::elementWiseStride(xShapeInfo);
-  const int rank = shape::rank(xShapeInfo);
+  const sd::LongType length = shape::length(xShapeInfo);
+  auto xEws = shape::elementWiseStride(xShapeInfo);
 
   if (shape::isEmpty(xShapeInfo)) {
     z[0] = OpType::startingValue(x);
@@ -66,7 +63,7 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
     sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-    X intermediate[64];
+    Z intermediate[64];
 
     PRAGMA_OMP_SIMD
     for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
@@ -89,14 +86,14 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
   }
 }
 
-template <typename X>
+template <typename X, typename Z>
 template <typename OpType>
-X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
+Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-  const auto xEws = shape::elementWiseStride(xShapeInfo);
+  auto xEws = shape::elementWiseStride(xShapeInfo);
 
   if (xEws >= 1) {
     return execScalar<OpType>(x, xEws, length, extraParams);
@@ -114,33 +111,34 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
   }
 }
 
-template <typename X>
-X ReduceSameFunction<X>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams) {
-  RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_SAME_OPS);
+template <typename X, typename Y>
+Y ReduceLongFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+                                       void *extraParams) {
+  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_LONG_OPS);
 }
 
-template <typename X>
-void ReduceSameFunction<X>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
-                                       void *extraParams, void *z, const sd::LongType *zShapeInfo) {
-  DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_SAME_OPS);
+template <typename X, typename Y>
+void ReduceLongFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
+                                          void *extraParams, void *z, const sd::LongType *zShapeInfo) {
+  DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_LONG_OPS);
 }
 
-template <typename X>
+template <typename X, typename Z>
 template <typename OpType>
-void SD_HOST ReduceSameFunction<X>::exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *vz,
-                                         const sd::LongType *zShapeInfo) {
-  auto z = reinterpret_cast<X *>(vz);
+void SD_HOST ReduceLongFunction<X, Z>::exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams,
+                                            void *vresult, const sd::LongType *resultShapeInfo) {
+  auto z = reinterpret_cast<Z *>(vresult);
   z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
 }
 
-template <typename X>
+template <typename X, typename Z>
 template <typename OpType>
-X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, sd::LongType xEws, sd::LongType length,
-                                            void *vextraParams) {
+Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws, sd::LongType length,
+                                               void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-  X intermediate[64];
+  Z intermediate[64];
 
   PRAGMA_OMP_SIMD
   for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
@@ -166,13 +164,13 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, sd::LongType xEws, s
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
+template <typename X, typename Z>
 template <typename OpType>
-void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const void *vx,
-                                         const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                         const sd::LongType *zShapeInfo, const int *dims) {
+void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
+                                            const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
+                                            const sd::LongType *zShapeInfo, const int *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
-  X *z = reinterpret_cast<X *>(vz);
+  Z *z = reinterpret_cast<Z *>(vz);
   X *extraParams = reinterpret_cast<X *>(vextraParams);
 
   const int xRank = shape::rank(xShapeInfo);
@@ -198,21 +196,20 @@ void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const
   }
 
 #ifdef SD_LOOPS_INLINED
-  sd::ReductionLoops<X, X, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+  sd::ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #else
-  sd::ReductionSameLoops<X>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims,
-                                                              extraParams);
+  sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims,
+                                                                 extraParams);
 #endif
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
-void ReduceSameFunction<X>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
-                                 const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                 const sd::LongType *zShapeInfo, const int *dims) {
-  DISPATCH_BY_OPNUM_T(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_SAME_OPS);
+template <typename X, typename Y>
+void ReduceLongFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
+                                    const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
+                                    const sd::LongType *zShapeInfo, const int *dims) {
+  DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_LONG_OPS);
 }
 
-BUILD_SINGLE_TEMPLATE(template class ReduceSameFunction, , SD_COMMON_TYPES);
 }  // namespace reduce
 }  // namespace functions
