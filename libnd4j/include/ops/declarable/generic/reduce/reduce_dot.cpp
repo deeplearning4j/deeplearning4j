@@ -24,9 +24,10 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
+#if NOT_EXCLUDED(OP_reduce_dot_bp)
+
 namespace sd {
 namespace ops {
-#if NOT_EXCLUDED(OP_reduce_dot_bp)
 
 ////////////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
@@ -127,7 +128,7 @@ DECLARE_TYPES(reduce_dot_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif
-
 }  // namespace ops
 }  // namespace sd
+
+#endif

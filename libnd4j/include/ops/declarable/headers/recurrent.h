@@ -28,6 +28,8 @@ namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
+
+#if NOT_EXCLUDED(OP_sru)
 /**
  * Implementation of operation for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
  *
@@ -42,31 +44,7 @@ namespace ops {
  *    0: 3d tensor of cell output [bS x K x N]
  *    1: 3d tensor of cell state [bS x K x N]
  */
-#if NOT_EXCLUDED(OP_sru)
 DECLARE_CUSTOM_OP(sru, 5, 2, false, 0, 0);
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-/**
- * Implementation of operation for Simple Recurrent Unit (bidirectional case): "Training RNNs as Fast as CNNs" Tao Lei,
- * Yu Zhang, Yoav Artzi
- *
- * Input arrays:
- *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
- *    1: 2d tensor of weights [2K x 6K]
- *    2: row of biases with twice length [1 x 4K]
- *    3: 2d tensor of previous cell state [bS x 2K]
- *    4: optional, 2d tensor of dropout mask [bS x 2K]
- *
- * Output arrays:
- *    0: 3d tensor of cell output [N x bS x 2K]
- *    1: 3d tensor of cell state [N x bS x 2K]
- */
-#if NOT_EXCLUDED(OP_sru_bi)
-DECLARE_CUSTOM_OP(sru_bi, 5, 2, true, 0, 0);
-#endif
-
-//////////////////////////////////////////////////////////////////////////
 /**
  * Implementation of operation for back propagation in Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei,
  * Yu Zhang, Yoav Artzi
@@ -87,10 +65,30 @@ DECLARE_CUSTOM_OP(sru_bi, 5, 2, true, 0, 0);
  *    2: 2d, row of biases gradients [1 x 2K]
  *    3: 2d, tensor of state gradients [bS x K]
  */
-#if NOT_EXCLUDED(OP_sru)
 DECLARE_CUSTOM_OP(sru_bp, 8, 4, true, 0, 0);
 #endif
 
+
+#if NOT_EXCLUDED(OP_sru_bi)
+//////////////////////////////////////////////////////////////////////////
+/**
+ * Implementation of operation for Simple Recurrent Unit (bidirectional case): "Training RNNs as Fast as CNNs" Tao Lei,
+ * Yu Zhang, Yoav Artzi
+ *
+ * Input arrays:
+ *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
+ *    1: 2d tensor of weights [2K x 6K]
+ *    2: row of biases with twice length [1 x 4K]
+ *    3: 2d tensor of previous cell state [bS x 2K]
+ *    4: optional, 2d tensor of dropout mask [bS x 2K]
+ *
+ * Output arrays:
+ *    0: 3d tensor of cell output [N x bS x 2K]
+ *    1: 3d tensor of cell state [N x bS x 2K]
+ */
+
+DECLARE_CUSTOM_OP(sru_bi, 5, 2, true, 0, 0);
+ 
 //////////////////////////////////////////////////////////////////////////
 /**
  * Implementation of operation for back propagation in Simple Recurrent Unit (bidirectional case): "Training RNNs as
@@ -112,7 +110,6 @@ DECLARE_CUSTOM_OP(sru_bp, 8, 4, true, 0, 0);
  *    2: 2d, row of biases gradients [1 x 4K]
  *    3: 2d, tensor of state gradients [bS x 2K]
  */
-#if NOT_EXCLUDED(OP_sru_bi)
 DECLARE_CUSTOM_OP(sru_bi_bp, 8, 4, true, 0, 0);
 #endif
 
@@ -151,8 +148,6 @@ DECLARE_CUSTOM_OP(lstmCell, 8, 2, false, 3, 2);
 
 #if NOT_EXCLUDED(OP_lstmLayerCell)
 DECLARE_CUSTOM_OP(lstmLayerCell, 5, 2, false, 1, 3);
-#endif
-#if NOT_EXCLUDED(OP_lstmLayerCell)
 DECLARE_CUSTOM_OP(lstmLayerCellBp, 7, 5, false, 1, 3);
 #endif
 
@@ -240,10 +235,6 @@ DECLARE_CUSTOM_OP(lstmBlock, 9, 7, false, 2, 2);
 //////////////////////////////////////////////////////////////////////////
 #if NOT_EXCLUDED(OP_lstmLayer)
 DECLARE_CUSTOM_OP(lstmLayer, 3, 1, false, 1, 5);
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-#if NOT_EXCLUDED(OP_lstmLayer)
 DECLARE_CUSTOM_OP(lstmLayer_bp, 4, 1, false, 1, 5);
 #endif
 
@@ -288,9 +279,6 @@ DECLARE_CUSTOM_OP(sruCell, 4, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_gruCell)
 DECLARE_CUSTOM_OP(gruCell, 6, 4, false, 0, 0);
-#endif
-
-#if NOT_EXCLUDED(OP_gruCell)
 DECLARE_CUSTOM_OP(gruCell_bp, 10, 6, false, 0, 0);
 #endif
 
@@ -336,9 +324,6 @@ DECLARE_CUSTOM_OP(lstm, 8, 2, false, 3, 2);
  */
 #if NOT_EXCLUDED(OP_gru)
 DECLARE_CUSTOM_OP(gru, 5, 1, false, 0, 0);
-#endif
-
-#if NOT_EXCLUDED(OP_gru)
 DECLARE_CUSTOM_OP(gru_bp, 6, 5, false, 0, 0);
 #endif
 

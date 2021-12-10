@@ -850,9 +850,6 @@ DECLARE_CUSTOM_OP(embedding_lookup, 2, 1, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_dynamic_partition)
 DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
-#endif
-
-#if NOT_EXCLUDED(OP_dynamic_partition_bp)
 DECLARE_CUSTOM_OP(dynamic_partition_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -963,6 +960,8 @@ DECLARE_CUSTOM_OP(sufficient_statistics, 2, 3, false, 0, 0);
 DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
 #endif
 
+
+#if NOT_EXCLUDED(OP_dropout)
 /**
  * This op calculates dropout of input
  * Input arguments
@@ -973,12 +972,8 @@ DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
  *  T parameter - probability (should be between 0 and 1)
  *  return value - a tensor with the same shape as target or input
  */
-#if NOT_EXCLUDED(OP_dropout)
 DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
-#endif
-#if NOT_EXCLUDED(OP_dropout_bp)
 DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
-#endif
 
 /*  Calculates alpha weighted dropout
     T params:
@@ -987,7 +982,6 @@ DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
         2 - alpha' value
         3 - beta value
  */
-#if NOT_EXCLUDED(OP_alpha_dropout_bp)
 DECLARE_CONFIGURABLE_OP(alpha_dropout_bp, 2, 1, false, 4, 1);
 #endif
 
@@ -1208,8 +1202,6 @@ DECLARE_CUSTOM_OP(sequence_mask, 1, 1, false, 0, 0);
 
 #if NOT_EXCLUDED(OP_segment_max)
 DECLARE_CUSTOM_OP(segment_max, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_segment_max_bp)
 DECLARE_CUSTOM_OP(segment_max_bp, 3, 2, false, 0, 0);
 #endif
 
@@ -1225,8 +1217,6 @@ DECLARE_CUSTOM_OP(segment_max_bp, 3, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_segment_min)
 DECLARE_CUSTOM_OP(segment_min, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_segment_min_bp)
 DECLARE_CUSTOM_OP(segment_min_bp, 3, 2, false, 0, 0);
 #endif
 
@@ -1242,8 +1232,6 @@ DECLARE_CUSTOM_OP(segment_min_bp, 3, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_segment_sum)
 DECLARE_CUSTOM_OP(segment_sum, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_segment_sum_bp)
 DECLARE_CUSTOM_OP(segment_sum_bp, 3, 2, false, 0, 0);
 #endif
 
@@ -1259,8 +1247,6 @@ DECLARE_CUSTOM_OP(segment_sum_bp, 3, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_segment_prod)
 DECLARE_CUSTOM_OP(segment_prod, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_segment_prod_bp)
 DECLARE_CUSTOM_OP(segment_prod_bp, 3, 2, false, 0, 0);
 #endif
 /**
@@ -1275,8 +1261,6 @@ DECLARE_CUSTOM_OP(segment_prod_bp, 3, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_segment_mean)
 DECLARE_CUSTOM_OP(segment_mean, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_segment_mean_bp)
 DECLARE_CUSTOM_OP(segment_mean_bp, 3, 2, false, 0, 0);
 #endif
 
@@ -1292,8 +1276,6 @@ DECLARE_CUSTOM_OP(segment_mean_bp, 3, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_unsorted_segment_max)
 DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_unsorted_segment_max_bp)
 DECLARE_CUSTOM_OP(unsorted_segment_max_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -1310,10 +1292,8 @@ DECLARE_CUSTOM_OP(unsorted_segment_max_bp, 3, 2, false, 0, 1);
  * return value:
  *    tensor with min values according to indices sets.
  */
-#if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
+#if NOT_EXCLUDED(OP_unsorted_segment_min)
 DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
 DECLARE_CUSTOM_OP(unsorted_segment_min_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -1332,8 +1312,6 @@ DECLARE_CUSTOM_OP(unsorted_segment_min_bp, 3, 2, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_unsorted_segment_sum)
 DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_unsorted_segment_sum_bp)
 DECLARE_CUSTOM_OP(unsorted_segment_sum_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -1352,8 +1330,6 @@ DECLARE_CUSTOM_OP(unsorted_segment_sum_bp, 3, 2, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_unsorted_segment_prod)
 DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_unsorted_segment_prod_bp)
 DECLARE_CUSTOM_OP(unsorted_segment_prod_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -1372,8 +1348,6 @@ DECLARE_CUSTOM_OP(unsorted_segment_prod_bp, 3, 2, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_unsorted_segment_mean)
 DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_unsorted_segment_mean_bp)
 DECLARE_CUSTOM_OP(unsorted_segment_mean_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -1392,8 +1366,6 @@ DECLARE_CUSTOM_OP(unsorted_segment_mean_bp, 3, 2, false, 0, 1);
  */
 #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n)
 DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n_bp)
 DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n_bp, 3, 2, false, 0, 1);
 #endif
 
@@ -1496,9 +1468,6 @@ DECLARE_CUSTOM_OP(lin_space, 0, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_sum)
 DECLARE_CUSTOM_OP(reduce_sum, -1, 1, false, 0, 0);
-#endif
-
-#if NOT_EXCLUDED(OP_reduce_sum_bp)
 DECLARE_CUSTOM_OP(reduce_sum_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1524,9 +1493,6 @@ DECLARE_CUSTOM_OP(reduce_sum_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_prod)
 DECLARE_CUSTOM_OP(reduce_prod, -1, 1, false, 0, 0);
-#endif
-
-#if NOT_EXCLUDED(OP_reduce_prod_bp)
 DECLARE_CUSTOM_OP(reduce_prod_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1548,8 +1514,6 @@ DECLARE_CUSTOM_OP(reduce_prod_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_min)
 DECLARE_CUSTOM_OP(reduce_min, -1, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_reduce_min_bp)
 DECLARE_CUSTOM_OP(reduce_min_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1571,8 +1535,6 @@ DECLARE_CUSTOM_OP(reduce_min_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_max)
 DECLARE_CUSTOM_OP(reduce_max, -1, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_reduce_max_bp)
 DECLARE_CUSTOM_OP(reduce_max_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1594,8 +1556,6 @@ DECLARE_CUSTOM_OP(reduce_max_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_norm1)
 DECLARE_CUSTOM_OP(reduce_norm1, -1, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_reduce_norm1_bp)
 DECLARE_CUSTOM_OP(reduce_norm1_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1617,8 +1577,6 @@ DECLARE_CUSTOM_OP(reduce_norm1_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_norm2)
 DECLARE_CUSTOM_OP(reduce_norm2, -1, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_reduce_norm2_bp)
 DECLARE_CUSTOM_OP(reduce_norm2_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1640,8 +1598,6 @@ DECLARE_CUSTOM_OP(reduce_norm2_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_sqnorm)
 DECLARE_CUSTOM_OP(reduce_sqnorm, -1, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
 DECLARE_CUSTOM_OP(reduce_sqnorm_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1663,8 +1619,6 @@ DECLARE_CUSTOM_OP(reduce_sqnorm_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_norm_max)
 DECLARE_CUSTOM_OP(reduce_norm_max, -1, 1, false, 0, 0);
-#endif
-#if NOT_EXCLUDED(OP_reduce_norm_max_bp)
 DECLARE_CUSTOM_OP(reduce_norm_max_bp, -1, 1, false, 0, 0);
 #endif
 
@@ -1686,9 +1640,6 @@ DECLARE_CUSTOM_OP(reduce_norm_max_bp, -1, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_reduce_mean)
 DECLARE_CUSTOM_OP(reduce_mean, -1, 1, false, 0, 0);
-#endif
-
-#if NOT_EXCLUDED(OP_reduce_mean_bp)
 DECLARE_CUSTOM_OP(reduce_mean_bp, -1, 1, false, 0, 0)
 #endif
 /**
