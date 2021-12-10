@@ -2535,15 +2535,15 @@ SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *mes
 }
 
 //host device codes which were duplicated in shape.cpp but guarded from inclusion
-#if defined(__CUDACC__)
-SD_INLINE SD_DEVICE bool isEmpty(const sd::LongType *shapeInfo) {
+#if defined(__NVCC__)
+SD_INLINE SD_HOST_DEVICE bool isEmpty(const sd::LongType *shapeInfo) {
   return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
 }
 
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
-SD_INLINE SD_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
+SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
                                              const sd::LongType *minShapeInfo, const int *dimsToExclude, int dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
@@ -2615,7 +2615,7 @@ SD_INLINE SD_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::Lo
   }
 }
 
-SD_INLINE SD_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+SD_INLINE SD_HOST_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
                                                      const sd::LongType *minShapeInfo, const int *dimsToExclude,
                                                      const int dimsLen) {
   int maxIdxs[SD_MAX_RANK];
@@ -2627,7 +2627,7 @@ SD_INLINE SD_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx, const
   return getOffset(minShapeInfo, minIdxs);
 }
 
-SD_INLINE SD_DEVICE int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
+SD_INLINE SD_DEVICE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                                                const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
                                                int *memBuff, const int *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
@@ -2695,7 +2695,7 @@ SD_INLINE SD_DEVICE int outerArrayOffsets(sd::LongType *maxOffsets, const sd::Lo
   return N;
 }
 
-SD_INLINE SD_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
+SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
   int rank = shape::rank(shapeBuffer);
   sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
   char order = shape::order(shapeBuffer);

@@ -19,10 +19,11 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 01.06.2018
 //
-
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/axis.h>
+#include <system/op_boilerplate.h>
+
 #if NOT_EXCLUDED(OP_reduce_mean)
+#include <ops/declarable/helpers/axis.h>
 namespace sd {
 namespace ops {
 
