@@ -46,7 +46,7 @@ if (SD_CUDA AND NOT SD_AURORA)
         # for cublas and cusolver to be resolved
         if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CMAKE_cublas_LIBRARY}" MATCHES "NOTFOUND")
             set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
-
+        endif()
 
         if(NOT DEFINED CUDA_cusolver_LIBRARY OR "${CUDA_cusolver_LIBRARY}" MATCHES "NOTFOUND")
             set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
@@ -349,8 +349,8 @@ if (${HELPERS_vednn})
     include(ExternalProject)
     set(VEDNN_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/vednn-install")
     set(VEDNN_STATIC_LIB
-        "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
-  
+            "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
     if(SD_AURORA)
         set (BASH_CMD_VE  bash build.sh -aq$<$<CONFIG:Debug>:d>)
     else()
@@ -359,19 +359,19 @@ if (${HELPERS_vednn})
     set(VEDNN_BUILD_COMMAND NLC_HOME=$ENV{NLC_ROOT} VEDNN_INSTALL_DIR=${VEDNN_PREFIX} ${BASH_CMD_VE})
     set(VEDNN_PATCH_COMMAND "patch" "-Np0" < ${CMAKE_SOURCE_DIR}/vednn.patch "||" true)
     ExternalProject_Add(vednn_project
-        GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
-        GIT_TAG           ve-v1.4
-        UPDATE_DISCONNECTED 1
-        SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
-        PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
-        CONFIGURE_COMMAND ""
-        BUILD_IN_SOURCE   1
-        BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
-        BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
-        INSTALL_COMMAND cmake -E echo "Skipping install step as its already inside build."
-        )
+            GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
+            GIT_TAG           ve-v1.4
+            UPDATE_DISCONNECTED 1
+            SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
+            PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
+            CONFIGURE_COMMAND ""
+            BUILD_IN_SOURCE   1
+            BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
+            BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
+            INSTALL_COMMAND cmake -E echo "Skipping install step as its already inside build."
+            )
 
- 
+
     set(VEDNN_INCLUDE "${VEDNN_PREFIX}/include")
     include_directories(${VEDNN_INCLUDE})
     list(APPEND EXTERNAL_DEPENDENCY_PROJECTS vednn_project)
