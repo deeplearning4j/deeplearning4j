@@ -246,7 +246,8 @@ if(SD_CUDA)
                 set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
                 set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so")
                 # See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
-                unset(CUDA_cublas-NOTFOUND)
+                unset(CUDA_cublas-NOTFOUND CACHE)
+                unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
 
 
             endif()
@@ -256,7 +257,9 @@ if(SD_CUDA)
                 set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
                 set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so")
                 #See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
-                unset(CUDA_cusolver-NOTFOUND)
+                unset(CUDA_cusolver-NOTFOUND CACHE)
+                unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
+
             endif()
 
             message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
