@@ -53,7 +53,7 @@ if (SD_CUDA AND NOT SD_AURORA)
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
 
-    if("${SD_ARCH}" MATCHES "armv8")
+    if("${SD_ARCH}" MATCHES "armv8-a")
         message("Adding jetson nano specific settings")
         # Need to manually specify stubbed links in order
         # for cublas and cusolver to be resolved
