@@ -241,14 +241,15 @@ if(SD_CUDA)
             message("Adding jetson nano specific settings")
             # Need to manually specify stubbed links in order
             # for cublas and cusolver to be resolved
-            message("In windows, setting cublas library and cusolver library")
             if(NOT DEFINED CUDA_cublas_LIBRARY)
-                set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
+                set(CUDA_cublas_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so")
             endif()
 
             if(NOT DEFINED CUDA_cusolver_LIBRARY)
-                set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
+                set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so")
             endif()
+
+            message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
         endif()
 
 
