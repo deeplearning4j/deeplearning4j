@@ -40,13 +40,6 @@ if (SD_CUDA AND NOT SD_AURORA)
     # The normal way of using __NVCC__ and __CUDACC__ does not show up
     # for cpp files which makes it difficult to add guards for specific functions.
     add_compile_definitions(SD_CUDA=true)
-    if("${SD_ARCH}" MATCHES "armv8-a")
-        message("Adding jetson nano specific settings")
-        # Need to manually specify stubbed links in order
-        # for cublas and cusolver to be resolved
-            set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
-            set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
-    endif()
 
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
         message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
