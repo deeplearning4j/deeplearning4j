@@ -44,11 +44,11 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Adding jetson nano specific settings")
         # Need to manually specify stubbed links in order
         # for cublas and cusolver to be resolved
-        if(NOT DEFINED CUDA_cublas_LIBRARY)
+        if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CMAKE_cublas_LIBRARY}" MATCHES "NOTFOUND")
             set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
-        endif()
 
-        if(NOT DEFINED CUDA_cusolver_LIBRARY)
+
+        if(NOT DEFINED CUDA_cusolver_LIBRARY OR "${CUDA_cusolver_LIBRARY}" MATCHES "NOTFOUND")
             set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
         endif()
     endif()
@@ -62,7 +62,7 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
     endif()
-   
+
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
