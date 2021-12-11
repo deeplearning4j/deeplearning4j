@@ -40,19 +40,6 @@ if (SD_CUDA AND NOT SD_AURORA)
     # The normal way of using __NVCC__ and __CUDACC__ does not show up
     # for cpp files which makes it difficult to add guards for specific functions.
     add_compile_definitions(SD_CUDA=true)
-
-    if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
-        add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>")
-        message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compiling CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
-        set(CMAKE_CXX_STANDARD 17)
-        set(CMAKE_CUDA_STANDARD 17)
-    else()
-        set(CMAKE_CXX_STANDARD 11)
-    endif()
-    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
-else()
-    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
-
     if("${SD_ARCH}" MATCHES "armv8-a")
         message("Adding jetson nano specific settings")
         # Need to manually specify stubbed links in order
@@ -75,6 +62,12 @@ else()
         message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
     endif()
+   
+    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+else()
+    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+
+
     set(CMAKE_CXX_STANDARD 11)
 
 endif()
