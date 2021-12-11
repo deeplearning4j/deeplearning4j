@@ -242,10 +242,12 @@ if(SD_CUDA)
             # Need to manually specify stubbed links in order
             # for cublas and cusolver to be resolved
             if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
+                message("Setting cublas library manually")
                 set(CUDA_cublas_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so"  FORCE)
             endif()
 
             if(NOT DEFINED CUDA_cusolver_LIBRARY OR "${CUDA_cusolver_LIBRARY}" MATCHES ".*NOTFOUND.*")
+                message("Setting cusolver library manually")
                 set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so"  FORCE)
             endif()
 
