@@ -248,6 +248,7 @@ if(SD_CUDA)
                 # See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
                 unset(CUDA_cublas-NOTFOUND CACHE)
                 unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
+                unset(CUDA_cublas_LIBRARY-NOTFOUND PARENT_SCOPE)
 
 
             endif()
@@ -259,6 +260,7 @@ if(SD_CUDA)
                 #See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
                 unset(CUDA_cusolver-NOTFOUND CACHE)
                 unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
+                unset(CUDA_cusolver_LIBRARY-NOTFOUND PARENT_SCOPE)
 
             endif()
 
