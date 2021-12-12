@@ -196,7 +196,7 @@ endif()
 
 if(SD_CUDA)
     message("Build cublas")
-     
+
     add_definitions(-D__CUDABLAS__=true)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         set (CMAKE_CXX_FLAGS "")
@@ -236,6 +236,37 @@ if(SD_CUDA)
                 set(CUDA_cusolver_LIBRARY ${CUDA_HOME}/lib/x64/cusolver.lib)
             endif()
         endif()
+
+        if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
+            message("Adding jetson nano specific settings")
+            # Need to manually specify stubbed links in order
+            # for cublas and cusolver to be resolved
+            if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
+                message("Setting cublas library manually")
+                set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
+                set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so")
+                # See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
+                unset(CUDA_cublas-NOTFOUND CACHE)
+                unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
+                unset(CUDA_cublas_LIBRARY-NOTFOUND PARENT_SCOPE)
+
+
+            endif()
+
+            if(NOT DEFINED CUDA_cusolver_LIBRARY OR "${CUDA_cusolver_LIBRARY}" MATCHES ".*NOTFOUND.*")
+                message("Setting cusolver library manually")
+                set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
+                set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so")
+                #See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
+                unset(CUDA_cusolver-NOTFOUND CACHE)
+                unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
+                unset(CUDA_cusolver_LIBRARY-NOTFOUND PARENT_SCOPE)
+
+            endif()
+
+            message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
+        endif()
+
 
 
         string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
@@ -448,7 +479,7 @@ elseif(SD_CPU OR SD_AURORA)
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
         target_link_libraries(${SD_LIBRARY_NAME} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
-endif()
+    endif()
 
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")

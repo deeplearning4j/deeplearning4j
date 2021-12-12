@@ -115,7 +115,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE void traceNew(int id);
 
 SD_LIB_EXPORT SD_HOST_DEVICE int tadIndexForLinear(int linearIndex, int tadLength);
 
-SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, int *dimension, int dimensionLength);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType *shapeInfo, int *dimension, int dimensionLength);
 
 /**
  * Tad element wise stride:
@@ -2530,6 +2530,25 @@ SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *mes
 
 //host device codes which were duplicated in shape.cpp but guarded from inclusion
 #if defined(SD_CUDA)
+
+
+/**
+ * Length of a tad given
+ * the shape information
+ */
+SD_LIB_EXPORT SD_INLINE  SD_HOST_DEVICE  sd::LongType tadLength(const sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+  if (dimensionLength == 1) {
+    return shape::shapeOf(shapeInfo)[dimension[0]];
+  } else {
+    sd::LongType ret = 1;
+    for (int i = 0; i < shape::rank(shapeInfo); i++) {
+      for (int j = 0; j < dimensionLength; j++) {
+        if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
+      }
+    }
+    return ret;
+  }
+}
 
 //////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_INLINE  SD_HOST_DEVICE sd::LongType subArrayIndex(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,

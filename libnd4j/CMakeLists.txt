@@ -34,37 +34,44 @@ endif()
 
 if (SD_CUDA AND NOT SD_AURORA)
     message("Enabling cuda")
+
+    if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
+        message("Adding jetson nano specific settings")
+        # Need to manually specify stubbed links in order
+        # for cublas and cusolver to be resolved
+        if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
+            message("Setting cublas library manually")
+            set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
+            set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so")
+            # See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
+            unset(CUDA_cublas-NOTFOUND CACHE)
+            unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
+            unset(CUDA_cublas_LIBRARY-NOTFOUND PARENT_SCOPE)
+
+
+        endif()
+
+        if(NOT DEFINED CUDA_cusolver_LIBRARY OR "${CUDA_cusolver_LIBRARY}" MATCHES ".*NOTFOUND.*")
+            message("Setting cusolver library manually")
+            set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
+            set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so")
+            #See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
+            unset(CUDA_cusolver-NOTFOUND CACHE)
+            unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
+            unset(CUDA_cusolver_LIBRARY-NOTFOUND PARENT_SCOPE)
+
+        endif()
+
+        message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
+    endif()
+
+
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
     # Add a platform agnostic way of showing we are compiling for cuda
     # The normal way of using __NVCC__ and __CUDACC__ does not show up
     # for cpp files which makes it difficult to add guards for specific functions.
     add_compile_definitions(SD_CUDA=true)
-
-    if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
-        add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>")
-        message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compiling CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
-        set(CMAKE_CXX_STANDARD 17)
-        set(CMAKE_CUDA_STANDARD 17)
-    else()
-        set(CMAKE_CXX_STANDARD 11)
-    endif()
-    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
-else()
-    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
-
-    if(${SD_ARCH} MATCHES "armv8-a")
-        message("Adding jetson nano specific settings")
-        # Need to manually specify stubbed links in order
-        # for cublas and cusolver to be resolved
-        if(NOT DEFINED CUDA_cublas_LIBRARY)
-            set(CUDA_cublas_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so)
-        endif()
-
-        if(NOT DEFINED CUDA_cusolver_LIBRARY)
-            set(CUDA_cusolver_LIBRARY $ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so)
-        endif()
-    endif()
 
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
         message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
@@ -75,6 +82,12 @@ else()
         message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
     endif()
+
+    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+else()
+    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+
+
     set(CMAKE_CXX_STANDARD 11)
 
 endif()
@@ -356,8 +369,8 @@ if (${HELPERS_vednn})
     include(ExternalProject)
     set(VEDNN_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/vednn-install")
     set(VEDNN_STATIC_LIB
-        "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
-  
+            "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
     if(SD_AURORA)
         set (BASH_CMD_VE  bash build.sh -aq$<$<CONFIG:Debug>:d>)
     else()
@@ -366,19 +379,19 @@ if (${HELPERS_vednn})
     set(VEDNN_BUILD_COMMAND NLC_HOME=$ENV{NLC_ROOT} VEDNN_INSTALL_DIR=${VEDNN_PREFIX} ${BASH_CMD_VE})
     set(VEDNN_PATCH_COMMAND "patch" "-Np0" < ${CMAKE_SOURCE_DIR}/vednn.patch "||" true)
     ExternalProject_Add(vednn_project
-        GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
-        GIT_TAG           ve-v1.4
-        UPDATE_DISCONNECTED 1
-        SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
-        PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
-        CONFIGURE_COMMAND ""
-        BUILD_IN_SOURCE   1
-        BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
-        BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
-        INSTALL_COMMAND cmake -E echo "Skipping install step as its already inside build."
-        )
+            GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
+            GIT_TAG           ve-v1.4
+            UPDATE_DISCONNECTED 1
+            SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
+            PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
+            CONFIGURE_COMMAND ""
+            BUILD_IN_SOURCE   1
+            BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
+            BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
+            INSTALL_COMMAND cmake -E echo "Skipping install step as its already inside build."
+            )
 
- 
+
     set(VEDNN_INCLUDE "${VEDNN_PREFIX}/include")
     include_directories(${VEDNN_INCLUDE})
     list(APPEND EXTERNAL_DEPENDENCY_PROJECTS vednn_project)
