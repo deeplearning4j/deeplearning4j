@@ -24,23 +24,7 @@
 namespace shape {
 
 
-/**
- * Length of a tad given
- * the shape information
- */
-SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
-  if (dimensionLength == 1) {
-    return shape::shapeOf(shapeInfo)[dimension[0]];
-  } else {
-    sd::LongType ret = 1;
-    for (int i = 0; i < shape::rank(shapeInfo); i++) {
-      for (int j = 0; j < dimensionLength; j++) {
-        if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
-      }
-    }
-    return ret;
-  }
-}
+
 
 SD_HOST sd::LongType *computeResultShape(sd::LongType const *originalShapeBuffer, int *dimension,
                                                           int dimensionLength) {
@@ -169,6 +153,25 @@ SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride,
 
 
 #ifndef SD_CUDA
+
+/**
+ * Length of a tad given
+ * the shape information
+ */
+SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+  if (dimensionLength == 1) {
+    return shape::shapeOf(shapeInfo)[dimension[0]];
+  } else {
+    sd::LongType ret = 1;
+    for (int i = 0; i < shape::rank(shapeInfo); i++) {
+      for (int j = 0; j < dimensionLength; j++) {
+        if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
+      }
+    }
+    return ret;
+  }
+}
+
 
 SD_LIB_EXPORT SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
   return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
