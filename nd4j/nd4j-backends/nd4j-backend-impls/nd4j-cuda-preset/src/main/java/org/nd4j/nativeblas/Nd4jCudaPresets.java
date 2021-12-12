@@ -34,7 +34,7 @@ import org.nd4j.presets.OpExclusionUtils;
  * @author saudet
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda", helper = "org.nd4j.nativeblas.Nd4jCudaHelper",
-        value = {@Platform(define = "SD_ALL_OPS", include = {
+        value = {@Platform(define = {"SD_ALL_OPS","SD_CUDA"}, include = {
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
