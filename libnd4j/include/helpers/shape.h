@@ -2529,7 +2529,7 @@ SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *mes
 }
 
 //host device codes which were duplicated in shape.cpp but guarded from inclusion
-#if defined(SD_CUDA) || defined(__CUDACC__)
+#if defined(SD_CUDA)
 
 
 /**
