@@ -26,6 +26,7 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -43,6 +44,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasOptimizerUtils;
+import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.autodiff.samediff.internal.DependencyList;
 import org.nd4j.autodiff.samediff.internal.DependencyTracker;
@@ -445,7 +447,7 @@ public class KerasModel {
                 KerasInput kerasInput = (KerasInput) layer;
                 Layer layer1 = layersOrdered.get(kerasLayerIdx + 1).layer;
                 //no dim order, try to pull it from the next layer if there is one
-                if(ConvolutionUtils.layerHasConvolutionLayout(layer1)) {
+                if(ConvolutionUtils.layerHasConvolutionLayout(layer1) && inputShape.length < 4) {
                     CNN2DFormat formatForLayer = ConvolutionUtils.getFormatForLayer(layer1);
                     if(formatForLayer == CNN2DFormat.NCHW) {
                         dimOrder = KerasLayer.DimOrder.THEANO;
@@ -454,7 +456,17 @@ public class KerasModel {
                     } else {
                         dimOrder = KerasLayer.DimOrder.NONE;
                     }
-                } else if(KerasRnnUtils.isRnnLayer(layersOrdered.get(kerasLayerIdx + 1))) {
+                } else if(Convolution3DUtils.layerHasConvolution3DLayout(layer1)) {
+                    Convolution3D.DataFormat dataFormat = Convolution3DUtils.getFormatForLayer(layer1);
+                    if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                        dimOrder = KerasLayer.DimOrder.THEANO;
+                    } else if(dataFormat == Convolution3D.DataFormat.NDHWC) {
+                        dimOrder = KerasLayer.DimOrder.TENSORFLOW;
+                    } else {
+                        dimOrder = KerasLayer.DimOrder.NONE;
+
+                    }
+                }  else if(KerasRnnUtils.isRnnLayer(layersOrdered.get(kerasLayerIdx + 1))) {
                     if(kerasInput.inputShape == null)
                         kerasInput.inputShape =  layersOrdered.get(kerasLayerIdx + 1).inputShape;
                 }

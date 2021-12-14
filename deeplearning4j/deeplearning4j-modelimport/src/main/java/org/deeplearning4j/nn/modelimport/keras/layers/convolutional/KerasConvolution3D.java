@@ -114,6 +114,7 @@ public class KerasConvolution3D extends KerasConvolution {
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
+
         this.layer = builder.build();
     }
 

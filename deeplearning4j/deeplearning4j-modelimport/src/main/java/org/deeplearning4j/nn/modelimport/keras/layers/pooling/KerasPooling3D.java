@@ -65,6 +65,7 @@ public class KerasPooling3D extends KerasLayer {
         Subsampling3DLayer.Builder builder = new Subsampling3DLayer.Builder(
                 KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
                 .dropOut(this.dropout)
+                .dataFormat(getCNN3DDataFormatFromConfig(layerConfig,conf))
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 3, conf, kerasMajorVersion))
                 .stride(getStrideFromConfig(layerConfig, 3, conf));
