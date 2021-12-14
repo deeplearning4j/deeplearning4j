@@ -61,7 +61,13 @@
 #endif
 #endif
 
-#ifdef __clang__
+
+#ifdef __NEC__
+#include <unordered_map>
+#define SD_MAP_IMPL std::unordered_map
+#define SD_LOOPS_INLINED
+#define SD_INLINE inline
+#elif __clang__
 #include <unordered_map>
 #define SD_MAP_IMPL std::unordered_map
 #define SD_LOOPS_INLINED
