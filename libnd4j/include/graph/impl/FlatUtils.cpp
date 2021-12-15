@@ -61,6 +61,9 @@ NDArray *FlatUtils::fromFlatArray(const sd::graph::FlatArray *flatArray) {
     auto longPtr = reinterpret_cast<sd::LongType *>(rawPtr);
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
     auto offsets = new sd::LongType[length + 1];
+#if defined(__NEC__)
+    #pragma _NEC novector
+#endif
     for (sd::LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];
       // FIXME: BE vs LE on partials
