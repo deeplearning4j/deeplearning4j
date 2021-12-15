@@ -3714,7 +3714,7 @@ public class Nd4j {
     }
 
     /**
-     * See {@link #, long[], long[], char, DataType)}
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());

@@ -151,7 +151,7 @@ class KerasConvolution3DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-        Convolution3D layer = (Convolution3D) new KerasConvolution3D(layerConfig).getConvolution3DLayer();
+        Convolution3D layer = new KerasConvolution3D(layerConfig).getConvolution3DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());
