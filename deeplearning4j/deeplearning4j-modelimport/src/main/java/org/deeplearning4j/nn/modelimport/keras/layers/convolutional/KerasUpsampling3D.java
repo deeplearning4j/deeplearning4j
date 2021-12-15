@@ -28,6 +28,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 
 import java.util.Map;
 
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getCNN3DDataFormatFromConfig;
+
 
 /**
  * Keras Upsampling3D layer support
@@ -66,6 +68,7 @@ public class KerasUpsampling3D extends KerasLayer {
         Upsampling3D.Builder builder = new Upsampling3D.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
+                .dataFormat(getCNN3DDataFormatFromConfig(layerConfig,conf))
                 .size(size[0]);
 
         this.layer = builder.build();

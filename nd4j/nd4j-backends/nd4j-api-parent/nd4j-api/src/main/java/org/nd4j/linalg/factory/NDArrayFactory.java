@@ -995,6 +995,18 @@ public interface NDArrayFactory {
      */
     INDArray scalar(double value);
 
+
+    /**
+     * Create a scalar nd array with the data type
+     * and a default value depending on the data type.
+     * Generally this will be an empty string for
+     * UTF8 or 0.0 for numerical values, or true for booleans.
+     *
+     * @param dataType the dataType of the scalar
+     *                 * @return the scalar nd array
+     */
+    INDArray scalar(DataType dataType);
+
     /**
      *
      * @param data

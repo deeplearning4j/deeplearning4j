@@ -19,8 +19,10 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.Upsampling3D;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -61,11 +63,14 @@ class KerasUpsampling3DTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Upsampling 3 D Layer")
     void testUpsampling3DLayer() throws Exception {
-        buildUpsampling3DLayer(conf1, keras1);
-        buildUpsampling3DLayer(conf2, keras2);
+        for(KerasLayer.DimOrder dimOrder : KerasLayer.DimOrder.values()) {
+            buildUpsampling3DLayer(conf1, keras1,dimOrder != KerasLayer.DimOrder.THEANO ? "channels_last" : "channels_first");
+            buildUpsampling3DLayer(conf2, keras2,dimOrder != KerasLayer.DimOrder.THEANO ? "channels_last" : "channels_first");
+        }
+
     }
 
-    private void buildUpsampling3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildUpsampling3DLayer(KerasLayerConfiguration conf, Integer kerasVersion,String ordering) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_UPSAMPLING_3D());
         Map<String, Object> config = new HashMap<>();
@@ -75,6 +80,8 @@ class KerasUpsampling3DTest extends BaseDL4JTest {
         sizeList.add(size[2]);
         config.put(conf.getLAYER_FIELD_UPSAMPLING_3D_SIZE(), sizeList);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_DIM_ORDERING(),ordering);
+
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
         Upsampling3D layer = new KerasUpsampling3D(layerConfig).getUpsampling3DLayer();
@@ -82,5 +89,11 @@ class KerasUpsampling3DTest extends BaseDL4JTest {
         assertEquals(size[0], layer.getSize()[0]);
         assertEquals(size[1], layer.getSize()[1]);
         assertEquals(size[2], layer.getSize()[2]);
+        if(ordering.equals("channels_last")) {
+            assertEquals(Convolution3D.DataFormat.NDHWC,layer.getDataFormat());
+        } else if(ordering.equals("channels_first")) {
+            assertEquals(Convolution3D.DataFormat.NCDHW,layer.getDataFormat());
+
+        }
     }
 }

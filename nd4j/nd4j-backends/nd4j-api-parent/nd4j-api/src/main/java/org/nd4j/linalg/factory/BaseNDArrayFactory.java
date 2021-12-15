@@ -1168,7 +1168,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(buffer, shape, stride, offset);
     }
 
-
+    @Override
+    public INDArray scalar(DataType dataType) {
+        switch(dataType) {
+            case BOOL:
+                return create(Nd4j.createTypedBuffer(new boolean[]{true},dataType));
+            case UTF8:
+                return Nd4j.create(Arrays.asList(""));
+            default:
+                return create(Nd4j.createTypedBuffer(new float[]{0.0f},dataType));
+        }
+    }
     /**
      * Creates an ndarray with the specified shape
      *

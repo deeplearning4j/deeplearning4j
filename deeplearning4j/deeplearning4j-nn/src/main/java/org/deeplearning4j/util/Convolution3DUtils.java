@@ -25,6 +25,7 @@ import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.util.ArrayUtil;
 
@@ -82,8 +83,8 @@ public class Convolution3DUtils {
 
 
     private static void validateShapes(int[] inputDataShape, int[] eKernel, int[] strides, int[] padding,
-                                      ConvolutionMode convolutionMode, int[] dilation, long[] inShape,
-                                      boolean atrous) {
+                                       ConvolutionMode convolutionMode, int[] dilation, long[] inShape,
+                                       boolean atrous) {
 
         String[] dims = new String[]{"depth", "height", "width"};
 
@@ -213,5 +214,48 @@ public class Convolution3DUtils {
                             + Arrays.toString(padding));
         }
     }
+
+
+    /**
+     * Returns the {@link org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat}
+     * for the associated layer.
+     * Note that {@link #layerHasConvolution3DLayout(Layer)}
+     * should return true on the given layer input or an {@link IllegalArgumentException}
+     * will be thrown
+     * @param inputLayer the input layer to get the format for
+     * @return the associated {@link org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat} with
+     * the layer
+     */
+    public static Convolution3D.DataFormat getFormatForLayer(Layer inputLayer) {
+        if(inputLayer instanceof Convolution3D) {
+            Convolution3D convolution3D = (Convolution3D) inputLayer;
+            return convolution3D.getDataFormat();
+        } else if(inputLayer instanceof Subsampling3DLayer) {
+            Subsampling3DLayer subsampling3DLayer = (Subsampling3DLayer) inputLayer;
+            return subsampling3DLayer.getDataFormat();
+        } else if(inputLayer instanceof Upsampling3D) {
+            Upsampling3D upsampling3D = (Upsampling3D) inputLayer;
+            return upsampling3D.getDataFormat();
+        } else if(inputLayer instanceof Deconvolution3D) {
+            Deconvolution3D deconvolution3D = (Deconvolution3D) inputLayer;
+            return deconvolution3D.getDataFormat();
+        } else {
+            throw new IllegalArgumentException("Illegal input format type " + inputLayer.getClass().getName() + " with layer name of " + inputLayer.getLayerName());
+        }
+    }
+
+    /**
+     * Returns true if any of the layers are 3d convolution, pooling, or upsampling layers including:
+     * {@link Convolution3D}, {@link Deconvolution3D}, {@link Subsampling3DLayer}, {@link Upsampling3D}
+     * @param layer the input layer to validate
+     * @return true if the layer is any of the types specified.
+     */
+    public static boolean layerHasConvolution3DLayout(Layer layer) {
+        return layer instanceof Convolution3D ||
+                layer instanceof Deconvolution3D ||
+                layer instanceof Subsampling3DLayer ||
+                layer instanceof Upsampling3D;
+    }
+
 
 }
