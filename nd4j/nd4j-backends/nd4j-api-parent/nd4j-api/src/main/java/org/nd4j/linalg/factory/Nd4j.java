@@ -3714,7 +3714,7 @@ public class Nd4j {
     }
 
     /**
-     * See {@link #create(int[], long[], long[], char, DataType)}
+     * See {@link #, long[], long[], char, DataType)}
      */
     public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4204,7 +4204,7 @@ public class Nd4j {
      */
     public static INDArray create(long[] shape, long[] stride, char ordering) {
         if(shape.length == 0)
-            return Nd4j.scalar(Nd4j.dataType(), 0.0);
+            return Nd4j.empty(Nd4j.dataType());
 
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, 0, ordering);
@@ -4293,7 +4293,7 @@ public class Nd4j {
      */
     public static INDArray create(@NonNull DataType dataType, @NonNull long[] shape, char ordering) {
         if(shape.length == 0)
-            return Nd4j.scalar(dataType, 0.0);
+            return Nd4j.empty(dataType);
         //ensure shapes that wind up being scalar end up with the write shape
         checkShapeValues(shape);
         return INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4373,7 +4373,7 @@ public class Nd4j {
      */
     public static INDArray createUninitialized(long[] shape, char ordering) {
         if (shape.length == 0)
-            return scalar(dataType(), 0.0);
+            return empty(dataType());
 
         checkShapeValues(shape);
         return INSTANCE.createUninitialized(shape, ordering);
