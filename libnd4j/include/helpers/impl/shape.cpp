@@ -279,9 +279,17 @@ SD_LIB_EXPORT SD_HOST void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::
   }
 }
 
+SD_LIB_EXPORT SD_HOST sd::LongType subArrayIndex(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+                                                 const sd::LongType *minShapeInfo, const int *dimsToExclude,
+                                                 const int dimsLen) {
+  int maxIdxs[SD_MAX_RANK];
+  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
+  int minIdxs[SD_MAX_RANK];
+  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
 
-
+  return shape::coords2index(minShapeInfo, minIdxs);
+}
 
 //////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
