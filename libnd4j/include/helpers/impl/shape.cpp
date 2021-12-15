@@ -173,7 +173,7 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, int 
 }
 
 
-SD_LIB_EXPORT SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+SD_LIB_EXPORT  SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
   return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
 }
 

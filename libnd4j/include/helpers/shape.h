@@ -143,7 +143,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType *shapeInf
  * Again: this may not preserve ordering of the tad
  * but maybe used for reductions.
  */
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength);
+SD_LIB_EXPORT  SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength);
 
 SD_LIB_EXPORT SD_HOST bool canReshape(const int oldRank, sd::LongType *oldShape, const int newRank,
                                              sd::LongType *newShape, bool isFOrder);
